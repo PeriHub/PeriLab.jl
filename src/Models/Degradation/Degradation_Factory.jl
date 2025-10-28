@@ -4,6 +4,7 @@
 
 module Degradation
 
+using ....Data_Manager
 using ...Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "degradation_name")
 for mod in module_list
@@ -17,68 +18,54 @@ export init_fields
 export fields_for_local_synchronization
 
 """
-init_fields(datamanager::Module)
+init_fields()
 
 Initialize  model fields
-
-# Arguments
-- `datamanager::Data_Manager`: Datamanager.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 """
-function init_fields(datamanager::Module)
-    datamanager.create_node_field("Damage", Float64, 1)
-    nlist = datamanager.get_nlist()
-    inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
-    return datamanager
+function init_fields()
+    Data_Manager.create_node_field("Damage", Float64, 1)
+    nlist = Data_Manager.get_nlist()
+    inverse_nlist = Data_Manager.set_inverse_nlist(find_inverse_bond_id(nlist))
 end
 
 """
-    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
+    compute_model(nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
 
 Computes the degradation models
 
 # Arguments
-- `datamanager::Module`: The datamanager
 - `nodes::AbstractVector{Int64}`: The nodes
 - `model_param::Dict`: The model parameters
 - `block::Int64`: The block
 - `time::Float64`: The current time
 - `dt::Float64`: The time step
-# Returns
-- `datamanager::Module`: The datamanager
 """
-function compute_model(datamanager::Module,
-                       nodes::AbstractVector{Int64},
+function compute_model(nodes::AbstractVector{Int64},
                        model_param::Dict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    mod = datamanager.get_model_module(model_param["Degradation Model"])
-    return mod.compute_model(datamanager, nodes, model_param, block, time, dt)
+    mod = Data_Manager.get_model_module(model_param["Degradation Model"])
+    return mod.compute_model(nodes, model_param, block, time, dt)
 end
 
 """
-    init_model(datamanager::Module, nodes::AbstractVector{Int64}, block::Int64)
+    init_model(nodes::AbstractVector{Int64}, block::Int64)
 
 Initialize a degradation models.
 
 # Arguments
-- `datamanager::Module`: The data manager module where the degradation model will be initialized.
 - `nodes::AbstractVector{Int64}`: Nodes for the degradation model.
 - `block::Int64`: Block identifier for the degradation model.
 
-# Returns
-- `datamanager`: The modified data manager module with the initialized degradation model.
-
 # Example
 ```julia
-datamanager = init_model(my_data_manager, [1, 2, 3], 1)
+init_model(my_data_manager, [1, 2, 3], 1)
 
 """
-function init_model(datamanager::Module, nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     block::Int64)
-    model_param = datamanager.get_properties(block, "Degradation Model")
+    model_param = Data_Manager.get_properties(block, "Degradation Model")
     mod = create_module_specifics(model_param["Degradation Model"],
                                   module_list,
                                   @__MODULE__,
@@ -88,28 +75,24 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
                " exists."
         return nothing
     end
-    datamanager.set_model_module(model_param["Degradation Model"], mod)
-    datamanager = mod.init_model(datamanager, nodes, model_param, block)
-    return datamanager
+    Data_Manager.set_model_module(model_param["Degradation Model"], mod)
+    mod.init_model(nodes, model_param, block)
 end
 
 """
-    fields_for_local_synchronization(datamanager, model, block)
+    fields_for_local_synchronization(model, block)
 
 Defines all synchronization fields for local synchronization
 
 # Arguments
-- `datamanager::Module`: datamanager.
 - `model::String`: Model class.
 - `block::Int64`: block ID
-# Returns
-- `datamanager::Module`: Datamanager.
 """
-function fields_for_local_synchronization(datamanager, model, block)
-    model_param = datamanager.get_properties(block, "Degradation Model")
-    mod = datamanager.get_model_module(model_param["Degradation Model"])
+function fields_for_local_synchronization(model, block)
+    model_param = Data_Manager.get_properties(block, "Degradation Model")
+    mod = Data_Manager.get_model_module(model_param["Degradation Model"])
 
-    return mod.fields_for_local_synchronization(datamanager, model)
+    return mod.fields_for_local_synchronization(model)
 end
 
 end

@@ -7,6 +7,8 @@ using LinearAlgebra: dot
 export compute_model
 export thermal_model_name
 export init_model
+
+using .....Data_Manager
 using .....Helpers: normalize_in_place!
 """
     thermal_model_name()
@@ -29,62 +31,53 @@ function thermal_model_name()
 end
 
 """
-    init_model(datamanager, nodes, thermal_parameter)
+    init_model(nodes, thermal_parameter)
 
-Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `thermal parameter::Dict(String, Any)`: Dictionary with thermal parameter.
 - `block::Int64`: The current block.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 
 """
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     thermal_parameter::Dict)
-    nlist = datamanager.get_nlist()
-    dof = datamanager.get_dof()
+    nlist = Data_Manager.get_nlist()
+    dof = Data_Manager.get_dof()
 
-    datamanager.create_constant_node_field("Specific Volume Check", Bool, 1, true)
+    Data_Manager.create_constant_node_field("Specific Volume Check", Bool, 1, true)
 
-    undeformed_bond = datamanager.get_field("Bond Geometry")
-    bond_norm_field = datamanager.create_constant_bond_field("Bond Norm", Float64, dof, 1)
+    undeformed_bond = Data_Manager.get_field("Bond Geometry")
+    bond_norm_field = Data_Manager.create_constant_bond_field("Bond Norm", Float64, dof, 1)
     for iID in nodes
         for (jID, neighborID) in enumerate(nlist[iID])
             normalize_in_place!(bond_norm_field[iID][jID], undeformed_bond[iID][jID])
         end
     end
-    return datamanager
 end
 
 """
-    compute_model(datamanager, nodes, thermal_parameter, time, dt)
+    compute_model(nodes, thermal_parameter, time, dt)
 
 Calculates the heat transfer to the environment. [BrighentiR2021](@cite)
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 Example:
 ```julia
 ```
 """
-function compute_model(datamanager::Module,
-                       nodes::AbstractVector{Int64},
+function compute_model(nodes::AbstractVector{Int64},
                        thermal_parameter::Dict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    dof = datamanager.get_dof()
-    volume = datamanager.get_field("Volume")
+    dof = Data_Manager.get_dof()
+    volume = Data_Manager.get_field("Volume")
     kappa = thermal_parameter["Heat Transfer Coefficient"]
     if thermal_parameter["Environmental Temperature"] isa String
         global t = time
@@ -93,17 +86,17 @@ function compute_model(datamanager::Module,
         Tenv = thermal_parameter["Environmental Temperature"]
     end
     allow_surface_change = get(thermal_parameter, "Allow Surface Change", true)
-    additive_enabled = haskey(datamanager.get_active_models(), "Additive Model")
-    heat_flow = datamanager.get_field("Heat Flow", "NP1")
-    temperature = datamanager.get_field("Temperature", "NP1")
-    surface_nodes = datamanager.get_field("Surface_Nodes")
-    specific_volume = datamanager.get_field("Specific Volume")
-    active = datamanager.get_field("Active")
-    bond_norm = datamanager.get_field("Bond Norm")
-    rotation_tensor = datamanager.get_rotation() ?
-                      datamanager.get_field("Rotation Tensor") : nothing
-    specific_volume_check = datamanager.get_field("Specific Volume Check")
-    nlist = datamanager.get_nlist()
+    additive_enabled = haskey(Data_Manager.get_active_models(), "Additive Model")
+    heat_flow = Data_Manager.get_field("Heat Flow", "NP1")
+    temperature = Data_Manager.get_field("Temperature", "NP1")
+    surface_nodes = Data_Manager.get_field("Surface_Nodes")
+    specific_volume = Data_Manager.get_field("Specific Volume")
+    active = Data_Manager.get_field("Active")
+    bond_norm = Data_Manager.get_field("Bond Norm")
+    rotation_tensor = Data_Manager.get_rotation() ?
+                      Data_Manager.get_field("Rotation Tensor") : nothing
+    specific_volume_check = Data_Manager.get_field("Specific Volume Check")
+    nlist = Data_Manager.get_nlist()
     dx = 1.0
 
     kappa = thermal_parameter["Heat Transfer Coefficient"]
@@ -137,8 +130,6 @@ function compute_model(datamanager::Module,
             surface_nodes[iID] = false
         end
     end
-
-    return datamanager
 end
 
 #TODO @Jan-Timo update documentation
@@ -198,7 +189,7 @@ function calculate_specific_volume!(specific_volume::Vector{Int64},
     end
 end
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+    fields_for_local_synchronization(model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -206,21 +197,20 @@ The structure of the Dict must because
 
     synchfield = Dict(
         "Field name" =>
-            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
+            Dict("upload_to_cores" => true, "dof" => Data_Manager.get_dof()),
     )
 
 or
 
     synchfield = Dict(
         "Field name" =>
-            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
+            Dict("download_from_cores" => true, "dof" => Data_Manager.get_dof()),
     )
 
 # Arguments
 
 """
-function fields_for_local_synchronization(datamanager::Module, model::String)
-    return Dict()
+function fields_for_local_synchronization(model::String)
 end
 
 end

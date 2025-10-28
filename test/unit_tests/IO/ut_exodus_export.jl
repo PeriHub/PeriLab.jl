@@ -191,33 +191,33 @@ computes = Dict("Fields" => Dict("External_Displacements" => Dict("fieldname" =>
                                                                                     "Variable" => "DisplacementsNP1"))))
 
 exo1 = PeriLab.IO.create_result_file(filename2,
-                          nnodes,
-                          dof,
-                          maximum(block_Id),
-                          length(nsets),
-                          2,
-                          topology)
+                                     nnodes,
+                                     dof,
+                                     maximum(block_Id),
+                                     length(nsets),
+                                     2,
+                                     topology)
 exo1["file"] = PeriLab.IO.init_results_in_exodus(exo1["file"],
-                                      outputs,
-                                      coords,
-                                      block_Id[1:nnodes],
-                                      ["Block_1", "Block_2"],
-                                      nsets,
-                                      [1, 2, 3, 4, 5],
-                                      "1.0.0",
-                                      fem_block,
-                                      topology,
-                                      [1, 2])
+                                                 outputs,
+                                                 coords,
+                                                 block_Id[1:nnodes],
+                                                 ["Block_1", "Block_2"],
+                                                 nsets,
+                                                 [1, 2, 3, 4, 5],
+                                                 "1.0.0",
+                                                 fem_block,
+                                                 topology,
+                                                 [1, 2])
 rm(filename2)
 exo = PeriLab.IO.create_result_file(filename, nnodes, dof, maximum(block_Id), length(nsets))
 exo["file"] = PeriLab.IO.init_results_in_exodus(exo["file"],
-                                     outputs,
-                                     coords,
-                                     block_Id[1:nnodes],
-                                     ["Block_1", "Block_2"],
-                                     nsets,
-                                     [1, 2, 3, 4, 5],
-                                     "1.0.0")
+                                                outputs,
+                                                coords,
+                                                block_Id[1:nnodes],
+                                                ["Block_1", "Block_2"],
+                                                nsets,
+                                                [1, 2, 3, 4, 5],
+                                                "1.0.0")
 result_files = []
 push!(result_files, exo)
 result_files[1]["file"] = PeriLab.IO.write_step_and_time(result_files[1]["file"], 2, 2.2)
@@ -262,8 +262,7 @@ disp[5] = 0
 
 nodal_outputs = Dict(key => value
                      for (key, value) in outputs["Fields"] if (!value["global_var"]))
-exo["file"] = PeriLab.IO.write_nodal_results_in_exodus(exo["file"], 2, nodal_outputs,
-                                            test_data_manager)
+exo["file"] = PeriLab.IO.write_nodal_results_in_exodus(exo["file"], 2, nodal_outputs)
 
 test_disp_step_zero = read_values(exo["file"], NodalVariable, 1, 1, "Displacements")
 

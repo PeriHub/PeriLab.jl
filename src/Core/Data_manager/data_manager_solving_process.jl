@@ -67,3 +67,45 @@ function fill_field!(field_NP1::AbstractArray{T},
                      active::Vector{Bool}, value::T) where {T<:Union{Int64,Float64,Bool}}
     fill!(field_NP1, value)
 end
+
+function fill_in_place!(A::Vector{Vector{T}},
+                        value::T,
+                        active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool}}
+    @inbounds for i in eachindex(A)
+        if active[i]
+            A[i] .= value
+        end
+    end
+end
+
+function fill_in_place!(A::Vector{Array{T,N}},
+                        value::T,
+                        active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool},N}
+    @inbounds for i in eachindex(A)
+        if active[i]
+            A[i] .= value
+        end
+    end
+end
+function fill_in_place!(A::Vector{Vector{Vector{T}}},
+                        value::T,
+                        active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool}}
+    @inbounds for i in eachindex(A)
+        if active[i]
+            @inbounds for j in eachindex(A[i])
+                A[i][j] .= value
+            end
+        end
+    end
+end
+function fill_in_place!(A::Vector{Vector{Array{T,N}}},
+                        value::T,
+                        active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool},N}
+    @inbounds for i in eachindex(A)
+        if active[i]
+            @inbounds for j in eachindex(A[i])
+                A[i][j] .= value
+            end
+        end
+    end
+end

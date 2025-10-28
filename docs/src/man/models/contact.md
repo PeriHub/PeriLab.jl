@@ -55,7 +55,7 @@ The quasi code is given here
 
 ```julia
 # synchronize all contact nodes
-synchronize_contact_points(datamanager, "Deformed Coordinates", "NP1",
+synchronize_contact_points("Deformed Coordinates", "NP1",
                                                all_positions)
 
 ## loop over all contact pairs
@@ -69,7 +69,7 @@ function contact_search(...)
         local_search(...)
         return
     else
-        synchronize_contact_points(datamanager, "Deformed Coordinates", "NP1",
+        synchronize_contact_points("Deformed Coordinates", "NP1",
                                                all_positions[potential_contact_list])
         local_search(...)   # finds all points within the contact radius
         return

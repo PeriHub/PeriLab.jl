@@ -5,6 +5,8 @@
 module Bond_Associated_Correspondence
 using LinearAlgebra: mul!
 using StaticArrays: I, @MMatrix
+
+using ........Data_Manager
 using .....Material_Basis: compute_Piola_Kirchhoff_stress!
 using ........Helpers:
                        find_local_neighbors, invert, rotate, determinant, smat,
@@ -18,42 +20,39 @@ export fields_for_local_synchronization
 export init_model
 export compute_model
 
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     if !haskey(material_parameter, "Symmetry")
         @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
         return nothing
     end
     if haskey(material_parameter, "Accuracy Order")
-        datamanager.set_accuracy_order(material_parameter["Accuracy Order"])
+        Data_Manager.set_accuracy_order(material_parameter["Accuracy Order"])
     end
 
-    dof = datamanager.get_dof()
-    datamanager.create_bond_field("Bond Strain", Float64, dof, VectorOrMatrix = "Matrix")
-    datamanager.create_bond_field("Bond Cauchy Stress", Float64, dof,
-                                  VectorOrMatrix = "Matrix")
-    datamanager.create_constant_bond_field("Bond Strain Increment", Float64, dof,
-                                           VectorOrMatrix = "Matrix")
-    datamanager.create_constant_node_field("Integral Nodal Stress", Float64, dof,
-                                           VectorOrMatrix = "Matrix")
+    dof = Data_Manager.get_dof()
+    Data_Manager.create_bond_field("Bond Strain", Float64, dof, VectorOrMatrix = "Matrix")
+    Data_Manager.create_bond_field("Bond Cauchy Stress", Float64, dof,
+                                   VectorOrMatrix = "Matrix")
+    Data_Manager.create_constant_bond_field("Bond Strain Increment", Float64, dof,
+                                            VectorOrMatrix = "Matrix")
+    Data_Manager.create_constant_node_field("Integral Nodal Stress", Float64, dof,
+                                            VectorOrMatrix = "Matrix")
 
-    datamanager.create_bond_field("Bond Rotation Tensor", Float64, dof,
-                                  VectorOrMatrix = "Matrix")
+    Data_Manager.create_bond_field("Bond Rotation Tensor", Float64, dof,
+                                   VectorOrMatrix = "Matrix")
 
-    nlist = datamanager.get_nlist()
-    volume = datamanager.get_field("Volume")
-    omega = datamanager.get_field("Influence Function")
-    bond_damage = datamanager.get_bond_damage("NP1")
-    weighted_volume = datamanager.create_constant_node_field("Weighted Volume", Float64, 1)
+    nlist = Data_Manager.get_nlist()
+    volume = Data_Manager.get_field("Volume")
+    omega = Data_Manager.get_field("Influence Function")
+    bond_damage = Data_Manager.get_bond_damage("NP1")
+    weighted_volume = Data_Manager.create_constant_node_field("Weighted Volume", Float64, 1)
 
     compute_weighted_volume!(weighted_volume, nodes, nlist, volume, bond_damage, omega)
-
-    return datamanager
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+    fields_for_local_synchronization(model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -62,14 +61,13 @@ Returns a user developer defined local synchronization. This happens before each
 # Arguments
 
 """
-function fields_for_local_synchronization(datamanager::Module, model::String)
+function fields_for_local_synchronization(model::String)
     download_from_cores = false
     upload_to_cores = true
-    datamanager.set_local_synch(model,
-                                "Deformation Gradient",
-                                download_from_cores,
-                                upload_to_cores)
-    return datamanager
+    Data_Manager.set_local_synch(model,
+                                 "Deformation Gradient",
+                                 download_from_cores,
+                                 upload_to_cores)
 end
 
 """
@@ -84,49 +82,48 @@ end
   -> numbers are correct and it allows a change in size -> local ID is correct
 """
 
-function compute_model(datamanager::Module,
-                       nodes::AbstractVector{Int64},
+function compute_model(nodes::AbstractVector{Int64},
                        material_parameter::Dict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    rotation::Bool = datamanager.get_rotation()
+    rotation::Bool = Data_Manager.get_rotation()
 
-    dof = datamanager.get_dof()
-    nlist = datamanager.get_nlist()
+    dof = Data_Manager.get_dof()
+    nlist = Data_Manager.get_nlist()
 
-    bond_damage = datamanager.get_bond_damage("NP1")
-    horizon = datamanager.get_field("Horizon")
-    omega = datamanager.get_field("Influence Function")
-    volume = datamanager.get_field("Volume")
+    bond_damage = Data_Manager.get_bond_damage("NP1")
+    horizon = Data_Manager.get_field("Horizon")
+    omega = Data_Manager.get_field("Influence Function")
+    volume = Data_Manager.get_field("Volume")
 
-    bond_length = datamanager.get_field("Bond Length")
+    bond_length = Data_Manager.get_field("Bond Length")
 
-    bond_geometry = datamanager.get_field("Bond Geometry")
-    bond_length = datamanager.get_field("Bond Length")
-    bond_deformation = datamanager.get_field("Deformed Bond Geometry", "NP1")
+    bond_geometry = Data_Manager.get_field("Bond Geometry")
+    bond_length = Data_Manager.get_field("Bond Length")
+    bond_deformation = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
 
-    strain_N = datamanager.get_field("Bond Strain", "N")
-    strain_NP1 = datamanager.get_field("Bond Strain", "NP1")
+    strain_N = Data_Manager.get_field("Bond Strain", "N")
+    strain_NP1 = Data_Manager.get_field("Bond Strain", "NP1")
 
-    stress_integral = datamanager.get_field("Integral Nodal Stress")
-    cauchy_stress_N = datamanager.get_field("Cauchy Stress", "N")
-    cauchy_stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
-    stress_N = datamanager.get_field("Bond Cauchy Stress", "N")
-    stress_NP1 = datamanager.get_field("Bond Cauchy Stress", "NP1")
-    strain_increment_nodal = datamanager.get_field("Strain Increment")
-    strain_increment = datamanager.get_field("Bond Strain Increment")
-    bond_force = datamanager.get_field("Bond Forces")
+    stress_integral = Data_Manager.get_field("Integral Nodal Stress")
+    cauchy_stress_N = Data_Manager.get_field("Cauchy Stress", "N")
+    cauchy_stress_NP1 = Data_Manager.get_field("Cauchy Stress", "NP1")
+    stress_N = Data_Manager.get_field("Bond Cauchy Stress", "N")
+    stress_NP1 = Data_Manager.get_field("Bond Cauchy Stress", "NP1")
+    strain_increment_nodal = Data_Manager.get_field("Strain Increment")
+    strain_increment = Data_Manager.get_field("Bond Strain Increment")
+    bond_force = Data_Manager.get_field("Bond Forces")
 
     # computed in pre calculation ----------------------------------
-    gradient_weights = datamanager.get_field("Lagrangian Gradient Weights")
-    weighted_volume = datamanager.get_field("Weighted Volume")
-    deformation_gradient = datamanager.get_field("Weighted Deformation Gradient")
+    gradient_weights = Data_Manager.get_field("Lagrangian Gradient Weights")
+    weighted_volume = Data_Manager.get_field("Weighted Volume")
+    deformation_gradient = Data_Manager.get_field("Weighted Deformation Gradient")
     #---------------------------------------------------------------
-    displacements = datamanager.get_field("Displacements", "NP1")
-    velocity = datamanager.get_field("Velocity", "NP1")
+    displacements = Data_Manager.get_field("Displacements", "NP1")
+    velocity = Data_Manager.get_field("Velocity", "NP1")
 
-    ba_deformation_gradient = datamanager.get_field("Bond Associated Deformation Gradient")
+    ba_deformation_gradient = Data_Manager.get_field("Bond Associated Deformation Gradient")
 
     ba_deformation_gradient = compute_bond_level_deformation_gradient(nodes,
                                                                       nlist,
@@ -137,7 +134,7 @@ function compute_model(datamanager::Module,
                                                                       deformation_gradient,
                                                                       ba_deformation_gradient)
 
-    ba_rotation_tensor = datamanager.get_field("Bond Rotation Tensor", "NP1")
+    ba_rotation_tensor = Data_Manager.get_field("Bond Rotation Tensor", "NP1")
 
     compute_bond_strain(nodes,
                         nlist,
@@ -150,12 +147,12 @@ function compute_model(datamanager::Module,
     # TODO decomposition to get the rotation and large deformation in
     # TODO store not angles, but rotation matrices, because they are computed in decomposition
     if rotation
-        rotation_tensor = datamanager.get_field("Rotation Tensor")
+        rotation_tensor = Data_Manager.get_field("Rotation Tensor")
         ba_rotation_tensor = compute_bond_level_rotation_tensor(nodes,
                                                                 nlist,
                                                                 ba_deformation_gradient,
                                                                 ba_rotation_tensor)
-        nneighbors = datamanager.get_field("Number of Neighbors")
+        nneighbors = Data_Manager.get_field("Number of Neighbors")
         for iID in nodes
             stress_N[iID] = rotate(Vector{Int64}(1:nneighbors[iID]),
                                    stress_N[iID],
@@ -172,10 +169,9 @@ function compute_model(datamanager::Module,
     material_models = map(r -> strip(r), material_models)
 
     for material_model in material_models
-        mod = datamanager.get_model_module(material_model)
+        mod = Data_Manager.get_model_module(material_model)
 
-        mod.compute_stresses_ba(datamanager,
-                                nodes,
+        mod.compute_stresses_ba(nodes,
                                 nlist,
                                 dof,
                                 material_parameter,
@@ -218,8 +214,6 @@ function compute_model(datamanager::Module,
                                      omega,
                                      bond_damage,
                                      bond_force)
-
-    return datamanager
 end
 
 function compute_stress_integral(nodes::AbstractVector{Int64},

@@ -4,6 +4,8 @@
 
 module Pre_calculation_template
 using DataStructures: OrderedDict
+
+using .......Data_Manager
 export compute_model
 export init_model
 export pre_calculation_name
@@ -29,7 +31,7 @@ function pre_calculation_name()
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+    fields_for_local_synchronization(model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -38,60 +40,49 @@ Returns a user developer defined local synchronization. This happens before each
 # Arguments
 
 """
-function fields_for_local_synchronization(datamanager::Module, model::String)
+function fields_for_local_synchronization(model::String)
     #download_from_cores = false
     #upload_to_cores = true
-    #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
-    return datamanager
+    #Data_Manager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
 end
 
 """
-    pre_calculation(datamanager, nodes, Pre_calculation_parameter, time, dt)
+    pre_calculation(nodes, Pre_calculation_parameter, time, dt)
 
-This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `Pre_calculation_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 Example:
 ```julia
   ```
 """
-function compute_model(datamanager::Module,
-                       nodes::AbstractVector{Int64},
+function compute_model(nodes::AbstractVector{Int64},
                        Pre_calculation_parameter::Dict,
                        block::Int64)
     @info "Please write a possible precalculation routines in pre_calculation_name()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_model(datamanager, nodes, Pre_calculation_parameter, time, dt) function."
-    @info "The datamanager and Pre_calculation_parameter holds all you need to solve your problem on material level."
+    @info "Fill the compute_model(nodes, Pre_calculation_parameter, time, dt) function."
+    @info "The Data_Manager and Pre_calculation_parameter holds all you need to solve your problem on material level."
     @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
-    return datamanager
 end
 
 """
-    init_model(datamanager, nodes, parameter)
+    init_model(nodes, parameter)
 
 Inits the calculation.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `parameter::Dict(String, Any)`: Dictionary with parameter.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 
 """
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     parameter::Union{Dict,OrderedDict},
                     block::Int64)
-    return datamanager
 end
 
 end

@@ -35,10 +35,10 @@ using Test
                                                                            "bool" => false))))
 
     PeriLab.Solver_Manager.Model_Factory.get_block_model_definition(params,
-                                             block_list,
-                                             block_id_list,
-                                             prop_keys,
-                                             test_data_manager.set_properties)
+                                                                    block_list,
+                                                                    block_id_list,
+                                                                    prop_keys,
+                                                                    test_data_manager.set_properties)
 
     @test test_data_manager.get_property(1, "Material Model", "value") ==
           params["Models"]["Material Models"]["a"]["value"]
@@ -89,7 +89,7 @@ end
                                    "Thermal Models" => Dict("therm" => Dict("value" => "hot",
                                                                             "bool" => true,
                                                                             "name" => "t3"))))
-    PeriLab.Solver_Manager.Model_Factory.read_properties(params, test_data_manager_read_properties, false)
+    PeriLab.Solver_Manager.Model_Factory.read_properties(params, false)
 
     @test isnothing(test_data_manager_read_properties.get_property(1, "Material Model",
                                                                    "value"))
@@ -100,7 +100,7 @@ end
     @test test_data_manager_read_properties.get_property(3, "Thermal Model", "bool") ==
           params["Models"]["Thermal Models"]["therm"]["bool"]
 
-    PeriLab.Solver_Manager.Model_Factory.read_properties(params, test_data_manager_read_properties, true)
+    PeriLab.Solver_Manager.Model_Factory.read_properties(params, true)
     @test test_data_manager_read_properties.get_property(1, "Material Model", "value") ==
           params["Models"]["Material Models"]["a"]["value"]
     @test test_data_manager_read_properties.get_property(2, "Material Model", "value") ==
@@ -120,5 +120,5 @@ end
 @testset "ut_add_model" begin
     test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.add_model(test_data_manager, "Test"))
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.add_model("Test"))
 end

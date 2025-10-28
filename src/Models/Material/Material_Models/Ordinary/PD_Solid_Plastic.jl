@@ -5,6 +5,8 @@
 module PD_Solid_Plastic
 
 using TimerOutputs: @timeit
+
+using ......Data_Manager
 using ....Material_Basis: get_symmetry
 using ......Helpers: add_in_place!, mul_in_place!, sub_in_place!
 using ..Ordinary: calculate_symmetry_params, get_bond_forces
@@ -35,29 +37,24 @@ function fe_support()
 end
 
 """
-  init_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
 
 Initializes the material model.
 
 # Arguments
-  - `datamanager::Data_Manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-
-# Returns
-  - `datamanager::Data_Manager`: Datamanager.
 """
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
-    horizon = datamanager.get_field("Horizon")
+    horizon = Data_Manager.get_field("Horizon")
 
     if !haskey(material_parameter, "Yield Stress")
         @error "Yield Stress is not defined in input deck"
         return nothing
     end
     yield_stress = material_parameter["Yield Stress"]
-    yield = datamanager.create_constant_node_field("Yield Value", Float64, 1)
+    yield = Data_Manager.create_constant_node_field("Yield Value", Float64, 1)
 
     if get_symmetry(material_parameter) == "3D"
         yield[nodes] .= 25 * yield_stress * yield_stress ./ (8 * pi .* horizon[nodes] .^ 5)
@@ -66,13 +63,12 @@ function init_model(datamanager::Module,
         yield[nodes] .= 225 * yield_stress * yield_stress ./
                         (24 * thickness * pi .* horizon[nodes] .^ 4)
     end
-    datamanager.create_constant_bond_field("Deviatoric Plastic Extension State", Float64, 1)
-    datamanager.create_node_field("Lambda Plastic", Float64, 1)
-    datamanager.create_constant_node_field("TD Norm", Float64, 1)
-    datamanager.create_constant_bond_field("Bond Forces Deviatoric", Float64, 1)
-    datamanager.create_constant_bond_field("Bond Forces Isotropic", Float64, 1)
-
-    return datamanager
+    Data_Manager.create_constant_bond_field("Deviatoric Plastic Extension State", Float64,
+                                            1)
+    Data_Manager.create_node_field("Lambda Plastic", Float64, 1)
+    Data_Manager.create_constant_node_field("TD Norm", Float64, 1)
+    Data_Manager.create_constant_bond_field("Bond Forces Deviatoric", Float64, 1)
+    Data_Manager.create_constant_bond_field("Bond Forces Isotropic", Float64, 1)
 end
 
 """
@@ -96,7 +92,7 @@ function material_name()
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+    fields_for_local_synchronization( model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -105,54 +101,49 @@ Returns a user developer defined local synchronization. This happens before each
 # Arguments
 
 """
-function fields_for_local_synchronization(datamanager::Module, model::String)
+function fields_for_local_synchronization(model::String)
     #download_from_cores = false
     #upload_to_cores = true
-    #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
-    return datamanager
+    #Data_Manager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
 end
 
 """
-    compute_model(datamanager, nodes, material_parameter, time, dt)
+    compute_model(nodes, material_parameter, time, dt)
 
-Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 Example:
 ```julia
 ```
 """
-function compute_model(datamanager::Module,
-                       nodes::AbstractVector{Int64},
+function compute_model(nodes::AbstractVector{Int64},
                        material_parameter::Dict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    volume = datamanager.get_field("Volume")
-    nlist = datamanager.get_nlist()
+    volume = Data_Manager.get_field("Volume")
+    nlist = Data_Manager.get_nlist()
     symmetry::String = get_symmetry(material_parameter)
-    deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
-    omega = datamanager.get_field("Influence Function")
-    bond_damage = datamanager.get_bond_damage("NP1")
-    bond_force = datamanager.get_field("Bond Forces")
-    temp = datamanager.get_field("Temporary Bond Field")
+    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
+    deformed_bond_length = Data_Manager.get_field("Deformed Bond Length", "NP1")
+    omega = Data_Manager.get_field("Influence Function")
+    bond_damage = Data_Manager.get_bond_damage("NP1")
+    bond_force = Data_Manager.get_field("Bond Forces")
+    temp = Data_Manager.get_field("Temporary Bond Field")
     shear_modulus = material_parameter["Shear Modulus"]
     bulk_modulus = material_parameter["Bulk Modulus"]
-    bond_force_deviatoric_part = datamanager.get_field("Bond Forces Deviatoric")
-    bond_force_isotropic_part = datamanager.get_field("Bond Forces Isotropic")
-    deviatoric_plastic_extension_state = datamanager.get_field("Deviatoric Plastic Extension State")
-    yield_value = datamanager.get_field("Yield Value")
-    td_norm = datamanager.get_field("TD Norm")
-    lambdaN = datamanager.get_field("Lambda Plastic", "N")
-    lambdaNP1 = datamanager.get_field("Lambda Plastic", "NP1")
+    bond_force_deviatoric_part = Data_Manager.get_field("Bond Forces Deviatoric")
+    bond_force_isotropic_part = Data_Manager.get_field("Bond Forces Isotropic")
+    deviatoric_plastic_extension_state = Data_Manager.get_field("Deviatoric Plastic Extension State")
+    yield_value = Data_Manager.get_field("Yield Value")
+    td_norm = Data_Manager.get_field("TD Norm")
+    lambdaN = Data_Manager.get_field("Lambda Plastic", "N")
+    lambdaNP1 = Data_Manager.get_field("Lambda Plastic", "NP1")
 
     @timeit "calculate_symmetry_params" alpha, gamma,
                                         kappa=calculate_symmetry_params(symmetry,
@@ -187,7 +178,6 @@ function compute_model(datamanager::Module,
                                                          deformed_bond_length,
                                                          bond_force,
                                                          temp)
-    return datamanager
 end
 
 """

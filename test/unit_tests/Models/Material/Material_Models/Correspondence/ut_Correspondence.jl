@@ -14,21 +14,29 @@ using Test
     nn[2] = 3
     nodes = Vector{Int64}(1:2)
 
-    @test PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.zero_energy_mode_compensation(test_data_manager,
-                                                       nodes,
-                                                       Dict{String,Any}(),
-                                                       0.0,
-                                                       0.0) == test_data_manager
+    PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.zero_energy_mode_compensation(nodes,
+                                                                                               Dict{String,
+                                                                                                    Any}(),
+                                                                                               0.0,
+                                                                                               0.0)
 end
 
 @testset "ut_init_model" begin
     test_data_manager = PeriLab.Data_Manager
     material_parameter = Dict{String,Any}()
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.init_model(test_data_manager, [1, 2], 1,
-                                              material_parameter))
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.init_model([
+                                                                                                1,
+                                                                                                2
+                                                                                            ],
+                                                                                            1,
+                                                                                            material_parameter))
 
     material_parameter = Dict{String,Any}("Material Model" => "Correspondence Non_Exist",
                                           "Symmetry" => "isotropic plane strain")
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.init_model(test_data_manager, [1, 2], 1,
-                                              material_parameter))
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.init_model([
+                                                                                                1,
+                                                                                                2
+                                                                                            ],
+                                                                                            1,
+                                                                                            material_parameter))
 end

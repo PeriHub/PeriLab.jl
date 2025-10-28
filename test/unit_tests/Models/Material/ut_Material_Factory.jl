@@ -12,7 +12,7 @@ using Test
     test_data_manager.create_constant_node_field("Coordinates", Float64, 3)
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1:4] = 1:4
-    PeriLab.Solver_Manager.Model_Factory.Material.init_fields(test_data_manager)
+    PeriLab.Solver_Manager.Model_Factory.Material.init_fields()
     field_keys = test_data_manager.get_all_field_keys()
     @test "ForcesN" in field_keys
     @test "ForcesNP1" in field_keys
@@ -27,6 +27,8 @@ end
     test_data_manager.set_block_id_list([2, 3, 1])
     test_data_manager.init_properties()
     test_data_manager.set_property(1, "Material Model", "E", 1)
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.init_model(test_data_manager, Vector{Int64}(1:4), 1))
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.init_model(test_data_manager, Vector{Int64}(1:4), 2))
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.init_model(Vector{Int64}(1:4),
+                                                                             1))
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.init_model(Vector{Int64}(1:4),
+                                                                             2))
 end

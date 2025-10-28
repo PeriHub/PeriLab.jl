@@ -39,30 +39,25 @@ function fe_support()
 end
 
 """
-  init_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
 
 Initializes the material model.
 
 # Arguments
-  - `datamanager::Data_Manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-
-# Returns
-  - `datamanager::Data_Manager`: Datamanager.
 """
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
-    dof = datamanager.get_dof()
-    nlist = datamanager.get_nlist()
-    constant = datamanager.create_constant_bond_field("Unified Bond Based Constant",
-                                                      Float64, 2)
-    bb_strain = datamanager.create_constant_node_field("Bond Based Strain", Float64,
-                                                       dof, VectorOrMatrix = "Matrix")
+    dof = Data_Manager.get_dof()
+    nlist = Data_Manager.get_nlist()
+    constant = Data_Manager.create_constant_bond_field("Unified Bond Based Constant",
+                                                       Float64, 2)
+    bb_strain = Data_Manager.create_constant_node_field("Bond Based Strain", Float64,
+                                                        dof, VectorOrMatrix = "Matrix")
 
-    bond_length = datamanager.get_field("Bond Length")
-    horizon = datamanager.get_field("Horizon")
+    bond_length = Data_Manager.get_field("Bond Length")
+    horizon = Data_Manager.get_field("Horizon")
     symmetry::String = get_symmetry(material_parameter)
     nu = material_parameter["Poisson's Ratio"]
     E = material_parameter["Young's Modulus"]
@@ -103,8 +98,6 @@ function init_model(datamanager::Module,
             end
         end
     end
-
-    return datamanager
 end
 
 """
@@ -117,35 +110,31 @@ function material_name()
 end
 
 """
-    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
+    compute_model(nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
 
 Calculate the elastic bond force for each node.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 """
-function compute_model(datamanager::Module,
-                       nodes::AbstractVector{Int64},
+function compute_model(nodes::AbstractVector{Int64},
                        material_parameter::Dict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    constant = datamanager.get_field("Unified Bond Based Constant")
-    undeformed_bond = datamanager.get_field("Bond Geometry")
-    undeformed_bond_length = datamanager.get_field("Bond Length")
-    deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
-    bond_damage = datamanager.get_bond_damage("NP1")
-    bond_force = datamanager.get_field("Bond Forces")
-    nlist = datamanager.get_nlist()
-    volume = datamanager.get_field("Volume")
-    bb_strain = datamanager.get_field("Bond Based Strain")
+    constant = Data_Manager.get_field("Unified Bond Based Constant")
+    undeformed_bond = Data_Manager.get_field("Bond Geometry")
+    undeformed_bond_length = Data_Manager.get_field("Bond Length")
+    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
+    deformed_bond_length = Data_Manager.get_field("Deformed Bond Length", "NP1")
+    bond_damage = Data_Manager.get_bond_damage("NP1")
+    bond_force = Data_Manager.get_field("Bond Forces")
+    nlist = Data_Manager.get_nlist()
+    volume = Data_Manager.get_field("Volume")
+    bb_strain = Data_Manager.get_field("Bond Based Strain")
     E = material_parameter["Young's Modulus"]
     symmetry::String = get_symmetry(material_parameter)
 
@@ -188,7 +177,6 @@ function compute_model(datamanager::Module,
     end
     # might be put in constants
     apply_pointwise_E(nodes, E, bond_force)
-    return datamanager
 end
 
 """
@@ -312,7 +300,7 @@ function compute_bb_force_2D!(bond_force,
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+    fields_for_local_synchronization(model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -321,11 +309,10 @@ Returns a user developer defined local synchronization. This happens before each
 # Arguments
 
 """
-function fields_for_local_synchronization(datamanager::Module, model::String)
+function fields_for_local_synchronization(model::String)
     #download_from_cores = false
     #upload_to_cores = true
-    #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
-    return datamanager
+    #Data_Manager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
 end
 
 # for 2D its 42, 43, 44 and 46

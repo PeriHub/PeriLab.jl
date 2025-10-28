@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Global_Zero_Energy_Control
+
+using ........Data_Manager
 using ........Helpers: get_fourth_order
 using StaticArrays: MMatrix, MVector
 using LoopVectorization
@@ -22,46 +24,41 @@ function control_name()
 end
 
 """
-    compute_control(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
+    compute_control( nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
 
 Computes the zero energy control
 
 # Arguments
-- `datamanager::Module`: The datamanager
 - `nodes::AbstractVector{Int64}`: The nodes
 - `material_parameter::Dict`: The material parameter
 - `time::Float64`: The current time
 - `dt::Float64`: The current time step
-# Returns
-- `datamanager::Module`: The datamanager
 """
-function compute_control(datamanager::Module,
-                         nodes::AbstractVector{Int64},
+function compute_control(nodes::AbstractVector{Int64},
                          material_parameter::Dict{String,Any},
                          time::Float64,
                          dt::Float64)
-    dof = datamanager.get_dof()
-    deformation_gradient = datamanager.get_field("Deformation Gradient")::Array{Float64,3}
-    bond_force = datamanager.get_field("Bond Forces")::Vector{Vector{Vector{Float64}}}
-    undeformed_bond = datamanager.get_field("Bond Geometry")::Vector{Vector{Vector{Float64}}}
-    deformed_bond = datamanager.get_field("Deformed Bond Geometry",
-                                          "NP1")::Vector{Vector{Vector{Float64}}}
-    Kinv = datamanager.get_field("Inverse Shape Tensor")::Array{Float64,3}
-    zStiff = datamanager.create_constant_node_field("Zero Energy Stiffness",
-                                                    Float64,
-                                                    dof,
-                                                    VectorOrMatrix = "Matrix")::Array{Float64,
-                                                                                      3}
-    rotation = datamanager.get_rotation()::Bool
+    dof = Data_Manager.get_dof()
+    deformation_gradient = Data_Manager.get_field("Deformation Gradient")::Array{Float64,3}
+    bond_force = Data_Manager.get_field("Bond Forces")::Vector{Vector{Vector{Float64}}}
+    undeformed_bond = Data_Manager.get_field("Bond Geometry")::Vector{Vector{Vector{Float64}}}
+    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry",
+                                           "NP1")::Vector{Vector{Vector{Float64}}}
+    Kinv = Data_Manager.get_field("Inverse Shape Tensor")::Array{Float64,3}
+    zStiff = Data_Manager.create_constant_node_field("Zero Energy Stiffness",
+                                                     Float64,
+                                                     dof,
+                                                     VectorOrMatrix = "Matrix")::Array{Float64,
+                                                                                       3}
+    rotation = Data_Manager.get_rotation()::Bool
 
     symmetry = material_parameter["Symmetry"]::String
-    CVoigt = get_Hooke_matrix(datamanager,
-                              material_parameter,
+    CVoigt = get_Hooke_matrix(material_parameter,
                               symmetry,
                               dof)
     if !haskey(material_parameter, "UMAT Material Name")
         if rotation
-            angles = datamanager.get_field("Angles")
+            angles = Data_Manager.get_field("Angles")
             create_zero_energy_mode_stiffness!(nodes, dof, CVoigt, angles, Kinv,
                                                zStiff)
         else
@@ -84,7 +81,6 @@ function compute_control(datamanager::Module,
                                        deformed_bond,
                                        bond_force)
     end
-    return datamanager::Module
 end
 
 """

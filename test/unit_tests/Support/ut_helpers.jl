@@ -451,14 +451,13 @@ end
 @testset "ut_is_dependent" begin
     (fieldN, fieldNP1) = test_data_manager.create_node_field("Parameter", Float64, 1)
     params = Dict("Value" => Dict("Field" => "Parameter"))
-    @test PeriLab.Solver_Manager.Helpers.is_dependent("Value", params, test_data_manager) ==
+    @test PeriLab.Solver_Manager.Helpers.is_dependent("Value", params) ==
           (true, fieldNP1)
     params = Dict("Value" => 1.0)
-    @test PeriLab.Solver_Manager.Helpers.is_dependent("Value", params, test_data_manager) ==
+    @test PeriLab.Solver_Manager.Helpers.is_dependent("Value", params) ==
           (false, nothing)
     params = Dict("Value" => Dict("Field" => "Non_Existent"))
-    @test isnothing(PeriLab.Solver_Manager.Helpers.is_dependent("Value", params,
-                                                                test_data_manager))
+    @test isnothing(PeriLab.Solver_Manager.Helpers.is_dependent("Value", params))
 end
 
 @testset "ut_matrix_to_voigt" begin

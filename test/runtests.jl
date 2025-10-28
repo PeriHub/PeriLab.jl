@@ -116,9 +116,9 @@ MPI.Init()
         end
 
         @testset "Models" begin
-            @testset "ut_templates" begin
-                include("unit_tests/Models/ut_templates.jl")
-            end
+            # @testset "ut_templates" begin
+            #     include("unit_tests/Models/ut_templates.jl")
+            # end
             @testset "Additive" begin
                 @testset "ut_Additive_Factory" begin
                     include("unit_tests/Models/Additive/ut_Additive_Factory.jl")

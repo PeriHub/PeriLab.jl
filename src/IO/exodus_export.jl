@@ -5,6 +5,9 @@
 using Exodus
 using Dates
 using OrderedCollections
+
+using ..Data_Manager
+
 export get_paraview_coordinates
 export create_result_file
 export init_results_in_exodus
@@ -45,10 +48,9 @@ function create_result_file(filename::Union{AbstractString,String},
         num_elems = num_nodes - length(element_nodes) + num_elements
     end
     num_side_sets = 0
-    init = Initialization{Int32}(
-    Int32(num_dim), Int32(num_nodes), Int32(num_elems),
-    Int32(num_elem_blks), Int32(num_node_sets), Int32(num_side_sets)
-  )
+    init = Initialization{Int32}(Int32(num_dim), Int32(num_nodes), Int32(num_elems),
+                                 Int32(num_elem_blks), Int32(num_node_sets),
+                                 Int32(num_side_sets))
     @info "Create output " * filename
     exo_db = ExodusDatabase{maps_int_type,ids_int_type,bulk_int_type,float_type}(filename,
                                                                                  "w",
@@ -247,7 +249,7 @@ function write_step_and_time(exo::ExodusDatabase, step::Int64, time::Float64)
 end
 
 """
-    write_nodal_results_in_exodus(exo::ExodusDatabase, step::Int64, output::Dict, datamanager::Module)
+    write_nodal_results_in_exodus(exo::ExodusDatabase, step::Int64, output::Dict)
 
 Writes the nodal results in the exodus file
 
@@ -255,18 +257,17 @@ Writes the nodal results in the exodus file
 - `exo::ExodusDatabase`: The exodus file
 - `step::Int64`: The step
 - `output::Dict`: The output
-- `datamanager::Module`: The datamanager
 # Returns
 - `exo::ExodusDatabase`: The exodus file
 """
 function write_nodal_results_in_exodus(exo::ExodusDatabase,
                                        step::Int64,
-                                       output::Dict,
-                                       datamanager::Module)
+                                       output::Dict)
     #write_values
-    nnodes = datamanager.get_nnodes()
+    nnodes = Data_Manager.get_nnodes()
     for varname in keys(output)
-        field = datamanager.get_field(output[varname]["fieldname"], output[varname]["time"])
+        field = Data_Manager.get_field(output[varname]["fieldname"],
+                                       output[varname]["time"])
         #exo, timestep::Integer, id::Integer, var_index::Integer,vector
         # =>https://github.com/cmhamel/Exodus.jl/blob/master/src/Variables.jl
         if haskey(output[varname], "dof")
@@ -274,7 +275,7 @@ function write_nodal_results_in_exodus(exo::ExodusDatabase,
         else
             var = convert(Array{Float64},
                           field[1:nnodes, output[varname]["i_dof"],
-                                output[varname]["j_dof"]])
+                          output[varname]["j_dof"]])
         end
         # interface does not work with Int yet 28//08//2023
         write_values(exo, NodalVariable, step, varname, var)

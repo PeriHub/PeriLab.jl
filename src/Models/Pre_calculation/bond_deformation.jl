@@ -4,6 +4,7 @@
 
 module Bond_Deformation
 using DataStructures: OrderedDict
+using .......Data_Manager
 using .......Geometry: bond_geometry!
 export pre_calculation_name
 export init_model
@@ -31,59 +32,49 @@ function pre_calculation_name()
 end
 
 """
-    init_model(datamanager, nodes, parameter)
+    init_model(nodes, parameter)
 
 Inits the bond deformation calculation.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `parameter::Dict(String, Any)`: Dictionary with parameter.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 
 """
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     parameter::Union{Dict,OrderedDict},
                     block::Int64)
-    dof = datamanager.get_dof()
-    datamanager.create_bond_field("Deformed Bond Geometry", Float64, dof)
-    datamanager.create_bond_field("Deformed Bond Length", Float64, 1)
-    datamanager.set_model_module("Deformed Bond Geometry", Bond_Deformation)
-    return datamanager
+    dof = Data_Manager.get_dof()
+    Data_Manager.create_bond_field("Deformed Bond Geometry", Float64, dof)
+    Data_Manager.create_bond_field("Deformed Bond Length", Float64, 1)
+    Data_Manager.set_model_module("Deformed Bond Geometry", Bond_Deformation)
 end
 
 """
-    compute(datamanager::Module, nodes::AbstractVector{Int64}), parameter::Dict
+    compute(nodes::AbstractVector{Int64}), parameter::Dict
 
 Compute the bond deformation.
 
 # Arguments
-- `datamanager`: Datamanager.
 - `nodes`: List of nodes.
 - `parameter::Dict(String, Any)`: Dictionary with parameter.
-# Returns
-- `datamanager`: Datamanager.
 """
-function compute(datamanager::Module,
-                 nodes::AbstractVector{Int64},
+function compute(nodes::AbstractVector{Int64},
                  parameter::Union{Dict,OrderedDict},
                  block::Int64)
-    nlist = datamanager.get_nlist()
-    deformed_coor = datamanager.get_field("Deformed Coordinates", "NP1")
-    deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
+    nlist = Data_Manager.get_nlist()
+    deformed_coor = Data_Manager.get_field("Deformed Coordinates", "NP1")
+    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
+    deformed_bond_length = Data_Manager.get_field("Deformed Bond Length", "NP1")
     bond_geometry!(deformed_bond,
                    deformed_bond_length,
                    nodes,
                    nlist,
                    deformed_coor)
-    return datamanager
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+    fields_for_local_synchronization(model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -92,10 +83,10 @@ Returns a user developer defined local synchronization. This happens before each
 # Arguments
 
 """
-function fields_for_local_synchronization(datamanager::Module, model::String)
+function fields_for_local_synchronization(model::String)
     # download_from_cores = false
     # upload_to_cores = true
-    # datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
-    return datamanager
+    # Data_Manager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
+    return
 end
 end

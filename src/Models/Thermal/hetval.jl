@@ -8,6 +8,8 @@ export init_model
 export thermal_model_name
 export fields_for_local_synchronization
 
+using .....Data_Manager
+
 global hetval_file_path = ""
 
 """
@@ -31,37 +33,33 @@ function thermal_model_name()
 end
 
 """
-    compute_model(datamanager, nodes, thermal_parameter, time, dt)
+    compute_model(nodes, thermal_parameter, time, dt)
 
-Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 Example:
 ```julia
 ```
 """
-function compute_model(datamanager::Module,
-                       nodes::AbstractVector{Int64},
+function compute_model(nodes::AbstractVector{Int64},
                        thermal_parameter::Dict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
     CMNAME::Cstring = malloc_cstring(thermal_parameter["HETVAL Material Name"])
-    temp_N = datamanager.get_field("Temperature", "N")
-    temp_NP1 = datamanager.get_field("Temperature", "NP1")
-    deltaT = datamanager.get_field("Delta Temperature")
-    statev = datamanager.get_field("State Variables")
-    flux_N = datamanager.get_field("Heat Flow", "N")
-    flux_NP1 = datamanager.get_field("Heat Flow", "NP1")
-    PREDEF = datamanager.get_field("Predefined Fields")
-    DPRED = datamanager.get_field("Predefined Fields Increment")
+    temp_N = Data_Manager.get_field("Temperature", "N")
+    temp_NP1 = Data_Manager.get_field("Temperature", "NP1")
+    deltaT = Data_Manager.get_field("Delta Temperature")
+    statev = Data_Manager.get_field("State Variables")
+    flux_N = Data_Manager.get_field("Heat Flow", "N")
+    flux_NP1 = Data_Manager.get_field("Heat Flow", "NP1")
+    PREDEF = Data_Manager.get_field("Predefined Fields")
+    DPRED = Data_Manager.get_field("Predefined Fields Increment")
 
     for iID in nodes
         STATEV_temp = statev[iID, :]
@@ -75,8 +73,6 @@ function compute_model(datamanager::Module,
                          DPRED[iID, :])
         statev[iID, :] = STATEV_temp
     end
-
-    return datamanager
 end
 
 """
@@ -93,9 +89,6 @@ HETVAL interface
 - `FLUX::Float64`: Heat Flow
 - `PREDEF::Vector{Float64}`: Predefined
 - `DPRED::Vector{Float64}`: Predefined increment
-
-# Returns
-- `datamanager`: Datamanager
 """
 function HETVAL_interface(CMNAME::Cstring,
                           TEMP::Vector{Float64},
@@ -126,20 +119,16 @@ function HETVAL_interface(CMNAME::Cstring,
 end
 
 """
-    init_model(datamanager, nodes, thermal_parameter)
+    init_model(nodes, thermal_parameter)
 
-Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `thermal parameter::Dict(String, Any)`: Dictionary with thermal parameter.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 
 """
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     thermal_parameter::Dict)
     # set to 1 to avoid a later check if the state variable field exists or not
     num_state_vars::Int64 = 1
@@ -147,7 +136,7 @@ function init_model(datamanager::Module,
         @error "HETVAL file is not defined."
         return nothing
     end
-    directory = datamanager.get_directory()
+    directory = Data_Manager.get_directory()
     thermal_parameter["File"] = joinpath(joinpath(pwd(), directory),
                                          thermal_parameter["File"])
     global hetval_file_path = thermal_parameter["File"]
@@ -159,7 +148,7 @@ function init_model(datamanager::Module,
         num_state_vars = thermal_parameter["Number of State Variables"]
     end
     # State variables are used to transfer additional information to the next step
-    datamanager.create_constant_node_field("State Variables", Float64, num_state_vars)
+    Data_Manager.create_constant_node_field("State Variables", Float64, num_state_vars)
 
     if !haskey(thermal_parameter, "HETVAL Material Name")
         @warn "No HETVAL Material Name is defined. Please check if you use it as method to check different material in your HETVAL."
@@ -174,34 +163,32 @@ function init_model(datamanager::Module,
         thermal_parameter["HETVAL name"] = "HETVAL"
     end
 
-    dof = datamanager.get_dof()
+    dof = Data_Manager.get_dof()
 
     if haskey(thermal_parameter, "Predefined Field Names")
         field_names = split(thermal_parameter["Predefined Field Names"], " ")
     else
         field_names = ["Volume"] #Use any if not defined!
     end
-    fields = datamanager.create_constant_node_field("Predefined Fields",
-                                                    Float64,
-                                                    length(field_names))
+    fields = Data_Manager.create_constant_node_field("Predefined Fields",
+                                                     Float64,
+                                                     length(field_names))
     for (id, field_name) in enumerate(field_names)
-        if !datamanager.has_key(String(field_name))
+        if !Data_Manager.has_key(String(field_name))
             @error "Predefined field ''$field_name'' is not defined in the mesh file."
             return nothing
         end
         # view or copy and than deleting the old one
         # TODO check if an existing field is a bool.
-        fields[:, id] = datamanager.get_field(String(field_name))
+        fields[:, id] = Data_Manager.get_field(String(field_name))
     end
-    datamanager.create_constant_node_field("Predefined Fields Increment",
-                                           Float64,
-                                           length(field_names))
-
-    return datamanager
+    Data_Manager.create_constant_node_field("Predefined Fields Increment",
+                                            Float64,
+                                            length(field_names))
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+    fields_for_local_synchronization(model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -210,11 +197,10 @@ Returns a user developer defined local synchronization. This happens before each
 # Arguments
 
 """
-function fields_for_local_synchronization(datamanager::Module, model::String)
+function fields_for_local_synchronization(model::String)
     #download_from_cores = false
     #upload_to_cores = true
-    #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
-    return datamanager
+    #Data_Manager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
 end
 
 """

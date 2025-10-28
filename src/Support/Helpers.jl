@@ -16,6 +16,8 @@ using Unitful: ustrip
 using CDDLib
 using Polyhedra: MixedMatHRep, polyhedron, vrep, hrep
 
+using ..Data_Manager
+
 export qdim
 export check_inf_or_nan
 export compute_geometry
@@ -36,7 +38,6 @@ export rotate
 export sub_in_place!
 export add_in_place!
 export div_in_place!
-export fill_in_place!
 export normalize_in_place!
 export fastdot
 export fast_mul!
@@ -66,8 +67,8 @@ const MAPPING_3D = @SMatrix [1 1; 2 2; 3 3; 2 3; 1 3; 1 2]
         return Matrix{Int64}(undef, 0, 0)
     end
 end
-function get_shared_horizon(datamanager, id)
-    horizon = datamanager.get_field("Shared Horizon")
+function get_shared_horizon(id)
+    horizon = Data_Manager.get_field("Shared Horizon")
     return horizon[id]
 end
 
@@ -564,47 +565,6 @@ function abs!(a::Vector{T}) where {T<:Union{Int64,Float64}}
         a[i] = abs(a[i])
     end
 end
-function fill_in_place!(A::Vector{Vector{T}},
-                        value::T,
-                        active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool}}
-    @inbounds for i in eachindex(A)
-        if active[i]
-            A[i] .= value
-        end
-    end
-end
-
-function fill_in_place!(A::Vector{Array{T,N}},
-                        value::T,
-                        active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool},N}
-    @inbounds for i in eachindex(A)
-        if active[i]
-            A[i] .= value
-        end
-    end
-end
-function fill_in_place!(A::Vector{Vector{Vector{T}}},
-                        value::T,
-                        active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool}}
-    @inbounds for i in eachindex(A)
-        if active[i]
-            @inbounds for j in eachindex(A[i])
-                A[i][j] .= value
-            end
-        end
-    end
-end
-function fill_in_place!(A::Vector{Vector{Array{T,N}}},
-                        value::T,
-                        active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool},N}
-    @inbounds for i in eachindex(A)
-        if active[i]
-            @inbounds for j in eachindex(A[i])
-                A[i][j] .= value
-            end
-        end
-    end
-end
 function normalize_in_place!(B::Vector{T}, A::Vector{T}) where {T<:Number}
     nrm = norm(A)
     @inbounds for i in eachindex(A)
@@ -908,24 +868,23 @@ function find_inverse_bond_id(nlist::Vector{Vector{Int64}})
     return inverse_nlist
 end
 
-function get_dependent_value(datamanager::Module,
-                             field_name::String,
+function get_dependent_value(field_name::String,
                              parameter::Dict,
                              iID::Int64 = 1)
-    dependend_value, dependent_field = is_dependent(field_name, parameter, datamanager)
+    dependend_value, dependent_field = is_dependent(field_name, parameter)
 
     return dependend_value ?
            interpol_data(dependent_field[iID], parameter[field_name]["Data"]) :
            parameter[field_name]
 end
 
-function is_dependent(field_name::String, damage_parameter::Dict, datamanager::Module)
+function is_dependent(field_name::String, damage_parameter::Dict)
     if haskey(damage_parameter, field_name) && damage_parameter[field_name] isa Dict
-        if !datamanager.has_key(damage_parameter[field_name]["Field"] * "NP1")
+        if !Data_Manager.has_key(damage_parameter[field_name]["Field"] * "NP1")
             @error "$(damage_parameter[field_name]["Field"]) does not exist for value interpolation."
             return nothing
         end
-        field = datamanager.get_field(damage_parameter[field_name]["Field"], "NP1")
+        field = Data_Manager.get_field(damage_parameter[field_name]["Field"], "NP1")
         return true, field
     end
     return false, nothing

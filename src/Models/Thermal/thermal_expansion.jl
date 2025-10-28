@@ -9,6 +9,8 @@
 module Thermal_Expansion
 using LinearAlgebra
 using StaticArrays
+
+using .....Data_Manager
 using ...Pre_Calculation.Deformation_Gradient
 export fields_for_local_synchronization
 export compute_model
@@ -35,53 +37,43 @@ function thermal_model_name()
 end
 
 """
-    init_model(datamanager, nodes, thermal_parameter)
+    init_model(nodes, thermal_parameter)
 
-Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
-
+Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `thermal parameter::Dict(String, Any)`: Dictionary with thermal parameter.
 - `block::Int64`: The current block.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 
 """
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     thermal_parameter::Dict)
     if !haskey(thermal_parameter, "Reference Temperature")
         @warn "No reference temperature defined. Assuming 0"
     end
-    return datamanager
 end
 
 """
-    compute_model(datamanager, nodes, thermal_parameter, block::Int64, time, dt)
+    compute_model(nodes, thermal_parameter, block::Int64, time, dt)
 
 Calculates the thermal expansion of the material.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 Example:
 ```julia
 ```
 """
-function compute_model(datamanager::Module,
-                       nodes::AbstractVector{Int64},
+function compute_model(nodes::AbstractVector{Int64},
                        thermal_parameter::Dict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    temperature_NP1 = datamanager.get_field("Temperature", "NP1")
-    dof = datamanager.get_dof()
+    temperature_NP1 = Data_Manager.get_field("Temperature", "NP1")
+    dof = Data_Manager.get_dof()
 
     alpha = thermal_parameter["Thermal Expansion Coefficient"]
     ref_temp = 0.0
@@ -99,10 +91,10 @@ function compute_model(datamanager::Module,
     elseif length(alpha) == dof * dof || length(alpha) == 9
         @error "Full heat expansion matrix is not implemented yet."
     end
-    undeformed_bond = datamanager.get_field("Bond Geometry")
-    undeformed_bond_length = datamanager.get_field("Bond Length")
-    deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
+    undeformed_bond = Data_Manager.get_field("Bond Geometry")
+    undeformed_bond_length = Data_Manager.get_field("Bond Length")
+    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
+    deformed_bond_length = Data_Manager.get_field("Deformed Bond Length", "NP1")
 
     temp_diff = 0.0
 
@@ -118,15 +110,13 @@ function compute_model(datamanager::Module,
                                       undeformed_bond_length[iID]
     end
 
-    if datamanager.has_key("Deformation Gradient")
-        datamanager = Deformation_Gradient.compute(datamanager, nodes, Dict(), block)
+    if Data_Manager.has_key("Deformation Gradient")
+        Deformation_Gradient.compute(nodes, Dict(), block)
     end
-
-    return datamanager
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+    fields_for_local_synchronization(model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -135,11 +125,10 @@ Returns a user developer defined local synchronization. This happens before each
 # Arguments
 
 """
-function fields_for_local_synchronization(datamanager::Module, model::String)
+function fields_for_local_synchronization(model::String)
     #download_from_cores = false
     #upload_to_cores = true
-    #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
-    return datamanager
+    #Data_Manager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
 end
 
 end # Module end

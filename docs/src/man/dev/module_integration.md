@@ -42,7 +42,7 @@ Here, the call for the init function is shown for the material factory.
 
 ```julia
 mod = create_module_specifics(material_model, module_list, "material_name")
-datamanager.set_model_module(material_model, mod)
+Data_Manager.set_model_module(material_model, mod)
 ```
 
 The module_list is optained, by applying
@@ -58,6 +58,6 @@ end
 You can integrate these functions than in the compute function of the factory module.
 
 ```julia
-mod = datamanager.get_model_module(material_model)
-datamanager = mod.compute_model(datamanager, nodes, model_param, time, dt, to)
+mod = Data_Manager.get_model_module(material_model)
+mod.compute_model(nodes, model_param, time, dt, to)
 ```

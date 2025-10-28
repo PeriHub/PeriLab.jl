@@ -4,6 +4,7 @@
 
 module Solver_Manager
 using TimerOutputs: @timeit
+using ..Data_Manager
 using ..Parameter_Handling:
                             get_density,
                             get_horizon,
@@ -39,52 +40,49 @@ export init
 export solver
 
 """
-    init(params::Dict, datamanager::Module)
+    init(params::Dict)
 
 Initialize the solver
 
 # Arguments
 - `params::Dict`: The parameters
-- `datamanager::Module`: Datamanager
 # Returns
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `bcs::Dict{Any,Any}`: A dictionary containing boundary conditions.
-- `datamanager::Module`: The data manager module that provides access to data fields and properties.
 - `solver_options::Dict{String,Any}`: A dictionary containing solver options.
 """
 function init(params::Dict,
-              datamanager::Module,
               step_id::Union{Nothing,Int64} = nothing)
     solver_options = Dict()
-    nnodes = datamanager.get_nnodes()
-    num_responder = datamanager.get_num_responder()
-    block_ids = datamanager.get_field("Block_Id")
+    nnodes = Data_Manager.get_nnodes()
+    num_responder = Data_Manager.get_num_responder()
+    block_ids = Data_Manager.get_field("Block_Id")
     block_nodes_with_neighbors = get_block_nodes(block_ids, nnodes + num_responder)
     block_nodes = get_block_nodes(block_ids, nnodes)
     block_name_list,
     block_id_list = get_block_names_and_ids(params, block_ids,
-                                            datamanager.get_mpi_active())
-    datamanager.set_block_name_list(block_name_list)
-    datamanager.set_block_id_list(block_id_list)
-    density = datamanager.create_constant_node_field("Density", Float64, 1)
-    horizon = datamanager.create_constant_node_field("Horizon", Float64, 1)
-    if datamanager.fem_active()
-        fem_block = datamanager.create_constant_node_field("FEM Block", Bool, 1, false)
+                                            Data_Manager.get_mpi_active())
+    Data_Manager.set_block_name_list(block_name_list)
+    Data_Manager.set_block_id_list(block_id_list)
+    density = Data_Manager.create_constant_node_field("Density", Float64, 1)
+    horizon = Data_Manager.create_constant_node_field("Horizon", Float64, 1)
+    if Data_Manager.fem_active()
+        fem_block = Data_Manager.create_constant_node_field("FEM Block", Bool, 1, false)
         fem_block = set_fem_block(params, block_nodes_with_neighbors, fem_block) # includes the neighbors
     end
-    active_nodes = datamanager.create_constant_node_field("Active Nodes", Int64, 1)
-    update_nodes = datamanager.create_constant_node_field("Update Nodes", Int64, 1)
-    datamanager.create_constant_node_field("Update", Bool, 1, true)
+    active_nodes = Data_Manager.create_constant_node_field("Active Nodes", Int64, 1)
+    update_nodes = Data_Manager.create_constant_node_field("Update Nodes", Int64, 1)
+    Data_Manager.create_constant_node_field("Update", Bool, 1, true)
     density = set_density(params, block_nodes_with_neighbors, density) # includes the neighbors
     horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
-    set_angles(datamanager, params, block_nodes_with_neighbors) # includes the Neighbors
+    set_angles(params, block_nodes_with_neighbors) # includes the Neighbors
     solver_params = isnothing(step_id) ? params["Solver"] :
                     get_solver_params(params, step_id)
     solver_options["Models"] = get_model_options(solver_params)
     solver_options["All Models"] = get_model_options(solver_params)
     solver_options["Calculation"] = get_calculation_options(solver_params)
     if !isnothing(step_id)
-        for step in 1:datamanager.get_max_step()
+        for step in 1:Data_Manager.get_max_step()
             step_solver_params = get_solver_params(params, step)
             append!(solver_options["All Models"],
                     get_model_options(step_solver_params))
@@ -97,37 +95,33 @@ function init(params::Dict,
         end
         solver_options["All Models"] = unique(solver_options["All Models"])
     end
-    datamanager.create_constant_bond_field("Influence Function", Float64, 1, 1)
+    Data_Manager.create_constant_bond_field("Influence Function", Float64, 1, 1)
     for iblock in eachindex(block_nodes)
-        datamanager = Influence_Function.init_influence_function(block_nodes[iblock],
-                                                                 datamanager,
-                                                                 params["Discretization"])
+        Influence_Function.init_influence_function(block_nodes[iblock],
+                                                   params["Discretization"])
     end
-    datamanager.create_bond_field("Bond Damage", Float64, 1, 1)
+    Data_Manager.create_bond_field("Bond Damage", Float64, 1, 1)
     @debug "Read properties"
-    read_properties(params, datamanager, "Material" in solver_options["All Models"])
+    read_properties(params, "Material" in solver_options["All Models"])
     @debug "Init models"
-    @timeit "init_models" datamanager=init_models(params,
-                                                  datamanager,
-                                                  block_nodes,
-                                                  solver_options,
-                                                  synchronise_field)
+    @timeit "init_models" init_models(params,
+                                      block_nodes,
+                                      solver_options,
+                                      synchronise_field)
     @debug "Init Boundary Conditions"
-    @timeit "init_BCs" bcs=init_BCs(params, datamanager)
+    @timeit "init_BCs" bcs=init_BCs(params)
     solver_options["Solver"] = get_solver_name(solver_params)
     if get_solver_name(solver_params) == "Verlet"
         @debug "Init " * get_solver_name(solver_params)
         @timeit "init_solver" Verlet_Solver.init_solver(solver_options,
                                                         solver_params,
                                                         bcs,
-                                                        datamanager,
                                                         block_nodes)
     elseif solver_options["Solver"] == "Static"
         @debug "Init " * get_solver_name(solver_params)
         @timeit "init_solver" Static_Solver.init_solver(solver_options,
                                                         solver_params,
                                                         bcs,
-                                                        datamanager,
                                                         block_nodes)
 
     else
@@ -135,21 +129,20 @@ function init(params::Dict,
         return nothing
     end
 
-    if datamanager.fem_active()
-        datamanager = FEM.init_FEM(params, datamanager)
-        datamanager = FEM.Coupling.init_coupling(datamanager,
-                                                 1:datamanager.get_nnodes(),
-                                                 params)
+    if Data_Manager.fem_active()
+        FEM.init_FEM(params)
+        FEM.Coupling.init_coupling(1:Data_Manager.get_nnodes(),
+                                   params)
     end
-    if !datamanager.has_key("Active")
-        active = datamanager.create_constant_node_field("Active", Bool, 1, true)
+    if !Data_Manager.has_key("Active")
+        active = Data_Manager.create_constant_node_field("Active", Bool, 1, true)
     end
-    #TODO: sync active with datamanager
+    #TODO: sync active with Data_Manager
 
-    datamanager = remove_models(datamanager, solver_options["Models"])
+    remove_models(solver_options["Models"])
 
     @debug "Finished Init Solver"
-    return block_nodes, bcs, datamanager, solver_options
+    return block_nodes, bcs, solver_options
 end
 
 """
@@ -172,27 +165,26 @@ function set_density(params::Dict, block_nodes::Dict, density::Vector{Float64})
 end
 
 """
-    set_angles(datamanager::Module, params::Dict, block_nodes::Dict)
+    set_angles(params::Dict, block_nodes::Dict)
 
 Sets the density of the nodes in the dictionary.
 
 # Arguments
-- `datamanager::Module`: The data manager
 - `params::Dict`: The parameters
 - `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
 """
-function set_angles(datamanager::Module, params::Dict, block_nodes::Dict)
+function set_angles(params::Dict, block_nodes::Dict)
     mesh_angles = false
-    if "Angles" in datamanager.get_all_field_keys()
-        datamanager.set_rotation(true)
+    if "Angles" in Data_Manager.get_all_field_keys()
+        Data_Manager.set_rotation(true)
         mesh_angles = true
     end
-    if "Element Angles" in datamanager.get_all_field_keys()
-        datamanager.set_element_rotation(true)
+    if "Element Angles" in Data_Manager.get_all_field_keys()
+        Data_Manager.set_element_rotation(true)
     end
 
     block_rotation = false
-    dof = datamanager.get_dof()
+    dof = Data_Manager.get_dof()
     for block in eachindex(block_nodes)
         if get_angles(params, block, dof) !== nothing
             block_rotation = true
@@ -203,8 +195,8 @@ function set_angles(datamanager::Module, params::Dict, block_nodes::Dict)
         if mesh_angles
             @warn "Angles defined in mesh will be overwritten by block angles"
         end
-        datamanager.set_rotation(true)
-        angles = datamanager.create_constant_node_field("Angles", Float64, dof)
+        Data_Manager.set_rotation(true)
+        angles = Data_Manager.create_constant_node_field("Angles", Float64, dof)
 
         for block in eachindex(block_nodes)
             angles_global = get_angles(params, block, dof)
@@ -257,7 +249,7 @@ function set_horizon(params::Dict, block_nodes::Dict, horizon::Vector{Float64})
 end
 
 """
-    solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, silent::Bool)
+    solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, silent::Bool)
 
 Runs the solver.
 
@@ -265,7 +257,6 @@ Runs the solver.
 - `solver_options::Dict{String,Any}`: The solver options
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes
 - `bcs::Dict{Any,Any}`: The boundary conditions
-- `datamanager::Module`: The data manager module
 - `outputs::Dict{Int64,Dict{}}`: A dictionary for output settings
 - `result_files::Vector{Any}`: A vector of result files
 - `write_results`: A function to write simulation results
@@ -276,7 +267,6 @@ Runs the solver.
 function solver(solver_options::Dict{Any,Any},
                 block_nodes::Dict{Int64,Vector{Int64}},
                 bcs::Dict{Any,Any},
-                datamanager::Module,
                 outputs::Dict{Int64,Dict{}},
                 result_files::Vector{Dict},
                 write_results,
@@ -285,7 +275,6 @@ function solver(solver_options::Dict{Any,Any},
         return Verlet_Solver.run_solver(solver_options,
                                         block_nodes,
                                         bcs,
-                                        datamanager,
                                         outputs,
                                         result_files,
                                         synchronise_field,
@@ -297,7 +286,6 @@ function solver(solver_options::Dict{Any,Any},
         return Static_Solver.run_solver(solver_options,
                                         block_nodes,
                                         bcs,
-                                        datamanager,
                                         outputs,
                                         result_files,
                                         synchronise_field,
@@ -366,37 +354,33 @@ function synchronise_field(comm,
 end
 
 """
-    remove_models(datamanager::Module, solver_options::Vector{String})
+    remove_models(solver_options::Vector{String})
 
 Sets the active models to false if they are deactivated in the solver. They can be active, because they are defined as model and in the blocks.
 
 # Arguments
-- `datamanager::Module`: The MPI communicator
 - `solver_options::Vector{String}`: A dictionary of fields
-# Returns
-- `datamanager`
 """
-function remove_models(datamanager::Module, solver_options::Vector{String})
+function remove_models(solver_options::Vector{String})
     check = replace.(solver_options .* " Model", "_" => " ")
-    for active_model_name in keys(datamanager.get_active_models())
+    for active_model_name in keys(Data_Manager.get_active_models())
         if !(active_model_name in check)
-            datamanager.remove_active_model(active_model_name)
+            Data_Manager.remove_active_model(active_model_name)
         end
     end
-    return datamanager
 end
 
 ## TODO generalize this interface
 
-function compute_parabolic_problems_before_model_evaluation(active_nodes, datamanager,
+function compute_parabolic_problems_before_model_evaluation(active_nodes,
                                                             solver_options)
     if !("Thermal" in solver_options["Models"]) &&
        !("Thermal" in solver_options["All Models"])
         return
     end
-    temperatureN = datamanager.get_field("Temperature", "N")
-    temperatureNP1 = datamanager.get_field("Temperature", "NP1")
-    deltaT = datamanager.get_field("Delta Temperature")
+    temperatureN = Data_Manager.get_field("Temperature", "N")
+    temperatureNP1 = Data_Manager.get_field("Temperature", "NP1")
+    deltaT = Data_Manager.get_field("Delta Temperature")
     if "Thermal" in solver_options["Models"]
         temperatureNP1[active_nodes] = temperatureN[active_nodes] + deltaT[active_nodes]
     else
@@ -405,16 +389,16 @@ function compute_parabolic_problems_before_model_evaluation(active_nodes, datama
         end
     end
 end
-function compute_parabolic_problems_after_model_evaluation(active_nodes, datamanager,
+function compute_parabolic_problems_after_model_evaluation(active_nodes,
                                                            solver_options, dt)
     if !("Thermal" in solver_options["Models"]) &&
        !("Thermal" in solver_options["All Models"])
         return
     end
-    deltaT = datamanager.get_field("Delta Temperature")
-    flowNP1 = datamanager.get_field("Heat Flow", "NP1")
-    density = datamanager.get_field("Density")
-    heat_capacity = datamanager.get_field("Specific Heat Capacity")
+    deltaT = Data_Manager.get_field("Delta Temperature")
+    flowNP1 = Data_Manager.get_field("Heat Flow", "NP1")
+    density = Data_Manager.get_field("Density")
+    heat_capacity = Data_Manager.get_field("Specific Heat Capacity")
     if "Thermal" in solver_options["Models"]
         check_inf_or_nan(flowNP1, "Heat Flow")
         # heat capacity check. if it is zero deltaT = 0

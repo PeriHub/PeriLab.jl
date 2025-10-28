@@ -228,8 +228,8 @@ end
         [1, 2, 3, 4],
         [5, 6, 3, 2, 8, 1, 4]
     ]
-    test_data_manager = PeriLab.IO.get_local_element_topology(test_data_manager, topology,
-                                                              distribution[1])
+    PeriLab.IO.get_local_element_topology(topology,
+                                          distribution[1])
     topo = test_data_manager.get_field("FE Topology")
 
     @test topo[1, 1] == 4
@@ -240,8 +240,8 @@ end
     @test topo[2, 2] == 3
     @test topo[2, 3] == 1
     @test topo[2, 4] == 4
-    test_data_manager = PeriLab.IO.get_local_element_topology(test_data_manager, topology,
-                                                              distribution[2])
+    PeriLab.IO.get_local_element_topology(topology,
+                                          distribution[2])
     topo = test_data_manager.get_field("FE Topology")
     @test topo[1, 1] == 1
     @test topo[1, 2] == 2
@@ -251,8 +251,8 @@ end
     @test topo[2, 2] == 4
     @test topo[2, 3] == 2
     @test topo[2, 4] == 1
-    test_data_manager = PeriLab.IO.get_local_element_topology(test_data_manager, topology,
-                                                              distribution[3])
+    PeriLab.IO.get_local_element_topology(topology,
+                                          distribution[3])
     topo = test_data_manager.get_field("FE Topology")
     @test topo[1, 1] == 6
     @test topo[1, 2] == 4
@@ -263,9 +263,8 @@ end
     @test topo[2, 3] == 4
     @test topo[2, 4] == 6
 
-    test_data_manager = PeriLab.IO.get_local_element_topology(test_data_manager,
-                                                              Vector([Vector{Int64}([])]),
-                                                              distribution[3])
+    PeriLab.IO.get_local_element_topology(Vector([Vector{Int64}([])]),
+                                          distribution[3])
     # nothing happens, because no field is initialized
     topo = test_data_manager.get_field("FE Topology")
     @test topo[1, 1] == 6
@@ -279,7 +278,7 @@ end
 
     topology = [[1, 2, 3, 4], [3, 4, 2, 1, 3]]
 
-    @test isnothing(PeriLab.IO.get_local_element_topology(test_data_manager, topology,
+    @test isnothing(PeriLab.IO.get_local_element_topology(topology,
                                                           distribution[3]))
 end
 @testset "ut_create_distribution" begin
@@ -534,7 +533,7 @@ end
 
     test_data_manager = PeriLab.Data_Manager
     @test test_data_manager.get_nnsets() == 0
-    PeriLab.IO.define_nsets(nsets_predef, test_data_manager)
+    PeriLab.IO.define_nsets(nsets_predef)
     @test test_data_manager.get_nnsets() == 2
     nsets = test_data_manager.get_nsets()
     @test nsets["Nset_1"] == [1, 2, 3, 4, 5, 6, 7]

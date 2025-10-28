@@ -19,7 +19,7 @@ using Test
     volume[1:5] = 1:5
     force_densityNP1 = rand(5, 3)
 
-    test_data_manager = PeriLab.Solver_Manager.Verlet_Solver.get_forces_from_force_density(test_data_manager)
+    PeriLab.Solver_Manager.Verlet_Solver.get_forces_from_force_density()
     forces = test_data_manager.get_field("Forces", "NP1")
     for i in 1:5
         for j in 1:3
@@ -60,7 +60,7 @@ end
 
     nodes = [1, 2, 3, 4, 5]
 
-    test_data_manager = PeriLab.Solver_Manager.Verlet_Solver.get_partial_stresses(test_data_manager, nodes)
+    PeriLab.Solver_Manager.Verlet_Solver.get_partial_stresses(nodes)
     stresses = test_data_manager.get_field("Cauchy Stress", "NP1")
 
     testval = zeros(5, 3, 3)
@@ -69,8 +69,8 @@ end
             for i in 1:3
                 for j in 1:3
                     testval[iID, i,
-                            j] += bond_forces[iID][jID][i] *
-                                  bond_geometry[iID][jID][j] * volume[iID]
+                    j] += bond_forces[iID][jID][i] *
+                                          bond_geometry[iID][jID][j] * volume[iID]
                 end
             end
         end

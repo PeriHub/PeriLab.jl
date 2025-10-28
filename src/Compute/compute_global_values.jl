@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+using ...Data_Manager
+
 """
-    calculate_nodelist(datamanager::Module, field_key::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, local_nodes::Vector{Int64})
+    calculate_nodelist(field_key::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, local_nodes::Vector{Int64})
 
 Calculate the global value of a field for a given set of nodes.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `field_key::String`: Field key.
 - `dof::Union{Int64,Vector{Int64}}`: Degree of freedom
 - `calculation_type::String`: Calculation type.
@@ -17,24 +18,23 @@ Calculate the global value of a field for a given set of nodes.
 - `value::Vector`: Global value.
 - `nnodes::Int64`: Number of nodes.
 """
-function calculate_nodelist(datamanager::Module,
-                            field_key::String,
+function calculate_nodelist(field_key::String,
                             dof::Union{Int64,Vector{Int64}},
                             calculation_type::String,
                             local_nodes::Union{Int64,Vector{Int64}})
     # get block_nodes
     # check NP1
-    if datamanager.has_key(field_key * "NP1")
-        field = datamanager.get_field(field_key, "NP1")
+    if Data_Manager.has_key(field_key * "NP1")
+        field = Data_Manager.get_field(field_key, "NP1")
         field_key = field_key * "NP1"
     else
-        field = datamanager.get_field(field_key)
+        field = Data_Manager.get_field(field_key)
     end
-    if !datamanager.has_key(field_key)
+    if !Data_Manager.has_key(field_key)
         @error "Field $field_key does not exists for compute sum."
         return nothing
     end
-    field_type = datamanager.get_field_type(field_key)
+    field_type = Data_Manager.get_field_type(field_key)
 
     if calculation_type == "Sum"
         if length(local_nodes) == 0
@@ -58,7 +58,7 @@ function calculate_nodelist(datamanager::Module,
         if length(local_nodes) == 0
             value = field_type(0)
         else
-            if datamanager.get_mpi_active()
+            if Data_Manager.get_mpi_active()
                 value = global_value_sum(field, dof, local_nodes)
             else
                 value = global_value_avg(field, dof, local_nodes)
@@ -79,12 +79,11 @@ function calculate_nodelist(datamanager::Module,
 end
 
 """
-    calculate_block(datamanager::Module, field_key::String, dof::Int64, calculation_type::String, block::Int64)
+    calculate_block( field_key::String, dof::Int64, calculation_type::String, block::Int64)
 
 Calculate the global value of a field for a given block.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `field_key::String`: Field key.
 - `dof::Union{Int64,Vector{Int64}}`: Degree of freedom
 - `calculation_type::String`: Calculation type.
@@ -93,16 +92,15 @@ Calculate the global value of a field for a given block.
 - `value::Float64`: Global value.
 - `nnodes::Int64`: Number of nodes.
 """
-function calculate_block(datamanager::Module,
-                         field_key::String,
+function calculate_block(field_key::String,
                          dof::Union{Int64,Vector{Int64}},
                          calculation_type::String,
                          block::Int64)
     # get block_nodes
-    block_ids = datamanager.get_field("Block_Id")
-    nnodes = datamanager.get_nnodes()
+    block_ids = Data_Manager.get_field("Block_Id")
+    nnodes = Data_Manager.get_nnodes()
     block_nodes = Vector{Int64}(findall(item -> item == block, block_ids[1:nnodes]))
-    return calculate_nodelist(datamanager, field_key, dof, calculation_type, block_nodes)
+    return calculate_nodelist(field_key, dof, calculation_type, block_nodes)
 end
 
 """

@@ -4,6 +4,8 @@
 
 module Correspondence_VUMAT
 using StaticArrays
+
+using ......Data_Manager
 using ......Helpers: voigt_to_matrix, matrix_to_voigt, matrix_to_vector,
                      vector_to_matrix
 using .....Material_Basis: get_Hooke_matrix
@@ -38,20 +40,15 @@ function fe_support()
 end
 
 """
-  init_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
 
 Initializes the material model.
 
 # Arguments
-  - `datamanager::Data_Manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-
-# Returns
-  - `datamanager::Data_Manager`: Datamanager.
 """
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     # set to 1 to avoid a later check if the state variable field exists or not
     num_state_vars::Int64 = 1
@@ -59,7 +56,7 @@ function init_model(datamanager::Module,
         @error "VUMAT file is not defined."
         return nothing
     end
-    directory = datamanager.get_directory()
+    directory = Data_Manager.get_directory()
     material_parameter["File"] = joinpath(joinpath(pwd(), directory),
                                           material_parameter["File"])
     global vumat_file_path = material_parameter["File"]
@@ -71,7 +68,7 @@ function init_model(datamanager::Module,
         num_state_vars = material_parameter["Number of State Variables"]
     end
     # State variables are used to transfer additional information to the next step
-    datamanager.create_constant_node_field("State Variables", Float64, num_state_vars)
+    Data_Manager.create_constant_node_field("State Variables", Float64, num_state_vars)
 
     if !haskey(material_parameter, "Number of Properties")
         @error "Number of Properties must be at least equal 1"
@@ -79,8 +76,8 @@ function init_model(datamanager::Module,
     end
     # properties include the material properties, etc.
     num_props = material_parameter["Number of Properties"]
-    properties = datamanager.create_constant_free_size_field("Properties", Float64,
-                                                             (num_props, 1))
+    properties = Data_Manager.create_constant_free_size_field("Properties", Float64,
+                                                              (num_props, 1))
 
     for iID in 1:num_props
         if !haskey(material_parameter, "Property_$iID")
@@ -104,17 +101,15 @@ function init_model(datamanager::Module,
         material_parameter["VUMAT name"] = "VUMAT"
     end
 
-    dof = datamanager.get_dof()
+    dof = Data_Manager.get_dof()
     ndi = dof
     nshr = 2 * dof - 3
     ntens = ndi + nshr
-    datamanager.create_node_field("Internal energy", Float64, 1)
-    datamanager.create_node_field("Dissipated inelastic energy", Float64, 1)
-    datamanager.create_node_field("Stretch", Float64, ntens)
-    datamanager.create_node_field("defGrad", Float64, ndi + 2 * nshr)
-    datamanager.create_node_field("Temperature", Float64, 1)
-
-    return datamanager
+    Data_Manager.create_node_field("Internal energy", Float64, 1)
+    Data_Manager.create_node_field("Dissipated inelastic energy", Float64, 1)
+    Data_Manager.create_node_field("Stretch", Float64, ntens)
+    Data_Manager.create_node_field("defGrad", Float64, ndi + 2 * nshr)
+    Data_Manager.create_node_field("Temperature", Float64, 1)
 end
 
 """
@@ -138,12 +133,11 @@ function correspondence_name()
 end
 
 """
-    compute_stresses(datamanager::Module, nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
+    compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
 
-Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `iID::Int64`: Node ID.
 - `dof::Int64`: Degrees of freedom
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
@@ -154,15 +148,13 @@ Calculates the stresses of the material. This template has to be copied, the fil
 - `stress_NP1::SubArray`: Stress of step N+1.
 - `iID_jID_nID::Tuple=(): (optional) are the index and node id information. The tuple is ordered iID as index of the point,  jID the index of the bond of iID and nID the neighborID.
 # Returns
-- `datamanager::Data_Manager`: Datamanager.
 - `stress_NP1::SubArray`: updated stresses
 
 Example:
 ```julia
 ```
 """
-function compute_stresses(datamanager::Module,
-                          nodes::AbstractVector{Int64},
+function compute_stresses(nodes::AbstractVector{Int64},
                           dof::Int64,
                           material_parameter::Dict,
                           time::Float64,
@@ -185,33 +177,33 @@ function compute_stresses(datamanager::Module,
     cmname::Cstring = malloc_cstring(material_parameter["VUMAT Material Name"])
     coordMp = zeros(Float64, nnodes, dof)
     charLength = zeros(Float64, nnodes)
-    props = datamanager.get_field("Properties")
-    density = datamanager.get_field("Density")
+    props = Data_Manager.get_field("Properties")
+    density = Data_Manager.get_field("Density")
     strainInc = zeros(Float64, nnodes, ntens)
     relSpinInc = zeros(Float64, nnodes, nshr)
-    tempOld = datamanager.get_field("Temperature", "N")
-    tempNew = datamanager.get_field("Temperature", "NP1")
-    stretchOld = datamanager.get_field("Stretch", "N")
-    stretchNew = datamanager.get_field("Stretch", "NP1")
-    defGradOld = datamanager.get_field("defGrad", "N")
-    defGradNew = datamanager.get_field("defGrad", "NP1")
-    deformation_gradient = datamanager.get_field("Deformation Gradient")
+    tempOld = Data_Manager.get_field("Temperature", "N")
+    tempNew = Data_Manager.get_field("Temperature", "NP1")
+    stretchOld = Data_Manager.get_field("Stretch", "N")
+    stretchNew = Data_Manager.get_field("Stretch", "NP1")
+    defGradOld = Data_Manager.get_field("defGrad", "N")
+    defGradNew = Data_Manager.get_field("defGrad", "NP1")
+    deformation_gradient = Data_Manager.get_field("Deformation Gradient")
     fieldOld = zeros(Float64, nnodes, nfieldv)
     fieldNew = zeros(Float64, nnodes, nfieldv)
     stressOld = zeros(Float64, nnodes, ntens)
     stressNew = zeros(Float64, nnodes, ntens)
-    stateNew = datamanager.get_field("State Variables")
+    stateNew = Data_Manager.get_field("State Variables")
     stateOld = copy(stateNew)
-    enerInternOld = datamanager.get_field("Internal energy", "N")
-    enerInternNew = datamanager.get_field("Internal energy", "NP1")
-    enerInelasOld = datamanager.get_field("Dissipated inelastic energy", "N")
-    enerInelasNew = datamanager.get_field("Dissipated inelastic energy", "NP1")
+    enerInternOld = Data_Manager.get_field("Internal energy", "N")
+    enerInternNew = Data_Manager.get_field("Internal energy", "NP1")
+    enerInelasOld = Data_Manager.get_field("Dissipated inelastic energy", "N")
+    enerInelasNew = Data_Manager.get_field("Dissipated inelastic energy", "NP1")
 
     for iID in nodes
         strainInc[iID, :] = matrix_to_voigt(strain_increment[iID, :, :])
         stressOld[iID, :] = matrix_to_voigt(stress_N[iID, :, :])
         defGradNew[iID, :] = matrix_to_vector(deformation_gradient[iID, :, :])
-        if datamanager.get_iteration() == 1
+        if Data_Manager.get_iteration() == 1
             defGradOld = defGradNew
         end
     end
@@ -293,9 +285,6 @@ VUMAT interface
 - `stateNew::Matrix{Float64}`: New state
 - `enerInternNew::Vector{Float64}`: New internal energy
 - `enerInelasNew::Vector{Float64}`: New inelastic energy
-
-# Returns
-- `datamanager`: Datamanager
 """
 function VUMAT_interface(nblock::Int64,
                          ndir::Int64,
@@ -400,8 +389,7 @@ function VUMAT_interface(nblock::Int64,
           enerInelasNew)
 end
 
-function compute_stresses_ba(datamanager::Module,
-                             nodes,
+function compute_stresses_ba(nodes,
                              nlist,
                              dof::Int64,
                              material_parameter::Dict,
@@ -428,7 +416,7 @@ function malloc_cstring(s::String)
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+    fields_for_local_synchronization(model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -437,11 +425,10 @@ Returns a user developer defined local synchronization. This happens before each
 # Arguments
 
 """
-function fields_for_local_synchronization(datamanager::Module, model::String)
+function fields_for_local_synchronization(model::String)
     #download_from_cores = false
     #upload_to_cores = true
-    #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
-    return datamanager
+    #Data_Manager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
 end
 
 end

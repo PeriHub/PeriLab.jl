@@ -35,9 +35,9 @@ main("examples/Dogbone/Dogbone.yaml"; output_dir="", dry_run=false, verbose=fals
 """
 
 module PeriLab
+include("./Core/Data_manager.jl")
 include("./Support/Helpers.jl")
 include("./Support/Geometry.jl")
-include("./Core/Data_manager.jl")
 include("./IO/logging.jl")
 include("./MPI_communication/MPI_communication.jl")
 include("./Support/Parameters/parameter_handling.jl")
@@ -293,60 +293,52 @@ function main(filename::String;
             end
             Data_Manager.set_silent(silent)
             Data_Manager.set_verbose(verbose)
-            @timeit "IO.initialize_data" datamanager,
-                                         params,
+            @timeit "IO.initialize_data" params,
                                          steps=IO.initialize_data(filename,
                                                                   filedirectory,
-                                                                  Data_Manager,
                                                                   comm)
-            datamanager.set_max_step(steps[end])
+            Data_Manager.set_max_step(steps[end])
             for step_id in steps
                 if !isnothing(step_id)
                     @info "Step: " * string(step_id) * " of " * string(length(steps))
                 end
-                datamanager.set_cancel(false)
-                datamanager.set_step(step_id)
+                Data_Manager.set_cancel(false)
+                Data_Manager.set_step(step_id)
                 @info "Init Solver"
                 @timeit "Solver_Manager.init" block_nodes,
                                               bcs,
-                                              datamanager,
                                               solver_options=Solver_Manager.init(params,
-                                                                                 datamanager,
                                                                                  step_id)
-                if datamanager.get_current_time() >= solver_options["Final Time"]
+                if Data_Manager.get_current_time() >= solver_options["Final Time"]
                     @info "Step " * string(step_id) * " skipped."
                     continue
                 end
-                if datamanager.get_current_time() < solver_options["Initial Time"]
+                if Data_Manager.get_current_time() < solver_options["Initial Time"]
                     @info "Initial time not reached. Skipping step " * string(step_id)
                     continue
                 end
-                @timeit "IO.init orientations" datamanager=IO.init_orientations(datamanager)
+                @timeit "IO.init orientations" IO.init_orientations()
                 IO.show_block_summary(solver_options,
                                       params,
                                       Logging_Module.get_log_file(),
                                       silent,
-                                      comm,
-                                      datamanager)
+                                      comm)
                 IO.show_mpi_summary(Logging_Module.get_log_file(),
                                     silent,
-                                    comm,
-                                    datamanager)
+                                    comm)
                 @debug "Init write results"
                 if isnothing(step_id) || step_id == 1
                     @timeit "IO.init_write_results" result_files,
                                                     outputs=IO.init_write_results(params,
                                                                                   output_dir,
                                                                                   filedirectory,
-                                                                                  datamanager,
                                                                                   PERILAB_VERSION)
                 end
                 IO.set_output_frequency(params,
-                                        datamanager,
                                         solver_options["Number of Steps"],
                                         step_id)
                 if verbose
-                    fields = datamanager.get_all_field_keys()
+                    fields = Data_Manager.get_all_field_keys()
                     @info "Found " * string(length(fields)) * " Fields"
                     @info fields
                 end
@@ -357,7 +349,6 @@ function main(filename::String;
                         @timeit "Solver" result_files=Solver_Manager.solver(solver_options,
                                                                             block_nodes,
                                                                             bcs,
-                                                                            datamanager,
                                                                             outputs,
                                                                             result_files,
                                                                             IO.write_results,
@@ -376,7 +367,6 @@ function main(filename::String;
                     @timeit "Solver_Manager.solver" result_files=Solver_Manager.solver(solver_options,
                                                                                        block_nodes,
                                                                                        bcs,
-                                                                                       datamanager,
                                                                                        outputs,
                                                                                        result_files,
                                                                                        IO.write_results,

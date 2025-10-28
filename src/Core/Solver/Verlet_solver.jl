@@ -10,6 +10,7 @@ using LoopVectorization
 using Logging
 using TimerOutputs: @timeit
 
+using ...Data_Manager
 using ...Helpers#: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
 using ...Parameter_Handling:
                              get_initial_time,
@@ -28,7 +29,7 @@ export init_solver
 export run_solver
 
 """
-    compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64}, datamanager::Module, lambda::Float64, Cv::Float64)
+    compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64}, lambda::Float64, Cv::Float64)
 
 Calculate the critical time step for a thermodynamic simulation based on  [OterkusS2014](@cite).
 
@@ -36,7 +37,6 @@ This function iterates over a collection of nodes and computes the critical time
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The collection of nodes to calculate the critical time step for.
-- `datamanager::Module`: The data manager module that provides access to required data fields.
 - `lambda::Float64`: The material parameter used in the calculations.
 - `Cv::Float64`: The heat capacity at constant volume used in the calculations.
 
@@ -44,7 +44,7 @@ This function iterates over a collection of nodes and computes the critical time
 - `Float64`: The calculated critical time step for the thermodynamic simulation.
 
 # Dependencies
-This function depends on the following data fields from the `datamanager` module:
+This function depends on the following data fields from the `Data_Manager` module:
 - `get_nlist()`: Returns the neighbor list.
 - `get_field("Density")`: Returns the density field.
 - `get_field("Bond Length")`: Returns the bond distance field.
@@ -52,14 +52,13 @@ This function depends on the following data fields from the `datamanager` module
 - `get_field("Number of Neighbors")`: Returns the number of neighbors field.
 """
 function compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64},
-                                                  datamanager::Module,
                                                   lambda::Union{Float64,Int64})
     critical_time_step::Float64 = 1.0e50
-    nlist = datamanager.get_nlist()
-    density = datamanager.get_field("Density")
-    undeformed_bond_length = datamanager.get_field("Bond Length")
-    volume = datamanager.get_field("Volume")
-    Cv = datamanager.get_field("Specific Heat Capacity")
+    nlist = Data_Manager.get_nlist()
+    density = Data_Manager.get_field("Density")
+    undeformed_bond_length = Data_Manager.get_field("Bond Length")
+    volume = Data_Manager.get_field("Volume")
+    Cv = Data_Manager.get_field("Specific Heat Capacity")
     lambda = matrix_style(lambda)
     eigLam = maximum(eigvals(lambda))
 
@@ -88,7 +87,7 @@ function get_cs_denominator(volume::AbstractVector{Float64},
 end
 
 """
-    compute_mechanical_critical_time_step(nodes::AbstractVector{Int64}, datamanager::Module, bulk_modulus::Float64)
+    compute_mechanical_critical_time_step(nodes::AbstractVector{Int64}, bulk_modulus::Float64)
 
 Calculate the critical time step for a mechanical simulation using a bond-based approximation [LittlewoodDJ2013](@cite).
 
@@ -96,14 +95,13 @@ This function iterates over a collection of nodes and computes the critical time
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The collection of nodes to calculate the critical time step for.
-- `datamanager::Module`: The data manager module that provides access to required data fields.
 - `bulk_modulus::Float64`: The bulk modulus used in the calculations.
 
 # Returns
 - `Float64`: The calculated critical time step for the mechanical simulation.
 
 # Dependencies
-This function depends on the following data fields from the `datamanager` module:
+This function depends on the following data fields from the `Data_Manager` module:
 - `get_nlist()`: Returns the neighbor list.
 - `get_field("Density")`: Returns the density field.
 - `get_field("Bond Length")`: Returns the bond distance field.
@@ -111,15 +109,14 @@ This function depends on the following data fields from the `datamanager` module
 - `get_field("Horizon")`: Returns the horizon field.
 """
 function compute_mechanical_critical_time_step(nodes::AbstractVector{Int64},
-                                               datamanager::Module,
                                                bulk_modulus::Union{Float64,Int64,SubArray,
                                                                    Vector{Float64}})
     critical_time_step::Float64 = 1.0e50
-    nlist = datamanager.get_nlist()
-    density = datamanager.get_field("Density")
-    undeformed_bond_length = datamanager.get_field("Bond Length")
-    volume = datamanager.get_field("Volume")
-    horizon = datamanager.get_field("Horizon")
+    nlist = Data_Manager.get_nlist()
+    density = Data_Manager.get_field("Density")
+    undeformed_bond_length = Data_Manager.get_field("Bond Length")
+    volume = Data_Manager.get_field("Volume")
+    horizon = Data_Manager.get_field("Horizon")
 
     for iID in nodes
         denominator = get_cs_denominator(volume[nlist[iID]], undeformed_bond_length[iID])
@@ -153,14 +150,13 @@ function test_timestep(t::Float64, critical_time_step::Float64)
 end
 
 """
-    compute_crititical_time_step(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+    compute_crititical_time_step(block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
 Calculate the critical time step for a simulation considering both mechanical and thermodynamic aspects.
 
 This function computes the critical time step by considering mechanical and thermodynamic properties of different blocks. The resulting critical time step is based on the smallest critical time step found among the blocks.
 
 # Arguments
-- `datamanager::Module`: The data manager module that provides access to required data fields and properties.
 - `block_nodes::Dict{Int64, Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `mechanical::Bool`: If `true`, mechanical properties are considered in the calculation.
 - `thermo::Bool`: If `true`, thermodynamic properties are considered in the calculation.
@@ -177,15 +173,14 @@ This function may depend on the following functions:
 # Errors
 - If required properties are not available in the data manager, it may raise an error message.
 """
-function compute_crititical_time_step(datamanager::Module,
-                                      block_nodes::Dict{Int64,Vector{Int64}},
+function compute_crititical_time_step(block_nodes::Dict{Int64,Vector{Int64}},
                                       mechanical::Bool,
                                       thermal::Bool)
     critical_time_step::Float64 = 1.0e50
     for iblock in eachindex(block_nodes)
         if thermal
-            lambda = datamanager.get_property(iblock, "Thermal Model",
-                                              "Thermal Conductivity")
+            lambda = Data_Manager.get_property(iblock, "Thermal Model",
+                                               "Thermal Conductivity")
             # if Cv and lambda are not defined it is valid, because an analysis can take place, if material is still analysed
             if isnothing(lambda)
                 if !mechanical
@@ -194,23 +189,25 @@ function compute_crititical_time_step(datamanager::Module,
                 end
             else
                 t = compute_thermodynamic_critical_time_step(block_nodes[iblock],
-                                                             datamanager,
                                                              lambda)
                 critical_time_step = test_timestep(t, critical_time_step)
             end
         end
         if mechanical
-            bulk_modulus = datamanager.get_property(iblock, "Material Model",
-                                                    "Bulk Modulus")
-            nu_xy = datamanager.get_property(iblock, "Material Model", "Poisson's Ratio XY")
-            nu_yz = datamanager.get_property(iblock, "Material Model", "Poisson's Ratio YZ")
-            nu_xz = datamanager.get_property(iblock, "Material Model", "Poisson's Ratio XZ")
-            E_x = datamanager.get_property(iblock, "Material Model", "Young's Modulus X")
-            E_y = datamanager.get_property(iblock, "Material Model", "Young's Modulus Y")
-            E_z = datamanager.get_property(iblock, "Material Model", "Young's Modulus Z")
-            c_44 = datamanager.get_property(iblock, "Material Model", "C44")
-            c_55 = datamanager.get_property(iblock, "Material Model", "C55")
-            c_66 = datamanager.get_property(iblock, "Material Model", "C66")
+            bulk_modulus = Data_Manager.get_property(iblock, "Material Model",
+                                                     "Bulk Modulus")
+            nu_xy = Data_Manager.get_property(iblock, "Material Model",
+                                              "Poisson's Ratio XY")
+            nu_yz = Data_Manager.get_property(iblock, "Material Model",
+                                              "Poisson's Ratio YZ")
+            nu_xz = Data_Manager.get_property(iblock, "Material Model",
+                                              "Poisson's Ratio XZ")
+            E_x = Data_Manager.get_property(iblock, "Material Model", "Young's Modulus X")
+            E_y = Data_Manager.get_property(iblock, "Material Model", "Young's Modulus Y")
+            E_z = Data_Manager.get_property(iblock, "Material Model", "Young's Modulus Z")
+            c_44 = Data_Manager.get_property(iblock, "Material Model", "C44")
+            c_55 = Data_Manager.get_property(iblock, "Material Model", "C55")
+            c_66 = Data_Manager.get_property(iblock, "Material Model", "C66")
             if !isnothing(bulk_modulus)
                 bulk_modulus = bulk_modulus
             elseif !isnothing(nu_xy) && !isnothing(nu_yz) && !isnothing(nu_xz)
@@ -229,7 +226,6 @@ function compute_crititical_time_step(datamanager::Module,
                 return nothing
             end
             t = compute_mechanical_critical_time_step(block_nodes[iblock],
-                                                      datamanager,
                                                       bulk_modulus)
             critical_time_step = test_timestep(t, critical_time_step)
         end
@@ -238,7 +234,7 @@ function compute_crititical_time_step(datamanager::Module,
 end
 
 """
-    init_solver(params::Dict, bcs::Dict{Any,Any}, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+    init_solver(params::Dict, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
 Initialize the Verlet solver for a simulation.
 
@@ -247,7 +243,6 @@ This function sets up the Verlet solver for a simulation by initializing various
 # Arguments
 - `params::Dict`: A dictionary containing simulation parameters.
 - `bcs::Dict{Any,Any}`: Boundary conditions
-- `datamanager::Module`: The data manager module that provides access to required data fields and properties.
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `mechanical::Bool`: If `true`, mechanical properties are considered in the calculation.
 - `thermo::Bool`: If `true`, thermodynamic properties are considered in the calculation.
@@ -270,7 +265,6 @@ This function may depend on the following functions:
 function init_solver(solver_options::Dict{Any,Any},
                      params::Dict,
                      bcs::Dict{Any,Any},
-                     datamanager::Module,
                      block_nodes::Dict{Int64,Vector{Int64}})
     # @info "======================="
     # @info "==== Verlet Solver ===="
@@ -278,24 +272,24 @@ function init_solver(solver_options::Dict{Any,Any},
 
     mechanical = "Material" in solver_options["Models"]
     thermal = "Thermal" in solver_options["Models"]
-    initial_time = get_initial_time(params, datamanager)
-    final_time = get_final_time(params, datamanager)
+    initial_time = get_initial_time(params)
+    final_time = get_final_time(params)
     safety_factor = get_safety_factor(params)
     fixed_dt = get_fixed_dt(params)
     if fixed_dt == -1.0
-        min_dt = compute_crititical_time_step(datamanager, block_nodes, mechanical, thermal)
+        min_dt = compute_crititical_time_step(block_nodes, mechanical, thermal)
         nsteps, dt = get_integration_steps(initial_time, final_time, safety_factor * min_dt)
     else
         nsteps, dt = get_integration_steps(initial_time, final_time, fixed_dt)
     end
 
-    comm = datamanager.get_comm()
+    comm = Data_Manager.get_comm()
     dt = find_and_set_core_value_min(comm, dt)
     nsteps = find_and_set_core_value_max(comm, nsteps)
     numerical_damping = get_numerical_damping(params)
     max_damage = get_max_damage(params)
 
-    if datamanager.get_rank() == 0
+    if Data_Manager.get_rank() == 0
         data = ["Verlet Solver" "" "" ""
                 "Initial time" "."^10 initial_time "s"
                 "Final time" "."^10 final_time "s"]
@@ -312,7 +306,7 @@ function init_solver(solver_options::Dict{Any,Any},
                     ["Number of steps" "."^10 nsteps ""
                      "Numerical Damping" "."^10 numerical_damping ""])
 
-        print_table(data, datamanager)
+        print_table(data)
     end
     solver_options["Initial Time"] = initial_time
     solver_options["Final Time"] = final_time
@@ -356,7 +350,6 @@ end
         solver_options::Dict{Any,Any},
         block_nodes::Dict{Int64,Vector{Int64}},
         bcs::Dict{Any,Any},
-        datamanager::Module,
         outputs::Dict{Int64,Dict{}},
         result_files::Vector{Any},
         synchronise_field,
@@ -372,7 +365,6 @@ This function performs the Verlet solver simulation, updating various data field
 - `solver_options::Dict{String,Any}`: A dictionary containing solver options and parameters.
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `bcs::Dict{Any,Any}`: A dictionary containing boundary conditions.
-- `datamanager::Module`: The data manager module that provides access to data fields and properties.
 - `outputs::Dict{Int64,Dict{}}`: A dictionary for output settings.
 - `result_files::Vector{Any}`: A vector of result files.
 - `synchronise_field`: A function for synchronization.
@@ -383,7 +375,7 @@ This function performs the Verlet solver simulation, updating various data field
 - `result_files`: A vector of updated result files.
 
 # Dependencies
-This function depends on various data fields and properties from the `datamanager` module, as well as several helper functions. It also relies on solver options and boundary conditions provided in the input parameters.
+This function depends on various data fields and properties from the `Data_Manager` module, as well as several helper functions. It also relies on solver options and boundary conditions provided in the input parameters.
 
 # Function Workflow
 1. Initialize simulation parameters and data fields.
@@ -394,7 +386,6 @@ This function depends on various data fields and properties from the `datamanage
 function run_solver(solver_options::Dict{Any,Any},
                     block_nodes::Dict{Int64,Vector{Int64}},
                     bcs::Dict{Any,Any},
-                    datamanager::Module,
                     outputs::Dict{Int64,Dict{}},
                     result_files::Vector{Dict},
                     synchronise_field,
@@ -402,27 +393,27 @@ function run_solver(solver_options::Dict{Any,Any},
                     compute_parabolic_problems_before_model_evaluation,
                     compute_parabolic_problems_after_model_evaluation,
                     silent::Bool)
-    atexit(() -> datamanager.set_cancel(true))
+    atexit(() -> Data_Manager.set_cancel(true))
 
     @info "Run Verlet Solver"
-    volume = datamanager.get_field("Volume")
-    active_list = datamanager.get_field("Active")
-    density = datamanager.get_field("Density")
-    coor = datamanager.get_field("Coordinates")
-    comm = datamanager.get_comm()
+    volume = Data_Manager.get_field("Volume")
+    active_list = Data_Manager.get_field("Active")
+    density = Data_Manager.get_field("Density")
+    coor = Data_Manager.get_field("Coordinates")
+    comm = Data_Manager.get_comm()
 
     if "Material" in solver_options["Models"]
-        external_forces = datamanager.get_field("External Forces")
-        external_force_densities = datamanager.get_field("External Force Densities")
-        a = datamanager.get_field("Acceleration")
+        external_forces = Data_Manager.get_field("External Forces")
+        external_force_densities = Data_Manager.get_field("External Force Densities")
+        a = Data_Manager.get_field("Acceleration")
     end
 
-    fem_option = datamanager.fem_active()
+    fem_option = Data_Manager.fem_active()
     if fem_option
-        lumped_mass = datamanager.get_field("Lumped Mass Matrix")
-        fe_nodes = datamanager.get_field("FE Nodes")
+        lumped_mass = Data_Manager.get_field("Lumped Mass Matrix")
+        fe_nodes = Data_Manager.get_field("FE Nodes")
     end
-    active = datamanager.get_field("Active")
+    active = Data_Manager.get_field("Active")
 
     dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["Number of Steps"]
@@ -432,59 +423,59 @@ function run_solver(solver_options::Dict{Any,Any},
     numerical_damping::Float64 = solver_options["Numerical Damping"]
     max_damage::Float64 = 0
     damage_init::Bool = false
-    rank = datamanager.get_rank()
+    rank = Data_Manager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
-    #nodes::Vector{Int64} = Vector{Int64}(1:datamanager.get_nnodes())
+    #nodes::Vector{Int64} = Vector{Int64}(1:Data_Manager.get_nnodes())
     @inbounds @fastmath for idt in iter
-        datamanager.set_iteration(idt)
+        Data_Manager.set_iteration(idt)
         @timeit "Verlet" begin
             if "Material" in solver_options["Models"]
-                uNP1 = datamanager.get_field("Displacements", "NP1")
-                deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
-                forces = datamanager.get_field("Forces", "NP1")
-                force_densities = datamanager.get_field("Force Densities", "NP1")
-                uN = datamanager.get_field("Displacements", "N")
-                vN = datamanager.get_field("Velocity", "N")
-                vNP1 = datamanager.get_field("Velocity", "NP1")
-                deformed_coorN = datamanager.get_field("Deformed Coordinates", "N")
-                forces = datamanager.get_field("Forces", "NP1")
+                uNP1 = Data_Manager.get_field("Displacements", "NP1")
+                deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
+                forces = Data_Manager.get_field("Forces", "NP1")
+                force_densities = Data_Manager.get_field("Force Densities", "NP1")
+                uN = Data_Manager.get_field("Displacements", "N")
+                vN = Data_Manager.get_field("Velocity", "N")
+                vNP1 = Data_Manager.get_field("Velocity", "NP1")
+                deformed_coorN = Data_Manager.get_field("Deformed Coordinates", "N")
+                forces = Data_Manager.get_field("Forces", "NP1")
             end
 
             # if "Degradation" in solver_options["Models"]
-            #     concentrationN = datamanager.get_field("Concentration", "N")
-            #     concentrationNP1 = datamanager.get_field("Concentration", "NP1")
-            #     concentration_fluxN = datamanager.get_field("Concentration Flux", "N")
-            #     concentration_fluxNP1 = datamanager.get_field("Concentration Flux", "NP1")
+            #     concentrationN = Data_Manager.get_field("Concentration", "N")
+            #     concentrationNP1 = Data_Manager.get_field("Concentration", "NP1")
+            #     concentration_fluxN = Data_Manager.get_field("Concentration Flux", "N")
+            #     concentration_fluxNP1 = Data_Manager.get_field("Concentration Flux", "NP1")
             # end
             if "Damage" in solver_options["Models"]
-                damage = datamanager.get_damage("NP1")
+                damage = Data_Manager.get_damage("NP1")
             end
-            active_nodes = datamanager.get_field("Active Nodes")
+            active_nodes = Data_Manager.get_field("Active Nodes")
             active_nodes = find_active_nodes(active_list, active_nodes,
-                                             1:datamanager.get_nnodes())
+                                             1:Data_Manager.get_nnodes())
             # one step more, because of init step (time = 0)
             if "Material" in solver_options["Models"]
                 @views vNP1[active_nodes,
                 :] = (1 - numerical_damping) .*
                                                vN[active_nodes, :] .+
                                                0.5 * dt .* a[active_nodes, :]
-                datamanager = apply_bc_dirichlet(["Velocity"], bcs, datamanager, time,
-                                                 step_time)
+                apply_bc_dirichlet(["Velocity"], bcs, time,
+                                   step_time)
                 @views uNP1[active_nodes,
                 :] = uN[active_nodes, :] .+
                                                dt .* vNP1[active_nodes, :]
             end
 
-            compute_parabolic_problems_before_model_evaluation(active_nodes, datamanager,
+            compute_parabolic_problems_before_model_evaluation(active_nodes,
                                                                solver_options)
             # if "Degradation" in solver_options["Models"]
             #     concentrationNP1[active_nodes] = concentrationN[active_nodes] +
             #                                      delta_concentration[active_nodes]
             # end
-            datamanager = apply_bc_dirichlet(["Displacements", "Temperature"],
-                                             bcs,
-                                             datamanager, time,
-                                             step_time) #-> Dirichlet
+            apply_bc_dirichlet(["Displacements", "Temperature"],
+                               bcs,
+                               time,
+                               step_time) #-> Dirichlet
             #needed because of optional deformation_gradient, Deformed bonds, etc.
             # all points to guarantee that the neighbors have coor as coordinates if they are not active
             if "Material" in solver_options["Models"]
@@ -492,46 +483,44 @@ function run_solver(solver_options::Dict{Any,Any},
                 :] = coor[active_nodes, :] .+
                                                            uNP1[active_nodes, :]
             end
-            @timeit "upload_to_cores" datamanager.synch_manager(synchronise_field,
-                                                                "upload_to_cores")
+            @timeit "upload_to_cores" Data_Manager.synch_manager(synchronise_field,
+                                                                 "upload_to_cores")
             # synch
 
-            @timeit "compute_models" datamanager=compute_models(datamanager,
-                                                                block_nodes,
-                                                                dt,
-                                                                time,
-                                                                solver_options["Models"],
-                                                                synchronise_field)
+            @timeit "compute_models" compute_models(block_nodes,
+                                                    dt,
+                                                    time,
+                                                    solver_options["Models"],
+                                                    synchronise_field)
             # update the current active nodes; might have been changed by the additive models
 
             if "Material" in solver_options["Models"]
                 # TODO rename function -> missleading, because strains are also covered. Has to be something like a factory class
-                @timeit "calculate_stresses" datamanager=calculate_stresses(datamanager,
-                                                                            block_nodes,
-                                                                            solver_options["Calculation"])
+                @timeit "calculate_stresses" calculate_stresses(block_nodes,
+                                                                solver_options["Calculation"])
             end
 
-            @timeit "download_from_cores" datamanager.synch_manager(synchronise_field,
-                                                                    "download_from_cores")
+            @timeit "download_from_cores" Data_Manager.synch_manager(synchronise_field,
+                                                                     "download_from_cores")
             # synch
-            datamanager = apply_bc_dirichlet(["Forces", "Force Densities"],
-                                             bcs,
-                                             datamanager, time,
-                                             step_time) #-> Dirichlet
-            # @timeit "apply_bc_neumann" datamanager = apply_bc_neumann(bcs, datamanager, time) #-> von neumann
-            active_nodes = datamanager.get_field("Active Nodes")
+            apply_bc_dirichlet(["Forces", "Force Densities"],
+                               bcs,
+                               time,
+                               step_time) #-> Dirichlet
+            # @timeit "apply_bc_neumann" apply_bc_neumann(bcs, time) #-> von neumann
+            active_nodes = get_field("Active Nodes")
             active_nodes = find_active_nodes(active_list, active_nodes,
-                                             1:datamanager.get_nnodes())
+                                             1:Data_Manager.get_nnodes())
             if "Material" in solver_options["Models"]
                 check_inf_or_nan(force_densities, "Forces")
 
                 if fem_option
                     # edit external force densities won't work so easy, because the corresponded volume is in detJ
                     # force density is for FEM part force
-                    active_nodes = datamanager.get_field("Active Nodes")
+                    active_nodes = Data_Manager.get_field("Active Nodes")
                     active_nodes = find_active_nodes(fe_nodes,
                                                      active_nodes,
-                                                     1:datamanager.get_nnodes())
+                                                     1:Data_Manager.get_nnodes())
 
                     forces[active_nodes, :] += external_forces[active_nodes, :]
                     force_densities[active_nodes,
@@ -543,10 +532,10 @@ function run_solver(solver_options::Dict{Any,Any},
                     :] = force_densities[active_nodes, :] ./
                                          lumped_mass[active_nodes] # element wise
 
-                    active_nodes = datamanager.get_field("Active Nodes")
+                    active_nodes = Data_Manager.get_field("Active Nodes")
                     active_nodes = find_active_nodes(fe_nodes,
                                                      active_nodes,
-                                                     1:datamanager.get_nnodes(),
+                                                     1:Data_Manager.get_nnodes(),
                                                      false)
                 end
 
@@ -565,8 +554,8 @@ function run_solver(solver_options::Dict{Any,Any},
                                                  volume[active_nodes]
             end
 
-            compute_parabolic_problems_after_model_evaluation(active_nodes, datamanager,
-                                                              solver_options, dt)
+            compute_parabolic_problems_after_model_evaluation(active_nodes, solver_options,
+                                                              dt)
 
             # if "Degradation" in solver_options["Models"]
             #     delta_concentration[active_nodes] = -concentration_fluxNP1[active_nodes] .*
@@ -575,7 +564,7 @@ function run_solver(solver_options::Dict{Any,Any},
             if "Damage" in solver_options["Models"] #TODO gather value
                 max_damage = maximum(damage[active_nodes])
                 if max_damage > max_cancel_damage
-                    datamanager.set_cancel(true)
+                    Data_Manager.set_cancel(true)
                 end
                 if !damage_init && max_damage > 0
                     damage_init = true
@@ -586,20 +575,19 @@ function run_solver(solver_options::Dict{Any,Any},
                 end
             end
             @timeit "write_results" result_files=write_results(result_files, time,
-                                                               max_damage, outputs,
-                                                               datamanager)
+                                                               max_damage, outputs)
             # for file in result_files
             #     flush(file)
             # end
-            if rank == 0 && !silent && datamanager.get_cancel()
+            if rank == 0 && !silent && Data_Manager.get_cancel()
                 set_multiline_postfix(iter, "Simulation canceled!")
                 break
             end
-            @timeit "switch_NP1_to_N" datamanager.switch_NP1_to_N()
+            @timeit "switch_NP1_to_N" Data_Manager.switch_NP1_to_N()
 
             time += dt
             step_time += dt
-            datamanager.set_current_time(time)
+            Data_Manager.set_current_time(time)
 
             if idt % ceil(nsteps / 100) == 0
                 @info "Step: $idt / $(nsteps+1) [$time s]"

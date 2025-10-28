@@ -10,6 +10,9 @@ using DataFrames
 using LibGit2
 using PrettyTables
 using Dates
+
+using ..Data_Manager
+
 export init_logging
 export get_current_git_info
 export get_log_stream
@@ -90,20 +93,19 @@ end
 # end
 
 """
-    print_table(data::Matrix, datamanager::Module)
+    print_table(data::Matrix)
 
 Print the table.
 
 # Arguments
 - `data::Matrix`: The data.
-- `datamanager::Module`: The data manager.
 """
-function print_table(data::Matrix, datamanager::Module)
+function print_table(data::Matrix)
     highlighters = [
         TextHighlighter((data, i, j) -> i == 1 && j == 1, crayon"bold"),
         TextHighlighter((data, i, j) -> j == 2, crayon"dark_gray")
     ]
-    if !datamanager.get_silent()
+    if !Data_Manager.get_silent()
         pretty_table(data;
                      cell_alignment = [(1, 1) => :l],
                      formatters = [fmt__printf("%10.1f", [2])],

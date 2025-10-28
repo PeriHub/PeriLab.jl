@@ -7,32 +7,28 @@ using Test
 #include("../../../../src/PeriLab.jl")
 #using .PeriLab
 
-@test PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.thermal_model_name() == "Thermal Flow"
+@test PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.thermal_model_name() ==
+      "Thermal Flow"
 
 @testset "ut_init_model" begin
     test_data_manager = PeriLab.Data_Manager
 
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(test_data_manager,
-                                            Vector{Int64}(1:3),
-                                            Dict("a" => 1, "Thermal Conductivity" => 100)))
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(test_data_manager,
-                                            Vector{Int64}(1:3),
-                                            Dict("Type" => "a",
-                                                 "Thermal Conductivity" => 100)))
-    @test PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(test_data_manager,
-                                  Vector{Int64}(1:3),
-                                  Dict("Type" => "Bond based",
-                                       "Thermal Conductivity" => 100)) == test_data_manager
-    @test PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(test_data_manager,
-                                  Vector{Int64}(1:3),
-                                  Dict("Type" => "Correspondence",
-                                       "Thermal Conductivity" => 100)) == test_data_manager
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(test_data_manager,
-                                            Vector{Int64}(1:3),
-                                            Dict("Type" => "Bond based")))
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(test_data_manager,
-                                            Vector{Int64}(1:3),
-                                            Dict("Type" => "Correspondence")))
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3),
+                                                                                         Dict("a" => 1,
+                                                                                              "Thermal Conductivity" => 100)))
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3),
+                                                                                         Dict("Type" => "a",
+                                                                                              "Thermal Conductivity" => 100)))
+    PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3),
+                                                                         Dict("Type" => "Bond based",
+                                                                              "Thermal Conductivity" => 100))
+    PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3),
+                                                                         Dict("Type" => "Correspondence",
+                                                                              "Thermal Conductivity" => 100))
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3),
+                                                                                         Dict("Type" => "Bond based")))
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3),
+                                                                                         Dict("Type" => "Correspondence")))
     parameter = Dict("Type" => "Correspondence",
                      "Thermal Conductivity" => 100,
                      "Print Bed Temperature" => 2)
@@ -49,14 +45,13 @@ using Test
     coordinates[3, 3] = 1
 
     test_data_manager.set_dof(3)
-    @test PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(test_data_manager, Vector{Int64}(1:3), parameter) ==
-          test_data_manager
+    PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3),
+                                                                         parameter)
 
     @test haskey(parameter, "Print Bed Temperature")
     test_data_manager.set_dof(2)
 
-    @test PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(test_data_manager, Vector{Int64}(1:3), parameter) ==
-          test_data_manager
-
+    PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3),
+                                                                         parameter)
     @test !haskey(parameter, "Print Bed Temperature")
 end

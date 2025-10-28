@@ -6,7 +6,8 @@ using Test
 #include("../../../../src/PeriLab.jl")
 #import .PeriLab
 
-@test PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion.thermal_model_name() == "Thermal Expansion"
+@test PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion.thermal_model_name() ==
+      "Thermal Expansion"
 
 @testset "ut_thermal_deformation" begin
     nnodes = 2
@@ -17,19 +18,22 @@ using Test
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1] = 2
     nn[2] = 3
-    temperature_N, temperature_NP1 = test_data_manager.create_node_field("Temperature",
-                                                                         Float64, 1)
+    temperature_N,
+    temperature_NP1 = test_data_manager.create_node_field("Temperature",
+                                                          Float64, 1)
     undeformed_bond = test_data_manager.create_constant_bond_field("Bond Geometry",
                                                                    Float64, dof)
-    deformed_bond_N, deformed_bond_NP1 = test_data_manager.create_bond_field("Deformed Bond Geometry",
-                                                                             Float64,
-                                                                             dof)
+    deformed_bond_N,
+    deformed_bond_NP1 = test_data_manager.create_bond_field("Deformed Bond Geometry",
+                                                            Float64,
+                                                            dof)
     undeformed_bond_length = test_data_manager.create_constant_bond_field("Bond Length",
                                                                           Float64, 1)
 
-    deformed_bond_length_N, deformed_bond_length_NP1 = test_data_manager.create_bond_field("Deformed Bond Length",
-                                                                                           Float64,
-                                                                                           1)
+    deformed_bond_length_N,
+    deformed_bond_length_NP1 = test_data_manager.create_bond_field("Deformed Bond Length",
+                                                                   Float64,
+                                                                   1)
 
     undeformed_bond[1][1][1] = 0
     undeformed_bond[1][1][2] = 1
@@ -70,8 +74,10 @@ using Test
                              "Reference Temperature" => 0.0)
 
     temperature_NP1 .= 0
-    test_data_manager = PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion.compute_model(test_data_manager, nodes,
-                                                        thermal_parameter, 1, 1.0, 1.0)
+    PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion.compute_model(nodes,
+                                                                                 thermal_parameter,
+                                                                                 1, 1.0,
+                                                                                 1.0)
 
     for iID in nodes
         for jID in nn[iID]
@@ -82,7 +88,7 @@ using Test
     end
 
     # temperature_NP1 .= 1
-    # test_data_manager = PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion.compute_model(test_data_manager, nodes, thermal_parameter, 1, 1.0, 1.0)
+    # PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion.compute_model(nodes, thermal_parameter, 1, 1.0, 1.0)
 
     # for iID in nodes
     #     for jID in nn[iID]
@@ -91,7 +97,7 @@ using Test
     # end
 
     # temperature_NP1 .= 2
-    # test_data_manager = PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion.compute_model(test_data_manager, nodes, thermal_parameter, 1, 1.0, 1.0)
+    # PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion.compute_model(nodes, thermal_parameter, 1, 1.0, 1.0)
 
     # for iID in nodes
     #     for jID in nn[iID]
@@ -104,7 +110,7 @@ using Test
     # temperature_NP1[2] = -23
 
     # thermal_parameter = Dict("Thermal Expansion Coefficient" => [-1.1,2.1], "Reference Temperature" => 0.0)
-    # test_data_manager = PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion.compute_model(test_data_manager, nodes, thermal_parameter, 1, 1.0, 1.0)
+    # PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion.compute_model(nodes, thermal_parameter, 1, 1.0, 1.0)
 
     # for iID in nodes
     #     for jID in nn[iID]

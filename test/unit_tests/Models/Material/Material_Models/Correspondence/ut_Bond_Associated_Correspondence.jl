@@ -37,11 +37,11 @@ using Test
     strainN[1][1, :, :] = [-1 -1; -1 -1]
     strainN[2][1, :, :] = [0.5 0; 0 0.5]
     PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.compute_bond_strain(nodes,
-                                                       nlist,
-                                                       deformation_gradient,
-                                                       strain,
-                                                       strainN,
-                                                       strain_inc)
+                                                                                                                    nlist,
+                                                                                                                    deformation_gradient,
+                                                                                                                    strain,
+                                                                                                                    strainN,
+                                                                                                                    strain_inc)
 
     @test strain[1][1, :, :] == [0 0; 0 0]
     @test strain[2][1, :, :] == [-0.5 0; 0 0.5]
@@ -57,9 +57,9 @@ end
                        (deformation_gradient * deformation_gradient_dot)')
     computed_strain = zeros(3, 3)
     PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.update_Green_Langrange_strain(dt,
-                                                                 deformation_gradient,
-                                                                 deformation_gradient_dot,
-                                                                 computed_strain)
+                                                                                                                              deformation_gradient,
+                                                                                                                              deformation_gradient_dot,
+                                                                                                                              computed_strain)
 
     # for i in 1:3
     #     for j in 1:3
@@ -72,9 +72,9 @@ end
     expected_strain = zeros(3, 3)
     computed_strain = zeros(3, 3)
     PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.update_Green_Langrange_strain(dt,
-                                                                 deformation_gradient,
-                                                                 deformation_gradient_dot,
-                                                                 computed_strain)
+                                                                                                                              deformation_gradient,
+                                                                                                                              deformation_gradient_dot,
+                                                                                                                              computed_strain)
     @test computed_strain == expected_strain
 end
 @testset "ut_init_Bond-Associated" begin
@@ -92,20 +92,18 @@ end
     test_data_manager.create_constant_bond_field("Influence Function", Float64, 1)
     test_data_manager.create_bond_field("Bond Damage", Float64, 1)
 
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.init_model(test_data_manager, nodes,
-                                                              Dict()))
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.init_model(nodes,
+                                                                                                                           Dict()))
 
     material_parameter = Dict{String,Any}("Symmetry" => "isotropic")
-    test_data_manager = PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.init_model(test_data_manager,
-                                                                  nodes,
-                                                                  material_parameter)
+    PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.init_model(nodes,
+                                                                                                           material_parameter)
 
     @test test_data_manager.get_accuracy_order() == 1
 
     material_parameter = Dict("Symmetry" => "isotropic", "Accuracy Order" => 2)
-    test_data_manager = PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.init_model(test_data_manager,
-                                                                  nodes,
-                                                                  material_parameter)
+    PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.init_model(nodes,
+                                                                                                           material_parameter)
 
     @test test_data_manager.get_accuracy_order() == 2
 end
@@ -160,17 +158,17 @@ end
                                                                    VectorOrMatrix = "Matrix")
 
     stress_integral = PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.compute_stress_integral(nodes,
-                                                                             dof,
-                                                                             nlist,
-                                                                             omega,
-                                                                             bond_damage,
-                                                                             volume,
-                                                                             weighted_volume,
-                                                                             bond_geometry,
-                                                                             bond_length,
-                                                                             deformation_gradient,
-                                                                             bond_stresses,
-                                                                             stress_integral)
+                                                                                                                                          dof,
+                                                                                                                                          nlist,
+                                                                                                                                          omega,
+                                                                                                                                          bond_damage,
+                                                                                                                                          volume,
+                                                                                                                                          weighted_volume,
+                                                                                                                                          bond_geometry,
+                                                                                                                                          bond_length,
+                                                                                                                                          deformation_gradient,
+                                                                                                                                          bond_stresses,
+                                                                                                                                          stress_integral)
 
     expected_stress_integral = [[0.0 0.0; 0.0 1.0], [0.0 0.0; 0.0 2.0]]
     @test isapprox(stress_integral[1, :, :], expected_stress_integral[1][:, :])

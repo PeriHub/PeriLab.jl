@@ -251,22 +251,19 @@ if ncores == 3
         push_test!(test, (E[3] == true), @__FILE__, @__LINE__)
         test = test_dict["find_global_core_value!_0"] = Dict("tests" => [], "line" => [])
         push_test!(test,
-                   (PeriLab.IO.find_global_core_value!(0, "Sum", 1, test_data_manager) == 3),
+                   (PeriLab.IO.find_global_core_value!(0, "Sum", 1) == 3),
                    @__FILE__,
                    @__LINE__)
         push_test!(test,
-                   (PeriLab.IO.find_global_core_value!(0, "Maximum", 1,
-                                                       test_data_manager) == 2),
+                   (PeriLab.IO.find_global_core_value!(0, "Maximum", 1) == 2),
                    @__FILE__,
                    @__LINE__)
         push_test!(test,
-                   (PeriLab.IO.find_global_core_value!(0, "Minimum", 1,
-                                                       test_data_manager) == 0),
+                   (PeriLab.IO.find_global_core_value!(0, "Minimum", 1) == 0),
                    @__FILE__,
                    @__LINE__)
         push_test!(test,
-                   (PeriLab.IO.find_global_core_value!(0, "Average", 1,
-                                                       test_data_manager) == 1),
+                   (PeriLab.IO.find_global_core_value!(0, "Average", 1) == 1),
                    @__FILE__,
                    @__LINE__)
     end
@@ -291,22 +288,19 @@ if ncores == 3
         push_test!(test, (E[3] == false), @__FILE__, @__LINE__)
         test = test_dict["find_global_core_value!_1"] = Dict("tests" => [], "line" => [])
         push_test!(test,
-                   (PeriLab.IO.find_global_core_value!(1, "Sum", 1, test_data_manager) == 3),
+                   (PeriLab.IO.find_global_core_value!(1, "Sum", 1) == 3),
                    @__FILE__,
                    @__LINE__)
         push_test!(test,
-                   (PeriLab.IO.find_global_core_value!(1, "Maximum", 1,
-                                                       test_data_manager) == 2),
+                   (PeriLab.IO.find_global_core_value!(1, "Maximum", 1) == 2),
                    @__FILE__,
                    @__LINE__)
         push_test!(test,
-                   (PeriLab.IO.find_global_core_value!(1, "Minimum", 1,
-                                                       test_data_manager) == 0),
+                   (PeriLab.IO.find_global_core_value!(1, "Minimum", 1) == 0),
                    @__FILE__,
                    @__LINE__)
         push_test!(test,
-                   (PeriLab.IO.find_global_core_value!(1, "Average", 1,
-                                                       test_data_manager) == 1),
+                   (PeriLab.IO.find_global_core_value!(1, "Average", 1) == 1),
                    @__FILE__,
                    @__LINE__)
     end
@@ -335,22 +329,19 @@ if ncores == 3
         push_test!(test, (E[3] == true), @__FILE__, @__LINE__)
         test = test_dict["find_global_core_value!_2"] = Dict("tests" => [], "line" => [])
         push_test!(test,
-                   (PeriLab.IO.find_global_core_value!(2, "Sum", 1, test_data_manager) == 3),
+                   (PeriLab.IO.find_global_core_value!(2, "Sum", 1) == 3),
                    @__FILE__,
                    @__LINE__)
         push_test!(test,
-                   (PeriLab.IO.find_global_core_value!(2, "Maximum", 1,
-                                                       test_data_manager) == 2),
+                   (PeriLab.IO.find_global_core_value!(2, "Maximum", 1) == 2),
                    @__FILE__,
                    @__LINE__)
         push_test!(test,
-                   (PeriLab.IO.find_global_core_value!(2, "Minimum", 1,
-                                                       test_data_manager) == 0),
+                   (PeriLab.IO.find_global_core_value!(2, "Minimum", 1) == 0),
                    @__FILE__,
                    @__LINE__)
         push_test!(test,
-                   (PeriLab.IO.find_global_core_value!(2, "Average", 1,
-                                                       test_data_manager) == 1),
+                   (PeriLab.IO.find_global_core_value!(2, "Average", 1) == 1),
                    @__FILE__,
                    @__LINE__)
     end
@@ -374,17 +365,15 @@ if ncores == 3
         end
     end
 
-    test_data_manager = PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(test_data_manager,
-                                                                                                   Vector{Int64}(1:nodes),
-                                                                                                   Dict("Bulk Modulus" => 1.0,
-                                                                                                        "Young's Modulus" => 1.0))
-    test_data_manager = PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(test_data_manager,
-                                                                                                      Vector{Int64}(1:nodes),
-                                                                                                      Dict("Bulk Modulus" => 1.0,
-                                                                                                           "Young's Modulus" => 1.0),
-                                                                                                      1,
-                                                                                                      0.0,
-                                                                                                      0.0)
+    PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(Vector{Int64}(1:nodes),
+                                                                               Dict("Bulk Modulus" => 1.0,
+                                                                                    "Young's Modulus" => 1.0))
+    PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(Vector{Int64}(1:nodes),
+                                                                                  Dict("Bulk Modulus" => 1.0,
+                                                                                       "Young's Modulus" => 1.0),
+                                                                                  1,
+                                                                                  0.0,
+                                                                                  0.0)
 
     bf = test_data_manager.get_field("Bond Forces")
 
@@ -411,11 +400,10 @@ if ncores == 3
                                                      "Material Model" => "Test 1"),
                                    "block_2" => Dict("Block ID" => 2,
                                                      "Material Model" => "Test 2")))
-    PeriLab.IO.show_block_summary(solver_options, params, "", false, comm,
-                                  test_data_manager)
-    PeriLab.IO.show_block_summary(solver_options, params, "", true, comm, test_data_manager)
-    PeriLab.IO.show_mpi_summary("", false, comm, test_data_manager)
-    PeriLab.IO.show_mpi_summary("", true, comm, test_data_manager)
+    PeriLab.IO.show_block_summary(solver_options, params, "", false, comm)
+    PeriLab.IO.show_block_summary(solver_options, params, "", true, comm)
+    PeriLab.IO.show_mpi_summary("", false, comm)
+    PeriLab.IO.show_mpi_summary("", true, comm)
 end
 
 open("test_results_$rank.json", "w") do f

@@ -521,11 +521,9 @@ end
                                                     "Fixed dt" => 1e-3)))
     @test PeriLab.Parameter_Handling.get_solver_name(params["Solver"]) ==
           "Verlet"
-    @test PeriLab.Parameter_Handling.get_final_time(params["Solver"],
-                                                    test_data_manager) ==
+    @test PeriLab.Parameter_Handling.get_final_time(params["Solver"]) ==
           params["Solver"]["Final Time"]
-    @test PeriLab.Parameter_Handling.get_initial_time(params["Solver"],
-                                                      test_data_manager) ==
+    @test PeriLab.Parameter_Handling.get_initial_time(params["Solver"]) ==
           params["Solver"]["Initial Time"]
     @test PeriLab.Parameter_Handling.get_safety_factor(params["Solver"]) ==
           params["Solver"]["Verlet"]["Safety Factor"]
@@ -543,12 +541,9 @@ end
           6
     @test PeriLab.Parameter_Handling.get_numerical_damping(params["Solver"]) ==
           0.0
-    @test isnothing(PeriLab.Parameter_Handling.get_initial_time(Dict("Solver" => Dict()),
-                                                                test_data_manager))
-    @test isnothing(PeriLab.Parameter_Handling.get_final_time(Dict("Solver" => Dict()),
-                                                              test_data_manager))
-    @test isnothing(PeriLab.Parameter_Handling.get_final_time(Dict("Solver" => Dict()),
-                                                              test_data_manager))
+    @test isnothing(PeriLab.Parameter_Handling.get_initial_time(Dict("Solver" => Dict())))
+    @test isnothing(PeriLab.Parameter_Handling.get_final_time(Dict("Solver" => Dict())))
+    @test isnothing(PeriLab.Parameter_Handling.get_final_time(Dict("Solver" => Dict())))
     @test isnothing(PeriLab.Parameter_Handling.get_solver_name(Dict("Solver" => Dict("Solvername" => Dict()))))
     params = Dict("Solver" => Dict("Initial Time" => 0.0,
                                    "Final Time" => 1.0,
@@ -557,8 +552,7 @@ end
           "Static"
     params = Dict("Solver" => Dict("Initial Time" => 1.0))
     test_data_manager.set_current_time(2.0)
-    @test PeriLab.Parameter_Handling.get_initial_time(params["Solver"],
-                                                      test_data_manager) ==
+    @test PeriLab.Parameter_Handling.get_initial_time(params["Solver"]) ==
           2.0
 end
 

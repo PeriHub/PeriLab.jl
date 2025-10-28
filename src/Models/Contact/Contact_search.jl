@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Contact_Search
+
+using ....Data_Manager
 using ....Helpers: get_nearest_neighbors, nearest_point_id, get_block_nodes,
                    compute_geometry,
                    point_is_inside, get_surface_information, compute_distance_and_normals
@@ -12,18 +14,17 @@ export compute_contact_pairs
 
 ## for one contact pair
 
-function init_contact_search(datamanager, contact_params, cm)
-    datamanager.set_search_step(cm, 0)
-    return datamanager
+function init_contact_search(contact_params, cm)
+    Data_Manager.set_search_step(cm, 0)
 end
 
-function global_contact_search(datamanager, contact_params)
-    all_positions = datamanager.get_all_positions()
+function global_contact_search(contact_params)
+    all_positions = Data_Manager.get_all_positions()
     #-------------
-    dof = datamanager.get_dof()
+    dof = Data_Manager.get_dof()
     # ids are exchange vector ids (''all position'' ids)
-    master_nodes = datamanager.get_free_contact_nodes(contact_params["Master Block ID"])
-    slave_nodes = datamanager.get_free_contact_nodes(contact_params["Slave Block ID"])
+    master_nodes = Data_Manager.get_free_contact_nodes(contact_params["Master Block ID"])
+    slave_nodes = Data_Manager.get_free_contact_nodes(contact_params["Slave Block ID"])
 
     near_points,
     no_pairs = find_potential_contact_pairs(dof,
@@ -40,35 +41,34 @@ function global_contact_search(datamanager, contact_params)
     return no_pairs, global_master, global_slave
 end
 
-function compute_contact_pairs(datamanager::Module, cg::String, contact_params::Dict)
-    if datamanager.get_search_step(cg) == 0
-        datamanager.set_global_search_master_nodes(cg, Vector{Int64}([]))
-        datamanager.set_global_search_slave_nodes(cg, Vector{Int64}([]))
+function compute_contact_pairs(cg::String, contact_params::Dict)
+    if Data_Manager.get_search_step(cg) == 0
+        Data_Manager.set_global_search_master_nodes(cg, Vector{Int64}([]))
+        Data_Manager.set_global_search_slave_nodes(cg, Vector{Int64}([]))
         no_pairs, global_master,
-        global_slave = global_contact_search(datamanager,
-                                             contact_params)
+        global_slave = global_contact_search(contact_params)
 
-        datamanager.set_global_search_master_nodes(cg, global_master)
-        datamanager.set_global_search_slave_nodes(cg, global_slave)
-        datamanager.set_no_pairs_flag(cg, no_pairs)
+        Data_Manager.set_global_search_master_nodes(cg, global_master)
+        Data_Manager.set_global_search_slave_nodes(cg, global_slave)
+        Data_Manager.set_no_pairs_flag(cg, no_pairs)
 
-        datamanager.add_synchronization_list(global_master)
-        datamanager.add_synchronization_list(global_slave)
+        Data_Manager.add_synchronization_list(global_master)
+        Data_Manager.add_synchronization_list(global_slave)
     end
-    if datamanager.get_no_pairs_flag(cg) # must be stored
+    if Data_Manager.get_no_pairs_flag(cg) # must be stored
         return
     end
 
-    contact_dict = local_contact_search(datamanager, contact_params,
-                                        datamanager.get_global_search_master_nodes(cg),
-                                        datamanager.get_global_search_slave_nodes(cg))
-    datamanager.set_contact_dict(cg, contact_dict)
+    contact_dict = local_contact_search(contact_params,
+                                        Data_Manager.get_global_search_master_nodes(cg),
+                                        Data_Manager.get_global_search_slave_nodes(cg))
+    Data_Manager.set_contact_dict(cg, contact_dict)
 end
 
-function local_contact_search(datamanager, contact_params, master_nodes, slave_nodes)
-    all_positions = datamanager.get_all_positions()
+function local_contact_search(contact_params, master_nodes, slave_nodes)
+    all_positions = Data_Manager.get_all_positions()
     #-------------
-    dof = datamanager.get_dof()
+    dof = Data_Manager.get_dof()
     contact_dict = Dict{Int64,Dict{String,Any}}()
     # ids are exchange vector ids (''all position'' ids)
     contact_points,
@@ -80,8 +80,8 @@ function local_contact_search(datamanager, contact_params, master_nodes, slave_n
         return contact_dict
     end
 
-    mapping = datamanager.get_exchange_id_to_local_id()
-    contact_nodes = datamanager.get_field("Contact Nodes")
+    mapping = Data_Manager.get_exchange_id_to_local_id()
+    contact_nodes = Data_Manager.get_field("Contact Nodes")
     for (iID, neighbors) in enumerate(contact_points)
         if isempty(neighbors)
             continue
@@ -116,12 +116,11 @@ function local_contact_search(datamanager, contact_params, master_nodes, slave_n
 end
 
 """
-    find_potential_contact_pairs(datamanager::Module, contact_params::Dict)
+    find_potential_contact_pairs(contact_params::Dict)
 
 Finds a list of potential master slave pairs which are next to each other. Only the free surface nodes of the contact blocks are tested. The process is done equally at each computational core.
 
 # Arguments
-- `datamanager::module`: datamanager.
 - `contact_params::Dict`: dictionary with contact relevant information.
 
 # Returns

@@ -18,12 +18,10 @@ using Test
     block_iD .= 1
     mod_struct = PeriLab.Solver_Manager.Model_Factory
 
-    @test mod_struct.init_surface_correction(test_data_manager,
-                                             Dict(),
-                                             "local_synch",
-                                             "synchronise_field") == test_data_manager
-    @test isnothing(mod_struct.init_surface_correction(test_data_manager,
-                                                       Dict("Surface Correction" => Dict("a" => 0)),
+    mod_struct.init_surface_correction(Dict(),
+                                       "local_synch",
+                                       "synchronise_field")
+    @test isnothing(mod_struct.init_surface_correction(Dict("Surface Correction" => Dict("a" => 0)),
                                                        "local_synch",
                                                        "synchronise_field"))
 end

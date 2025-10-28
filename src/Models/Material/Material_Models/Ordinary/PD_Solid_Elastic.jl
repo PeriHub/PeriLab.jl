@@ -5,6 +5,7 @@
 module PD_Solid_Elastic
 
 using TimerOutputs: @timeit
+using ......Data_Manager
 using ....Material_Basis: get_symmetry
 using ......Helpers: add_in_place!
 using StaticArrays
@@ -38,29 +39,23 @@ function fe_support()
 end
 
 """
-  init_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
 
 Initializes the material model.
 
 # Arguments
-  - `datamanager::Data_Manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-
-# Returns
-  - `datamanager::Data_Manager`: Datamanager.
 """
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
-    datamanager.create_constant_node_field("Weighted Volume", Float64, 1)
-    datamanager.create_constant_node_field("Dilatation", Float64, 1)
+    Data_Manager.create_constant_node_field("Weighted Volume", Float64, 1)
+    Data_Manager.create_constant_node_field("Dilatation", Float64, 1)
 
-    bond_force_deviatoric_part = datamanager.create_constant_bond_field("Bond Forces Deviatoric",
+    bond_force_deviatoric_part = Data_Manager.create_constant_bond_field("Bond Forces Deviatoric",
+                                                                         Float64, 1)
+    bond_force_isotropic_part = Data_Manager.create_constant_bond_field("Bond Forces Isotropic",
                                                                         Float64, 1)
-    bond_force_isotropic_part = datamanager.create_constant_bond_field("Bond Forces Isotropic",
-                                                                       Float64, 1)
-    return datamanager
 end
 
 """
@@ -73,7 +68,7 @@ function material_name()
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+    fields_for_local_synchronization(model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -82,29 +77,24 @@ Returns a user developer defined local synchronization. This happens before each
 # Arguments
 
 """
-function fields_for_local_synchronization(datamanager::Module, model::String)
+function fields_for_local_synchronization(model::String)
     #download_from_cores = false
     #upload_to_cores = true
-    #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
-    return datamanager
+    #Data_Manager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
 end
 
 """
-    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
+    compute_model(nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
 
 Computes the forces.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: The nodes.
 - `material_parameter::Dict`: The material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 """
-function compute_model(datamanager::Module,
-                       nodes::AbstractVector{Int64},
+function compute_model(nodes::AbstractVector{Int64},
                        material_parameter::Dict,
                        block::Int64,
                        time::Float64,
@@ -112,23 +102,23 @@ function compute_model(datamanager::Module,
     # global dof
     # global nlist
     # global volume
-    dof = datamanager.get_dof()
-    nlist = datamanager.get_nlist()
-    volume = datamanager.get_field("Volume")
+    dof = Data_Manager.get_dof()
+    nlist = Data_Manager.get_nlist()
+    volume = Data_Manager.get_field("Volume")
 
-    deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
-    bond_damage = datamanager.get_bond_damage("NP1")
-    omega = datamanager.get_field("Influence Function")
-    undeformed_bond_length = datamanager.get_field("Bond Length")
-    bond_force = datamanager.get_field("Bond Forces")
-    temp = datamanager.get_field("Temporary Bond Field")
+    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
+    deformed_bond_length = Data_Manager.get_field("Deformed Bond Length", "NP1")
+    bond_damage = Data_Manager.get_bond_damage("NP1")
+    omega = Data_Manager.get_field("Influence Function")
+    undeformed_bond_length = Data_Manager.get_field("Bond Length")
+    bond_force = Data_Manager.get_field("Bond Forces")
+    temp = Data_Manager.get_field("Temporary Bond Field")
 
-    bond_force_deviatoric_part = datamanager.get_field("Bond Forces Deviatoric")
-    bond_force_isotropic_part = datamanager.get_field("Bond Forces Isotropic")
+    bond_force_deviatoric_part = Data_Manager.get_field("Bond Forces Deviatoric")
+    bond_force_isotropic_part = Data_Manager.get_field("Bond Forces Isotropic")
     # isotropic; deviatoric; all
-    weighted_volume = datamanager.get_field("Weighted Volume")
-    theta = datamanager.get_field("Dilatation")
+    weighted_volume = Data_Manager.get_field("Weighted Volume")
+    theta = Data_Manager.get_field("Dilatation")
 
     # optimizing, because if no damage it has not to be updated
     # TBD update_list should be used here as in shape_tensor.jl
@@ -162,8 +152,6 @@ function compute_model(datamanager::Module,
     @timeit "get_bond_forces" bond_force=get_bond_forces(nodes, temp, deformed_bond,
                                                          deformed_bond_length,
                                                          bond_force, temp)
-
-    return datamanager
 end
 
 """
