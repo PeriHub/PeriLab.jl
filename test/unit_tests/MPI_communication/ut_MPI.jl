@@ -15,8 +15,6 @@ end
 
 MPI.Init()
 
-# const to = TimerOutput()
-
 comm = MPI.COMM_WORLD
 rank = MPI.Comm_rank(comm)
 ncores = MPI.Comm_size(comm)
@@ -386,8 +384,7 @@ if ncores == 3
                                                                                                            "Young's Modulus" => 1.0),
                                                                                                       1,
                                                                                                       0.0,
-                                                                                                      0.0,
-                                                                                                      PeriLab.to)
+                                                                                                      0.0)
 
     bf = test_data_manager.get_field("Bond Forces")
 

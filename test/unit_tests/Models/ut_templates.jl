@@ -15,10 +15,8 @@ include("../../../src/Models/Thermal/Thermal_template/thermal_template.jl")
 include("../../../src/Models/Pre_calculation/Pre_calculation_template/pre_calculation_template.jl")
 
 using Test
-using TimerOutputs
 #include("../../../src/PeriLab.jl")
 #using .PeriLab
-const to = TimerOutput()
 
 test_data_manager = PeriLab.Data_Manager
 test_data_manager.initialize_data()
@@ -73,8 +71,7 @@ end
                                         Dict(),
                                         1,
                                         0.0,
-                                        0.0,
-                                        to) == test_data_manager
+                                        0.0) == test_data_manager
 
     @test Damage_template.init_model(test_data_manager, Vector{Int64}(1:3), Dict(), 1) ==
           test_data_manager
@@ -104,8 +101,7 @@ end
                                           Dict(),
                                           1,
                                           0.0,
-                                          0.0,
-                                          to) == test_data_manager
+                                          0.0) == test_data_manager
     @test Material_template.fields_for_local_synchronization(test_data_manager, "") ==
           test_data_manager
 end

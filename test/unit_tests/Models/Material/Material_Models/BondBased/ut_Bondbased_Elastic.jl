@@ -49,8 +49,7 @@ end
                                                                                                            "Young's Modulus" => 1.0),
                                                                                                       1,
                                                                                                       0.0,
-                                                                                                      0.0,
-                                                                                                      PeriLab.to)
+                                                                                                      0.0)
 
     bf = test_data_manager.get_field("Bond Forces")
     @test isapprox(bf[1],
@@ -82,8 +81,7 @@ end
                                                                                                            "Symmetry" => "here is something"),
                                                                                                       1,
                                                                                                       0.0,
-                                                                                                      0.0,
-                                                                                                      to)
+                                                                                                      0.0)
 
     bf = test_data_manager.get_field("Bond Forces")
 
@@ -117,8 +115,7 @@ end
                                                                                                            "Symmetry" => "plane strain"),
                                                                                                       1,
                                                                                                       0.0,
-                                                                                                      0.0,
-                                                                                                      to)
+                                                                                                      0.0)
 
     bf = test_data_manager.get_field("Bond Forces")
 
@@ -151,8 +148,7 @@ end
                                                                                                            "Symmetry" => "plane stress"),
                                                                                                       1,
                                                                                                       0.0,
-                                                                                                      0.0,
-                                                                                                      to)
+                                                                                                      0.0)
 
     bf = test_data_manager.get_field("Bond Forces")
     @test isapprox(bf[1][1][1], -0.15915494309189532)
