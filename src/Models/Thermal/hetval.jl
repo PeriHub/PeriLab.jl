@@ -148,7 +148,12 @@ function init_model(nodes::AbstractVector{Int64},
         num_state_vars = thermal_parameter["Number of State Variables"]
     end
     # State variables are used to transfer additional information to the next step
-    Data_Manager.create_constant_node_field("State Variables", Float64, num_state_vars)
+    if num_state_vars == 1
+        Data_Manager.create_constant_node_scalar_field("State Variables", Float64)
+    else
+        Data_Manager.create_constant_node_vector_field("State Variables", Float64,
+                                                       num_state_vars)
+    end
 
     if !haskey(thermal_parameter, "HETVAL Material Name")
         @warn "No HETVAL Material Name is defined. Please check if you use it as method to check different material in your HETVAL."
@@ -170,9 +175,15 @@ function init_model(nodes::AbstractVector{Int64},
     else
         field_names = ["Volume"] #Use any if not defined!
     end
-    fields = Data_Manager.create_constant_node_field("Predefined Fields",
-                                                     Float64,
-                                                     length(field_names))
+    n_fields = length(field_names)
+    if n_fields == 1
+        fields = Data_Manager.create_constant_node_scalar_field("Predefined Fields",
+                                                                Float64)
+    else
+        fields = Data_Manager.create_constant_node_vector_field("Predefined Fields",
+                                                                Float64,
+                                                                n_fields)
+    end
     for (id, field_name) in enumerate(field_names)
         if !Data_Manager.has_key(String(field_name))
             @error "Predefined field ''$field_name'' is not defined in the mesh file."
@@ -182,9 +193,14 @@ function init_model(nodes::AbstractVector{Int64},
         # TODO check if an existing field is a bool.
         fields[:, id] = Data_Manager.get_field(String(field_name))
     end
-    Data_Manager.create_constant_node_field("Predefined Fields Increment",
-                                            Float64,
-                                            length(field_names))
+    if n_fields == 1
+        fields = Data_Manager.create_constant_node_scalar_field("Predefined Fields Increment",
+                                                                Float64)
+    else
+        fields = Data_Manager.create_constant_node_vector_field("Predefined Fields Increment",
+                                                                Float64,
+                                                                n_fields)
+    end
 end
 
 """

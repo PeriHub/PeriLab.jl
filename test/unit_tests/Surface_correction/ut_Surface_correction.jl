@@ -14,7 +14,7 @@ using Test
     test_data_manager.init_properties()
     test_data_manager.set_dof(3)
     test_data_manager.set_num_controller(4)
-    block_iD = test_data_manager.create_constant_node_field("Block_Id", Int64, 1)
+    block_iD = test_data_manager.create_constant_node_scalar_field("Block_Id", Int64)
     block_iD .= 1
     mod_struct = PeriLab.Solver_Manager.Model_Factory
 

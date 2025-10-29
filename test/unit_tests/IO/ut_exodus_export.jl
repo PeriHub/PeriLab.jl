@@ -95,7 +95,7 @@ nnodes = 5
 dof = 2
 test_data_manager.set_num_controller(nnodes)
 test_data_manager.set_dof(dof)
-coordinates = test_data_manager.create_constant_node_field("Coordinates", Float64, 2)
+coordinates = test_data_manager.create_constant_node_vector_field("Coordinates", Float64, 2)
 coordinates[1, 1] = 0
 coordinates[1, 2] = 0
 coordinates[2, 1] = 1
@@ -106,11 +106,11 @@ coordinates[4, 1] = 1
 coordinates[4, 2] = 1
 coordinates[5, 1] = 2
 coordinates[5, 2] = 2
-test_data_manager.create_constant_node_field("Block_Id", Int64, 1)
+test_data_manager.create_constant_node_scalar_field("Block_Id", Int64)
 block_Id = test_data_manager.get_field("Block_Id")
 block_Id .+= 1
 block_Id[end] = 2
-test_data_manager.create_constant_node_field("FEM", Bool, 1, true)
+test_data_manager.create_constant_node_scalar_field("FEM", Bool; default_value = true)
 fem_block = test_data_manager.get_field("FEM")
 #outputs = ["Displacements", "Forces"]
 test_data_manager.set_nset("Nset_1", [1, 2])
@@ -248,8 +248,8 @@ result_files[1]["file"] = PeriLab.IO.write_step_and_time(result_files[1]["file"]
     @test read_name(exo["file"], Block, 2) == "Block_2"
 end
 
-test_data_manager.create_node_field("Forces", Float64, 6)
-test_data_manager.create_node_field("Displacements", Float64, 1)
+test_data_manager.create_node_vector_field("Forces", Float64, 6)
+test_data_manager.create_node_scalar_field("Displacements", Float64)
 force = test_data_manager.get_field("Forces", "NP1")
 disp = test_data_manager.get_field("Displacements", "NP1")
 force[5, 1:6] .= 3.3

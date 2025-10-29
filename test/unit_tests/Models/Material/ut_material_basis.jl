@@ -10,7 +10,7 @@ using Test
     test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(3)
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
     nn .= 2
     @test isnothing(PeriLab.Solver_Manager.Material_Basis.init_local_damping_due_to_damage(collect(1:2),
                                                                                            Dict(),
@@ -299,7 +299,8 @@ end
     @test parameter["Poisson's Ratio"] == Float64(1 / 3)
     @test parameter["Young's Modulus"] == 5
 
-    test_data_manager.create_constant_node_field("Bulk_Modulus", Float64, 1, 10)
+    test_data_manager.create_constant_node_scalar_field("Bulk_Modulus", Float64;
+                                                        default_value = 10)
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Shear Modulus" => 10)
     PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(parameter)

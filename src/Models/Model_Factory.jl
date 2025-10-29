@@ -65,8 +65,8 @@ function init_models(params::Dict,
     end
 
     if "Additive" in solver_options["Models"] || "Thermal" in solver_options["Models"]
-        heat_capacity = Data_Manager.create_constant_node_field("Specific Heat Capacity",
-                                                                Float64, 1)
+        heat_capacity = Data_Manager.create_constant_node_scalar_field("Specific Heat Capacity",
+                                                                       Float64)
         heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
     end
 
@@ -104,16 +104,14 @@ function init_models(params::Dict,
 
     if solver_options["Calculation"]["Calculate Cauchy"] |
        solver_options["Calculation"]["Calculate von Mises stress"]
-        Data_Manager.create_node_field("Cauchy Stress",
-                                       Float64, Data_Manager.get_dof(),
-                                       VectorOrMatrix = "Matrix")
+        Data_Manager.create_node_tensor_field("Cauchy Stress",
+                                              Float64, Data_Manager.get_dof())
     end
     if solver_options["Calculation"]["Calculate Strain"]
-        Data_Manager.create_node_field("Strain", Float64, Data_Manager.get_dof(),
-                                       VectorOrMatrix = "Matrix")
+        Data_Manager.create_node_tensor_field("Strain", Float64, Data_Manager.get_dof())
     end
     if solver_options["Calculation"]["Calculate von Mises stress"]
-        Data_Manager.create_node_field("von Mises Stress", Float64, 1)
+        Data_Manager.create_node_scalar_field("von Mises Stress", Float64)
     end
 
     check_contact(params)

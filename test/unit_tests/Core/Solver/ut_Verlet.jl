@@ -44,23 +44,24 @@ comm = MPI.COMM_WORLD
 test_data_manager.set_comm(comm)
 test_data_manager.set_num_controller(5)
 test_data_manager.set_dof(2)
-blocks = test_data_manager.create_constant_node_field("Block_Id", Int64, 1)
-horizon = test_data_manager.create_constant_node_field("Horizon", Float64, 1)
-coor = test_data_manager.create_constant_node_field("Coordinates", Float64, 2)
-density = test_data_manager.create_constant_node_field("Density", Float64, 1)
-volume = test_data_manager.create_constant_node_field("Volume", Float64, 1)
-length_nlist = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+blocks = test_data_manager.create_constant_node_scalar_field("Block_Id", Int64)
+horizon = test_data_manager.create_constant_node_scalar_field("Horizon", Float64)
+coor = test_data_manager.create_constant_node_vector_field("Coordinates", Float64, 2)
+density = test_data_manager.create_constant_node_scalar_field("Density", Float64)
+volume = test_data_manager.create_constant_node_scalar_field("Volume", Float64)
+length_nlist = test_data_manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                   Int64)
 length_nlist .= 4
 
-nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-undeformed_bond = test_data_manager.create_constant_bond_field("Bond Geometry", Float64,
-                                                               dof)
-undeformed_bond_length = test_data_manager.create_constant_bond_field("Bond Length",
-                                                                      Float64, 1)
-heat_capacity = test_data_manager.create_constant_node_field("Specific Heat Capacity",
-                                                             Float64,
-                                                             1,
-                                                             18000)
+nlist = test_data_manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
+undeformed_bond = test_data_manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                      Float64,
+                                                                      dof)
+undeformed_bond_length = test_data_manager.create_constant_bond_scalar_state("Bond Length",
+                                                                             Float64)
+heat_capacity = test_data_manager.create_constant_node_scalar_field("Specific Heat Capacity",
+                                                                    Float64;
+                                                                    default_value = 18000)
 nlist[1] = [2, 3, 4, 5]
 nlist[2] = [1, 3, 4, 5]
 nlist[3] = [1, 2, 4, 5]
@@ -143,13 +144,13 @@ end
 # test_data_manager.set_dof(2)
 
 # test_data_manager.set_glob_to_loc([1, 2, 3, 4, 5])
-# density = test_data_manager.create_constant_node_field("Density", Float64, 1)
-# force = test_data_manager.create_node_field("Forces", Float64, dof)
-# Y = testDatama#nager.create_node_field("Deformed State", Float64, dof)
-# u = test_data_manager.create_node_field("Displacements", Float64, dof)
-# bu = test_data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof + 1)
+# density = test_data_manager.create_constant_node_scalar_field("Density", Float64)
+# force = test_data_manager.create_node_vector_field("Forces", Float64, dof)
+# Y = testDatama#nager.create_node_vector_field("Deformed State", Float64, dof)
+# u = test_data_manager.create_node_vector_field("Displacements", Float64, dof)
+# bu = test_data_manager.create_bond_vector_state("Deformed Bond Geometry", Float64, dof + 1)
 # a = test_data_manager.create_constant_node_field("Acceleration", Float64, dof)
-# v = test_data_manager.create_node_field("Velocity", Float64, dof)
+# v = test_data_manager.create_node_vector_field("Velocity", Float64, dof)
 
 # density = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
 # test_data_manager.set_nset("Nset_1", [1, 2, 3])

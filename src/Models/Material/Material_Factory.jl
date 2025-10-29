@@ -49,23 +49,23 @@ Initialize material model fields
 """
 function init_fields()
     dof = Data_Manager.get_dof()
-    Data_Manager.create_node_field("Forces", Float64, dof) #-> only if it is an output
+    Data_Manager.create_node_vector_field("Forces", Float64, dof) #-> only if it is an output
     # tbd later in the compute class
-    Data_Manager.create_constant_node_field("External Forces", Float64, dof)
-    Data_Manager.create_node_field("Force Densities", Float64, dof)
-    Data_Manager.create_constant_node_field("External Force Densities", Float64, dof)
-    Data_Manager.create_constant_node_field("Acceleration", Float64, dof)
-    Data_Manager.create_node_field("Velocity", Float64, dof)
-    Data_Manager.create_constant_bond_field("Bond Forces", Float64, dof)
-    Data_Manager.create_constant_bond_field("Temporary Bond Field", Float64, 1)
+    Data_Manager.create_constant_node_vector_field("External Forces", Float64, dof)
+    Data_Manager.create_node_vector_field("Force Densities", Float64, dof)
+    Data_Manager.create_constant_node_vector_field("External Force Densities", Float64, dof)
+    Data_Manager.create_constant_node_vector_field("Acceleration", Float64, dof)
+    Data_Manager.create_node_vector_field("Velocity", Float64, dof)
+    Data_Manager.create_constant_bond_vector_state("Bond Forces", Float64, dof)
+    Data_Manager.create_constant_bond_scalar_state("Temporary Bond Field", Float64)
     deformed_coorN,
-    deformed_coorNP1 = Data_Manager.create_node_field("Deformed Coordinates",
-                                                      Float64, dof)
+    deformed_coorNP1 = Data_Manager.create_node_vector_field("Deformed Coordinates",
+                                                             Float64, dof)
     deformed_coorN = copy(Data_Manager.get_field("Coordinates"))
     deformed_coorNP1 = copy(Data_Manager.get_field("Coordinates"))
-    Data_Manager.create_node_field("Displacements", Float64, dof)
-    Data_Manager.create_bond_field("Deformed Bond Geometry", Float64, dof)
-    Data_Manager.create_bond_field("Deformed Bond Length", Float64, 1)
+    Data_Manager.create_node_vector_field("Displacements", Float64, dof)
+    Data_Manager.create_bond_vector_state("Deformed Bond Geometry", Float64, dof)
+    Data_Manager.create_bond_scalar_state("Deformed Bond Length", Float64)
     # Data_Manager.set_synch("Bond Forces", false, true)
     Data_Manager.set_synch("Force Densities", true, false)
     Data_Manager.set_synch("Velocity", false, true)

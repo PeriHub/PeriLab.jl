@@ -23,7 +23,7 @@ init_fields()
 Initialize  model fields
 """
 function init_fields()
-    Data_Manager.create_node_field("Damage", Float64, 1)
+    Data_Manager.create_node_scalar_field("Damage", Float64)
     nlist = Data_Manager.get_nlist()
     inverse_nlist = Data_Manager.set_inverse_nlist(find_inverse_bond_id(nlist))
 end

@@ -49,13 +49,13 @@ Initializes the material model.
 """
 function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
-    Data_Manager.create_constant_node_field("Weighted Volume", Float64, 1)
-    Data_Manager.create_constant_node_field("Dilatation", Float64, 1)
+    Data_Manager.create_constant_node_scalar_field("Weighted Volume", Float64)
+    Data_Manager.create_constant_node_scalar_field("Dilatation", Float64)
 
-    bond_force_deviatoric_part = Data_Manager.create_constant_bond_field("Bond Forces Deviatoric",
-                                                                         Float64, 1)
-    bond_force_isotropic_part = Data_Manager.create_constant_bond_field("Bond Forces Isotropic",
-                                                                        Float64, 1)
+    bond_force_deviatoric_part = Data_Manager.create_constant_bond_scalar_state("Bond Forces Deviatoric",
+                                                                                Float64)
+    bond_force_isotropic_part = Data_Manager.create_constant_bond_scalar_state("Bond Forces Isotropic",
+                                                                               Float64)
 end
 
 """

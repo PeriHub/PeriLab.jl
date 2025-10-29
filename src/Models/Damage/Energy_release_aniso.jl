@@ -264,8 +264,8 @@ function init_model(nodes::AbstractVector{Int64},
                     damage_parameter::Dict,
                     block::Int64)
     dof = Data_Manager.get_dof()
-    quad_horizon = Data_Manager.create_constant_node_field("Quad Horizon", Float64, 1)
-    Data_Manager.create_constant_bond_field("Bond Displacements", Float64, dof)
+    quad_horizon = Data_Manager.create_constant_node_scalar_field("Quad Horizon", Float64)
+    Data_Manager.create_constant_bond_vector_state("Bond Displacements", Float64, dof)
     horizon = Data_Manager.get_field("Horizon")
     thickness::Float64 = get(damage_parameter, "Thickness", 1)
     for iID in nodes

@@ -294,9 +294,9 @@ end
                                            8 => 8,
                                            9 => 9,
                                            10 => 10))
-    test_data_manager.create_constant_node_field("Coordinates", Float64, 3)
-    test_data_manager.create_constant_node_field("Forces", Float64, 3)
-    test_data_manager.create_node_field("Displacements", Float64, 3)
+    test_data_manager.create_constant_node_vector_field("Coordinates", Float64, 3)
+    test_data_manager.create_constant_node_vector_field("Forces", Float64, 3)
+    test_data_manager.create_node_vector_field("Displacements", Float64, 3)
     test_data_manager.set_dof(3)
 
     params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Variable" => "Forces",
@@ -343,14 +343,15 @@ end
     test_data_manager.set_num_controller(10)
     test_data_manager.set_dof(3)
     test_data_manager.set_step(nothing)
-    test_data_manager.create_constant_node_field("Coordinates", Float64, 3)
-    test_data_manager.create_constant_node_field("Temperature", Float64, 3)
-    test_data_manager.create_node_field("Displacements", Float64, 3)
-    test_data_manager.create_constant_node_field("Forces", Float64, 3)
-    test_data_manager.create_constant_node_field("External Forces", Float64, 3)
-    test_data_manager.create_constant_node_field("Force Densities", Float64, 3)
-    test_data_manager.create_constant_node_field("External Force Densities", Float64, 3)
-    test_data_manager.create_constant_node_field("Density", Float64, 1)
+    test_data_manager.create_constant_node_vector_field("Coordinates", Float64, 3)
+    test_data_manager.create_constant_node_vector_field("Temperature", Float64, 3)
+    test_data_manager.create_node_vector_field("Displacements", Float64, 3)
+    test_data_manager.create_constant_node_vector_field("Forces", Float64, 3)
+    test_data_manager.create_constant_node_vector_field("External Forces", Float64, 3)
+    test_data_manager.create_constant_node_vector_field("Force Densities", Float64, 3)
+    test_data_manager.create_constant_node_vector_field("External Force Densities", Float64,
+                                                        3)
+    test_data_manager.create_constant_node_scalar_field("Density", Float64)
     test_data_manager.set_nset("Nset_1", [1, 2, 3])
     test_data_manager.set_nset("Nset_2", [3, 4, 7, 10])
     test_data_manager.set_glob_to_loc(Dict(1 => 1,

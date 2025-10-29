@@ -51,11 +51,10 @@ function init_model(nodes::AbstractVector{Int64},
         return nothing
     end
     dof = Data_Manager.get_dof()
-    Data_Manager.create_node_field("Strain", Float64, dof, VectorOrMatrix = "Matrix")
-    Data_Manager.create_constant_node_field("Strain Increment", Float64, dof,
-                                            VectorOrMatrix = "Matrix")
-    Data_Manager.create_node_field("Cauchy Stress", Float64, dof, VectorOrMatrix = "Matrix")
-    Data_Manager.create_node_field("von Mises Stress", Float64, 1)
+    Data_Manager.create_node_tensor_field("Strain", Float64, dof)
+    Data_Manager.create_constant_node_tensor_field("Strain Increment", Float64, dof)
+    Data_Manager.create_node_tensor_field("Cauchy Stress", Float64, dof)
+    Data_Manager.create_node_scalar_field("von Mises Stress", Float64)
     rotation::Bool = Data_Manager.get_rotation()
     material_models = split(material_parameter["Material Model"], "+")
     material_models = map(r -> strip(r), material_models)

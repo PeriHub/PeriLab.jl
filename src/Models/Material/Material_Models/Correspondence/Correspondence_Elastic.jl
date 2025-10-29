@@ -45,9 +45,9 @@ Initializes the material model.
 function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     dof = Data_Manager.get_dof()
-    hooke_matrix = Data_Manager.create_constant_node_field("Hooke Matrix", Float64,
-                                                           Int64((dof * (dof + 1)) / 2),
-                                                           VectorOrMatrix = "Matrix")
+    hooke_matrix = Data_Manager.create_constant_node_tensor_field("Hooke Matrix", Float64,
+                                                                  Int64((dof * (dof + 1)) /
+                                                                        2))
     symmetry = get(material_parameter, "Symmetry", "default")::String
     for iID in nodes
         @views hooke_matrix[iID, :,

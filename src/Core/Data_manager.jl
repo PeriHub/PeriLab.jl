@@ -14,10 +14,9 @@ const fields = Dict()
 const data = Dict()
 #####################
 
-struct DataField{T,N}
+struct DataField{T,D}
     name::String
-    data::Array{T,N}
-    bond_or_node::String
+    data::D
 end
 
 struct FieldManager

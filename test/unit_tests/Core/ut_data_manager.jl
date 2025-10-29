@@ -103,22 +103,22 @@ num_controller = 3
 num_responder = 2
 test_data_manager.set_num_controller(num_controller)
 test_data_manager.set_num_responder(num_responder)
-nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
 nn[1] = 2
 nn[2] = 3
 nn[3] = 2
 nn[4] = 2
 nn[5] = 5
 
-test_data_manager.create_constant_node_field("A", Float64, 1)
-B = test_data_manager.create_node_field("B", Bool, 1)
-C = test_data_manager.create_constant_node_field("C", Float64, 4)
+test_data_manager.create_constant_node_scalar_field("A", Float64)
+B = test_data_manager.create_node_scalar_field("B", Bool)
+C = test_data_manager.create_constant_node_vector_field("C", Float64, 4)
 C[1, 2] = 4
-test_data_manager.create_node_field("D", Int64, 7)
-test_data_manager.create_constant_bond_field("F", Float64, 1)
-test_data_manager.create_bond_field("G", Bool, 1)
-test_data_manager.create_constant_bond_field("H", Float64, 4)
-test_data_manager.create_bond_field("I", Int64, 7)
+test_data_manager.create_node_vector_field("D", Int64, 7)
+test_data_manager.create_constant_bond_scalar_state("F", Float64)
+test_data_manager.create_bond_scalar_state("G", Bool)
+test_data_manager.create_constant_bond_vector_state("H", Float64, 4)
+test_data_manager.create_bond_vector_state("I", Int64, 7)
 testfield_keys = test_data_manager.get_all_field_keys()
 @testset "create data fields -> get all fields" begin
     @test test_data_manager.get_nnodes() == num_controller
@@ -176,7 +176,7 @@ end
     @test isnothing(test_data_manager.set_num_elements(-1))
 end
 @testset "ut_create_existing_field" begin
-    field1, field2 = test_data_manager.create_node_field("D", Int64, 3)
+    field1, field2 = test_data_manager.create_node_vector_field("D", Int64, 3)
     testfield_keys = test_data_manager.get_all_field_keys()
     @test "DN" in testfield_keys
     @test "DNP1" in testfield_keys
@@ -238,7 +238,7 @@ end
     @test test_data_manager.get_field_type("A") == Float64
     @test test_data_manager.get_field_type("DN") == Int64
     @test test_data_manager.get_field_type("DNP1") == Int64
-    @test test_data_manager.get_field_type("GN") == Bool
+    @test test_data_manager.get_field_type("GN") == Vector{Bool}
     @test isnothing(test_data_manager.get_field_type("not there"))
     @test isnothing(test_data_manager.get_field_type("D"))
 end
@@ -254,7 +254,7 @@ end
     test = test_data_manager.create_constant_free_size_field("GN", Float64, (2, 3))
     @info test
     @test size(test) == (5,)
-    test = test_data_manager.create_constant_node_field("BMatrix", Float64, 3)
+    test = test_data_manager.create_constant_node_vector_field("BMatrix", Float64, 3)
     @test size(test) == (50, 3)
     test = test_data_manager.create_constant_free_size_field("Test_size", Float64,
                                                              (2, 3, 3))
@@ -263,11 +263,9 @@ end
                                                              Float64,
                                                              (2, 3, 3, 4))
     @test size(test) == (2, 3, 3, 4)
-    test = test_data_manager.create_constant_node_field("Test_size_3", Float64, 3,
-                                                        VectorOrMatrix = "Matrix")
+    test = test_data_manager.create_constant_node_tensor_field("Test_size_3", Float64, 3)
     @test size(test) == (5, 3, 3)
-    test = test_data_manager.create_constant_node_field("Test_size_3", Float64, 3,
-                                                        VectorOrMatrix = "Matrix")
+    test = test_data_manager.create_constant_node_tensor_field("Test_size_3", Float64, 3)
     @test size(test) == (5, 3, 3)
     test,
     test2 = test_data_manager.create_free_size_field("Test_size_4", Float64,
@@ -277,8 +275,7 @@ end
     @test "Test_size_4N" in test_data_manager.get_all_field_keys()
     @test "Test_size_4NP1" in test_data_manager.get_all_field_keys()
     test,
-    test2 = test_data_manager.create_node_field("Test_size_4", Float64, 3,
-                                                VectorOrMatrix = "Matrix")
+    test2 = test_data_manager.create_node_tensor_field("Test_size_4", Float64, 3)
     @test size(test) == (3, 3, 1, 3)
     @test size(test2) == (3, 3, 1, 3)
     test = test_data_manager.create_constant_free_size_field("Int8Matrix", Int64, (50, 3))
@@ -286,32 +283,32 @@ end
 end
 
 @testset "set_get_field" begin
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
     nn[1] = 2
     nn[2] = 3
     nn[3] = 2
     nn[4] = 2
     nn[5] = 5
-    test = test_data_manager.create_constant_node_field("test", Float64, 1)
+    test = test_data_manager.create_constant_node_scalar_field("test", Float64)
     @test test == test_data_manager.get_field("test")
-    @test test_data_manager.create_constant_node_field("test", Float64, 1) ==
+    @test test_data_manager.create_constant_node_scalar_field("test", Float64) ==
           test_data_manager.get_field("test")
-    test = test_data_manager.create_constant_node_field("test2", Float64, 3)
+    test = test_data_manager.create_constant_node_vector_field("test2", Float64, 3)
     @test test == test_data_manager.get_field("test2")
-    test1, test2 = test_data_manager.create_node_field("test3", Float64, 1)
+    test1, test2 = test_data_manager.create_node_scalar_field("test3", Float64)
     @test test1 == test_data_manager.get_field("test3", "N")
     @test test2 == test_data_manager.get_field("test3", "NP1")
-    test1, test2 = test_data_manager.create_node_field("test4", Float64, 3)
+    test1, test2 = test_data_manager.create_node_vector_field("test4", Float64, 3)
     @test test1 == test_data_manager.get_field("test4", "N")
     @test test2 == test_data_manager.get_field("test4", "NP1")
-    test = test_data_manager.create_constant_bond_field("test5", Float64, 1)
+    test = test_data_manager.create_constant_bond_scalar_state("test5", Float64)
     @test test == test_data_manager.get_field("test5")
-    test = test_data_manager.create_constant_bond_field("test6", Float64, 3)
+    test = test_data_manager.create_constant_node_vector_field("test6", Float64, 3)
     @test test == test_data_manager.get_field("test6")
-    test1, test2 = test_data_manager.create_bond_field("test7", Float64, 1)
+    test1, test2 = test_data_manager.create_bond_scalar_state("test7", Float64)
     @test test1 == test_data_manager.get_field("test7", "N")
     @test test2 == test_data_manager.get_field("test7", "NP1")
-    test1, test2 = test_data_manager.create_bond_field("test8", Float64, 3)
+    test1, test2 = test_data_manager.create_bond_vector_state("test8", Float64, 3)
     @test test1 == test_data_manager.get_field("test8", "N")
     @test test2 == test_data_manager.get_field("test8", "NP1")
     # testnewFloat = test_data_manager.create_constant_node_field("testnewFloat", Float16, 1)
@@ -327,28 +324,24 @@ end
 
 @testset "Matrix" begin
     #Arrays
-    test = test_data_manager.create_constant_node_field("test9", Float64, 2,
-                                                        VectorOrMatrix = "Matrix")
+    test = test_data_manager.create_constant_node_tensor_field("test9", Float64, 2)
     test[1, 1, 1] = 1.2
     test[1, 2, 1] = -1.2
     test[1, 1, 2] = 1.4
     test[1, 2, 2] = 1.2
     @test test == test_data_manager.get_field("test9")
-    test = test_data_manager.create_constant_bond_field("test10", Float64, 3,
-                                                        VectorOrMatrix = "Matrix")
+    test = test_data_manager.create_constant_bond_tensor_state("test10", Float64, 3)
     test[1][1, 1, 1] = 1.2
     test[2][1, 2, 1] = -1.2
     test[2][1, 1, 3] = 1.4
     test[2][1, 2, 2] = 1.2
     @test test == test_data_manager.get_field("test10")
     test1,
-    test2 = test_data_manager.create_bond_field("test11", Float64, 6,
-                                                VectorOrMatrix = "Matrix")
+    test2 = test_data_manager.create_bond_tensor_state("test11", Float64, 6)
     @test test1 == test_data_manager.get_field("test11", "N")
     @test test2 == test_data_manager.get_field("test11", "NP1")
     test1,
-    test2 = test_data_manager.create_node_field("test12", Float64, 3,
-                                                VectorOrMatrix = "Matrix")
+    test2 = test_data_manager.create_node_tensor_field("test12", Float64, 3)
     @test test1 == test_data_manager.get_field("test12", "N")
     @test test2 == test_data_manager.get_field("test12", "NP1")
 end
@@ -370,15 +363,15 @@ end
     @test DN[1, 3] == DNtest[1, 3]
 end
 
-bdn, bdnp1 = test_data_manager.create_bond_field("Bond Damage", Float64, 1, 1)
-test_data_manager.create_constant_node_field("Active", Bool, 1, true)
+bdn,
+bdnp1 = test_data_manager.create_bond_scalar_state("Bond Damage", Float64;
+                                                   default_value = 1)
+test_data_manager.create_constant_node_scalar_field("Active", Bool; default_value = true)
 @testset "switch_NP1_to_N" begin
     bmatrixN,
-    bmatrixNP1 = test_data_manager.create_bond_field("Bmat", Float64, 2,
-                                                     VectorOrMatrix = "Matrix")
+    bmatrixNP1 = test_data_manager.create_bond_tensor_state("Bmat", Float64, 2)
     nmatrixN,
-    nmatrixNP1 = test_data_manager.create_node_field("Nmat", Float64, 2,
-                                                     VectorOrMatrix = "Matrix")
+    nmatrixNP1 = test_data_manager.create_node_tensor_field("Nmat", Float64, 2)
     DN = test_data_manager.get_field("D", "N")
     DNP1 = test_data_manager.get_field("D", "NP1")
 
@@ -543,7 +536,7 @@ end
     angles = test_data_manager.get_field("Angles")
     @test !rotation
     @test isnothing(angles)
-    test_angles = test_data_manager.create_constant_node_field("Angles", Float64, 3)
+    test_angles = test_data_manager.create_constant_node_vector_field("Angles", Float64, 3)
     test_data_manager.set_rotation(true)
     rotation = test_data_manager.get_rotation()
     angles = test_data_manager.get_field("Angles")
@@ -553,7 +546,8 @@ end
     angles = test_data_manager.get_field("Element Angles")
     @test !rotation
     @test isnothing(angles)
-    test_angles = test_data_manager.create_constant_node_field("Element Angles", Float64, 3)# in code it has length number of elements * element integration points
+    test_angles = test_data_manager.create_constant_node_vector_field("Element Angles",
+                                                                      Float64, 3)# in code it has length number of elements * element integration points
     test_data_manager.set_element_rotation(true)
     rotation = test_data_manager.get_element_rotation()
     angles = test_data_manager.get_field("Element Angles")
@@ -577,7 +571,7 @@ end
 
 @testset "ut_initialize_data" begin
     test_data_manager = PeriLab.Data_Manager
-    test_data_manager.create_node_field("test4", Float64, 3)
+    test_data_manager.create_node_vector_field("test4", Float64, 3)
     test_data_manager.initialize_data()
 
     @test test_data_manager.get_nnodes() == 0
@@ -592,7 +586,7 @@ end
     num_responder = 2
     test_data_manager.set_num_controller(num_controller)
     test_data_manager.set_num_responder(num_responder)
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
     nn[1] = 2
     nn[2] = 3
     nn[3] = 2
@@ -600,39 +594,34 @@ end
     nn[5] = 5
 
     alloc = 0
-    alloc += @allocated test_data_manager.create_constant_node_field("A", Float64, 1)
-    alloc += @allocated test_data_manager.create_node_field("B", Bool, 1)
-    alloc += @allocated test_data_manager.create_constant_node_field("C", Float64, 4)
-    alloc += @allocated test_data_manager.create_node_field("D", Int64, 7)
-    alloc += @allocated test_data_manager.create_constant_bond_field("E", Float64, 1)
-    alloc += @allocated test_data_manager.create_bond_field("G", Bool, 1)
-    alloc += @allocated test_data_manager.create_constant_bond_field("H", Float64, 4)
-    alloc += @allocated test_data_manager.create_bond_field("I", Int64, 7)
+    alloc += @allocated test_data_manager.create_constant_node_scalar_field("A", Float64)
+    alloc += @allocated test_data_manager.create_node_scalar_field("B", Bool)
+    alloc += @allocated test_data_manager.create_constant_node_vector_field("C", Float64, 4)
+    alloc += @allocated test_data_manager.create_node_vector_field("D", Int64, 7)
+    alloc += @allocated test_data_manager.create_constant_bond_scalar_state("E", Float64)
+    alloc += @allocated test_data_manager.create_bond_scalar_state("G", Bool)
+    alloc += @allocated test_data_manager.create_constant_bond_vector_state("H", Float64, 4)
+    alloc += @allocated test_data_manager.create_bond_vector_state("I", Int64, 7)
     alloc += @allocated test_data_manager.create_constant_free_size_field("J", Float64,
                                                                           (2, 3))
-    alloc += @allocated test_data_manager.create_constant_node_field("K", Float64, 3)
+    alloc += @allocated test_data_manager.create_constant_node_vector_field("K", Float64, 3)
     alloc += @allocated test_data_manager.create_constant_free_size_field("L",
                                                                           Float64,
                                                                           (2, 3, 3))
     alloc += @allocated test_data_manager.create_constant_free_size_field("M",
                                                                           Float64,
                                                                           (2, 3, 3, 4))
-    alloc += @allocated test_data_manager.create_constant_node_field("N", Float64,
-                                                                     3,
-                                                                     VectorOrMatrix = "Matrix")
-    alloc += @allocated test_data_manager.create_constant_node_field("O", Float64,
-                                                                     3,
-                                                                     VectorOrMatrix = "Matrix")
+    alloc += @allocated test_data_manager.create_constant_node_tensor_field("N", Float64,
+                                                                            3)
+    alloc += @allocated test_data_manager.create_constant_node_tensor_field("O", Float64,
+                                                                            3)
     alloc += @allocated test_data_manager.create_free_size_field("P", Float64, (3, 3, 1, 3))
-    alloc += @allocated test_data_manager.create_node_field("Q", Float64, 3,
-                                                            VectorOrMatrix = "Matrix")
+    alloc += @allocated test_data_manager.create_node_tensor_field("Q", Float64, 3)
     alloc += @allocated test_data_manager.create_constant_free_size_field("R", Int64,
                                                                           (50, 3))
-    alloc += @allocated test_data_manager.create_constant_bond_field("S", Float64,
-                                                                     3,
-                                                                     VectorOrMatrix = "Matrix")
-    alloc += @allocated test_data_manager.create_bond_field("T", Float64, 3,
-                                                            VectorOrMatrix = "Matrix")
+    alloc += @allocated test_data_manager.create_constant_bond_tensor_state("S", Float64,
+                                                                            3)
+    alloc += @allocated test_data_manager.create_bond_tensor_state("T", Float64, 3)
 
     @test alloc < 10947441 # 1.3684 MB
 

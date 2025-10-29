@@ -22,7 +22,7 @@ end
     test_data_manager.set_dof(2)
     test_data_manager.set_num_elements(nelements)
     test_data_manager.set_num_controller(6)
-    rho = test_data_manager.create_constant_node_field("Density", Float64, 1)
+    rho = test_data_manager.create_constant_node_scalar_field("Density", Float64)
     rho .= 2
     test = PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,Any}())
     @test isnothing(test)
@@ -35,8 +35,9 @@ end
     @test isnothing(test)
     dof = 2
     test_data_manager.set_dof(dof)
-    test_data_manager.create_node_field("Displacements", Float64, dof)
-    coordinates = test_data_manager.create_constant_node_field("Coordinates", Float64, dof)
+    test_data_manager.create_node_vector_field("Displacements", Float64, dof)
+    coordinates = test_data_manager.create_constant_node_vector_field("Coordinates",
+                                                                      Float64, dof)
     coordinates[1, 1] = 0
     coordinates[1, 2] = 0
     coordinates[2, 1] = 1
@@ -125,12 +126,12 @@ end
     test_data_manager.set_dof(dof)
     test_data_manager.set_num_elements(2)
     test_data_manager.set_num_controller(6)
-    test_data_manager.create_node_field("Cauchy Stress", Float64, dof,
-                                        VectorOrMatrix = "Matrix")
-    test_data_manager.create_node_field("Force Densities", Float64, dof)
-    test_data_manager.create_node_field("Displacements", Float64, dof)
-    test_data_manager.create_node_field("Forces", Float64, dof)
-    coordinates = test_data_manager.create_constant_node_field("Coordinates", Float64, dof)
+    test_data_manager.create_node_tensor_field("Cauchy Stress", Float64, dof)
+    test_data_manager.create_node_vector_field("Force Densities", Float64, dof)
+    test_data_manager.create_node_vector_field("Displacements", Float64, dof)
+    test_data_manager.create_node_vector_field("Forces", Float64, dof)
+    coordinates = test_data_manager.create_constant_node_vector_field("Coordinates",
+                                                                      Float64, dof)
     # only in tests for resize or redefinition reasons
     test_data_manager.fields[Int64]["FE Topology"] = zeros(Int64, 2, 4)
     coordinates[1, 1] = 0

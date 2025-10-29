@@ -47,10 +47,8 @@ function init_model(nodes::AbstractVector{Int64},
                     parameter::Union{Dict,OrderedDict},
                     block::Int64)
     dof = Data_Manager.get_dof()
-    Data_Manager.create_constant_node_field("Shape Tensor", Float64, dof,
-                                            VectorOrMatrix = "Matrix")
-    Data_Manager.create_constant_node_field("Inverse Shape Tensor", Float64, dof,
-                                            VectorOrMatrix = "Matrix")
+    Data_Manager.create_constant_node_tensor_field("Shape Tensor", Float64, dof)
+    Data_Manager.create_constant_node_tensor_field("Inverse Shape Tensor", Float64, dof)
 end
 
 """

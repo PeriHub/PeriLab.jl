@@ -22,12 +22,13 @@ export fields_for_local_synchronization
 Initialize thermal model fields
 """
 function init_fields()
-    Data_Manager.create_node_field("Temperature", Float64, 1)
-    Data_Manager.create_constant_node_field("Delta Temperature", Float64, 1)
-    Data_Manager.create_node_field("Heat Flow", Float64, 1)
-    Data_Manager.create_constant_node_field("Specific Volume", Int64, 1)
+    Data_Manager.create_node_scalar_field("Temperature", Float64)
+    Data_Manager.create_constant_node_scalar_field("Delta Temperature", Float64)
+    Data_Manager.create_node_scalar_field("Heat Flow", Float64)
+    Data_Manager.create_constant_node_scalar_field("Specific Volume", Int64)
     # if it is already initialized via mesh file no new field is created here
-    Data_Manager.create_constant_node_field("Surface_Nodes", Bool, 1, true)
+    Data_Manager.create_constant_node_scalar_field("Surface_Nodes", Bool;
+                                                   default_value = true)
 end
 
 """

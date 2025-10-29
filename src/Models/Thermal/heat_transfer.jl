@@ -46,10 +46,12 @@ function init_model(nodes::AbstractVector{Int64},
     nlist = Data_Manager.get_nlist()
     dof = Data_Manager.get_dof()
 
-    Data_Manager.create_constant_node_field("Specific Volume Check", Bool, 1, true)
+    Data_Manager.create_constant_node_scalar_field("Specific Volume Check", Bool;
+                                                   default_value = true)
 
     undeformed_bond = Data_Manager.get_field("Bond Geometry")
-    bond_norm_field = Data_Manager.create_constant_bond_field("Bond Norm", Float64, dof, 1)
+    bond_norm_field = Data_Manager.create_constant_bond_vector_state("Bond Norm", Float64,
+                                                                     dof; default_value = 1)
     for iID in nodes
         for (jID, neighborID) in enumerate(nlist[iID])
             normalize_in_place!(bond_norm_field[iID][jID], undeformed_bond[iID][jID])

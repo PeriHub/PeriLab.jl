@@ -135,7 +135,8 @@ function init_FEM(complete_params::Dict)
                                         jacobian,
                                         determinant_jacobian)
 
-    lumped_mass = Data_Manager.create_constant_node_field("Lumped Mass Matrix", Float64, 1)
+    lumped_mass = Data_Manager.create_constant_node_scalar_field("Lumped Mass Matrix",
+                                                                 Float64)
     rho = Data_Manager.get_field("Density")
     lumped_mass = get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho,
                                   lumped_mass)
@@ -194,7 +195,7 @@ function eval_FEM(elements::AbstractVector{Int64},
 end
 
 function get_FEM_nodes(topology::Matrix{Int64})
-    fem_nodes = Data_Manager.create_constant_node_field("FE Nodes", Bool, 1)
+    fem_nodes = Data_Manager.create_constant_node_scalar_field("FE Nodes", Bool)
     for el_topo in eachrow(topology)
         fem_nodes[el_topo] .= true
     end

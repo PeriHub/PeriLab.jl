@@ -9,7 +9,7 @@ using Test
     test_data_manager = PeriLab.Data_Manager
     nnodes = 2
     test_data_manager.set_num_controller(nnodes)
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
     nn[1] = 2
     nn[2] = 3
     nodes = Vector{Int64}(1:2)

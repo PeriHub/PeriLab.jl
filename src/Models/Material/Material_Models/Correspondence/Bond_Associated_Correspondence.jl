@@ -31,22 +31,19 @@ function init_model(nodes::AbstractVector{Int64},
     end
 
     dof = Data_Manager.get_dof()
-    Data_Manager.create_bond_field("Bond Strain", Float64, dof, VectorOrMatrix = "Matrix")
-    Data_Manager.create_bond_field("Bond Cauchy Stress", Float64, dof,
-                                   VectorOrMatrix = "Matrix")
-    Data_Manager.create_constant_bond_field("Bond Strain Increment", Float64, dof,
-                                            VectorOrMatrix = "Matrix")
-    Data_Manager.create_constant_node_field("Integral Nodal Stress", Float64, dof,
-                                            VectorOrMatrix = "Matrix")
+    Data_Manager.create_bond_tensor_state("Bond Strain", Float64, dof)
+    Data_Manager.create_bond_tensor_state("Bond Cauchy Stress", Float64, dof)
+    Data_Manager.create_constant_bond_tensor_state("Bond Strain Increment", Float64, dof)
+    Data_Manager.create_constant_node_tensor_field("Integral Nodal Stress", Float64, dof)
 
-    Data_Manager.create_bond_field("Bond Rotation Tensor", Float64, dof,
-                                   VectorOrMatrix = "Matrix")
+    Data_Manager.create_bond_tensor_state("Bond Rotation Tensor", Float64, dof)
 
     nlist = Data_Manager.get_nlist()
     volume = Data_Manager.get_field("Volume")
     omega = Data_Manager.get_field("Influence Function")
     bond_damage = Data_Manager.get_bond_damage("NP1")
-    weighted_volume = Data_Manager.create_constant_node_field("Weighted Volume", Float64, 1)
+    weighted_volume = Data_Manager.create_constant_node_scalar_field("Weighted Volume",
+                                                                     Float64)
 
     compute_weighted_volume!(weighted_volume, nodes, nlist, volume, bond_damage, omega)
 end

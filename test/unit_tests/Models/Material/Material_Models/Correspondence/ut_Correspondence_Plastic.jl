@@ -20,7 +20,7 @@ end
     test_data_manager.set_num_controller(nodes)
     dof = 3
     test_data_manager.set_dof(dof)
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
     nn .= 2
     @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_Plastic.init_model(Vector{Int64}(1:nodes),
                                                                                                                    material_parameter))

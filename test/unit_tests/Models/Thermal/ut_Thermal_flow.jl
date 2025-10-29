@@ -33,7 +33,8 @@ using Test
                      "Thermal Conductivity" => 100,
                      "Print Bed Temperature" => 2)
 
-    coordinates = test_data_manager.create_constant_node_field("Coordinates", Float64, 3)
+    coordinates = test_data_manager.create_constant_node_vector_field("Coordinates",
+                                                                      Float64, 3)
     coordinates[1, 1] = 0
     coordinates[1, 2] = 0
     coordinates[1, 3] = 1

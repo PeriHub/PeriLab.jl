@@ -28,14 +28,15 @@ function init_fields()
         @error "'Activation_Time' is missing. Please define an 'Activation_Time' for each point in the mesh file."
     end
     # must be specified, because it might be that no temperature model has been defined
-    Data_Manager.create_node_field("Temperature", Float64, 1)
-    Data_Manager.create_node_field("Heat Flow", Float64, 1)
+    Data_Manager.create_node_scalar_field("Temperature", Float64)
+    Data_Manager.create_node_scalar_field("Heat Flow", Float64)
 
     bond_damageN = Data_Manager.get_bond_damage("N")
     bond_damageNP1 = Data_Manager.get_bond_damage("NP1")
     nnodes = Data_Manager.get_nnodes()
     if !Data_Manager.has_key("Active")
-        active = Data_Manager.create_constant_node_field("Active", Bool, 1, false)
+        active = Data_Manager.create_constant_node_scalar_field("Active", Bool;
+                                                                default_value = false)
         for iID in 1:nnodes
             bond_damageN[iID] .= 0
             bond_damageNP1[iID] .= 0

@@ -45,11 +45,10 @@ function compute_control(nodes::AbstractVector{Int64},
     deformed_bond = Data_Manager.get_field("Deformed Bond Geometry",
                                            "NP1")::Vector{Vector{Vector{Float64}}}
     Kinv = Data_Manager.get_field("Inverse Shape Tensor")::Array{Float64,3}
-    zStiff = Data_Manager.create_constant_node_field("Zero Energy Stiffness",
-                                                     Float64,
-                                                     dof,
-                                                     VectorOrMatrix = "Matrix")::Array{Float64,
-                                                                                       3}
+    zStiff = Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",
+                                                            Float64,
+                                                            dof)::Array{Float64,
+                                                                        3}
     rotation = Data_Manager.get_rotation()::Bool
 
     symmetry = material_parameter["Symmetry"]::String

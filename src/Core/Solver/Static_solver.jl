@@ -125,10 +125,11 @@ function init_solver(solver_options::Dict{Any,Any},
                                                         split(params["Static"]["Linear Start Value"]))
     end
 
-    residual = Data_Manager.create_constant_node_field("Residual", Float64, dof)
+    residual = Data_Manager.create_constant_node_vector_field("Residual", Float64, dof)
 
     if !("Start_Values" in Data_Manager.get_all_field_keys())
-        start_u = Data_Manager.create_constant_node_field("Start_Values", Float64, dof)
+        start_u = Data_Manager.create_constant_node_vector_field("Start_Values", Float64,
+                                                                 dof)
         coor = Data_Manager.get_field("Coordinates")
         ls = solver_specifics["Linear Start Value"]
         if ls[1] == ls[2]

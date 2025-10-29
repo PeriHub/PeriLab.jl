@@ -30,7 +30,7 @@ Initialize damage model fields
 """
 function init_fields()
     dof = Data_Manager.get_dof()
-    Data_Manager.create_node_field("Damage", Float64, 1)
+    Data_Manager.create_node_scalar_field("Damage", Float64)
 
     anisotropic_damage = false
 
@@ -226,7 +226,7 @@ function init_model(nodes::AbstractVector{Int64},
                     block::Int64)
     model_param = Data_Manager.get_properties(block, "Damage Model")
     # if haskey(model_param, "Anisotropic Damage")
-    #     Data_Manager.create_bond_field("Bond Damage Anisotropic", Float64, Data_Manager.get_dof(), 1)
+    #     Data_Manager.create_bond_vector_state("Bond Damage Anisotropic", Float64, Data_Manager.get_dof(), 1)
     # end
     mod = create_module_specifics(model_param["Damage Model"],
                                   module_list,

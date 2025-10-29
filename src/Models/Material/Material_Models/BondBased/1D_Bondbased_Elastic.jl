@@ -43,7 +43,7 @@ Initializes the material model.
 """
 function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict{String,Any})
-    constant = Data_Manager.create_constant_bond_field("Visual", Float64, 1)
+    constant = Data_Manager.create_constant_bond_scalar_state("Visual", Float64)
 end
 
 """

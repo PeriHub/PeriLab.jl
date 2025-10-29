@@ -67,7 +67,12 @@ function init_model(nodes::AbstractVector{Int64},
         num_state_vars = material_parameter["Number of State Variables"]
     end
     # State variables are used to transfer additional information to the next step
-    Data_Manager.create_constant_node_field("State Variables", Float64, num_state_vars)
+    if num_state_vars == 1
+        Data_Manager.create_constant_node_scalar_field("State Variables", Float64)
+    else
+        Data_Manager.create_constant_node_vector_field("State Variables", Float64,
+                                                       num_state_vars)
+    end
 
     if !haskey(material_parameter, "Number of Properties")
         @error "Number of Properties must be at least equal 1"
@@ -101,35 +106,37 @@ function init_model(nodes::AbstractVector{Int64},
     end
 
     dof = Data_Manager.get_dof()
-    sse = Data_Manager.create_constant_node_field("Specific Elastic Strain Energy", Float64,
-                                                  1)
-    spd = Data_Manager.create_constant_node_field("Specific Plastic Dissipation", Float64,
-                                                  1)
-    scd = Data_Manager.create_constant_node_field("Specific Creep Dissipation Energy",
-                                                  Float64,
-                                                  1)
-    rpl = Data_Manager.create_constant_node_field("Volumetric heat generation per unit time",
-                                                  Float64,
-                                                  1)
-    DDSDDT = Data_Manager.create_constant_node_field("Variation of the stress increments with respect to the temperature",
-                                                     Float64,
-                                                     3 * dof - 3)
-    DRPLDE = Data_Manager.create_constant_node_field("Variation of RPL with respect to the strain increment",
-                                                     Float64,
-                                                     3 * dof - 3)
-    DRPLDT = Data_Manager.create_constant_node_field("Variation of RPL with respect to the temperature",
-                                                     Float64,
-                                                     1)
-    DFGRD0 = Data_Manager.create_constant_node_field("DFGRD0", Float64, dof,
-                                                     VectorOrMatrix = "Matrix")
+    sse = Data_Manager.create_constant_node_scalar_field("Specific Elastic Strain Energy",
+                                                         Float64)
+    spd = Data_Manager.create_constant_node_scalar_field("Specific Plastic Dissipation",
+                                                         Float64)
+    scd = Data_Manager.create_constant_node_scalar_field("Specific Creep Dissipation Energy",
+                                                         Float64)
+    rpl = Data_Manager.create_constant_node_scalar_field("Volumetric heat generation per unit time",
+                                                         Float64)
+    DDSDDT = Data_Manager.create_constant_node_vector_field("Variation of the stress increments with respect to the temperature",
+                                                            Float64,
+                                                            3 * dof - 3)
+    DRPLDE = Data_Manager.create_constant_node_vector_field("Variation of RPL with respect to the strain increment",
+                                                            Float64,
+                                                            3 * dof - 3)
+    DRPLDT = Data_Manager.create_constant_node_scalar_field("Variation of RPL with respect to the temperature",
+                                                            Float64)
+    DFGRD0 = Data_Manager.create_constant_node_tensor_field("DFGRD0", Float64, dof)
     # is already initialized if thermal problems are adressed
-    Data_Manager.create_node_field("Temperature", Float64, 1)
-    deltaT = Data_Manager.create_constant_node_field("Delta Temperature", Float64, 1)
+    Data_Manager.create_node_scalar_field("Temperature", Float64)
+    deltaT = Data_Manager.create_constant_node_scalar_field("Delta Temperature", Float64)
     if haskey(material_parameter, "Predefined Field Names")
         field_names = split(material_parameter["Predefined Field Names"], " ")
-        fields = Data_Manager.create_constant_node_field("Predefined Fields",
-                                                         Float64,
-                                                         length(field_names))
+        n_fields = length(field_names)
+        if n_fields == 1
+            fields = Data_Manager.create_constant_node_scalar_field("Predefined Fields",
+                                                                    Float64)
+        else
+            fields = Data_Manager.create_constant_node_vector_field("Predefined Fields",
+                                                                    Float64,
+                                                                    n_fields)
+        end
         for (id, field_name) in enumerate(field_names)
             if !Data_Manager.has_key(String(field_name))
                 @error "Predefined field ''$field_name'' is not defined in the mesh file."
@@ -139,14 +146,19 @@ function init_model(nodes::AbstractVector{Int64},
             # TODO check if an existing field is a bool.
             fields[:, id] = Data_Manager.get_field(String(field_name))
         end
-        Data_Manager.create_constant_node_field("Predefined Fields Increment",
-                                                Float64,
-                                                length(field_names))
+        if n_fields == 1
+            fields = Data_Manager.create_constant_node_scalar_field("Predefined Fields Increment",
+                                                                    Float64)
+        else
+            fields = Data_Manager.create_constant_node_vector_field("Predefined Fields Increment",
+                                                                    Float64,
+                                                                    n_fields)
+        end
     end
 
-    zStiff = Data_Manager.create_constant_node_field("Zero Energy Stiffness",
-                                                     Float64,
-                                                     dof, VectorOrMatrix = "Matrix")
+    zStiff = Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",
+                                                            Float64,
+                                                            dof)
 end
 
 """

@@ -73,7 +73,8 @@ function init_local_damping_due_to_damage(nodes::AbstractVector{Int64},
         return nothing
     end
     @info "Local damping is active with damping coefficient $(damage_parameter["Local Damping"]["Damping coefficient"])"
-    constant = Data_Manager.create_constant_node_field("Bond Based Constant", Float64, 1)
+    constant = Data_Manager.create_constant_node_scalar_field("Bond Based Constant",
+                                                              Float64)
     horizon = Data_Manager.get_field("Horizon")
     symmetry::String = get_symmetry(material_parameter)
     compute_bond_based_constants(nodes, symmetry, constant, horizon)
@@ -101,14 +102,12 @@ function get_value(parameter::Union{Dict{Any,Any},Dict{String,Any}},
     end
     if any_field_allocated
         if haskey(parameter, key)
-            return Data_Manager.create_constant_node_field(replace(key, " " => "_"),
-                                                           Float64,
-                                                           1,
-                                                           parameter[key])
+            return Data_Manager.create_constant_node_scalar_field(replace(key, " " => "_"),
+                                                                  Float64;
+                                                                  default_value = parameter[key])
         else
-            return Data_Manager.create_constant_node_field(replace(key, " " => "_"),
-                                                           Float64,
-                                                           1)
+            return Data_Manager.create_constant_node_scalar_field(replace(key, " " => "_"),
+                                                                  Float64)
         end
     elseif haskey(parameter, key)
         return parameter[key]

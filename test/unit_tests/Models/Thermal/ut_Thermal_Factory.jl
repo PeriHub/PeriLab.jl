@@ -8,7 +8,7 @@ using Test
     test_data_manager.initialize_data()
     test_data_manager.set_dof(3)
     test_data_manager.set_num_controller(4)
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
     nn[1] = 2
     nn[2] = 3
     nn[3] = 1
@@ -26,18 +26,20 @@ end
     test_data_manager.initialize_data()
     test_data_manager.set_dof(2)
     test_data_manager.set_num_controller(4)
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
     nn[1] = 2
     nn[2] = 3
     nn[3] = 1
     nn[4] = 2
-    nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist = test_data_manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
     nlist[1] = [2, 3]
     nlist[2] = [1, 3, 4]
     nlist[3] = [2]
     nlist[4] = [2, 3]
-    bond_geometry = test_data_manager.create_constant_bond_field("Bond Geometry", Float64,
-                                                                 2, 1)
+    bond_geometry = test_data_manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                        Float64,
+                                                                        2;
+                                                                        default_value = 1)
     test_data_manager.set_block_id_list([1, 2])
     test_data_manager.init_properties()
     test_data_manager.set_properties(1,

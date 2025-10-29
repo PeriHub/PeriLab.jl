@@ -253,11 +253,11 @@ end
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(nnodes)
     test_data_manager.set_num_responder(num_responder)
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
     nn[1] = 1
     nn[2] = 2
     nn[3] = 3
-    nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist = test_data_manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
     nlist[1] = [2]
     nlist[2] = [1, 3]
     nlist[3] = [1, 2]
@@ -347,9 +347,12 @@ end
     test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(nnodes)
-    update_list = test_data_manager.create_constant_node_field("Update", Bool, 1, true)
-    active = test_data_manager.create_constant_node_field("Active", Bool, 1, true)
-    update_nodes = test_data_manager.create_constant_node_field("Update Nodes", Int64, 1)
+    update_list = test_data_manager.create_constant_node_scalar_field("Update", Bool;
+                                                                      default_value = true)
+    active = test_data_manager.create_constant_node_scalar_field("Active", Bool;
+                                                                 default_value = true)
+    update_nodes = test_data_manager.create_constant_node_scalar_field("Update Nodes",
+                                                                       Int64)
     block_nodes = Dict(1 => [1, 2], 2 => [3, 4])
     block = 1
     @test PeriLab.Solver_Manager.Helpers.get_active_update_nodes(active,
@@ -448,7 +451,7 @@ end
 end
 
 @testset "ut_is_dependent" begin
-    (fieldN, fieldNP1) = test_data_manager.create_node_field("Parameter", Float64, 1)
+    (fieldN, fieldNP1) = test_data_manager.create_node_scalar_field("Parameter", Float64)
     params = Dict("Value" => Dict("Field" => "Parameter"))
     @test PeriLab.Solver_Manager.Helpers.is_dependent("Value", params) ==
           (true, fieldNP1)

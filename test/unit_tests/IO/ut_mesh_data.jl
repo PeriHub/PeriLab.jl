@@ -544,15 +544,15 @@ end
     test_data_manager.set_num_controller(3)
     test_data_manager.set_num_responder(0)
     test_data_manager.set_dof(2)
-    length_nlist = test_data_manager.create_constant_node_field("Number of Neighbors",
-                                                                Int64, 1)
+    length_nlist = test_data_manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                       Int64)
     length_nlist .= [2, 2, 2]
-    nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist = test_data_manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
 
     nlist[1] = [2, 3]
     nlist[2] = [1, 3]
     nlist[3] = [1, 2]
-    coor = test_data_manager.create_constant_node_field("Coordinates", Float64, 2)
+    coor = test_data_manager.create_constant_node_vector_field("Coordinates", Float64, 2)
     coor[1, 1] = 0
     coor[1, 2] = 0
     coor[2, 1] = 1
@@ -563,10 +563,11 @@ end
     nnodes = test_data_manager.get_nnodes()
     nlist = test_data_manager.get_nlist()
     coor = test_data_manager.get_field("Coordinates")
-    undeformed_bond = test_data_manager.create_constant_bond_field("Bond Geometry", Float64,
-                                                                   dof)
-    undeformed_bond_length = test_data_manager.create_constant_bond_field("Bond Length",
-                                                                          Float64, 1)
+    undeformed_bond = test_data_manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                          Float64,
+                                                                          dof)
+    undeformed_bond_length = test_data_manager.create_constant_bond_scalar_state("Bond Length",
+                                                                                 Float64)
     PeriLab.Geometry.bond_geometry!(undeformed_bond,
                                     undeformed_bond_length,
                                     Vector(1:nnodes),

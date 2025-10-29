@@ -72,13 +72,13 @@ function init_model(nodes::AbstractVector{Int64},
         return nothing
     end
 
-    Data_Manager.create_node_field("von Mises Yield Stress", Float64, 1)
-    Data_Manager.create_node_field("Plastic Strain", Float64, 1)
+    Data_Manager.create_node_scalar_field("von Mises Yield Stress", Float64)
+    Data_Manager.create_node_scalar_field("Plastic Strain", Float64)
 
     if haskey(material_parameter, "Bond Associated") &&
        material_parameter["Bond Associated"]
-        Data_Manager.create_bond_field("von Mises Bond Yield Stress", Float64, 1)
-        Data_Manager.create_bond_field("Plastic Bond Strain", Float64, 1)
+        Data_Manager.create_bond_scalar_state("von Mises Bond Yield Stress", Float64)
+        Data_Manager.create_bond_scalar_state("Plastic Bond Strain", Float64)
     end
     dof = Data_Manager.get_dof()
     deviatoric_stress_N = zeros(dof, dof)

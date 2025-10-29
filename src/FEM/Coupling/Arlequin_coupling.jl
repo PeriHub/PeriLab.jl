@@ -52,9 +52,9 @@ function init_coupling_model(nodes, fe_params::Dict{String,Any})
     lumped_mass = Data_Manager.get_field("Lumped Mass Matrix")
 
     # TODO memory efficiency; create a mapping field and allocate only the memory of length coupling nodes
-    coupling_matrix = Data_Manager.create_constant_node_field("Coupling Matrix",
-                                                              Float64, (prod(p .+ 1) + 1),
-                                                              VectorOrMatrix = "Matrix")
+    coupling_matrix = Data_Manager.create_constant_node_tensor_field("Coupling Matrix",
+                                                                     Float64,
+                                                                     (prod(p .+ 1) + 1))
 
     if any(x -> x > 1, p)
         @error "Coupling is supported only for linear elements yet."

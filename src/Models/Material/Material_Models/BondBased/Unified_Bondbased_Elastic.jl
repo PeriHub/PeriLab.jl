@@ -54,10 +54,10 @@ function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     dof = Data_Manager.get_dof()
     nlist = Data_Manager.get_nlist()
-    constant = Data_Manager.create_constant_bond_field("Unified Bond Based Constant",
-                                                       Float64, 2)
-    bb_strain = Data_Manager.create_constant_node_field("Bond Based Strain", Float64,
-                                                        dof, VectorOrMatrix = "Matrix")
+    constant = Data_Manager.create_constant_bond_vector_state("Unified Bond Based Constant",
+                                                              Float64, 2)
+    bb_strain = Data_Manager.create_constant_node_tensor_field("Bond Based Strain", Float64,
+                                                               dof)
 
     bond_length = Data_Manager.get_field("Bond Length")
     horizon = Data_Manager.get_field("Horizon")

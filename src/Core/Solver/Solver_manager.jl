@@ -64,15 +64,16 @@ function init(params::Dict,
                                             Data_Manager.get_mpi_active())
     Data_Manager.set_block_name_list(block_name_list)
     Data_Manager.set_block_id_list(block_id_list)
-    density = Data_Manager.create_constant_node_field("Density", Float64, 1)
-    horizon = Data_Manager.create_constant_node_field("Horizon", Float64, 1)
+    density = Data_Manager.create_constant_node_scalar_field("Density", Float64)
+    horizon = Data_Manager.create_constant_node_scalar_field("Horizon", Float64)
     if Data_Manager.fem_active()
-        fem_block = Data_Manager.create_constant_node_field("FEM Block", Bool, 1, false)
+        fem_block = Data_Manager.create_constant_node_scalar_field("FEM Block", Bool;
+                                                                   default_value = false)
         fem_block = set_fem_block(params, block_nodes_with_neighbors, fem_block) # includes the neighbors
     end
-    active_nodes = Data_Manager.create_constant_node_field("Active Nodes", Int64, 1)
-    update_nodes = Data_Manager.create_constant_node_field("Update Nodes", Int64, 1)
-    Data_Manager.create_constant_node_field("Update", Bool, 1, true)
+    active_nodes = Data_Manager.create_constant_node_scalar_field("Active Nodes", Int64)
+    update_nodes = Data_Manager.create_constant_node_scalar_field("Update Nodes", Int64)
+    Data_Manager.create_constant_node_scalar_field("Update", Bool; default_value = true)
     density = set_density(params, block_nodes_with_neighbors, density) # includes the neighbors
     horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
     set_angles(params, block_nodes_with_neighbors) # includes the Neighbors
@@ -95,12 +96,13 @@ function init(params::Dict,
         end
         solver_options["All Models"] = unique(solver_options["All Models"])
     end
-    Data_Manager.create_constant_bond_field("Influence Function", Float64, 1, 1)
+    Data_Manager.create_constant_bond_scalar_state("Influence Function", Float64;
+                                                   default_value = 1)
     for iblock in eachindex(block_nodes)
         Influence_Function.init_influence_function(block_nodes[iblock],
                                                    params["Discretization"])
     end
-    Data_Manager.create_bond_field("Bond Damage", Float64, 1, 1)
+    Data_Manager.create_bond_scalar_state("Bond Damage", Float64; default_value = 1)
     @debug "Read properties"
     read_properties(params, "Material" in solver_options["All Models"])
     @debug "Init models"
@@ -135,7 +137,8 @@ function init(params::Dict,
                                    params)
     end
     if !Data_Manager.has_key("Active")
-        active = Data_Manager.create_constant_node_field("Active", Bool, 1, true)
+        active = Data_Manager.create_constant_node_scalar_field("Active", Bool;
+                                                                default_value = true)
     end
     #TODO: sync active with Data_Manager
 
@@ -196,7 +199,7 @@ function set_angles(params::Dict, block_nodes::Dict)
             @warn "Angles defined in mesh will be overwritten by block angles"
         end
         Data_Manager.set_rotation(true)
-        angles = Data_Manager.create_constant_node_field("Angles", Float64, dof)
+        angles = Data_Manager.create_constant_node_vector_field("Angles", Float64, dof)
 
         for block in eachindex(block_nodes)
             angles_global = get_angles(params, block, dof)

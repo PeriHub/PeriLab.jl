@@ -92,7 +92,7 @@ if ncores == 3
     test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_comm(comm)
-    test_data_manager.create_constant_node_field("Block_Id", Int64, 1)
+    test_data_manager.create_constant_node_scalar_field("Block_Id", Int64)
 
     if rank == 0
         test_data_manager.set_num_controller(1)
@@ -115,11 +115,11 @@ if ncores == 3
     test_data_manager.set_block_name_list(["block_1", "block_2"])
     test_data_manager.set_block_id_list([1, 2])
     test_data_manager.set_dof(dof)
-    A = test_data_manager.create_constant_node_field("A", Float64, 1)
-    B = test_data_manager.create_constant_node_field("B", Float64, 4)
-    C = test_data_manager.create_constant_node_field("C", Int64, 1)
-    D = test_data_manager.create_constant_node_field("D", Int64, 5)
-    E = test_data_manager.create_constant_node_field("E", Bool, 1)
+    A = test_data_manager.create_constant_node_scalar_field("A", Float64)
+    B = test_data_manager.create_constant_node_vector_field("B", Float64, 4)
+    C = test_data_manager.create_constant_node_scalar_field("C", Int64)
+    D = test_data_manager.create_constant_node_vector_field("D", Int64, 5)
+    E = test_data_manager.create_constant_node_scalar_field("E", Bool)
     if rank == 0
         A[1] = 1.4
         A[2] = 3
@@ -345,20 +345,25 @@ if ncores == 3
                    @__FILE__,
                    @__LINE__)
     end
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
     nn .= 2
-    h = test_data_manager.create_constant_node_field("Horizon", Float64, 1)
+    h = test_data_manager.create_constant_node_scalar_field("Horizon", Float64)
     nodes = test_data_manager.get_nnodes()
     h .= 5.0
-    bf = test_data_manager.create_constant_bond_field("Bond Forces", Float64, dof)
+    bf = test_data_manager.create_constant_bond_vector_state("Bond Forces", Float64, dof)
 
-    bdN, bdNP1 = test_data_manager.create_bond_field("Bond Damage", Float64, 1, 1)
+    bdN,
+    bdNP1 = test_data_manager.create_bond_scalar_state("Bond Damage", Float64;
+                                                       default_value = 1)
     dbN,
-    dbNP1 = test_data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof,
-                                                1)
-    dbdN, dbdNP1 = test_data_manager.create_bond_field("Deformed Bond Length", Float64, 1)
-    bg = test_data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
-    bd = test_data_manager.create_constant_bond_field("Bond Length", Float64, 1, 1)
+    dbNP1 = test_data_manager.create_bond_vector_state("Deformed Bond Geometry", Float64,
+                                                       dof
+                                                       ; default_value = 1)
+    dbdN,
+    dbdNP1 = test_data_manager.create_bond_scalar_state("Deformed Bond Length", Float64)
+    bg = test_data_manager.create_constant_bond_vector_state("Bond Geometry", Float64, dof)
+    bd = test_data_manager.create_constant_bond_scalar_state("Bond Length", Float64;
+                                                             default_value = 1)
     for iID in 1:nodes
         for jID in 1:nn[iID]
             dbdNP1[iID][jID] = 1 + (-1)^iID * 0.1

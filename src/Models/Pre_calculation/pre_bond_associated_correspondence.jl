@@ -50,15 +50,13 @@ function init_model(nodes::AbstractVector{Int64},
                     parameter::Union{Dict,OrderedDict},
                     block::Int64)
     dof = Data_Manager.get_dof()
-    Data_Manager.create_constant_bond_field("Bond Associated Deformation Gradient",
-                                            Float64, dof,
-                                            VectorOrMatrix = "Matrix")
-    Data_Manager.create_constant_node_field("Deformation Gradient", Float64, dof,
-                                            VectorOrMatrix = "Matrix")
-    Data_Manager.create_constant_bond_field("Lagrangian Gradient Weights", Float64, dof)
-    Data_Manager.create_constant_node_field("Weighted Deformation Gradient",
-                                            Float64, dof,
-                                            VectorOrMatrix = "Matrix")
+    Data_Manager.create_constant_bond_tensor_state("Bond Associated Deformation Gradient",
+                                                   Float64, dof)
+    Data_Manager.create_constant_node_tensor_field("Deformation Gradient", Float64, dof)
+    Data_Manager.create_constant_bond_vector_state("Lagrangian Gradient Weights", Float64,
+                                                   dof)
+    Data_Manager.create_constant_node_tensor_field("Weighted Deformation Gradient",
+                                                   Float64, dof)
 
     #https://arxiv.org/pdf/2004.11477
     # maybe as static array
@@ -68,7 +66,8 @@ function init_model(nodes::AbstractVector{Int64},
     if "Q Vector" in Data_Manager.get_all_field_keys()
         return
     end
-    Data_Manager.create_constant_free_size_field("Q Vector", Float64, (dim,), 1)
+    Data_Manager.create_constant_free_size_field("Q Vector", Float64, (dim,);
+                                                 default_value = 1)
     Data_Manager.create_constant_free_size_field("Minv Matrix", Float64, (dim, dim))
     Data_Manager.create_constant_free_size_field("M temporary Matrix", Float64, (dim, dim))
 end

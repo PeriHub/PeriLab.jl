@@ -54,10 +54,10 @@ function init_model(nodes::AbstractVector{Int64},
     else
         damage_parameter["Important value"] = 0
     end
-    my_constant_node_field = Data_Manager.create_constant_node_field("my constant node field", Float64, 10)
-    my_node_field_N, my_node_field_NP1 = Data_Manager.create_node_field("my node field", Float64, 2, VectorOrMatrix="Matrix")
-    my_constant_bond_field = Data_Manager.create_constant_bond_field("my constant bond field", Float64, 10)
-    my_bobd_field_N,  my_bobd_field_NP1 = Data_Manager.create_bond_field("my bond field", Float64, 10)
+    my_constant_node_field = Data_Manager.create_constant_node_vector_field("my constant node field", Float64, 10)
+    my_node_field_N, my_node_field_NP1 = Data_Manager.create_node_tensor_field("my node field", Float64, 2)
+    my_constant_bond_field = Data_Manager.create_constant_bond_vector_state("my constant bond field", Float64, 10)
+    my_bobd_field_N,  my_bobd_field_NP1 = Data_Manager.create_bond_vector_state("my bond field", Float64, 10)
 
    field = Data_Manager.create_constant_free_size_field(Fieldname::String, Type_of_variable::Type, size::NTuple)
     fieldN, fieldNP1 = Data_Manager.create_free_size_field(Fieldname::String, Type_of_variable::Type, size::NTuple)

@@ -253,12 +253,12 @@ test_data_manager = PeriLab.Data_Manager
 @testset "ut_get_outputs" begin
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(5)
-    test_data_manager.create_constant_node_field("A", Float64, 1)
-    test_data_manager.create_node_field("B", Bool, 1)
-    test_data_manager.create_constant_node_field("C", Float64, 4)
-    test_data_manager.create_node_field("D", Int64, 7)
-    test_data_manager.create_node_field("F", Float64, 1)
-    test_data_manager.create_constant_node_field("E", Float64, 4)
+    test_data_manager.create_constant_node_scalar_field("A", Float64)
+    test_data_manager.create_node_scalar_field("B", Bool)
+    test_data_manager.create_constant_node_vector_field("C", Float64, 4)
+    test_data_manager.create_node_vector_field("D", Int64, 7)
+    test_data_manager.create_node_scalar_field("F", Float64)
+    test_data_manager.create_constant_node_vector_field("E", Float64, 4)
     testfield_keys = test_data_manager.get_all_field_keys()
 
     params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [],

@@ -35,9 +35,9 @@ end
                                                                                         Any}("File" => file,
                                                                                              "Predefined Field Names" => "test_field_2 test_field_3")))
 
-    test_1 = test_data_manager.create_constant_node_field("test_field_2", Float64, 1)
+    test_1 = test_data_manager.create_constant_node_scalar_field("test_field_2", Float64)
     test_1[1] = 7.3
-    test_2 = test_data_manager.create_constant_node_field("test_field_3", Float64, 1)
+    test_2 = test_data_manager.create_constant_node_scalar_field("test_field_3", Float64)
     test_2 .= 3
     mat_dict = Dict{String,Any}("File" => file,
                                 "HETVAL name" => "test_sub",

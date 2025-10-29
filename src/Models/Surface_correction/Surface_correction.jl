@@ -69,11 +69,10 @@ end
 
 function init_volumen_correction(local_synch, synchronise_field)
     horizon = Data_Manager.get_field("Horizon")
-    vol = Data_Manager.create_constant_node_field("Reference Volume", Float64, 1)
-    volume_correction = Data_Manager.create_constant_bond_field("Volume Correction",
-                                                                Float64,
-                                                                1)
-    domain_volume = Data_Manager.create_constant_node_field("Domain Volume", Float64, 1)
+    vol = Data_Manager.create_constant_node_scalar_field("Reference Volume", Float64)
+    volume_correction = Data_Manager.create_constant_bond_scalar_state("Volume Correction",
+                                                                       Float64)
+    domain_volume = Data_Manager.create_constant_node_scalar_field("Domain Volume", Float64)
     nnodes = Data_Manager.get_nnodes()
     dof = Data_Manager.get_dof()
     for iID in 1:nnodes

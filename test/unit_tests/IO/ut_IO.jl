@@ -22,12 +22,12 @@ test_data_manager.set_comm(comm)
 test_data_manager.set_dof(dof)
 test_data_manager.set_max_rank(1)
 test_data_manager.set_distribution([1, 2, 3, 4, 5])
-test_data_manager.create_constant_node_field("Coordinates", Float64, 2)
+test_data_manager.create_constant_node_vector_field("Coordinates", Float64, 2)
 coordinates = test_data_manager.get_field("Coordinates")
-test_data_manager.create_constant_node_field("Block_Id", Int64, 1)
+test_data_manager.create_constant_node_scalar_field("Block_Id", Int64)
 block_Id = test_data_manager.get_field("Block_Id")
-test_data_manager.create_node_field("Displacements", Float64, 2)
-test_data_manager.create_node_field("Forces", Float64, 6)
+test_data_manager.create_node_vector_field("Displacements", Float64, 2)
+test_data_manager.create_node_vector_field("Forces", Float64, 6)
 
 block_list = ["block_1", "block_2"]
 test_data_manager.set_block_name_list(block_list)
@@ -191,7 +191,8 @@ end
 # end
 
 @testset "ut_init_orientations" begin
-    angles = test_data_manager.create_constant_node_field("Angles", Float64, 1, 90)
+    angles = test_data_manager.create_constant_node_scalar_field("Angles", Float64;
+                                                                 default_value = 90)
     test_data_manager.set_rotation(true)
     PeriLab.IO.init_orientations()
     orientations = test_data_manager.get_field("Orientations")
@@ -228,7 +229,8 @@ end
     # coordinates[5, 1] = 2
     # coordinates[5, 2] = 2
     # coordinates[5, 3] = 0
-    angles = test_data_manager.create_constant_node_field("Angles", Float64, 3, 90)
+    angles = test_data_manager.create_constant_node_vector_field("Angles", Float64, 3;
+                                                                 default_value = 90)
     test_data_manager.set_rotation(true)
     PeriLab.IO.init_orientations()
     orientations = test_data_manager.get_field("Orientations")
@@ -256,7 +258,7 @@ end
     test_data_manager.set_dof(dof)
     test_data_manager.set_max_rank(1)
     test_data_manager.set_distribution([1, 2, 3, 4, 5])
-    test_data_manager.create_constant_node_field("Block_Id", Int64, 1)
+    test_data_manager.create_constant_node_scalar_field("Block_Id", Int64)
     block_Id = test_data_manager.get_field("Block_Id")
     block_Id .+= 1
     block_Id[end] = 2

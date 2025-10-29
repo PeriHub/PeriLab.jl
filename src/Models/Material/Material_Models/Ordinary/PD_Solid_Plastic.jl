@@ -54,7 +54,7 @@ function init_model(nodes::AbstractVector{Int64},
         return nothing
     end
     yield_stress = material_parameter["Yield Stress"]
-    yield = Data_Manager.create_constant_node_field("Yield Value", Float64, 1)
+    yield = Data_Manager.create_constant_node_scalar_field("Yield Value", Float64)
 
     if get_symmetry(material_parameter) == "3D"
         yield[nodes] .= 25 * yield_stress * yield_stress ./ (8 * pi .* horizon[nodes] .^ 5)
@@ -63,12 +63,12 @@ function init_model(nodes::AbstractVector{Int64},
         yield[nodes] .= 225 * yield_stress * yield_stress ./
                         (24 * thickness * pi .* horizon[nodes] .^ 4)
     end
-    Data_Manager.create_constant_bond_field("Deviatoric Plastic Extension State", Float64,
-                                            1)
-    Data_Manager.create_node_field("Lambda Plastic", Float64, 1)
-    Data_Manager.create_constant_node_field("TD Norm", Float64, 1)
-    Data_Manager.create_constant_bond_field("Bond Forces Deviatoric", Float64, 1)
-    Data_Manager.create_constant_bond_field("Bond Forces Isotropic", Float64, 1)
+    Data_Manager.create_constant_bond_scalar_state("Deviatoric Plastic Extension State",
+                                                   Float64)
+    Data_Manager.create_node_scalar_field("Lambda Plastic", Float64)
+    Data_Manager.create_constant_node_scalar_field("TD Norm", Float64)
+    Data_Manager.create_constant_bond_scalar_state("Bond Forces Deviatoric", Float64)
+    Data_Manager.create_constant_bond_scalar_state("Bond Forces Isotropic", Float64)
 end
 
 """

@@ -12,25 +12,22 @@ using Test
     test_data_manager.set_num_controller(2)
     test_data_manager.set_dof(2)
 
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
     nn[1] = 1
     nn[2] = 1
     nodes = [1, 2]
 
-    nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist = test_data_manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
     nlist[1] = [2]
     nlist[2] = [1]
 
-    deformation_gradient = test_data_manager.create_constant_bond_field("Deformation Gradient",
-                                                                        Float64,
-                                                                        2,
-                                                                        VectorOrMatrix = "Matrix")
+    deformation_gradient = test_data_manager.create_constant_bond_tensor_state("Deformation Gradient",
+                                                                               Float64,
+                                                                               2)
     strain,
-    strainN = test_data_manager.create_bond_field("Strain", Float64, 2,
-                                                  VectorOrMatrix = "Matrix")
-    strain_inc = test_data_manager.create_constant_bond_field("Strain Increment",
-                                                              Float64, 2,
-                                                              VectorOrMatrix = "Matrix")
+    strainN = test_data_manager.create_bond_tensor_state("Strain", Float64, 2)
+    strain_inc = test_data_manager.create_constant_bond_tensor_state("Strain Increment",
+                                                                     Float64, 2)
     deformation_gradient[1][1, :, :] = [1 0; 0 1]
     deformation_gradient[2][1, :, :] = [0 1; 0 1]
 
@@ -82,15 +79,15 @@ end
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(2)
     test_data_manager.set_dof(3)
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
     nn[:] .= 1
-    nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist = test_data_manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
     nlist[1] = [2]
     nlist[2] = [1]
     nodes = Vector{Int64}(1:2)
-    test_data_manager.create_constant_node_field("Volume", Float64, 1)
-    test_data_manager.create_constant_bond_field("Influence Function", Float64, 1)
-    test_data_manager.create_bond_field("Bond Damage", Float64, 1)
+    test_data_manager.create_constant_node_scalar_field("Volume", Float64)
+    test_data_manager.create_constant_bond_scalar_state("Influence Function", Float64)
+    test_data_manager.create_bond_scalar_state("Bond Damage", Float64)
 
     @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.init_model(nodes,
                                                                                                                            Dict()))
@@ -113,49 +110,51 @@ end
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(2)
     test_data_manager.set_dof(dof)
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
     nn[:] .= 1
-    nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist = test_data_manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
     nlist[1][:] = [2]
     nlist[2][:] = [1]
     nodes = Vector{Int64}(1:2)
-    omega = test_data_manager.create_constant_bond_field("Influence Function", Float64, 1)
+    omega = test_data_manager.create_constant_bond_scalar_state("Influence Function",
+                                                                Float64)
 
     omega[1][:] = [1.0]
     omega[2][:] = [2.0]
-    bond_damage = test_data_manager.create_constant_bond_field("Bond Damage", Float64, 1)
+    bond_damage = test_data_manager.create_constant_bond_scalar_state("Bond Damage",
+                                                                      Float64)
     bond_damage[1][:] = [1.0]
     bond_damage[2][:] = [1.0]
-    volume = test_data_manager.create_constant_node_field("Volume", Float64, 1)
+    volume = test_data_manager.create_constant_node_scalar_field("Volume", Float64)
     volume .= 1
-    weighted_volume = test_data_manager.create_constant_node_field("Weighted Volume",
-                                                                   Float64, 1)
+    weighted_volume = test_data_manager.create_constant_node_scalar_field("Weighted Volume",
+                                                                          Float64)
     weighted_volume .= 1
 
-    bond_geometry = test_data_manager.create_constant_bond_field("Bond Geometry", Float64,
-                                                                 dof)
+    bond_geometry = test_data_manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                        Float64,
+                                                                        dof)
     bond_geometry[1][1] = [1.0, 0.0]
     bond_geometry[2][1] = [-1.0, 0.0]
 
-    bond_length = test_data_manager.create_constant_bond_field("Bond Length", Float64, 1, 1)
+    bond_length = test_data_manager.create_constant_bond_scalar_state("Bond Length",
+                                                                      Float64;
+                                                                      default_value = 1)
 
-    deformation_gradient = test_data_manager.create_constant_bond_field("Bond Deformation Gradient",
-                                                                        Float64, dof,
-                                                                        VectorOrMatrix = "Matrix")
+    deformation_gradient = test_data_manager.create_constant_bond_tensor_state("Bond Deformation Gradient",
+                                                                               Float64, dof)
     deformation_gradient[1][1, :, :] = [1 0; 0 1]
     deformation_gradient[2][1, :, :] = [1 0; 0 1]
 
-    bond_stresses = test_data_manager.create_constant_bond_field("Bond Cauchy Stress",
-                                                                 Float64,
-                                                                 dof,
-                                                                 VectorOrMatrix = "Matrix")
+    bond_stresses = test_data_manager.create_constant_bond_tensor_state("Bond Cauchy Stress",
+                                                                        Float64,
+                                                                        dof)
     bond_stresses[1][1, :, :] = [1.0 0.0; 0.0 1.0]
     bond_stresses[2][1, :, :] = [1.0 0.0; 0.0 1.0]
 
-    stress_integral = test_data_manager.create_constant_node_field("Stress Integral",
-                                                                   Float64, dof,
-                                                                   VectorOrMatrix = "Matrix")
+    stress_integral = test_data_manager.create_constant_node_tensor_field("Stress Integral",
+                                                                          Float64, dof)
 
     stress_integral = PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.compute_stress_integral(nodes,
                                                                                                                                           dof,

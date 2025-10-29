@@ -68,7 +68,12 @@ function init_model(nodes::AbstractVector{Int64},
         num_state_vars = material_parameter["Number of State Variables"]
     end
     # State variables are used to transfer additional information to the next step
-    Data_Manager.create_constant_node_field("State Variables", Float64, num_state_vars)
+    if num_state_vars == 1
+        Data_Manager.create_constant_node_scalar_field("State Variables", Float64)
+    else
+        Data_Manager.create_constant_node_vector_field("State Variables", Float64,
+                                                       num_state_vars)
+    end
 
     if !haskey(material_parameter, "Number of Properties")
         @error "Number of Properties must be at least equal 1"
@@ -105,11 +110,11 @@ function init_model(nodes::AbstractVector{Int64},
     ndi = dof
     nshr = 2 * dof - 3
     ntens = ndi + nshr
-    Data_Manager.create_node_field("Internal energy", Float64, 1)
-    Data_Manager.create_node_field("Dissipated inelastic energy", Float64, 1)
-    Data_Manager.create_node_field("Stretch", Float64, ntens)
-    Data_Manager.create_node_field("defGrad", Float64, ndi + 2 * nshr)
-    Data_Manager.create_node_field("Temperature", Float64, 1)
+    Data_Manager.create_node_scalar_field("Internal energy", Float64)
+    Data_Manager.create_node_scalar_field("Dissipated inelastic energy", Float64)
+    Data_Manager.create_node_vector_field("Stretch", Float64, ntens)
+    Data_Manager.create_node_vector_field("defGrad", Float64, ndi + 2 * nshr)
+    Data_Manager.create_node_scalar_field("Temperature", Float64)
 end
 
 """

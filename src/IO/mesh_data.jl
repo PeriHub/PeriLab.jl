@@ -162,7 +162,8 @@ function create_and_distribute_bond_norm(comm::MPI.Comm,
                                          bond_norm::Vector{Any},
                                          dof::Int64)
     bond_norm = broadcast_value(comm, bond_norm)
-    bond_norm_field = Data_Manager.create_constant_bond_field("Bond Norm", Float64, dof, 1)
+    bond_norm_field = Data_Manager.create_constant_bond_vector_state("Bond Norm", Float64,
+                                                                     dof; default_value = 1)
     distribute_neighborhoodlist_to_cores(comm,
                                          nlist_filtered_ids,
                                          distribution,
@@ -297,11 +298,11 @@ function distribute_neighborhoodlist_to_cores(comm::MPI.Comm,
                                               filtered::Bool)
     send_msg = 0
     if filtered
-        length_nlist = Data_Manager.create_constant_node_field("Number of Filtered Neighbors",
-                                                               Int64, 1)
+        length_nlist = Data_Manager.create_constant_node_scalar_field("Number of Filtered Neighbors",
+                                                                      Int64)
     else
-        length_nlist = Data_Manager.create_constant_node_field("Number of Neighbors", Int64,
-                                                               1)
+        length_nlist = Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                      Int64)
     end
     rank = MPI.Comm_rank(comm)
     if rank == 0
@@ -310,10 +311,11 @@ function distribute_neighborhoodlist_to_cores(comm::MPI.Comm,
     length_nlist .= send_vector_from_root_to_core_i(comm, send_msg, length_nlist,
                                                     distribution)
     if filtered
-        nlist_core = Data_Manager.create_constant_bond_field("FilteredNeighborhoodlist",
-                                                             Int64, 1)
+        nlist_core = Data_Manager.create_constant_bond_scalar_state("FilteredNeighborhoodlist",
+                                                                    Int64)
     else
-        nlist_core = Data_Manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+        nlist_core = Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist",
+                                                                    Int64)
     end
 
     nlist_core .= nlist[distribution[rank + 1][:]]
@@ -349,9 +351,10 @@ function get_bond_geometry()
     nnodes = Data_Manager.get_nnodes()
     nlist = Data_Manager.get_nlist()
     coor = Data_Manager.get_field("Coordinates")
-    undeformed_bond = Data_Manager.create_constant_bond_field("Bond Geometry", Float64, dof)
-    undeformed_bond_length = Data_Manager.create_constant_bond_field("Bond Length", Float64,
-                                                                     1)
+    undeformed_bond = Data_Manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                     Float64, dof)
+    undeformed_bond_length = Data_Manager.create_constant_bond_scalar_state("Bond Length",
+                                                                            Float64)
     bond_geometry!(undeformed_bond,
                    undeformed_bond_length,
                    Vector{Int64}(1:nnodes),
@@ -398,9 +401,14 @@ function distribution_to_cores(comm::MPI.Comm,
     meshdata = broadcast_value(comm, meshdata)
     for fieldname in keys(meshdata)
         field_dof = length(meshdata[fieldname]["Mesh ID"])
-        datafield = Data_Manager.create_constant_node_field(fieldname,
-                                                            meshdata[fieldname]["Type"],
-                                                            field_dof)
+        if field_dof == 1
+            datafield = Data_Manager.create_constant_node_scalar_field(fieldname,
+                                                                       meshdata[fieldname]["Type"])
+        else
+            datafield = Data_Manager.create_constant_node_vector_field(fieldname,
+                                                                       meshdata[fieldname]["Type"],
+                                                                       field_dof)
+        end
         for (localDof, mesh_id) in enumerate(meshdata[fieldname]["Mesh ID"])
             if rank == 0
                 send_msg = meshdata[fieldname]["Type"].(mesh[!, mesh_id])

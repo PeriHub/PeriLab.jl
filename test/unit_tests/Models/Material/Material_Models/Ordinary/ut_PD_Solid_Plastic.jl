@@ -19,12 +19,12 @@ end
     test_data_manager.set_num_controller(nodes)
     dof = 3
     test_data_manager.set_dof(dof)
-    horizon = test_data_manager.create_constant_node_field("Horizon", Float64, 1)
+    horizon = test_data_manager.create_constant_node_scalar_field("Horizon", Float64)
 
     horizon[1] = 3
     horizon[2] = 2
 
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
 
     nn .= 1
     @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(Vector{Int64}(1:nodes),

@@ -98,7 +98,7 @@ You can call the user subroutine by defining path with a compiled Fotran library
 | Parameter | Type and Range | Description | Optional |
 |---|---|---|---|
 | File | String | Path and filename of the UMAT, e.g. "./src/Models/Material/UMATs/libusertest.so" | No |
-| Number of State Variables | Int $\geq$ 0 | Number of state variables; Defines the size of state variable field Data_Manager.create_constant_node_field("State Variables", Float64, num_state_vars)| yes |
+| Number of State Variables | Int $\geq$ 0 | Number of state variables; Defines the size of state variable field Data_Manager.create_constant_node_scalar_field("State Variables", Float64, num_state_vars)| yes |
 | Number of Properties | Int $\geq$ 1 | Properties of the material; Needed for the propterty field Data_Manager.create_constant_free_size_field("Properties", Float64, (num_props, 1))
  | No |
 | Property_$iID| Float | iID is 1...Number of Properties. It has to be in order and can be utilized in the UMAT. | No|

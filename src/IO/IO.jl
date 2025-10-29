@@ -271,7 +271,12 @@ function get_results_mapping(params::Dict, path::String)
                 field_type = Data_Manager.get_field_type(fieldname[1]*fieldname[2], false)
             end
 
-            if !(field_type in ["Node_Field", "Element_Field"])
+            if !(field_type in [
+                     "NodeScalarField",
+                     "NodeVectorField",
+                     "NodeTensorField",
+                     "Element_Field"
+                 ])
                 @error "Fieldtype $field_type of field $(fieldname[1]) is not supported."
             end
 
@@ -426,11 +431,11 @@ function init_orientations()
     end
     dof = Data_Manager.get_dof()
     nnodes = Data_Manager.get_nnodes()
-    orientations = Data_Manager.create_constant_node_field("Orientations", Float64, 3)
-    rotation_tensor_field = Data_Manager.create_constant_node_field("Rotation Tensor",
-                                                                    Float64,
-                                                                    dof,
-                                                                    VectorOrMatrix = "Matrix")
+    orientations = Data_Manager.create_constant_node_vector_field("Orientations", Float64,
+                                                                  3)
+    rotation_tensor_field = Data_Manager.create_constant_node_tensor_field("Rotation Tensor",
+                                                                           Float64,
+                                                                           dof)
     angles = Data_Manager.get_field("Angles")
 
     for iID in 1:nnodes

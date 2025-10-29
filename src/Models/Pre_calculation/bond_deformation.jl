@@ -45,8 +45,8 @@ function init_model(nodes::AbstractVector{Int64},
                     parameter::Union{Dict,OrderedDict},
                     block::Int64)
     dof = Data_Manager.get_dof()
-    Data_Manager.create_bond_field("Deformed Bond Geometry", Float64, dof)
-    Data_Manager.create_bond_field("Deformed Bond Length", Float64, 1)
+    Data_Manager.create_bond_vector_state("Deformed Bond Geometry", Float64, dof)
+    Data_Manager.create_bond_scalar_state("Deformed Bond Length", Float64)
     Data_Manager.set_model_module("Deformed Bond Geometry", Bond_Deformation)
 end
 

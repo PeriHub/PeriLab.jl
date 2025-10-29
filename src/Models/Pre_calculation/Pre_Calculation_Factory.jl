@@ -28,13 +28,13 @@ Initializes the fields.
 function init_fields()
     dof = Data_Manager.get_dof()
     deformed_coorN,
-    deformed_coorNP1 = Data_Manager.create_node_field("Deformed Coordinates",
-                                                      Float64, dof)
+    deformed_coorNP1 = Data_Manager.create_node_vector_field("Deformed Coordinates",
+                                                             Float64, dof)
     deformed_coorN = copy(Data_Manager.get_field("Coordinates"))
     deformed_coorNP1 = copy(Data_Manager.get_field("Coordinates"))
-    Data_Manager.create_bond_field("Deformed Bond Geometry", Float64, dof)
-    Data_Manager.create_bond_field("Deformed Bond Length", Float64, 1)
-    Data_Manager.create_node_field("Displacements", Float64, dof)
+    Data_Manager.create_bond_vector_state("Deformed Bond Geometry", Float64, dof)
+    Data_Manager.create_bond_scalar_state("Deformed Bond Length", Float64)
+    Data_Manager.create_node_vector_field("Displacements", Float64, dof)
 end
 
 """

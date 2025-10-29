@@ -103,7 +103,7 @@ Inits the simple additive model.
 function init_model(nodes::AbstractVector{Int64},
                     additive_parameter::Dict,
                     block::Int64)
-    add_flux = Data_Manager.create_constant_node_field("Additive Heat Flux", Float64, 1)
+    add_flux = Data_Manager.create_constant_node_scalar_field("Additive Heat Flux", Float64)
     heat_capacity = Data_Manager.get_field("Specific Heat Capacity")
     density = Data_Manager.get_field("Density")
 

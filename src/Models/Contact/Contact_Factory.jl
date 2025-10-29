@@ -51,7 +51,7 @@ function init_contact_model(params)
 
     global_contact_ids = identify_contact_block_nodes(contact_blocks,
                                                       only_surface)
-    contact_nodes = Data_Manager.create_constant_node_field("Contact Nodes", Int64, 1)
+    contact_nodes = Data_Manager.create_constant_node_scalar_field("Contact Nodes", Int64)
     block_list = Data_Manager.get_all_blocks()
 
     mapping = contact_block_ids(global_contact_ids, block_list, contact_blocks)

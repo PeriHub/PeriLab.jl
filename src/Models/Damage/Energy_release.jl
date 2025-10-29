@@ -82,6 +82,7 @@ function compute_model(nodes::AbstractVector{Int64},
                       damage_parameter["Critical Value"]
     critical_energy_value::Float64 = 0.0
     quad_horizons::Vector{Float64} = Data_Manager.get_field("Quad Horizon")
+    # quad_horizons::Data_Manager.NodeScalarField = Data_Manager.get_field("Quad Horizon")
     inverse_nlist::Vector{Dict{Int64,Int64}} = Data_Manager.get_inverse_nlist()
 
     dependend_value, dependent_field = is_dependent("Critical Value", damage_parameter)
@@ -202,8 +203,8 @@ function init_model(nodes::AbstractVector{Int64},
                     damage_parameter::Dict,
                     block::Int64)
     dof = Data_Manager.get_dof()
-    quad_horizons = Data_Manager.create_constant_node_field("Quad Horizon", Float64, 1)
-    Data_Manager.create_constant_bond_field("Bond Displacements", Float64, dof)
+    quad_horizons = Data_Manager.create_constant_node_scalar_field("Quad Horizon", Float64)
+    Data_Manager.create_constant_bond_vector_state("Bond Displacements", Float64, dof)
     horizon = Data_Manager.get_field("Horizon")
     thickness::Float64 = get(damage_parameter, "Thickness", 1)
     for iID in nodes
