@@ -11,8 +11,11 @@ It is simplified. Rigid body motion is not considered )omega_{ij} = 0 as well as
 """
 
 #
-import ....Material_Basis: get_symmetry, apply_pointwise_E
 using LoopVectorization
+
+using .....Data_Manager
+using ....Material_Basis: get_symmetry, apply_pointwise_E
+
 export init_model
 export fe_support
 export material_name
