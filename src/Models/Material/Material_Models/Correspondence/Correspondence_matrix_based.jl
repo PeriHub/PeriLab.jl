@@ -12,52 +12,21 @@ using SparseArrays
 using StaticArrays: @MMatrix
 export init_model
 export add_zero_energy_stiff!
+export compute_bond_force
+
 """
 Peridynamic Correspondence Stiffness Matrix Assembly with Voigt Notation
 
-This module implements corrected stiffness matrix assembly for peridynamics
-correspondence theory based on the LaTeX formulation. It provides efficient
-assembly of global stiffness matrices for implicit time integration and
-static equilibrium solutions.
-
-Key features:
-- Linearized operator computation (K_ijk)
-- Tensor contractions for elasticity
-- Sparse matrix assembly
-- 2D plane stress/strain support
-- Memory-efficient implementations
+Memory-optimized implementation using Dict-based sparse column accumulation.
+Reduces memory from O(dof × n_total) to O(dof × n_neighbors) per iteration.
 """
 
-"""
-Kronecker delta function
-Returns 1 if x == y, 0 otherwise
-"""
 kronecker_delta(x::Int64, y::Int64) = ==(x, y)
 
-"""
-Compute tensor contraction C : B for elasticity and strain tensors
-
-Performs the contraction: CB_{mnq} = C_{mnop} * B_{opq}
-This operation combines the 4th order elasticity tensor C with the
-3rd order strain-displacement tensor B.
-
-Arguments:
-- C: 4th order elasticity tensor (dof×dof×dof×dof)
-- B: 3rd order strain-displacement tensor (dof×dof×dof)
-
-Returns:
-- CB: Contracted tensor (dof×dof×dof)
-
-Mathematical background:
-This contraction is fundamental in correspondence theory, relating
-the material response (C) to the kinematic relationship (B).
-"""
-function contraction!(C::Array{Float64,4}, B::Array{Float64,3},
+function contraction!(C::Array{Float64,4}, B::Array{Float64,3}, dof::Int64,
                       CB::AbstractArray{Float64,3})
-    dof = size(C, 1)
     fill!(CB, 0.0)
 
-    # CB_{mnq} = C_{mnop} * B_{opq}
     @inbounds for q in 1:dof, p in 1:dof, o in 1:dof
         B_opq = B[o, p, q]
         for n in 1:dof, m in 1:dof
@@ -66,48 +35,28 @@ function contraction!(C::Array{Float64,4}, B::Array{Float64,3},
     end
 end
 
-"""
-Create 3rd order B-tensor for strain-displacement relationship
-
-The B-tensor relates displacement differences to strain components through:
-B[m,n,p] = (omega_ik * V_k / 2) * (δ_mp * B1[n] + δ_np * B2[m])
-
-Arguments:
-- D_inv: Inverse shape tensor matrix (dof×dof)
-- X_ik: Bond vector from node iID to node kID (dof×1)
-- V_k: Volume of node kID
-- omega_ik: Influence function value for bond iID-kID
-
-Returns:
-- B_tensor: 3rd order strain-displacement tensor (dof×dof×dof)
-
-Mathematical formulation:
-B1 = X_ik' * D_inv (row vector)
-B2 = D_inv' * X_ik (column vector)
-The tensor incorporates both volumetric and influence function weights.
-"""
 function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
-                          V_k::Float64, omega_ik::Float64, B_tensor::Array{Float64,3})
-    dof = length(X_ik)
+                          V_k::Float64, omega_ik::Float64, dof::Int64,
+                          B_tensor::Array{Float64,3})
     factor = omega_ik * V_k * 0.5
 
     @inbounds @fastmath if dof == 2
-        # Compute B1 and B2 inline
         B1_1 = D_inv[1, 1] * X_ik[1] + D_inv[2, 1] * X_ik[2]
         B1_2 = D_inv[1, 2] * X_ik[1] + D_inv[2, 2] * X_ik[2]
         B2_1 = D_inv[1, 1] * X_ik[1] + D_inv[1, 2] * X_ik[2]
         B2_2 = D_inv[2, 1] * X_ik[1] + D_inv[2, 2] * X_ik[2]
 
-        # Direct assignment with factor
         B_tensor[1, 1, 1] = factor * (B1_1 + B2_1)
+        B_tensor[1, 1, 2] = 0.0
         B_tensor[1, 2, 1] = factor * B1_2
         B_tensor[1, 2, 2] = factor * B2_1
+
         B_tensor[2, 1, 1] = factor * B2_2
         B_tensor[2, 1, 2] = factor * B1_1
+        B_tensor[2, 2, 1] = 0.0
         B_tensor[2, 2, 2] = factor * (B1_2 + B2_2)
 
     else  # dof == 3
-        # Compute B1 and B2 inline
         B1_1 = D_inv[1, 1] * X_ik[1] + D_inv[2, 1] * X_ik[2] + D_inv[3, 1] * X_ik[3]
         B1_2 = D_inv[1, 2] * X_ik[1] + D_inv[2, 2] * X_ik[2] + D_inv[3, 2] * X_ik[3]
         B1_3 = D_inv[1, 3] * X_ik[1] + D_inv[2, 3] * X_ik[2] + D_inv[3, 3] * X_ik[3]
@@ -115,56 +64,45 @@ function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
         B2_2 = D_inv[2, 1] * X_ik[1] + D_inv[2, 2] * X_ik[2] + D_inv[2, 3] * X_ik[3]
         B2_3 = D_inv[3, 1] * X_ik[1] + D_inv[3, 2] * X_ik[2] + D_inv[3, 3] * X_ik[3]
 
-        # Direct assignment with factor
         B_tensor[1, 1, 1] = factor * (B1_1 + B2_1)
+        B_tensor[1, 1, 2] = 0.0
+        B_tensor[1, 1, 3] = 0.0
         B_tensor[1, 2, 1] = factor * B1_2
-        B_tensor[1, 3, 1] = factor * B1_3
         B_tensor[1, 2, 2] = factor * B2_1
+        B_tensor[1, 2, 3] = 0.0
+        B_tensor[1, 3, 1] = factor * B1_3
+        B_tensor[1, 3, 2] = 0.0
         B_tensor[1, 3, 3] = factor * B2_1
 
         B_tensor[2, 1, 1] = factor * B2_2
         B_tensor[2, 1, 2] = factor * B1_1
+        B_tensor[2, 1, 3] = 0.0
+        B_tensor[2, 2, 1] = 0.0
         B_tensor[2, 2, 2] = factor * (B1_2 + B2_2)
+        B_tensor[2, 2, 3] = 0.0
+        B_tensor[2, 3, 1] = 0.0
         B_tensor[2, 3, 2] = factor * B1_3
         B_tensor[2, 3, 3] = factor * B2_2
 
         B_tensor[3, 1, 1] = factor * B2_3
-        B_tensor[3, 2, 2] = factor * B2_3
+        B_tensor[3, 1, 2] = 0.0
         B_tensor[3, 1, 3] = factor * B1_1
+        B_tensor[3, 2, 1] = 0.0
+        B_tensor[3, 2, 2] = factor * B2_3
         B_tensor[3, 2, 3] = factor * B1_2
+        B_tensor[3, 3, 1] = 0.0
+        B_tensor[3, 3, 2] = 0.0
         B_tensor[3, 3, 3] = factor * (B1_3 + B2_3)
     end
 
     return nothing
 end
 
-"""
-Compute linearized operator K_ijk for correspondence theory
-
-The linearized operator relates displacement at node kID to bond force along iID-jID:
-K_{ijk,mo} = ω_{ij} * V_k * ω_{ik} * Σ_{n,p} CB_{ik,mno} * (D_i^{-1})_{np} * X_{ij,p}
-
-Arguments:
-- CB_ik: Contracted elasticity-strain tensor for bond iID-kID
-- D_inv_i: Inverse shape tensor at node iID
-- X_ij: Bond vector from node iID to node jID
-- omega_ij: Influence function value for bond iID-jID
-- V_k: Volume of node kID
-- omega_ik: Influence function value for bond iID-kID
-
-Returns:
-- K_ijk: Linearized operator matrix (dof×dof)
-
-This operator is central to the linearized correspondence formulation,
-enabling efficient implicit solution methods.
-"""
 function compute_linearized_operator(CB_ik::AbstractArray{Float64,3},
                                      D_inv_i::Matrix{Float64},
                                      X_ij::Vector{Float64}, omega_ij::Float64,
                                      V_k::Float64, omega_ik::Float64, dof::Int64,
                                      K_ijk::AbstractMatrix{Float64})
-    dof = size(CB_ik, 1)
-
     if dof == 2
         DX_1 = D_inv_i[1, 1] * X_ij[1] + D_inv_i[1, 2] * X_ij[2]
         DX_2 = D_inv_i[2, 1] * X_ij[1] + D_inv_i[2, 2] * X_ij[2]
@@ -210,20 +148,214 @@ function compute_linearized_operator(CB_ik::AbstractArray{Float64,3},
     end
 end
 
-"""
-Adds Zero-Energy-Mode stabilization to the stiffness matrix (in-place).
+function precompute_CB_tensors!(CB_k::AbstractArray{Float64,4},
+                                C_tensor::Array{Float64,4},
+                                D_inv::Matrix{Float64},
+                                neighbors::Vector{Int64},
+                                volume::Vector{Float64},
+                                bond_geometry_i::Vector{Vector{Float64}},
+                                omega_i::Vector{Float64},
+                                dof::Int64,
+                                B_ik::Array{Float64,3})
+    @inbounds for (k_idx, k) in enumerate(neighbors)
+        V_k = volume[k]
+        omega_ik = omega_i[k_idx]
+        X_ik = bond_geometry_i[k_idx]
+        create_B_tensor!(D_inv, X_ik, V_k, omega_ik, dof, B_ik)
+        @views contraction!(C_tensor, B_ik, dof, CB_k[k_idx, :, :, :])
+    end
+    return nothing
+end
 
-# Arguments
-- `K::SparseMatrixCSC{Float64, Int64}`: Stiffness matrix (will be modified)
-- `nnodes::Int`: Number of nodes
-- `dof::Int`: Degrees of freedom per node
-- `C_voigt::Matrix{Float64}`: Elasticity tensor in Voigt notation (3×3 for 2D, 6×6 for 3D)
-- `inverse_shape_tensor::Vector{Matrix{Float64}}`: Inverse shape tensors D^(-1) for each node
-- `nlist::Vector{Vector{Int}}`: Neighborhood list [i] -> [j1, j2, ...]
-- `volume::Vector{Float64}`: Node volumes
-- `bond_geometry::Vector{Vector{Vector{Float64}}}`: Bond vectors X_ij for each node
-- `omega::Vector{Vector{Float64}}`: Influence functions ω for each bond
 """
+	create_sparse_matrix_mapping(nodes, nlist, dof)
+
+Create mapping structure for efficient sparse matrix assembly.
+"""
+function create_sparse_matrix_mapping(nodes::AbstractVector{Int64},
+                                      nlist::Vector{Vector{Int64}},
+                                      dof::Int64)
+    edge_pairs = Set{Tuple{Int64,Int64}}()
+
+    @inbounds for i in nodes
+        push!(edge_pairs, (i, i))
+
+        for j in nlist[i]
+            if i != j
+                push!(edge_pairs, (i, j))
+                push!(edge_pairs, (j, i))
+            end
+
+            for k in nlist[i]
+                if k != i && k != j
+                    push!(edge_pairs, (j, k))
+                    push!(edge_pairs, (k, j))
+                end
+            end
+        end
+    end
+
+    nnz = length(edge_pairs) * dof * dof
+
+    I = Vector{Int64}(undef, nnz)
+    J = Vector{Int64}(undef, nnz)
+    V = Vector{Float64}(undef, nnz)
+    fill!(V, 0.0)
+
+    coo_map = Dict{Tuple{Int64,Int64},Int64}()
+
+    idx = 1
+    for (i_node, j_node) in sort(collect(edge_pairs))
+        coo_map[(i_node, j_node)] = idx
+
+        @inbounds for n in 1:dof
+            for m in 1:dof
+                I[idx] = (i_node - 1) * dof + m
+                J[idx] = (j_node - 1) * dof + n
+                idx += 1
+            end
+        end
+    end
+
+    return coo_map, I, J, V
+end
+
+"""
+	add_block_mapped!(V, coo_map, block, i_node, j_node, dof)
+
+Add dof×dof block to sparse matrix values using mapping structure.
+"""
+@inline function add_block_mapped!(V::Vector{Float64},
+                                   coo_map::Dict{Tuple{Int64,Int64},Int64},
+                                   block::AbstractMatrix{Float64},
+                                   i_node::Int64,
+                                   j_node::Int64,
+                                   dof::Int64)
+    start_idx = get(coo_map, (i_node, j_node), 0)
+    if start_idx == 0
+        return
+    end
+
+    idx = start_idx
+    @inbounds for n in 1:dof
+        for m in 1:dof
+            V[idx] += block[m, n]
+            idx += 1
+        end
+    end
+end
+
+"""
+	init_assemble_stiffness_optimized(...)
+
+Memory-optimized assembly using Dict for sparse column accumulation.
+
+Key insight: Instead of K_ij_j = zeros(dof, n_total), use
+K_ij_j = Dict{Int, Matrix{Float64}} to store only non-zero columns.
+
+Memory reduction: O(dof × n_total) → O(dof² × n_neighbors)
+"""
+function init_assemble_stiffness_optimized(nodes::AbstractVector{Int64},
+                                           dof::Int64,
+                                           C_Voigt::Array{Float64,3},
+                                           inverse_shape_tensor::Array{Float64,3},
+                                           number_of_neighbors::Vector{Int64},
+                                           nlist::Vector{Vector{Int64}},
+                                           volume::Vector{Float64},
+                                           bond_geometry::Vector{Vector{Vector{Float64}}},
+                                           omega::Vector{Vector{Float64}})
+    n_total = nodes[end] * dof
+
+    @info "Building sparse matrix structure..."
+    coo_map, I, J, V = create_sparse_matrix_mapping(nodes, nlist, dof)
+
+    # Dict: column_node → dof×dof block
+    K_ij_j = Dict{Int64,Matrix{Float64}}()
+    K_ij_i = Dict{Int64,Matrix{Float64}}()
+
+    if dof == 2
+        K_block = @MMatrix zeros(2, 2)
+        B_ik = zeros(2, 2, 2)
+    else
+        K_block = @MMatrix zeros(3, 3)
+        B_ik = zeros(3, 3, 3)
+    end
+
+    max_neighbors = maximum(number_of_neighbors)
+    CB_k_buffer = zeros(max_neighbors, dof, dof, dof)
+
+    @info "Assembling stiffness contributions..."
+    iter = progress_bar(0, length(nodes)-1, false)
+
+    @inbounds for iter_dx in iter
+        i = nodes[iter_dx]
+        D_inv = inverse_shape_tensor[i, :, :]
+        @views C_tensor = get_fourth_order(C_Voigt[i, :, :], dof)
+        V_i = volume[i]
+        ni = nlist[i]
+        n_neighbors = length(ni)
+
+        CB_k = @view CB_k_buffer[1:n_neighbors, :, :, :]
+
+        precompute_CB_tensors!(CB_k, C_tensor, D_inv, ni, volume,
+                               bond_geometry[i], omega[i], dof, B_ik)
+
+        for (j_idx, j) in enumerate(ni)
+            omega_ij = omega[i][j_idx]
+            V_j = volume[j]
+            X_ij = bond_geometry[i][j_idx]
+
+            # Clear dictionaries for new (i,j) pair
+            empty!(K_ij_j)
+            empty!(K_ij_i)
+
+            # Accumulate contributions from all k neighbors
+            for (k_idx, k) in enumerate(ni)
+                omega_ik = omega[i][k_idx]
+                V_k = volume[k]
+
+                @views compute_linearized_operator(CB_k[k_idx, :, :, :],
+                                                   D_inv, X_ij,
+                                                   omega_ij, V_k, omega_ik,
+                                                   dof, K_block)
+
+                # Initialize blocks if needed
+                if !haskey(K_ij_j, i)
+                    K_ij_j[i] = zeros(dof, dof)
+                    K_ij_i[i] = zeros(dof, dof)
+                end
+                if !haskey(K_ij_j, k)
+                    K_ij_j[k] = zeros(dof, dof)
+                    K_ij_i[k] = zeros(dof, dof)
+                end
+
+                # Accumulate: subtract from column i, add to column k
+                # This matches the original logic:
+                # K_ij_j[m, i_offset+o] -= val
+                # K_ij_j[m, k_offset+o] += val
+                K_ij_j[i] .-= K_block
+                K_ij_i[i] .-= K_block
+                K_ij_j[k] .+= K_block
+                K_ij_i[k] .+= K_block
+            end
+
+            # Write accumulated blocks to sparse matrix
+            # Row j gets entries from K_ij_j (scaled by -V_i)
+            for (col_node, block) in K_ij_j
+                scaled_ji = -V_i .* block
+                add_block_mapped!(V, coo_map, scaled_ji, j, col_node, dof)
+            end
+
+            # Row i gets entries from K_ij_i (scaled by V_j)
+            for (col_node, block) in K_ij_i
+                scaled_ij = V_j .* block
+                add_block_mapped!(V, coo_map, scaled_ij, i, col_node, dof)
+            end
+        end
+    end
+
+    return I, J, V, n_total
+end
 
 function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
                                 nodes::AbstractVector{Int64},
@@ -237,13 +369,10 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
                                 omega::Vector{Vector{Float64}})
     ndof_total = nodes[end] * dof
 
-    # COO format
     I_indices = Int[]
     J_indices = Int[]
     values = Float64[]
 
-    # Pre-compute scalar product matrix S for each node
-    # S[i][p,q] = X_ip^T * D_inv_i * X_iq
     S_matrices = Vector{Matrix{Float64}}(undef, nodes[end])
     D_inv_X = Vector{Vector{Vector{Float64}}}(undef, nodes[end])
 
@@ -253,10 +382,8 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
 
         @views D_inv_i = inverse_shape_tensor[i, :, :]
 
-        # Pre-compute D_inv * X for all bonds
         D_inv_X[i] = [D_inv_i * bond_geometry[i][idx] for idx in 1:n_neighbors]
 
-        # Compute S matrix
         S_matrices[i] = zeros(n_neighbors, n_neighbors)
         for p in 1:n_neighbors
             if bond_damage[i][p] == 0
@@ -271,8 +398,6 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
         end
     end
 
-    # STEP 1: Fill rows for neighbor nodes (j, k, l, m, ...)
-    # For each node i and each bond ij
     for i in nodes
         neighbors = nlist[i]
 
@@ -284,18 +409,15 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
                 continue
             end
 
-            # Scalar sum for bond ij: Σ_k ω_ik V_k s_kj
             scalar_sum_j = 0.0
             for idx_k in eachindex(neighbors)
                 k = neighbors[idx_k]
                 scalar_sum_j += omega[i][idx_k] * volume[k] * S_matrices[i][idx_k, idx_j]
             end
 
-            # Row j: K_ji
             K_ji = -V_i * (1.0 - scalar_sum_j) * Z_i
             add_block_to_coo!(I_indices, J_indices, values, K_ji, j, i, dof)
 
-            # Row j: K_jk for other neighbors k ≠ j
             for (idx_k, k) in enumerate(neighbors)
                 if k == i || k == j
                     continue
@@ -308,15 +430,12 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
         end
     end
 
-    # STEP 2: Fill row for central node i
-    # Each row i gets contributions from ALL bonds of node i
     for i in nodes
         neighbors = nlist[i]
 
         @views Z_i = zStiff[i, :, :]
         V_i = volume[i]
 
-        # For each neighbor j, compute K_ij (sum over all bonds)
         for (idx_j, j) in enumerate(neighbors)
             if i == j
                 continue
@@ -324,18 +443,15 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
 
             K_ij_total = zeros(dof, dof)
 
-            # Each bond contributes to K_ij
             for (idx_bond, bond_node) in enumerate(neighbors)
                 if bond_node == i
                     continue
                 end
 
                 if idx_bond == idx_j
-                    # Contribution from bond ij to K_ij
                     s_jj = S_matrices[i][idx_j, idx_j]
                     K_ij_total .-= V_i * (1.0 - omega[i][idx_j] * volume[j] * s_jj) * Z_i
                 else
-                    # Contribution from bond ik (k≠j) to K_ij
                     s_kj = S_matrices[i][idx_bond, idx_j]
                     K_ij_total .+= V_i * omega[i][idx_j] * volume[j] * s_kj * Z_i
                 end
@@ -345,14 +461,11 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
         end
     end
 
-    # Create stabilization matrix from off-diagonal blocks
     K_stab = sparse(I_indices, J_indices, values, ndof_total, ndof_total)
 
-    # STEP 3: Diagonal blocks K_ii = -Σ_(ℓ≠i) K_iℓ
     for i in nodes
         K_ii_block = zeros(dof, dof)
 
-        # Sum all off-diagonal entries in row i
         for d1 in 1:dof
             row = (i-1)*dof + d1
             for j in nodes
@@ -365,7 +478,6 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
             end
         end
 
-        # Add diagonal block to K
         for d1 in 1:dof
             for d2 in 1:dof
                 row = (i-1)*dof + d1
@@ -375,49 +487,11 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
         end
     end
 
-    # Add off-diagonal stabilization to K
     K .+= K_stab
 
     return nothing
 end
 
-"""
-Computes Γ_ij = I - Σ_k ω_ik V_k X_ik (D^(-1) X_ij)^T.
-
-Note: This is a MATRIX equation, not scalar! The term X_ik (D^(-1) X_ij)^T
-is an outer product creating a dof×dof matrix.
-"""
-function compute_gamma(bond_vectors::Vector{Vector{Float64}},
-                       X_ij::Vector{Float64},
-                       omega_i::Vector{Float64},
-                       volume::Vector{Float64},
-                       neighbors::Vector{Int},
-                       D_inv::AbstractMatrix{Float64},
-                       dof::Int)
-    Γ = Matrix{Float64}(I, dof, dof)  # Identity matrix
-
-    # Precompute D^(-1) * X_ij (column vector)
-    D_inv_X_ij = D_inv * X_ij
-
-    # Σ_k ω_ik V_k X_ik (D^(-1) X_ij)^T
-    # This is an outer product: X_ik * (D_inv_X_ij)^T creates a dof×dof matrix
-    for (idx_k, k) in enumerate(neighbors)
-        X_ik = bond_vectors[idx_k]
-
-        # Outer product: X_ik (column) times (D_inv_X_ij)^T (row)
-        # Results in a dof×dof matrix
-        outer_prod = X_ik * D_inv_X_ij'
-
-        # Subtract from Γ
-        Γ .-= omega_i[idx_k] * volume[k] * outer_prod
-    end
-
-    return Γ
-end
-
-"""
-Adds a dof×dof block to COO sparse matrix format.
-"""
 function add_block_to_coo!(I_indices::Vector{Int},
                            J_indices::Vector{Int},
                            values::Vector{Float64},
@@ -427,7 +501,7 @@ function add_block_to_coo!(I_indices::Vector{Int},
                            dof::Int)
     for d1 in 1:dof
         for d2 in 1:dof
-            if abs(block[d1, d2]) > 1e-14  # Only add non-zero entries
+            if abs(block[d1, d2]) > 1e-14
                 push!(I_indices, (i-1)*dof + d1)
                 push!(J_indices, (j-1)*dof + d2)
                 push!(values, block[d1, d2])
@@ -435,378 +509,13 @@ function add_block_to_coo!(I_indices::Vector{Int},
         end
     end
 end
-# Helper function 1: Precompute CB tensors for all k neighbors
-function precompute_CB_tensors!(CB_k::AbstractArray{Float64,4},
-                                C_tensor::Array{Float64,4},
-                                D_inv::Matrix{Float64},
-                                neighbors::Vector{Int64},
-                                volume::Vector{Float64},
-                                bond_geometry_i::Vector{Vector{Float64}},
-                                omega_i::Vector{Float64},
-                                B_ik::Array{Float64,3})
-    @inbounds for (k_idx, k) in enumerate(neighbors)
-        V_k = volume[k]
-        omega_ik = omega_i[k_idx]
-        X_ik = bond_geometry_i[k_idx]
-        create_B_tensor!(D_inv, X_ik, V_k, omega_ik, B_ik)
-        @views contraction!(C_tensor, B_ik, CB_k[k_idx, :, :, :])
-    end
-    return nothing
-end
 
-# Helper function 2: Accumulate K contributions for a (j,k) pair
-@inline function accumulate_K_contributions!(K_ij_j::Matrix{Float64},
-                                             K_ij_i::Matrix{Float64},
-                                             CB_k::AbstractArray{Float64,3},
-                                             D_inv::Matrix{Float64},
-                                             X_ij::Vector{Float64},
-                                             omega_ij::Float64,
-                                             V_k::Float64,
-                                             omega_ik::Float64,
-                                             i_offset::Int64,
-                                             k_offset::Int64,
-                                             dof::Int64)
-    # Compute K_block for this (j,k) pair
-    K_block = compute_linearized_operator(CB_k, D_inv, X_ij, omega_ij, V_k, omega_ik, dof,
-                                          K_ij_i)
-
-    factor = omega_ij * V_k * omega_ik
-
-    @inbounds for m in 1:dof, o in 1:dof
-        val = factor * K_block[m, o]
-        K_ij_j[m, i_offset+o] -= val
-        K_ij_i[m, i_offset+o] -= val
-        K_ij_j[m, k_offset+o] += val
-        K_ij_i[m, k_offset+o] += val
-    end
-
-    return nothing
-end
-
-# Helper function 3: Add non-zero entries to COO format
-@inline function add_coo_entries!(I::Vector{Int64},
-                                  J::Vector{Int64},
-                                  V::Vector{Float64},
-                                  idx::Ref{Int64},
-                                  K_ij_j::Matrix{Float64},
-                                  K_ij_i::Matrix{Float64},
-                                  j_offset::Int64,
-                                  i_offset::Int64,
-                                  V_i::Float64,
-                                  V_j::Float64,
-                                  dof::Int64,
-                                  n_total::Int64,
-                                  tol::Float64 = 1e-16)
-    @inbounds for m in 1:dof, n in 1:n_total
-        # j-row
-        val_j = -K_ij_j[m, n] * V_i
-        if abs(val_j) > tol
-            idx[] += 1
-            I[idx[]] = j_offset + m
-            J[idx[]] = n
-            V[idx[]] = val_j
-        end
-
-        # i-row
-        val_i = K_ij_i[m, n] * V_j
-        if abs(val_i) > tol
-            idx[] += 1
-            I[idx[]] = i_offset + m
-            J[idx[]] = n
-            V[idx[]] = val_i
-        end
-    end
-
-    return nothing
-end
-
-# Main function: Fully integrated, no Dict, minimal loops
-function init_assemble_stiffness_contributions_sparse(nodes::AbstractVector{Int64},
-                                                      dof::Int64,
-                                                      C_Voigt::Array{Float64,3},
-                                                      inverse_shape_tensor::Array{Float64,
-                                                                                  3},
-                                                      number_of_neighbors::Vector{Int64},
-                                                      nlist::Vector{Vector{Int64}},
-                                                      volume::Vector{Float64},
-                                                      bond_geometry::Vector{Vector{Vector{Float64}}},
-                                                      omega::Vector{Vector{Float64}})
-    n_total = nodes[end] * dof
-    estimated_nnz = 2 * dof^2 * sum(number_of_neighbors[i]^2 for i in nodes)
-
-    I = Vector{Int64}(undef, estimated_nnz)
-    J = Vector{Int64}(undef, estimated_nnz)
-    V = Vector{Float64}(undef, estimated_nnz)
-
-    idx = Ref(0)  # Mutable reference for idx
-
-    # Reusable buffers
-    K_ij_j = zeros(dof, n_total)
-    K_ij_i = zeros(dof, n_total)
-
-    # Buffer for CB tensors (allocate once, reuse)
-    CB_k_buffer = zeros(maximum(number_of_neighbors), dof, dof, dof)
-
-    if dof == 2
-        K_block = @MMatrix zeros(2, 2)
-        B_ik = zeros(2, 2, 2)
-    else
-        K_block = @MMatrix zeros(3, 3)
-        B_ik = zeros(3, 3, 3)
-    end
-
-    iter = progress_bar(1, length(nodes)-1, false) # steps + 1 as end step
-    @inbounds for iter_dx in iter
-        i = nodes[iter_dx]
-        D_inv = inverse_shape_tensor[i, :, :]
-        @views C_tensor = get_fourth_order(C_Voigt[i, :, :], dof)
-        V_i = volume[i]
-        ni = nlist[i]
-        n_neighbors = length(ni)
-
-        CB_k = @view CB_k_buffer[1:n_neighbors, :, :, :]
-
-        # Step 1: Precompute CB tensors (once per i)
-        precompute_CB_tensors!(CB_k, C_tensor, D_inv, ni, volume,
-                               bond_geometry[i], omega[i], B_ik)
-
-        # Step 2: j-loop
-        for (j_idx, j) in enumerate(ni)
-            omega_ij = omega[i][j_idx]
-            V_j = volume[j]
-            X_ij = bond_geometry[i][j_idx]
-
-            fill!(K_ij_j, 0.0)
-            fill!(K_ij_i, 0.0)
-
-            # Step 3: k-loop - accumulate K contributions
-            i_offset = (i-1)*dof
-            for (k_idx, k) in enumerate(ni)
-                omega_ik = omega[i][k_idx]
-                V_k = volume[k]
-                k_offset = (k-1)*dof
-
-                @views accumulate_K_contributions!(K_ij_j, K_ij_i, CB_k[k_idx, :, :, :],
-                                                   D_inv, X_ij, omega_ij, V_k, omega_ik,
-                                                   i_offset, k_offset, dof)
-            end
-
-            # Step 4: Add COO entries
-            j_offset = (j-1)*dof
-            add_coo_entries!(I, J, V, idx, K_ij_j, K_ij_i,
-                             j_offset, i_offset, V_i, V_j, dof, n_total)
-        end
-    end
-
-    # Trim to actual size
-    resize!(I, idx[])
-    resize!(J, idx[])
-    resize!(V, idx[])
-
-    return I, J, V, n_total
-end
-#tbd
-function update_assemble_stiffness_contributions_sparse!(nodes::AbstractVector{Int64},
-                                                         dof::Int64,
-                                                         C_Voigt::Array{Float64,3},
-                                                         inverse_shape_tensor::Array{Float64,
-                                                                                     3},
-                                                         nlist::Vector{Vector{Int64}},
-                                                         volume::Vector{Float64},
-                                                         bond_geometry::Vector{Vector{Vector{Float64}}},
-                                                         omega::Vector{Vector{Float64}},
-                                                         bond_damage::Vector{Vector{Float64}},
-                                                         xID::Vector{Int64},
-                                                         yID::Vector{Int64},
-                                                         K::SparseMatrixCSC{Float64,Int64})
-    n_total = nodes[end] * dof
-    K_ij_j = zeros(dof, n_total)
-    K_ij_i = zeros(dof, n_total)
-    function update_assemble_stiffness_contributions_sparse!(nodes::AbstractVector{Int64},
-                                                             dof::Int64,
-                                                             C_Voigt::Array{Float64,3},
-                                                             inverse_shape_tensor::Array{Float64,
-                                                                                         3},
-                                                             nlist::Vector{Vector{Int64}},
-                                                             volume::Vector{Float64},
-                                                             bond_geometry::Vector{Vector{Vector{Float64}}},
-                                                             omega::Vector{Vector{Float64}},
-                                                             bond_damage::Vector{Vector{Float64}},
-                                                             xID::Vector{Int64},
-                                                             yID::Vector{Int64},
-                                                             K::SparseMatrixCSC{Float64,
-                                                                                Int64})
-        n_total = nodes[end] * dof
-        fill!(K.nzval, 0.0)
-        v_idx = 1
-
-        # Pre-allocate und wiederverwenden (außerhalb der Schleife)
-        K_ij_j = zeros(dof, n_total)
-        K_ij_i = zeros(dof, n_total)
-
-        @inbounds for i in nodes  # @inbounds für bessere Performance
-            D_inv = @view inverse_shape_tensor[i, :, :]
-            C_tensor = get_fourth_order(@view(C_Voigt[i, :, :]), dof)
-            K_ijk = compute_all_linearized_operators(i, C_tensor, D_inv,
-                                                     volume, bond_geometry, omega, nlist)
-
-            V_i = volume[i]
-            ni = nlist[i]
-            i_offset = (i-1)*dof
-
-            for (j_idx, j) in enumerate(ni)
-                omega_ij = omega[i][j_idx]
-                # Optional: Schaden einbeziehen
-                if !isempty(bond_damage) && !isempty(bond_damage[i])
-                    omega_ij *= (1.0 - bond_damage[i][j_idx])
-                end
-
-                V_j = volume[j]
-                j_offset = (j-1)*dof
-
-                # Effizientes Zurücksetzen
-                K_ij_j .= 0.0
-                K_ij_i .= 0.0
-
-                for (k_idx, k) in enumerate(ni)
-                    omega_ik = omega[i][k_idx]
-                    if !isempty(bond_damage) && !isempty(bond_damage[i])
-                        omega_ik *= (1.0 - bond_damage[i][k_idx])
-                    end
-
-                    V_k = volume[k]
-                    K_block = K_ijk[(i, j, k)]
-                    factor = omega_ij * V_k * omega_ik
-                    k_offset = (k-1)*dof
-
-                    for m in 1:dof
-                        @simd for o in 1:dof  # SIMD-Optimierung
-                            val = factor * K_block[m, o]
-                            K_ij_j[m, i_offset+o] -= val
-                            K_ij_i[m, i_offset+o] -= val
-                            K_ij_j[m, k_offset+o] += val
-                            K_ij_i[m, k_offset+o] += val
-                        end
-                    end
-                end
-
-                # Schreibe in K.nzval
-                for m in 1:dof
-                    row_j = j_offset + m
-                    row_i = i_offset + m
-
-                    for n in 1:n_total
-                        val_j = -K_ij_j[m, n] * V_i
-                        if abs(val_j) > 1e-16
-                            K.nzval[v_idx] = val_j
-                            v_idx += 1
-                        end
-
-                        val_i = K_ij_i[m, n] * V_j
-                        if abs(val_i) > 1e-16
-                            K.nzval[v_idx] = val_i
-                            v_idx += 1
-                        end
-                    end
-                end
-            end
-        end
-    end
-end
-
-function compute_bond_force(bond_force::Vector{Vector{Vector{Float64}}},
-                            K::SparseMatrixCSC{Float64,Int64}, u::Matrix{Float64},
-                            nodes::Vector{Int64}, nlist::Vector{Vector{Int64}}, dof::Int64)
-
-    # Diese Funktion berechnet K_ij * (u_j - u_i)
-    # NICHT die echte Bond-Kraft, nur die linearisierte Komponente!
-
-    for i in nodes
-        ni = nlist[i]
-        i_offset = (i-1)*dof
-
-        for (j_idx, j) in enumerate(ni)
-            if i == j
-                continue
-            end
-
-            j_offset = (j-1)*dof
-            f_ij = zeros(dof)
-
-            # K_ij Block auslesen
-            @inbounds for m in 1:dof
-                for n in 1:dof
-                    # K[i_offset+m, j_offset+n] ist die Steifigkeit
-                    f_ij[m] += K[i_offset+m, j_offset+n] * (u[j, n] - u[i, n])
-                end
-            end
-
-            bond_force[i][j_idx] = f_ij
-        end
-    end
-end
-
-"""
-Assemble global stiffness matrix for peridynamics system
-
-Main function for assembling the complete stiffness matrix using
-correspondence theory. Supports different material models and
-dofensionalities.
-
-Arguments:
-- model: Peridynamics model containing all system data
-- nodes: Array of node indices to process
-- material_type: Material model type (default: "plane_stress")
-- is_3d: Boolean indicating 3D analysis (default: false)
-
-Returns:
-- K: Sparse global stiffness matrix
-
-The resulting matrix can be used for:
-- Implicit time integration schemes
-- Static equilibrium analysis
-- Modal analysis and eigenvalue problems
-- Linearized stability analysis
-
-Currently supports:
-- 2D plane stress analysis
-- Future extensions: plane strain, 3D analysis
-"""
-
-"""
-  init_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict)
-
-Initializes the material model.
-
-# Arguments
-  - `datamanager::Data_manager`: Datamanager.
-  - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-
-# Returns
-  - `datamanager::Data_manager`: Datamanager.
-"""
 function init_model(datamanager::Module,
                     nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     if datamanager.get_max_rank()>1
         @error "Correspondence matrix based not implemented for parallel runs."
     end
-
-    dof = datamanager.get_dof()
-
-    #hooke_matrix = datamanager.create_constant_node_field("Hooke Matrix", Float64,
-    #	Int64((dof * (dof + 1)) / 2),
-    #	VectorOrMatrix = "Matrix")
-    #symmetry = get(material_parameter, "Symmetry", "default")::String
-    #for iID in nodes
-    #	@views hooke_matrix[iID, :,
-    #		:] = get_Hooke_matrix(datamanager,
-    #		material_parameter,
-    #		symmetry,
-    #		dof,
-    #		iID)
-    #end
 
     return datamanager
 end
@@ -826,16 +535,18 @@ function init_matrix(datamanager::Module)
     volume = datamanager.get_field("Volume")
     omega = datamanager.get_field("Influence Function")
     C_voigt = datamanager.get_field("Hooke Matrix")
+
+    @info "Initializing stiffness matrix (optimized version)"
     index_x, index_y, vals,
-    total_dof = init_assemble_stiffness_contributions_sparse(nodes,              # nnodes
-                                                             dof,                # dof
-                                                             C_voigt,            # C_Voigt
-                                                             inverse_shape_tensor, # inverse_shape_tensor
-                                                             number_of_neighbors,
-                                                             nlist,              # nlist
-                                                             volume,      # volume
-                                                             bond_geometry,      # bond_geometry
-                                                             omega)
+    total_dof = init_assemble_stiffness_optimized(nodes,
+                                                  dof,
+                                                  C_voigt,
+                                                  inverse_shape_tensor,
+                                                  number_of_neighbors,
+                                                  nlist,
+                                                  volume,
+                                                  bond_geometry,
+                                                  omega)
 
     datamanager.init_stiffness_matrix(index_x, index_y, vals, total_dof)
 end
@@ -847,41 +558,74 @@ function compute_model(datamanager::Module,
     inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
     nlist = datamanager.get_nlist()
     volume = datamanager.get_field("Volume")
-    #bond_geometry = datamanager.get_field("Bond Geometry")
     bond_geometry_N = datamanager.get_field("Deformed Bond Geometry", "N")
     omega = datamanager.get_field("Influence Function")
     bond_damage = datamanager.get_field("Bond Damage", "NP1")
-    # verify K
+
     zStiff = datamanager.get_field("Zero Energy Stiffness")
-    xID, yID = datamanager.get_stiffness_matrix_indices()
     K_sparse = datamanager.get_stiffness_matrix()
-    update_assemble_stiffness_contributions_sparse!(nodes,              # nnodes
-                                                    dof,                # dof
-                                                    C_voigt,            # C_Voigt
-                                                    inverse_shape_tensor, # inverse_shape_tensor
-                                                    nlist,              # nlist
-                                                    volume,      # volume
-                                                    bond_geometry_N,      # bond_geometry
-                                                    omega,
-                                                    bond_damage,
-                                                    xID,
-                                                    yID,
-                                                    K_sparse)
 
     create_zero_energy_mode_stiffness!(nodes, dof, C_voigt,
                                        inverse_shape_tensor, zStiff)
-    K_sparse = datamanager.get_stiffness_matrix()
+
     add_zero_energy_stiff!(K_sparse,
-                           nodes,              # nnodes
-                           dof,                # dof
-                           zStiff,            # C_Voigt
-                           inverse_shape_tensor, # inverse_shape_tensor
-                           nlist,              # nlist
-                           volume,      # volume
-                           bond_geometry_N,      # bond_geometry
+                           nodes,
+                           dof,
+                           zStiff,
+                           inverse_shape_tensor,
+                           nlist,
+                           volume,
+                           bond_geometry_N,
                            bond_damage,
                            omega)
-    #datamanager.set_stiffness_matrix(K_sparse)
+
     return K_sparse
 end
+
+"""
+	compute_bond_force(bond_force, K, u, nodes, nlist, dof)
+
+Compute bond forces from stiffness matrix and displacements.
+
+Calculates the linearized bond force component: f_ij = K_ij * (u_j - u_i)
+
+# Arguments
+- `bond_force`: Output vector for bond forces (modified in-place)
+- `K`: Global stiffness matrix
+- `u`: Displacement field (nnodes × dof)
+- `nodes`: Vector of node indices
+- `nlist`: Neighborhood list
+- `dof`: Degrees of freedom per node
+
+# Note
+This computes only the linearized force component, not the complete
+peridynamic bond force which includes nonlinear terms.
+"""
+function compute_bond_force(bond_force::Vector{Vector{Vector{Float64}}},
+                            K::SparseMatrixCSC{Float64,Int64}, u::Matrix{Float64},
+                            nodes::Vector{Int64}, nlist::Vector{Vector{Int64}}, dof::Int64)
+    @inbounds for i in nodes
+        ni = nlist[i]
+        i_offset = (i-1)*dof
+
+        for (j_idx, j) in enumerate(ni)
+            if i == j
+                continue
+            end
+
+            j_offset = (j-1)*dof
+            f_ij = zeros(dof)
+
+            # Extract K_ij block and compute force
+            for m in 1:dof
+                for n in 1:dof
+                    f_ij[m] += K[i_offset+m, j_offset+n] * (u[j, n] - u[i, n])
+                end
+            end
+
+            bond_force[i][j_idx] = f_ij
+        end
+    end
+end
+
 end # module
