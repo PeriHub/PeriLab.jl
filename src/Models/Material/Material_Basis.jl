@@ -26,7 +26,7 @@ export apply_pointwise_E
 export compute_bond_based_constants
 export init_local_damping_due_to_damage
 export local_damping_due_to_damage
-function local_damping_due_to_damage(Data_Manager::Module, nodes::AbstractVector{Int64},
+function local_damping_due_to_damage(nodes::AbstractVector{Int64},
                                      params, dt)
     damage = Data_Manager.get_field("Damage", "NP1")
     nlist = Data_Manager.get_nlist()

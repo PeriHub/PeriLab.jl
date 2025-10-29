@@ -94,11 +94,9 @@ function compute_FEM(elements::AbstractVector{Int64},
         nnodes::Int64 = length(topo)
 
         for id_int in eachindex(B_matrix[1, :, 1, 1])
-            strain_NP1[id_el, id_int,
-            :] = B_matrix[id_el, id_int, :, :]' *
+            strain_NP1[id_el, id_int, :] = B_matrix[id_el, id_int, :, :]' *
                                            reshape((uNP1[topo, :])', le)
-            strain_increment[id_el, id_int,
-            :] = strain_NP1[id_el, id_int, :] -
+            strain_increment[id_el, id_int, :] = strain_NP1[id_el, id_int, :] -
                                                  strain_N[id_el, id_int, :]
 
             if rotation

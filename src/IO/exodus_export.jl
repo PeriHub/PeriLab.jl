@@ -48,9 +48,15 @@ function create_result_file(filename::Union{AbstractString,String},
         num_elems = num_nodes - length(element_nodes) + num_elements
     end
     num_side_sets = 0
-    init = Initialization{Int32}(Int32(num_dim), Int32(num_nodes), Int32(num_elems),
-                                 Int32(num_elem_blks), Int32(num_node_sets),
-                                 Int32(num_side_sets))
+    # init = Initialization{Int32}(Int32(num_dim), Int32(num_nodes), Int32(num_elems),  Exodus v 0.14
+    #                              Int32(num_elem_blks), Int32(num_node_sets),
+    #                              Int32(num_side_sets))
+    init = Initialization{Int32(num_dim),
+                          Int32(num_nodes),
+                          Int32(num_elems),
+                          Int32(num_elem_blks),
+                          Int32(num_node_sets),
+                          Int32(num_side_sets)}()
     @info "Create output " * filename
     exo_db = ExodusDatabase{maps_int_type,ids_int_type,bulk_int_type,float_type}(filename,
                                                                                  "w",

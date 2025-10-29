@@ -15,8 +15,7 @@ include("../../../src/Models/Thermal/Thermal_template/thermal_template.jl")
 include("../../../src/Models/Pre_calculation/Pre_calculation_template/pre_calculation_template.jl")
 
 using Test
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+#using PeriLab
 
 test_data_manager = PeriLab.Data_Manager
 test_data_manager.initialize_data()

@@ -5,8 +5,7 @@
 using MPI
 using Test
 
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+#using PeriLab
 
 @testset "set_comm" begin
     # MPI.Init()

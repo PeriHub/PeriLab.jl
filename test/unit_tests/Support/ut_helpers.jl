@@ -6,8 +6,7 @@ using Test
 using ProgressBars
 using LinearAlgebra
 using StaticArrays
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+#using PeriLab
 
 function remove_ids(dict::Dict{Int64,Int64}, numbers::Vector{Int64})
     for num in numbers

@@ -5,8 +5,7 @@
 using Test
 using TimerOutputs
 using DataFrames
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+#using PeriLab
 
 @testset "ut_read_mesh" begin
     params = Dict("Discretization" => Dict("Type" => "not supported"))

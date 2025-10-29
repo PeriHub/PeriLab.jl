@@ -4,8 +4,7 @@
 
 using Test
 
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+#using PeriLab
 
 @testset "init_influence_function" begin
     test_data_manager = PeriLab.Data_Manager

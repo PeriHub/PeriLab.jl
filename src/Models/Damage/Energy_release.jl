@@ -84,9 +84,7 @@ function compute_model(nodes::AbstractVector{Int64},
     quad_horizons::Vector{Float64} = Data_Manager.get_field("Quad Horizon")
     inverse_nlist::Vector{Dict{Int64,Int64}} = Data_Manager.get_inverse_nlist()
 
-    # dependend_value,
-    # dependent_field = is_dependent("Critical Value", damage_parameter)
-    dependend_value = false
+    dependend_value, dependent_field = is_dependent("Critical Value", damage_parameter)
 
     tension::Bool = get(damage_parameter, "Only Tension", false)
     inter_block_damage::Bool = Data_Manager.haskey(damage_parameter, "Interblock Damage")

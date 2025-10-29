@@ -2,8 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+#using PeriLab
 using Test
 
 @testset "ut_get_block_model_definition" begin

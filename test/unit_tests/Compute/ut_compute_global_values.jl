@@ -4,8 +4,7 @@
 
 using Test
 
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+#using PeriLab
 @testset "ut_global_value_sum" begin
     test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
