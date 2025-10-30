@@ -8,7 +8,22 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
-## [1.4.10] - 2025-08-13
+## [1.5.0] - 2025-10-30
+
+### Added
+
+- PeriLabError, to handle known exceptions
+- FieldTypes added and field creation streamlined
+
+### Changed
+
+- Data_Manager removed as an argument
+- Removed module includes, reducing compilation time
+- Module names streamlined
+- TimerOutputs is now using the default timer
+
+
+## [1.4.10] - 2025-10-06
 
 ### Added
 
