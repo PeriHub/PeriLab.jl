@@ -28,7 +28,8 @@ using ..MPI_Communication: send_single_value_from_vector, synch_responder_to_con
 using ..Helpers: progress_bar
 using ..Logging_Module: get_log_stream
 using ..Parameter_Handling: get_solver_steps, get_flush_file, get_write_after_damage,
-                            get_start_time, get_end_time, get_outputs, get_output_frequency,
+                            get_start_time, get_end_time, get_outputs,
+                            get_output_frequencies,
                             get_output_filenames, get_computes_names, get_computes,
                             get_fem_block
 using ..Geometry: rotation_tensor
@@ -589,7 +590,7 @@ Sets the output frequency.
 function set_output_frequency(params::Dict,
                               nsteps::Int64,
                               step_id::Union{Nothing,Int64} = nothing)
-    output_frequencies = get_output_frequency(params, nsteps)
+    output_frequencies = get_output_frequencies(params, nsteps)
     if isnothing(step_id) || step_id == 1
         output_frequency = []
         for id in eachindex(output_frequencies)

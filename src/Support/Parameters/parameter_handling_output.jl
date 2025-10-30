@@ -7,7 +7,7 @@ export get_write_after_damage
 export get_start_time
 export get_end_time
 export get_outputs
-export get_output_frequency
+export get_output_frequencies
 export get_output_filenames
 export get_output_type
 export check_for_duplicates
@@ -227,17 +227,17 @@ function get_outputs(params::Dict, variables::Vector{String}, compute_names::Vec
 end
 
 """
-    get_output_frequency(params::Dict, nsteps::Int64)
+    get_output_frequencies(params::Dict, nsteps::Int64)
 
-Gets the output frequency.
+Gets the output frequencies.
 
 # Arguments
 - `params::Dict`: The parameters
 - `nsteps::Int64`: The number of steps
 # Returns
-- `freq::Vector{Int64}`: The output frequency
+- `freq::Vector{Int64}`: The output frequencies
 """
-function get_output_frequency(params::Dict, nsteps::Int64)
+function get_output_frequencies(params::Dict, nsteps::Int64)
     freq = zeros(1)
     if haskey(params::Dict, "Outputs")
         outputs = params["Outputs"]
