@@ -199,9 +199,9 @@ MPI.Init()
 
     # Logging.disable_logging(Logging.Debug - 2000)
     @testset "fullscale_tests" begin
-        # @testset "test_reload" begin
-        #     include("fullscale_tests/test_reload/test_reload.jl")
-        # end
+        @testset "test_reload" begin
+            include("fullscale_tests/test_reload/test_reload.jl")
+        end
         @testset "test_bond_based_elastic" begin
             include("fullscale_tests/test_bond_based_elastic/test_bond_based_elastic.jl")
         end
