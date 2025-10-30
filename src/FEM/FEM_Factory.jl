@@ -4,7 +4,7 @@
 module FEM
 
 using ...Data_Manager
-using ...Solver_Manager: find_module_files, create_module_specifics
+using ..Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "element_name")
 for mod in module_list
     include(mod["File"])
@@ -18,7 +18,6 @@ using .FEM_Basis:
                   get_number_of_integration_points,
                   get_lumped_mass,
                   get_polynomial_degree,
-                  create_B_matrix,
                   create_B_matrix
 include("./Coupling/Coupling_Factory.jl")
 

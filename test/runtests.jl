@@ -25,10 +25,9 @@ MPI.Init()
             @testset "ut_FEM_routines" begin
                 include("unit_tests/FEM/ut_FEM_routines.jl")
             end
-
-            # @testset "ut_FEM_Factory" begin
-            #     include("unit_tests/FEM/ut_FEM_Factory.jl")
-            # end
+            @testset "ut_FEM_Factory" begin
+                include("unit_tests/FEM/ut_FEM_Factory.jl")
+            end
             @testset "ut_Lagrange_element" begin
                 include("unit_tests/FEM/Element_formulation/ut_lagrange_element.jl")
             end
@@ -293,12 +292,12 @@ MPI.Init()
         @testset "test_point_wise_material" begin
             include("fullscale_tests/test_point_wise_material/test_point_wise_material.jl")
         end
-        # @testset "test_FEM_coupling" begin
-        #     include("fullscale_tests/test_FEM_coupling/test_FEM_coupling.jl")
-        # end
-        # @testset "test_FEM" begin
-        #     include("fullscale_tests/test_FEM/test_FEM.jl")
-        # end
+        @testset "test_FEM_coupling" begin
+            include("fullscale_tests/test_FEM_coupling/test_FEM_coupling.jl")
+        end
+        @testset "test_FEM" begin
+            include("fullscale_tests/test_FEM/test_FEM.jl")
+        end
         @testset "test_vumat" begin
             include("fullscale_tests/test_vumat/test_vumat.jl")
         end

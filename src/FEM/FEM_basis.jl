@@ -107,21 +107,20 @@ function compute_FEM(elements::AbstractVector{Int64},
 
             # in future this part must be changed -> using set Modules
 
-            stress_NP1[id_el, id_int, :],
-            compute_stresses(dof,
-                             convert(Dict{String,Any},
-                                     params["Material Model"]),
-                             time,
-                             dt,
-                             strain_increment[id_el,
-                                              id_int,
-                                              :],
-                             stress_N[id_el,
-                                      id_int,
-                                      :],
-                             stress_NP1[id_el,
-                                        id_int,
-                                        :])
+            stress_NP1[id_el, id_int, :] = compute_stresses(dof,
+                                                            convert(Dict{String,Any},
+                                                                    params["Material Model"]),
+                                                            time,
+                                                            dt,
+                                                            strain_increment[id_el,
+                                                            id_int,
+                                                            :],
+                                                            stress_N[id_el,
+                                                            id_int,
+                                                            :],
+                                                            stress_NP1[id_el,
+                                                            id_int,
+                                                            :])
 
             #specifics = Dict{String,String}("Call Function" => "compute_stresses", "Name" => "material_name") -> tbd
             # material_model is missing

@@ -122,10 +122,13 @@ end
 
 @testset "ut_eval" begin
     test_data_manager = PeriLab.Data_Manager
+    test_data_manager.initialize_data()
     dof = 2
     test_data_manager.set_dof(dof)
     test_data_manager.set_num_elements(2)
     test_data_manager.set_num_controller(6)
+    rho = test_data_manager.create_constant_node_scalar_field("Density", Float64)
+    rho .= 2
     test_data_manager.create_node_tensor_field("Cauchy Stress", Float64, dof)
     test_data_manager.create_node_vector_field("Force Densities", Float64, dof)
     test_data_manager.create_node_vector_field("Displacements", Float64, dof)
