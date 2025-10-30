@@ -226,6 +226,8 @@ end
 function create_free_size_field(name::String, vartype::Type{T}, dof::Tuple;
                                 default_value::Number = 0) where {T<:Union{Int64,Float64,
                                                                            Bool}}
+    set_NP1_to_N(name, vartype)
+
     return _create_free_size_field(name * "N", T(default_value), dof),
            _create_free_size_field(name * "NP1", T(default_value), dof)
 end
