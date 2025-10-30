@@ -22,6 +22,14 @@ export create_constant_element_vector_field
 export create_constant_free_size_field
 export create_free_size_field
 
+export
+       NodeScalarField,
+       NodeVectorField,
+       NodeTensorField,
+       BondScalarState,
+       BondVectorState,
+       BondTensorState
+
 """
     get_field(name::String, time::String)
 

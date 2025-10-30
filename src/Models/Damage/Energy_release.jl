@@ -64,25 +64,24 @@ function compute_model(nodes::AbstractVector{Int64},
                        time::Float64,
                        dt::Float64)
     dof = Data_Manager.get_dof()
-    nlist::Vector{Vector{Int64}} = Data_Manager.get_nlist()
-    block_ids::Vector{Int64} = Data_Manager.get_field("Block_Id")
-    update_list::Vector{Bool} = Data_Manager.get_field("Update")
-    bond_damage::Vector{Vector{Float64}} = Data_Manager.get_bond_damage("NP1")
+    nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
+    block_ids::NodeScalarField{Int64} = Data_Manager.get_field("Block_Id")
+    update_list::NodeScalarField{Bool} = Data_Manager.get_field("Update")
+    bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
 
-    undeformed_bond::Vector{Vector{Vector{Float64}}} = Data_Manager.get_field("Bond Geometry")
-    undeformed_bond_length::Vector{Vector{Float64}} = Data_Manager.get_field("Bond Length")
-    bond_forces::Vector{Vector{Vector{Float64}}} = Data_Manager.get_field("Bond Forces")
-    deformed_bond::Vector{Vector{Vector{Float64}}} = Data_Manager.get_field("Deformed Bond Geometry",
+    undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
+    undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
+    bond_forces::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
+    deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
+                                                                     "NP1")
+    deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
                                                                             "NP1")
-    deformed_bond_length::Vector{Vector{Float64}} = Data_Manager.get_field("Deformed Bond Length",
-                                                                           "NP1")
-    bond_displacements::Vector{Vector{Vector{Float64}}} = Data_Manager.get_field("Bond Displacements")
+    bond_displacements::BondVectorState{Float64} = Data_Manager.get_field("Bond Displacements")
     critical_field = has_key("Critical_Value")
     critical_energy = critical_field ? Data_Manager.get_field("Critical_Value") :
                       damage_parameter["Critical Value"]
     critical_energy_value::Float64 = 0.0
-    quad_horizons::Vector{Float64} = Data_Manager.get_field("Quad Horizon")
-    # quad_horizons::Data_Manager.NodeScalarField = Data_Manager.get_field("Quad Horizon")
+    quad_horizons::NodeScalarField{Float64} = Data_Manager.get_field("Quad Horizon")
     inverse_nlist::Vector{Dict{Int64,Int64}} = Data_Manager.get_inverse_nlist()
 
     dependend_value, dependent_field = is_dependent("Critical Value", damage_parameter)
@@ -168,10 +167,8 @@ end
 
 Returns a user developer defined local synchronization. This happens before each model.
 
-
-
 # Arguments
-
+- `model::String`: The model to be synchronized.
 """
 function fields_for_local_synchronization(model::String)
     download_from_cores = false

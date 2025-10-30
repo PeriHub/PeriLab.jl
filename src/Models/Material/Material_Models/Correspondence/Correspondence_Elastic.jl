@@ -107,7 +107,7 @@ function compute_stresses(nodes::AbstractVector{Int64},
                           stress_N::AbstractArray{Float64},
                           stress_NP1::AbstractArray{Float64})
     mapping = get_mapping(dof)
-    hooke_matrix = Data_Manager.get_field("Hooke Matrix")
+    hooke_matrix::NodeTensorField{Float64} = Data_Manager.get_field("Hooke Matrix")
     for iID in nodes
         @views sNP1 = stress_NP1[iID, :, :]
         @views sInc = strain_increment[iID, :, :]

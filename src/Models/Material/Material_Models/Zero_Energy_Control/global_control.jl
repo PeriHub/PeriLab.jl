@@ -4,12 +4,14 @@
 
 module Global_Zero_Energy_Control
 
-using ........Data_Manager
-using ........Helpers: get_fourth_order
 using StaticArrays: MMatrix, MVector
 using LoopVectorization
+
+using ........Data_Manager
+using ........Helpers: get_fourth_order
 using .....Material_Basis: get_Hooke_matrix
 using ........Geometry: rotation_tensor
+
 export control_name
 export compute_control
 export global_zero_energy_mode_stiffness
@@ -39,16 +41,17 @@ function compute_control(nodes::AbstractVector{Int64},
                          time::Float64,
                          dt::Float64)
     dof = Data_Manager.get_dof()
-    deformation_gradient = Data_Manager.get_field("Deformation Gradient")::Array{Float64,3}
-    bond_force = Data_Manager.get_field("Bond Forces")::Vector{Vector{Vector{Float64}}}
-    undeformed_bond = Data_Manager.get_field("Bond Geometry")::Vector{Vector{Vector{Float64}}}
-    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry",
-                                           "NP1")::Vector{Vector{Vector{Float64}}}
-    Kinv = Data_Manager.get_field("Inverse Shape Tensor")::Array{Float64,3}
-    zStiff = Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",
-                                                            Float64,
-                                                            dof)::Array{Float64,
-                                                                        3}
+    deformation_gradient::NodeTensorField{Float64,
+                                          3} = Data_Manager.get_field("Deformation Gradient")
+    bond_force::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
+    undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
+    deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
+                                                                     "NP1")
+    Kinv::NodeTensorField{Float64,3} = Data_Manager.get_field("Inverse Shape Tensor")
+    zStiff::NodeTensorField{Float64,
+                            3} = Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",
+                                                                                Float64,
+                                                                                dof)
     rotation = Data_Manager.get_rotation()::Bool
 
     symmetry = material_parameter["Symmetry"]::String

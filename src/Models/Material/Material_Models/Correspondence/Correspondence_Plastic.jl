@@ -148,10 +148,13 @@ function compute_stresses(nodes,
     global temp_B
     global sqrt23
 
-    von_Mises_stress_yield = Data_Manager.get_field("von Mises Yield Stress", "NP1")
-    plastic_strain_N = Data_Manager.get_field("Plastic Strain", "N")
-    plastic_strain_NP1 = Data_Manager.get_field("Plastic Strain", "NP1")
-    coordinates = Data_Manager.get_field("Coordinates")
+    von_Mises_stress_yield::NodeScalarField{Float64} = Data_Manager.get_field("von Mises Yield Stress",
+                                                                              "NP1")
+    plastic_strain_N::NodeScalarField{Float64} = Data_Manager.get_field("Plastic Strain",
+                                                                        "N")
+    plastic_strain_NP1::NodeScalarField{Float64} = Data_Manager.get_field("Plastic Strain",
+                                                                          "NP1")
+    coordinates::NodeVectorField{Float64} = Data_Manager.get_field("Coordinates")
     yield_stress = material_parameter["Yield Stress"]
     spherical_stress_N = 0.0
     spherical_stress_NP1 = 0.0
