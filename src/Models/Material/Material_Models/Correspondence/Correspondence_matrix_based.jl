@@ -28,14 +28,31 @@ kronecker_delta(x::Int64, y::Int64) = ==(x, y)
 function contraction!(C::Array{Float64,4}, B::Array{Float64,3}, dof::Int64,
                       CB::AbstractArray{Float64,3})
     fill!(CB, 0.0)
-    @inbounds for q in 1:dof, p in 1:dof, o in 1:dof
-        B_opq = B[o, p, q]
-        for n in 1:dof, m in 1:dof
-            CB[m, n, q] += C[m, n, o, p] * B_opq
+
+    # Unroll for common cases
+    if dof == 2
+        @turbo for q in 1:2, p in 1:2, o in 1:2
+            B_opq = B[o, p, q]
+            for n in 1:2, m in 1:2
+                CB[m, n, q] += C[m, n, o, p] * B_opq
+            end
+        end
+    elseif dof == 3
+        @turbo for q in 1:3, p in 1:3, o in 1:3
+            B_opq = B[o, p, q]
+            for n in 1:3, m in 1:3
+                CB[m, n, q] += C[m, n, o, p] * B_opq
+            end
+        end
+    else
+        @inbounds for q in 1:dof, p in 1:dof, o in 1:dof
+            B_opq = B[o, p, q]
+            for n in 1:dof, m in 1:dof
+                CB[m, n, q] += C[m, n, o, p] * B_opq
+            end
         end
     end
 end
-
 function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
                           V_k::Float64, omega_ik::Float64, dof::Int64,
                           B_tensor::Array{Float64,3})
@@ -243,7 +260,7 @@ Add dof×dof block directly to V at start_idx.
 end
 
 """
-	init_assemble_stiffness_optimized(...)
+	init_assemble_stiffness(...)
 
 Optimized assembly with mapping vector structure.
 
@@ -252,15 +269,15 @@ Uses:
 - mapping[i][k_idx+1] for column nlist[i][k_idx]
 - mapping[j][...] for writing row j when j ∈ nlist[i]
 """
-function init_assemble_stiffness_optimized(nodes::AbstractVector{Int64},
-                                           dof::Int64,
-                                           C_Voigt::Array{Float64,3},
-                                           inverse_shape_tensor::Array{Float64,3},
-                                           number_of_neighbors::Vector{Int64},
-                                           nlist::Vector{Vector{Int64}},
-                                           volume::Vector{Float64},
-                                           bond_geometry::Vector{Vector{Vector{Float64}}},
-                                           omega::Vector{Vector{Float64}})
+function init_assemble_stiffness(nodes::AbstractVector{Int64},
+                                 dof::Int64,
+                                 C_Voigt::Array{Float64,3},
+                                 inverse_shape_tensor::Array{Float64,3},
+                                 number_of_neighbors::Vector{Int64},
+                                 nlist::Vector{Vector{Int64}},
+                                 volume::Vector{Float64},
+                                 bond_geometry::Vector{Vector{Vector{Float64}}},
+                                 omega::Vector{Vector{Float64}})
     @info "Creating mapping structure..."
     mapping, I, J, V,
     n_total = create_mapping_structure(nodes, nlist,
@@ -275,10 +292,9 @@ function init_assemble_stiffness_optimized(nodes::AbstractVector{Int64},
         end
     end
 
-    # Buffers
+    # Nur noch CB_k_buffer und K_block - keine K_ij Buffers!
     max_neighbors = maximum(number_of_neighbors)
-    K_ij_j_buffer = zeros(max_neighbors + 1, dof, dof)
-    K_ij_i_buffer = zeros(max_neighbors + 1, dof, dof)
+    CB_k_buffer = zeros(max_neighbors, dof, dof, dof)
 
     if dof == 2
         K_block = @MMatrix zeros(2, 2)
@@ -287,8 +303,6 @@ function init_assemble_stiffness_optimized(nodes::AbstractVector{Int64},
         K_block = @MMatrix zeros(3, 3)
         B_ik = zeros(3, 3, 3)
     end
-
-    CB_k_buffer = zeros(max_neighbors, dof, dof, dof)
 
     @info "Assembling stiffness..."
     iter = progress_bar(0, length(nodes)-1, false)
@@ -305,19 +319,20 @@ function init_assemble_stiffness_optimized(nodes::AbstractVector{Int64},
         precompute_CB_tensors!(CB_k, C_tensor, D_inv, ni, volume,
                                bond_geometry[i], omega[i], dof, B_ik)
 
-        # Get lookup for i's neighbors
-        i_lookup = neighbor_positions[i]
+        # Pre-fetch mapping indices für row i (einmal pro i)
+        i_diag_idx = mapping[i][1]
+        i_offdiag_idx = [mapping[i][k_idx+1] for k_idx in 1:n_neighbors]
 
         for (j_idx, j) in enumerate(ni)
             omega_ij = omega[i][j_idx]
             V_j = volume[j]
             X_ij = bond_geometry[i][j_idx]
 
-            # Clear buffers (faster than fill!)
-            @turbo K_ij_j_buffer .= 0.0
-            @turbo K_ij_i_buffer .= 0.0
+            # Pre-fetch lookups für row j
+            j_lookup = neighbor_positions[j]
+            j_diag_idx = mapping[j][1]
 
-            # Accumulate over k ∈ nlist[i]
+            # Für jeden k: berechne K_ijk und schreibe direkt
             for (k_idx, k) in enumerate(ni)
                 omega_ik = omega[i][k_idx]
                 V_k = volume[k]
@@ -326,45 +341,35 @@ function init_assemble_stiffness_optimized(nodes::AbstractVector{Int64},
                                             D_inv, X_ij, omega_ij, V_k, omega_ik, dof,
                                             K_block)
 
-                # Accumulate using SIMD
-                @turbo for a in 1:dof, b in 1:dof
-                    K_ij_j_buffer[1, a, b] -= K_block[a, b]
-                    K_ij_i_buffer[1, a, b] -= K_block[a, b]
-                    K_ij_j_buffer[k_idx+1, a, b] += K_block[a, b]
-                    K_ij_i_buffer[k_idx+1, a, b] += K_block[a, b]
+                # === Row j Einträge ===
+                # Column i: nur wenn i ∈ nlist[j]
+                i_pos_in_j = get(j_lookup, i, nothing)
+                if i_pos_in_j !== nothing
+                    # K_ij_j_buffer[1] -= K_block, dann *= -V_i
+                    # Also: V += K_block * V_i
+                    add_block_scaled!(V, mapping[j][i_pos_in_j+1], K_block, V_i, dof)
                 end
-            end
 
-            # Write row j - use pre-computed lookups
-            j_lookup = neighbor_positions[j]
-
-            # Column i
-            i_pos_in_j = get(j_lookup, i, nothing)
-            if i_pos_in_j !== nothing
-                start_idx = mapping[j][i_pos_in_j+1]
-                add_block_scaled!(V, start_idx, @view(K_ij_j_buffer[1, :, :]), -V_i, dof)
-            end
-
-            # Columns k ∈ nlist[i] - kombinierte Schleife
-            for (k_idx, k) in enumerate(ni)
-                k_pos_in_j = get(j_lookup, k, nothing)
-                if k_pos_in_j !== nothing
-                    start_idx = mapping[j][k_pos_in_j+1]
-                elseif k == j
-                    start_idx = mapping[j][1]
+                # Column k
+                if k == j
+                    # Diagonal: K_ij_j_buffer[k_idx+1] += K_block, dann *= -V_i
+                    # Also: V -= K_block * V_i
+                    add_block_scaled!(V, j_diag_idx, K_block, -V_i, dof)
                 else
-                    continue
+                    k_pos_in_j = get(j_lookup, k, nothing)
+                    if k_pos_in_j !== nothing
+                        add_block_scaled!(V, mapping[j][k_pos_in_j+1], K_block, -V_i, dof)
+                    end
                 end
-                add_block_scaled!(V, start_idx, @view(K_ij_j_buffer[k_idx+1, :, :]), -V_i,
-                                  dof)
-            end
 
-            # Write row i - straightforward
-            add_block_scaled!(V, mapping[i][1], @view(K_ij_i_buffer[1, :, :]), V_j, dof)
+                # === Row i Einträge ===
+                # Column i (diagonal): K_ij_i_buffer[1] -= K_block, dann *= V_j
+                # Also: V -= K_block * V_j
+                add_block_scaled!(V, i_diag_idx, K_block, -V_j, dof)
 
-            for (k_idx, k) in enumerate(ni)
-                add_block_scaled!(V, mapping[i][k_idx+1],
-                                  @view(K_ij_i_buffer[k_idx+1, :, :]), V_j, dof)
+                # Column k: K_ij_i_buffer[k_idx+1] += K_block, dann *= V_j
+                # Also: V += K_block * V_j
+                add_block_scaled!(V, i_offdiag_idx[k_idx], K_block, V_j, dof)
             end
         end
     end
@@ -372,7 +377,6 @@ function init_assemble_stiffness_optimized(nodes::AbstractVector{Int64},
     return I, J, V, n_total
 end
 
-# Hilfsfunktion für skalierte Addition
 @inline function add_block_scaled!(V, start_idx, block, scale, dof)
     @turbo for i in 1:dof, j in 1:dof
         V[start_idx+(j-1)*dof+i-1] += scale * block[i, j]
@@ -580,29 +584,29 @@ function init_matrix(datamanager::Module)
 
     @info "Initializing stiffness matrix (mapping optimized)"
     index_x, index_y, vals,
-    total_dof = init_assemble_stiffness_optimized(nodes,
-                                                  dof,
-                                                  C_voigt,
-                                                  inverse_shape_tensor,
-                                                  number_of_neighbors,
-                                                  nlist,
-                                                  volume,
-                                                  bond_geometry,
-                                                  omega)
+    total_dof = init_assemble_stiffness(nodes,
+                                        dof,
+                                        C_voigt,
+                                        inverse_shape_tensor,
+                                        number_of_neighbors,
+                                        nlist,
+                                        volume,
+                                        bond_geometry,
+                                        omega)
 
     datamanager.init_stiffness_matrix(index_x, index_y, vals, total_dof)
 end
 
-function compute_model(datamanager::Module,
-                       nodes::AbstractVector{Int64})
-    dof = datamanager.get_dof()
-    C_voigt = datamanager.get_field("Hooke Matrix")
-    inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
-    nlist = datamanager.get_nlist()
-    volume = datamanager.get_field("Volume")
-    bond_geometry_N = datamanager.get_field("Deformed Bond Geometry", "N")
-    omega = datamanager.get_field("Influence Function")
-    bond_damage = datamanager.get_field("Bond Damage", "NP1")
+function compute_model(datamanager::Module, nodes::AbstractVector{Int64})
+    dof::Int64 = datamanager.get_dof()
+    C_voigt::Array{Float64,3} = datamanager.get_field("Hooke Matrix")
+    inverse_shape_tensor::Array{Float64,3} = datamanager.get_field("Inverse Shape Tensor")
+    nlist::Vector{Vector{Int64}} = datamanager.get_nlist()
+    volume::Vector{Float64} = datamanager.get_field("Volume")
+    bond_geometry_N::Vector{Vector{Vector{Float64}}} = datamanager.get_field("Deformed Bond Geometry",
+                                                                             "N")
+    omega::Vector{Vector{Float64}} = datamanager.get_field("Influence Function")
+    bond_damage::Vector{Vector{Float64}} = datamanager.get_field("Bond Damage", "NP1")
 
     zStiff = datamanager.get_field("Zero Energy Stiffness")
     K_sparse = datamanager.get_stiffness_matrix()
