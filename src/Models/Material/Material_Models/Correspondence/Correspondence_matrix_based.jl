@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Correspondence_matrix_based
+using Base.Threads
 using LinearAlgebra
 using ProgressBars
 using LoopVectorization: @turbo
@@ -292,7 +293,6 @@ function init_assemble_stiffness(nodes::AbstractVector{Int64},
         end
     end
 
-    # Nur noch CB_k_buffer und K_block - keine K_ij Buffers!
     max_neighbors = maximum(number_of_neighbors)
     CB_k_buffer = zeros(max_neighbors, dof, dof, dof)
 
@@ -313,26 +313,24 @@ function init_assemble_stiffness(nodes::AbstractVector{Int64},
         C_tensor = get_fourth_order(@view(C_Voigt[i, :, :]), dof)
         V_i = volume[i]
         ni = nlist[i]
-        n_neighbors = length(ni)
 
-        CB_k = @view CB_k_buffer[1:n_neighbors, :, :, :]
+        CB_k = @view CB_k_buffer[eachindex(ni), :, :, :]
         precompute_CB_tensors!(CB_k, C_tensor, D_inv, ni, volume,
                                bond_geometry[i], omega[i], dof, B_ik)
 
         # Pre-fetch mapping indices für row i (einmal pro i)
         i_diag_idx = mapping[i][1]
-        i_offdiag_idx = [mapping[i][k_idx+1] for k_idx in 1:n_neighbors]
+        i_offdiag_idx = [mapping[i][k_idx+1] for k_idx in eachindex(ni)]
 
         for (j_idx, j) in enumerate(ni)
             omega_ij = omega[i][j_idx]
             V_j = volume[j]
             X_ij = bond_geometry[i][j_idx]
 
-            # Pre-fetch lookups für row j
+            # Pre-fetch lookups for row j
             j_lookup = neighbor_positions[j]
             j_diag_idx = mapping[j][1]
 
-            # Für jeden k: berechne K_ijk und schreibe direkt
             for (k_idx, k) in enumerate(ni)
                 omega_ik = omega[i][k_idx]
                 V_k = volume[k]
@@ -341,19 +339,19 @@ function init_assemble_stiffness(nodes::AbstractVector{Int64},
                                             D_inv, X_ij, omega_ij, V_k, omega_ik, dof,
                                             K_block)
 
-                # === Row j Einträge ===
+                # === Row j entries ===
                 # Column i: nur wenn i ∈ nlist[j]
                 i_pos_in_j = get(j_lookup, i, nothing)
                 if i_pos_in_j !== nothing
                     # K_ij_j_buffer[1] -= K_block, dann *= -V_i
-                    # Also: V += K_block * V_i
+                    # V += K_block * V_i
                     add_block_scaled!(V, mapping[j][i_pos_in_j+1], K_block, V_i, dof)
                 end
 
                 # Column k
                 if k == j
                     # Diagonal: K_ij_j_buffer[k_idx+1] += K_block, dann *= -V_i
-                    # Also: V -= K_block * V_i
+                    # V -= K_block * V_i
                     add_block_scaled!(V, j_diag_idx, K_block, -V_i, dof)
                 else
                     k_pos_in_j = get(j_lookup, k, nothing)
@@ -362,13 +360,13 @@ function init_assemble_stiffness(nodes::AbstractVector{Int64},
                     end
                 end
 
-                # === Row i Einträge ===
+                # === Row i entries ===
                 # Column i (diagonal): K_ij_i_buffer[1] -= K_block, dann *= V_j
-                # Also: V -= K_block * V_j
+                # V -= K_block * V_j
                 add_block_scaled!(V, i_diag_idx, K_block, -V_j, dof)
 
                 # Column k: K_ij_i_buffer[k_idx+1] += K_block, dann *= V_j
-                # Also: V += K_block * V_j
+                # V += K_block * V_j
                 add_block_scaled!(V, i_offdiag_idx[k_idx], K_block, V_j, dof)
             end
         end
