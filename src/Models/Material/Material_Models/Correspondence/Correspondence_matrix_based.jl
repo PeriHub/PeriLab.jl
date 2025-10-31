@@ -284,95 +284,123 @@ function init_assemble_stiffness(nodes::AbstractVector{Int64},
     n_total = create_mapping_structure(nodes, nlist,
                                        number_of_neighbors, dof)
 
-    # Pre-allocate lookup tables
+    # Neighbor lookup (array-based for speed)
     max_nodes = maximum(nodes)
-    neighbor_positions = [Dict{Int64,Int64}() for _ in 1:max_nodes]
+    neighbor_positions = [zeros(Int64, max_nodes) for _ in 1:max_nodes]
     for node in nodes
         for (idx, neighbor) in enumerate(nlist[node])
             neighbor_positions[node][neighbor] = idx
         end
     end
 
+    @info "Assembling stiffness (multi-threaded)..."
+
+    # Partition nodes by workload
+    n_threads = Threads.nthreads()
+    workloads = [number_of_neighbors[i]^2 for i in nodes]
+    node_partitions = partition_by_workload(nodes, workloads, n_threads)
+
+    # Thread-local V arrays
+    thread_V = [zeros(Float64, length(V)) for _ in 1:n_threads]
+
+    # Thread-local buffers
     max_neighbors = maximum(number_of_neighbors)
-    CB_k_buffer = zeros(max_neighbors, dof, dof, dof)
+    thread_buffers = [(CB_k = zeros(max_neighbors, dof, dof, dof),
+                       K_block = dof == 2 ? @MMatrix(zeros(2, 2)) : @MMatrix(zeros(3, 3)),
+                       B_ik = dof == 2 ? zeros(2, 2, 2) : zeros(3, 3, 3))
+                      for _ in 1:n_threads]
 
-    if dof == 2
-        K_block = @MMatrix zeros(2, 2)
-        B_ik = zeros(2, 2, 2)
-    else
-        K_block = @MMatrix zeros(3, 3)
-        B_ik = zeros(3, 3, 3)
-    end
+    # Process each partition in parallel
+    Threads.@threads for tid in 1:n_threads
+        buffers = thread_buffers[tid]
+        V_thread = thread_V[tid]
 
-    @info "Assembling stiffness..."
-    iter = progress_bar(0, length(nodes)-1, false)
+        for i in node_partitions[tid]
+            D_inv = @view inverse_shape_tensor[i, :, :]
+            C_tensor = get_fourth_order(@view(C_Voigt[i, :, :]), dof)
+            V_i = volume[i]
+            ni = nlist[i]
 
-    @inbounds for iter_dx in iter
-        i = nodes[iter_dx]
-        D_inv = @view inverse_shape_tensor[i, :, :]
-        C_tensor = get_fourth_order(@view(C_Voigt[i, :, :]), dof)
-        V_i = volume[i]
-        ni = nlist[i]
+            CB_k = @view buffers.CB_k[eachindex(ni), :, :, :]
+            precompute_CB_tensors!(CB_k, C_tensor, D_inv, ni, volume,
+                                   bond_geometry[i], omega[i], dof, buffers.B_ik)
 
-        CB_k = @view CB_k_buffer[eachindex(ni), :, :, :]
-        precompute_CB_tensors!(CB_k, C_tensor, D_inv, ni, volume,
-                               bond_geometry[i], omega[i], dof, B_ik)
+            i_diag_idx = mapping[i][1]
+            mapping_i = mapping[i]
 
-        # Pre-fetch mapping indices für row i (einmal pro i)
-        i_diag_idx = mapping[i][1]
-        i_offdiag_idx = [mapping[i][k_idx+1] for k_idx in eachindex(ni)]
+            for (j_idx, j) in enumerate(ni)
+                omega_ij = omega[i][j_idx]
+                V_j = volume[j]
+                X_ij = bond_geometry[i][j_idx]
 
-        for (j_idx, j) in enumerate(ni)
-            omega_ij = omega[i][j_idx]
-            V_j = volume[j]
-            X_ij = bond_geometry[i][j_idx]
+                neighbor_pos_j = neighbor_positions[j]
+                j_diag_idx = mapping[j][1]
+                mapping_j = mapping[j]
 
-            # Pre-fetch lookups for row j
-            j_lookup = neighbor_positions[j]
-            j_diag_idx = mapping[j][1]
+                for (k_idx, k) in enumerate(ni)
+                    omega_ik = omega[i][k_idx]
+                    V_k = volume[k]
 
-            for (k_idx, k) in enumerate(ni)
-                omega_ik = omega[i][k_idx]
-                V_k = volume[k]
+                    compute_linearized_operator(@view(CB_k[k_idx, :, :, :]),
+                                                D_inv, X_ij, omega_ij, V_k, omega_ik,
+                                                dof, buffers.K_block)
 
-                compute_linearized_operator(@view(CB_k[k_idx, :, :, :]),
-                                            D_inv, X_ij, omega_ij, V_k, omega_ik, dof,
-                                            K_block)
-
-                # === Row j entries ===
-                # Column i: nur wenn i ∈ nlist[j]
-                i_pos_in_j = get(j_lookup, i, nothing)
-                if i_pos_in_j !== nothing
-                    # K_ij_j_buffer[1] -= K_block, dann *= -V_i
-                    # V += K_block * V_i
-                    add_block_scaled!(V, mapping[j][i_pos_in_j+1], K_block, V_i, dof)
-                end
-
-                # Column k
-                if k == j
-                    # Diagonal: K_ij_j_buffer[k_idx+1] += K_block, dann *= -V_i
-                    # V -= K_block * V_i
-                    add_block_scaled!(V, j_diag_idx, K_block, -V_i, dof)
-                else
-                    k_pos_in_j = get(j_lookup, k, nothing)
-                    if k_pos_in_j !== nothing
-                        add_block_scaled!(V, mapping[j][k_pos_in_j+1], K_block, -V_i, dof)
+                    # Row j entries
+                    i_pos_in_j = neighbor_pos_j[i]
+                    if i_pos_in_j != 0
+                        add_block_scaled!(V_thread, mapping_j[i_pos_in_j+1],
+                                          buffers.K_block, V_i, dof)
                     end
+
+                    if k == j
+                        add_block_scaled!(V_thread, j_diag_idx, buffers.K_block, -V_i, dof)
+                    else
+                        k_pos_in_j = neighbor_pos_j[k]
+                        if k_pos_in_j != 0
+                            add_block_scaled!(V_thread, mapping_j[k_pos_in_j+1],
+                                              buffers.K_block, -V_i, dof)
+                        end
+                    end
+
+                    # Row i entries
+                    add_block_scaled!(V_thread, i_diag_idx, buffers.K_block, -V_j, dof)
+                    add_block_scaled!(V_thread, mapping_i[k_idx+1], buffers.K_block, V_j,
+                                      dof)
                 end
-
-                # === Row i entries ===
-                # Column i (diagonal): K_ij_i_buffer[1] -= K_block, dann *= V_j
-                # V -= K_block * V_j
-                add_block_scaled!(V, i_diag_idx, K_block, -V_j, dof)
-
-                # Column k: K_ij_i_buffer[k_idx+1] += K_block, dann *= V_j
-                # V += K_block * V_j
-                add_block_scaled!(V, i_offdiag_idx[k_idx], K_block, V_j, dof)
             end
         end
     end
 
+    # Merge results
+    @info "Merging thread results..."
+    @inbounds Threads.@threads for i in eachindex(V)
+        for tid in 1:n_threads
+            V[i] += thread_V[tid][i]
+        end
+    end
+
     return I, J, V, n_total
+end
+
+# Helper function for load balancing
+function partition_by_workload(nodes, workloads, n_threads)
+    total_work = sum(workloads)
+    target_work = total_work / n_threads
+
+    partitions = [Int64[] for _ in 1:n_threads]
+    current_thread = 1
+    current_work = 0.0
+
+    for (i, node) in enumerate(nodes)
+        if current_thread < n_threads && current_work >= target_work
+            current_thread += 1
+            current_work = 0.0
+        end
+        push!(partitions[current_thread], node)
+        current_work += workloads[i]
+    end
+
+    return partitions
 end
 
 @inline function add_block_scaled!(V, start_idx, block, scale, dof)
