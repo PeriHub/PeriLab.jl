@@ -5,6 +5,7 @@
 module Correspondence_matrix_based
 using LinearAlgebra
 using ProgressBars
+using LoopVectorization: @turbo
 using ...Material_Basis: get_Hooke_matrix
 using ....Helpers: get_fourth_order, progress_bar
 using ...Global_Zero_Energy_Control: create_zero_energy_mode_stiffness!
@@ -265,7 +266,16 @@ function init_assemble_stiffness_optimized(nodes::AbstractVector{Int64},
     n_total = create_mapping_structure(nodes, nlist,
                                        number_of_neighbors, dof)
 
-    # Buffers: [1] for i, [2..n+1] for nlist[i]
+    # Pre-allocate lookup tables
+    max_nodes = maximum(nodes)
+    neighbor_positions = [Dict{Int64,Int64}() for _ in 1:max_nodes]
+    for node in nodes
+        for (idx, neighbor) in enumerate(nlist[node])
+            neighbor_positions[node][neighbor] = idx
+        end
+    end
+
+    # Buffers
     max_neighbors = maximum(number_of_neighbors)
     K_ij_j_buffer = zeros(max_neighbors + 1, dof, dof)
     K_ij_i_buffer = zeros(max_neighbors + 1, dof, dof)
@@ -285,88 +295,88 @@ function init_assemble_stiffness_optimized(nodes::AbstractVector{Int64},
 
     @inbounds for iter_dx in iter
         i = nodes[iter_dx]
-        @views D_inv = inverse_shape_tensor[i, :, :]
-        @views C_tensor = get_fourth_order(C_Voigt[i, :, :], dof)
+        D_inv = @view inverse_shape_tensor[i, :, :]
+        C_tensor = get_fourth_order(@view(C_Voigt[i, :, :]), dof)
         V_i = volume[i]
         ni = nlist[i]
         n_neighbors = length(ni)
 
         CB_k = @view CB_k_buffer[1:n_neighbors, :, :, :]
-
         precompute_CB_tensors!(CB_k, C_tensor, D_inv, ni, volume,
                                bond_geometry[i], omega[i], dof, B_ik)
+
+        # Get lookup for i's neighbors
+        i_lookup = neighbor_positions[i]
 
         for (j_idx, j) in enumerate(ni)
             omega_ij = omega[i][j_idx]
             V_j = volume[j]
             X_ij = bond_geometry[i][j_idx]
 
-            # Clear buffers
-            fill!(K_ij_j_buffer, 0.0)
-            fill!(K_ij_i_buffer, 0.0)
+            # Clear buffers (faster than fill!)
+            @turbo K_ij_j_buffer .= 0.0
+            @turbo K_ij_i_buffer .= 0.0
 
-            # Accumulate over all k ∈ nlist[i]
+            # Accumulate over k ∈ nlist[i]
             for (k_idx, k) in enumerate(ni)
                 omega_ik = omega[i][k_idx]
                 V_k = volume[k]
 
-                @views compute_linearized_operator(CB_k[k_idx, :, :, :],
-                                                   D_inv, X_ij,
-                                                   omega_ij, V_k, omega_ik,
-                                                   dof, K_block)
+                compute_linearized_operator(@view(CB_k[k_idx, :, :, :]),
+                                            D_inv, X_ij, omega_ij, V_k, omega_ik, dof,
+                                            K_block)
 
-                # Accumulate: buffer[1] for i, buffer[k_idx+1] for k
-                @views K_ij_j_buffer[1, :, :] .-= K_block
-                @views K_ij_i_buffer[1, :, :] .-= K_block
-                @views K_ij_j_buffer[k_idx+1, :, :] .+= K_block
-                @views K_ij_i_buffer[k_idx+1, :, :] .+= K_block
-            end
-
-            # Write row j using mapping[j]
-            # Find j's position relative to i's neighbors
-            # Column i: need to find i in nlist[j]
-            j_neighbors = nlist[j]
-            i_pos_in_j = findfirst(==(i), j_neighbors)
-
-            if i_pos_in_j !== nothing
-                # j has i as neighbor - use mapping[j][i_pos_in_j+1]
-                start_idx = mapping[j][i_pos_in_j+1]
-                @views scaled = -V_i .* K_ij_j_buffer[1, :, :]
-                add_block_direct!(V, start_idx, scaled, dof)
-            end
-
-            # Columns k ∈ nlist[i]
-            for (k_idx, k) in enumerate(ni)
-                k_pos_in_j = findfirst(==(k), j_neighbors)
-
-                if k_pos_in_j !== nothing
-                    start_idx = mapping[j][k_pos_in_j+1]
-                    @views scaled = -V_i .* K_ij_j_buffer[k_idx+1, :, :]
-                    add_block_direct!(V, start_idx, scaled, dof)
-                elseif k == j
-                    # Diagonal block (j, j)
-                    start_idx = mapping[j][1]
-                    @views scaled = -V_i .* K_ij_j_buffer[k_idx+1, :, :]
-                    add_block_direct!(V, start_idx, scaled, dof)
+                # Accumulate using SIMD
+                @turbo for a in 1:dof, b in 1:dof
+                    K_ij_j_buffer[1, a, b] -= K_block[a, b]
+                    K_ij_i_buffer[1, a, b] -= K_block[a, b]
+                    K_ij_j_buffer[k_idx+1, a, b] += K_block[a, b]
+                    K_ij_i_buffer[k_idx+1, a, b] += K_block[a, b]
                 end
             end
 
-            # Write row i using mapping[i] - straightforward!
-            # Column i (diagonal)
-            start_idx = mapping[i][1]
-            @views scaled = V_j .* K_ij_i_buffer[1, :, :]
-            add_block_direct!(V, start_idx, scaled, dof)
+            # Write row j - use pre-computed lookups
+            j_lookup = neighbor_positions[j]
 
-            # Columns k ∈ nlist[i]
+            # Column i
+            i_pos_in_j = get(j_lookup, i, nothing)
+            if i_pos_in_j !== nothing
+                start_idx = mapping[j][i_pos_in_j+1]
+                add_block_scaled!(V, start_idx, @view(K_ij_j_buffer[1, :, :]), -V_i, dof)
+            end
+
+            # Columns k ∈ nlist[i] - kombinierte Schleife
             for (k_idx, k) in enumerate(ni)
-                start_idx = mapping[i][k_idx+1]
-                @views scaled = V_j .* K_ij_i_buffer[k_idx+1, :, :]
-                add_block_direct!(V, start_idx, scaled, dof)
+                k_pos_in_j = get(j_lookup, k, nothing)
+                if k_pos_in_j !== nothing
+                    start_idx = mapping[j][k_pos_in_j+1]
+                elseif k == j
+                    start_idx = mapping[j][1]
+                else
+                    continue
+                end
+                add_block_scaled!(V, start_idx, @view(K_ij_j_buffer[k_idx+1, :, :]), -V_i,
+                                  dof)
+            end
+
+            # Write row i - straightforward
+            add_block_scaled!(V, mapping[i][1], @view(K_ij_i_buffer[1, :, :]), V_j, dof)
+
+            for (k_idx, k) in enumerate(ni)
+                add_block_scaled!(V, mapping[i][k_idx+1],
+                                  @view(K_ij_i_buffer[k_idx+1, :, :]), V_j, dof)
             end
         end
     end
 
     return I, J, V, n_total
+end
+
+# Hilfsfunktion für skalierte Addition
+@inline function add_block_scaled!(V, start_idx, block, scale, dof)
+    @turbo for i in 1:dof, j in 1:dof
+        V[start_idx+(j-1)*dof+i-1] += scale * block[i, j]
+    end
 end
 
 # [Include all other functions from working version]
