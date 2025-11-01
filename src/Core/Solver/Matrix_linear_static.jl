@@ -111,6 +111,8 @@ function init_solver(solver_options::Dict{Any,Any},
                      block_nodes::Dict{Int64,Vector{Int64}},
                      to::TimerOutput)
     find_bc_free_dof(datamanager, bcs)
+    delta_u = datamanager.create_constant_node_field("Delta Displacements", Float64,
+                                                     datamanager.get_dof())
     solver_options["Initial Time"] = get_initial_time(params, datamanager)
     solver_options["Final Time"] = get_final_time(params, datamanager)
 
@@ -187,22 +189,22 @@ function run_solver(solver_options::Dict{Any,Any},
     nodes::Vector{Int64} = collect(1:datamanager.get_nnodes())
     nlist = datamanager.get_nlist()
     dof = datamanager.get_dof()
-    delta_u = datamanager.create_constant_node_field("Delta Displacements", Float64,
-                                                     datamanager.get_dof())
+
+    uN = datamanager.get_field("Displacements", "N")
+    uNP1 = datamanager.get_field("Displacements", "NP1")
+    delta_u = datamanager.get_field("Delta Displacements")
+    deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
+    forces = datamanager.get_field("Forces", "NP1")
+    force_densities_N = datamanager.get_field("Force Densities", "N")
+    force_densities_NP1 = datamanager.get_field("Force Densities", "NP1")
+    volume = datamanager.get_field("Volume")
+    forces = datamanager.get_field("Forces", "NP1")
+    velocities = datamanager.get_field("Velocity", "NP1")
+    external_force_densities = datamanager.get_field("External Force Densities")
+
     @inbounds @fastmath for idt in iter
         datamanager.set_iteration(idt)
         @timeit to "Linear Static" begin
-            uN = datamanager.get_field("Displacements", "N")
-            uNP1 = datamanager.get_field("Displacements", "NP1")
-            deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
-            forces = datamanager.get_field("Forces", "NP1")
-            force_densities_N = datamanager.get_field("Force Densities", "N")
-            force_densities_NP1 = datamanager.get_field("Force Densities", "NP1")
-            volume = datamanager.get_field("Volume")
-            forces = datamanager.get_field("Forces", "NP1")
-            velocities = datamanager.get_field("Velocity", "NP1")
-            external_force_densities = datamanager.get_field("External Force Densities")
-
             datamanager = apply_bc_dirichlet(["Displacements", "Forces", "Force Densities"],
                                              bcs,
                                              datamanager, time,
