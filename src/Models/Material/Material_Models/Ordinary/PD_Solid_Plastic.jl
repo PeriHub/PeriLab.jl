@@ -208,14 +208,14 @@ Compute the norm of the deviatoric force state for each node.
 
 function compute_deviatoric_force_state_norm!(td_norm::Vector{Float64},
                                               nodes::AbstractVector{Int64},
-                                              nlist::Vector{Vector{Int64}},
+                                              nlist::BondScalarState{Int64},
                                               alpha::Float64,
-                                              bond_force_deviatoric::Vector{Vector{Float64}},
-                                              bond_damage::Vector{Vector{Float64}},
-                                              omega::Vector{Vector{Float64}},
-                                              volume::Vector{Float64},
-                                              deviatoric_plastic_extension_state::Vector{Vector{Float64}},
-                                              temp_field::Vector{Vector{Float64}})
+                                              bond_force_deviatoric::BondScalarState{Float64},
+                                              bond_damage::BondScalarState{Float64},
+                                              omega::BondScalarState{Float64},
+                                              volume::NodeScalarField{Float64},
+                                              deviatoric_plastic_extension_state::BondScalarState{Float64},
+                                              temp_field::BondScalarState{Float64})
     # not optimal allocation of memory, but not check of indices is needed
     # for iID in nodes
     # td_trial = bond_force_deviatoric[iID] -
@@ -234,14 +234,14 @@ end
 
 function compute_deviatoric_force_state_norm!(td_norm::Vector{Float64},
                                               nodes::AbstractVector{Int64},
-                                              nlist::Vector{Vector{Int64}},
+                                              nlist::BondScalarState{Int64},
                                               alpha::Vector{Float64},
-                                              bond_force_deviatoric::Vector{Vector{Float64}},
-                                              bond_damage::Vector{Vector{Float64}},
-                                              omega::Vector{Vector{Float64}},
-                                              volume::Vector{Float64},
-                                              deviatoric_plastic_extension_state::Vector{Vector{Float64}},
-                                              temp_field::Vector{Vector{Float64}})
+                                              bond_force_deviatoric::BondScalarState{Float64},
+                                              bond_damage::BondScalarState{Float64},
+                                              omega::BondScalarState{Float64},
+                                              volume::NodeScalarField{Float64},
+                                              deviatoric_plastic_extension_state::BondScalarState{Float64},
+                                              temp_field::BondScalarState{Float64})
     # not optimal allocation of memory, but not check of indices is needed
 
     # for iID in nodes
@@ -294,10 +294,10 @@ function plastic(nodes::AbstractVector{Int64},
                  yield_value::Vector{Float64},
                  lambdaNP1::AbstractVector{Float64},
                  alpha::Float64,
-                 omega::Vector{Vector{Float64}},
-                 bond_damage::Vector{Vector{Float64}},
-                 deviatoric_plastic_extension_state::Vector{Vector{Float64}},
-                 bond_force_deviatoric::Vector{Vector{Float64}})
+                 omega::BondScalarState{Float64},
+                 bond_damage::BondScalarState{Float64},
+                 deviatoric_plastic_extension_state::BondScalarState{Float64},
+                 bond_force_deviatoric::BondScalarState{Float64})
     for iID in nodes
         if td_norm[iID] * td_norm[iID] / 2 - yield_value[iID] < 0
             continue
@@ -318,10 +318,10 @@ function plastic(nodes::AbstractVector{Int64},
                  yield_value::Vector{Float64},
                  lambdaNP1::AbstractVector{Float64},
                  alpha::Vector{Float64},
-                 omega::Vector{Vector{Float64}},
-                 bond_damage::Vector{Vector{Float64}},
-                 deviatoric_plastic_extension_state::Vector{Vector{Float64}},
-                 bond_force_deviatoric::Vector{Vector{Float64}})
+                 omega::BondScalarState{Float64},
+                 bond_damage::BondScalarState{Float64},
+                 deviatoric_plastic_extension_state::BondScalarState{Float64},
+                 bond_force_deviatoric::BondScalarState{Float64})
     for iID in nodes
         if td_norm[iID] * td_norm[iID] / 2 - yield_value[iID] < 0
             continue

@@ -151,9 +151,9 @@ Calculates the specific volume.
 """
 function calculate_specific_volume!(specific_volume::Vector{Int64},
                                     nodes::AbstractVector{Int64},
-                                    nlist::Union{SubArray,Vector{Vector{Int64}}},
+                                    nlist::Union{SubArray,BondScalarState{Int64}},
                                     active::Vector{Bool},
-                                    bond_norm::Vector{Vector{Vector{Float64}}},
+                                    bond_norm::BondVectorState{Float64},
                                     rotation_tensor::Union{Array{Float64,3},Nothing},
                                     specific_volume_check::Vector{Bool},
                                     dof::Int64)

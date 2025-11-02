@@ -149,18 +149,18 @@ function init(params::Dict,
 end
 
 """
-    set_density(params::Dict, block_nodes::Dict, density::Vector{Float64})
+    set_density(params::Dict, block_nodes::Dict, density::NodeScalarField{Float64})
 
 Sets the density of the nodes in the dictionary.
 
 # Arguments
 - `params::Dict`: The parameters
 - `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
-- `density::Vector{Float64}`: The density
+- `density::NodeScalarField{Float64}`: The density
 # Returns
-- `density::Vector{Float64}`: The density
+- `density::NodeScalarField{Float64}`: The density
 """
-function set_density(params::Dict, block_nodes::Dict, density::Vector{Float64})
+function set_density(params::Dict, block_nodes::Dict, density::NodeScalarField{Float64})
     for block in eachindex(block_nodes)
         density[block_nodes[block]] .= get_density(params, block)
     end
@@ -233,18 +233,18 @@ function set_fem_block(params::Dict, block_nodes::Dict, fem_block::Vector{Bool})
 end
 
 """
-    set_horizon(params::Dict, block_nodes::Dict, horizon::Vector{Float64})
+    set_horizon(params::Dict, block_nodes::Dict, horizon::NodeScalarField{Float64})
 
 Sets the horizon of the nodes in the dictionary.
 
 # Arguments
 - `params::Dict`: The parameters
 - `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
-- `horizon::Vector{Float64}`: The horizon
+- `horizon::NodeScalarField{Float64}`: The horizon
 # Returns
-- `horizon::Vector{Float64}`: The horizon
+- `horizon::NodeScalarField{Float64}`: The horizon
 """
-function set_horizon(params::Dict, block_nodes::Dict, horizon::Vector{Float64})
+function set_horizon(params::Dict, block_nodes::Dict, horizon::NodeScalarField{Float64})
     for block in eachindex(block_nodes)
         horizon[block_nodes[block]] .= get_horizon(params, block)
     end

@@ -7,16 +7,19 @@ using LinearAlgebra: mul!
 using Combinatorics: levicivita
 using StaticArrays
 using Rotations
+
+using ...Data_Manager
 using ...Helpers: invert, smat, mat_mul_transpose_mat!
+
 export bond_geometry!
 export compute_shape_tensors!
 export compute_deformation_gradients!
 
 """
-     bond_geometry(undeformed_bond::Vector{Vector{Vector{Float64}}},
-    undeformed_bond_length::Vector{Vector{Float64}},
+     bond_geometry(undeformed_bond::BondVectorState{Float64},
+    undeformed_bond_length::BondScalarState{Float64},
     nodes::AbstractVector{Int64},
-    nlist::Vector{Vector{Int64}},
+    nlist::BondScalarState{Int64},
     coor::Union{SubArray,Matrix{Float64},Matrix{Int64}},
 
 Calculate bond geometries between nodes based on their coordinates.
@@ -48,10 +51,10 @@ Calculate bond geometries between nodes based on their coordinates.
  undeformed_bond(nodes, dof, nlist, coor, undeformed_bond)
 """
 
-function bond_geometry!(undeformed_bond::Vector{Vector{Vector{Float64}}},
-                        undeformed_bond_length::Vector{Vector{Float64}},
+function bond_geometry!(undeformed_bond::BondVectorState{Float64},
+                        undeformed_bond_length::BondScalarState{Float64},
                         nodes::AbstractVector{Int64},
-                        nlist::Vector{Vector{Int64}},
+                        nlist::BondScalarState{Int64},
                         coor::AbstractMatrix{Float64})
     for iID in nodes
         calculate_bond_length!(undeformed_bond[iID],
@@ -62,8 +65,8 @@ function bond_geometry!(undeformed_bond::Vector{Vector{Vector{Float64}}},
     end
 end
 
-@inline function calculate_bond_length!(bond_vectors::Vector{Vector{Float64}},
-                                        bond_norm::Vector{Float64},
+@inline function calculate_bond_length!(bond_vectors::BondScalarState{Float64},
+                                        bond_norm::NodeScalarField{Float64},
                                         iID::Int64,
                                         coor::Matrix{Float64},
                                         nlist::Vector{Int64})
@@ -114,14 +117,14 @@ undeformed_bond = rand(Float64, length(nodes), length(nlist[1]), dof)
 shape_tensor = zeros(Float64, length(nodes), dof, dof)
 inverse_shape_tensor = zeros(Float64, length(nodes), dof, dof)
 """
-function compute_shape_tensors!(shape_tensor::Array{Float64,3},
-                                inverse_shape_tensor::Array{Float64,3},
+function compute_shape_tensors!(shape_tensor::NodeTensorField{Float64,3},
+                                inverse_shape_tensor::NodeTensorField{Float64,3},
                                 nodes::AbstractVector{Int64},
-                                nlist::Vector{Vector{Int64}},
-                                volume::Vector{Float64},
-                                omega::Vector{Vector{Float64}},
-                                bond_damage::Vector{Vector{Float64}},
-                                undeformed_bond::Vector{Vector{Vector{Float64}}})
+                                nlist::BondScalarState{Int64},
+                                volume::NodeScalarField{Float64},
+                                omega::BondScalarState{Float64},
+                                bond_damage::BondScalarState{Float64},
+                                undeformed_bond::BondVectorState{Float64})
     for iID in nodes
         @views compute_shape_tensor!(shape_tensor,
                                      volume[nlist[iID]],
@@ -148,11 +151,11 @@ end
 #
 #end
 
-function compute_shape_tensor!(shape_tensor::Array{Float64,3},
+function compute_shape_tensor!(shape_tensor::NodeTensorField{Float64,3},
                                volume::AbstractVector{Float64},
-                               omega::Vector{Float64},
-                               bond_damage::Vector{Float64},
-                               undeformed_bond::Vector{Vector{Float64}},
+                               omega::NodeScalarField{Float64},
+                               bond_damage::NodeScalarField{Float64},
+                               undeformed_bond::BondScalarState{Float64},
                                iID::Int64)
     @inbounds @fastmath for m in axes(shape_tensor, 2), n in axes(shape_tensor, 3)
         Cmn = zero(eltype(shape_tensor))
@@ -208,16 +211,16 @@ deformation_gradient = zeros(Float64, length(nodes), dof, dof)
 
 """
 
-function compute_deformation_gradients!(deformation_gradient::Array{Float64,3},
+function compute_deformation_gradients!(deformation_gradient::NodeTensorField{Float64,3},
                                         nodes::AbstractVector{Int64},
                                         dof::Int64,
-                                        nlist::Vector{Vector{Int64}},
-                                        volume::Vector{Float64},
-                                        omega::Vector{Vector{Float64}},
-                                        bond_damage::Vector{Vector{Float64}},
-                                        deformed_bond::Vector{Vector{Vector{Float64}}},
-                                        undeformed_bond::Vector{Vector{Vector{Float64}}},
-                                        inverse_shape_tensor::Array{Float64,3})
+                                        nlist::BondScalarState{Int64},
+                                        volume::NodeScalarField{Float64},
+                                        omega::BondScalarState{Float64},
+                                        bond_damage::BondScalarState{Float64},
+                                        deformed_bond::BondVectorState{Float64},
+                                        undeformed_bond::BondVectorState{Float64},
+                                        inverse_shape_tensor::NodeTensorField{Float64,3})
     if dof == 2
         temp = @MMatrix zeros(2, 2)
     else
@@ -243,11 +246,11 @@ function compute_deformation_gradients!(deformation_gradient::Array{Float64,3},
 end
 
 function compute_deformation_gradient!(deformation_gradient::AbstractMatrix{Float64},
-                                       bond_damage::Vector{Float64},
-                                       deformed_bond::Vector{Vector{Float64}},
-                                       undeformed_bond::Vector{Vector{Float64}},
+                                       bond_damage::NodeScalarField{Float64},
+                                       deformed_bond::BondScalarState{Float64},
+                                       undeformed_bond::BondScalarState{Float64},
                                        volume::AbstractVector{Float64},
-                                       omega::Vector{Float64})
+                                       omega::NodeScalarField{Float64})
     @inbounds @fastmath for m in axes(deformation_gradient, 1),
                             n in axes(deformation_gradient, 2)
         Cmn = zero(eltype(deformation_gradient))
@@ -345,8 +348,8 @@ This function iterates over the specified nodes and computes strain at each node
 
 """
 function compute_strain(nodes::AbstractVector{Int64},
-                        deformation_gradient::AbstractArray{Float64},
-                        strain::AbstractArray{Float64})
+                        deformation_gradient::NodeTensorField{Float64},
+                        strain::NodeTensorField{Float64})
     # https://en.wikipedia.org/wiki/Strain_(mechanics)
     for iID in nodes
         @views mat_mul_transpose_mat!(strain[iID, :, :],

@@ -249,29 +249,29 @@ function zero_energy_mode_compensation(nodes::AbstractVector{Int64},
 end
 
 """
-    calculate_bond_force(nodes::AbstractVector{Int64}, deformation_gradient::Array{Float64, 3}, undeformed_bond::Vector{Matrix{Float64}}, bond_damage::Vector{Vector{Float64}}, inverse_shape_tensor::Array{Float64, 3}, stress_NP1::Array{Float64, 3}, bond_force::Vector{Matrix{Float64}})
+    calculate_bond_force(nodes::AbstractVector{Int64}, deformation_gradient::Array{Float64, 3}, undeformed_bond::Vector{Matrix{Float64}}, bond_damage::BondScalarState{Float64}, inverse_shape_tensor::Array{Float64, 3}, stress_NP1::Array{Float64, 3}, bond_force::Vector{Matrix{Float64}})
 
 Calculate bond forces for specified nodes based on deformation gradients.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `deformation_gradient::SubArray`: Deformation gradient.
-- `undeformed_bond::Vector{Vector{Vector{Float64}}}`: Undeformed bond geometry.
-- `bond_damage::Vector{Vector{Float64}}`: Bond damage.
+- `undeformed_bond::BondVectorState{Float64}`: Undeformed bond geometry.
+- `bond_damage::BondScalarState{Float64}`: Bond damage.
 - `inverse_shape_tensor::Array{Float64, 3}`: Inverse shape tensor.
 - `stress_NP1::Array{Float64, 3}`: Stress at time step n+1.
-- `bond_force::Vector{Vector{Vector{Float64}}}`: Bond force.
+- `bond_force::BondVectorState{Float64}`: Bond force.
 # Returns
-- `bond_force::Vector{Vector{Vector{Float64}}}`: Bond force.
+- `bond_force::BondVectorState{Float64}`: Bond force.
 """
 function calculate_bond_force!(nodes::AbstractVector{Int64},
                                dof::Int64,
-                               deformation_gradient::Array{Float64,3},
-                               undeformed_bond::Vector{Vector{Vector{Float64}}},
-                               bond_damage::Vector{Vector{Float64}},
-                               inverse_shape_tensor::Array{Float64,3},
-                               stress_NP1::Array{Float64,3},
-                               bond_force::Vector{Vector{Vector{Float64}}})
+                               deformation_gradient::NodeTensorField{Float64,3},
+                               undeformed_bond::BondVectorState{Float64},
+                               bond_damage::BondScalarState{Float64},
+                               inverse_shape_tensor::NodeTensorField{Float64,3},
+                               stress_NP1::NodeTensorField{Float64,3},
+                               bond_force::BondVectorState{Float64})
     if dof == 2
         return calculate_bond_force_2d!(bond_force,
                                         nodes,
@@ -292,13 +292,13 @@ function calculate_bond_force!(nodes::AbstractVector{Int64},
     #return bond_force
 end
 
-function calculate_bond_force_2d!(bond_force::Vector{Vector{Vector{Float64}}},
+function calculate_bond_force_2d!(bond_force::BondVectorState{Float64},
                                   nodes::AbstractVector{Int64},
-                                  deformation_gradient::Array{Float64,3},
-                                  undeformed_bond::Vector{Vector{Vector{Float64}}},
-                                  bond_damage::Vector{Vector{Float64}},
-                                  inverse_shape_tensor::Array{Float64,3},
-                                  stress_NP1::Array{Float64,3})
+                                  deformation_gradient::NodeTensorField{Float64,3},
+                                  undeformed_bond::BondVectorState{Float64},
+                                  bond_damage::BondScalarState{Float64},
+                                  inverse_shape_tensor::NodeTensorField{Float64,3},
+                                  stress_NP1::NodeTensorField{Float64,3})
     pk_stress = MMatrix{2,2}(zeros(2, 2))
     temp = MMatrix{2,2}(zeros(Float64, 2, 2))
     @inbounds @fastmath for iID in nodes
@@ -327,13 +327,13 @@ function calculate_bond_force_2d!(bond_force::Vector{Vector{Vector{Float64}}},
     end
 end
 
-function calculate_bond_force_3d!(bond_force::Vector{Vector{Vector{Float64}}},
+function calculate_bond_force_3d!(bond_force::BondVectorState{Float64},
                                   nodes::AbstractVector{Int64},
-                                  deformation_gradient::Array{Float64,3},
-                                  undeformed_bond::Vector{Vector{Vector{Float64}}},
-                                  bond_damage::Vector{Vector{Float64}},
-                                  inverse_shape_tensor::Array{Float64,3},
-                                  stress_NP1::Array{Float64,3})
+                                  deformation_gradient::NodeTensorField{Float64,3},
+                                  undeformed_bond::BondVectorState{Float64},
+                                  bond_damage::BondScalarState{Float64},
+                                  inverse_shape_tensor::NodeTensorField{Float64,3},
+                                  stress_NP1::NodeTensorField{Float64,3})
     pk_stress = MMatrix{3,3}(zeros(3, 3))
     temp = MMatrix{3,3}(zeros(Float64, 3, 3))
     @inbounds @fastmath for iID in nodes

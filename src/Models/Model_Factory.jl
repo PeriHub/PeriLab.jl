@@ -414,18 +414,18 @@ function read_properties(params::Dict, material_model::Bool)
 end
 
 """
-    set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::Vector{Float64})
+    set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::NodeScalarField{Float64})
 
 Sets the heat capacity of the nodes in the dictionary.
 
 # Arguments
 - `params::Dict`: The parameters
 - `block_nodes::Dict`: The block nodes
-- `heat_capacity::Vector{Float64}`: The heat capacity array
+- `heat_capacity::NodeScalarField{Float64}`: The heat capacity array
 # Returns
 - `heat_capacity::SubArray`: The heat capacity array
 """
-function set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::Vector{Float64})
+function set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::NodeScalarField{Float64})
     for block in eachindex(block_nodes)
         heat_capacity[block_nodes[block]] .= get_heat_capacity(params, block)
     end

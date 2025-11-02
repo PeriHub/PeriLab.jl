@@ -101,11 +101,11 @@ Computes the zero energy mode force
 - `bond_force::SubArray`: The bond force
 """
 function get_zero_energy_mode_force_2d!(nodes::AbstractVector{Int64},
-                                        zStiff::Array{Float64,3},
-                                        deformation_gradient::Array{Float64,3},
-                                        undeformed_bond::Vector{Vector{Vector{Float64}}},
-                                        deformed_bond::Vector{Vector{Vector{Float64}}},
-                                        bond_force::Vector{Vector{Vector{Float64}}})
+                                        zStiff::NodeTensorField{Float64,3},
+                                        deformation_gradient::NodeTensorField{Float64,3},
+                                        undeformed_bond::BondVectorState{Float64},
+                                        deformed_bond::BondVectorState{Float64},
+                                        bond_force::BondVectorState{Float64})
     df = MVector{2}(zeros(Float64, 2))
     @inbounds @fastmath for iID in nodes
         @inbounds @fastmath @views for nID in axes(undeformed_bond[iID], 1)
@@ -144,10 +144,10 @@ end
 
 function get_zero_energy_mode_force_3d!(nodes::AbstractVector{Int64},
                                         zStiff::AbstractArray{Float64},
-                                        deformation_gradient::Array{Float64,3},
-                                        undeformed_bond::Vector{Vector{Vector{Float64}}},
-                                        deformed_bond::Vector{Vector{Vector{Float64}}},
-                                        bond_force::Vector{Vector{Vector{Float64}}})
+                                        deformation_gradient::NodeTensorField{Float64,3},
+                                        undeformed_bond::BondVectorState{Float64},
+                                        deformed_bond::BondVectorState{Float64},
+                                        bond_force::BondVectorState{Float64})
     df = MVector{3}(zeros(Float64, 3))
     @inbounds @fastmath for iID in nodes
         @inbounds @fastmath @views for nID in axes(undeformed_bond[iID], 1)
@@ -181,8 +181,8 @@ Creates the zero energy mode stiffness
 function create_zero_energy_mode_stiffness!(nodes::AbstractVector{Int64},
                                             dof::Int64,
                                             CVoigt::MMatrix{N,N,Float64,N2},
-                                            Kinv::Array{Float64,3},
-                                            zStiff::Array{Float64,3}) where {N,N2}
+                                            Kinv::NodeTensorField{Float64,3},
+                                            zStiff::NodeTensorField{Float64,3}) where {N,N2}
     C = get_fourth_order(CVoigt, dof)  # construct once, if it's always same!
     for iID in nodes
         global_zero_energy_mode_stiffness(iID, C, Kinv, zStiff)
@@ -205,8 +205,8 @@ Creates the zero energy mode stiffness, based on the UMAT interface
 
 function global_zero_energy_mode_stiffness(ID::Int64,
                                            C::Array{Float64,4},
-                                           Kinv::Array{Float64,3},
-                                           zStiff::Array{Float64,3})
+                                           Kinv::NodeTensorField{Float64,3},
+                                           zStiff::NodeTensorField{Float64,3})
 
     # Perform matrix multiplication for each i, j
     @views @inbounds @fastmath for i in axes(zStiff, 2), j in axes(zStiff, 3)

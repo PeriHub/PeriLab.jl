@@ -130,10 +130,10 @@ end
 
 function compute_weighted_volume!(weighted_volume::Vector{Float64},
                                   nodes::AbstractVector{Int64},
-                                  nlist::Union{Vector{Vector{Int64}},SubArray},
+                                  nlist::Union{BondScalarState{Int64},SubArray},
                                   volume::Vector{Float64},
-                                  bond_damage::Vector{Vector{Float64}},
-                                  omega::Vector{Vector{Float64}})
+                                  bond_damage::BondScalarState{Float64},
+                                  omega::BondScalarState{Float64})
     for iID in nodes
         weighted_volume[iID] = 0
         @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
@@ -214,12 +214,12 @@ function compute_Lagrangian_gradient_weights(nodes::AbstractVector{Int64},
                                              dof::Int64,
                                              accuracy_order::Int64,
                                              volume::AbstractVector{Float64},
-                                             nlist::Union{Vector{Vector{Int64}},SubArray},
+                                             nlist::Union{BondScalarState{Int64},SubArray},
                                              horizon::Union{SubArray,Vector{Float64}},
                                              bond_damage::Union{SubArray,
-                                                                Vector{Vector{Float64}}},
+                                                                BondScalarState{Float64}},
                                              omega::Union{SubArray,
-                                                          Vector{Vector{Float64}}},
+                                                          BondScalarState{Float64}},
                                              Q,
                                              M,
                                              Minv,

@@ -301,13 +301,13 @@ function clean_up(bc::String)
 end
 
 """
-    eval_bc!(field_values::Union{Vector{Float64},Vector{Int64}}, bc::Union{Float64,Float64,Int64,String}, coordinates::Matrix{Float64}, time::Float64, dof::Int64)
+    eval_bc!(field_values::Union{NodeScalarField{Float64},NodeScalarField{Int64}}, bc::Union{Float64,Float64,Int64,String}, coordinates::Matrix{Float64}, time::Float64, dof::Int64)
 Working with if-statements
 "if t>2 0 else 20 end"
 works for scalars. If you want to evaluate a vector, please use the Julia notation as input
 "ifelse.(x .> y, 10, 20)"
 """
-function eval_bc!(field_values::Union{SubArray,Vector{Float64},Vector{Int64}},
+function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},NodeScalarField{Int64}},
                   bc::Union{Float64,Int64,String},
                   coordinates::Union{Matrix{Float64},Matrix{Int64}},
                   time::Float64,

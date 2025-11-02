@@ -118,12 +118,12 @@ function compute_model(nodes::AbstractVector{Int64},
     end
 end
 
-function compute_bb_force!(bond_force::Vector{Vector{Float64}},
+function compute_bb_force!(bond_force::BondScalarState{Float64},
                            constant::Float64,
-                           bond_damage::Vector{Float64},
-                           deformed_bond_length::Vector{Float64},
-                           undeformed_bond_length::Vector{Float64},
-                           deformed_bond::Vector{Vector{Float64}})
+                           bond_damage::NodeScalarField{Float64},
+                           deformed_bond_length::NodeScalarField{Float64},
+                           undeformed_bond_length::NodeScalarField{Float64},
+                           deformed_bond::BondScalarState{Float64})
     @inbounds @fastmath for i in axes(bond_force, 1)
         @inbounds @fastmath for j in eachindex(bond_force[i])
             bond_force[i][j] = (constant *

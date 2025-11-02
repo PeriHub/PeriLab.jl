@@ -95,7 +95,7 @@ damageIndex = sum_i (brokenBonds_i * volume_i) / volumeNeighborhood
 - `nodes::AbstractVector{Int64}`: corresponding nodes to this model
 """
 function damage_index(nodes::AbstractVector{Int64},
-                      nlist_filtered_ids::Vector{Vector{Int64}})
+                      nlist_filtered_ids::BondScalarState{Int64})
     bond_damageNP1 = Data_Manager.get_bond_damage("NP1")
     for iID in nodes
         bond_damageNP1[iID][nlist_filtered_ids[iID]] .= 1
@@ -104,18 +104,18 @@ function damage_index(nodes::AbstractVector{Int64},
 end
 
 function damage_index(nodes::AbstractVector{Int64})
-    nlist = Data_Manager.get_nlist()::Vector{Vector{Int64}}
-    volume = Data_Manager.get_field("Volume")::AbstractVector{Float64}
-    bond_damageNP1 = Data_Manager.get_bond_damage("NP1")::Vector{Vector{Float64}}
-    damage = Data_Manager.get_damage("NP1")::AbstractVector{Float64}
+    nlist = Data_Manager.get_nlist()::BondScalarState{Int64}
+    volume = Data_Manager.get_field("Volume")::NodeScalarField{Float64}
+    bond_damageNP1 = Data_Manager.get_bond_damage("NP1")::BondScalarState{Float64}
+    damage = Data_Manager.get_damage("NP1")::NodeScalarField{Float64}
     compute_index(damage, nodes, volume, nlist, bond_damageNP1)
 end
 
-function compute_index(damage::AbstractVector{Float64},
+function compute_index(damage::NodeScalarField{Float64},
                        nodes::AbstractVector{Int64},
-                       volume::AbstractVector{Float64},
-                       nlist::Vector{Vector{Int64}},
-                       bond_damage::Vector{Vector{Float64}})::Nothing
+                       volume::NodeScalarField{Float64},
+                       nlist::BondScalarState{Int64},
+                       bond_damage::BondScalarState{Float64})::Nothing
     @inbounds @fastmath for iID in nodes
         undamaged_volume = 0.0  # More explicit than zero(Float64)
         totalDamage = 0.0

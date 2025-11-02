@@ -842,16 +842,16 @@ function voigt_to_tensor4_3d!(T4::Array{Float64,4}, C_voigt::AbstractMatrix{Floa
 end
 
 """
-    find_inverse_bond_id(nlist::Vector{Vector{Int64}})
+    find_inverse_bond_id(nlist::BondScalarState{Int64})
 
 Finds the inverse of the bond id in the nlist.
 
 # Arguments
-- `nlist::Vector{Vector{Int64}}`: The nlist to find the inverse of.
+- `nlist::BondScalarState{Int64}`: The nlist to find the inverse of.
 # Returns
 - `inverse_nlist::Vector{Dict{Int64,Int64}}`: The inverse nlist.
 """
-function find_inverse_bond_id(nlist::Vector{Vector{Int64}})
+function find_inverse_bond_id(nlist::BondScalarState{Int64})
     inverse_nlist = [Dict{Int64,Int64}() for _ in eachindex(nlist)]
     for iID in eachindex(nlist)
         neighbors = nlist[iID]

@@ -170,15 +170,15 @@ is a prototype with some errors
 """
 function compute_heat_flow_state_correspondence(nodes::AbstractVector{Int64},
                                                 dof::Int64,
-                                                nlist::Vector{Vector{Int64}},
+                                                nlist::BondScalarState{Int64},
                                                 lambda::Union{Matrix{Float64},MMatrix},
                                                 rotation_tensor,
-                                                bond_damage::Vector{Vector{Float64}},
-                                                undeformed_bond::Vector{Vector{Vector{Float64}}},
+                                                bond_damage::BondScalarState{Float64},
+                                                undeformed_bond::BondVectorState{Float64},
                                                 Kinv::Array{Float64,3},
-                                                temperature::Vector{Float64},
-                                                volume::Vector{Float64},
-                                                heat_flow::Vector{Float64})
+                                                temperature::NodeScalarField{Float64},
+                                                volume::NodeScalarField{Float64},
+                                                heat_flow::NodeScalarField{Float64})
     nablaT = @MVector zeros(Float64, dof)
     H = @MVector zeros(Float64, dof)
     for iID in nodes
@@ -207,8 +207,8 @@ end
 
 """
     compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64}, dof::Int64, nlist::Vector{Vector{Int64},
-      lambda::Union{Float64, Int64}, bond_damage::Vector{Vector{Float64}}, undeformed_bond::Vector{Matrix{Float64}}, horizon::Vector{Float64},
-      temperature::Vector{Float64}, heat_flow::Vector{Float64})
+      lambda::Union{Float64, Int64}, bond_damage::BondScalarState{Float64}, undeformed_bond::Vector{Matrix{Float64}}, horizon::NodeScalarField{Float64},
+      temperature::NodeScalarField{Float64}, heat_flow::NodeScalarField{Float64})
 
 Calculate Heat Flow based on a bond-based model for thermal analysis.
 
@@ -220,12 +220,12 @@ Calculate Heat Flow based on a bond-based model for thermal analysis.
 - `apply_print_bed::Bool`: A boolean indicating whether the print bed should be applied to the thermal conductivity.
 - `t_bed::Float64`: The thickness of the print bed.
 - `lambda_bed::Float64`: The thermal conductivity of the print bed.
-- `bond_damage::Vector{Vector{Float64}}`: A Vector representing the damage state of bonds between nodes.
+- `bond_damage::BondScalarState{Float64}`: A Vector representing the damage state of bonds between nodes.
 - `undeformed_bond::Vector{Matrix{Float64}}`: A Vector representing the geometry of the bonds.
-- `undeformed_bond_length::Vector{Vector{Float64}}`: A Vector representing the undeformed bond length for each bond.
-- `horizon::Vector{Float64}`: A Vector representing the horizon for each node.
-- `temperature::Vector{Float64}`: A Vector representing the temperature at each node.
-- `heat_flow::Vector{Float64}`: A Vector where the computed Heat Flow values will be stored.
+- `undeformed_bond_length::BondScalarState{Float64}`: A Vector representing the undeformed bond length for each bond.
+- `horizon::NodeScalarField{Float64}`: A Vector representing the horizon for each node.
+- `temperature::NodeScalarField{Float64}`: A Vector representing the temperature at each node.
+- `heat_flow::NodeScalarField{Float64}`: A Vector where the computed Heat Flow values will be stored.
 
 ## Returns
 - `heat_flow`: updated bond Heat Flow values will be stored.
@@ -236,21 +236,21 @@ This function calculates the Heat Flow between neighboring nodes based on a bond
 """
 function compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64},
                                             dof::Int64,
-                                            nlist::Vector{Vector{Int64}},
+                                            nlist::BondScalarState{Int64},
                                             lambda::Union{Float64,Int64},
                                             apply_print_bed::Bool,
                                             t_bed::Float64,
                                             lambda_bed::Float64,
                                             print_bed_z_coord::Float64,
                                             coordinates::Matrix{Float64},
-                                            bond_damage::Vector{Vector{Float64}},
+                                            bond_damage::BondScalarState{Float64},
                                             active::Vector{Bool},
-                                            undeformed_bond::Vector{Vector{Vector{Float64}}},
-                                            undeformed_bond_length::Vector{Vector{Float64}},
-                                            horizon::Vector{Float64},
-                                            temperature::Vector{Float64},
-                                            volume::Vector{Float64},
-                                            heat_flow::Vector{Float64})
+                                            undeformed_bond::BondVectorState{Float64},
+                                            undeformed_bond_length::BondScalarState{Float64},
+                                            horizon::NodeScalarField{Float64},
+                                            temperature::NodeScalarField{Float64},
+                                            volume::NodeScalarField{Float64},
+                                            heat_flow::NodeScalarField{Float64})
     kernel::Float64 = 0.0
     for iID in nodes
         if !active[iID]

@@ -215,15 +215,15 @@ end
 
 function compute_stress_integral(nodes::AbstractVector{Int64},
                                  dof::Int64,
-                                 nlist::Union{Vector{Vector{Int64}},SubArray},
-                                 omega::Vector{Vector{Float64}},
-                                 bond_damage::Vector{Vector{Float64}},
-                                 volume::Vector{Float64},
-                                 weighted_volume::Vector{Float64},
-                                 bond_geometry::Vector{Vector{Vector{Float64}}},
-                                 bond_length::Vector{Vector{Float64}},
-                                 bond_stresses::Vector{Array{Float64,3}},
-                                 deformation_gradient::Vector{Array{Float64,3}},
+                                 nlist::Union{BondScalarState{Int64},SubArray},
+                                 omega::BondScalarState{Float64},
+                                 bond_damage::BondScalarState{Float64},
+                                 volume::NodeScalarField{Float64},
+                                 weighted_volume::NodeScalarField{Float64},
+                                 bond_geometry::BondVectorState{Float64},
+                                 bond_length::BondScalarState{Float64},
+                                 bond_stresses::BondTensorState{Float64,3},
+                                 deformation_gradient::BondTensorState{Float64,3},
                                  stress_integral::Array{Float64,3})
     if dof == 2
         temp = @MMatrix zeros(2, 2)
@@ -260,7 +260,7 @@ function compute_stress_integral(nodes::AbstractVector{Int64},
     return stress_integral
 end
 
-#function compute_bond_strain(nodes::AbstractVector{Int64}, nlist::Union{Vector{Vector{Int64}},SubArray}, deformation_gradient::SubArray, strain::SubArray)
+#function compute_bond_strain(nodes::AbstractVector{Int64}, nlist::Union{BondScalarState{Int64},SubArray}, deformation_gradient::SubArray, strain::SubArray)
 #
 function compute_bond_strain(nodes,
                              nlist,
@@ -300,7 +300,7 @@ function update_Green_Langrange_nodal_strain_increment(nodes::Union{SubArray,
 end
 
 function update_Green_Langrange_bond_strain_increment(nodes::AbstractVector{Int64},
-                                                      nlist::Union{Vector{Vector{Int64}},
+                                                      nlist::Union{BondScalarState{Int64},
                                                                    SubArray},
                                                       dt::Float64,
                                                       deformation_gradient::SubArray,
@@ -332,7 +332,7 @@ function update_Green_Langrange_strain(dt::Float64,
 end
 
 function compute_bond_forces(nodes::AbstractVector{Int64},
-                             nlist::Union{Vector{Vector{Int64}},SubArray},
+                             nlist::Union{BondScalarState{Int64},SubArray},
                              bond_geometry,
                              bond_length,
                              bond_stress,

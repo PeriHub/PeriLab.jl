@@ -145,19 +145,19 @@ function init_data(params::Dict,
 end
 
 """
-    create_and_distribute_bond_norm(comm::MPI.Comm, nlist_filtered_ids::Vector{Vector{Int64}}, distribution::Vector{Int64}, bond_norm::Vector{Float64}, dof::Int64)
+    create_and_distribute_bond_norm(comm::MPI.Comm, nlist_filtered_ids::BondScalarState{Int64}, distribution::Vector{Int64}, bond_norm::Vector{Float64}, dof::Int64)
 
 Create and distribute the bond norm
 
 # Arguments
 - `comm::MPI.Comm`: MPI communicator
-- `nlist_filtered_ids::Vector{Vector{Int64}}`: The filtered neighborhood list
+- `nlist_filtered_ids::BondScalarState{Int64}`: The filtered neighborhood list
 - `distribution::Vector{Int64}`: The distribution
 - `bond_norm::Vector{Float64}`: The bond norm
 - `dof::Int64`: The degree of freedom
 """
 function create_and_distribute_bond_norm(comm::MPI.Comm,
-                                         nlist_filtered_ids::Vector{Vector{Int64}},
+                                         nlist_filtered_ids::BondScalarState{Int64},
                                          distribution::Vector{Vector{Int64}},
                                          bond_norm::Vector{Any},
                                          dof::Int64)
@@ -293,7 +293,7 @@ Distributes the neighborhood list to the cores.
 - `distribution Array{Int64}`: global nodes distribution at cores
 """
 function distribute_neighborhoodlist_to_cores(comm::MPI.Comm,
-                                              nlist::Vector{Vector{Int64}},
+                                              nlist::BondScalarState{Int64},
                                               distribution::Vector{Vector{Int64}},
                                               filtered::Bool)
     send_msg = 0
@@ -907,7 +907,7 @@ end
 
 function create_consistent_neighborhoodlist(external_topology::DataFrame,
                                             params::Dict,
-                                            nlist::Vector{Vector{Int64}},
+                                            nlist::BondScalarState{Int64},
                                             dof::Int64)
     pd_neighbors::Bool = false
     if haskey(params, "Add Neighbor Search")
@@ -965,16 +965,16 @@ function create_neighborhoodlist(mesh::DataFrame, params::Dict, dof::Int64)
 end
 
 """
-    get_number_of_neighbornodes(nlist::Vector{Vector{Int64}})
+    get_number_of_neighbornodes(nlist::BondScalarState{Int64})
 
 Get the number of neighbors for each node.
 
 # Arguments
-- `nlist::Vector{Vector{Int64}}`: The neighborhood list of the mesh elements.
+- `nlist::BondScalarState{Int64}`: The neighborhood list of the mesh elements.
 # Returns
 - `length_nlist::Vector{Int64}`: The number of neighbors for each node.
 """
-function get_number_of_neighbornodes(nlist::Vector{Vector{Int64}}, filtered::Bool)
+function get_number_of_neighbornodes(nlist::BondScalarState{Int64}, filtered::Bool)
     len = length(nlist)
     length_nlist = zeros(Int64, len)
     for id in 1:len
@@ -994,7 +994,7 @@ Create the distribution of the finite elements. Is needed to avoid multiple elem
 
 # Arguments
 - `topology::Vector{Vector{Int64}}`: The topology list of the mesh elements.
-- `nlist::Vector{Vector{Int64}}`: The neighborhood list of the mesh elements.
+- `nlist::BondScalarState{Int64}`: The neighborhood list of the mesh elements.
 - `size::Int64`: The number of ranks.
 # Returns
 - `distribution::Vector{Vector{Int64}}`: The distribution of the nodes.
@@ -1041,12 +1041,12 @@ function element_distribution(topology::Vector{Vector{Int64}},
 end
 
 """
-    node_distribution(nlist::Vector{Vector{Int64}}, size::Int64)
+    node_distribution(nlist::BondScalarState{Int64}, size::Int64)
 
 Create the distribution of the nodes.
 
 # Arguments
-- `nlist::Vector{Vector{Int64}}`: The neighborhood list of the mesh elements.
+- `nlist::BondScalarState{Int64}`: The neighborhood list of the mesh elements.
 - `size::Int64`: The number of ranks.
 - `distribution_type::String`: The distribution type.
 # Returns
@@ -1054,7 +1054,7 @@ Create the distribution of the nodes.
 - `ptc::Vector{Int64}`: Defines at which core / rank each node lies.
 - `ntype::Dict`: The type of the nodes.
 """
-function node_distribution(nlist::Vector{Vector{Int64}},
+function node_distribution(nlist::BondScalarState{Int64},
                            size::Int64,
                            distribution_type::String = "Neighbor based")
     nnodes = length(nlist)
@@ -1158,20 +1158,20 @@ function create_overlap_map(distribution::Vector{Vector{Int64}},
 end
 
 """
-    create_distribution_node_based(nnodes::Int64,nlist::Vector{Vector{Int64}}, size::Int64)
+    create_distribution_node_based(nnodes::Int64,nlist::BondScalarState{Int64}, size::Int64)
 
 Calculate the initial size of each chunk for a nearly equal number of nodes vs. cores this algorithm might lead to the problem, that the last core is not equally loaded
 
 # Arguments
 - `nnodes::Int64`: The number of nodes.
-- `nlist::Vector{Vector{Int64}}`: The neighborhood list.
+- `nlist::BondScalarState{Int64}`: The neighborhood list.
 - `size::Int64`: The number of cores.
 # Returns
 - `distribution::Array{Int64,1}`: The distribution of the nodes.
 - `point_to_core::Array{Int64,1}`: The number of nodes in each rank.
 """
 function create_distribution_node_based(nnodes::Int64,
-                                        nlist::Vector{Vector{Int64}},
+                                        nlist::BondScalarState{Int64},
                                         size::Int64)
     if size > nnodes
         @error "Number of cores $size exceeds number of nodes $nnodes."
@@ -1226,20 +1226,20 @@ function create_distribution_node_based(nnodes::Int64,
 end
 
 """
-    create_distribution_neighbor_based(nnodes::Int64,nlist::Vector{Vector{Int64}}, size::Int64)
+    create_distribution_neighbor_based(nnodes::Int64,nlist::BondScalarState{Int64}, size::Int64)
 
 Calculate the initial size of each chunk for a nearly equal number of nodes vs. cores this algorithm might lead to the problem, that the last core is not equally loaded
 
 # Arguments
 - `nnodes::Int64`: The number of nodes.
-- `nlist::Vector{Vector{Int64}}`: The neighborhood list.
+- `nlist::BondScalarState{Int64}`: The neighborhood list.
 - `size::Int64`: The number of cores.
 # Returns
 - `distribution::Array{Int64,1}`: The distribution of the nodes.
 - `point_to_core::Array{Int64,1}`: The number of nodes in each rank.
 """
 function create_distribution_neighbor_based(nnodes::Int64,
-                                            nlist::Vector{Vector{Int64}},
+                                            nlist::BondScalarState{Int64},
                                             size::Int64)
     if size > nnodes
         @error "Number of cores $size exceeds number of nodes $nnodes."

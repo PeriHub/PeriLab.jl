@@ -417,17 +417,17 @@ function get_2D_Hooke_matrix(aniso_matrix::MMatrix{T}, symmetry::String,
 end
 
 """
-	distribute_forces!(nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}}, nlist_filtered_ids::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, displacements::Matrix{Float64}, bond_norm::Vector{Matrix{Float64}}, force_densities::Matrix{Float64})
+	distribute_forces!(nodes::AbstractVector{Int64}, nlist::BondScalarState{Int64}, nlist_filtered_ids::BondScalarState{Int64}, bond_force::Vector{Matrix{Float64}}, volume::NodeScalarField{Float64}, bond_damage::BondScalarState{Float64}, displacements::Matrix{Float64}, bond_norm::Vector{Matrix{Float64}}, force_densities::Matrix{Float64})
 
 Distribute the forces on the nodes
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes.
-- `nlist::Vector{Vector{Int64}}`: The neighbor list.
-- `nlist_filtered_ids::Vector{Vector{Int64}},`:  The filtered neighbor list.
+- `nlist::BondScalarState{Int64}`: The neighbor list.
+- `nlist_filtered_ids::BondScalarState{Int64},`:  The filtered neighbor list.
 - `bond_force::Vector{Matrix{Float64}}`: The bond forces.
-- `volume::Vector{Float64}`: The volumes.
-- `bond_damage::Vector{Vector{Float64}}`: The bond damage.
+- `volume::NodeScalarField{Float64}`: The volumes.
+- `bond_damage::BondScalarState{Float64}`: The bond damage.
 - `displacements::Matrix{Float64}`: The displacements.
 - `bond_norm::Vector{Matrix{Float64}}`: The pre defined bond normal.
 - `force_densities::Matrix{Float64}`: The force densities.
@@ -436,13 +436,13 @@ Distribute the forces on the nodes
 """
 function distribute_forces!(force_densities::Matrix{Float64},
                             nodes::AbstractVector{Int64},
-                            nlist::Vector{Vector{Int64}},
-                            nlist_filtered_ids::Vector{Vector{Int64}},
-                            bond_force::Vector{Vector{Vector{Float64}}},
-                            volume::Vector{Float64},
-                            bond_damage::Vector{Vector{Float64}},
+                            nlist::BondScalarState{Int64},
+                            nlist_filtered_ids::BondScalarState{Int64},
+                            bond_force::BondVectorState{Float64},
+                            volume::NodeScalarField{Float64},
+                            bond_damage::BondScalarState{Float64},
                             displacements::Matrix{Float64},
-                            bond_norm::Vector{Vector{Vector{Float64}}})
+                            bond_norm::BondVectorState{Float64})
     @inbounds @fastmath for iID in nodes
         bond_mod = copy(bond_norm[iID])
         if length(nlist_filtered_ids[iID]) > 0
@@ -475,26 +475,26 @@ function distribute_forces!(force_densities::Matrix{Float64},
 end
 
 """
-	distribute_forces!(nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, force_densities::Matrix{Float64})
+	distribute_forces!(nodes::AbstractVector{Int64}, nlist::BondScalarState{Int64}, bond_force::Vector{Matrix{Float64}}, volume::NodeScalarField{Float64}, bond_damage::BondScalarState{Float64}, force_densities::Matrix{Float64})
 
 Distribute the forces on the nodes
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes.
-- `nlist::Vector{Vector{Int64}}`: The neighbor list.
+- `nlist::BondScalarState{Int64}`: The neighbor list.
 - `bond_force::Vector{Matrix{Float64}}`: The bond forces.
-- `volume::Vector{Float64}`: The volumes.
-- `bond_damage::Vector{Vector{Float64}}`: The bond damage.
+- `volume::NodeScalarField{Float64}`: The volumes.
+- `bond_damage::BondScalarState{Float64}`: The bond damage.
 - `force_densities::Matrix{Float64}`: The force densities.
 # Returns
 - `force_densities::Matrix{Float64}`: The force densities.
 """
 function distribute_forces!(force_densities::Matrix{Float64},
                             nodes::AbstractVector{Int64},
-                            nlist::Vector{Vector{Int64}},
-                            bond_force::Vector{Vector{Vector{Float64}}},
-                            volume::Vector{Float64},
-                            bond_damage::Vector{Vector{Float64}})::Nothing
+                            nlist::BondScalarState{Int64},
+                            bond_force::BondVectorState{Float64},
+                            volume::NodeScalarField{Float64},
+                            bond_damage::BondScalarState{Float64})::Nothing
     @inbounds @fastmath for iID in nodes
         # Cache arrays to help type inference
         @views neighbors = nlist[iID]
@@ -700,7 +700,7 @@ function compute_Piola_Kirchhoff_stress!(pk_stress::AbstractMatrix{Float64},
 end
 
 function apply_pointwise_E(nodes::AbstractVector{Int64}, E::Union{Int64,Float64},
-                           bond_force::Vector{Vector{Vector{Float64}}})
+                           bond_force::BondVectorState{Float64})
     @inbounds @fastmath for i in nodes
         @views @inbounds @fastmath for bf in bond_force[i]
             bf .*= E
@@ -710,7 +710,7 @@ end
 
 function apply_pointwise_E(nodes::AbstractVector{Int64},
                            E::Union{SubArray,Vector{Float64},Vector{Int64}},
-                           bond_force::Vector{Vector{Vector{Float64}}})
+                           bond_force::BondVectorState{Float64})
     @inbounds @fastmath for i in nodes
         @views @inbounds @fastmath for bf in bond_force[i]
             bf .*= E[i]
@@ -719,7 +719,7 @@ function apply_pointwise_E(nodes::AbstractVector{Int64},
 end
 
 function apply_pointwise_E(nodes::AbstractVector{Int64},
-                           bond_force::Vector{Vector{Vector{Float64}}}, dependent_field)
+                           bond_force::BondVectorState{Float64}, dependent_field)
     warning_flag = true
     @inbounds @fastmath for i in nodes
         E_int = interpol_data(dependent_field[i],

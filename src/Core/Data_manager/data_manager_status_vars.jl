@@ -17,7 +17,7 @@ export get_iteration
 export set_num_controller
 
 """
-    get_damage(time::String) -> Vector{Float64}
+    get_damage(time::String) -> NodeScalarField{Float64}
 
 Get the damage values for a specific time.
 
@@ -25,7 +25,7 @@ Get the damage values for a specific time.
 - `time::String`: The time identifier for the damage field.
 
 # Returns
-- `Vector{Float64}`: The damage values as a vector of floating-point numbers.
+- `NodeScalarField{Float64}`: The damage values as a vector of floating-point numbers.
 
 # Examples
 ```julia
@@ -33,9 +33,9 @@ damage_values = get_damage("NP1")
 println(damage_values)  # [1.5, 2.3, 0.8, ...]
 ```
 """
-function get_damage(time::String)::Vector{Float64}
+function get_damage(time::String)::NodeScalarField{Float64}
     damage = get_field("Damage", time)
-    return damage::Vector{Float64}
+    return damage::NodeScalarField{Float64}
 end
 
 """

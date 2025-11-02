@@ -88,7 +88,7 @@ Calculates the stresses of the material. This template has to be copied, the fil
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-- `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
+- `strainInc::Union{NodeTensorField{Float64,3},Array{Float64,6}}`: Strain increment.
 - `stress_N::SubArray`: Stress of step N.
 - `stress_NP1::SubArray`: Stress of step N+1.
 - `iID_jID_nID::Tuple=(): (optional) are the index and node id information. The tuple is ordered iID as index of the point,  jID the index of the bond of iID and nID the neighborID.
@@ -103,9 +103,9 @@ function compute_stresses(nodes::AbstractVector{Int64},
                           material_parameter::Dict,
                           time::Float64,
                           dt::Float64,
-                          strain_increment::AbstractArray{Float64},
-                          stress_N::AbstractArray{Float64},
-                          stress_NP1::AbstractArray{Float64})
+                          strain_increment::NodeTensorField{Float64},
+                          stress_N::NodeTensorField{Float64},
+                          stress_NP1::NodeTensorField{Float64})
     mapping = get_mapping(dof)
     hooke_matrix::NodeTensorField{Float64} = Data_Manager.get_field("Hooke Matrix")
     for iID in nodes
@@ -149,7 +149,7 @@ Calculates the stresses of a single node. Needed for FEM. This template has to b
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-- `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
+- `strainInc::Union{NodeTensorField{Float64,3},Array{Float64,6}}`: Strain increment.
 - `stress_N::SubArray`: Stress of step N.
 - `stress_NP1::SubArray`: Stress of step N+1.
 # Returns
@@ -162,9 +162,9 @@ function compute_stresses(dof::Int64,
                           material_parameter::Dict,
                           time::Float64,
                           dt::Float64,
-                          strain_increment::Vector{Float64},
-                          stress_N::Vector{Float64},
-                          stress_NP1::Vector{Float64})
+                          strain_increment::NodeScalarField{Float64},
+                          stress_N::NodeScalarField{Float64},
+                          stress_NP1::NodeScalarField{Float64})
     hookeMatrix = get_Hooke_matrix(material_parameter,
                                    material_parameter["Symmetry"],
                                    dof)

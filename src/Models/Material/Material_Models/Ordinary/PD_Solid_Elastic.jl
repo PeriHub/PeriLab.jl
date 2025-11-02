@@ -178,15 +178,15 @@ for 3D, plane stress and plane strain it is refered to [BobaruF2016](@cite) page
 - bond_force: dictionary of calculated bond forces for each node
 """
 function elastic!(nodes::AbstractVector{Int64},
-                  undeformed_bond_length::Vector{Vector{Float64}},
-                  deformed_bond_length::Vector{Vector{Float64}},
-                  bond_damage::Vector{Vector{Float64}},
-                  theta::Vector{Float64},
-                  weighted_volume::Vector{Float64},
-                  omega::Vector{Vector{Float64}},
+                  undeformed_bond_length::BondScalarState{Float64},
+                  deformed_bond_length::BondScalarState{Float64},
+                  bond_damage::BondScalarState{Float64},
+                  theta::NodeScalarField{Float64},
+                  weighted_volume::NodeScalarField{Float64},
+                  omega::BondScalarState{Float64},
                   material::Dict,
-                  bond_force_deviatoric_part::Vector{Vector{Float64}},
-                  bond_force_isotropic_part::Vector{Vector{Float64}})
+                  bond_force_deviatoric_part::BondScalarState{Float64},
+                  bond_force_isotropic_part::BondScalarState{Float64})
     shear_modulus = material["Shear Modulus"]
     bulk_modulus = material["Bulk Modulus"]
 

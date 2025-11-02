@@ -119,7 +119,7 @@ Calculates the stresses of the material. This template has to be copied, the fil
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-- `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
+- `strainInc::Union{NodeTensorField{Float64,3},Array{Float64,6}}`: Strain increment.
 - `stress_N::SubArray`: Stress of step N.
 - `stress_NP1::SubArray`: Stress of step N+1.
 - `iID_jID_nID::Tuple=(): (optional) are the index and node id information. The tuple is ordered iID as index of the point,  jID the index of the bond of iID and nID the neighborID.
@@ -135,9 +135,9 @@ function compute_stresses(nodes,
                           material_parameter::Dict,
                           time::Float64,
                           dt::Float64,
-                          strain_increment::Union{SubArray,Array{Float64,3}},
-                          stress_N::Union{SubArray,Array{Float64,3}},
-                          stress_NP1::Union{SubArray,Array{Float64,3}})
+                          strain_increment::Union{SubArray,NodeTensorField{Float64,3}},
+                          stress_N::Union{SubArray,NodeTensorField{Float64,3}},
+                          stress_NP1::Union{SubArray,NodeTensorField{Float64,3}})
     global yield_stress
     global reduced_yield_stress
     global spherical_stress_N
