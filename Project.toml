@@ -1,7 +1,7 @@
 name = "PeriLab"
 uuid = "2ecefcea-59f0-46dd-9cfd-1d2b8cc5f112"
-authors = ["Christian Willberg <christian.willberg@dlr.de>", "Jan-Timo Hesse <jan-timo.hesse@dlr.de>"]
 version = "1.5.0"
+authors = ["Christian Willberg <christian.willberg@dlr.de>", "Jan-Timo Hesse <jan-timo.hesse@dlr.de>"]
 
 [deps]
 AbaqusReader = "bc6b9049-e460-56d6-94b4-a597b2c0390d"
@@ -55,7 +55,7 @@ DataFrames = "1"
 DataStructures = "0.18, 0.19"
 Dates = "1"
 Dierckx = "0.5"
-Exodus = "0.13"
+Exodus = "0.13, 0.14"
 FastGaussQuadrature = "1"
 JSON3 = "1"
 LazyGrids = "1"
