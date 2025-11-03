@@ -1086,11 +1086,11 @@ function init_stiffness_matrix(xID::Vector{Int64}, yID::Vector{Int64},
     data["Stiffness Matrix"] = PD_matrix(xID, yID, vals, N)
 end
 #
-#function set_stiffness_matrix(sparse_mat)
-#	#data["Stiffness Matrix"] = PD_matrix(xID, yID, sparse_data,
-#	#	data["Stiffness Matrix"].sparse_matrix)
-#	data["Stiffness Matrix"].sparse_matrix = sparse_mat
-#end
+function set_stiffness_matrix(sparse_mat)
+    #data["Stiffness Matrix"] = PD_matrix(xID, yID, sparse_data,
+    #	data["Stiffness Matrix"].sparse_matrix)
+    data["Stiffness Matrix"].sparse_matrix = sparse_mat
+end
 
 function get_stiffness_matrix()
     return data["Stiffness Matrix"].sparse_matrix

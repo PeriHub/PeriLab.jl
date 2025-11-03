@@ -5,7 +5,6 @@
 module Correspondence_matrix_based
 using Base.Threads
 using LinearAlgebra
-using ProgressBars
 using LoopVectorization: @turbo
 using ...Material_Basis: get_Hooke_matrix
 using ....Helpers: get_fourth_order, progress_bar
@@ -607,7 +606,8 @@ function init_matrix(datamanager::Module)
     volume = datamanager.get_field("Volume")
     omega = datamanager.get_field("Influence Function")
     C_voigt = datamanager.get_field("Hooke Matrix")
-
+    bond_geometry_N = datamanager.get_field("Deformed Bond Geometry", "N")
+    bond_damage=datamanager.get_field("Bond Damage", "NP1")
     @info "Initializing stiffness matrix (mapping optimized)"
     index_x, index_y, vals,
     total_dof = init_assemble_stiffness(nodes,
@@ -621,6 +621,20 @@ function init_matrix(datamanager::Module)
                                         omega)
 
     datamanager.init_stiffness_matrix(index_x, index_y, vals, total_dof)
+    K_sparse = datamanager.get_stiffness_matrix()
+    create_zero_energy_mode_stiffness!(nodes, dof, C_voigt,
+                                       inverse_shape_tensor, zStiff)
+
+    add_zero_energy_stiff!(K_sparse,
+                           nodes,
+                           dof,
+                           zStiff,
+                           inverse_shape_tensor,
+                           nlist,
+                           volume,
+                           bond_geometry_N,
+                           bond_damage,
+                           omega)
 end
 
 function compute_model(datamanager::Module, nodes::AbstractVector{Int64})
