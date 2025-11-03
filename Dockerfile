@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM julia:latest AS build
+FROM julia:1.11 AS build
 
 WORKDIR /env
 
