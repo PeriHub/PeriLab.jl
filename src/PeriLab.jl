@@ -378,9 +378,7 @@ function main(filename::String;
             if e isa InterruptException
                 @info "PeriLab was interrupted"
             elseif !isa(e, Logging_Module.PeriLabError)
-                open(Logging_Module.log_file, "a") do io
-                    println(io, "[Error] ", e)
-                end
+                Logging_Module.print_exception(e)
                 if !silent
                     rethrow(e)
                 end

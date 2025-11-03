@@ -66,10 +66,17 @@ Get the log file.
 - `log_file::String`: The log file.
 """
 function get_log_file()
-    global log_file
     return log_file
 end
 
+function print_exception(e::Exception)
+    global log_file
+    if log_file != ""
+        open(log_file, "a") do io
+            println(io, "[Error] ", e)
+        end
+    end
+end
 function get_log_stream(id::Int64)
     try
         return current_logger().loggers[id].logger.stream
