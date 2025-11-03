@@ -29,7 +29,7 @@ export init_solver
 export run_solver
 
 """
-    compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64}, datamanager::Module, lambda::Float64, Cv::Float64)
+	compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64}, datamanager::Module, lambda::Float64, Cv::Float64)
 
 Calculate the critical time step for a thermodynamic simulation based on  [OterkusS2014](@cite).
 
@@ -73,7 +73,7 @@ function compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64},
 end
 
 """
-    get_cs_denominator(volume::AbstractVector{Float64}, undeformed_bond::AbstractVector{Float64})
+	get_cs_denominator(volume::AbstractVector{Float64}, undeformed_bond::AbstractVector{Float64})
 
 Calculate the denominator for the critical time step calculation.
 
@@ -89,7 +89,7 @@ function get_cs_denominator(volume::AbstractVector{Float64},
 end
 
 """
-    compute_mechanical_critical_time_step(nodes::AbstractVector{Int64}, datamanager::Module, bulk_modulus::Float64)
+	compute_mechanical_critical_time_step(nodes::AbstractVector{Int64}, datamanager::Module, bulk_modulus::Float64)
 
 Calculate the critical time step for a mechanical simulation using a bond-based approximation [LittlewoodDJ2013](@cite).
 
@@ -135,7 +135,7 @@ function compute_mechanical_critical_time_step(nodes::AbstractVector{Int64},
 end
 
 """
-    test_timestep(t::Float64, critical_time_step::Float64)
+	test_timestep(t::Float64, critical_time_step::Float64)
 
 Compare a time step `t` with a critical time step `critical_time_step` and update `critical_time_step` if `t` is smaller.
 
@@ -154,7 +154,7 @@ function test_timestep(t::Float64, critical_time_step::Float64)
 end
 
 """
-    compute_crititical_time_step(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+	compute_crititical_time_step(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
 Calculate the critical time step for a simulation considering both mechanical and thermodynamic aspects.
 
@@ -239,7 +239,7 @@ function compute_crititical_time_step(datamanager::Module,
 end
 
 """
-    init_solver(params::Dict, bcs::Dict{Any,Any}, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+	init_solver(params::Dict, bcs::Dict{Any,Any}, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
 Initialize the Verlet solver for a simulation.
 
@@ -325,7 +325,7 @@ function init_solver(solver_options::Dict{Any,Any},
 end
 
 """
-    get_integration_steps(initial_time::Float64, end_time::Float64, dt::Float64)
+	get_integration_steps(initial_time::Float64, end_time::Float64, dt::Float64)
 
 Calculate the number of integration steps and the adjusted time step for a numerical integration process.
 
@@ -353,18 +353,18 @@ function get_integration_steps(initial_time::Float64, end_time::Float64, dt::Flo
 end
 
 """
-    run_solver(
-        solver_options::Dict{Any,Any},
-        block_nodes::Dict{Int64,Vector{Int64}},
-        bcs::Dict{Any,Any},
-        datamanager::Module,
-        outputs::Dict{Int64,Dict{}},
-        result_files::Vector{Any},
-        synchronise_field,
-        write_results,
-        to::TimerOutputs.TimerOutput,
-        silent::Bool
-    )
+	run_solver(
+		solver_options::Dict{Any,Any},
+		block_nodes::Dict{Int64,Vector{Int64}},
+		bcs::Dict{Any,Any},
+		datamanager::Module,
+		outputs::Dict{Int64,Dict{}},
+		result_files::Vector{Any},
+		synchronise_field,
+		write_results,
+		to::TimerOutputs.TimerOutput,
+		silent::Bool
+	)
 
 Run the Verlet solver for a simulation based on the strategy provided in [BobaruF2016](@cite) and  [LittlewoodDJ2023](@cite).
 
@@ -426,7 +426,6 @@ function run_solver(solver_options::Dict{Any,Any},
         lumped_mass = datamanager.get_field("Lumped Mass Matrix")
         fe_nodes = datamanager.get_field("FE Nodes")
     end
-    active = datamanager.get_field("Active")
 
     dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["Number of Steps"]
