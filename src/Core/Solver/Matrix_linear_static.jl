@@ -129,6 +129,10 @@ function init_solver(solver_options::Dict{Any,Any},
         Correspondence_matrix_based.init_model(datamanager, nodes, model_param)
     end
     @timeit to "init_matrix" Correspondence_matrix_based.init_matrix(datamanager)
+    if !haskey(solver_options, "Matrix update")
+        solver_options["Matrix update"] = true
+    end
+
     ### for coupled thermal analysis
 
     #critical_time_step::Float64 = 1.0e50
@@ -202,6 +206,8 @@ function run_solver(solver_options::Dict{Any,Any},
     velocities = datamanager.get_field("Velocity", "NP1")
     external_force_densities = datamanager.get_field("External Force Densities")
 
+    matrix_update::Bool = solver_options["Matrix update"]
+
     @inbounds @fastmath for idt in iter
         datamanager.set_iteration(idt)
         @timeit to "Linear Static" begin
@@ -213,9 +219,12 @@ function run_solver(solver_options::Dict{Any,Any},
             # reshape
             non_BCs = datamanager.get_bc_free_dof()
             delta_u .= uNP1-uN
-            K = datamanager.get_stiffness_matrix()
 
-            @timeit to "update stiffness matrix" K = compute_matrix(datamanager)
+            if matrix_update
+                @timeit to "update stiffness matrix" K = compute_matrix(datamanager)
+            else
+                K = datamanager.get_stiffness_matrix()
+            end
             @timeit to "compute_displacements" compute_displacements!(K[perm, perm],
                                                                       non_BCs,
                                                                       delta_u,

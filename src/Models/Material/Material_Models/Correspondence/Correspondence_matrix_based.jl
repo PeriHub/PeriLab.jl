@@ -163,11 +163,12 @@ function precompute_CB_tensors!(CB_k::AbstractArray{Float64,4},
                                 volume::Vector{Float64},
                                 bond_geometry_i::Vector{Vector{Float64}},
                                 omega_i::Vector{Float64},
+                                bond_damage_i::Vector{Float64},
                                 dof::Int64,
                                 B_ik::Array{Float64,3})
     @inbounds for (k_idx, k) in enumerate(neighbors)
         V_k = volume[k]
-        omega_ik = omega_i[k_idx]
+        omega_ik = omega_i[k_idx] * bond_damage_i[k_idx]
         X_ik = bond_geometry_i[k_idx]
         create_B_tensor!(D_inv, X_ik, V_k, omega_ik, dof, B_ik)
         @views contraction!(C_tensor, B_ik, dof, CB_k[k_idx, :, :, :])
@@ -236,8 +237,6 @@ function create_mapping_structure(nodes::AbstractVector{Int64},
 
     n_total = nodes[end] * dof
 
-    @info "Mapping structure: $total_blocks blocks, $total_entries entries"
-
     return mapping, I, J, V, n_total
 end
 
@@ -260,7 +259,7 @@ Add dof×dof block directly to V at start_idx.
 end
 
 """
-	init_assemble_stiffness(...)
+	assemble_stiffness(...)
 
 Optimized assembly with mapping vector structure.
 
@@ -269,16 +268,18 @@ Uses:
 - mapping[i][k_idx+1] for column nlist[i][k_idx]
 - mapping[j][...] for writing row j when j ∈ nlist[i]
 """
-function init_assemble_stiffness(nodes::AbstractVector{Int64},
-                                 dof::Int64,
-                                 C_Voigt::Array{Float64,3},
-                                 inverse_shape_tensor::Array{Float64,3},
-                                 number_of_neighbors::Vector{Int64},
-                                 nlist::Vector{Vector{Int64}},
-                                 volume::Vector{Float64},
-                                 bond_geometry::Vector{Vector{Vector{Float64}}},
-                                 omega::Vector{Vector{Float64}})
-    @info "Creating mapping structure..."
+function assemble_stiffness(nodes::AbstractVector{Int64},
+                            dof::Int64,
+                            C_Voigt::Array{Float64,3},
+                            inverse_shape_tensor::Array{Float64,3},
+                            number_of_neighbors::Vector{Int64},
+                            nlist::Vector{Vector{Int64}},
+                            volume::Vector{Float64},
+                            bond_geometry::Vector{Vector{Vector{Float64}}},
+                            omega::Vector{Vector{Float64}},
+                            bond_damage::Vector{Vector{Float64}})
+
+    # TODO: reuse mapping structure from initialization
     mapping, I, J, V,
     n_total = create_mapping_structure(nodes, nlist,
                                        number_of_neighbors, dof)
@@ -291,8 +292,6 @@ function init_assemble_stiffness(nodes::AbstractVector{Int64},
             neighbor_positions[node][neighbor] = idx
         end
     end
-
-    @info "Assembling stiffness (multi-threaded)..."
 
     # Partition nodes by workload
     n_threads = Threads.nthreads()
@@ -322,13 +321,14 @@ function init_assemble_stiffness(nodes::AbstractVector{Int64},
 
             CB_k = @view buffers.CB_k[eachindex(ni), :, :, :]
             precompute_CB_tensors!(CB_k, C_tensor, D_inv, ni, volume,
-                                   bond_geometry[i], omega[i], dof, buffers.B_ik)
+                                   bond_geometry[i], omega[i], bond_damage[i], dof,
+                                   buffers.B_ik)
 
             i_diag_idx = mapping[i][1]
             mapping_i = mapping[i]
 
             for (j_idx, j) in enumerate(ni)
-                omega_ij = omega[i][j_idx]
+                omega_ij = omega[i][j_idx]*bond_damage[i][j_idx]
                 V_j = volume[j]
                 X_ij = bond_geometry[i][j_idx]
 
@@ -337,7 +337,7 @@ function init_assemble_stiffness(nodes::AbstractVector{Int64},
                 mapping_j = mapping[j]
 
                 for (k_idx, k) in enumerate(ni)
-                    omega_ik = omega[i][k_idx]
+                    omega_ik = omega[i][k_idx]*bond_damage[i][k_idx]
                     V_k = volume[k]
 
                     compute_linearized_operator(@view(CB_k[k_idx, :, :, :]),
@@ -370,8 +370,6 @@ function init_assemble_stiffness(nodes::AbstractVector{Int64},
         end
     end
 
-    # Merge results
-    @info "Merging thread results..."
     @inbounds Threads.@threads for i in eachindex(V)
         for tid in 1:n_threads
             V[i] += thread_V[tid][i]
@@ -461,7 +459,8 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
             scalar_sum_j = 0.0
             for idx_k in eachindex(neighbors)
                 k = neighbors[idx_k]
-                scalar_sum_j += omega[i][idx_k] * volume[k] * S_matrices[i][idx_k, idx_j]
+                scalar_sum_j += omega[i][idx_k] * bond_damage[i][idx_k] * volume[k] *
+                                S_matrices[i][idx_k, idx_j]
             end
 
             K_ji = -V_i * (1.0 - scalar_sum_j) * Z_i
@@ -472,7 +471,8 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
                     continue
                 end
 
-                s_value = omega[i][idx_k] * volume[k] * S_matrices[i][idx_k, idx_j]
+                s_value = omega[i][idx_k] * bond_damage[i][idx_k] * volume[k] *
+                          S_matrices[i][idx_k, idx_j]
                 K_jk = -V_i * s_value * Z_i
                 add_block_to_coo!(I_indices, J_indices, values, K_jk, j, k, dof)
             end
@@ -498,10 +498,14 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
 
                 if idx_bond == idx_j
                     s_jj = S_matrices[i][idx_j, idx_j]
-                    K_ij_total .-= V_i * (1.0 - omega[i][idx_j] * volume[j] * s_jj) * Z_i
+                    K_ij_total .-= V_i *
+                                   (1.0 -
+                                    omega[i][idx_j] * bond_damage[i][idx_j] * volume[j] *
+                                    s_jj) * Z_i
                 else
                     s_kj = S_matrices[i][idx_bond, idx_j]
-                    K_ij_total .+= V_i * omega[i][idx_j] * volume[j] * s_kj * Z_i
+                    K_ij_total .+= V_i * omega[i][idx_j] * bond_damage[i][idx_j] *
+                                   volume[j] * s_kj * Z_i
                 end
             end
 
@@ -607,18 +611,19 @@ function init_matrix(datamanager::Module)
     omega = datamanager.get_field("Influence Function")
     C_voigt = datamanager.get_field("Hooke Matrix")
     bond_geometry_N = datamanager.get_field("Deformed Bond Geometry", "N")
-    bond_damage=datamanager.get_field("Bond Damage", "NP1")
+    bond_damage = datamanager.get_field("Bond Damage", "NP1")
     @info "Initializing stiffness matrix (mapping optimized)"
     index_x, index_y, vals,
-    total_dof = init_assemble_stiffness(nodes,
-                                        dof,
-                                        C_voigt,
-                                        inverse_shape_tensor,
-                                        number_of_neighbors,
-                                        nlist,
-                                        volume,
-                                        bond_geometry,
-                                        omega)
+    total_dof = assemble_stiffness(nodes,
+                                   dof,
+                                   C_voigt,
+                                   inverse_shape_tensor,
+                                   number_of_neighbors,
+                                   nlist,
+                                   volume,
+                                   bond_geometry,
+                                   omega,
+                                   bond_damage)
 
     datamanager.init_stiffness_matrix(index_x, index_y, vals, total_dof)
     K_sparse = datamanager.get_stiffness_matrix()
@@ -645,15 +650,30 @@ function compute_model(datamanager::Module, nodes::AbstractVector{Int64})
     volume::Vector{Float64} = datamanager.get_field("Volume")
     bond_geometry_N::Vector{Vector{Vector{Float64}}} = datamanager.get_field("Deformed Bond Geometry",
                                                                              "N")
+    number_of_neighbors::Vector{Int64} = datamanager.get_field("Number of Neighbors")
     omega::Vector{Vector{Float64}} = datamanager.get_field("Influence Function")
     bond_damage::Vector{Vector{Float64}} = datamanager.get_field("Bond Damage", "NP1")
 
     zStiff = datamanager.get_field("Zero Energy Stiffness")
-    K_sparse = datamanager.get_stiffness_matrix()
+    # TODO: optimize update
+    index_x, index_y, vals,
+    total_dof = assemble_stiffness(nodes,
+                                   dof,
+                                   C_voigt,
+                                   inverse_shape_tensor,
+                                   number_of_neighbors,
+                                   nlist,
+                                   volume,
+                                   bond_geometry_N,
+                                   omega,
+                                   bond_damage)
+
+    datamanager.init_stiffness_matrix(index_x, index_y, vals, total_dof)
 
     create_zero_energy_mode_stiffness!(nodes, dof, C_voigt,
                                        inverse_shape_tensor, zStiff)
 
+    K_sparse = datamanager.get_stiffness_matrix()
     add_zero_energy_stiff!(K_sparse,
                            nodes,
                            dof,
