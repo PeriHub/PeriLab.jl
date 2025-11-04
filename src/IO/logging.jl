@@ -210,9 +210,15 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
                             args.message)
                 end
             end
+            error_logger = FormatLogger(log_file; append = false) do io, args
+                if args.level == Logging.Error
+                    throw(PeriLabError(args, args.message))
+                end
+            end
             filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
             demux_logger = TeeLogger(MinLevelLogger(filtered_logger, Logging.Debug),
-                                     MinLevelLogger(file_logger, Logging.Debug))
+                                     MinLevelLogger(file_logger, Logging.Debug),
+                                     MinLevelLogger(error_logger, Logging.Info))
         elseif silent
             io = open(log_file, "a")
             redirect_stderr(io)

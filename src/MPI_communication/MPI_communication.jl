@@ -203,8 +203,8 @@ function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof
                                                tag = 0)
             else
                 vector[recv_index,
-                       :] = MPI.Recv!(vector[recv_index, :], comm;
-                                      source = jcore - 1, tag = 0)
+                :] = MPI.Recv!(vector[recv_index, :], comm;
+                                                  source = jcore - 1, tag = 0)
             end
             # @debug "Receiving $(jcore-1) -> $rank"
 
@@ -364,6 +364,7 @@ Sends a vector from the root to the core i
 """
 function send_vector_from_root_to_core_i(comm::MPI.Comm, send_msg, recv_msg, distribution)
     currentRank = MPI.Comm_rank(comm)
+    MPI.Barrier(comm)
     if currentRank == 0
         for rank in 1:(MPI.Comm_size(comm) - 1)
             MPI.Isend(send_msg[distribution[rank + 1]], comm; dest = rank, tag = 0)

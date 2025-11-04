@@ -299,6 +299,7 @@ function main(filename::String;
                                                                   comm)
             Data_Manager.set_max_step(steps[end])
             for step_id in steps
+                MPI.Barrier(comm)
                 if !isnothing(step_id)
                     @info "Step: " * string(step_id) * " of " * string(length(steps))
                 end
@@ -382,6 +383,9 @@ function main(filename::String;
                 if !silent
                     rethrow(e)
                 end
+            end
+            if size > 1
+                MPI.Abort(comm, 0)
             end
         end
         if !isnothing(result_files)

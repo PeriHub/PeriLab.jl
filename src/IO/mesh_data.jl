@@ -102,15 +102,18 @@ function init_data(params::Dict,
         @debug "Get node sets"
         define_nsets(nsets)
         # defines the order of the global nodes to the local core nodes
+        @debug "Set distribution"
         Data_Manager.set_distribution(distribution[rank])
         Data_Manager.set_glob_to_loc(create_global_to_local_mapping(distribution[rank]))
         @timeit "get_local_overlap_map" overlap_map=get_local_overlap_map(overlap_map,
                                                                           distribution,
                                                                           size)
+        @debug "Distribution to cores"
         @timeit "distribution_to_cores" distribution_to_cores(comm,
                                                               mesh,
                                                               distribution,
                                                               dof)
+        @debug "Distribution of nlist"
         @timeit "distribute_neighborhoodlist_to_cores" distribute_neighborhoodlist_to_cores(comm,
                                                                                             nlist,
                                                                                             distribution,
@@ -139,7 +142,7 @@ function init_data(params::Dict,
         end
         @debug "Finish init data"
     end
-    barrier(comm)
+    # barrier(comm)
     mesh = nothing
     return params
 end
