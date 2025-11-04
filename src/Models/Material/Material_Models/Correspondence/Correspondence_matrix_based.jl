@@ -269,6 +269,7 @@ Uses:
 - mapping[j][...] for writing row j when j ∈ nlist[i]
 """
 function assemble_stiffness(nodes::AbstractVector{Int64},
+                            active_nodes::AbstractVector{Int64},
                             dof::Int64,
                             C_Voigt::Array{Float64,3},
                             inverse_shape_tensor::Array{Float64,3},
@@ -280,6 +281,7 @@ function assemble_stiffness(nodes::AbstractVector{Int64},
                             bond_damage::Vector{Vector{Float64}})
 
     # TODO: reuse mapping structure from initialization
+    # right now nodes are needed to get the full mapping structure
     mapping, I, J, V,
     n_total = create_mapping_structure(nodes, nlist,
                                        number_of_neighbors, dof)
@@ -295,8 +297,11 @@ function assemble_stiffness(nodes::AbstractVector{Int64},
 
     # Partition nodes by workload
     n_threads = Threads.nthreads()
-    workloads = [number_of_neighbors[i]^2 for i in nodes]
-    node_partitions = partition_by_workload(nodes, workloads, n_threads)
+    #workloads = [number_of_neighbors[i]^2 for i in nodes]
+    workloads = [number_of_neighbors[i]^2 for i in active_nodes]
+    #    node_partitions = partition_by_workload(nodes, workloads, n_threads)
+
+    node_partitions = partition_by_workload(active_nodes, workloads, n_threads)
 
     # Thread-local V arrays
     thread_V = [zeros(Float64, length(V)) for _ in 1:n_threads]
@@ -409,7 +414,7 @@ end
 # [Include all other functions from working version]
 
 function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
-                                nodes::AbstractVector{Int64},
+                                active_nodes::AbstractVector{Int64},
                                 dof::Int64,
                                 zStiff::Array{Float64,3},
                                 inverse_shape_tensor::Array{Float64,3},
@@ -418,15 +423,14 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
                                 bond_geometry::Vector{Vector{Vector{Float64}}},
                                 bond_damage::Vector{Vector{Float64}},
                                 omega::Vector{Vector{Float64}})
-    ndof_total = nodes[end] * dof
     I_indices = Int[]
     J_indices = Int[]
     values = Float64[]
+    # TODO: not very memory efficient
+    S_matrices = Vector{Matrix{Float64}}(undef, maximum(active_nodes))
+    D_inv_X = Vector{Vector{Vector{Float64}}}(undef, maximum(active_nodes))
 
-    S_matrices = Vector{Matrix{Float64}}(undef, nodes[end])
-    D_inv_X = Vector{Vector{Vector{Float64}}}(undef, nodes[end])
-
-    for i in nodes
+    for i in active_nodes
         neighbors = nlist[i]
         n_neighbors = length(neighbors)
         @views D_inv_i = inverse_shape_tensor[i, :, :]
@@ -446,7 +450,7 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
         end
     end
 
-    for i in nodes
+    for i in active_nodes
         neighbors = nlist[i]
         @views Z_i = zStiff[i, :, :]
         V_i = volume[i]
@@ -479,7 +483,7 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
         end
     end
 
-    for i in nodes
+    for i in active_nodes
         neighbors = nlist[i]
         @views Z_i = zStiff[i, :, :]
         V_i = volume[i]
@@ -513,14 +517,14 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
         end
     end
 
-    K_stab = sparse(I_indices, J_indices, values, ndof_total, ndof_total)
+    K_stab = sparse(I_indices, J_indices, values, size(K)...)
 
-    for i in nodes
+    for i in active_nodes
         K_ii_block = zeros(dof, dof)
 
         for d1 in 1:dof
             row = (i-1)*dof + d1
-            for j in nodes
+            for j in active_nodes
                 if i != j
                     for d2 in 1:dof
                         col = (j-1)*dof + d2
@@ -563,7 +567,8 @@ end
 
 function compute_bond_force(bond_force::Vector{Vector{Vector{Float64}}},
                             K::SparseMatrixCSC{Float64,Int64}, u::Matrix{Float64},
-                            nodes::Vector{Int64}, nlist::Vector{Vector{Int64}}, dof::Int64)
+                            nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}},
+                            dof::Int64)
     @inbounds for i in nodes
         ni = nlist[i]
         i_offset = (i-1)*dof
@@ -615,6 +620,7 @@ function init_matrix(datamanager::Module)
     @info "Initializing stiffness matrix (mapping optimized)"
     index_x, index_y, vals,
     total_dof = assemble_stiffness(nodes,
+                                   nodes,
                                    dof,
                                    C_voigt,
                                    inverse_shape_tensor,
@@ -657,7 +663,8 @@ function compute_model(datamanager::Module, nodes::AbstractVector{Int64})
     zStiff = datamanager.get_field("Zero Energy Stiffness")
     # TODO: optimize update
     index_x, index_y, vals,
-    total_dof = assemble_stiffness(nodes,
+    total_dof = assemble_stiffness(collect(1:datamanager.get_nnodes()),
+                                   nodes,
                                    dof,
                                    C_voigt,
                                    inverse_shape_tensor,
