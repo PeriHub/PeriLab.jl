@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Damage_Based
+module Simple_additive
 export compute_model
 export additive_name
 export init_model
