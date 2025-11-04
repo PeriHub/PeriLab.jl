@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+# Notizen
+# die matrix soll über eine nodes liste aufgebau werden. Nachbarn die dort nicht existieren, sollen nicht berücksichtigt werden
+# die knoten nummern sollen so bleiben. d.h. die Matrixgröße bleibt
+# dann gibt es einen active node filter. der muss die randbedingungen berücksichtigen und die reduzierte matrix
+# nutzen. die reduzierte matrix greift nur auf die werte zu welche existieren
+# Herausforderung
+#   I,J -> müssten auf Null einträge zeigen können, da die indizierung vorher bestimmt wird
+#   idx muss richtig berechnet werden, auch wenn schleifen geskippt werden
+#   bc ist ein nodes x dof Feld auf globaler indizierung; diese muss auf die lokale aktivierte indizierung gemappt werden
+
 module Linear_static_matrix_based
 using ProgressBars: set_multiline_postfix, set_postfix
 using Printf
@@ -130,7 +140,7 @@ function init_solver(solver_options::Dict{Any,Any},
     end
     @timeit to "init_matrix" Correspondence_matrix_based.init_matrix(datamanager)
     if !haskey(solver_options, "Matrix update")
-        solver_options["Matrix update"] = true
+        solver_options["Matrix update"] = false
     end
 
     ### for coupled thermal analysis
@@ -204,6 +214,7 @@ function run_solver(solver_options::Dict{Any,Any},
     volume = datamanager.get_field("Volume")
     forces = datamanager.get_field("Forces", "NP1")
     velocities = datamanager.get_field("Velocity", "NP1")
+
     external_force_densities = datamanager.get_field("External Force Densities")
 
     matrix_update::Bool = solver_options["Matrix update"]
@@ -219,17 +230,25 @@ function run_solver(solver_options::Dict{Any,Any},
             # reshape
             non_BCs = datamanager.get_bc_free_dof()
             delta_u .= uNP1-uN
+            active_nodes = datamanager.get_field("Active Nodes")
+            active_list = datamanager.get_field("Active")
+            active_nodes = find_active_nodes(active_list, active_nodes,
+                                             1:datamanager.get_nnodes()) # -> in dof umwandeln
 
             if matrix_update
-                @timeit to "update stiffness matrix" K = compute_matrix(datamanager)
+                @timeit to "update stiffness matrix" K = compute_matrix(datamanager,
+                                                                        active_nodes)
             else
                 K = datamanager.get_stiffness_matrix()
             end
-            @timeit to "compute_displacements" compute_displacements!(K[perm, perm],
-                                                                      non_BCs,
-                                                                      delta_u,
-                                                                      force_densities_NP1,
-                                                                      external_force_densities)
+
+            @views K_analysis = K[perm, perm]
+
+            @timeit to "compute_displacements" @views compute_displacements!(K_analysis,
+                                                                             non_BCs,
+                                                                             delta_u,
+                                                                             force_densities_NP1,
+                                                                             external_force_densities)
             @timeit to "compute bond forces" Correspondence_matrix_based.compute_bond_force(bond_force,
                                                                                             K,
                                                                                             uNP1,
@@ -243,8 +262,14 @@ function run_solver(solver_options::Dict{Any,Any},
                                                                                              solver_options["Models"],
                                                                                              synchronise_field,
                                                                                              to)
-            @timeit to "update stiffness matrix" K = compute_matrix(datamanager)
-            @timeit to "compute_displacements" compute_displacements!(K[perm, perm],
+            active_nodes = datamanager.get_field("Active Nodes")
+            active_list = datamanager.get_field("Active")
+            active_nodes = find_active_nodes(active_list, active_nodes,
+                                             1:datamanager.get_nnodes())
+            @timeit to "update stiffness matrix" K = compute_matrix(datamanager,
+                                                                    active_nodes)
+            @views K_analysis = K[perm, perm]
+            @timeit to "compute_displacements" compute_displacements!(K_analysis,
                                                                       non_BCs,
                                                                       delta_u,
                                                                       force_densities_NP1,
@@ -288,8 +313,11 @@ function run_solver(solver_options::Dict{Any,Any},
     return result_files
 end
 
-function compute_matrix(datamanager::Module)
+function compute_matrix(datamanager::Module, nodes::AbstractVector{Int64})
     nodes = collect(1:datamanager.get_nnodes())
+    if length(nodes)==0
+        return datamanager.get_stiffness_matrix()
+    end
     Bond_Deformation.compute(datamanager,
                              nodes,
                              Dict(),
@@ -310,8 +338,8 @@ Arguments:
 - F_temp: Temporary force vector (pre-allocated)
 
 """
-function compute_displacements!(K::SparseMatrixCSC{Float64,Int64},
-                                non_BCs::Vector{Int64},
+function compute_displacements!(K::AbstractMatrix{Float64},
+                                non_BCs::AbstractVector{Int64},
                                 u::Matrix{Float64},
                                 F_int::Matrix{Float64},
                                 F_ext::Matrix{Float64})
