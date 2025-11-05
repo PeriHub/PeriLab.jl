@@ -165,7 +165,21 @@ function init_solver(solver_options::Dict{Any,Any},
     #	end
     #end
 end
+function filter_dofs_to_active_nodes(non_BCs::AbstractVector{Int64},
+                                     active_nodes::AbstractVector{Int64},
+                                     dof::Int64)
+    active_set = Set(active_nodes)
 
+    filtered = Int64[]
+    for dof_idx in non_BCs
+        node = div(dof_idx - 1, dof) + 1  # Welcher Knoten?
+        if node in active_set              # Ist er aktiv?
+            push!(filtered, dof_idx)       # Dann behalten!
+        end
+    end
+
+    return filtered
+end
 function run_solver(solver_options::Dict{Any,Any},
                     block_nodes::Dict{Int64,Vector{Int64}},
                     bcs::Dict{Any,Any},
@@ -187,7 +201,7 @@ function run_solver(solver_options::Dict{Any,Any},
     bond_force = datamanager.get_field("Bond Forces")
     comm = datamanager.get_comm()
     # needed to bring K_sparse into the consistent style of the transformation matrix -> vector
-    perm = create_permutation(datamanager.get_nnodes(), datamanager.get_dof())
+
     if "Material" in solver_options["Models"]
         external_forces = datamanager.get_field("External Forces")
         external_force_densities = datamanager.get_field("External Force Densities")
@@ -229,12 +243,15 @@ function run_solver(solver_options::Dict{Any,Any},
             external_force_densities .= external_forces ./ volume # it must be delta external forces
             # reshape
             non_BCs = datamanager.get_bc_free_dof()
+
             delta_u .= uNP1-uN
             active_nodes = datamanager.get_field("Active Nodes")
             active_list = datamanager.get_field("Active")
             active_nodes = find_active_nodes(active_list, active_nodes,
-                                             1:datamanager.get_nnodes()) # -> in dof umwandeln
-
+                                             1:datamanager.get_nnodes())
+            perm = create_permutation(active_nodes, datamanager.get_dof())
+            active_nodes = find_active_nodes(active_list, active_nodes,
+                                             1:datamanager.get_nnodes())
             if matrix_update
                 @timeit to "update stiffness matrix" K = compute_matrix(datamanager,
                                                                         active_nodes)
@@ -242,19 +259,24 @@ function run_solver(solver_options::Dict{Any,Any},
                 K = datamanager.get_stiffness_matrix()
             end
 
-            @views K_analysis = K[perm, perm]
+            filtered = filter_dofs_to_active_nodes(non_BCs, active_nodes, dof)
 
-            @timeit to "compute_displacements" @views compute_displacements!(K_analysis,
-                                                                             non_BCs,
-                                                                             delta_u,
-                                                                             force_densities_NP1,
-                                                                             external_force_densities)
+            @timeit to "compute_displacements" @views compute_displacements!(K[perm, perm],
+                                                                             filtered,
+                                                                             delta_u[active_nodes,
+                                                                                     :],
+                                                                             force_densities_NP1[active_nodes,
+                                                                                                 :],
+                                                                             external_force_densities[active_nodes,
+                                                                                                      :])
             @timeit to "compute bond forces" Correspondence_matrix_based.compute_bond_force(bond_force,
                                                                                             K,
                                                                                             uNP1,
-                                                                                            nodes,
+                                                                                            active_nodes,
                                                                                             nlist,
                                                                                             dof)
+            compute_parabolic_problems_before_model_evaluation(active_nodes, datamanager,
+                                                               solver_options)
             @timeit to "compute_models" datamanager = compute_stiff_matrix_compatible_models(datamanager,
                                                                                              block_nodes,
                                                                                              dt,
@@ -266,15 +288,18 @@ function run_solver(solver_options::Dict{Any,Any},
             active_list = datamanager.get_field("Active")
             active_nodes = find_active_nodes(active_list, active_nodes,
                                              1:datamanager.get_nnodes())
-            @timeit to "update stiffness matrix" K = compute_matrix(datamanager,
-                                                                    active_nodes)
-            @views K_analysis = K[perm, perm]
-            @timeit to "compute_displacements" compute_displacements!(K_analysis,
-                                                                      non_BCs,
-                                                                      delta_u,
-                                                                      force_densities_NP1,
-                                                                      external_force_densities)
-            force_densities_NP1 .+= force_densities_N
+
+            compute_parabolic_problems_after_model_evaluation(active_nodes, datamanager,
+                                                              solver_options, dt)
+            #@timeit to "update stiffness matrix" K = compute_matrix(datamanager,
+            #	active_nodes)
+            #@views K_analysis = K[perm, perm]
+            #@timeit to "compute_displacements" compute_displacements!(K_analysis,
+            #	non_BCs,
+            #	delta_u,
+            #	force_densities_NP1,
+            #	external_force_densities)
+            #force_densities_NP1 .+= force_densities_N
             for iID in nodes
                 @views forces[iID, :] .= force_densities_NP1[iID, :] .* volume[iID]
             end
@@ -314,7 +339,6 @@ function run_solver(solver_options::Dict{Any,Any},
 end
 
 function compute_matrix(datamanager::Module, nodes::AbstractVector{Int64})
-    nodes = collect(1:datamanager.get_nnodes())
     if length(nodes)==0
         return datamanager.get_stiffness_matrix()
     end
@@ -340,9 +364,9 @@ Arguments:
 """
 function compute_displacements!(K::AbstractMatrix{Float64},
                                 non_BCs::AbstractVector{Int64},
-                                u::Matrix{Float64},
-                                F_int::Matrix{Float64},
-                                F_ext::Matrix{Float64})
+                                u::AbstractMatrix{Float64},
+                                F_int::AbstractMatrix{Float64},
+                                F_ext::AbstractMatrix{Float64})
 
     # Compute modified force: F_modified = F - K * u_prescribed
     # (u contains prescribed displacements at fixed DOFs)
@@ -356,17 +380,37 @@ function compute_displacements!(K::AbstractMatrix{Float64},
     BCs = setdiff(1:length(vec(u)), non_BCs)
     F_int[non_BCs] = (K[non_BCs, BCs] * vec(u)[BCs])
     @views F_modified[non_BCs] .-= F_int[non_BCs]
-    @views vec(u)[non_BCs] .= K[non_BCs, non_BCs] \ F_modified[non_BCs]
+    try
+        @views vec(u)[non_BCs] .= K[non_BCs, non_BCs] \ F_modified[non_BCs]
+    catch
+        display(K[non_BCs, non_BCs])
+        println(diag(K))
+        println(det(K[non_BCs, non_BCs]))
 
+        @error ""
+    end
     #return reshape(F_int, 2, :)
 
 end
 
-function create_permutation(nnodes::Int, dof::Int)
+function create_permutation(nnodes::Int64, dof::Int64)
     perm = Vector{Int}(undef, nnodes * dof)
     idx = 1
-    for d in 1:dof           # Für jeden DOF
-        for n in 1:nnodes     # Für jeden Knoten
+    for d in 1:dof
+        for n in 1:nnodes
+            old_idx = (n-1)*dof + d  # Row-major: node, dann dof
+            perm[idx] = old_idx
+            idx += 1
+        end
+    end
+    return perm
+end
+
+function create_permutation(nodes::AbstractVector{Int64}, dof::Int64)
+    perm = Vector{Int}(undef, length(nodes) * dof)
+    idx = 1
+    for d in 1:dof
+        for n in nodes
             old_idx = (n-1)*dof + d  # Row-major: node, dann dof
             perm[idx] = old_idx
             idx += 1
