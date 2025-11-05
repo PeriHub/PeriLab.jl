@@ -13,11 +13,11 @@ export compute_shape_tensors!
 export compute_deformation_gradients!
 
 """
-     bond_geometry(undeformed_bond::Vector{Vector{Vector{Float64}}},
-    undeformed_bond_length::Vector{Vector{Float64}},
-    nodes::AbstractVector{Int64},
-    nlist::Vector{Vector{Int64}},
-    coor::Union{SubArray,Matrix{Float64},Matrix{Int64}},
+	 bond_geometry(undeformed_bond::Vector{Vector{Vector{Float64}}},
+	undeformed_bond_length::Vector{Vector{Float64}},
+	nodes::AbstractVector{Int64},
+	nlist::Vector{Vector{Int64}},
+	coor::Union{SubArray,Matrix{Float64},Matrix{Int64}},
 
 Calculate bond geometries between nodes based on their coordinates.
 
@@ -78,7 +78,7 @@ end
     end
 end
 """
-    compute_shape_tensors!(nodes::AbstractVector{Int64}, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
+	compute_shape_tensors!(nodes::AbstractVector{Int64}, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 
 Calculate the shape tensor and its inverse for a set of nodes in a computational mechanics context.
 
@@ -138,7 +138,7 @@ function compute_shape_tensors!(shape_tensor::Array{Float64,3},
 
         @views inverse_shape_tensor[iID, :,
         :] .= invert(shape_tensor[iID, :, :],
-                                                         "Shape Tensor is singular and cannot be inverted).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds.")
+                                                         "Shape Tensor is singular and cannot be inverted.\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds.")
     end
 end
 
@@ -169,7 +169,7 @@ function compute_shape_tensor!(shape_tensor::Array{Float64,3},
 end
 
 """
-    compute_deformation_gradients!(nodes::AbstractVector{Int64}, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
+	compute_deformation_gradients!(nodes::AbstractVector{Int64}, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
 
 Calculate the deformation gradient tensor for a set of nodes in a computational mechanics context.
 
@@ -329,7 +329,7 @@ function deformation_gradient_decomposition(nodes::Union{Base.OneTo{Int64},Vecto
 end
 
 """
-    function compute_strain(nodes::Union{Base.OneTo{Int64},Vector{Int64}, SubArray}, deformation_gradient, strain)
+	function compute_strain(nodes::Union{Base.OneTo{Int64},Vector{Int64}, SubArray}, deformation_gradient, strain)
 
 Calculate strains for specified nodes based on deformation gradients.
 
@@ -361,7 +361,7 @@ function compute_strain(nodes::AbstractVector{Int64},
 end
 
 """
-    function rotation_tensor(angles::Vector{Float64})
+	function rotation_tensor(angles::Vector{Float64})
 
 Creates the rotation tensor for 2D or 3D applications. Uses Rotations.jl package.
 
