@@ -15,7 +15,7 @@ export compute_model
 export thermal_model_name
 export init_model
 """
-    thermal_model_name()
+	thermal_model_name()
 
 Gives the expansion model name. It is needed for comparison with the yaml input deck.
 
@@ -26,7 +26,6 @@ Gives the expansion model name. It is needed for comparison with the yaml input 
 
 Example:
 ```julia
-println(flow_name())
 "Thermal Expansion"
 ```
 """
@@ -34,8 +33,30 @@ function thermal_model_name()
     return "Thermal Expansion"
 end
 
+function thermal_expansion_matrix(alpha::T,
+                                  ::Val{2}) where {T<:Union{Float64,Matrix{Float64}}}
+    if length(alpha) == 1
+        return alpha_mat = SMatrix{2,2,Float64}(alpha, 0, 0, alpha)
+    elseif length(alpha) == 2
+        return alpha_mat = SMatrix{2,2,Float64}(alpha[1], 0, 0, alpha[2])
+    elseif length(alpha) == 4
+        @error "Full heat expansion matrix is not implemented yet."
+    end
+end
+function thermal_expansion_matrix(alpha::T,
+                                  ::Val{3}) where {T<:Union{Float64,Matrix{Float64}}}
+    if length(alpha) == 1
+        return alpha_mat = SMatrix{3,3,Float64}(alpha, 0, 0, 0, alpha, 0, 0, 0, alpha)
+    elseif length(alpha) == 3
+        return alpha_mat = SMatrix{3,3,Float64}(alpha[1], 0, 0, 0, alpha[2], 0, 0, 0,
+                                                alpha[3])
+    elseif length(alpha) == 9
+        @error "Full heat expansion matrix is not implemented yet."
+    end
+end
+
 """
-    init_model(datamanager, nodes, thermal_parameter)
+	init_model(datamanager, nodes, thermal_parameter)
 
 Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -58,7 +79,7 @@ function init_model(datamanager::Module,
 end
 
 """
-    compute_model(datamanager, nodes, thermal_parameter, block::Int64, time, dt)
+	compute_model(datamanager, nodes, thermal_parameter, block::Int64, time, dt)
 
 Calculates the thermal expansion of the material.
 
@@ -80,25 +101,21 @@ function compute_model(datamanager::Module,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
+    thermal_parameter["Matrix based"]
+    if get(thermal_parameter, "Matrix based", false)
+        return compute_model_matrix_based(datamanager, nodes, thermal_parameter, block,
+                                          time, dt)
+    end
+
     temperature_NP1 = datamanager.get_field("Temperature", "NP1")
     dof = datamanager.get_dof()
 
-    alpha = thermal_parameter["Thermal Expansion Coefficient"]
-    ref_temp = 0.0
-    if haskey(thermal_parameter, "Reference Temperature")
-        ref_temp = thermal_parameter["Reference Temperature"]
-    end
+    alpha_mat=thermal_expansion_matrix(thermal_parameter["Thermal Expansion Coefficient"],
+                                       Val(dof))
 
-    alpha_mat::Matrix{Float64} = @MMatrix zeros(Float64, dof, dof)
-    if length(alpha) == 1
-        alpha_mat = alpha .* I(dof)
-    elseif length(alpha) == dof || length(alpha) == 3
-        for i in 1:dof
-            alpha_mat[i, i] = alpha[i]
-        end
-    elseif length(alpha) == dof * dof || length(alpha) == 9
-        @error "Full heat expansion matrix is not implemented yet."
-    end
+    ref_temp = 0.0
+    ref_temp = get(thermal_parameter, "Reference Temperature", 0.0)
+
     undeformed_bond = datamanager.get_field("Bond Geometry")
     undeformed_bond_length = datamanager.get_field("Bond Length")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
@@ -126,7 +143,7 @@ function compute_model(datamanager::Module,
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+	fields_for_local_synchronization(datamanager::Module, model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -139,6 +156,27 @@ function fields_for_local_synchronization(datamanager::Module, model::String)
     #download_from_cores = false
     #upload_to_cores = true
     #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
+    return datamanager
+end
+
+function compute_model_matrix_based(datamanager::Module,
+                                    nodes::AbstractVector{Int64},
+                                    thermal_parameter::Dict,
+                                    block::Int64,
+                                    time::Float64,
+                                    dt::Float64)
+    thermal_factor = datamanager.get_field("Thermal Expension Factor")
+    temperatureN = datamanager.get_field("Temperature", "N")
+    temperatureNP1 = datamanager.get_field("Temperature", "NP1")
+    dof = datamanager.get_dof()
+
+    ref_temp = get(thermal_parameter, "Reference Temperature", 0.0)
+
+    alpha_mat=thermal_expansion_matrix(thermal_parameter["Thermal Expansion Coefficient"],
+                                       Val(dof))
+    for iID in nodes
+        @views thermal_factor[iID, :]=(temperatureNP1[iID]-ref_temp) .* diag(alpha_mat) .+ 1
+    end
     return datamanager
 end
 

@@ -14,6 +14,7 @@ using StaticArrays: @MMatrix
 export init_model
 export add_zero_energy_stiff!
 export compute_bond_force
+export init_matrix
 
 """
 Peridynamic Correspondence Stiffness Matrix Assembly
@@ -54,14 +55,16 @@ function contraction!(C::Array{Float64,4}, B::Array{Float64,3}, dof::Int64,
     end
 end
 function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
+                          thermal_expansion_factor::AbstractVector{Float64},
                           V_k::Float64, omega_ik::Float64, ::Val{2},
                           B_tensor::Array{Float64,3})
     factor = omega_ik * V_k * 0.5
-
-    B1_1 = D_inv[1, 1] * X_ik[1] + D_inv[2, 1] * X_ik[2]
-    B1_2 = D_inv[1, 2] * X_ik[1] + D_inv[2, 2] * X_ik[2]
-    B2_1 = D_inv[1, 1] * X_ik[1] + D_inv[1, 2] * X_ik[2]
-    B2_2 = D_inv[2, 1] * X_ik[1] + D_inv[2, 2] * X_ik[2]
+    X_x = thermal_expansion_factor[1] * X_ik[1]
+    X_y = thermal_expansion_factor[2] * X_ik[2]
+    B1_1 = D_inv[1, 1] * X_x + D_inv[2, 1] * X_y
+    B1_2 = D_inv[1, 2] * X_x + D_inv[2, 2] * X_y
+    B2_1 = D_inv[1, 1] * X_x + D_inv[1, 2] * X_y
+    B2_2 = D_inv[2, 1] * X_x + D_inv[2, 2] * X_y
 
     B_tensor[1, 1, 1] = factor * (B1_1 + B2_1)
     B_tensor[1, 1, 2] = 0.0
@@ -76,16 +79,21 @@ function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
 end
 
 function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
+                          thermal_expansion_factor::AbstractVector{Float64},
                           V_k::Float64, omega_ik::Float64, ::Val{3},
                           B_tensor::Array{Float64,3})
     factor = omega_ik * V_k * 0.5
 
-    B1_1 = D_inv[1, 1] * X_ik[1] + D_inv[2, 1] * X_ik[2] + D_inv[3, 1] * X_ik[3]
-    B1_2 = D_inv[1, 2] * X_ik[1] + D_inv[2, 2] * X_ik[2] + D_inv[3, 2] * X_ik[3]
-    B1_3 = D_inv[1, 3] * X_ik[1] + D_inv[2, 3] * X_ik[2] + D_inv[3, 3] * X_ik[3]
-    B2_1 = D_inv[1, 1] * X_ik[1] + D_inv[1, 2] * X_ik[2] + D_inv[1, 3] * X_ik[3]
-    B2_2 = D_inv[2, 1] * X_ik[1] + D_inv[2, 2] * X_ik[2] + D_inv[2, 3] * X_ik[3]
-    B2_3 = D_inv[3, 1] * X_ik[1] + D_inv[3, 2] * X_ik[2] + D_inv[3, 3] * X_ik[3]
+    X_x = thermal_expansion_factor[1] * X_ik[1]
+    X_y = thermal_expansion_factor[2] * X_ik[2]
+    X_z = thermal_expansion_factor[3] * X_ik[3]
+
+    B1_1 = D_inv[1, 1] * X_x + D_inv[2, 1] * X_y + D_inv[3, 1] * X_z
+    B1_2 = D_inv[1, 2] * X_x + D_inv[2, 2] * X_y + D_inv[3, 2] * X_z
+    B1_3 = D_inv[1, 3] * X_x + D_inv[2, 3] * X_y + D_inv[3, 3] * X_z
+    B2_1 = D_inv[1, 1] * X_x + D_inv[1, 2] * X_y + D_inv[1, 3] * X_z
+    B2_2 = D_inv[2, 1] * X_x + D_inv[2, 2] * X_y + D_inv[2, 3] * X_z
+    B2_3 = D_inv[3, 1] * X_x + D_inv[3, 2] * X_y + D_inv[3, 3] * X_z
 
     B_tensor[1, 1, 1] = factor * (B1_1 + B2_1)
     B_tensor[1, 1, 2] = 0.0
@@ -172,12 +180,14 @@ function precompute_CB_tensors!(CB_k::AbstractArray{Float64,4},
                                 omega_i::Vector{Float64},
                                 bond_damage_i::Vector{Float64},
                                 dof::Int64,
+                                thermal_expansion_factor::AbstractVector{Float64},
                                 B_ik::Array{Float64,3})
     @inbounds for (k_idx, k) in enumerate(neighbors)
         V_k = volume[k]
         omega_ik = omega_i[k_idx] * bond_damage_i[k_idx]
         X_ik = bond_geometry_i[k_idx]
-        create_B_tensor!(D_inv, X_ik, V_k, omega_ik, Val(dof), B_ik)
+        create_B_tensor!(D_inv, X_ik, thermal_expansion_factor, V_k, omega_ik, Val(dof),
+                         B_ik)
         @views contraction!(C_tensor, B_ik, dof, CB_k[k_idx, :, :, :])
     end
     return nothing
@@ -285,7 +295,8 @@ function assemble_stiffness(nodes::AbstractVector{Int64},
                             volume::Vector{Float64},
                             bond_geometry::Vector{Vector{Vector{Float64}}},
                             omega::Vector{Vector{Float64}},
-                            bond_damage::Vector{Vector{Float64}})
+                            bond_damage::Vector{Vector{Float64}},
+                            thermal_expansion_factor::Matrix{Float64})
 
     # TODO: reuse mapping structure from initialization
     # right now nodes are needed to get the full mapping structure
@@ -331,9 +342,10 @@ function assemble_stiffness(nodes::AbstractVector{Int64},
             ni = nlist[i]
 
             CB_k = @view buffers.CB_k[eachindex(ni), :, :, :]
-            precompute_CB_tensors!(CB_k, C_tensor, D_inv, ni, volume,
-                                   bond_geometry[i], omega[i], bond_damage[i], dof,
-                                   buffers.B_ik)
+            @views precompute_CB_tensors!(CB_k, C_tensor, D_inv, ni, volume,
+                                          bond_geometry[i], omega[i], bond_damage[i], dof,
+                                          thermal_expansion_factor[i, :],
+                                          buffers.B_ik)
 
             i_diag_idx = mapping[i][1]
             mapping_i = mapping[i]
@@ -623,6 +635,8 @@ function init_matrix(datamanager::Module)
     C_voigt = datamanager.get_field("Hooke Matrix")
     bond_geometry_N = datamanager.get_field("Deformed Bond Geometry", "N")
     bond_damage = datamanager.get_field("Bond Damage", "NP1")
+    thermal_expansion_factor = datamanager.create_constant_node_field("Thermal Expension Factor",
+                                                                      Float64, dof, 1)
     @info "Initializing stiffness matrix (mapping optimized)"
     index_x, index_y, vals,
     total_dof = assemble_stiffness(nodes,
@@ -635,7 +649,8 @@ function init_matrix(datamanager::Module)
                                    volume,
                                    bond_geometry,
                                    omega,
-                                   bond_damage)
+                                   bond_damage,
+                                   thermal_expansion_factor)
 
     datamanager.init_stiffness_matrix(index_x, index_y, vals, total_dof)
     K_sparse = datamanager.get_stiffness_matrix()
@@ -665,6 +680,7 @@ function compute_model(datamanager::Module, nodes::AbstractVector{Int64})
     number_of_neighbors::Vector{Int64} = datamanager.get_field("Number of Neighbors")
     omega::Vector{Vector{Float64}} = datamanager.get_field("Influence Function")
     bond_damage::Vector{Vector{Float64}} = datamanager.get_field("Bond Damage", "NP1")
+    thermal_expansion_factor = datamanager.get_field("Thermal Expansion Factor")
 
     zStiff = datamanager.get_field("Zero Energy Stiffness")
     # TODO: optimize update
@@ -699,6 +715,135 @@ function compute_model(datamanager::Module, nodes::AbstractVector{Int64})
                            omega)
 
     return K_sparse
+end
+
+"""
+Compute thermal forces from temperature changes.
+
+Thermal forces represent the equivalent nodal loads due to thermal expansion:
+	f_thermal = ∫ Bᵀ * σ_thermal dV
+
+where σ_thermal = C : ε_thermal and ε_thermal = α * ΔT * I
+
+# Arguments
+- `nodes`: Vector of node indices
+- `dof`: Degrees of freedom (2 or 3)
+- `C_Voigt`: Hooke matrix in Voigt notation [n_nodes, voigt_size, voigt_size]
+- `inverse_shape_tensor`: Inverse shape tensor [n_nodes, dof, dof]
+- `nlist`: Neighbor list for each node
+- `volume`: Volume of each node
+- `bond_geometry`: Bond vectors in reference configuration
+- `omega`: Influence function values
+- `bond_damage`: Bond damage values (0-1)
+- `alpha`: Thermal expansion coefficient (scalar or vector per node)
+- `ΔT`: Temperature change per node
+
+# Returns
+- `f_thermal`: Thermal forces [n_nodes, dof]
+"""
+function compute_thermal_forces(nodes::AbstractVector{Int64},
+                                dof::Int64,
+                                C_Voigt::Array{Float64,3},
+                                inverse_shape_tensor::Array{Float64,3},
+                                nlist::Vector{Vector{Int64}},
+                                volume::Vector{Float64},
+                                bond_geometry::Vector{Vector{Vector{Float64}}},
+                                omega::Vector{Vector{Float64}},
+                                bond_damage::Vector{Vector{Float64}},
+                                alpha::Union{Vector{Float64},Array{Float64,2}},  # Scalar or [n_nodes, dof] for anisotropic
+                                ΔT::Vector{Float64})
+    n_nodes = maximum(nodes)
+    f_thermal = zeros(Float64, n_nodes, dof)
+
+    # Voigt notation size
+    voigt_size = dof == 2 ? 3 : 6
+
+    # Check if alpha is isotropic (vector) or anisotropic (matrix)
+    is_isotropic = alpha isa Vector{Float64} && length(alpha) == n_nodes
+
+    for i in nodes
+        # Skip if no temperature change
+        if abs(ΔT[i]) < 1e-14
+            continue
+        end
+
+        # Get thermal expansion coefficient
+        if is_isotropic
+            α_i = alpha[i]
+            # Isotropic thermal strain in Voigt notation
+            if dof == 2
+                ε_th_voigt = α_i * ΔT[i] * [1.0, 1.0, 0.0]
+            else  # dof == 3
+                ε_th_voigt = α_i * ΔT[i] * [1.0, 1.0, 1.0, 0.0, 0.0, 0.0]
+            end
+        else
+            # Anisotropic thermal strain
+            α_i = alpha[i, :]
+            if dof == 2
+                ε_th_voigt = ΔT[i] * [α_i[1], α_i[2], 0.0]
+            else  # dof == 3
+                ε_th_voigt = ΔT[i] * [α_i[1], α_i[2], α_i[3], 0.0, 0.0, 0.0]
+            end
+        end
+
+        # Thermal stress in Voigt notation
+        σ_th_voigt = C_Voigt[i, :, :] * ε_th_voigt
+
+        # Convert to tensor form for force calculation
+        σ_th_tensor = voigt_to_tensor(σ_th_voigt, dof)
+
+        # Get node properties
+        D_inv_i = inverse_shape_tensor[i, :, :]
+        V_i = volume[i]
+        ni = nlist[i]
+
+        # Loop over all bonds from node i
+        for (j_idx, j) in enumerate(ni)
+            if i == j
+                continue
+            end
+
+            # Bond properties
+            X_ij = bond_geometry[i][j_idx]
+            ω_ij = omega[i][j_idx] * bond_damage[i][j_idx]
+            V_j = volume[j]
+
+            # Skip if bond is broken or has no influence
+            if ω_ij < 1e-14
+                continue
+            end
+
+            # Thermal force on bond i→j
+            # Analogy to mechanical force: f = V_i * V_j * ω * σ * (D_inv * X)
+            DX = D_inv_i * X_ij
+            σDX = σ_th_tensor * DX
+            f_ij = V_i * V_j * ω_ij * σDX
+
+            # Apply forces (action-reaction)
+            for d in 1:dof
+                f_thermal[i, d] += f_ij[d]
+                f_thermal[j, d] -= f_ij[d]
+            end
+        end
+    end
+
+    return f_thermal
+end
+
+"""
+Convert stress from Voigt notation to tensor form.
+"""
+function voigt_to_tensor(σ_voigt::Vector{Float64}, dof::Int64)
+    if dof == 2
+        # Voigt: [σxx, σyy, σxy]
+        return [σ_voigt[1] σ_voigt[3];
+                σ_voigt[3] σ_voigt[2]]
+    else  # dof == 3
+        # Voigt: [σxx, σyy, σzz, σyz, σxz, σxy]
+        return [σ_voigt[1] σ_voigt[6] σ_voigt[5];
+                σ_voigt[6] σ_voigt[2] σ_voigt[4];
+                σ_voigt[5] σ_voigt[4] σ_voigt[3]]
+    end
 end
 
 end # module

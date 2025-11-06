@@ -17,7 +17,7 @@ export init_fields
 export fields_for_local_synchronization
 
 """
-    init_fields(datamanager::Module)
+	init_fields(datamanager::Module)
 
 Initialize thermal model fields
 
@@ -38,7 +38,7 @@ function init_fields(datamanager::Module)
 end
 
 """
-    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
+	compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
 
 Computes the thermal models
 
@@ -70,7 +70,7 @@ function compute_model(datamanager::Module,
 end
 
 """
-    init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}, block::Int64)
+	init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}, block::Int64)
 
 Initializes the thermal model.
 
@@ -89,7 +89,7 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
     for thermal_model in thermal_models
         mod = create_module_specifics(thermal_model,
                                       module_list,
-                                          @__MODULE__,
+                                      @__MODULE__,
                                       "thermal_model_name")
         if isnothing(mod)
             @error "No thermal model of name " * thermal_model * " exists."
@@ -102,7 +102,7 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
 end
 
 """
-    fields_for_local_synchronization(datamanager, model, block)
+	fields_for_local_synchronization(datamanager, model, block)
 
 Defines all synchronization fields for local synchronization
 

@@ -261,6 +261,7 @@ function run_solver(solver_options::Dict{Any,Any},
 
             filtered = filter_dofs_to_active_nodes(non_BCs, active_nodes, dof)
 
+            # das muss in model evaluation; dann funktioniert die Reihenfolge auch.
             @timeit to "compute_displacements" @views compute_displacements!(K[perm, perm],
                                                                              filtered,
                                                                              delta_u[active_nodes,
@@ -277,6 +278,8 @@ function run_solver(solver_options::Dict{Any,Any},
                                                                                             dof)
             compute_parabolic_problems_before_model_evaluation(active_nodes, datamanager,
                                                                solver_options)
+            # Materialmodell aufrufen. aber die bond deformations N -> NP1 darstellen + bond force berechnen
+            # für temperatur braucht man eine matrix, um u zu berechnen
             @timeit to "compute_models" datamanager = compute_stiff_matrix_compatible_models(datamanager,
                                                                                              block_nodes,
                                                                                              dt,
@@ -284,6 +287,15 @@ function run_solver(solver_options::Dict{Any,Any},
                                                                                              solver_options["Models"],
                                                                                              synchronise_field,
                                                                                              to)
+            @views external_force_densities[active_nodes, :] += force_densities_NP1[active_nodes, :]
+            @timeit to "compute_displacements" @views compute_displacements!(K[perm, perm],
+                                                                             filtered,
+                                                                             delta_u[active_nodes,
+                                                                                     :],
+                                                                             force_densities_NP1[active_nodes,
+                                                                                                 :],
+                                                                             external_force_densities[active_nodes,
+                                                                                                      :])
             active_nodes = datamanager.get_field("Active Nodes")
             active_list = datamanager.get_field("Active")
             active_nodes = find_active_nodes(active_list, active_nodes,
