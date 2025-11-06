@@ -54,60 +54,67 @@ function contraction!(C::Array{Float64,4}, B::Array{Float64,3}, dof::Int64,
     end
 end
 function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
-                          V_k::Float64, omega_ik::Float64, dof::Int64,
+                          V_k::Float64, omega_ik::Float64, ::Val{2},
                           B_tensor::Array{Float64,3})
     factor = omega_ik * V_k * 0.5
 
-    @inbounds @fastmath if dof == 2
-        B1_1 = D_inv[1, 1] * X_ik[1] + D_inv[2, 1] * X_ik[2]
-        B1_2 = D_inv[1, 2] * X_ik[1] + D_inv[2, 2] * X_ik[2]
-        B2_1 = D_inv[1, 1] * X_ik[1] + D_inv[1, 2] * X_ik[2]
-        B2_2 = D_inv[2, 1] * X_ik[1] + D_inv[2, 2] * X_ik[2]
+    B1_1 = D_inv[1, 1] * X_ik[1] + D_inv[2, 1] * X_ik[2]
+    B1_2 = D_inv[1, 2] * X_ik[1] + D_inv[2, 2] * X_ik[2]
+    B2_1 = D_inv[1, 1] * X_ik[1] + D_inv[1, 2] * X_ik[2]
+    B2_2 = D_inv[2, 1] * X_ik[1] + D_inv[2, 2] * X_ik[2]
 
-        B_tensor[1, 1, 1] = factor * (B1_1 + B2_1)
-        B_tensor[1, 1, 2] = 0.0
-        B_tensor[1, 2, 1] = factor * B1_2
-        B_tensor[1, 2, 2] = factor * B2_1
-        B_tensor[2, 1, 1] = factor * B2_2
-        B_tensor[2, 1, 2] = factor * B1_1
-        B_tensor[2, 2, 1] = 0.0
-        B_tensor[2, 2, 2] = factor * (B1_2 + B2_2)
-    else
-        B1_1 = D_inv[1, 1] * X_ik[1] + D_inv[2, 1] * X_ik[2] + D_inv[3, 1] * X_ik[3]
-        B1_2 = D_inv[1, 2] * X_ik[1] + D_inv[2, 2] * X_ik[2] + D_inv[3, 2] * X_ik[3]
-        B1_3 = D_inv[1, 3] * X_ik[1] + D_inv[2, 3] * X_ik[2] + D_inv[3, 3] * X_ik[3]
-        B2_1 = D_inv[1, 1] * X_ik[1] + D_inv[1, 2] * X_ik[2] + D_inv[1, 3] * X_ik[3]
-        B2_2 = D_inv[2, 1] * X_ik[1] + D_inv[2, 2] * X_ik[2] + D_inv[2, 3] * X_ik[3]
-        B2_3 = D_inv[3, 1] * X_ik[1] + D_inv[3, 2] * X_ik[2] + D_inv[3, 3] * X_ik[3]
+    B_tensor[1, 1, 1] = factor * (B1_1 + B2_1)
+    B_tensor[1, 1, 2] = 0.0
+    B_tensor[1, 2, 1] = factor * B1_2
+    B_tensor[1, 2, 2] = factor * B2_1
+    B_tensor[2, 1, 1] = factor * B2_2
+    B_tensor[2, 1, 2] = factor * B1_1
+    B_tensor[2, 2, 1] = 0.0
+    B_tensor[2, 2, 2] = factor * (B1_2 + B2_2)
 
-        B_tensor[1, 1, 1] = factor * (B1_1 + B2_1)
-        B_tensor[1, 1, 2] = 0.0
-        B_tensor[1, 1, 3] = 0.0
-        B_tensor[1, 2, 1] = factor * B1_2
-        B_tensor[1, 2, 2] = factor * B2_1
-        B_tensor[1, 2, 3] = 0.0
-        B_tensor[1, 3, 1] = factor * B1_3
-        B_tensor[1, 3, 2] = 0.0
-        B_tensor[1, 3, 3] = factor * B2_1
-        B_tensor[2, 1, 1] = factor * B2_2
-        B_tensor[2, 1, 2] = factor * B1_1
-        B_tensor[2, 1, 3] = 0.0
-        B_tensor[2, 2, 1] = 0.0
-        B_tensor[2, 2, 2] = factor * (B1_2 + B2_2)
-        B_tensor[2, 2, 3] = 0.0
-        B_tensor[2, 3, 1] = 0.0
-        B_tensor[2, 3, 2] = factor * B1_3
-        B_tensor[2, 3, 3] = factor * B2_2
-        B_tensor[3, 1, 1] = factor * B2_3
-        B_tensor[3, 1, 2] = 0.0
-        B_tensor[3, 1, 3] = factor * B1_1
-        B_tensor[3, 2, 1] = 0.0
-        B_tensor[3, 2, 2] = factor * B2_3
-        B_tensor[3, 2, 3] = factor * B1_2
-        B_tensor[3, 3, 1] = 0.0
-        B_tensor[3, 3, 2] = 0.0
-        B_tensor[3, 3, 3] = factor * (B1_3 + B2_3)
-    end
+    return nothing
+end
+
+function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
+                          V_k::Float64, omega_ik::Float64, ::Val{3},
+                          B_tensor::Array{Float64,3})
+    factor = omega_ik * V_k * 0.5
+
+    B1_1 = D_inv[1, 1] * X_ik[1] + D_inv[2, 1] * X_ik[2] + D_inv[3, 1] * X_ik[3]
+    B1_2 = D_inv[1, 2] * X_ik[1] + D_inv[2, 2] * X_ik[2] + D_inv[3, 2] * X_ik[3]
+    B1_3 = D_inv[1, 3] * X_ik[1] + D_inv[2, 3] * X_ik[2] + D_inv[3, 3] * X_ik[3]
+    B2_1 = D_inv[1, 1] * X_ik[1] + D_inv[1, 2] * X_ik[2] + D_inv[1, 3] * X_ik[3]
+    B2_2 = D_inv[2, 1] * X_ik[1] + D_inv[2, 2] * X_ik[2] + D_inv[2, 3] * X_ik[3]
+    B2_3 = D_inv[3, 1] * X_ik[1] + D_inv[3, 2] * X_ik[2] + D_inv[3, 3] * X_ik[3]
+
+    B_tensor[1, 1, 1] = factor * (B1_1 + B2_1)
+    B_tensor[1, 1, 2] = 0.0
+    B_tensor[1, 1, 3] = 0.0
+    B_tensor[1, 2, 1] = factor * B1_2
+    B_tensor[1, 2, 2] = factor * B2_1
+    B_tensor[1, 2, 3] = 0.0
+    B_tensor[1, 3, 1] = factor * B1_3
+    B_tensor[1, 3, 2] = 0.0
+    B_tensor[1, 3, 3] = factor * B2_1
+    B_tensor[2, 1, 1] = factor * B2_2
+    B_tensor[2, 1, 2] = factor * B1_1
+    B_tensor[2, 1, 3] = 0.0
+    B_tensor[2, 2, 1] = 0.0
+    B_tensor[2, 2, 2] = factor * (B1_2 + B2_2)
+    B_tensor[2, 2, 3] = 0.0
+    B_tensor[2, 3, 1] = 0.0
+    B_tensor[2, 3, 2] = factor * B1_3
+    B_tensor[2, 3, 3] = factor * B2_2
+    B_tensor[3, 1, 1] = factor * B2_3
+    B_tensor[3, 1, 2] = 0.0
+    B_tensor[3, 1, 3] = factor * B1_1
+    B_tensor[3, 2, 1] = 0.0
+    B_tensor[3, 2, 2] = factor * B2_3
+    B_tensor[3, 2, 3] = factor * B1_2
+    B_tensor[3, 3, 1] = 0.0
+    B_tensor[3, 3, 2] = 0.0
+    B_tensor[3, 3, 3] = factor * (B1_3 + B2_3)
+
     return nothing
 end
 
@@ -170,7 +177,7 @@ function precompute_CB_tensors!(CB_k::AbstractArray{Float64,4},
         V_k = volume[k]
         omega_ik = omega_i[k_idx] * bond_damage_i[k_idx]
         X_ik = bond_geometry_i[k_idx]
-        create_B_tensor!(D_inv, X_ik, V_k, omega_ik, dof, B_ik)
+        create_B_tensor!(D_inv, X_ik, V_k, omega_ik, Val(dof), B_ik)
         @views contraction!(C_tensor, B_ik, dof, CB_k[k_idx, :, :, :])
     end
     return nothing
@@ -317,7 +324,6 @@ function assemble_stiffness(nodes::AbstractVector{Int64},
     Threads.@threads for tid in 1:n_threads
         buffers = thread_buffers[tid]
         V_thread = thread_V[tid]
-
         for i in node_partitions[tid]
             D_inv = @view inverse_shape_tensor[i, :, :]
             C_tensor = get_fourth_order(@view(C_Voigt[i, :, :]), dof)
@@ -429,7 +435,7 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
     # TODO: not very memory efficient
     S_matrices = Vector{Matrix{Float64}}(undef, maximum(active_nodes))
     D_inv_X = Vector{Vector{Vector{Float64}}}(undef, maximum(active_nodes))
-
+    1
     for i in active_nodes
         neighbors = nlist[i]
         n_neighbors = length(neighbors)
@@ -542,8 +548,8 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
             end
         end
     end
-
     K .+= K_stab
+
     return nothing
 end
 
