@@ -294,6 +294,7 @@ function compute_models(datamanager::Module,
                                                   1:datamanager.get_nnodes(), true))
         end
     end
+
     if "Material" in options
         if "Damage" in options
             for (block, nodes) in pairs(block_nodes)
@@ -381,7 +382,7 @@ function compute_stiff_matrix_compatible_models(datamanager::Module,
         #	active_model_name,
         #	"download_from_cores",
         #	synchronise_field)
-        if active_model_name == "Material Model"
+        if active_model_name == "Material Model" && !("Thermal" in options)
             # we need here an activation trigger for mixed models in future
             continue
         end
@@ -409,6 +410,14 @@ function compute_stiff_matrix_compatible_models(datamanager::Module,
         end
     end
 
+    if ("Material" in options) && ("Thermal" in options)
+        active_nodes = datamanager.get_field("Active Nodes")
+        active_nodes = find_active_nodes(active_list, active_nodes,
+                                         1:datamanager.get_nnodes())
+        @timeit to "distribute_force_densities" Material.distribute_force_densities(datamanager,
+                                                                                    active_nodes,
+                                                                                    to)
+    end
     return datamanager
 end
 

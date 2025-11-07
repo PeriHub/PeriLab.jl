@@ -965,7 +965,7 @@ Invert a n x n matrix. Throws an error if A is singular.
 """
 function invert(A::AbstractMatrix{Float64},
                 error_message::String = "Matrix is singular")
-    if abs(det(A))<1e-10
+    if rank(A)<size(A)[1]
         @warn "$error_message \n - rank is $(rank(A))"
         return pinv(smat(A))
     end
