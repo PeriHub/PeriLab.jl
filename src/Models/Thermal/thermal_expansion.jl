@@ -101,12 +101,6 @@ function compute_model(datamanager::Module,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    thermal_parameter["Matrix based"]
-    if get(thermal_parameter, "Matrix based", false)
-        return compute_model_matrix_based(datamanager, nodes, thermal_parameter, block,
-                                          time, dt)
-    end
-
     temperature_NP1 = datamanager.get_field("Temperature", "NP1")
     dof = datamanager.get_dof()
 
@@ -121,10 +115,8 @@ function compute_model(datamanager::Module,
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
 
-    temp_diff = 0.0
-
     for iID in nodes
-        temp_diff = temperature_NP1[iID] - ref_temp
+        temp_diff::Float64 = temperature_NP1[iID] - ref_temp
         @inbounds @fastmath @views for jID in eachindex(undeformed_bond[iID])
             for j in 1:dof
                 deformed_bond[iID][jID][j] -= temp_diff * alpha_mat[j, j] *
@@ -138,7 +130,6 @@ function compute_model(datamanager::Module,
     if datamanager.has_key("Deformation Gradient")
         datamanager = Deformation_Gradient.compute(datamanager, nodes, Dict(), block)
     end
-
     return datamanager
 end
 
@@ -156,27 +147,6 @@ function fields_for_local_synchronization(datamanager::Module, model::String)
     #download_from_cores = false
     #upload_to_cores = true
     #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
-    return datamanager
-end
-
-function compute_model_matrix_based(datamanager::Module,
-                                    nodes::AbstractVector{Int64},
-                                    thermal_parameter::Dict,
-                                    block::Int64,
-                                    time::Float64,
-                                    dt::Float64)
-    thermal_factor = datamanager.get_field("Thermal Expension Factor")
-    temperatureN = datamanager.get_field("Temperature", "N")
-    temperatureNP1 = datamanager.get_field("Temperature", "NP1")
-    dof = datamanager.get_dof()
-
-    ref_temp = get(thermal_parameter, "Reference Temperature", 0.0)
-
-    alpha_mat=thermal_expansion_matrix(thermal_parameter["Thermal Expansion Coefficient"],
-                                       Val(dof))
-    for iID in nodes
-        @views thermal_factor[iID, :]=(temperatureNP1[iID]-ref_temp) .* diag(alpha_mat) .+ 1
-    end
     return datamanager
 end
 
