@@ -10,7 +10,7 @@ export create_constant_element_field
 export create_node_field
 
 """
-    get_field(name::String, time::String)
+	get_field(name::String, time::String)
 
 Returns the field with the given name and time.
 
@@ -49,7 +49,7 @@ function get_field(name::String, time::String = "Constant")
 end
 
 """
-    get_field_if_exists(name::String, time::String)
+	get_field_if_exists(name::String, time::String)
 
 Returns the field with the given name if it exists.
 
@@ -69,7 +69,7 @@ function (f::DataField{T,N})() where {T,N}
 end
 
 """
-    _get_field(name::String)
+	_get_field(name::String)
 
 Returns the field with the given name.
 
@@ -84,13 +84,13 @@ function _get_field(name::String)::Union{Array,Nothing}
     catch
         @error "Field ''" *
                name *
-               "'' does not exist. Check if it is initialized as non-constant."
+               "'' does not exist. \n - Check if it is initialized as non-constant. \n - Check if the model is not actiavated in the solver options, e.g. Pre Calculation Models: False"
         return nothing
     end
 end
 
 """
-    get_all_field_keys()
+	get_all_field_keys()
 
 Returns a list of all field keys.
 """
@@ -99,7 +99,7 @@ function get_all_field_keys()::Vector{String}
 end
 
 """
-    create_bond_field(name::String, vartype::Type, dof::Int64)
+	create_bond_field(name::String, vartype::Type, dof::Int64)
 
 Creates a bond field with the given name, data type, and degree of freedom.
 
@@ -133,7 +133,7 @@ function create_bond_field(name::String,
 end
 
 """
-    create_constant_bond_field(name::String, vartype::Type, dof::Int64, default_value::Union{Int64,Float64,Bool}=0))
+	create_constant_bond_field(name::String, vartype::Type, dof::Int64, default_value::Union{Int64,Float64,Bool}=0))
 
 Creates a constant bond field with the given name, data type, and degree of freedom.
 
@@ -184,7 +184,7 @@ function create_free_size_field(name::String,
 end
 
 """
-    create_constant_node_field(name::String, vartype::Type, dof::Int64)
+	create_constant_node_field(name::String, vartype::Type, dof::Int64)
 
 Creates a constant node field with the given name, data type, and degree of freedom.
 
@@ -214,7 +214,7 @@ function create_constant_node_field(name::String,
 end
 
 """
-    create_constant_element_field(name::String, vartype::Type, dof::Int64)
+	create_constant_element_field(name::String, vartype::Type, dof::Int64)
 
 Creates a constant element field with the given name, data type, and degree of freedom.
 
@@ -242,7 +242,7 @@ function create_constant_element_field(name::String,
 end
 
 """
-    create_node_field(name::String, vartype::Type, dof::Int64)
+	create_node_field(name::String, vartype::Type, dof::Int64)
 
 Creates a node field with the given name, data type, and degree of freedom.
 
@@ -275,7 +275,7 @@ function create_node_field(name::String,
 end
 
 """
-    create_field(name::String, vartype::Type, bondNode::String, dof::Int64, default_value::Any=0)
+	create_field(name::String, vartype::Type, bondNode::String, dof::Int64, default_value::Any=0)
 
 Create a field with the given `name` for the specified `vartype`. If the field already exists, return the existing field. If the field does not exist, create a new field with the specified characteristics.
 
