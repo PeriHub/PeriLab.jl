@@ -218,17 +218,10 @@ function run_solver(solver_options::Dict{Any,Any},
     nlist = datamanager.get_nlist()
     dof = datamanager.get_dof()
 
-    uN = datamanager.get_field("Displacements", "N")
-    uNP1 = datamanager.get_field("Displacements", "NP1")
-    delta_u = datamanager.get_field("Delta Displacements")
-    deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
-    forces = datamanager.get_field("Forces", "NP1")
-    force_densities_N = datamanager.get_field("Force Densities", "N")
-    force_densities_NP1 = datamanager.get_field("Force Densities", "NP1")
     volume = datamanager.get_field("Volume")
     forces = datamanager.get_field("Forces", "NP1")
-    velocities = datamanager.get_field("Velocity", "NP1")
 
+    delta_u = datamanager.get_field("Delta Displacements")
     external_force_densities = datamanager.get_field("External Force Densities")
 
     matrix_update::Bool = solver_options["Matrix update"]
@@ -244,12 +237,22 @@ function run_solver(solver_options::Dict{Any,Any},
     else
         K = datamanager.get_stiffness_matrix()
     end
-    @inbounds @fastmath for idt in iter
+    for idt in iter
         datamanager.set_iteration(idt)
         @timeit to "Linear Static" begin
 
             # reshape
+            # All 2 time steps fields must be in the loop, because switch NP1 to N changes the adresses
+            uN = datamanager.get_field("Displacements", "N")
+            uNP1 = datamanager.get_field("Displacements", "NP1")
+            velocities = datamanager.get_field("Velocity", "NP1")
+            deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
+            forces = datamanager.get_field("Forces", "NP1")
+            force_densities_N = datamanager.get_field("Force Densities", "N")
+            force_densities_NP1 = datamanager.get_field("Force Densities", "NP1")
+
             non_BCs = datamanager.get_bc_free_dof()
+            #force_densities_NP1[active_nodes, :] .= force_densities_N[active_nodes, :]
 
             # das muss in model evaluation; dann funktioniert die Reihenfolge auch. in material
             @timeit to "compute bond forces" Correspondence_matrix_based.compute_bond_force(bond_force,
@@ -258,6 +261,7 @@ function run_solver(solver_options::Dict{Any,Any},
                                                                                             active_nodes,
                                                                                             nlist,
                                                                                             dof)
+
             compute_parabolic_problems_before_model_evaluation(active_nodes, datamanager,
                                                                solver_options)
             datamanager = apply_bc_dirichlet([
@@ -271,7 +275,6 @@ function run_solver(solver_options::Dict{Any,Any},
                                              step_time)
 
             external_force_densities .= external_forces ./ volume # it must be delta external forces
-            uNP1 .= uN
 
             @timeit to "compute_models" datamanager = compute_stiff_matrix_compatible_models(datamanager,
                                                                                              block_nodes,
@@ -280,32 +283,34 @@ function run_solver(solver_options::Dict{Any,Any},
                                                                                              solver_options["Models"],
                                                                                              synchronise_field,
                                                                                              to)
-            @views deformed_coorNP1 .= coor .+ uNP1
+
             active_nodes = datamanager.get_field("Active Nodes")
             active_list = datamanager.get_field("Active")
             active_nodes = find_active_nodes(active_list, active_nodes,
                                              1:datamanager.get_nnodes())
-            filter_dofs_to_active_nodes
+
             if matrix_update
                 @timeit to "update stiffness matrix" K = compute_matrix(datamanager,
                                                                         active_nodes)
             else
                 K = datamanager.get_stiffness_matrix()
             end
-            #@views external_force_densities[active_nodes, :] -= force_densities_NP1[active_nodes, :]
+
+            #@views external_force_densities[active_nodes, :] += force_densities_NP1[active_nodes, :]
             perm = create_permutation(active_nodes, datamanager.get_dof())
             filtered = filter_dofs_to_active_nodes(non_BCs, active_nodes, dof)
+            filtered_perm = [findfirst(==(dof), perm) for dof in filtered if dof in perm]
+            filtered_perm = filter(!isnothing, filtered_perm)
 
             @timeit to "compute_displacements" @views compute_displacements!(K[perm, perm],
-                                                                             filtered,
-                                                                             uN[active_nodes,
-                                                                                :],
+                                                                             non_BCs,
+                                                                             uNP1[active_nodes,
+                                                                                  :],
                                                                              force_densities_NP1[active_nodes,
-                                                                                                 :] +
-                                                                             force_densities_N[active_nodes,
-                                                                                               :],
+                                                                                                 :],
                                                                              external_force_densities[active_nodes,
                                                                                                       :])
+
             active_nodes = datamanager.get_field("Active Nodes")
             active_list = datamanager.get_field("Active")
             active_nodes = find_active_nodes(active_list, active_nodes,
@@ -318,7 +323,8 @@ function run_solver(solver_options::Dict{Any,Any},
                 @views forces[iID, :] .= force_densities_NP1[iID, :] .* volume[iID]
             end
 
-            velocities .= (uNP1 .- uN) ./ dt
+            velocities .= (uNP1 - uN) ./ dt
+            @views deformed_coorNP1 .= coor .+ uNP1
 
             # @timeit to "download_from_cores" datamanager.synch_manager(synchronise_field,
             #                                                            "download_from_cores")
@@ -326,6 +332,7 @@ function run_solver(solver_options::Dict{Any,Any},
             @timeit to "write_results" result_files=write_results(result_files, time,
                                                                   max_damage, outputs,
                                                                   datamanager)
+
             # for file in result_files
             #     flush(file)
             # end
@@ -333,7 +340,9 @@ function run_solver(solver_options::Dict{Any,Any},
                 set_multiline_postfix(iter, "Simulation canceled!")
                 break
             end
+
             @timeit to "switch_NP1_to_N" datamanager.switch_NP1_to_N()
+
             time += dt
             step_time += dt
             datamanager.set_current_time(time)
@@ -381,21 +390,25 @@ function compute_displacements!(K::AbstractMatrix{Float64},
                                 F_int::AbstractMatrix{Float64},
                                 F_ext::AbstractMatrix{Float64})
 
-    # Compute modified force: F_modified = F - K * u_prescribed
-    # (u contains prescribed displacements at fixed DOFs)
-
-    F_modified = copy(vec(F_ext+F_int))
+    # Get BC DOFs
     BCs = setdiff(1:length(vec(u)), non_BCs)
 
-    # KuN is included due to pseudo time integration schema
-    F_int[non_BCs] = (K[non_BCs, BCs] * vec(u)[BCs])
+    # 1. Total force on free DOFs (external + internal/thermal)
+    F_total = vec(F_ext) .+ vec(F_int)  # ✓ PLUS!
 
-    @views F_modified[non_BCs] .-= F_int[non_BCs]
+    # 2. Force contribution from prescribed displacements
+    #if !isempty(BCs)
+    #	F_from_BCs = K[non_BCs, BCs] * vec(u)[BCs]
+    #else
+    #	F_from_BCs = zeros(length(non_BCs))
+    #end
+    # 3. Modified force: F_total - K_fb * u_b
+    F_modified = F_total[non_BCs] .- K[non_BCs, BCs] * vec(u)[BCs]
 
-    @views vec(u)[non_BCs] .= K[non_BCs, non_BCs] \ F_modified[non_BCs]
+    # 4. Solve for free DOFs
+    @views vec(u)[non_BCs] .= K[non_BCs, non_BCs] \ F_modified
 
-    #return reshape(F_int, 2, :)
-
+    return nothing
 end
 
 function create_permutation(nnodes::Int64, dof::Int64)

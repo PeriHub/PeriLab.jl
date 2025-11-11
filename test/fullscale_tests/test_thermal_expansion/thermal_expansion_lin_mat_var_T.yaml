@@ -5,7 +5,9 @@
 PeriLab:
   Discretization:
     Node Sets:
-      Node Set 3: "BCall.txt"
+      Node Set 1: "BCall.txt"
+      Node Set 2: x<0.0001
+      Node Set 3: y<0.0001
     Type: "Text File"
     Input Mesh File: "mesh.txt"
   Models:
@@ -39,8 +41,20 @@ PeriLab:
   Boundary Conditions:
     BC_1:
       Variable: "Temperature"
-      Node Set: "Node Set 3"
+      Node Set: "Node Set 1"
       Value: "100*t"
+      Type: Dirichlet
+    BC_2:
+      Variable: "Displacements"
+      Node Set: "Node Set 2"
+      Value: "0"
+      Coordinate: "x"
+      Type: Dirichlet
+    BC_3:
+      Variable: "Displacements"
+      Node Set: "Node Set 3"
+      Value: "0"
+      Coordinate: "y"
       Type: Dirichlet
   Solver:
     Final Time: 2.01e-8
@@ -54,13 +68,7 @@ PeriLab:
     Output1:
       Output Filename: "thermal_expansion_lin_mat_var_T"
       Output File Type: Exodus
-      Number of Output Steps: 100
+      Number of Output Steps: 10
       Output Variables:
         Temperature: True
         Displacements: True
-        Number of Neighbors: True
-        Cauchy Stress: True
-        Strain: True
-        Deformation Gradient: True
-        Shape Tensor: True
-        Inverse Shape Tensor: True
