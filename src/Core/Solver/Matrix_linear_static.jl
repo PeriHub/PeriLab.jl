@@ -172,9 +172,9 @@ function filter_dofs_to_active_nodes(non_BCs::AbstractVector{Int64},
 
     filtered = Int64[]
     for dof_idx in non_BCs
-        node = div(dof_idx - 1, dof) + 1  # Welcher Knoten?
-        if node in active_set              # Ist er aktiv?
-            push!(filtered, dof_idx)       # Dann behalten!
+        node = div(dof_idx - 1, dof) + 1
+        if node in active_set
+            push!(filtered, dof_idx)
         end
     end
 
@@ -297,13 +297,12 @@ function run_solver(solver_options::Dict{Any,Any},
             end
 
             #@views external_force_densities[active_nodes, :] += force_densities_NP1[active_nodes, :]
-            perm = create_permutation(active_nodes, datamanager.get_dof())
-            filtered = filter_dofs_to_active_nodes(non_BCs, active_nodes, dof)
-            filtered_perm = [findfirst(==(dof), perm) for dof in filtered if dof in perm]
-            filtered_perm = filter(!isnothing, filtered_perm)
+            perm = create_permutation(active_nodes, datamanager.get_dof()) # only active node dofs are there
 
+            filtered_perm = Vector{Int64}(filter(!isnothing, indexin(non_BCs, perm)))
+            @info typeof(filtered_perm)
             @timeit to "compute_displacements" @views compute_displacements!(K[perm, perm],
-                                                                             non_BCs,
+                                                                             filtered_perm,
                                                                              uNP1[active_nodes,
                                                                                   :],
                                                                              force_densities_NP1[active_nodes,
@@ -396,13 +395,18 @@ function compute_displacements!(K::AbstractMatrix{Float64},
     # 1. Total force on free DOFs (external + internal/thermal)
     @views F_total = vec(F_ext) .- vec(F_int)
     # 2. Force contribution from prescribed displacements
-    #if !isempty(BCs)
-    #	F_from_BCs = K[non_BCs, BCs] * vec(u)[BCs]
-    #else
-    #	F_from_BCs = zeros(length(non_BCs))
-    #end
+    # TODO must be optimized
+    println("non_BCs: ", BCs)
+    if isempty(non_BCs)
+        return nothing
+    end
+    if !isempty(BCs)
+        F_from_BCs = K[non_BCs, BCs] * vec(u)[BCs]
+    else
+        F_from_BCs = zeros(length(non_BCs))
+    end
     # 3. Modified force: F_total - K_fb * u_b
-    F_modified = F_total[non_BCs] .- K[non_BCs, BCs] * vec(u)[BCs]
+    F_modified = F_total[non_BCs] .- F_from_BCs
 
     # 4. Solve for free DOFs
     @views vec(u)[non_BCs] .= K[non_BCs, non_BCs] \ F_modified
