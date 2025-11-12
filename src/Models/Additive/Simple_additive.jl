@@ -8,7 +8,7 @@ export additive_name
 export init_model
 export fields_for_local_synchronization
 """
-    additive_name()
+	additive_name()
 
 Gives the additive name. It is needed for comparison with the yaml input deck.
 
@@ -28,13 +28,13 @@ function additive_name()
 end
 
 """
-    compute_model(
-    datamanager::Module,
-    nodes::AbstractVector{Int64},
-    additive_parameter::Dict,
-    block::Int64,
-    time::Float64,
-    dt::Float64,
+	compute_model(
+	datamanager::Module,
+	nodes::AbstractVector{Int64},
+	additive_parameter::Dict,
+	block::Int64,
+	time::Float64,
+	dt::Float64,
 )
 
 Calculates the force densities of the additive. This template has to be copied, the file renamed and edited by the user to create a new additive. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
@@ -72,7 +72,7 @@ function compute_model(datamanager::Module,
         if active[iID]
             continue
         end
-        if time - dt <= activation_time[iID] < time
+        if time - dt <= activation_time[iID] <= time
             active[iID] = true
             flux[iID] = add_flux[iID] / dt
             nlist_temp = nlist[iID]
@@ -94,7 +94,7 @@ function compute_model(datamanager::Module,
 end
 
 """
-    init_model(datamanager, nodes, additive_parameter)
+	init_model(datamanager, nodes, additive_parameter)
 
 Inits the simple additive model.
 
@@ -125,7 +125,7 @@ function init_model(datamanager::Module,
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+	fields_for_local_synchronization(datamanager::Module, model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
