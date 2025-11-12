@@ -55,12 +55,11 @@ function contraction!(C::Array{Float64,4}, B::Array{Float64,3}, dof::Int64,
     end
 end
 function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
-                          thermal_expansion_factor::AbstractVector{Float64},
                           V_k::Float64, omega_ik::Float64, ::Val{2},
                           B_tensor::Array{Float64,3})
     factor = omega_ik * V_k * 0.5
-    X_x = thermal_expansion_factor[1] * X_ik[1]
-    X_y = thermal_expansion_factor[2] * X_ik[2]
+    X_x = X_ik[1]
+    X_y = X_ik[2]
     B1_1 = D_inv[1, 1] * X_x + D_inv[2, 1] * X_y
     B1_2 = D_inv[1, 2] * X_x + D_inv[2, 2] * X_y
     B2_1 = D_inv[1, 1] * X_x + D_inv[1, 2] * X_y
@@ -79,14 +78,13 @@ function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
 end
 
 function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
-                          thermal_expansion_factor::AbstractVector{Float64},
                           V_k::Float64, omega_ik::Float64, ::Val{3},
                           B_tensor::Array{Float64,3})
     factor = omega_ik * V_k * 0.5
 
-    X_x = thermal_expansion_factor[1] * X_ik[1]
-    X_y = thermal_expansion_factor[2] * X_ik[2]
-    X_z = thermal_expansion_factor[3] * X_ik[3]
+    X_x = X_ik[1]
+    X_y = X_ik[2]
+    X_z = X_ik[3]
 
     B1_1 = D_inv[1, 1] * X_x + D_inv[2, 1] * X_y + D_inv[3, 1] * X_z
     B1_2 = D_inv[1, 2] * X_x + D_inv[2, 2] * X_y + D_inv[3, 2] * X_z
@@ -180,13 +178,12 @@ function precompute_CB_tensors!(CB_k::AbstractArray{Float64,4},
                                 omega_i::Vector{Float64},
                                 bond_damage_i::Vector{Float64},
                                 dof::Int64,
-                                thermal_expansion_factor::AbstractVector{Float64},
                                 B_ik::Array{Float64,3})
     @inbounds for (k_idx, k) in enumerate(neighbors)
         V_k = volume[k]
         omega_ik = omega_i[k_idx] * bond_damage_i[k_idx]
         X_ik = bond_geometry_i[k_idx]
-        create_B_tensor!(D_inv, X_ik, thermal_expansion_factor, V_k, omega_ik, Val(dof),
+        create_B_tensor!(D_inv, X_ik, V_k, omega_ik, Val(dof),
                          B_ik)
         @views contraction!(C_tensor, B_ik, dof, CB_k[k_idx, :, :, :])
     end
@@ -295,8 +292,7 @@ function assemble_stiffness(nodes::AbstractVector{Int64},
                             volume::Vector{Float64},
                             bond_geometry::Vector{Vector{Vector{Float64}}},
                             omega::Vector{Vector{Float64}},
-                            bond_damage::Vector{Vector{Float64}},
-                            thermal_expansion_factor::Matrix{Float64})
+                            bond_damage::Vector{Vector{Float64}})
 
     # TODO: reuse mapping structure from initialization
     # right now nodes are needed to get the full mapping structure
@@ -344,7 +340,6 @@ function assemble_stiffness(nodes::AbstractVector{Int64},
             CB_k = @view buffers.CB_k[eachindex(ni), :, :, :]
             @views precompute_CB_tensors!(CB_k, C_tensor, D_inv, ni, volume,
                                           bond_geometry[i], omega[i], bond_damage[i], dof,
-                                          thermal_expansion_factor[i, :],
                                           buffers.B_ik)
 
             i_diag_idx = mapping[i][1]
@@ -635,8 +630,7 @@ function init_matrix(datamanager::Module)
     C_voigt = datamanager.get_field("Hooke Matrix")
     bond_geometry_N = datamanager.get_field("Deformed Bond Geometry", "N")
     bond_damage = datamanager.get_field("Bond Damage", "NP1")
-    thermal_expansion_factor = datamanager.create_constant_node_field("Thermal Expension Factor",
-                                                                      Float64, dof, 1)
+
     @info "Initializing stiffness matrix (mapping optimized)"
     index_x, index_y, vals,
     total_dof = assemble_stiffness(nodes,
@@ -649,8 +643,7 @@ function init_matrix(datamanager::Module)
                                    volume,
                                    bond_geometry,
                                    omega,
-                                   bond_damage,
-                                   thermal_expansion_factor)
+                                   bond_damage)
 
     datamanager.init_stiffness_matrix(index_x, index_y, vals, total_dof)
     K_sparse = datamanager.get_stiffness_matrix()
@@ -680,7 +673,6 @@ function compute_model(datamanager::Module, nodes::AbstractVector{Int64})
     number_of_neighbors::Vector{Int64} = datamanager.get_field("Number of Neighbors")
     omega::Vector{Vector{Float64}} = datamanager.get_field("Influence Function")
     bond_damage::Vector{Vector{Float64}} = datamanager.get_field("Bond Damage", "NP1")
-    thermal_expansion_factor = datamanager.get_field("Thermal Expansion Factor")
 
     zStiff = datamanager.get_field("Zero Energy Stiffness")
     # TODO: optimize update

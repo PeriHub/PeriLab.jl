@@ -139,9 +139,9 @@ function init_solver(solver_options::Dict{Any,Any},
         Correspondence_matrix_based.init_model(datamanager, nodes, model_param)
     end
     @timeit to "init_matrix" Correspondence_matrix_based.init_matrix(datamanager)
-    if !haskey(solver_options, "Matrix update")
-        solver_options["Matrix update"] = false
-    end
+
+    solver_options["Matrix update"] = get(params["Linear Static Matrix Based"],
+                                          "Matrix update", false)
 
     ### for coupled thermal analysis
 
@@ -228,8 +228,9 @@ function run_solver(solver_options::Dict{Any,Any},
 
     active_nodes = datamanager.get_field("Active Nodes")
     active_list = datamanager.get_field("Active")
+
     active_nodes = find_active_nodes(active_list, active_nodes,
-                                     1:datamanager.get_nnodes())
+                                     nodes)
 
     if matrix_update
         @timeit to "update stiffness matrix" K = compute_matrix(datamanager,
@@ -286,12 +287,14 @@ function run_solver(solver_options::Dict{Any,Any},
 
             active_nodes = datamanager.get_field("Active Nodes")
             active_list = datamanager.get_field("Active")
+
             active_nodes = find_active_nodes(active_list, active_nodes,
-                                             1:datamanager.get_nnodes())
+                                             nodes)
 
             if matrix_update
                 @timeit to "update stiffness matrix" K = compute_matrix(datamanager,
                                                                         active_nodes)
+
             else
                 K = datamanager.get_stiffness_matrix()
             end
@@ -299,8 +302,9 @@ function run_solver(solver_options::Dict{Any,Any},
             #@views external_force_densities[active_nodes, :] += force_densities_NP1[active_nodes, :]
             perm = create_permutation(active_nodes, datamanager.get_dof()) # only active node dofs are there
 
-            filtered_perm = Vector{Int64}(filter(!isnothing, indexin(non_BCs, perm)))
-            @info typeof(filtered_perm)
+            filtered_perm = filter_and_map_bc(non_BCs, active_nodes, dof,
+                                              datamanager.get_nnodes())
+            #@info (filtered_perm)
             @timeit to "compute_displacements" @views compute_displacements!(K[perm, perm],
                                                                              filtered_perm,
                                                                              uNP1[active_nodes,
@@ -312,6 +316,7 @@ function run_solver(solver_options::Dict{Any,Any},
 
             active_nodes = datamanager.get_field("Active Nodes")
             active_list = datamanager.get_field("Active")
+
             active_nodes = find_active_nodes(active_list, active_nodes,
                                              1:datamanager.get_nnodes())
 
@@ -358,6 +363,18 @@ function run_solver(solver_options::Dict{Any,Any},
     end
     return result_files
 end
+function filter_and_map_bc(non_BCs, active_nodes, dof, nnodes::Int64)
+    filtered = []
+    for i in eachindex(active_nodes)
+        for j in 1:dof
+            if active_nodes[i] + (j - 1)*nnodes in non_BCs
+                push!(filtered, i+(j - 1) * length(active_nodes))
+            end
+        end
+    end
+
+    return filtered
+end
 
 function compute_matrix(datamanager::Module, nodes::AbstractVector{Int64})
     if length(nodes)==0
@@ -384,7 +401,7 @@ Arguments:
 
 """
 function compute_displacements!(K::AbstractMatrix{Float64},
-                                non_BCs::AbstractVector{Int64},
+                                non_BCs,
                                 u::AbstractMatrix{Float64},
                                 F_int::AbstractMatrix{Float64},
                                 F_ext::AbstractMatrix{Float64})
@@ -396,7 +413,7 @@ function compute_displacements!(K::AbstractMatrix{Float64},
     @views F_total = vec(F_ext) .- vec(F_int)
     # 2. Force contribution from prescribed displacements
     # TODO must be optimized
-    println("non_BCs: ", BCs)
+
     if isempty(non_BCs)
         return nothing
     end
@@ -407,7 +424,7 @@ function compute_displacements!(K::AbstractMatrix{Float64},
     end
     # 3. Modified force: F_total - K_fb * u_b
     F_modified = F_total[non_BCs] .- F_from_BCs
-
+    #@info non_BCs
     # 4. Solve for free DOFs
     @views vec(u)[non_BCs] .= K[non_BCs, non_BCs] \ F_modified
 
