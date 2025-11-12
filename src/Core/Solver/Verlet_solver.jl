@@ -564,6 +564,7 @@ function run_solver(solver_options::Dict{Any,Any},
             if "Damage" in solver_options["Models"] #TODO gather value
                 max_damage = maximum(damage[active_nodes])
                 if max_damage > max_cancel_damage
+                    @info "Simulation cancelled, max. damage reached!"
                     Data_Manager.set_cancel(true)
                 end
                 if !damage_init && max_damage > 0
