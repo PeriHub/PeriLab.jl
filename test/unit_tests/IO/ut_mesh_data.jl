@@ -5,8 +5,7 @@
 using Test
 using TimerOutputs
 using DataFrames
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+#using PeriLab
 
 @testset "ut_read_mesh" begin
     params = Dict("Discretization" => Dict("Type" => "not supported"))
@@ -228,8 +227,8 @@ end
         [1, 2, 3, 4],
         [5, 6, 3, 2, 8, 1, 4]
     ]
-    test_data_manager = PeriLab.IO.get_local_element_topology(test_data_manager, topology,
-                                                              distribution[1])
+    PeriLab.IO.get_local_element_topology(topology,
+                                          distribution[1])
     topo = test_data_manager.get_field("FE Topology")
 
     @test topo[1, 1] == 4
@@ -240,8 +239,8 @@ end
     @test topo[2, 2] == 3
     @test topo[2, 3] == 1
     @test topo[2, 4] == 4
-    test_data_manager = PeriLab.IO.get_local_element_topology(test_data_manager, topology,
-                                                              distribution[2])
+    PeriLab.IO.get_local_element_topology(topology,
+                                          distribution[2])
     topo = test_data_manager.get_field("FE Topology")
     @test topo[1, 1] == 1
     @test topo[1, 2] == 2
@@ -251,8 +250,8 @@ end
     @test topo[2, 2] == 4
     @test topo[2, 3] == 2
     @test topo[2, 4] == 1
-    test_data_manager = PeriLab.IO.get_local_element_topology(test_data_manager, topology,
-                                                              distribution[3])
+    PeriLab.IO.get_local_element_topology(topology,
+                                          distribution[3])
     topo = test_data_manager.get_field("FE Topology")
     @test topo[1, 1] == 6
     @test topo[1, 2] == 4
@@ -263,9 +262,8 @@ end
     @test topo[2, 3] == 4
     @test topo[2, 4] == 6
 
-    test_data_manager = PeriLab.IO.get_local_element_topology(test_data_manager,
-                                                              Vector([Vector{Int64}([])]),
-                                                              distribution[3])
+    PeriLab.IO.get_local_element_topology(Vector([Vector{Int64}([])]),
+                                          distribution[3])
     # nothing happens, because no field is initialized
     topo = test_data_manager.get_field("FE Topology")
     @test topo[1, 1] == 6
@@ -279,7 +277,7 @@ end
 
     topology = [[1, 2, 3, 4], [3, 4, 2, 1, 3]]
 
-    @test isnothing(PeriLab.IO.get_local_element_topology(test_data_manager, topology,
+    @test isnothing(PeriLab.IO.get_local_element_topology(topology,
                                                           distribution[3]))
 end
 @testset "ut_create_distribution" begin
@@ -534,7 +532,7 @@ end
 
     test_data_manager = PeriLab.Data_Manager
     @test test_data_manager.get_nnsets() == 0
-    PeriLab.IO.define_nsets(nsets_predef, test_data_manager)
+    PeriLab.IO.define_nsets(nsets_predef)
     @test test_data_manager.get_nnsets() == 2
     nsets = test_data_manager.get_nsets()
     @test nsets["Nset_1"] == [1, 2, 3, 4, 5, 6, 7]
@@ -546,15 +544,15 @@ end
     test_data_manager.set_num_controller(3)
     test_data_manager.set_num_responder(0)
     test_data_manager.set_dof(2)
-    length_nlist = test_data_manager.create_constant_node_field("Number of Neighbors",
-                                                                Int64, 1)
+    length_nlist = test_data_manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                       Int64)
     length_nlist .= [2, 2, 2]
-    nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist = test_data_manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
 
     nlist[1] = [2, 3]
     nlist[2] = [1, 3]
     nlist[3] = [1, 2]
-    coor = test_data_manager.create_constant_node_field("Coordinates", Float64, 2)
+    coor = test_data_manager.create_constant_node_vector_field("Coordinates", Float64, 2)
     coor[1, 1] = 0
     coor[1, 2] = 0
     coor[2, 1] = 1
@@ -565,10 +563,11 @@ end
     nnodes = test_data_manager.get_nnodes()
     nlist = test_data_manager.get_nlist()
     coor = test_data_manager.get_field("Coordinates")
-    undeformed_bond = test_data_manager.create_constant_bond_field("Bond Geometry", Float64,
-                                                                   dof)
-    undeformed_bond_length = test_data_manager.create_constant_bond_field("Bond Length",
-                                                                          Float64, 1)
+    undeformed_bond = test_data_manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                          Float64,
+                                                                          dof)
+    undeformed_bond_length = test_data_manager.create_constant_bond_scalar_state("Bond Length",
+                                                                                 Float64)
     PeriLab.Geometry.bond_geometry!(undeformed_bond,
                                     undeformed_bond_length,
                                     Vector(1:nnodes),

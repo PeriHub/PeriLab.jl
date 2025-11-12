@@ -3,6 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Contact_template
+
+using .....Data_Manager
+
 export contact_model_name
 export init_contact_model
 export compute_model
@@ -29,32 +32,25 @@ end
 
 """
    init_contact_model(
-    datamanager::Module,
     nodes::AbstractVector{Int64},
     contact_parameter::Dict,
     block::Int64,
 
-Inits the contact model. This template has to be copied, the file renamed and edited by the user to create a new contact. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Inits the contact model. This template has to be copied, the file renamed and edited by the user to create a new contact. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `contact_parameter::Dict(String, Any)`: Dictionary with contact parameter.
 - `block::Int64`: The current block.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 
 """
-function init_contact_model(datamanager::Module,
-                            nodes::AbstractVector{Int64},
+function init_contact_model(nodes::AbstractVector{Int64},
                             contact_parameter::Dict,
                             block::Int64)
-    return datamanager
 end
 
 """
     compute_model(
-    datamanager::Module,
     nodes::AbstractVector{Int64},
     contact_parameter::Dict,
     block::Int64,
@@ -62,32 +58,27 @@ end
     dt::Float64,
 )
 
-Calculates the contact behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Calculates the contact behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 Example:
 ```julia
 ```
 """
-function compute_model(datamanager::Module,
-                       nodes::AbstractVector{Int64},
+function compute_model(nodes::AbstractVector{Int64},
                        contact_parameter::Dict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
     @info "Please write a contact model name in contact_model_name()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_model(datamanager, nodes, contact_parameter, time, dt) function."
-    @info "The datamanager and contact_parameter holds all you need to solve your problem on contact flow level."
+    @info "Fill the compute_model(nodes, contact_parameter, time, dt) function."
+    @info "The Data_Manager and contact_parameter holds all you need to solve your problem on contact flow level."
     @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
-    return datamanager
 end
 
 end

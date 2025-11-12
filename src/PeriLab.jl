@@ -35,9 +35,9 @@ main("examples/Dogbone/Dogbone.yaml"; output_dir="", dry_run=false, verbose=fals
 """
 
 module PeriLab
+include("./Core/Data_manager.jl")
 include("./Support/Helpers.jl")
 include("./Support/Geometry.jl")
-include("./Core/Data_manager.jl")
 include("./IO/logging.jl")
 include("./MPI_communication/MPI_communication.jl")
 include("./Support/Parameters/parameter_handling.jl")
@@ -52,15 +52,13 @@ using Dates
 using LibGit2
 using StyledStrings
 
-const to = TimerOutput()
-
 using .Data_Manager
 
 import .Logging_Module
 import .IO
 using .Solver_Manager
 
-PERILAB_VERSION = "1.5.0"
+PERILAB_VERSION = "1.5.1"
 
 export main
 
@@ -229,9 +227,9 @@ function main(filename::String;
               verbose::Bool = false,
               debug::Bool = false,
               silent::Bool = false,
-              reload::Bool = false)
-    reset_timer!(to)
-    @timeit to "PeriLab" begin
+              reload::Bool = false,)
+    reset_timer!()
+    @timeit "PeriLab" begin
         if !MPI.Initialized()
             MPI.Init()
         end
@@ -295,61 +293,53 @@ function main(filename::String;
             end
             Data_Manager.set_silent(silent)
             Data_Manager.set_verbose(verbose)
-            @timeit to "IO.initialize_data" datamanager,
-                                            params,
-                                            steps=IO.initialize_data(filename,
-                                                                     filedirectory,
-                                                                     Data_Manager,
-                                                                     comm, to)
-            datamanager.set_max_step(steps[end])
+            @timeit "IO.initialize_data" params,
+                                         steps=IO.initialize_data(filename,
+                                                                  filedirectory,
+                                                                  comm)
+            Data_Manager.set_max_step(steps[end])
             for step_id in steps
+                MPI.Barrier(comm)
                 if !isnothing(step_id)
                     @info "Step: " * string(step_id) * " of " * string(length(steps))
                 end
-                datamanager.set_cancel(false)
-                datamanager.set_step(step_id)
+                Data_Manager.set_cancel(false)
+                Data_Manager.set_step(step_id)
                 @info "Init Solver"
-                @timeit to "Solver_Manager.init" block_nodes,
-                                                 bcs,
-                                                 datamanager,
-                                                 solver_options=Solver_Manager.init(params,
-                                                                                    datamanager,
-                                                                                    to,
-                                                                                    step_id)
-                if datamanager.get_current_time() >= solver_options["Final Time"]
+                @timeit "Solver_Manager.init" block_nodes,
+                                              bcs,
+                                              solver_options=Solver_Manager.init(params,
+                                                                                 step_id)
+                if Data_Manager.get_current_time() >= solver_options["Final Time"]
                     @info "Step " * string(step_id) * " skipped."
                     continue
                 end
-                if datamanager.get_current_time() < solver_options["Initial Time"]
+                if Data_Manager.get_current_time() < solver_options["Initial Time"]
                     @info "Initial time not reached. Skipping step " * string(step_id)
                     continue
                 end
-                @timeit to "IO.init orientations" datamanager=IO.init_orientations(datamanager)
+                @timeit "IO.init orientations" IO.init_orientations()
                 IO.show_block_summary(solver_options,
                                       params,
                                       Logging_Module.get_log_file(),
                                       silent,
-                                      comm,
-                                      datamanager)
+                                      comm)
                 IO.show_mpi_summary(Logging_Module.get_log_file(),
                                     silent,
-                                    comm,
-                                    datamanager)
+                                    comm)
                 @debug "Init write results"
                 if isnothing(step_id) || step_id == 1
-                    @timeit to "IO.init_write_results" result_files,
-                                                       outputs=IO.init_write_results(params,
-                                                                                     output_dir,
-                                                                                     filedirectory,
-                                                                                     datamanager,
-                                                                                     PERILAB_VERSION)
+                    @timeit "IO.init_write_results" result_files,
+                                                    outputs=IO.init_write_results(params,
+                                                                                  output_dir,
+                                                                                  filedirectory,
+                                                                                  PERILAB_VERSION)
                 end
                 IO.set_output_frequency(params,
-                                        datamanager,
                                         solver_options["Number of Steps"],
                                         step_id)
                 if verbose
-                    fields = datamanager.get_all_field_keys()
+                    fields = Data_Manager.get_all_field_keys()
                     @info "Found " * string(length(fields)) * " Fields"
                     @info fields
                 end
@@ -357,15 +347,13 @@ function main(filename::String;
                     nsteps = solver_options["Number of Steps"]
                     solver_options["Number of Steps"] = 10
                     elapsed_time = @elapsed begin
-                        @timeit to "Solver" result_files=Solver_Manager.solver(solver_options,
-                                                                               block_nodes,
-                                                                               bcs,
-                                                                               datamanager,
-                                                                               outputs,
-                                                                               result_files,
-                                                                               IO.write_results,
-                                                                               to,
-                                                                               silent)
+                        @timeit "Solver" result_files=Solver_Manager.solver(solver_options,
+                                                                            block_nodes,
+                                                                            bcs,
+                                                                            outputs,
+                                                                            result_files,
+                                                                            IO.write_results,
+                                                                            silent)
                     end
 
                     @info "Estimated runtime: " *
@@ -377,15 +365,13 @@ function main(filename::String;
                           " [b]"
 
                 else
-                    @timeit to "Solver_Manager.solver" result_files=Solver_Manager.solver(solver_options,
-                                                                                          block_nodes,
-                                                                                          bcs,
-                                                                                          datamanager,
-                                                                                          outputs,
-                                                                                          result_files,
-                                                                                          IO.write_results,
-                                                                                          to,
-                                                                                          silent)
+                    @timeit "Solver_Manager.solver" result_files=Solver_Manager.solver(solver_options,
+                                                                                       block_nodes,
+                                                                                       bcs,
+                                                                                       outputs,
+                                                                                       result_files,
+                                                                                       IO.write_results,
+                                                                                       silent)
                 end
             end
 
@@ -393,12 +379,13 @@ function main(filename::String;
             if e isa InterruptException
                 @info "PeriLab was interrupted"
             elseif !isa(e, Logging_Module.PeriLabError)
-                open(Logging_Module.log_file, "a") do io
-                    println(io, "[Error] ", e)
-                end
+                Logging_Module.print_exception(e)
                 if !silent
                     rethrow(e)
                 end
+            end
+            if size > 1
+                MPI.Abort(comm, 0)
             end
         end
         if !isnothing(result_files)
@@ -415,6 +402,7 @@ function main(filename::String;
         end
     end
     if verbose
+        to = TimerOutputs.get_defaulttimer()
         TimerOutputs.complement!(to)
         @info to
         reset_timer!(to)

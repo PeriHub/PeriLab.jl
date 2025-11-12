@@ -3,8 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+#using PeriLab
 
 """
     Final test set should be included in runtest.jl

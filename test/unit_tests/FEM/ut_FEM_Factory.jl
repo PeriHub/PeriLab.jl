@@ -3,8 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+using PeriLab
 PeriLab.Data_Manager.initialize_data()
 
 @testset "ut_valid_models" begin
@@ -23,24 +22,22 @@ end
     test_data_manager.set_dof(2)
     test_data_manager.set_num_elements(nelements)
     test_data_manager.set_num_controller(6)
-    rho = test_data_manager.create_constant_node_field("Density", Float64, 1)
+    rho = test_data_manager.create_constant_node_scalar_field("Density", Float64)
     rho .= 2
-    test = PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,Any}(), test_data_manager)
+    test = PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,Any}())
     @test isnothing(test)
-    test = PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,Any}("FEM" => Dict()),
-                                               test_data_manager)
+    test = PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,Any}("FEM" => Dict()))
     @test isnothing(test)
     test_data_manager.set_dof(1)
-    test = PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,Any}("FEM" => Dict("Degree" => 1)),
-                                               test_data_manager)
+    test = PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,Any}("FEM" => Dict("Degree" => 1)))
     @test isnothing(test)
-    test = PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,Any}("FEM" => Dict("Degree" => 4)),
-                                               test_data_manager)
+    test = PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,Any}("FEM" => Dict("Degree" => 4)))
     @test isnothing(test)
     dof = 2
     test_data_manager.set_dof(dof)
-    test_data_manager.create_node_field("Displacements", Float64, dof)
-    coordinates = test_data_manager.create_constant_node_field("Coordinates", Float64, dof)
+    test_data_manager.create_node_vector_field("Displacements", Float64, dof)
+    coordinates = test_data_manager.create_constant_node_vector_field("Coordinates",
+                                                                      Float64, dof)
     coordinates[1, 1] = 0
     coordinates[1, 2] = 0
     coordinates[2, 1] = 1
@@ -75,7 +72,7 @@ end
                                                                                                 "Young's Modulus" => 2.5e+3,
                                                                                                 "Poisson's Ratio" => 0.33,
                                                                                                 "Shear Modulus" => 2.0e3))))
-    @test isnothing(PeriLab.Solver_Manager.FEM.init_FEM(params, test_data_manager))
+    @test isnothing(PeriLab.Solver_Manager.FEM.init_FEM(params))
     params = Dict{String,Any}("FEM" => Dict("Degree" => 1,
                                             "Element Type" => "Lagrange",
                                             "Material Model" => "Elastic Model"),
@@ -85,7 +82,7 @@ end
                                                                                                              "Poisson's Ratio" => 0.33,
                                                                                                              "Shear Modulus" => 2.0e3))))
 
-    test_data_manager = PeriLab.Solver_Manager.FEM.init_FEM(params, test_data_manager)
+    PeriLab.Solver_Manager.FEM.init_FEM(params)
 
     @test "N Matrix" in test_data_manager.get_all_field_keys()
     @test "B Matrix" in test_data_manager.get_all_field_keys()
@@ -120,21 +117,24 @@ end
 
     # only in tests for resize or redefinition reasons
     test_data_manager.fields[Int64]["FE Topology"] = zeros(Int64, 1, 6)
-    @test isnothing(PeriLab.Solver_Manager.FEM.init_FEM(params, test_data_manager))
+    @test isnothing(PeriLab.Solver_Manager.FEM.init_FEM(params))
 end
 
 @testset "ut_eval" begin
     test_data_manager = PeriLab.Data_Manager
+    test_data_manager.initialize_data()
     dof = 2
     test_data_manager.set_dof(dof)
     test_data_manager.set_num_elements(2)
     test_data_manager.set_num_controller(6)
-    test_data_manager.create_node_field("Cauchy Stress", Float64, dof,
-                                        VectorOrMatrix = "Matrix")
-    test_data_manager.create_node_field("Force Densities", Float64, dof)
-    test_data_manager.create_node_field("Displacements", Float64, dof)
-    test_data_manager.create_node_field("Forces", Float64, dof)
-    coordinates = test_data_manager.create_constant_node_field("Coordinates", Float64, dof)
+    rho = test_data_manager.create_constant_node_scalar_field("Density", Float64)
+    rho .= 2
+    test_data_manager.create_node_tensor_field("Cauchy Stress", Float64, dof)
+    test_data_manager.create_node_vector_field("Force Densities", Float64, dof)
+    test_data_manager.create_node_vector_field("Displacements", Float64, dof)
+    test_data_manager.create_node_vector_field("Forces", Float64, dof)
+    coordinates = test_data_manager.create_constant_node_vector_field("Coordinates",
+                                                                      Float64, dof)
     # only in tests for resize or redefinition reasons
     test_data_manager.fields[Int64]["FE Topology"] = zeros(Int64, 2, 4)
     coordinates[1, 1] = 0
@@ -172,14 +172,13 @@ end
                                                                                                  "Poisson's Ratio" => 0.33,
                                                                                                  "Shear Modulus" => 0.5639))))
 
-    test_data_manager = PeriLab.Solver_Manager.FEM.init_FEM(params, test_data_manager)
+    PeriLab.Solver_Manager.FEM.init_FEM(params)
     elements = Vector{Int64}([1, 2])
-    test_data_manager = PeriLab.Solver_Manager.FEM.eval_FEM(test_data_manager,
-                                                            elements,
-                                                            test_data_manager.get_properties(1,
-                                                                                             "FEM"),
-                                                            0.0,
-                                                            1.0e-6)
+    PeriLab.Solver_Manager.FEM.eval_FEM(elements,
+                                        test_data_manager.get_properties(1,
+                                                                         "FEM"),
+                                        0.0,
+                                        1.0e-6)
 
     stress = test_data_manager.get_field("Element Stress", "NP1")
     strain = test_data_manager.get_field("Element Strain", "NP1")
@@ -205,12 +204,11 @@ end
     displacements[5, 2] = 0.5
     displacements[6, 1] = 1
     displacements[6, 2] = 0.5
-    test_data_manager = PeriLab.Solver_Manager.FEM.eval_FEM(test_data_manager,
-                                                            elements,
-                                                            test_data_manager.get_properties(1,
-                                                                                             "FEM"),
-                                                            0.0,
-                                                            1.0e-6)
+    PeriLab.Solver_Manager.FEM.eval_FEM(elements,
+                                        test_data_manager.get_properties(1,
+                                                                         "FEM"),
+                                        0.0,
+                                        1.0e-6)
     stress = test_data_manager.get_field("Element Stress", "NP1")
     strain = test_data_manager.get_field("Element Strain", "NP1")
 
@@ -228,8 +226,7 @@ end
 @testset "ut_get_FEM_nodes" begin
     test_data_manager = PeriLab.Data_Manager
     topology = test_data_manager.get_field("FE Topology")
-    test_data_manager = PeriLab.Solver_Manager.FEM.get_FEM_nodes(test_data_manager,
-                                                                 topology)
+    PeriLab.Solver_Manager.FEM.get_FEM_nodes(topology)
     @test "FE Nodes" in test_data_manager.get_all_field_keys()
     fem_nodes = test_data_manager.get_field("FE Nodes")
     for i in eachindex(fem_nodes)
@@ -244,8 +241,7 @@ end
     topology[2, 2] = 5
     topology[2, 3] = 3
     topology[2, 4] = 4
-    test_data_manager = PeriLab.Solver_Manager.FEM.get_FEM_nodes(test_data_manager,
-                                                                 topology)
+    PeriLab.Solver_Manager.FEM.get_FEM_nodes(topology)
     @test fem_nodes[1]
     @test !fem_nodes[2]
     @test fem_nodes[3]

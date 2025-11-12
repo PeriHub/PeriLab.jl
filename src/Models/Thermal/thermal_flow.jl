@@ -5,7 +5,9 @@
 module Thermal_Flow
 using LinearAlgebra
 using StaticArrays
-using .....Helpers: rotate_second_order_tensor, fastdot
+
+using .....Data_Manager
+using .....Helpers: rotate_second_order_tensor
 export compute_model
 export thermal_model_name
 export init_model
@@ -25,23 +27,19 @@ function thermal_model_name()
 end
 
 """
-	init_model(datamanager, nodes, thermal_parameter, block)
+    init_model(nodes, thermal_parameter, block)
 
-Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `thermal parameter::Dict(String, Any)`: Dictionary with thermal parameter.
 - `block::Int64`: The current block.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 
 """
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     thermal_parameter::Dict)
-    dof = datamanager.get_dof()
+    dof = Data_Manager.get_dof()
     if !haskey(thermal_parameter, "Type") || (thermal_parameter["Type"] != "Bond based" &&
         thermal_parameter["Type"] != "Correspondence")
         @warn "No model type has beed defined; ''Type'': ''Bond based'' or Type: ''Correspondence'; \n ''Bond based'' is set as default.'"
@@ -53,7 +51,7 @@ function init_model(datamanager::Module,
             @warn "Print bed temperature can only be defined for 3D problems. Its deactivated."
             delete!(thermal_parameter, "Print Bed Temperature")
         else
-            coordinates = datamanager.get_field("Coordinates")
+            coordinates = Data_Manager.get_field("Coordinates")
             print_bed_z_coord = get(thermal_parameter, "Print Bed Z Coordinate", 0.0)
             if print_bed_z_coord >= minimum(coordinates[:, 3])
                 @error "The Print Bed Z Coordinate needs to be smaller than the minimum Z coordinate."
@@ -64,49 +62,43 @@ function init_model(datamanager::Module,
         @error "Thermal Conductivity not defined."
         return nothing
     end
-
-    return datamanager
 end
 
 """
-	compute_model(datamanager, nodes, thermal_parameter, time, dt)
+    compute_model(nodes, thermal_parameter, time, dt)
 
-Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `thermal_parameter::Dict(String, Any)`: Dictionary with flow parameter.
 - `block::Int64`: Current block
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 Example:
 ```julia
 ```
 """
-function compute_model(datamanager::Module,
-                       nodes::AbstractVector{Int64},
+function compute_model(nodes::AbstractVector{Int64},
                        thermal_parameter::Dict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    dof = datamanager.get_dof()
-    nlist = datamanager.get_nlist()
-    coordinates = datamanager.get_field("Coordinates")
-    bond_damage = datamanager.get_bond_damage("NP1")
-    heat_flow = datamanager.get_field("Heat Flow", "NP1")
-    undeformed_bond = datamanager.get_field("Bond Geometry")
-    undeformed_bond_length = datamanager.get_field("Bond Length")
-    volume = datamanager.get_field("Volume")
-    temperature = datamanager.get_field("Temperature", "NP1")
-    active = datamanager.get_field("Active")
+    dof = Data_Manager.get_dof()
+    nlist = Data_Manager.get_nlist()
+    coordinates = Data_Manager.get_field("Coordinates")
+    bond_damage = Data_Manager.get_bond_damage("NP1")
+    heat_flow = Data_Manager.get_field("Heat Flow", "NP1")
+    undeformed_bond = Data_Manager.get_field("Bond Geometry")
+    undeformed_bond_length = Data_Manager.get_field("Bond Length")
+    volume = Data_Manager.get_field("Volume")
+    temperature = Data_Manager.get_field("Temperature", "NP1")
+    active = Data_Manager.get_field("Active")
     lambda = thermal_parameter["Thermal Conductivity"]
-    rotation::Bool = datamanager.get_element_rotation()
+    rotation::Bool = Data_Manager.get_element_rotation()
     rotation_tensor = nothing
     if rotation
-        rotation_tensor = datamanager.get_field("Rotation Tensor")
+        rotation_tensor = Data_Manager.get_field("Rotation Tensor")
     end
     apply_print_bed = false
 
@@ -123,7 +115,7 @@ function compute_model(datamanager::Module,
     lambda = thermal_parameter["Thermal Conductivity"]
 
     if thermal_parameter["Type"] == "Bond based"
-        horizon = datamanager.get_field("Horizon")
+        horizon = Data_Manager.get_field("Horizon")
         if length(lambda) > 1
             lambda = lambda[1]
         end
@@ -144,11 +136,11 @@ function compute_model(datamanager::Module,
                                                        temperature,
                                                        volume,
                                                        heat_flow)
-        return datamanager
+        return
 
     elseif thermal_parameter["Type"] == "Correspondence"
         lambda_matrix = @MMatrix zeros(Float64, dof, dof)
-        Kinv = datamanager.get_field("Inverse Shape Tensor")
+        Kinv = Data_Manager.get_field("Inverse Shape Tensor")
         if length(lambda) == 1
             for i in 1:dof
                 lambda_matrix[i, i] = lambda
@@ -170,7 +162,6 @@ function compute_model(datamanager::Module,
                                                            volume,
                                                            heat_flow)
     end
-    return datamanager
 end
 
 """
@@ -179,15 +170,15 @@ is a prototype with some errors
 """
 function compute_heat_flow_state_correspondence(nodes::AbstractVector{Int64},
                                                 dof::Int64,
-                                                nlist::Vector{Vector{Int64}},
+                                                nlist::BondScalarState{Int64},
                                                 lambda::Union{Matrix{Float64},MMatrix},
                                                 rotation_tensor,
-                                                bond_damage::Vector{Vector{Float64}},
-                                                undeformed_bond::Vector{Vector{Vector{Float64}}},
+                                                bond_damage::BondScalarState{Float64},
+                                                undeformed_bond::BondVectorState{Float64},
                                                 Kinv::Array{Float64,3},
-                                                temperature::Vector{Float64},
-                                                volume::Vector{Float64},
-                                                heat_flow::Vector{Float64})
+                                                temperature::NodeScalarField{Float64},
+                                                volume::NodeScalarField{Float64},
+                                                heat_flow::NodeScalarField{Float64})
     nablaT = @MVector zeros(Float64, dof)
     H = @MVector zeros(Float64, dof)
     for iID in nodes
@@ -207,17 +198,17 @@ function compute_heat_flow_state_correspondence(nodes::AbstractVector{Int64},
         end
         for (jID, neighborID) in enumerate(nlist[iID])
             temp = Kinv[iID, :, :] * undeformed_bond[iID][jID]
-            heat_flow[iID] -= fastdot(temp, q) * volume[neighborID]
-            heat_flow[neighborID] += fastdot(temp, q) * volume[iID]
+            heat_flow[iID] -= dot(temp, q) * volume[neighborID]
+            heat_flow[neighborID] += dot(temp, q) * volume[iID]
         end
     end
     return heat_flow
 end
 
 """
-	compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64}, dof::Int64, nlist::Vector{Vector{Int64},
-	  lambda::Union{Float64, Int64}, bond_damage::Vector{Vector{Float64}}, undeformed_bond::Vector{Matrix{Float64}}, horizon::Vector{Float64},
-	  temperature::Vector{Float64}, heat_flow::Vector{Float64})
+    compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64}, dof::Int64, nlist::Vector{Vector{Int64},
+      lambda::Union{Float64, Int64}, bond_damage::BondScalarState{Float64}, undeformed_bond::Vector{Matrix{Float64}}, horizon::NodeScalarField{Float64},
+      temperature::NodeScalarField{Float64}, heat_flow::NodeScalarField{Float64})
 
 Calculate Heat Flow based on a bond-based model for thermal analysis.
 
@@ -229,12 +220,12 @@ Calculate Heat Flow based on a bond-based model for thermal analysis.
 - `apply_print_bed::Bool`: A boolean indicating whether the print bed should be applied to the thermal conductivity.
 - `t_bed::Float64`: The thickness of the print bed.
 - `lambda_bed::Float64`: The thermal conductivity of the print bed.
-- `bond_damage::Vector{Vector{Float64}}`: A Vector representing the damage state of bonds between nodes.
+- `bond_damage::BondScalarState{Float64}`: A Vector representing the damage state of bonds between nodes.
 - `undeformed_bond::Vector{Matrix{Float64}}`: A Vector representing the geometry of the bonds.
-- `undeformed_bond_length::Vector{Vector{Float64}}`: A Vector representing the undeformed bond length for each bond.
-- `horizon::Vector{Float64}`: A Vector representing the horizon for each node.
-- `temperature::Vector{Float64}`: A Vector representing the temperature at each node.
-- `heat_flow::Vector{Float64}`: A Vector where the computed Heat Flow values will be stored.
+- `undeformed_bond_length::BondScalarState{Float64}`: A Vector representing the undeformed bond length for each bond.
+- `horizon::NodeScalarField{Float64}`: A Vector representing the horizon for each node.
+- `temperature::NodeScalarField{Float64}`: A Vector representing the temperature at each node.
+- `heat_flow::NodeScalarField{Float64}`: A Vector where the computed Heat Flow values will be stored.
 
 ## Returns
 - `heat_flow`: updated bond Heat Flow values will be stored.
@@ -245,21 +236,21 @@ This function calculates the Heat Flow between neighboring nodes based on a bond
 """
 function compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64},
                                             dof::Int64,
-                                            nlist::Vector{Vector{Int64}},
+                                            nlist::BondScalarState{Int64},
                                             lambda::Union{Float64,Int64},
                                             apply_print_bed::Bool,
                                             t_bed::Float64,
                                             lambda_bed::Float64,
                                             print_bed_z_coord::Float64,
                                             coordinates::Matrix{Float64},
-                                            bond_damage::Vector{Vector{Float64}},
+                                            bond_damage::BondScalarState{Float64},
                                             active::Vector{Bool},
-                                            undeformed_bond::Vector{Vector{Vector{Float64}}},
-                                            undeformed_bond_length::Vector{Vector{Float64}},
-                                            horizon::Vector{Float64},
-                                            temperature::Vector{Float64},
-                                            volume::Vector{Float64},
-                                            heat_flow::Vector{Float64})
+                                            undeformed_bond::BondVectorState{Float64},
+                                            undeformed_bond_length::BondScalarState{Float64},
+                                            horizon::NodeScalarField{Float64},
+                                            temperature::NodeScalarField{Float64},
+                                            volume::NodeScalarField{Float64},
+                                            heat_flow::NodeScalarField{Float64})
     kernel::Float64 = 0.0
     for iID in nodes
         if !active[iID]
@@ -293,7 +284,7 @@ function compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64},
 end
 
 """
-	fields_for_local_synchronization(datamanager::Module, model::String)
+    fields_for_local_synchronization(model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -302,11 +293,10 @@ Returns a user developer defined local synchronization. This happens before each
 # Arguments
 
 """
-function fields_for_local_synchronization(datamanager::Module, model::String)
+function fields_for_local_synchronization(model::String)
     #download_from_cores = false
     #upload_to_cores = true
-    #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
-    return datamanager
+    #Data_Manager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
 end
 
 end

@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+using ..Data_Manager
+
 export get_solver_steps
 export get_solver_params
 export get_initial_time
@@ -86,18 +88,17 @@ function get_solver_name(params::Dict)
 end
 
 """
-	get_initial_time(params::Dict, datamanager::Module)
+    get_initial_time(params::Dict)
 
 Get the initial time
 
 # Arguments
 - `params::Dict`: The parameters dictionary.
-- `datamanager::Module`: The data manager module
 # Returns
 - `initial_time::Float64`: The initial time
 """
-function get_initial_time(params::Dict, datamanager::Module)
-    current_time = datamanager.get_current_time()
+function get_initial_time(params::Dict)
+    current_time = Data_Manager.get_current_time()
     if haskey(params, "Initial Time")
         if Float64(params["Initial Time"]) <= current_time
             return current_time
@@ -117,16 +118,15 @@ Get the final time
 
 # Arguments
 - `params::Dict`: The parameters dictionary.
-- `datamanager::Module`: The data manager module
 # Returns
 - `final_time::Float64`: The final time
 """
-function get_final_time(params::Dict, datamanager::Module)
+function get_final_time(params::Dict)
     if haskey(params, "Final Time")
         return Float64(params["Final Time"])
     end
     if haskey(params, "Additional Time")
-        return datamanager.get_current_time() + Float64(params["Additional Time"])
+        return Data_Manager.get_current_time() + Float64(params["Additional Time"])
     end
     @error "No final time defined"
 end

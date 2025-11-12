@@ -4,7 +4,9 @@
 
 module OneD_Bond_Based_Elastic
 using LoopVectorization
-using TimerOutputs
+
+using .......Data_Manager
+
 export init_model
 export fe_support
 export material_name
@@ -31,24 +33,17 @@ function fe_support()
 end
 
 """
-  init_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict{String, Any})
+  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict{String, Any})
 
 Initializes the material model.
 
 # Arguments
-  - `datamanager::Data_Manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-
-# Returns
-  - `datamanager::Data_Manager`: Datamanager.
 """
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict{String,Any})
-    constant = datamanager.create_constant_bond_field("Visual", Float64, 1)
-
-    return datamanager
+    constant = Data_Manager.create_constant_bond_scalar_state("Visual", Float64)
 end
 
 """
@@ -61,35 +56,30 @@ function material_name()
 end
 
 """
-    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict{String, Any}, time::Float64, dt::Float64)
+    compute_model(nodes::AbstractVector{Int64}, material_parameter::Dict{String, Any}, time::Float64, dt::Float64)
 
 Calculate the elastic bond force for each node.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 """
-function compute_model(datamanager::Module,
-                       nodes::AbstractVector{Int64},
+function compute_model(odes::AbstractVector{Int64},
                        material_parameter::Dict{String,Any},
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
-    undeformed_bond_length = datamanager.get_field("Bond Length")
-    undeformed_bond = datamanager.get_field("Bond Geometry")
-    deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
-    bond_damage = datamanager.get_bond_damage("NP1")
-    bond_force = datamanager.get_field("Bond Forces")
-    coor = datamanager.get_field("Coordinates")
+                       dt::Float64)
+    undeformed_bond_length = Data_Manager.get_field("Bond Length")
+    undeformed_bond = Data_Manager.get_field("Bond Geometry")
+    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
+    deformed_bond_length = Data_Manager.get_field("Deformed Bond Length", "NP1")
+    bond_damage = Data_Manager.get_bond_damage("NP1")
+    bond_force = Data_Manager.get_field("Bond Forces")
+    coor = Data_Manager.get_field("Coordinates")
     E = material_parameter["Young's Modulus"]
-    nlist = datamanager.get_nlist()
+    nlist = Data_Manager.get_nlist()
     # only one core
     id1 = material_parameter["Id1"]
     id2 = material_parameter["Id2"]
@@ -120,8 +110,6 @@ function compute_model(datamanager::Module,
         #
     end
     # might be put in constant
-
-    return datamanager
 end
 
 function compute_bb_force!(bond_force,
@@ -136,7 +124,7 @@ function compute_bb_force!(bond_force,
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+    fields_for_local_synchronization(model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -145,11 +133,10 @@ Returns a user developer defined local synchronization. This happens before each
 # Arguments
 
 """
-function fields_for_local_synchronization(datamanager::Module, model::String)
+function fields_for_local_synchronization(model::String)
     #download_from_cores = false
     #upload_to_cores = true
-    #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
-    return datamanager
+    #Data_Manager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
 end
 
 end

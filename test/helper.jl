@@ -26,11 +26,13 @@ function run_perilab(filename, cores, compare, folder_name = ""; silent = true,
              filename *
              """.yaml"; silent = true)"""
         command = `$(Base.julia_cmd()) -e "$(fn)"`
-        mpiexec() do exe  # MPI wrapper
-            cmd = `$exe -n $cores $command`
-            exit_code = run(cmd).exitcode
-            @test exit_code == 0
-        end
+        p = run(ignorestatus(`$(mpiexec()) -n $cores $command`))
+        @test success(p)
+        # mpiexec() do exe  # MPI wrapper
+        #     cmd = `$exe -n $cores $command`
+        #     exit_code = run(cmd).exitcode
+        #     @test exit_code == 0
+        # end
     end
     if compare
         same = false

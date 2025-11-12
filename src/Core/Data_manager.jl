@@ -6,7 +6,6 @@ module Data_Manager
 using MPI
 using SparseArrays
 using DataStructures: OrderedDict
-using ..Helpers: fill_in_place!
 
 ##########################
 # Variables
@@ -16,10 +15,9 @@ const fields = Dict()
 const data = Dict()
 #####################
 
-struct DataField{T,N}
+struct DataField{T,D}
     name::String
-    data::Array{T,N}
-    bond_or_node::String
+    data::D
 end
 
 struct PD_matrix
@@ -74,6 +72,7 @@ export get_field
 export get_field_type
 export get_inverse_nlist
 export get_local_nodes
+export get_model_module
 export get_nlist
 export get_nnsets
 export get_nsets
@@ -117,7 +116,7 @@ export set_element_rotation
 """
 	initialize_data()
 
-Initialize all parameter in the datamanager and sets them to the default values.
+Initialize all parameter in the Data_Manager and sets them to the default values.
 """
 function initialize_data()
     data["current_time"] = 0.0
@@ -1180,7 +1179,7 @@ Sets the synchronization dictionary locally during the model update process. Sho
 """
 function set_local_synch(model, name, download_from_cores, upload_to_cores, dof = 0)
     if !haskey(data["local_fields_to_synch"], model)
-        @error "Model $model is not defined. If it is a new model type, please add it to data[\"local_fields_to_synch\"] in the datamanager."
+        @error "Model $model is not defined. If it is a new model type, please add it to data[\"local_fields_to_synch\"] in the Data_Manager."
         return nothing
     end
     if name in get_all_field_keys()

@@ -6,7 +6,8 @@ using LinearAlgebra
 #include("../../../../../../src/PeriLab.jl")
 #using .PeriLab
 @testset "get_name&fe_support" begin
-    @test PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.correspondence_name() == "Correspondence UMAT"
+    @test PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.correspondence_name() ==
+          "Correspondence UMAT"
     @test PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.fe_support()
 end
 @testset "init exceptions" begin
@@ -21,42 +22,42 @@ end
         file = "../src/Models/Material/UMATs/libperuser.so"
     end
 
-    @test !isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
-                                                    Vector{Int64}(1:nodes),
-                                                    Dict{String,Any}("File" => file,
-                                                                     "Number of Properties" => 3,
-                                                                     "Property_1" => 2,
-                                                                     "Property_2" => 2,
-                                                                     "Property_3" => 2.4,
-                                                                     "Property_4" => 2)))
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
-                                                   Vector{Int64}(1:nodes),
-                                                   Dict{String,Any}("File" => file *
-                                                                              "_not_there")))
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
-                                                   Vector{Int64}(1:nodes),
-                                                   Dict{String,Any}("File" => file)))
+    @test !isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                                 Dict{String,
+                                                                                                                      Any}("File" => file,
+                                                                                                                           "Number of Properties" => 3,
+                                                                                                                           "Property_1" => 2,
+                                                                                                                           "Property_2" => 2,
+                                                                                                                           "Property_3" => 2.4,
+                                                                                                                           "Property_4" => 2)))
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                                Dict{String,
+                                                                                                                     Any}("File" => file *
+                                                                                                                                    "_not_there")))
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                                Dict{String,
+                                                                                                                     Any}("File" => file)))
 
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
-                                                   Vector{Int64}(1:nodes),
-                                                   Dict{String,Any}()))
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                                Dict{String,
+                                                                                                                     Any}()))
 
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
-                                                   Vector{Int64}(1:nodes),
-                                                   Dict{String,Any}("File" => file,
-                                                                    "Number of Properties" => 3,
-                                                                    "Property_1" => 2,
-                                                                    "Property_2" => 2.4,
-                                                                    "Property_3" => 2.4,
-                                                                    "UMAT Material Name" => "a"^81)))
-    @test !isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
-                                                    Vector{Int64}(1:nodes),
-                                                    Dict{String,Any}("File" => file,
-                                                                     "Number of Properties" => 3,
-                                                                     "Property_1" => 2,
-                                                                     "Property_2" => 2,
-                                                                     "Property_3" => 2.4,
-                                                                     "UMAT Material Name" => "a"^80)))
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                                Dict{String,
+                                                                                                                     Any}("File" => file,
+                                                                                                                          "Number of Properties" => 3,
+                                                                                                                          "Property_1" => 2,
+                                                                                                                          "Property_2" => 2.4,
+                                                                                                                          "Property_3" => 2.4,
+                                                                                                                          "UMAT Material Name" => "a"^81)))
+    @test !isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                                 Dict{String,
+                                                                                                                      Any}("File" => file,
+                                                                                                                           "Number of Properties" => 3,
+                                                                                                                           "Property_1" => 2,
+                                                                                                                           "Property_2" => 2,
+                                                                                                                           "Property_3" => 2.4,
+                                                                                                                           "UMAT Material Name" => "a"^80)))
 
     properties = test_data_manager.get_field("Properties")
     @test length(properties) == 3
@@ -64,18 +65,18 @@ end
     @test properties[2] == 2
     @test properties[3] == 2.4
 
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
-                                                   Vector{Int64}(1:nodes),
-                                                   Dict{String,Any}("File" => file,
-                                                                    "Number of Properties" => 3,
-                                                                    "Property_1" => 2,
-                                                                    "Property_2" => 2,
-                                                                    "Property_3" => 2.4,
-                                                                    "Predefined Field Names" => "test_field_2 test_field_3")))
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                                Dict{String,
+                                                                                                                     Any}("File" => file,
+                                                                                                                          "Number of Properties" => 3,
+                                                                                                                          "Property_1" => 2,
+                                                                                                                          "Property_2" => 2,
+                                                                                                                          "Property_3" => 2.4,
+                                                                                                                          "Predefined Field Names" => "test_field_2 test_field_3")))
 
-    test_1 = test_data_manager.create_constant_node_field("test_field_2", Float64, 1)
+    test_1 = test_data_manager.create_constant_node_scalar_field("test_field_2", Float64)
     test_1[1] = 7.3
-    test_2 = test_data_manager.create_constant_node_field("test_field_3", Float64, 1)
+    test_2 = test_data_manager.create_constant_node_scalar_field("test_field_3", Float64)
     test_2 .= 3
     mat_dict = Dict{String,Any}("File" => file,
                                 "UMAT name" => "test_sub",
@@ -84,7 +85,8 @@ end
                                 "Property_2" => 2,
                                 "Property_3" => 2.4,
                                 "Predefined Field Names" => "test_field_2 test_field_3")
-    PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager, Vector{Int64}(1:nodes), mat_dict)
+    PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                mat_dict)
     fields = test_data_manager.get_field("Predefined Fields")
     inc = test_data_manager.get_field("Predefined Fields Increment")
     @test size(fields) == (2, 2)
@@ -101,7 +103,8 @@ end
                                 "Property_3" => 2.4,
                                 "Predefined Field Names" => "test_field_2 test_field_3")
     @test !haskey(mat_dict, "UMAT name")
-    PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager, Vector{Int64}(1:nodes), mat_dict)
+    PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                mat_dict)
     @test haskey(mat_dict, "UMAT name")
     @test mat_dict["UMAT name"] == "UMAT"
 end
@@ -164,42 +167,42 @@ end
     DSTRAN[1] = 3
     PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.umat_file_path = file
     PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.UMAT_interface(STRESS,
-                                       STATEV,
-                                       DDSDDE,
-                                       SSE,
-                                       SPD,
-                                       SCD,
-                                       RPL,
-                                       DDSDDT,
-                                       DRPLDE,
-                                       DRPLDT,
-                                       STRAN,
-                                       DSTRAN,
-                                       TIME,
-                                       DTIME,
-                                       TEMP,
-                                       DTEMP,
-                                       PREDEF,
-                                       DPRED,
-                                       CMNAME,
-                                       NDI,
-                                       NSHR,
-                                       NTENS,
-                                       NSTATEV,
-                                       Vector{Float64}(PROPS[:]),
-                                       NPROPS,
-                                       COORDS,
-                                       DROT,
-                                       PNEWDT,
-                                       CELENT,
-                                       DFGRD0,
-                                       DFGRD1,
-                                       NOEL,
-                                       NPT,
-                                       LAYER,
-                                       KSPT,
-                                       JSTEP,
-                                       KINC)
+                                                                                                    STATEV,
+                                                                                                    DDSDDE,
+                                                                                                    SSE,
+                                                                                                    SPD,
+                                                                                                    SCD,
+                                                                                                    RPL,
+                                                                                                    DDSDDT,
+                                                                                                    DRPLDE,
+                                                                                                    DRPLDT,
+                                                                                                    STRAN,
+                                                                                                    DSTRAN,
+                                                                                                    TIME,
+                                                                                                    DTIME,
+                                                                                                    TEMP,
+                                                                                                    DTEMP,
+                                                                                                    PREDEF,
+                                                                                                    DPRED,
+                                                                                                    CMNAME,
+                                                                                                    NDI,
+                                                                                                    NSHR,
+                                                                                                    NTENS,
+                                                                                                    NSTATEV,
+                                                                                                    Vector{Float64}(PROPS[:]),
+                                                                                                    NPROPS,
+                                                                                                    COORDS,
+                                                                                                    DROT,
+                                                                                                    PNEWDT,
+                                                                                                    CELENT,
+                                                                                                    DFGRD0,
+                                                                                                    DFGRD1,
+                                                                                                    NOEL,
+                                                                                                    NPT,
+                                                                                                    LAYER,
+                                                                                                    KSPT,
+                                                                                                    JSTEP,
+                                                                                                    KINC)
     @test STRESS[1] == 0
     @test STRAN[1] == 4.2
     @test isapprox(DSTRAN[1], 12.6)

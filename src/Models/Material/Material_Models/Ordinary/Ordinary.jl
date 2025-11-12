@@ -4,9 +4,12 @@
 
 module Ordinary
 
-using .....Helpers: div_in_place!, mul_in_place!
 using LinearAlgebra
 using LoopVectorization
+
+using .....Data_Manager
+using .....Helpers: div_in_place!, mul_in_place!
+
 export compute_dilatation!
 export compute_weighted_volume!
 export get_bond_forces
@@ -14,33 +17,33 @@ export calculate_symmetry_params
 
 """
     compute_weighted_volume!(nodes::AbstractVector{Int64},
-                            nlist::Vector{Vector{Int64}},
-                            undeformed_bond_length::Vector{Vector{Float64}},
-                            bond_damage::Vector{Vector{Float64}},
-                            omega::Vector{Vector{Float64}},
-                            volume::Vector{Float64})
+                            nlist::BondScalarState{Int64},
+                            undeformed_bond_length::BondScalarState{Float64},
+                            bond_damage::BondScalarState{Float64},
+                            omega::BondScalarState{Float64},
+                            volume::NodeScalarField{Float64})
 
 Compute the weighted volume for each node, [SillingSA2007](@cite). Taken from Peridigm -> but adding the bond_damage; this is missing in Peridigm, but should be there.
 
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: Vector of node indices or a subarray representing the indices of the nodes.
-- `nlist::Vector{Vector{Int64}}`: Vector representing the neighbor list for each node.
-- `undeformed_bond_length::Vector{Vector{Float64}}`: Vector representing the undeformed bonds.
-- `bond_damage::Vector{Vector{Float64}}`: Vector representing the bond damage.
-- `omega::Vector{Vector{Float64}}`: Vector representing the weights for each bond.
-- `volume::Vector{Float64}`: Vector representing the volume for each node.
+- `nlist::BondScalarState{Int64}`: Vector representing the neighbor list for each node.
+- `undeformed_bond_length::BondScalarState{Float64}`: Vector representing the undeformed bonds.
+- `bond_damage::BondScalarState{Float64}`: Vector representing the bond damage.
+- `omega::BondScalarState{Float64}`: Vector representing the weights for each bond.
+- `volume::NodeScalarField{Float64}`: Vector representing the volume for each node.
 
 # Returns
-- `weighted_volume::Vector{Float64}`: Vector containing the computed weighted volume for each node.
+- `weighted_volume::NodeScalarField{Float64}`: Vector containing the computed weighted volume for each node.
 """
-function compute_weighted_volume!(weighted_volume::Vector{Float64},
+function compute_weighted_volume!(weighted_volume::NodeScalarField{Float64},
                                   nodes::AbstractVector{Int64},
-                                  nlist::Vector{Vector{Int64}},
-                                  undeformed_bond_length::Vector{Vector{Float64}},
-                                  bond_damage::Vector{Vector{Float64}},
-                                  omega::Vector{Vector{Float64}},
-                                  volume::Vector{Float64})
+                                  nlist::BondScalarState{Int64},
+                                  undeformed_bond_length::BondScalarState{Float64},
+                                  bond_damage::BondScalarState{Float64},
+                                  omega::BondScalarState{Float64},
+                                  volume::NodeScalarField{Float64})
     @inbounds for iID in nodes
         wv = 0.0  # Explizit Float64 statt zero(eltype(weighted_volume))
         @fastmath for (jID, nID) in enumerate(nlist[iID])
@@ -68,7 +71,7 @@ Calculate the forces on the bonds in a peridynamic material.
 - `nodes::AbstractVector{Int64}`: Vector of node indices or a subarray representing the indices of the nodes.
 - `bond_force_length::AbstractVector{<:AbstractVector{Float64}}`: Vector of vectors or a subarray representing the desired lengths of the bonds for each node.
 - `deformed_bond::Vector{Matrix{Float64}}`: Vector representing the deformed bonds.
-- `deformed_bond_length::Vector{Vector{Float64}}`: Vector representing the deformed bond lengths.
+- `deformed_bond_length::BondScalarState{Float64}`: Vector representing the deformed bond lengths.
 - `bond_force::Vector{Matrix{Float64}}`: Vector representing the resulting forces on the bonds.
 
 # Returns
@@ -77,10 +80,10 @@ Calculate the forces on the bonds in a peridynamic material.
 
 function get_bond_forces(nodes::AbstractVector{Int64},
                          bond_force_length::AbstractVector{<:AbstractVector{Float64}},
-                         deformed_bond::Vector{Vector{Vector{Float64}}},
-                         deformed_bond_length::Vector{Vector{Float64}},
-                         bond_force::Vector{Vector{Vector{Float64}}},
-                         temp::Vector{Vector{Float64}})
+                         deformed_bond::BondVectorState{Float64},
+                         deformed_bond_length::BondScalarState{Float64},
+                         bond_force::BondVectorState{Float64},
+                         temp::BondScalarState{Float64})
     div_in_place!(temp, bond_force_length, deformed_bond_length)
     for iID in nodes
         mul_in_place!(bond_force[iID], deformed_bond[iID], temp[iID])
@@ -122,38 +125,38 @@ function calculate_symmetry_params(symmetry::String,
 end
 
 """
-    compute_dilatation(nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}},
-                             undeformed_bond_length::Vector{Vector{Float64}},
-                             deformed_bond_length::Vector{Vector{Float64}},
-                             bond_damage::Vector{Vector{Float64}},
-                             volume::Vector{Float64},
-                             weighted_volume::Vector{Float64},
-                             omega::Vector{Vector{Float64}},
-                             theta::Vector{Float64})
+    compute_dilatation(nodes::AbstractVector{Int64}, nlist::BondScalarState{Int64},
+                             undeformed_bond_length::BondScalarState{Float64},
+                             deformed_bond_length::BondScalarState{Float64},
+                             bond_damage::BondScalarState{Float64},
+                             volume::NodeScalarField{Float64},
+                             weighted_volume::NodeScalarField{Float64},
+                             omega::BondScalarState{Float64},
+                             theta::NodeScalarField{Float64})
 
 Calculate the dilatation for each node, [SillingSA2007](@cite).
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: Nodes.
-- `nlist::Vector{Vector{Int64}}`: Neighbor list.
-- `undeformed_bond_length::Vector{Vector{Float64}}`: Bond geometry.
-- `deformed_bond_length::Vector{Vector{Float64}}`: Deformed bond geometry.
-- `bond_damage::Vector{Vector{Float64}}`: Bond damage.
-- `volume::Vector{Float64}`: Volume.
-- `weighted_volume::Vector{Float64}`: Weighted volume.
-- `omega::Vector{Vector{Float64}}`: Influence function.
+- `nlist::BondScalarState{Int64}`: Neighbor list.
+- `undeformed_bond_length::BondScalarState{Float64}`: Bond geometry.
+- `deformed_bond_length::BondScalarState{Float64}`: Deformed bond geometry.
+- `bond_damage::BondScalarState{Float64}`: Bond damage.
+- `volume::NodeScalarField{Float64}`: Volume.
+- `weighted_volume::NodeScalarField{Float64}`: Weighted volume.
+- `omega::BondScalarState{Float64}`: Influence function.
 # Returns
-- `theta::Vector{Float64}`: Dilatation.
+- `theta::NodeScalarField{Float64}`: Dilatation.
 """
 
-function compute_dilatation!(nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}},
-                             undeformed_bond_length::Vector{Vector{Float64}},
-                             deformed_bond_length::Vector{Vector{Float64}},
-                             bond_damage::Vector{Vector{Float64}},
-                             volume::Vector{Float64},
-                             weighted_volume::Vector{Float64},
-                             omega::Vector{Vector{Float64}},
-                             theta::Vector{Float64})
+function compute_dilatation!(nodes::AbstractVector{Int64}, nlist::BondScalarState{Int64},
+                             undeformed_bond_length::BondScalarState{Float64},
+                             deformed_bond_length::BondScalarState{Float64},
+                             bond_damage::BondScalarState{Float64},
+                             volume::NodeScalarField{Float64},
+                             weighted_volume::NodeScalarField{Float64},
+                             omega::BondScalarState{Float64},
+                             theta::NodeScalarField{Float64})
     @inbounds for iID in nodes
         if weighted_volume[iID] == zero(Float64)
             theta[iID] = zero(Float64)

@@ -59,9 +59,9 @@ Congratulations you first model works and runs. However, it does not do anything
 The module TimerOutputs allows you measuring the computation speed and memory for certain functions or areas of your code.
 
 ```julia
-@timeit to "foo function" foo()
+@timeit "foo function" foo()
 
-@timeit to "more foo functions" begin
+@timeit "more foo functions" begin
     foo1()
     foo2()
 end
@@ -72,10 +72,8 @@ The function init_model is used to initialize the model. Here, you can check if 
 You can and should also create fields using the [datamanger](datamanager.md).
 
 ```julia
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
-    return datamanager
 end
 ```
 This function is used as marker if it is suited for FE support. Therefore, it must be able to compute a Cauchy stress.
@@ -94,9 +92,7 @@ This feature is only needed for multicore applications. The main parameters are 
     Be aware, that synchronization cost time. Therefore, try to avoid it if possible.
 
 ```julia
-function fields_for_local_synchronization(datamanager::Module, model::String)
-
-    return datamanager
+function fields_for_local_synchronization(model::String)
 end
 ```
 
@@ -107,15 +103,12 @@ The last module computes the model in each time step. You get all nodes and have
     Please seperate the functionality. Call type stable functions for analysis. Use compute_model as function to structure your analysis (getting data, call subfunctions). It is better to read, better to test and better to optimize.
 
 ```julia
-function compute_model(datamanager::Module,
-                       nodes::AbstractVector{Int64},
+function compute_model(nodes::AbstractVector{Int64},
                        material_parameter::Dict,
                        block::Int64,
                        time::Float64,
                        dt::Float64,
                        to::TimerOutput)
-
-    return datamanager
 end
 ```
 

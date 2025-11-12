@@ -3,32 +3,33 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Surface_Correction
+
+using .....Data_Manager
 export init_surface_correction
 export compute_surface_correction
 
-function compute_surface_correction(datamanager::Module,
-                                    nodes,
+function compute_surface_correction(nodes,
                                     local_synch,
                                     synchronise_field)
     # get a random block, because surface correction is applied to all blocks
-    params = datamanager.get_properties(datamanager.get_block_id_list()[1],
-                                        "Surface Correction")
+    params = Data_Manager.get_properties(Data_Manager.get_block_id_list()[1],
+                                         "Surface Correction")
     if !haskey(params, "Type")
         return
     end
 
     if params["Type"] == "Volume Correction"
         if haskey(params, "Update") && params["Update"]
-            volumen_correction(datamanager, nodes, local_synch, synchronise_field)
+            volumen_correction(nodes, local_synch, synchronise_field)
         end
-        return compute_surface_volume_correction(datamanager, nodes)
+        return compute_surface_volume_correction(nodes)
     end
 end
 
-function compute_surface_volume_correction(datamanager::Module, nodes)
-    nlist = datamanager.get_nlist()
-    bond_force = datamanager.get_field("Bond Forces")
-    volume_correction = datamanager.get_field("Volume Correction")
+function compute_surface_volume_correction(nodes)
+    nlist = Data_Manager.get_nlist()
+    bond_force = Data_Manager.get_field("Bond Forces")
+    volume_correction = Data_Manager.get_field("Volume Correction")
     for iID in nodes
         @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
             bond_force[iID][jID][:] .*= volume_correction[iID][jID]
@@ -36,16 +37,14 @@ function compute_surface_volume_correction(datamanager::Module, nodes)
     end
 end
 
-function init_surface_correction(datamanager::Module,
-                                 params::Dict,
+function init_surface_correction(params::Dict,
                                  local_synch,
                                  synchronise_field)
     # check if surface correction exists
     if !haskey(params, "Surface Correction")
         # if not set it to false
         params["Surface Correction"] = Dict("Type" => nothing)
-        datamanager.set_properties("Surface Correction", params["Surface Correction"])
-        return datamanager
+        Data_Manager.set_properties("Surface Correction", params["Surface Correction"])
     end
     # check if type exists; if not its an error
     if !haskey(params["Surface Correction"], "Type")
@@ -53,29 +52,29 @@ function init_surface_correction(datamanager::Module,
         return nothing
     end
     # needed for multi-step, because if type is false its not a valid model
-    datamanager.set_properties("Surface Correction", params["Surface Correction"])
+    Data_Manager.set_properties("Surface Correction", params["Surface Correction"])
     if isnothing(params["Surface Correction"]["Type"])
-        return datamanager
+        return
     end
     if !haskey(params["Surface Correction"], "Update")
         params["Surface Correction"]["Update"] = false
     end
     if params["Surface Correction"]["Type"] == "Volume Correction"
-        return init_volumen_correction(datamanager, local_synch, synchronise_field)
+        return init_volumen_correction(local_synch, synchronise_field)
     else
         @error "Type $(params["Surface Correction"]["Type"]) not defined for surface correction."
         return nothing
     end
 end
 
-function init_volumen_correction(datamanager, local_synch, synchronise_field)
-    horizon = datamanager.get_field("Horizon")
-    vol = datamanager.create_constant_node_field("Reference Volume", Float64, 1)
-    volume_correction = datamanager.create_constant_bond_field("Volume Correction", Float64,
-                                                               1)
-    domain_volume = datamanager.create_constant_node_field("Domain Volume", Float64, 1)
-    nnodes = datamanager.get_nnodes()
-    dof = datamanager.get_dof()
+function init_volumen_correction(local_synch, synchronise_field)
+    horizon = Data_Manager.get_field("Horizon")
+    vol = Data_Manager.create_constant_node_scalar_field("Reference Volume", Float64)
+    volume_correction = Data_Manager.create_constant_bond_scalar_state("Volume Correction",
+                                                                       Float64)
+    domain_volume = Data_Manager.create_constant_node_scalar_field("Domain Volume", Float64)
+    nnodes = Data_Manager.get_nnodes()
+    dof = Data_Manager.get_dof()
     for iID in 1:nnodes
         if dof == 3
             vol[iID] = 4 * pi * horizon[iID]^3 / 3
@@ -83,15 +82,15 @@ function init_volumen_correction(datamanager, local_synch, synchronise_field)
             vol[iID] = pi * horizon[iID]^2 / 4
         end
     end
-    return volumen_correction(datamanager, 1:nnodes, local_synch, synchronise_field)
+    return volumen_correction(1:nnodes, local_synch, synchronise_field)
 end
-function volumen_correction(datamanager, nodes, local_synch, synchronise_field)
-    nlist = datamanager.get_nlist()
-    vol = datamanager.get_field("Reference Volume")
-    volume_correction = datamanager.get_field("Volume Correction")
-    bond_damage = datamanager.get_field("Bond Damage", "NP1")
-    volume = datamanager.get_field("Volume")
-    domain_volume = datamanager.get_field("Domain Volume")
+function volumen_correction(nodes, local_synch, synchronise_field)
+    nlist = Data_Manager.get_nlist()
+    vol = Data_Manager.get_field("Reference Volume")
+    volume_correction = Data_Manager.get_field("Volume Correction")
+    bond_damage = Data_Manager.get_field("Bond Damage", "NP1")
+    volume = Data_Manager.get_field("Volume")
+    domain_volume = Data_Manager.get_field("Domain Volume")
 
     for iID in nodes
         domain_volume[iID] = 0
@@ -99,14 +98,13 @@ function volumen_correction(datamanager, nodes, local_synch, synchronise_field)
             domain_volume[iID] += volume[nID] * bond_damage[iID][jID]
         end
     end
-    datamanager.set_local_synch("Surface Correction", "Domain Volume", false, true, 1)
-    local_synch(datamanager, "Surface Correction", "upload_to_cores", synchronise_field)
+    Data_Manager.set_local_synch("Surface Correction", "Domain Volume", false, true, 1)
+    local_synch("Surface Correction", "upload_to_cores", synchronise_field)
     for iID in nodes
         for (jID, nID) in enumerate(nlist[iID])
             volume_correction[iID][jID] = 2 * vol[iID] /
                                           (domain_volume[nID] + domain_volume[iID])
         end
     end
-    return datamanager
 end
 end

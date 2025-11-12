@@ -23,8 +23,8 @@ function bond_intersects_disc(p0::Vector{Float64},
                               center::Vector{Float64},
                               normal::Vector{Float64},
                               radius::Float64)
-    numerator = fastdot((center - p0), normal)
-    denominator = fastdot((p1 - p0), normal)
+    numerator = dot((center - p0), normal)
+    denominator = dot((p1 - p0), normal)
     if abs(denominator) < TOLERANCE
         # Line is parallel to the plane, may or may not lie on the plane
         # If it does lie on the plane, then the numerator will be zero
@@ -69,7 +69,7 @@ function bond_intersect_infinite_plane(p0::Vector{Float64},
                                        p1::Vector{Float64},
                                        lower_left_corner::Vector{Float64},
                                        normal::Vector{Float64})
-    denominator = fastdot((p1 - p0), normal)
+    denominator = dot((p1 - p0), normal)
     if abs(denominator) < TOLERANCE
         # Line is parallel to the plane
         # It may or may not lie on the plane
@@ -79,7 +79,7 @@ function bond_intersect_infinite_plane(p0::Vector{Float64},
     end
     # The line intersects the plane
 
-    t = fastdot((lower_left_corner - p0), normal) / denominator
+    t = dot((lower_left_corner - p0), normal) / denominator
 
     # Determine if the line segment intersects the plane
     if 0.0 <= t <= 1.0
@@ -119,7 +119,7 @@ function bond_intersect_rectangle_plane(x::Union{Vector{Float64},Vector{Int64}},
             return true
         end
         ua = cross(bottom_unit_vector, normal)
-        aa = fastdot(dr, ua)
+        aa = dot(dr, ua)
         if 0.0 <= aa && aa / side_length <= 1.0
             return true
         end
@@ -128,20 +128,20 @@ function bond_intersect_rectangle_plane(x::Union{Vector{Float64},Vector{Int64}},
 end
 
 """
-    apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, params::Dict, dof::Int64)
+    apply_bond_filters(nlist::BondScalarState{Int64}, mesh::DataFrame, params::Dict, dof::Int64)
 
 Apply the bond filters to the neighborhood list.
 
 # Arguments
-- `nlist::Vector{Vector{Int64}}`: The neighborhood list.
+- `nlist::BondScalarState{Int64}`: The neighborhood list.
 - `mesh::DataFrame`: The mesh.
 - `params::Dict`: The parameters.
 - `dof::Int64`: The degrees of freedom.
 # Returns
-- `nlist::Vector{Vector{Int64}}`: The filtered neighborhood list.
-- `nlist_filtered_ids::Vector{Vector{Int64}}`: The filtered neighborhood list.
+- `nlist::BondScalarState{Int64}`: The filtered neighborhood list.
+- `nlist_filtered_ids::BondScalarState{Int64}`: The filtered neighborhood list.
 """
-function apply_bond_filters(nlist::Vector{Vector{Int64}},
+function apply_bond_filters(nlist::BondScalarState{Int64},
                             mesh::DataFrame,
                             params::Dict,
                             dof::Int64)
@@ -200,7 +200,7 @@ function apply_bond_filters(nlist::Vector{Vector{Int64}},
 end
 
 """
-    disk_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
+    disk_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::BondScalarState{Int64}, dof::Int64)
 
 Apply the disk filter to the neighborhood list.
 
@@ -208,7 +208,7 @@ Apply the disk filter to the neighborhood list.
 - `nnodes::Int64`: The number of nodes.
 - `data::Matrix{Float64}`: The data.
 - `filter::Dict`: The filter.
-- `nlist::Vector{Vector{Int64}}`: The neighborhood list.
+- `nlist::BondScalarState{Int64}`: The neighborhood list.
 - `dof::Int64`: The degrees of freedom.
 # Returns
 - `filter_flag::Vector{Bool}`: The filter flag.
@@ -217,7 +217,7 @@ Apply the disk filter to the neighborhood list.
 function disk_filter(nnodes::Int64,
                      data::Matrix{Float64},
                      filter::Dict,
-                     nlist::Vector{Vector{Int64}},
+                     nlist::BondScalarState{Int64},
                      dof::Int64)
     if dof == 3
         center = [filter["Center X"], filter["Center Y"], filter["Center Z"]]
@@ -243,7 +243,7 @@ function disk_filter(nnodes::Int64,
 end
 
 """
-    rectangular_plane_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
+    rectangular_plane_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::BondScalarState{Int64}, dof::Int64)
 
 Apply the rectangular plane filter to the neighborhood list.
 
@@ -251,7 +251,7 @@ Apply the rectangular plane filter to the neighborhood list.
 - `nnodes::Int64`: The number of nodes.
 - `data::Matrix{Float64}`: The data.
 - `filter::Dict`: The filter.
-- `nlist::Vector{Vector{Int64}}`: The neighborhood list.
+- `nlist::BondScalarState{Int64}`: The neighborhood list.
 - `dof::Int64`: The degrees of freedom.
 # Returns
 - `filter_flag::Vector{Bool}`: The filter flag.
@@ -260,7 +260,7 @@ Apply the rectangular plane filter to the neighborhood list.
 function rectangular_plane_filter(nnodes::Int64,
                                   data::Matrix{Float64},
                                   filter::Dict,
-                                  nlist::Vector{Vector{Int64}},
+                                  nlist::BondScalarState{Int64},
                                   dof::Int64)
     if dof == 2
         normal = [filter["Normal X"], filter["Normal Y"]]

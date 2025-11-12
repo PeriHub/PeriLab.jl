@@ -9,6 +9,7 @@ using StaticArrays
 using ......Helpers: get_MMatrix, determinant, invert, smat, interpol_data,
                      get_dependent_value,
                      mat_mul!, matrix_to_voigt, voigt_to_matrix
+using ......Data_Manager
 export get_value
 export get_all_elastic_moduli
 export get_Hooke_matrix
@@ -25,21 +26,21 @@ export apply_pointwise_E
 export compute_bond_based_constants
 export init_local_damping_due_to_damage
 export local_damping_due_to_damage
-function local_damping_due_to_damage(datamanager::Module, nodes::AbstractVector{Int64},
+function local_damping_due_to_damage(nodes::AbstractVector{Int64},
                                      params, dt)
-    damage = datamanager.get_field("Damage", "NP1")
-    nlist = datamanager.get_nlist()
-    density = datamanager.get_field("Density")
+    damage = Data_Manager.get_field("Damage", "NP1")
+    nlist = Data_Manager.get_nlist()
+    density = Data_Manager.get_field("Density")
 
-    deformed_bond_lengthN = datamanager.get_field("Deformed Bond Length", "N")
-    deformed_bond_lengthNP1 = datamanager.get_field("Deformed Bond Length", "NP1")
-    deformend_bond_geometry = datamanager.get_field("Deformed Bond Geometry", "NP1")
+    deformed_bond_lengthN = Data_Manager.get_field("Deformed Bond Length", "N")
+    deformed_bond_lengthNP1 = Data_Manager.get_field("Deformed Bond Length", "NP1")
+    deformend_bond_geometry = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
     local_damping = params["Damping coefficient"]
-    force_densities = datamanager.get_field("Force Densities", "NP1")
-    volume = datamanager.get_field("Volume")
+    force_densities = Data_Manager.get_field("Force Densities", "NP1")
+    volume = Data_Manager.get_field("Volume")
     E = params["Representative Young's modulus"]
-    constant = datamanager.get_field("Bond Based Constant")
-    t = zeros(Float64, datamanager.get_dof())
+    constant = Data_Manager.get_field("Bond Based Constant")
+    t = zeros(Float64, Data_Manager.get_dof())
 
     for iID in nodes
         v0 = sqrt(E / density[iID])
@@ -60,8 +61,7 @@ function local_damping_due_to_damage(datamanager::Module, nodes::AbstractVector{
     end
 end
 
-function init_local_damping_due_to_damage(datamanager::Module,
-                                          nodes::AbstractVector{Int64},
+function init_local_damping_due_to_damage(nodes::AbstractVector{Int64},
                                           material_parameter,
                                           damage_parameter)
     if !haskey(damage_parameter["Local Damping"], "Representative Young's modulus")
@@ -73,8 +73,9 @@ function init_local_damping_due_to_damage(datamanager::Module,
         return nothing
     end
     @info "Local damping is active with damping coefficient $(damage_parameter["Local Damping"]["Damping coefficient"])"
-    constant = datamanager.create_constant_node_field("Bond Based Constant", Float64, 1)
-    horizon = datamanager.get_field("Horizon")
+    constant = Data_Manager.create_constant_node_scalar_field("Bond Based Constant",
+                                                              Float64)
+    horizon = Data_Manager.get_field("Horizon")
     symmetry::String = get_symmetry(material_parameter)
     compute_bond_based_constants(nodes, symmetry, constant, horizon)
 end
@@ -92,24 +93,21 @@ function compute_bond_based_constants(nodes::AbstractVector{Int64}, symmetry, co
     end
 end
 
-function get_value(datamanager::Module,
-                   parameter::Union{Dict{Any,Any},Dict{String,Any}},
+function get_value(parameter::Union{Dict{Any,Any},Dict{String,Any}},
                    any_field_allocated::Bool,
                    key::String,
                    field_allocated::Bool)
     if field_allocated
-        return datamanager.get_field(replace(key, " " => "_"))
+        return Data_Manager.get_field(replace(key, " " => "_"))
     end
     if any_field_allocated
         if haskey(parameter, key)
-            return datamanager.create_constant_node_field(replace(key, " " => "_"),
-                                                          Float64,
-                                                          1,
-                                                          parameter[key])
+            return Data_Manager.create_constant_node_scalar_field(replace(key, " " => "_"),
+                                                                  Float64;
+                                                                  default_value = parameter[key])
         else
-            return datamanager.create_constant_node_field(replace(key, " " => "_"),
-                                                          Float64,
-                                                          1)
+            return Data_Manager.create_constant_node_scalar_field(replace(key, " " => "_"),
+                                                                  Float64)
         end
     elseif haskey(parameter, key)
         return parameter[key]
@@ -119,19 +117,18 @@ function get_value(datamanager::Module,
 end
 
 """
-	get_all_elastic_moduli(datamanager::Module, parameter::Union{Dict{Any,Any},Dict{String,Any}})
+	get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}})
 
 Returns the elastic moduli of the material.
 
 # Arguments
 - `parameter::Union{Dict{Any,Any},Dict{String,Any}}`: The material parameter.
 """
-function get_all_elastic_moduli(datamanager::Module,
-                                parameter::Union{Dict{Any,Any},Dict{String,Any}})
+function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}})
     state_factor_defined = haskey(parameter, "State Factor ID")
 
     if haskey(parameter, "Computed") &&
-       !(state_factor_defined && datamanager.has_key("State Variables"))
+       !(state_factor_defined && Data_Manager.has_key("State Variables"))
         if parameter["Computed"]
             return nothing
         end
@@ -141,10 +138,10 @@ function get_all_elastic_moduli(datamanager::Module,
     if bond_based
         bond_based = !occursin("Unified Bond-based", parameter["Material Model"])
     end
-    bulk_field = datamanager.has_key("Bulk_Modulus")
-    youngs_field = datamanager.has_key("Young's_Modulus")
-    poissons_field = datamanager.has_key("Poisson's_Ratio")
-    shear_field = datamanager.has_key("Shear_Modulus")
+    bulk_field = Data_Manager.has_key("Bulk_Modulus")
+    youngs_field = Data_Manager.has_key("Young's_Modulus")
+    poissons_field = Data_Manager.has_key("Poisson's_Ratio")
+    shear_field = Data_Manager.has_key("Shear_Modulus")
 
     any_field_allocated = bulk_field | youngs_field | poissons_field | shear_field |
                           state_factor_defined
@@ -154,22 +151,20 @@ function get_all_elastic_moduli(datamanager::Module,
     shear = haskey(parameter, "Shear Modulus") | shear_field
     poissons = haskey(parameter, "Poisson's Ratio") | poissons_field
 
-    K = get_value(datamanager, parameter, any_field_allocated, "Bulk Modulus", bulk_field)
-    E = get_value(datamanager,
-                  parameter,
+    K = get_value(parameter, any_field_allocated, "Bulk Modulus", bulk_field)
+    E = get_value(parameter,
                   any_field_allocated,
                   "Young's Modulus",
                   youngs_field)
-    G = get_value(datamanager, parameter, any_field_allocated, "Shear Modulus", shear_field)
+    G = get_value(parameter, any_field_allocated, "Shear Modulus", shear_field)
 
-    nu = get_value(datamanager,
-                   parameter,
+    nu = get_value(parameter,
                    any_field_allocated,
                    "Poisson's Ratio",
                    poissons_field)
 
     if bond_based
-        nu_fixed = datamanager.get_dof() == 2 ? 1 / 3 : 1 / 4
+        nu_fixed = Data_Manager.get_dof() == 2 ? 1 / 3 : 1 / 4
         if nu != 0.0 && nu != nu_fixed
             @warn "Chosen Bond-based model only supports a fixed Poisson's ratio of " *
                   string(nu_fixed)
@@ -243,8 +238,8 @@ function get_all_elastic_moduli(datamanager::Module,
         G = E ./ (2 .+ 2 .* nu)
     end
 
-    if state_factor_defined && datamanager.has_key("State Variables")
-        state_factor = datamanager.get_field("State Variables")[:,
+    if state_factor_defined && Data_Manager.has_key("State Variables")
+        state_factor = Data_Manager.get_field("State Variables")[:,
         parameter["State Factor ID"]]
         K .*= state_factor
         E .*= state_factor
@@ -257,20 +252,19 @@ function get_all_elastic_moduli(datamanager::Module,
     parameter["Poisson's Ratio"] = nu
     parameter["Computed"] = true
     if any_field_allocated
-        datamanager.get_field("Bulk_Modulus") .= K
-        datamanager.get_field("Young's_Modulus") .= E
-        datamanager.get_field("Shear_Modulus") .= G
-        datamanager.get_field("Poisson's_Ratio") .= nu
+        Data_Manager.get_field("Bulk_Modulus") .= K
+        Data_Manager.get_field("Young's_Modulus") .= E
+        Data_Manager.get_field("Shear_Modulus") .= G
+        Data_Manager.get_field("Poisson's_Ratio") .= nu
     end
 end
 
 """
-	get_Hooke_matrix(datamanager::Module, parameter::Dict, symmetry::String, dof::Int64, ID::Int64=1)
+	get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int64=1)
 
 Returns the Hooke matrix of the material.
 
 # Arguments
-- `datamanager::Module`: The data manager.
 - `parameter::Union{Dict{Any,Any},Dict{String,Any}}`: The material parameter.
 - `symmetry::String`: The symmetry of the material.
 - `dof::Int64`: The degree of freedom.
@@ -278,8 +272,7 @@ Returns the Hooke matrix of the material.
 # Returns
 - `matrix::Matrix{Float64}`: The Hooke matrix.
 """
-function get_Hooke_matrix(datamanager::Module,
-                          parameter::Dict,
+function get_Hooke_matrix(parameter::Dict,
                           symmetry::String,
                           dof::Int64,
                           ID::Int64 = 1)
@@ -290,8 +283,7 @@ function get_Hooke_matrix(datamanager::Module,
         aniso_matrix = get_MMatrix(36)
         for iID in 1:6
             for jID in iID:6
-                value = get_dependent_value(datamanager,
-                                            "C" * string(iID) * string(jID),
+                value = get_dependent_value("C" * string(iID) * string(jID),
                                             parameter)
                 aniso_matrix[iID, jID] = value
                 aniso_matrix[jID, iID] = value
@@ -301,15 +293,15 @@ function get_Hooke_matrix(datamanager::Module,
     elseif occursin("orthotropic", symmetry)
         aniso_matrix = get_MMatrix(36)
 
-        E_x = get_dependent_value(datamanager, "Young's Modulus X", parameter, ID)
-        E_y = get_dependent_value(datamanager, "Young's Modulus Y", parameter, ID)
-        E_z = get_dependent_value(datamanager, "Young's Modulus Z", parameter, ID)
-        nu_xy = get_dependent_value(datamanager, "Poisson's Ratio XY", parameter, ID)
-        nu_yz = get_dependent_value(datamanager, "Poisson's Ratio YZ", parameter, ID)
-        nu_xz = get_dependent_value(datamanager, "Poisson's Ratio XZ", parameter, ID)
-        g_xy = get_dependent_value(datamanager, "Shear Modulus XY", parameter, ID)
-        g_yz = get_dependent_value(datamanager, "Shear Modulus YZ", parameter, ID)
-        g_xz = get_dependent_value(datamanager, "Shear Modulus XZ", parameter, ID)
+        E_x = get_dependent_value("Young's Modulus X", parameter, ID)
+        E_y = get_dependent_value("Young's Modulus Y", parameter, ID)
+        E_z = get_dependent_value("Young's Modulus Z", parameter, ID)
+        nu_xy = get_dependent_value("Poisson's Ratio XY", parameter, ID)
+        nu_yz = get_dependent_value("Poisson's Ratio YZ", parameter, ID)
+        nu_xz = get_dependent_value("Poisson's Ratio XZ", parameter, ID)
+        g_xy = get_dependent_value("Shear Modulus XY", parameter, ID)
+        g_yz = get_dependent_value("Shear Modulus YZ", parameter, ID)
+        g_xz = get_dependent_value("Shear Modulus XZ", parameter, ID)
 
         nu_yx = nu_xy * E_y / E_x
         nu_zy = nu_yz * E_z / E_y
@@ -425,17 +417,17 @@ function get_2D_Hooke_matrix(aniso_matrix::MMatrix{T}, symmetry::String,
 end
 
 """
-	distribute_forces!(nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}}, nlist_filtered_ids::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, displacements::Matrix{Float64}, bond_norm::Vector{Matrix{Float64}}, force_densities::Matrix{Float64})
+	distribute_forces!(nodes::AbstractVector{Int64}, nlist::BondScalarState{Int64}, nlist_filtered_ids::BondScalarState{Int64}, bond_force::Vector{Matrix{Float64}}, volume::NodeScalarField{Float64}, bond_damage::BondScalarState{Float64}, displacements::Matrix{Float64}, bond_norm::Vector{Matrix{Float64}}, force_densities::Matrix{Float64})
 
 Distribute the forces on the nodes
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes.
-- `nlist::Vector{Vector{Int64}}`: The neighbor list.
-- `nlist_filtered_ids::Vector{Vector{Int64}},`:  The filtered neighbor list.
+- `nlist::BondScalarState{Int64}`: The neighbor list.
+- `nlist_filtered_ids::BondScalarState{Int64},`:  The filtered neighbor list.
 - `bond_force::Vector{Matrix{Float64}}`: The bond forces.
-- `volume::Vector{Float64}`: The volumes.
-- `bond_damage::Vector{Vector{Float64}}`: The bond damage.
+- `volume::NodeScalarField{Float64}`: The volumes.
+- `bond_damage::BondScalarState{Float64}`: The bond damage.
 - `displacements::Matrix{Float64}`: The displacements.
 - `bond_norm::Vector{Matrix{Float64}}`: The pre defined bond normal.
 - `force_densities::Matrix{Float64}`: The force densities.
@@ -444,13 +436,13 @@ Distribute the forces on the nodes
 """
 function distribute_forces!(force_densities::Matrix{Float64},
                             nodes::AbstractVector{Int64},
-                            nlist::Vector{Vector{Int64}},
-                            nlist_filtered_ids::Vector{Vector{Int64}},
-                            bond_force::Vector{Vector{Vector{Float64}}},
-                            volume::Vector{Float64},
-                            bond_damage::Vector{Vector{Float64}},
+                            nlist::BondScalarState{Int64},
+                            nlist_filtered_ids::BondScalarState{Int64},
+                            bond_force::BondVectorState{Float64},
+                            volume::NodeScalarField{Float64},
+                            bond_damage::BondScalarState{Float64},
                             displacements::Matrix{Float64},
-                            bond_norm::Vector{Vector{Vector{Float64}}})
+                            bond_norm::BondVectorState{Float64})
     @inbounds @fastmath for iID in nodes
         bond_mod = copy(bond_norm[iID])
         if length(nlist_filtered_ids[iID]) > 0
@@ -483,26 +475,26 @@ function distribute_forces!(force_densities::Matrix{Float64},
 end
 
 """
-	distribute_forces!(nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, force_densities::Matrix{Float64})
+	distribute_forces!(nodes::AbstractVector{Int64}, nlist::BondScalarState{Int64}, bond_force::Vector{Matrix{Float64}}, volume::NodeScalarField{Float64}, bond_damage::BondScalarState{Float64}, force_densities::Matrix{Float64})
 
 Distribute the forces on the nodes
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes.
-- `nlist::Vector{Vector{Int64}}`: The neighbor list.
+- `nlist::BondScalarState{Int64}`: The neighbor list.
 - `bond_force::Vector{Matrix{Float64}}`: The bond forces.
-- `volume::Vector{Float64}`: The volumes.
-- `bond_damage::Vector{Vector{Float64}}`: The bond damage.
+- `volume::NodeScalarField{Float64}`: The volumes.
+- `bond_damage::BondScalarState{Float64}`: The bond damage.
 - `force_densities::Matrix{Float64}`: The force densities.
 # Returns
 - `force_densities::Matrix{Float64}`: The force densities.
 """
 function distribute_forces!(force_densities::Matrix{Float64},
                             nodes::AbstractVector{Int64},
-                            nlist::Vector{Vector{Int64}},
-                            bond_force::Vector{Vector{Vector{Float64}}},
-                            volume::Vector{Float64},
-                            bond_damage::Vector{Vector{Float64}})::Nothing
+                            nlist::BondScalarState{Int64},
+                            bond_force::BondVectorState{Float64},
+                            volume::NodeScalarField{Float64},
+                            bond_damage::BondScalarState{Float64})::Nothing
     @inbounds @fastmath for iID in nodes
         # Cache arrays to help type inference
         @views neighbors = nlist[iID]
@@ -708,7 +700,7 @@ function compute_Piola_Kirchhoff_stress!(pk_stress::AbstractMatrix{Float64},
 end
 
 function apply_pointwise_E(nodes::AbstractVector{Int64}, E::Union{Int64,Float64},
-                           bond_force::Vector{Vector{Vector{Float64}}})
+                           bond_force::BondVectorState{Float64})
     @inbounds @fastmath for i in nodes
         @views @inbounds @fastmath for bf in bond_force[i]
             bf .*= E
@@ -718,7 +710,7 @@ end
 
 function apply_pointwise_E(nodes::AbstractVector{Int64},
                            E::Union{SubArray,Vector{Float64},Vector{Int64}},
-                           bond_force::Vector{Vector{Vector{Float64}}})
+                           bond_force::BondVectorState{Float64})
     @inbounds @fastmath for i in nodes
         @views @inbounds @fastmath for bf in bond_force[i]
             bf .*= E[i]
@@ -727,7 +719,7 @@ function apply_pointwise_E(nodes::AbstractVector{Int64},
 end
 
 function apply_pointwise_E(nodes::AbstractVector{Int64},
-                           bond_force::Vector{Vector{Vector{Float64}}}, dependent_field)
+                           bond_force::BondVectorState{Float64}, dependent_field)
     warning_flag = true
     @inbounds @fastmath for i in nodes
         E_int = interpol_data(dependent_field[i],

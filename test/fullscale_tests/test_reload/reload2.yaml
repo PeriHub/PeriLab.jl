@@ -47,8 +47,8 @@ PeriLab:
       Type: Dirichlet
   Solver:
     Material Models: False
-    Initial Time: 0.0
-    Final Time: 5.0e-5
+    Initial Time: 5.0e-5
+    Final Time: 1.0e-4
     Verlet:
       Fixed dt: 5.0e-6
       Safety Factor: 1.0

@@ -4,13 +4,10 @@
 
 using Test
 
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+#using PeriLab
 
 @testset "init_influence_function" begin
     test_data_manager = PeriLab.Data_Manager
-    @test PeriLab.Solver_Manager.Influence_Function.init_influence_function(Vector{Int64}(1:2),
-                                                                            test_data_manager,
-                                                                            Dict()) ==
-          test_data_manager
+    PeriLab.Solver_Manager.Influence_Function.init_influence_function(Vector{Int64}(1:2),
+                                                                      Dict())
 end

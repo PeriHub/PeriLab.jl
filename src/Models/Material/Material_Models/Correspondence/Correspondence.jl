@@ -7,6 +7,9 @@ module Correspondence
 #TODO: include here and not in Solver_manager
 # include("../Zero_Energy_Control/global_control.jl")
 
+using TimerOutputs: @timeit
+
+using .....Data_Manager
 using ....Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "correspondence_name")
 for mod in module_list
@@ -16,7 +19,6 @@ end
 using LinearAlgebra
 using StaticArrays
 using LoopVectorization
-using TimerOutputs
 using Rotations
 include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
@@ -30,21 +32,16 @@ export material_name
 export compute_model
 export fields_for_local_synchronization
 """
-  init_model(datamanager::Module, nodes::AbstractVector{Int64}, block::Int64, material_parameter::Dict{String,Any})
+  init_model( nodes::AbstractVector{Int64}, block::Int64, material_parameter::Dict{String,Any})
 
 Initializes the correspondence material model.
 
 # Arguments
-  - `datamanager::Data_Manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `block::Int64`: Block id of the current block.
   - `material_parameter::Dict{String,Any}`: Dictionary with material parameter.
-
-# Returns
-  - `datamanager::Data_Manager`: Datamanager.
 """
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     block::Int64,
                     material_parameter::Dict{String,Any})
     # global dof
@@ -54,18 +51,17 @@ function init_model(datamanager::Module,
         @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
         return nothing
     end
-    dof = datamanager.get_dof()
-    datamanager.create_node_field("Strain", Float64, dof, VectorOrMatrix = "Matrix")
-    datamanager.create_constant_node_field("Strain Increment", Float64, dof,
-                                           VectorOrMatrix = "Matrix")
-    datamanager.create_node_field("Cauchy Stress", Float64, dof, VectorOrMatrix = "Matrix")
-    datamanager.create_node_field("von Mises Stress", Float64, 1)
-    rotation::Bool = datamanager.get_rotation()
+    dof = Data_Manager.get_dof()
+    Data_Manager.create_node_tensor_field("Strain", Float64, dof)
+    Data_Manager.create_constant_node_tensor_field("Strain Increment", Float64, dof)
+    Data_Manager.create_node_tensor_field("Cauchy Stress", Float64, dof)
+    Data_Manager.create_node_scalar_field("von Mises Stress", Float64)
+    rotation::Bool = Data_Manager.get_rotation()
     material_models = split(material_parameter["Material Model"], "+")
     material_models = map(r -> strip(r), material_models)
     #occursin("Correspondence", material_name)
     for material_model in material_models
-        datamanager.set_analysis_model("Correspondence Model", block, material_model)
+        Data_Manager.set_analysis_model("Correspondence Model", block, material_model)
         mod = create_module_specifics(material_model,
                                       module_list,
                                       @__MODULE__,
@@ -74,18 +70,16 @@ function init_model(datamanager::Module,
             @error "No correspondence material of name " * material_model * " exists."
             return nothing
         end
-        datamanager.set_model_module(material_model, mod)
-        datamanager = mod.init_model(datamanager, nodes,
-                                     material_parameter)
+        Data_Manager.set_model_module(material_model, mod)
+        mod.init_model(nodes,
+                       material_parameter)
     end
     if haskey(material_parameter, "Bond Associated") &&
        material_parameter["Bond Associated"]
-        return Bond_Associated_Correspondence.init_model(datamanager,
-                                                         nodes,
+        return Bond_Associated_Correspondence.init_model(nodes,
                                                          material_parameter)
     end
     material_parameter["Bond Associated"] = false
-    return datamanager
 end
 
 """
@@ -109,7 +103,7 @@ function material_name()
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+    fields_for_local_synchronization(model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -118,102 +112,86 @@ Returns a user developer defined local synchronization. This happens before each
 # Arguments
 
 """
-function fields_for_local_synchronization(datamanager::Module,
-                                          model::String,
+function fields_for_local_synchronization(model::String,
                                           block::Int64,
                                           model_param::Dict)
-    for material_model in datamanager.get_analysis_model("Correspondence Model", block)
-        mod = datamanager.get_model_module(material_model)
+    for material_model in Data_Manager.get_analysis_model("Correspondence Model", block)
+        mod = Data_Manager.get_model_module(material_model)
 
-        datamanager = mod.fields_for_local_synchronization(datamanager,
-                                                           model)
+        mod.fields_for_local_synchronization(model)
         if model_param["Bond Associated"]
-            Bond_Associated_Correspondence.fields_for_local_synchronization(datamanager,
-                                                                            model)
+            Bond_Associated_Correspondence.fields_for_local_synchronization(model)
         end
     end
-    return datamanager
 end
 
 """
-    compute_model(datamanager, nodes, material_parameter, time, dt, to::TimerOutput)
+    compute_model(nodes, material_parameter, time, dt)
 
-Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict{String,Any}`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 Example:
 ```julia
 ```
 """
-function compute_model(datamanager::Module,
-                       nodes::AbstractVector{Int64},
+function compute_model(nodes::AbstractVector{Int64},
                        material_parameter::Dict{String,Any},
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
+                       dt::Float64)
     if material_parameter["Bond Associated"]
-        return Bond_Associated_Correspondence.compute_model(datamanager,
-                                                            nodes,
+        return Bond_Associated_Correspondence.compute_model(nodes,
                                                             material_parameter,
                                                             block,
                                                             time,
-                                                            dt,
-                                                            to)
+                                                            dt)
     end
-    return compute_correspondence_model(datamanager,
-                                        nodes,
+    return compute_correspondence_model(nodes,
                                         material_parameter,
                                         block,
                                         time,
-                                        dt,
-                                        to)
+                                        dt)
 end
 
-function compute_correspondence_model(datamanager::Module,
-                                      nodes::AbstractVector{Int64},
+function compute_correspondence_model(nodes::AbstractVector{Int64},
                                       material_parameter::Dict{String,Any},
                                       block::Int64,
                                       time::Float64,
-                                      dt::Float64,
-                                      to::TimerOutput)
-    rotation::Bool = datamanager.get_rotation()
-    dof = datamanager.get_dof()
-    deformation_gradient = datamanager.get_field("Deformation Gradient")
-    bond_force = datamanager.get_field("Bond Forces")
-    bond_damage = datamanager.get_bond_damage("NP1")
-    undeformed_bond = datamanager.get_field("Bond Geometry")
-    inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
+                                      dt::Float64)
+    rotation::Bool = Data_Manager.get_rotation()
+    dof = Data_Manager.get_dof()
+    deformation_gradient::NodeTensorField{Float64} = Data_Manager.get_field("Deformation Gradient")
+    bond_force::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
+    bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
+    undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
+    inverse_shape_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Inverse Shape Tensor")
 
-    strain_N = datamanager.get_field("Strain", "N")
-    strain_NP1 = datamanager.get_field("Strain", "NP1")
-    stress_N = datamanager.get_field("Cauchy Stress", "N")
-    stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
-    strain_increment = datamanager.get_field("Strain Increment")
+    strain_N::NodeTensorField{Float64} = Data_Manager.get_field("Strain", "N")
+    strain_NP1::NodeTensorField{Float64} = Data_Manager.get_field("Strain", "NP1")
+    stress_N::NodeTensorField{Float64} = Data_Manager.get_field("Cauchy Stress", "N")
+    stress_NP1::NodeTensorField{Float64} = Data_Manager.get_field("Cauchy Stress", "NP1")
+    strain_increment::NodeTensorField{Float64} = Data_Manager.get_field("Strain Increment")
     compute_strain(nodes, deformation_gradient, strain_NP1)
     matrix_diff!(strain_increment, nodes, strain_NP1, strain_N)
 
     if rotation
-        rotation_tensor = datamanager.get_field("Rotation Tensor")
+        rotation_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Rotation Tensor")
         stress_N = rotate(nodes, stress_N, rotation_tensor, false)
         strain_increment = rotate(nodes, strain_increment, rotation_tensor, false)
     end
 
     # material_models = split(material_parameter["Material Model"], "+")
     # material_models = map(r -> strip(r), material_models)
-    @timeit to "Calculated material" begin
-        for material_model in datamanager.get_analysis_model("Correspondence Model", block)
-            mod = datamanager.get_model_module(material_model)
+    @timeit "Calculated material" begin
+        for material_model in Data_Manager.get_analysis_model("Correspondence Model", block)
+            mod = Data_Manager.get_model_module(material_model)
 
-            mod.compute_stresses(datamanager,
-                                 nodes,
+            mod.compute_stresses(nodes,
                                  dof,
                                  material_parameter,
                                  time,
@@ -227,37 +205,32 @@ function compute_correspondence_model(datamanager::Module,
     if rotation
         stress_NP1 = rotate(nodes, stress_NP1, rotation_tensor, true)
     end
-    @timeit to "Calculated bond force" calculate_bond_force!(nodes,
-                                                             dof,
-                                                             deformation_gradient,
-                                                             undeformed_bond,
-                                                             bond_damage,
-                                                             inverse_shape_tensor,
-                                                             stress_NP1,
-                                                             bond_force)
+    @timeit "Calculated bond force" calculate_bond_force!(nodes,
+                                                          dof,
+                                                          deformation_gradient,
+                                                          undeformed_bond,
+                                                          bond_damage,
+                                                          inverse_shape_tensor,
+                                                          stress_NP1,
+                                                          bond_force)
     # TODO general interface, because it might be a flexbile Set_modules interface in future
-    @timeit to "zero energy" datamanager=zero_energy_mode_compensation(datamanager, nodes,
-                                                                       material_parameter,
-                                                                       time, dt)
-    return datamanager
+    @timeit "zero energy" zero_energy_mode_compensation(nodes,
+                                                        material_parameter,
+                                                        time, dt)
 end
 
 """
-    zero_energy_mode_compensation(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict{String,Any}, time::Float64, dt::Float64)
+    zero_energy_mode_compensation(nodes::AbstractVector{Int64}, material_parameter::Dict{String,Any}, time::Float64, dt::Float64)
 
 Global - J. Wan et al., "Improved method for zero-energy mode suppression in peridynamic correspondence model in Acta Mechanica Sinica https://doi.org/10.1007/s10409-019-00873-y
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict{String, Any}`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 """
-function zero_energy_mode_compensation(datamanager::Module,
-                                       nodes::AbstractVector{Int64},
+function zero_energy_mode_compensation(nodes::AbstractVector{Int64},
                                        material_parameter::Dict{String,Any},
                                        time::Float64,
                                        dt::Float64)
@@ -265,43 +238,41 @@ function zero_energy_mode_compensation(datamanager::Module,
         if time == 0
             @warn "No zero energy control activated for corresponcence."
         end
-        return datamanager::Module
+        return
     end
     if material_parameter["Zero Energy Control"]::String ==
        Global_Zero_Energy_Control.control_name()::String
-        datamanager = Global_Zero_Energy_Control.compute_control(datamanager,
-                                                                 nodes,
-                                                                 material_parameter,
-                                                                 time,
-                                                                 dt)::Module
+        Global_Zero_Energy_Control.compute_control(nodes,
+                                                   material_parameter,
+                                                   time,
+                                                   dt)
     end
-    return datamanager
 end
 
 """
-    calculate_bond_force(nodes::AbstractVector{Int64}, deformation_gradient::Array{Float64, 3}, undeformed_bond::Vector{Matrix{Float64}}, bond_damage::Vector{Vector{Float64}}, inverse_shape_tensor::Array{Float64, 3}, stress_NP1::Array{Float64, 3}, bond_force::Vector{Matrix{Float64}})
+    calculate_bond_force(nodes::AbstractVector{Int64}, deformation_gradient::Array{Float64, 3}, undeformed_bond::Vector{Matrix{Float64}}, bond_damage::BondScalarState{Float64}, inverse_shape_tensor::Array{Float64, 3}, stress_NP1::Array{Float64, 3}, bond_force::Vector{Matrix{Float64}})
 
 Calculate bond forces for specified nodes based on deformation gradients.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `deformation_gradient::SubArray`: Deformation gradient.
-- `undeformed_bond::Vector{Vector{Vector{Float64}}}`: Undeformed bond geometry.
-- `bond_damage::Vector{Vector{Float64}}`: Bond damage.
+- `undeformed_bond::BondVectorState{Float64}`: Undeformed bond geometry.
+- `bond_damage::BondScalarState{Float64}`: Bond damage.
 - `inverse_shape_tensor::Array{Float64, 3}`: Inverse shape tensor.
 - `stress_NP1::Array{Float64, 3}`: Stress at time step n+1.
-- `bond_force::Vector{Vector{Vector{Float64}}}`: Bond force.
+- `bond_force::BondVectorState{Float64}`: Bond force.
 # Returns
-- `bond_force::Vector{Vector{Vector{Float64}}}`: Bond force.
+- `bond_force::BondVectorState{Float64}`: Bond force.
 """
 function calculate_bond_force!(nodes::AbstractVector{Int64},
                                dof::Int64,
-                               deformation_gradient::Array{Float64,3},
-                               undeformed_bond::Vector{Vector{Vector{Float64}}},
-                               bond_damage::Vector{Vector{Float64}},
-                               inverse_shape_tensor::Array{Float64,3},
-                               stress_NP1::Array{Float64,3},
-                               bond_force::Vector{Vector{Vector{Float64}}})
+                               deformation_gradient::NodeTensorField{Float64,3},
+                               undeformed_bond::BondVectorState{Float64},
+                               bond_damage::BondScalarState{Float64},
+                               inverse_shape_tensor::NodeTensorField{Float64,3},
+                               stress_NP1::NodeTensorField{Float64,3},
+                               bond_force::BondVectorState{Float64})
     if dof == 2
         return calculate_bond_force_2d!(bond_force,
                                         nodes,
@@ -322,13 +293,13 @@ function calculate_bond_force!(nodes::AbstractVector{Int64},
     #return bond_force
 end
 
-function calculate_bond_force_2d!(bond_force::Vector{Vector{Vector{Float64}}},
+function calculate_bond_force_2d!(bond_force::BondVectorState{Float64},
                                   nodes::AbstractVector{Int64},
-                                  deformation_gradient::Array{Float64,3},
-                                  undeformed_bond::Vector{Vector{Vector{Float64}}},
-                                  bond_damage::Vector{Vector{Float64}},
-                                  inverse_shape_tensor::Array{Float64,3},
-                                  stress_NP1::Array{Float64,3})
+                                  deformation_gradient::NodeTensorField{Float64,3},
+                                  undeformed_bond::BondVectorState{Float64},
+                                  bond_damage::BondScalarState{Float64},
+                                  inverse_shape_tensor::NodeTensorField{Float64,3},
+                                  stress_NP1::NodeTensorField{Float64,3})
     pk_stress = MMatrix{2,2}(zeros(2, 2))
     temp = MMatrix{2,2}(zeros(Float64, 2, 2))
     @inbounds @fastmath for iID in nodes
@@ -357,13 +328,13 @@ function calculate_bond_force_2d!(bond_force::Vector{Vector{Vector{Float64}}},
     end
 end
 
-function calculate_bond_force_3d!(bond_force::Vector{Vector{Vector{Float64}}},
+function calculate_bond_force_3d!(bond_force::BondVectorState{Float64},
                                   nodes::AbstractVector{Int64},
-                                  deformation_gradient::Array{Float64,3},
-                                  undeformed_bond::Vector{Vector{Vector{Float64}}},
-                                  bond_damage::Vector{Vector{Float64}},
-                                  inverse_shape_tensor::Array{Float64,3},
-                                  stress_NP1::Array{Float64,3})
+                                  deformation_gradient::NodeTensorField{Float64,3},
+                                  undeformed_bond::BondVectorState{Float64},
+                                  bond_damage::BondScalarState{Float64},
+                                  inverse_shape_tensor::NodeTensorField{Float64,3},
+                                  stress_NP1::NodeTensorField{Float64,3})
     pk_stress = MMatrix{3,3}(zeros(3, 3))
     temp = MMatrix{3,3}(zeros(Float64, 3, 3))
     @inbounds @fastmath for iID in nodes

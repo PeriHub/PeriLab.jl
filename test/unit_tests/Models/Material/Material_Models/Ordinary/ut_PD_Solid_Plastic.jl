@@ -7,7 +7,8 @@ using Test
 #using .PeriLab
 
 @testset "get_name&fe_support" begin
-    @test PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.material_name() == "PD Solid Plastic"
+    @test PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.material_name() ==
+          "PD Solid Plastic"
     @test !(PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.fe_support())
 end
 
@@ -18,29 +19,27 @@ end
     test_data_manager.set_num_controller(nodes)
     dof = 3
     test_data_manager.set_dof(dof)
-    horizon = test_data_manager.create_constant_node_field("Horizon", Float64, 1)
+    horizon = test_data_manager.create_constant_node_scalar_field("Horizon", Float64)
 
     horizon[1] = 3
     horizon[2] = 2
 
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
 
     nn .= 1
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(test_data_manager, Vector{Int64}(1:nodes),
-                                                Dict()))
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(Vector{Int64}(1:nodes),
+                                                                                              Dict()))
 
-    test_data_manager = PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(test_data_manager,
-                                                    Vector{Int64}(1:nodes),
-                                                    Dict("Yield Stress" => 5.3))
+    PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(Vector{Int64}(1:nodes),
+                                                                              Dict("Yield Stress" => 5.3))
     yield = test_data_manager.get_field("Yield Value")
 
     @test isapprox(yield[1], 25 * 5.3 * 5.3 / (8 * pi * 3^5))
     @test isapprox(yield[2], 25 * 5.3 * 5.3 / (8 * pi * 2^5))
 
-    test_data_manager = PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(test_data_manager,
-                                                    Vector{Int64}(1:nodes),
-                                                    Dict("Yield Stress" => 2.2,
-                                                         "Symmetry" => "plane stress"))
+    PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(Vector{Int64}(1:nodes),
+                                                                              Dict("Yield Stress" => 2.2,
+                                                                                   "Symmetry" => "plane stress"))
     yield = test_data_manager.get_field("Yield Value")
 
     @test isapprox(yield[1], 225 * 2.2 * 2.2 / (24 * pi * 3^4))
@@ -58,15 +57,16 @@ end
     deviatoric_plastic_extension_state = [[0.0, 0.0], [0.0, 0.0]]
     bond_force_deviatoric = [[0.0, 0.0], [0.0, 0.0]]
 
-    (bond_force_deviatoric, deviatoric_plastic_extension_state) = PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.plastic(nodes,
-                                                                                           td_norm,
-                                                                                           yield_value,
-                                                                                           lambdaNP1,
-                                                                                           alpha,
-                                                                                           omega,
-                                                                                           bond_damage,
-                                                                                           deviatoric_plastic_extension_state,
-                                                                                           bond_force_deviatoric)
+    (bond_force_deviatoric,
+     deviatoric_plastic_extension_state) = PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.plastic(nodes,
+                                                                                                                  td_norm,
+                                                                                                                  yield_value,
+                                                                                                                  lambdaNP1,
+                                                                                                                  alpha,
+                                                                                                                  omega,
+                                                                                                                  bond_damage,
+                                                                                                                  deviatoric_plastic_extension_state,
+                                                                                                                  bond_force_deviatoric)
     @test bond_force_deviatoric == [[0.0, 0.0], [0.0, 0.0]]
     @test deviatoric_plastic_extension_state == [[0.0, 0.0], [0.0, 0.0]]
 end

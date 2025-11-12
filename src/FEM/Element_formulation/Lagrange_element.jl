@@ -13,25 +13,19 @@ function element_name()
 end
 
 """
-    init_element(datamanager::Module, elements::AbstractVector{Int64}, element_params::Dict, p::Vector{Int64})
+    init_element(elements::AbstractVector{Int64}, element_params::Dict, p::Vector{Int64})
 
 Init the Lagrange element of a given polynomial degree. This degree can be different for each direction
 
 # Arguments
-- `datamanager::Module`: Datamanager.
 - `elements::AbstractVector{Int64}`: listed element numbers
 - `element_params::Dict`: Element specific data.
 - `p::Vector{Int64}`: A vector containing the polynomial degrees for each degree of freedom.
-
-# Returns
-- `Datamanager::Module`: Datamanager containing additional fields needed for the Lagrange element.
 """
 
-function init_element(datamanager::Module,
-                      elements::AbstractVector{Int64},
+function init_element(elements::AbstractVector{Int64},
                       element_params::Dict,
                       p::Vector{Int64})
-    return datamanager
 end
 """
     define_lagrangian_grid_space(dof::Int64, p::Vector{Int64})

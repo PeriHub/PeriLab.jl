@@ -4,7 +4,8 @@
 
 module Penalty_Model
 
-import .....Helpers: get_shared_horizon, dot, norm
+using .....Data_Manager
+using .....Helpers: get_shared_horizon, dot, norm
 
 export contact_model_name
 export init_contact_model
@@ -14,7 +15,7 @@ function contact_model_name()
     return "Penalty Contact"
 end
 
-function init_contact_model(datamanager, params)
+function init_contact_model(params)
     if !haskey(params, "Contact Stiffness")
         @warn "No ''Contact Stiffness'' has been defined. It is set to 1e8."
         params["Contact Stiffness"] = 1e8
@@ -32,25 +33,24 @@ function init_contact_model(datamanager, params)
     if !haskey(params, "Symmetry")
         params["Symmetry"] = "3D"
     end
-    return datamanager
 end
 """
-    compute_contact_model(datamanager, cg, params, compute_master_force_density,
+    compute_contact_model(cg, params, compute_master_force_density,
                                compute_slave_force_density)
     Computes a Penalty model taken from [Peridigm](https://github.com/peridigm/peridigm/blob/master/src/contact/Peridigm_ShortRangeForceContactModel.cpp)
 
 """
-function compute_contact_model(datamanager, cg, params, compute_master_force_density,
+function compute_contact_model(cg, params, compute_master_force_density,
                                compute_slave_force_density)
-    contact_dict = datamanager.get_contact_dict(cg)
+    contact_dict = Data_Manager.get_contact_dict(cg)
     contact_stiffness = params["Contact Stiffness"]
     contact_radius = params["Contact Radius"]
-    normal_force = zeros(datamanager.get_dof())
-    #datamanager.get_symmetry() # TODO store in materials the information
+    normal_force = zeros(Data_Manager.get_dof())
+    #Data_Manager.get_symmetry() # TODO store in materials the information
     for (master_id, contact) in pairs(contact_dict)
         for id in 1:contact["nSlaves"]
             slave_id = contact["Slaves"][id]
-            horizon = get_shared_horizon(datamanager, slave_id) # needed to get the correct contact horizon
+            horizon = get_shared_horizon(slave_id) # needed to get the correct contact horizon
             # TODO symmetry needed
             if params["Symmetry"] == "plane stress"
                 stiffness = 9 / (pi * horizon^4) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
@@ -66,39 +66,38 @@ function compute_contact_model(datamanager, cg, params, compute_master_force_den
             temp = contact_stiffness * stiffness * (contact_radius - distance)
             normal_force = temp .* normal
             friction_id,
-            friction_slave_id = compute_friction(datamanager, id, slave_id,
+            friction_slave_id = compute_friction(id, slave_id,
                                                  params["Friction Coefficient"],
                                                  normal_force, normal)
 
-            compute_master_force_density(datamanager, master_id, slave_id,
+            compute_master_force_density(master_id, slave_id,
                                          normal_force .+ friction_id)
-            compute_slave_force_density(datamanager, slave_id, master_id,
+            compute_slave_force_density(slave_id, master_id,
                                         normal_force .+ friction_slave_id)
         end
     end
-    return datamanager
 end
 """
 
 code was taken from Peridigm
 
 """
-function compute_friction(datamanager, id, slave_id, friction_coefficient, normal_force,
+function compute_friction(id, slave_id, friction_coefficient, normal_force,
                           normal)
-    dof = datamanager.get_dof()
+    dof = Data_Manager.get_dof()
     friction_id = zeros(dof)
     friction_slave_id = zeros(dof)
     if friction_coefficient == 0
         return friction_id, friction_slave_id
     end
 
-    mapping = datamanager.get_exchange_id_to_local_id()
+    mapping = Data_Manager.get_exchange_id_to_local_id()
 
     if isnothing(get(mapping, id, nothing)) || isnothing(get(mapping, slave_id, nothing))
         return friction_id, friction_slave_id
     end
 
-    velocity = datamanager.get_field("Velocity", "NP1")
+    velocity = Data_Manager.get_field("Velocity", "NP1")
 
     velo_id = zeros(dof)
     velo_slave_id = zeros(dof)

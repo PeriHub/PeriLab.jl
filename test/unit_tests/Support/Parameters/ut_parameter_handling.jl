@@ -213,29 +213,29 @@ end
     @test fieldnames == []
 end
 
-@testset "get_output_frequency" begin
+@testset "get_output_frequencies" begin
     nsteps = 40
     params = Dict()
     params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 2),
                                     "Output2" => Dict("Number of Output Steps" => 1,
                                                       "Output Frequency" => 1)))
-    freq = PeriLab.Parameter_Handling.get_output_frequency(params, nsteps)
+    freq = PeriLab.Parameter_Handling.get_output_frequencies(params, nsteps)
     @test freq[1] == 2
     @test freq[2] == 40
 
     params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 20),
                                     "Output2" => Dict("Number of Output Steps" => 10)))
-    freq = PeriLab.Parameter_Handling.get_output_frequency(params, nsteps)
+    freq = PeriLab.Parameter_Handling.get_output_frequencies(params, nsteps)
     @test freq[1] == 20
     @test freq[2] == 4
 
     nsteps = 1000
-    freq = PeriLab.Parameter_Handling.get_output_frequency(params, nsteps)
+    freq = PeriLab.Parameter_Handling.get_output_frequencies(params, nsteps)
     @test freq[1] == 20
     @test freq[2] == 100
 
     nsteps = 2
-    freq = PeriLab.Parameter_Handling.get_output_frequency(params, nsteps)
+    freq = PeriLab.Parameter_Handling.get_output_frequencies(params, nsteps)
     @test freq[1] == 2
     @test freq[2] == 1
 
@@ -244,7 +244,7 @@ end
                                     "Output2" => Dict("Number of Output Steps" => 10,
                                                       "Output Frequency" => 20)))
     nsteps = 1000
-    freq = PeriLab.Parameter_Handling.get_output_frequency(params, nsteps)
+    freq = PeriLab.Parameter_Handling.get_output_frequencies(params, nsteps)
     @test (freq[1] == 100) || (freq[1] == 20)
     @test (freq[2] == 100) || (freq[2] == 20)
 end
@@ -253,12 +253,12 @@ test_data_manager = PeriLab.Data_Manager
 @testset "ut_get_outputs" begin
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(5)
-    test_data_manager.create_constant_node_field("A", Float64, 1)
-    test_data_manager.create_node_field("B", Bool, 1)
-    test_data_manager.create_constant_node_field("C", Float64, 4)
-    test_data_manager.create_node_field("D", Int64, 7)
-    test_data_manager.create_node_field("F", Float64, 1)
-    test_data_manager.create_constant_node_field("E", Float64, 4)
+    test_data_manager.create_constant_node_scalar_field("A", Float64)
+    test_data_manager.create_node_scalar_field("B", Bool)
+    test_data_manager.create_constant_node_vector_field("C", Float64, 4)
+    test_data_manager.create_node_vector_field("D", Int64, 7)
+    test_data_manager.create_node_scalar_field("F", Float64)
+    test_data_manager.create_constant_node_vector_field("E", Float64, 4)
     testfield_keys = test_data_manager.get_all_field_keys()
 
     params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [],
@@ -521,11 +521,9 @@ end
                                                     "Fixed dt" => 1e-3)))
     @test PeriLab.Parameter_Handling.get_solver_name(params["Solver"]) ==
           "Verlet"
-    @test PeriLab.Parameter_Handling.get_final_time(params["Solver"],
-                                                    test_data_manager) ==
+    @test PeriLab.Parameter_Handling.get_final_time(params["Solver"]) ==
           params["Solver"]["Final Time"]
-    @test PeriLab.Parameter_Handling.get_initial_time(params["Solver"],
-                                                      test_data_manager) ==
+    @test PeriLab.Parameter_Handling.get_initial_time(params["Solver"]) ==
           params["Solver"]["Initial Time"]
     @test PeriLab.Parameter_Handling.get_safety_factor(params["Solver"]) ==
           params["Solver"]["Verlet"]["Safety Factor"]
@@ -543,12 +541,9 @@ end
           6
     @test PeriLab.Parameter_Handling.get_numerical_damping(params["Solver"]) ==
           0.0
-    @test isnothing(PeriLab.Parameter_Handling.get_initial_time(Dict("Solver" => Dict()),
-                                                                test_data_manager))
-    @test isnothing(PeriLab.Parameter_Handling.get_final_time(Dict("Solver" => Dict()),
-                                                              test_data_manager))
-    @test isnothing(PeriLab.Parameter_Handling.get_final_time(Dict("Solver" => Dict()),
-                                                              test_data_manager))
+    @test isnothing(PeriLab.Parameter_Handling.get_initial_time(Dict("Solver" => Dict())))
+    @test isnothing(PeriLab.Parameter_Handling.get_final_time(Dict("Solver" => Dict())))
+    @test isnothing(PeriLab.Parameter_Handling.get_final_time(Dict("Solver" => Dict())))
     @test isnothing(PeriLab.Parameter_Handling.get_solver_name(Dict("Solver" => Dict("Solvername" => Dict()))))
     params = Dict("Solver" => Dict("Initial Time" => 0.0,
                                    "Final Time" => 1.0,
@@ -557,8 +552,7 @@ end
           "Static"
     params = Dict("Solver" => Dict("Initial Time" => 1.0))
     test_data_manager.set_current_time(2.0)
-    @test PeriLab.Parameter_Handling.get_initial_time(params["Solver"],
-                                                      test_data_manager) ==
+    @test PeriLab.Parameter_Handling.get_initial_time(params["Solver"]) ==
           2.0
 end
 

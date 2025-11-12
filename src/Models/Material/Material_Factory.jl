@@ -6,6 +6,8 @@ module Material
 
 include("Material_Models/Ordinary/Ordinary.jl")
 
+using TimerOutputs: @timeit
+using ....Data_Manager
 using ...Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "material_name")
 for mod in module_list
@@ -20,7 +22,6 @@ using ...Material_Basis:
                          init_local_damping_due_to_damage,
                          local_damping_due_to_damage
 using LinearAlgebra: dot
-using TimerOutputs
 using StaticArrays
 
 export init_model
@@ -32,78 +33,66 @@ export fields_for_local_synchronization
 export compute_local_damping
 export init_local_damping
 
-function compute_local_damping(datamanager::Module, nodes, params, dt)
-    return local_damping_due_to_damage(datamanager, nodes, params, dt)
+function compute_local_damping(nodes, params, dt)
+    return local_damping_due_to_damage(nodes, params, dt)
 end
-function init_local_damping(datamanager, nodes, material_parameter, damage_parameter)
-    return init_local_damping_due_to_damage(datamanager,
-                                            nodes,
+function init_local_damping(nodes, material_parameter, damage_parameter)
+    return init_local_damping_due_to_damage(nodes,
                                             material_parameter,
                                             damage_parameter)
 end
 
 """
-    init_fields(datamanager::Module)
+    init_fields()
 
 Initialize material model fields
-
-# Arguments
-- `datamanager::Data_Manager`: Datamanager.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 """
-function init_fields(datamanager::Module)
-    dof = datamanager.get_dof()
-    datamanager.create_node_field("Forces", Float64, dof) #-> only if it is an output
+function init_fields()
+    dof = Data_Manager.get_dof()
+    Data_Manager.create_node_vector_field("Forces", Float64, dof) #-> only if it is an output
     # tbd later in the compute class
-    datamanager.create_constant_node_field("External Forces", Float64, dof)
-    datamanager.create_node_field("Force Densities", Float64, dof)
-    datamanager.create_constant_node_field("External Force Densities", Float64, dof)
-    datamanager.create_constant_node_field("Acceleration", Float64, dof)
-    datamanager.create_node_field("Velocity", Float64, dof)
-    datamanager.create_constant_bond_field("Bond Forces", Float64, dof)
-    datamanager.create_constant_bond_field("Temporary Bond Field", Float64, 1)
+    Data_Manager.create_constant_node_vector_field("External Forces", Float64, dof)
+    Data_Manager.create_node_vector_field("Force Densities", Float64, dof)
+    Data_Manager.create_constant_node_vector_field("External Force Densities", Float64, dof)
+    Data_Manager.create_constant_node_vector_field("Acceleration", Float64, dof)
+    Data_Manager.create_node_vector_field("Velocity", Float64, dof)
+    Data_Manager.create_constant_bond_vector_state("Bond Forces", Float64, dof)
+    Data_Manager.create_constant_bond_scalar_state("Temporary Bond Field", Float64)
     deformed_coorN,
-    deformed_coorNP1 = datamanager.create_node_field("Deformed Coordinates",
-                                                     Float64, dof)
-    deformed_coorN = copy(datamanager.get_field("Coordinates"))
-    deformed_coorNP1 = copy(datamanager.get_field("Coordinates"))
-    datamanager.create_node_field("Displacements", Float64, dof)
-    datamanager.create_bond_field("Deformed Bond Geometry", Float64, dof)
-    datamanager.create_bond_field("Deformed Bond Length", Float64, 1)
-    # datamanager.set_synch("Bond Forces", false, true)
-    datamanager.set_synch("Force Densities", true, false)
-    datamanager.set_synch("Velocity", false, true)
-    datamanager.set_synch("Displacements", false, true)
-    datamanager.set_synch("Acceleration", false, true)
-    datamanager.set_synch("Deformed Coordinates", false, true)
-
-    return datamanager
+    deformed_coorNP1 = Data_Manager.create_node_vector_field("Deformed Coordinates",
+                                                             Float64, dof)
+    deformed_coorN = copy(Data_Manager.get_field("Coordinates"))
+    deformed_coorNP1 = copy(Data_Manager.get_field("Coordinates"))
+    Data_Manager.create_node_vector_field("Displacements", Float64, dof)
+    Data_Manager.create_bond_vector_state("Deformed Bond Geometry", Float64, dof)
+    Data_Manager.create_bond_scalar_state("Deformed Bond Length", Float64)
+    # Data_Manager.set_synch("Bond Forces", false, true)
+    Data_Manager.set_synch("Force Densities", true, false)
+    Data_Manager.set_synch("Velocity", false, true)
+    Data_Manager.set_synch("Displacements", false, true)
+    Data_Manager.set_synch("Acceleration", false, true)
+    Data_Manager.set_synch("Deformed Coordinates", false, true)
 end
 
 """
-    init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}, block::Int64)
+    init_model(nodes::Union{SubArray,Vector{Int64}, block::Int64)
 
 Initializes the material model.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager
 - `nodes::AbstractVector{Int64}`: The nodes.
 - `block::Int64`: Block.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 """
-function init_model(datamanager::Module, nodes::AbstractVector{Int64},
-                    block::Int64)
-    model_param = datamanager.get_properties(block, "Material Model")::Dict{String,Any}
+function init_model(nodes::AbstractVector{Int64}, block::Int64)
+    model_param = Data_Manager.get_properties(block, "Material Model")::Dict{String,Any}
     if !haskey(model_param, "Material Model")
         @error "Block " * string(block) * " has no material model defined."
         return nothing
     end
 
     if occursin("Correspondence", model_param["Material Model"])
-        datamanager.set_model_module("Correspondence", Correspondence)
-        return Correspondence.init_model(datamanager, nodes, block, model_param)
+        Data_Manager.set_model_module("Correspondence", Correspondence)
+        return Correspondence.init_model(nodes, block, model_param)
     end
 
     material_models = split(model_param["Material Model"], "+")
@@ -112,21 +101,21 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
     for material_model in material_models
         mod = create_module_specifics(material_model,
                                       module_list,
-                                          @__MODULE__,
+                                      @__MODULE__,
                                       "material_name")
-        datamanager.set_analysis_model("Material Model", block, material_model)
+        Data_Manager.set_analysis_model("Material Model", block, material_model)
         if isnothing(mod)
             @error "No material of name " * material_model * " exists."
         end
-        datamanager.set_model_module(material_model, mod)
-        datamanager = mod.init_model(datamanager, nodes, model_param)
+        Data_Manager.set_model_module(material_model, mod)
+        mod.init_model(nodes, model_param)
     end
     #TODO in extra function
-    # nlist = datamanager.get_nlist()
-    nlist_filtered_ids = datamanager.get_filtered_nlist()
+    # nlist = Data_Manager.get_nlist()
+    nlist_filtered_ids = Data_Manager.get_filtered_nlist()
     if !isnothing(nlist_filtered_ids)
-        bond_norm = datamanager.get_field("Bond Norm")
-        bond_geometry = datamanager.get_field("Bond Geometry")
+        bond_norm = Data_Manager.get_field("Bond Norm")
+        bond_geometry = Data_Manager.get_field("Bond Geometry")
         for iID in nodes
             if length(nlist_filtered_ids[iID]) != 0
                 for neighborID in nlist_filtered_ids[iID]
@@ -136,82 +125,68 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
             end
         end
     end
-
-    return datamanager
 end
 
 """
-    fields_for_local_synchronization(datamanager, model, block)
+    fields_for_local_synchronization(model, block)
 
 Defines all synchronization fields for local synchronization
 
 # Arguments
-- `datamanager::Module`: datamanager.
 - `model::String`: Model class.
-- `block::Int64`: block ID
-# Returns
-- `datamanager::Module`: Datamanager.
+- `block::Int64`: block id
 """
-function fields_for_local_synchronization(datamanager, model, block)
-    model_param = datamanager.get_properties(block, "Material Model")
+function fields_for_local_synchronization(model, block)
+    model_param = Data_Manager.get_properties(block, "Material Model")
     if occursin("Correspondence", model_param["Material Model"])
-        return Correspondence.fields_for_local_synchronization(datamanager, model, block,
+        return Correspondence.fields_for_local_synchronization(model, block,
                                                                model_param)
     end
 
-    for material_model in datamanager.get_analysis_model("Material Model", block)
-        mod = datamanager.get_model_module(material_model)
-        mod.fields_for_local_synchronization(datamanager, model)
+    for material_model in Data_Manager.get_analysis_model("Material Model", block)
+        mod = Data_Manager.get_model_module(material_model)
+        mod.fields_for_local_synchronization(model)
     end
-    return datamanager
 end
 
 """
-    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict{String,Any}, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
+    compute_model(nodes::AbstractVector{Int64}, model_param::Dict{String,Any}, block::Int64, time::Float64, dt::Float64)
 
 Computes the material models
 
 # Arguments
-- `datamanager::Module`: The datamanager
 - `nodes::AbstractVector{Int64}`: The nodes
 - `model_param::Dict{String,Any}`: The model parameters
 - `block::Int64`: The block
 - `time::Float64`: The current time
 - `dt::Float64`: The time step
-# Returns
-- `datamanager::Module`: The datamanager
 """
-function compute_model(datamanager::Module,
-                       nodes::AbstractVector{Int64},
+function compute_model(nodes::AbstractVector{Int64},
                        model_param::Dict{String,Any},
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
-    @timeit to "all" begin
+                       dt::Float64)
+    @timeit "all" begin
         if occursin("Correspondence", model_param["Material Model"])
-            @timeit to "corresponcence" begin
-                datamanager = Correspondence.compute_model(datamanager, nodes, model_param,
-                                                           block, time,
-                                                           dt,
-                                                           to)
-                return datamanager
+            @timeit "corresponcence" begin
+                Correspondence.compute_model(nodes, model_param,
+                                             block, time,
+                                             dt)
+                return
             end
         end
 
-        for material_model in datamanager.get_analysis_model("Material Model", block)
-            mod = datamanager.get_model_module(material_model)
+        for material_model in Data_Manager.get_analysis_model("Material Model", block)
+            mod = Data_Manager.get_model_module(material_model)
 
-            datamanager = mod.compute_model(datamanager, nodes, model_param, block, time,
-                                            dt,
-                                            to)
+            mod.compute_model(nodes, model_param, block, time,
+                              dt)
         end
-        return datamanager
     end
 end
 
 """
-    determine_isotropic_parameter(datamanager::Module, prop::Dict)
+    determine_isotropic_parameter(prop::Dict)
 
 Determine the isotropic parameter.
 
@@ -220,8 +195,8 @@ Determine the isotropic parameter.
 # Returns
 - `prop::Dict`: The material property.
 """
-function determine_isotropic_parameter(datamanager::Module, prop::Dict)
-    get_all_elastic_moduli(datamanager, prop)
+function determine_isotropic_parameter(prop::Dict)
+    get_all_elastic_moduli(prop)
 end
 
 """
@@ -240,41 +215,37 @@ function check_material_symmetry(dof::Int64, prop::Dict)
 end
 
 """
-    distribute_force_densities(datamanager::Module, nodes::AbstractVector{Int64})
+    distribute_force_densities(nodes::AbstractVector{Int64})
 
 Distribute the force densities.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: The nodes.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 """
-function distribute_force_densities(datamanager::Module,
-                                    nodes::AbstractVector{Int64}, to::TimerOutput)
-    @timeit to "load data" begin
-        nlist = datamanager.get_nlist()
-        nlist_filtered_ids = datamanager.get_filtered_nlist()
-        bond_force = datamanager.get_field("Bond Forces")
-        force_densities = datamanager.get_field("Force Densities", "NP1")
-        volume = datamanager.get_field("Volume")
-        bond_damage = datamanager.get_bond_damage("NP1")
+function distribute_force_densities(nodes::AbstractVector{Int64})
+    @timeit "load data" begin
+        nlist = Data_Manager.get_nlist()
+        nlist_filtered_ids = Data_Manager.get_filtered_nlist()
+        bond_force = Data_Manager.get_field("Bond Forces")
+        force_densities = Data_Manager.get_field("Force Densities", "NP1")
+        volume = Data_Manager.get_field("Volume")
+        bond_damage = Data_Manager.get_bond_damage("NP1")
     end
     if !isnothing(nlist_filtered_ids)
-        bond_norm = datamanager.get_field("Bond Norm")
-        displacements = datamanager.get_field("Displacements", "NP1")
-        @timeit to "local dist" force_densities=distribute_forces!(force_densities,
-                                                                   nodes,
-                                                                   nlist,
-                                                                   nlist_filtered_ids,
-                                                                   bond_force,
-                                                                   volume,
-                                                                   bond_damage,
-                                                                   displacements,
-                                                                   bond_norm)
+        bond_norm = Data_Manager.get_field("Bond Norm")
+        displacements = Data_Manager.get_field("Displacements", "NP1")
+        @timeit "local dist" force_densities=distribute_forces!(force_densities,
+                                                                nodes,
+                                                                nlist,
+                                                                nlist_filtered_ids,
+                                                                bond_force,
+                                                                volume,
+                                                                bond_damage,
+                                                                displacements,
+                                                                bond_norm)
     else
-        @timeit to "local dist" distribute_forces!(force_densities, nodes, nlist,
-                                                   bond_force, volume, bond_damage)
+        @timeit "local dist" distribute_forces!(force_densities, nodes, nlist,
+                                                bond_force, volume, bond_damage)
     end
 end
 end

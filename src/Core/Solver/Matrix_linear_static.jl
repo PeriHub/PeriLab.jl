@@ -19,12 +19,10 @@ using SparseArrays
 using LinearAlgebra
 using TimerOutputs
 
-using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar
-using ...Parameter_Handling: get_initial_time, get_nsteps, get_final_time
+using ...Data_Manager
+using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
 using ...MPI_Communication: barrier
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
-
-using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
 using ...Parameter_Handling:
                              get_initial_time,
                              get_fixed_dt,
@@ -65,14 +63,13 @@ This function depends on the following data fields from the `datamanager` module
 - `get_field("Number of Neighbors")`: Returns the number of neighbors field.
 """
 function compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64},
-                                                  datamanager::Module,
                                                   lambda::Union{Float64,Int64})
     critical_time_step::Float64 = 1.0e50
-    nlist = datamanager.get_nlist()
-    density = datamanager.get_field("Density")
-    undeformed_bond_length = datamanager.get_field("Bond Length")
-    volume = datamanager.get_field("Volume")
-    Cv = datamanager.get_field("Specific Heat Capacity")
+    nlist = Data_Manager.get_nlist()
+    density = Data_Manager.get_field("Density")
+    undeformed_bond_length = Data_Manager.get_field("Bond Length")
+    volume = Data_Manager.get_field("Volume")
+    Cv = Data_Manager.get_field("Specific Heat Capacity")
     lambda = matrix_style(lambda)
     eigLam = maximum(eigvals(lambda))
 
@@ -117,14 +114,13 @@ This function may depend on the following functions:
 function init_solver(solver_options::Dict{Any,Any},
                      params::Dict,
                      bcs::Dict{Any,Any},
-                     datamanager::Module,
                      block_nodes::Dict{Int64,Vector{Int64}},
                      to::TimerOutput)
-    find_bc_free_dof(datamanager, bcs)
-    delta_u = datamanager.create_constant_node_field("Delta Displacements", Float64,
-                                                     datamanager.get_dof())
-    solver_options["Initial Time"] = get_initial_time(params, datamanager)
-    solver_options["Final Time"] = get_final_time(params, datamanager)
+    find_bc_free_dof(Data_Manager, bcs)
+    delta_u = Data_Manager.create_constant_node_field("Delta Displacements", Float64,
+                                                      Data_Manager.get_dof())
+    solver_options["Initial Time"] = get_initial_time(params, Data_Manager)
+    solver_options["Final Time"] = get_final_time(params, Data_Manager)
 
     solver_options["Number of Steps"] = get_nsteps(params)
     ## Remark: For static analysis, the number of steps is mandatory
@@ -135,10 +131,10 @@ function init_solver(solver_options::Dict{Any,Any},
                            solver_options["Number of Steps"]
 
     for (block, nodes) in pairs(block_nodes)
-        model_param = datamanager.get_properties(block, "Material Model")
-        Correspondence_matrix_based.init_model(datamanager, nodes, model_param)
+        model_param = Data_Manager.get_properties(block, "Material Model")
+        Correspondence_matrix_based.init_model(Data_Manager, nodes, model_param)
     end
-    @timeit to "init_matrix" Correspondence_matrix_based.init_matrix(datamanager)
+    @timeit to "init_matrix" Correspondence_matrix_based.init_matrix(Data_Manager)
 
     solver_options["Matrix update"] = get(params["Linear Static Matrix Based"],
                                           "Matrix update", false)
@@ -183,7 +179,6 @@ end
 function run_solver(solver_options::Dict{Any,Any},
                     block_nodes::Dict{Int64,Vector{Int64}},
                     bcs::Dict{Any,Any},
-                    datamanager::Module,
                     outputs::Dict{Int64,Dict{}},
                     result_files::Vector{Dict},
                     synchronise_field,
@@ -192,67 +187,67 @@ function run_solver(solver_options::Dict{Any,Any},
                     compute_parabolic_problems_after_model_evaluation,
                     to::TimerOutputs.TimerOutput,
                     silent::Bool)
-    atexit(() -> datamanager.set_cancel(true))
+    atexit(() -> Data_Manager.set_cancel(true))
 
     @info "Run Linear Static Solver"
     max_damage::Float64 = 0
-    volume = datamanager.get_field("Volume")
-    coor = datamanager.get_field("Coordinates")
-    bond_force = datamanager.get_field("Bond Forces")
-    comm = datamanager.get_comm()
+    volume = Data_Manager.get_field("Volume")
+    coor = Data_Manager.get_field("Coordinates")
+    bond_force = Data_Manager.get_field("Bond Forces")
+    comm = Data_Manager.get_comm()
     # needed to bring K_sparse into the consistent style of the transformation matrix -> vector
 
     if "Material" in solver_options["Models"]
-        external_forces = datamanager.get_field("External Forces")
-        external_force_densities = datamanager.get_field("External Force Densities")
-        a = datamanager.get_field("Acceleration")
+        external_forces = Data_Manager.get_field("External Forces")
+        external_force_densities = Data_Manager.get_field("External Force Densities")
+        a = Data_Manager.get_field("Acceleration")
     end
 
     dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["Number of Steps"]
     time::Float64 = solver_options["Initial Time"]
     step_time::Float64 = 0
-    rank = datamanager.get_rank()
+    rank = Data_Manager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
-    nodes::Vector{Int64} = collect(1:datamanager.get_nnodes())
-    nlist = datamanager.get_nlist()
-    dof = datamanager.get_dof()
+    nodes::Vector{Int64} = collect(1:Data_Manager.get_nnodes())
+    nlist = Data_Manager.get_nlist()
+    dof = Data_Manager.get_dof()
 
-    volume = datamanager.get_field("Volume")
-    forces = datamanager.get_field("Forces", "NP1")
+    volume = Data_Manager.get_field("Volume")
+    forces = Data_Manager.get_field("Forces", "NP1")
 
-    delta_u = datamanager.get_field("Delta Displacements")
-    external_force_densities = datamanager.get_field("External Force Densities")
+    delta_u = Data_Manager.get_field("Delta Displacements")
+    external_force_densities = Data_Manager.get_field("External Force Densities")
 
     matrix_update::Bool = solver_options["Matrix update"]
 
-    active_nodes = datamanager.get_field("Active Nodes")
-    active_list = datamanager.get_field("Active")
+    active_nodes = Data_Manager.get_field("Active Nodes")
+    active_list = Data_Manager.get_field("Active")
 
     active_nodes = find_active_nodes(active_list, active_nodes,
                                      nodes)
 
     if matrix_update
-        @timeit to "update stiffness matrix" K = compute_matrix(datamanager,
+        @timeit to "update stiffness matrix" K = compute_matrix(Data_Manager,
                                                                 active_nodes)
     else
-        K = datamanager.get_stiffness_matrix()
+        K = Data_Manager.get_stiffness_matrix()
     end
     for idt in iter
-        datamanager.set_iteration(idt)
+        Data_Manager.set_iteration(idt)
         @timeit to "Linear Static" begin
 
             # reshape
             # All 2 time steps fields must be in the loop, because switch NP1 to N changes the adresses
-            uN = datamanager.get_field("Displacements", "N")
-            uNP1 = datamanager.get_field("Displacements", "NP1")
-            velocities = datamanager.get_field("Velocity", "NP1")
-            deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
-            forces = datamanager.get_field("Forces", "NP1")
-            force_densities_N = datamanager.get_field("Force Densities", "N")
-            force_densities_NP1 = datamanager.get_field("Force Densities", "NP1")
+            uN = Data_Manager.get_field("Displacements", "N")
+            uNP1 = Data_Manager.get_field("Displacements", "NP1")
+            velocities = Data_Manager.get_field("Velocity", "NP1")
+            deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
+            forces = Data_Manager.get_field("Forces", "NP1")
+            force_densities_N = Data_Manager.get_field("Force Densities", "N")
+            force_densities_NP1 = Data_Manager.get_field("Force Densities", "NP1")
 
-            non_BCs = datamanager.get_bc_free_dof()
+            non_BCs = Data_Manager.get_bc_free_dof()
             #force_densities_NP1[active_nodes, :] .= force_densities_N[active_nodes, :]
 
             # das muss in model evaluation; dann funktioniert die Reihenfolge auch. in material
@@ -263,47 +258,47 @@ function run_solver(solver_options::Dict{Any,Any},
                                                                                             nlist,
                                                                                             dof)
 
-            compute_parabolic_problems_before_model_evaluation(active_nodes, datamanager,
+            compute_parabolic_problems_before_model_evaluation(active_nodes, Data_Manager,
                                                                solver_options)
-            datamanager = apply_bc_dirichlet([
-                                                 "Displacements",
-                                                 "Forces",
-                                                 "Force Densities",
-                                                 "Temperature"
-                                             ],
-                                             bcs,
-                                             datamanager, time,
-                                             step_time)
+            Data_Manager = apply_bc_dirichlet([
+                                                  "Displacements",
+                                                  "Forces",
+                                                  "Force Densities",
+                                                  "Temperature"
+                                              ],
+                                              bcs,
+                                              Data_Manager, time,
+                                              step_time)
 
             external_force_densities .= external_forces ./ volume # it must be delta external forces
 
-            @timeit to "compute_models" datamanager = compute_stiff_matrix_compatible_models(datamanager,
-                                                                                             block_nodes,
-                                                                                             dt,
-                                                                                             time,
-                                                                                             solver_options["Models"],
-                                                                                             synchronise_field,
-                                                                                             to)
+            @timeit to "compute_models" Data_Manager = compute_stiff_matrix_compatible_models(Data_Manager,
+                                                                                              block_nodes,
+                                                                                              dt,
+                                                                                              time,
+                                                                                              solver_options["Models"],
+                                                                                              synchronise_field,
+                                                                                              to)
 
-            active_nodes = datamanager.get_field("Active Nodes")
-            active_list = datamanager.get_field("Active")
+            active_nodes = Data_Manager.get_field("Active Nodes")
+            active_list = Data_Manager.get_field("Active")
 
             active_nodes = find_active_nodes(active_list, active_nodes,
                                              nodes)
 
             if matrix_update
-                @timeit to "update stiffness matrix" K = compute_matrix(datamanager,
+                @timeit to "update stiffness matrix" K = compute_matrix(Data_Manager,
                                                                         active_nodes)
 
             else
-                K = datamanager.get_stiffness_matrix()
+                K = Data_Manager.get_stiffness_matrix()
             end
 
             #@views external_force_densities[active_nodes, :] += force_densities_NP1[active_nodes, :]
-            perm = create_permutation(active_nodes, datamanager.get_dof()) # only active node dofs are there
+            perm = create_permutation(active_nodes, Data_Manager.get_dof()) # only active node dofs are there
 
             filtered_perm = filter_and_map_bc(non_BCs, active_nodes, dof,
-                                              datamanager.get_nnodes())
+                                              Data_Manager.get_nnodes())
             #@info (filtered_perm)
             @timeit to "compute_displacements" @views compute_displacements!(K[perm, perm],
                                                                              filtered_perm,
@@ -314,13 +309,13 @@ function run_solver(solver_options::Dict{Any,Any},
                                                                              external_force_densities[active_nodes,
                                                                                                       :])
 
-            active_nodes = datamanager.get_field("Active Nodes")
-            active_list = datamanager.get_field("Active")
+            active_nodes = Data_Manager.get_field("Active Nodes")
+            active_list = Data_Manager.get_field("Active")
 
             active_nodes = find_active_nodes(active_list, active_nodes,
-                                             1:datamanager.get_nnodes())
+                                             1:Data_Manager.get_nnodes())
 
-            compute_parabolic_problems_after_model_evaluation(active_nodes, datamanager,
+            compute_parabolic_problems_after_model_evaluation(active_nodes, Data_Manager,
                                                               solver_options, dt)
 
             for iID in nodes
@@ -330,26 +325,26 @@ function run_solver(solver_options::Dict{Any,Any},
             velocities .= (uNP1 - uN) ./ dt
             @views deformed_coorNP1 .= coor .+ uNP1
 
-            # @timeit to "download_from_cores" datamanager.synch_manager(synchronise_field,
+            # @timeit to "download_from_cores" Data_Manager.synch_manager(synchronise_field,
             #                                                            "download_from_cores")
 
             @timeit to "write_results" result_files=write_results(result_files, time,
                                                                   max_damage, outputs,
-                                                                  datamanager)
+                                                                  Data_Manager)
 
             # for file in result_files
             #     flush(file)
             # end
-            if rank == 0 && !silent && datamanager.get_cancel()
+            if rank == 0 && !silent && Data_Manager.get_cancel()
                 set_multiline_postfix(iter, "Simulation canceled!")
                 break
             end
 
-            @timeit to "switch_NP1_to_N" datamanager.switch_NP1_to_N()
+            @timeit to "switch_NP1_to_N" Data_Manager.switch_NP1_to_N()
 
             time += dt
             step_time += dt
-            datamanager.set_current_time(time)
+            Data_Manager.set_current_time(time)
 
             if idt % ceil(nsteps / 100) == 0
                 @info "Step: $idt / $(nsteps+1) [$time s]"
@@ -376,15 +371,15 @@ function filter_and_map_bc(non_BCs, active_nodes, dof, nnodes::Int64)
     return filtered
 end
 
-function compute_matrix(datamanager::Module, nodes::AbstractVector{Int64})
+function compute_matrix(nodes::AbstractVector{Int64})
     if length(nodes)==0
-        return datamanager.get_stiffness_matrix()
+        return Data_Manager.get_stiffness_matrix()
     end
-    Bond_Deformation.compute(datamanager,
+    Bond_Deformation.compute(Data_Manager,
                              nodes,
                              Dict(),
                              0) # not needed here
-    return Correspondence_matrix_based.compute_model(datamanager, nodes)
+    return Correspondence_matrix_based.compute_model(Data_Manager, nodes)
 end
 """
 	compute_displacements!(K, non_BCs, u, F, F_temp, K_reduced, lu_fact, temp)

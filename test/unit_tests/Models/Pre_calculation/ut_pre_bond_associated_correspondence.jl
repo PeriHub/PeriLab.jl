@@ -14,10 +14,10 @@ using Test
     expected_Q = [1.0 / 3.0, 2.0 / 3.0]
     Q = zeros(2)
     Q = PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(accuracy_order,
-                                                       dof,
-                                                       undeformed_bond,
-                                                       horizon,
-                                                       Q)
+                                                                                                            dof,
+                                                                                                            undeformed_bond,
+                                                                                                            horizon,
+                                                                                                            Q)
 
     @test isapprox(Q, expected_Q)
 
@@ -34,10 +34,10 @@ using Test
     ]
     Q = zeros(5)
     Q = PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(accuracy_order,
-                                                       dof,
-                                                       undeformed_bond,
-                                                       horizon,
-                                                       Q)
+                                                                                                            dof,
+                                                                                                            undeformed_bond,
+                                                                                                            horizon,
+                                                                                                            Q)
 
     @test isapprox(Q, expected_Q)
 
@@ -58,21 +58,33 @@ using Test
     ]
     Q = zeros(9)
     Q = PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(accuracy_order,
-                                                       dof,
-                                                       undeformed_bond,
-                                                       horizon,
-                                                       Q)
+                                                                                                            dof,
+                                                                                                            undeformed_bond,
+                                                                                                            horizon,
+                                                                                                            Q)
 
     @test isapprox(Q, expected_Q)
     Q = zeros(3)
     undeformed_bond = [1.0, 0.0, 0]
-    @test PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
+    @test PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(1,
+                                                                                                              dof,
+                                                                                                              undeformed_bond,
+                                                                                                              1.0,
+                                                                                                              Q) ==
           [1, 0, 0]
     undeformed_bond = [0.0, 1.0, 0]
-    @test PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
+    @test PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(1,
+                                                                                                              dof,
+                                                                                                              undeformed_bond,
+                                                                                                              1.0,
+                                                                                                              Q) ==
           [0, 1, 0]
     undeformed_bond = [0.0, 0.0, 1.0]
-    @test PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
+    @test PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(1,
+                                                                                                              dof,
+                                                                                                              undeformed_bond,
+                                                                                                              1.0,
+                                                                                                              Q) ==
           [0, 0, 1]
 end
 
@@ -82,33 +94,35 @@ end
     test_data_manager.set_num_controller(4)
     test_data_manager.set_dof(3)
 
-    volume = test_data_manager.create_constant_node_field("Volume", Float64, 1)
+    volume = test_data_manager.create_constant_node_scalar_field("Volume", Float64)
     volume[:] = [1.0, 2.0, 3.0, 4.0]
 
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
     nn[1] = 3
     nn[2:4] .= 1
     nodes = [1]
 
-    nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist = test_data_manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
     nlist[1] = [2, 3, 4]
     nlist[2] = [1]
     nlist[3] = [1]
     nlist[4] = [1]
 
-    bond_damage = test_data_manager.create_constant_bond_field("Bond Damage", Float64, 1)
+    bond_damage = test_data_manager.create_constant_bond_scalar_state("Bond Damage",
+                                                                      Float64)
     bond_damage[1][:] .= 1
-    omega = test_data_manager.create_constant_bond_field("Influence Function", Float64, 1)
+    omega = test_data_manager.create_constant_bond_scalar_state("Influence Function",
+                                                                Float64)
     omega[1][:] = [1.0, 0.8, 0.6]
-    weighted_volume = test_data_manager.create_constant_node_field("Weighted Volume",
-                                                                   Float64, 1)
+    weighted_volume = test_data_manager.create_constant_node_scalar_field("Weighted Volume",
+                                                                          Float64)
 
     PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.compute_weighted_volume!(weighted_volume,
-                                                                nodes,
-                                                                nlist,
-                                                                volume,
-                                                                bond_damage,
-                                                                omega)
+                                                                                                                     nodes,
+                                                                                                                     nlist,
+                                                                                                                     volume,
+                                                                                                                     bond_damage,
+                                                                                                                     omega)
 
     expected_weighted_volume = sum(bond_damage[1][:] .* omega[1][:] .* volume[nlist[1]])
     @test isapprox(weighted_volume[1], expected_weighted_volume)
@@ -136,18 +150,18 @@ end
     M = zeros(5, 5)
 
     PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.compute_Lagrangian_gradient_weights(nodes,
-                                                                           dof,
-                                                                           accuracy_order,
-                                                                           volume,
-                                                                           nlist,
-                                                                           horizon,
-                                                                           bond_damage,
-                                                                           omega,
-                                                                           Q,
-                                                                           M,
-                                                                           Minv,
-                                                                           undeformed_bond,
-                                                                           gradient_weights)
+                                                                                                                                dof,
+                                                                                                                                accuracy_order,
+                                                                                                                                volume,
+                                                                                                                                nlist,
+                                                                                                                                horizon,
+                                                                                                                                bond_damage,
+                                                                                                                                omega,
+                                                                                                                                Q,
+                                                                                                                                M,
+                                                                                                                                Minv,
+                                                                                                                                undeformed_bond,
+                                                                                                                                gradient_weights)
 
     @test isapprox(gradient_weights[1][1], [0.5000000000000014, -0.24999999999999992])
     @test isapprox(gradient_weights[1][2], [-2.5000000000000817, -1.000000000000037])

@@ -10,6 +10,9 @@ using DataFrames
 using LibGit2
 using PrettyTables
 using Dates
+
+using ..Data_Manager
+
 export init_logging
 export get_current_git_info
 export get_log_stream
@@ -63,10 +66,17 @@ Get the log file.
 - `log_file::String`: The log file.
 """
 function get_log_file()
-    global log_file
     return log_file
 end
 
+function print_exception(e::Exception)
+    global log_file
+    if log_file != ""
+        open(log_file, "a") do io
+            println(io, "[Error] ", e)
+        end
+    end
+end
 function get_log_stream(id::Int64)
     try
         return current_logger().loggers[id].logger.stream
@@ -90,51 +100,48 @@ end
 # end
 
 """
-    print_table(data::Matrix, datamanager::Module)
+    print_table(data::Matrix)
 
 Print the table.
 
 # Arguments
 - `data::Matrix`: The data.
-- `datamanager::Module`: The data manager.
 """
-function print_table(data::Matrix, datamanager::Module)
-    if !datamanager.get_silent()
+function print_table(data::Matrix)
+    highlighters = [
+        TextHighlighter((data, i, j) -> i == 1 && j == 1, crayon"bold"),
+        TextHighlighter((data, i, j) -> j == 2, crayon"dark_gray")
+    ]
+    if !Data_Manager.get_silent()
         pretty_table(data;
-                     body_hlines = [1],
-                     body_hlines_format = Tuple('─' for _ in 1:4),
-                     cell_alignment = Dict((1, 1) => :l),
-                     formatters = ft_printf("%10.1f", 2),
-                     highlighters = (hl_cell([(1, 1)], crayon"bold"),
-                                     hl_col(2, crayon"dark_gray")),
-                     show_header = false,
-                     tf = tf_borderless,)
+                     cell_alignment = [(1, 1) => :l],
+                     formatters = [fmt__printf("%10.1f", [2])],
+                     highlighters = highlighters,
+                     show_column_labels = false,
+                     table_format = TextTableFormat(; @text__no_vertical_lines,
+                                                    horizontal_lines_at_data_rows = [1]))
         stream = Logging_Module.get_log_stream(2)
         if !isnothing(stream)
             pretty_table(stream,
                          data;
-                         body_hlines = [1],
-                         body_hlines_format = Tuple('─' for _ in 1:4),
-                         cell_alignment = Dict((1, 1) => :l),
-                         formatters = ft_printf("%10.1f", 2),
-                         highlighters = (hl_cell([(1, 1)], crayon"bold"),
-                                         hl_col(2, crayon"dark_gray")),
-                         show_header = false,
-                         tf = tf_borderless,)
+                         cell_alignment = [(1, 1) => :l],
+                         formatters = [fmt__printf("%10.1f", [2])],
+                         highlighters = highlighters,
+                         show_column_labels = false,
+                         table_format = TextTableFormat(; @text__no_vertical_lines,
+                                                        horizontal_lines_at_data_rows = [1]))
         end
     else
         stream = Logging_Module.get_log_stream(1)
         if !isnothing(stream)
             pretty_table(stream,
                          data;
-                         body_hlines = [1],
-                         body_hlines_format = Tuple('─' for _ in 1:4),
-                         cell_alignment = Dict((1, 1) => :l),
-                         formatters = ft_printf("%10.1f", 2),
-                         highlighters = (hl_cell([(1, 1)], crayon"bold"),
-                                         hl_col(2, crayon"dark_gray")),
-                         show_header = false,
-                         tf = tf_borderless,)
+                         cell_alignment = [(1, 1) => :l],
+                         formatters = [fmt__printf("%10.1f", [2])],
+                         highlighters = highlighters,
+                         show_column_labels = false,
+                         table_format = TextTableFormat(; @text__no_vertical_lines,
+                                                        horizontal_lines_at_data_rows = [1]))
         end
     end
 end
@@ -203,9 +210,15 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
                             args.message)
                 end
             end
+            error_logger = FormatLogger(log_file; append = false) do io, args
+                if args.level == Logging.Error
+                    throw(PeriLabError(args, args.message))
+                end
+            end
             filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
             demux_logger = TeeLogger(MinLevelLogger(filtered_logger, Logging.Debug),
-                                     MinLevelLogger(file_logger, Logging.Debug))
+                                     MinLevelLogger(file_logger, Logging.Debug),
+                                     MinLevelLogger(error_logger, Logging.Info))
         elseif silent
             io = open(log_file, "a")
             redirect_stderr(io)

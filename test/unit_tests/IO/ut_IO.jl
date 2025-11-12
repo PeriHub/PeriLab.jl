@@ -22,12 +22,12 @@ test_data_manager.set_comm(comm)
 test_data_manager.set_dof(dof)
 test_data_manager.set_max_rank(1)
 test_data_manager.set_distribution([1, 2, 3, 4, 5])
-test_data_manager.create_constant_node_field("Coordinates", Float64, 2)
+test_data_manager.create_constant_node_vector_field("Coordinates", Float64, 2)
 coordinates = test_data_manager.get_field("Coordinates")
-test_data_manager.create_constant_node_field("Block_Id", Int64, 1)
+test_data_manager.create_constant_node_scalar_field("Block_Id", Int64)
 block_Id = test_data_manager.get_field("Block_Id")
-test_data_manager.create_node_field("Displacements", Float64, 2)
-test_data_manager.create_node_field("Forces", Float64, 6)
+test_data_manager.create_node_vector_field("Displacements", Float64, 2)
+test_data_manager.create_node_vector_field("Forces", Float64, 6)
 
 block_list = ["block_1", "block_2"]
 test_data_manager.set_block_name_list(block_list)
@@ -61,7 +61,7 @@ block_Id .+= 1
 block_Id[end] = 2
 
 @testset "ut_get_results_mapping" begin
-    output = PeriLab.IO.get_results_mapping(params, "", test_data_manager)
+    output = PeriLab.IO.get_results_mapping(params, "")
     @test sort(collect(keys(output[2]["Fields"]))) ==
           ["Forcesxx", "Forcesxy", "Forcesxz", "Forcesyx", "Forcesyy", "Forcesyz"]
     @test sort(collect(keys(output[3]["Fields"]))) == [
@@ -97,7 +97,7 @@ end
 
 @testset "ut_init_write_result_and_write_results" begin
     result_files,
-    outputs = PeriLab.IO.init_write_results(params, "", "", test_data_manager,
+    outputs = PeriLab.IO.init_write_results(params, "", "",
                                             "1.0.0")
     @test length(result_files) == 3
     @test length(result_files[2]["file"].nodal_var_name_dict) == 6
@@ -148,11 +148,11 @@ end
         Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1),
         Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1)
     ]
-    PeriLab.IO.write_results(result_files, 1.5, 0.0, outputs, test_data_manager)
+    PeriLab.IO.write_results(result_files, 1.5, 0.0, outputs)
 
     @test read_time(result_files[2]["file"], 2) == 1.5
     @test read_time(result_files[3]["file"], 2) == 1.5
-    PeriLab.IO.write_results(result_files, 1.6, 0.0, outputs, test_data_manager)
+    PeriLab.IO.write_results(result_files, 1.6, 0.0, outputs)
 
     @test read_time(result_files[2]["file"], 3) == 1.6
     @test read_time(result_files[3]["file"], 3) == 1.6
@@ -182,18 +182,19 @@ end
 #     test_data_manager.set_block_name_list([1])
 #     solver_options = Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)
 #     params = Dict("Blocks" => Dict("block_1" => Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)))
-#     PeriLab.IO.show_block_summary(solver_options, params, "test.log", comm, test_data_manager)
+#     PeriLab.IO.show_block_summary(solver_options, params, "test.log", comm)
 # end
 
 # @testset "ut_show_mpi_summary" begin
 #     test_data_manager.set_block_name_list([1])
-#     PeriLab.IO.show_mpi_summary("test.log", comm, test_data_manager)
+#     PeriLab.IO.show_mpi_summary("test.log", comm)
 # end
 
 @testset "ut_init_orientations" begin
-    angles = test_data_manager.create_constant_node_field("Angles", Float64, 1, 90)
+    angles = test_data_manager.create_constant_node_scalar_field("Angles", Float64;
+                                                                 default_value = 90)
     test_data_manager.set_rotation(true)
-    PeriLab.IO.init_orientations(test_data_manager)
+    PeriLab.IO.init_orientations()
     orientations = test_data_manager.get_field("Orientations")
     @test isapprox(orientations[1, 1], 0; atol = 0.00001)
     @test isapprox(orientations[1, 2], 1; atol = 0.00001)
@@ -228,9 +229,10 @@ end
     # coordinates[5, 1] = 2
     # coordinates[5, 2] = 2
     # coordinates[5, 3] = 0
-    angles = test_data_manager.create_constant_node_field("Angles", Float64, 3, 90)
+    angles = test_data_manager.create_constant_node_vector_field("Angles", Float64, 3;
+                                                                 default_value = 90)
     test_data_manager.set_rotation(true)
-    PeriLab.IO.init_orientations(test_data_manager)
+    PeriLab.IO.init_orientations()
     orientations = test_data_manager.get_field("Orientations")
     @test isapprox(orientations[1, 1], 0; atol = 0.00001)
     @test isapprox(orientations[1, 2], 0; atol = 0.00001)
@@ -256,7 +258,7 @@ end
     test_data_manager.set_dof(dof)
     test_data_manager.set_max_rank(1)
     test_data_manager.set_distribution([1, 2, 3, 4, 5])
-    test_data_manager.create_constant_node_field("Block_Id", Int64, 1)
+    test_data_manager.create_constant_node_scalar_field("Block_Id", Int64)
     block_Id = test_data_manager.get_field("Block_Id")
     block_Id .+= 1
     block_Id[end] = 2
@@ -280,13 +282,12 @@ end
                                   params,
                                   "",
                                   false,
-                                  comm,
-                                  test_data_manager)
+                                  comm)
 end
 
 @testset "ut_show_mpi_summary" begin
     # Not fully tested yet because MPI.size=1
-    @test PeriLab.IO.show_mpi_summary("", false, comm, test_data_manager) == 1
+    @test PeriLab.IO.show_mpi_summary("", false, comm) == 1
 end
 
 @testset "ut_clearNP1" begin

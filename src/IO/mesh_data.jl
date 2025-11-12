@@ -6,7 +6,9 @@ using LinearAlgebra
 using AbaqusReader
 using DataFrames
 using OrderedCollections: OrderedDict
-using PrettyTables
+using TimerOutputs: @timeit
+
+using ..Data_Manager
 include("bond_filters.jl")
 include("gcode.jl")
 include("volume.jl")
@@ -23,45 +25,39 @@ export init_data
 const TOLERANCE = 1.0e-14
 
 """
-    init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Comm, to::TimerOutput)
+    init_data(params::Dict, path::String, comm::MPI.Comm)
 
 Initializes the data for the mesh.
 
 # Arguments
 - `params::Dict`: The parameters for the simulation.
 - `path::String`: The path to the mesh file.
-- `datamanager::Data_Manager`: The data manager.
 - `comm::MPI.Comm`: The MPI communicator.
-- `to::TimerOutput`: The timer output.
 # Returns
-- `datamanager::Data_Manager`: The data manager.
 - `params::Dict`: The parameters for the simulation.
 """
 function init_data(params::Dict,
                    path::String,
-                   datamanager::Module,
-                   comm::MPI.Comm,
-                   to::TimerOutput)
-    @timeit to "init_data - mesh_data,jl" begin
+                   comm::MPI.Comm)
+    @timeit "init_data - mesh_data,jl" begin
         size = MPI.Comm_size(comm)
         rank = MPI.Comm_rank(comm) + 1
         fem_active::Bool = false
         if rank == 1
-            @timeit to "load_and_evaluate_mesh" distribution,
-                                                mesh,
-                                                ntype,
-                                                overlap_map,
-                                                nlist,
-                                                nlist_filtered_ids,
-                                                bond_norm,
-                                                dof,
-                                                nsets,
-                                                topology,
-                                                element_distribution=load_and_evaluate_mesh(params,
-                                                                                            path,
-                                                                                            size,
-                                                                                            to,
-                                                                                            datamanager.get_silent())
+            @timeit "load_and_evaluate_mesh" distribution,
+                                             mesh,
+                                             ntype,
+                                             overlap_map,
+                                             nlist,
+                                             nlist_filtered_ids,
+                                             bond_norm,
+                                             dof,
+                                             nsets,
+                                             topology,
+                                             element_distribution=load_and_evaluate_mesh(params,
+                                                                                         path,
+                                                                                         size,
+                                                                                         Data_Manager.get_silent())
             if !isnothing(element_distribution)
                 fem_active = true
             end
@@ -72,7 +68,7 @@ function init_data(params::Dict,
             if fem_active
                 data = vcat(data, ["Number of finite elements" "."^10 length(topology)])
             end
-            print_table(data, datamanager)
+            print_table(data)
         else
             dof::Int64 = 0
             distribution = nothing
@@ -99,97 +95,94 @@ function init_data(params::Dict,
                                                               Int64)
         num_responder::Int64 = send_single_value_from_vector(comm, 0, ntype["responder"],
                                                              Int64)
-        datamanager.set_dof(dof)
-        datamanager.set_overlap_map(overlap_map)
-        datamanager.set_num_controller(num_controller)
-        datamanager.set_num_responder(num_responder)
+        Data_Manager.set_dof(dof)
+        Data_Manager.set_overlap_map(overlap_map)
+        Data_Manager.set_num_controller(num_controller)
+        Data_Manager.set_num_responder(num_responder)
         @debug "Get node sets"
-        datamanager = define_nsets(nsets, datamanager)
+        define_nsets(nsets)
         # defines the order of the global nodes to the local core nodes
-        datamanager.set_distribution(distribution[rank])
-        datamanager.set_glob_to_loc(create_global_to_local_mapping(distribution[rank]))
-        @timeit to "get_local_overlap_map" overlap_map=get_local_overlap_map(overlap_map,
-                                                                             distribution,
-                                                                             size)
-        @timeit to "distribution_to_cores" datamanager=distribution_to_cores(comm,
-                                                                             datamanager,
-                                                                             mesh,
-                                                                             distribution,
-                                                                             dof)
-        @timeit to "distribute_neighborhoodlist_to_cores" datamanager=distribute_neighborhoodlist_to_cores(comm,
-                                                                                                           datamanager,
-                                                                                                           nlist,
-                                                                                                           distribution,
-                                                                                                           false)
+        @debug "Set distribution"
+        Data_Manager.set_distribution(distribution[rank])
+        Data_Manager.set_glob_to_loc(create_global_to_local_mapping(distribution[rank]))
+        @timeit "get_local_overlap_map" overlap_map=get_local_overlap_map(overlap_map,
+                                                                          distribution,
+                                                                          size)
+        @debug "Distribution to cores"
+        @timeit "distribution_to_cores" distribution_to_cores(comm,
+                                                              mesh,
+                                                              distribution,
+                                                              dof)
+        @debug "Distribution of nlist"
+        @timeit "distribute_neighborhoodlist_to_cores" distribute_neighborhoodlist_to_cores(comm,
+                                                                                            nlist,
+                                                                                            distribution,
+                                                                                            false)
 
         if !isnothing(nlist_filtered_ids)
             create_and_distribute_bond_norm(comm,
-                                            datamanager,
                                             nlist_filtered_ids,
                                             distribution,
                                             bond_norm,
                                             dof)
         end
 
-        datamanager = contact_basis(datamanager, params, mesh, comm, rank)
+        contact_basis(params, mesh, comm, rank)
 
-        datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
-        datamanager.set_fem(fem_active)
+        get_bond_geometry() # gives the initial length and bond damage
+        Data_Manager.set_fem(fem_active)
         if fem_active
             @debug "Set and synchronize elements"
             element_distribution = broadcast_value(comm, element_distribution)
             topology = broadcast_value(comm, topology)
-            datamanager.set_num_elements(length(element_distribution[rank]))
+            Data_Manager.set_num_elements(length(element_distribution[rank]))
             @debug "Set local topology vector"
-            datamanager = get_local_element_topology(datamanager,
-                                                     topology[element_distribution[rank]],
-                                                     distribution[rank])
+            get_local_element_topology(topology[element_distribution[rank]],
+                                       distribution[rank])
         end
         @debug "Finish init data"
     end
-    barrier(comm)
+    # barrier(comm)
     mesh = nothing
-    return datamanager, params
+    return params
 end
 
 """
-    create_and_distribute_bond_norm(comm::MPI.Comm, datamanager::Module, nlist_filtered_ids::Vector{Vector{Int64}}, distribution::Vector{Int64}, bond_norm::Vector{Float64}, dof::Int64)
+    create_and_distribute_bond_norm(comm::MPI.Comm, nlist_filtered_ids::BondScalarState{Int64}, distribution::Vector{Int64}, bond_norm::Vector{Float64}, dof::Int64)
 
 Create and distribute the bond norm
 
 # Arguments
 - `comm::MPI.Comm`: MPI communicator
-- `datamanager::Module`: Data manager
-- `nlist_filtered_ids::Vector{Vector{Int64}}`: The filtered neighborhood list
+- `nlist_filtered_ids::BondScalarState{Int64}`: The filtered neighborhood list
 - `distribution::Vector{Int64}`: The distribution
 - `bond_norm::Vector{Float64}`: The bond norm
 - `dof::Int64`: The degree of freedom
 """
 function create_and_distribute_bond_norm(comm::MPI.Comm,
-                                         datamanager::Module,
-                                         nlist_filtered_ids::Vector{Vector{Int64}},
+                                         nlist_filtered_ids::BondScalarState{Int64},
                                          distribution::Vector{Vector{Int64}},
                                          bond_norm::Vector{Any},
                                          dof::Int64)
     bond_norm = broadcast_value(comm, bond_norm)
-    bond_norm_field = datamanager.create_constant_bond_field("Bond Norm", Float64, dof, 1)
-    datamanager = distribute_neighborhoodlist_to_cores(comm,
-                                                       datamanager,
-                                                       nlist_filtered_ids,
-                                                       distribution,
-                                                       true)
+    bond_norm_field = Data_Manager.create_constant_bond_vector_state("Bond Norm", Float64,
+                                                                     dof; default_value = 1)
+    distribute_neighborhoodlist_to_cores(comm,
+                                         nlist_filtered_ids,
+                                         distribution,
+                                         true)
     copyto!.(bond_norm_field, bond_norm)
 end
 
-function contact_basis(datamanager::Module, params::Dict, mesh::DataFrame, comm,
+function contact_basis(params::Dict, mesh::DataFrame, comm,
                        rank::Int64)
     if !haskey(params, "Contact")
-        return datamanager
+        return
     end
     ## All coordinates and block Ids are stored at all cores. Reason is, that you might need them for self contact, etc.
     if rank == 1
         mesh_id = ["x", "y"]
-        if datamanager.get_dof() == 3
+        if Data_Manager.get_dof() == 3
             mesh_id = ["x", "y", "z"]
         end
         points = Matrix{Float64}(mesh[:, mesh_id])
@@ -201,45 +194,39 @@ function contact_basis(datamanager::Module, params::Dict, mesh::DataFrame, comm,
     end
     points = broadcast_value(comm, points)
     blocks = broadcast_value(comm, blocks)
-    datamanager.set_all_positions(points)
-    datamanager.set_all_blocks(blocks)
-    return datamanager
+    Data_Manager.set_all_positions(points)
+    Data_Manager.set_all_blocks(blocks)
 end
 """
-    get_local_element_topology(datamanager::Module, topology::Vector{Vector{Int64}}, distribution::Vector{Int64})
+    get_local_element_topology(topology::Vector{Vector{Int64}}, distribution::Vector{Int64})
 
 Get the local element topology
 
 # Arguments
-- `datamanager::Module`: The datamanager
 - `topology::Vector{Vector{Int64}}`: The topology
 - `distribution::Vector{Int64}`: The distribution
-# Returns
-- `datamanager::Module`: The datamanager
 """
-function get_local_element_topology(datamanager::Module,
-                                    topology::Vector{Vector{Int64}},
+function get_local_element_topology(topology::Vector{Vector{Int64}},
                                     distribution::Vector{Int64})
     if isempty(topology[1])
-        return datamanager
+        return
     end
     master_len = length(topology[1][:])
     for top in topology
         if length(top) != master_len
             @error "Only one element type is supported. Please define the same numbers of nodes per element."
             return nothing
-            # - new field like the bond field has to be defined for elements in the datamanager
+            # - new field like the bond field has to be defined for elements in the Data_Manager
             # - can be avoided right now by setting zeros in the topology vector as empty nodes
         end
     end
-    topo = datamanager.create_constant_free_size_field("FE Topology",
-                                                       Int64,
-                                                       (length(topology), master_len))
+    topo = Data_Manager.create_constant_free_size_field("FE Topology",
+                                                        Int64,
+                                                        (length(topology), master_len))
     ilocal = create_global_to_local_mapping(distribution)
     for el_id in eachindex(topology)
         topo[el_id, :] = local_nodes_from_dict(ilocal, topology[el_id])
     end
-    return datamanager
 end
 
 """
@@ -299,30 +286,26 @@ function local_nodes_from_dict(create_global_to_local_mapping::Dict{Int,Int},
 end
 
 """
-    distribute_neighborhoodlist_to_cores(comm::MPI.Comm, datamanager::Module, nlist, distribution)
+    distribute_neighborhoodlist_to_cores(comm::MPI.Comm, nlist, distribution)
 
 Distributes the neighborhood list to the cores.
 
 # Arguments
 - `comm::MPI.Comm`: MPI communicator
-- `datamanager::Module`: Data manager
 - `nlist`: neighborhood list
 - `distribution Array{Int64}`: global nodes distribution at cores
-# Returns
-- `datamanager::Module`: data manager
 """
 function distribute_neighborhoodlist_to_cores(comm::MPI.Comm,
-                                              datamanager::Module,
-                                              nlist::Vector{Vector{Int64}},
+                                              nlist::BondScalarState{Int64},
                                               distribution::Vector{Vector{Int64}},
                                               filtered::Bool)
     send_msg = 0
     if filtered
-        length_nlist = datamanager.create_constant_node_field("Number of Filtered Neighbors",
-                                                              Int64, 1)
+        length_nlist = Data_Manager.create_constant_node_scalar_field("Number of Filtered Neighbors",
+                                                                      Int64)
     else
-        length_nlist = datamanager.create_constant_node_field("Number of Neighbors", Int64,
-                                                              1)
+        length_nlist = Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                      Int64)
     end
     rank = MPI.Comm_rank(comm)
     if rank == 0
@@ -331,16 +314,16 @@ function distribute_neighborhoodlist_to_cores(comm::MPI.Comm,
     length_nlist .= send_vector_from_root_to_core_i(comm, send_msg, length_nlist,
                                                     distribution)
     if filtered
-        nlist_core = datamanager.create_constant_bond_field("FilteredNeighborhoodlist",
-                                                            Int64, 1)
+        nlist_core = Data_Manager.create_constant_bond_scalar_state("FilteredNeighborhoodlist",
+                                                                    Int64)
     else
-        nlist_core = datamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+        nlist_core = Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist",
+                                                                    Int64)
     end
 
     nlist_core .= nlist[distribution[rank + 1][:]]
-    nlist_core .= get_local_neighbors(datamanager.get_local_nodes, nlist_core)
+    nlist_core .= get_local_neighbors(Data_Manager.get_local_nodes, nlist_core)
     nlist = 0
-    return datamanager
 end
 
 """
@@ -362,63 +345,52 @@ function get_local_neighbors(mapping, nlist_core)
 end
 
 """
-    get_bond_geometry(datamanager::Module)
+    get_bond_geometry()
 
 Gets the bond geometry
-
-# Arguments
-- `datamanager::Module`: Data manager
-# Returns
-- `datamanager::Module`: data manager
 """
-function get_bond_geometry(datamanager::Module)
-    dof = datamanager.get_dof()
-    nnodes = datamanager.get_nnodes()
-    nlist = datamanager.get_nlist()
-    coor = datamanager.get_field("Coordinates")
-    undeformed_bond = datamanager.create_constant_bond_field("Bond Geometry", Float64, dof)
-    undeformed_bond_length = datamanager.create_constant_bond_field("Bond Length", Float64,
-                                                                    1)
+function get_bond_geometry()
+    dof = Data_Manager.get_dof()
+    nnodes = Data_Manager.get_nnodes()
+    nlist = Data_Manager.get_nlist()
+    coor = Data_Manager.get_field("Coordinates")
+    undeformed_bond = Data_Manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                     Float64, dof)
+    undeformed_bond_length = Data_Manager.create_constant_bond_scalar_state("Bond Length",
+                                                                            Float64)
     bond_geometry!(undeformed_bond,
                    undeformed_bond_length,
                    Vector{Int64}(1:nnodes),
                    nlist,
                    coor)
-    return datamanager
 end
 
 """
-    define_nsets(nsets::Dict{String,Vector{Int64}}, datamanager::Module)
+    define_nsets(nsets::Dict{String,Vector{Int64}})
 
 Defines the node sets
 
 # Arguments
 - `nsets::Dict{String,Vector{Int64}}`: Node sets read from files
-- `datamanager::Module`: Data manager
 """
-function define_nsets(nsets::Dict{String,Vector{Int64}}, datamanager::Module)
+function define_nsets(nsets::Dict{String,Vector{Int64}})
     for nset in keys(nsets)
-        datamanager.set_nset(nset, nsets[nset])
+        Data_Manager.set_nset(nset, nsets[nset])
     end
-    return datamanager
 end
 
 """
-    distribution_to_cores(comm::MPI.Comm, datamanager::Module, mesh, distribution, dof::Int64)
+    distribution_to_cores(comm::MPI.Comm, mesh, distribution, dof::Int64)
 
 Distributes the mesh data to the cores
 
 # Arguments
 - `comm::MPI.Comm`: MPI communicator
-- `datamanager::Module`: Data manager
 - `mesh`: Mesh
 - `distribution Array{Int64}`: global nodes distribution at cores
 - `dof::Int64`: Degree of freedom
-# Returns
-- `datamanager::Module`: data manager
 """
 function distribution_to_cores(comm::MPI.Comm,
-                               datamanager::Module,
                                mesh::DataFrame,
                                distribution::Vector{Vector{Int64}},
                                dof::Int64)
@@ -432,9 +404,14 @@ function distribution_to_cores(comm::MPI.Comm,
     meshdata = broadcast_value(comm, meshdata)
     for fieldname in keys(meshdata)
         field_dof = length(meshdata[fieldname]["Mesh ID"])
-        datafield = datamanager.create_constant_node_field(fieldname,
-                                                           meshdata[fieldname]["Type"],
-                                                           field_dof)
+        if field_dof == 1
+            datafield = Data_Manager.create_constant_node_scalar_field(fieldname,
+                                                                       meshdata[fieldname]["Type"])
+        else
+            datafield = Data_Manager.create_constant_node_vector_field(fieldname,
+                                                                       meshdata[fieldname]["Type"],
+                                                                       field_dof)
+        end
         for (localDof, mesh_id) in enumerate(meshdata[fieldname]["Mesh ID"])
             if rank == 0
                 send_msg = meshdata[fieldname]["Type"].(mesh[!, mesh_id])
@@ -448,15 +425,14 @@ function distribution_to_cores(comm::MPI.Comm,
                                                              distribution)
             else
                 datafield[:,
-                          localDof] = send_vector_from_root_to_core_i(comm,
-                                                                      send_msg,
-                                                                      datafield[:,
-                                                                                localDof],
-                                                                      distribution)
+                localDof] = send_vector_from_root_to_core_i(comm,
+                                                                         send_msg,
+                                                                         datafield[:,
+                                                                         localDof],
+                                                                         distribution)
             end
         end
     end
-    return datamanager
 end
 
 """
@@ -822,7 +798,7 @@ function check_types_in_dataframe(mesh::DataFrame)
 end
 
 """
-    load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to::TimerOutput)
+    load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
 
 Load and evaluate the mesh data.
 
@@ -830,7 +806,6 @@ Load and evaluate the mesh data.
 - `params::Dict`: The input parameters.
 - `path::String`: The path to the mesh file.
 - `ranksize::Int64`: The number of ranks.
-- `to::TimerOutput`: The timer output
 # Returns
 - `distribution::Array{Int64,1}`: The distribution of the mesh elements.
 - `mesh::DataFrame`: The mesh data as a DataFrame.
@@ -845,11 +820,10 @@ Load and evaluate the mesh data.
 function load_and_evaluate_mesh(params::Dict,
                                 path::String,
                                 ranksize::Int64,
-                                to::TimerOutput,
                                 silent::Bool)
     filename = joinpath(path, get_mesh_name(params))
     if params["Discretization"]["Type"] == "Abaqus"
-        @timeit to "read_mesh" mesh, nsets=read_mesh(filename, params)
+        @timeit "read_mesh" mesh, nsets=read_mesh(filename, params)
     elseif params["Discretization"]["Type"] == "Gcode"
         txt_file = replace(filename, ".gcode" => ".txt")
         @info txt_file
@@ -861,7 +835,7 @@ function load_and_evaluate_mesh(params::Dict,
         nsets = get_node_sets(params, path, mesh)
     else
         @debug "Read node sets"
-        @timeit to "read_mesh" mesh=read_mesh(filename, params)
+        @timeit "read_mesh" mesh=read_mesh(filename, params)
         nsets = get_node_sets(params, path, mesh)
     end
     nnodes = size(mesh, 1) + 1
@@ -884,13 +858,13 @@ function load_and_evaluate_mesh(params::Dict,
         @info "External topology files was read."
     end
     dof::Int64 = set_dof(mesh)
-    @timeit to "neighborhoodlist" nlist, _=create_neighborhoodlist(mesh, params, dof)
+    @timeit "neighborhoodlist" nlist, _=create_neighborhoodlist(mesh, params, dof)
     @debug "Finished init Neighborhoodlist"
-    @timeit to "apply_bond_filters" nlist, nlist_filtered_ids,
-                                    bond_norm=apply_bond_filters(nlist,
-                                                                 mesh,
-                                                                 params,
-                                                                 dof)
+    @timeit "apply_bond_filters" nlist, nlist_filtered_ids,
+                                 bond_norm=apply_bond_filters(nlist,
+                                                              mesh,
+                                                              params,
+                                                              dof)
     topology = nothing
     if !isnothing(external_topology)
         @info "Create a consistent neighborhood list with external topology definition."
@@ -902,14 +876,14 @@ function load_and_evaluate_mesh(params::Dict,
     end
     @debug "Start distribution"
     if haskey(params["Discretization"], "Distribution Type")
-        @timeit to "node_distribution" distribution, ptc,
-                                       ntype=node_distribution(nlist,
-                                                               ranksize,
-                                                               params["Discretization"]["Distribution Type"])
+        @timeit "node_distribution" distribution, ptc,
+                                    ntype=node_distribution(nlist,
+                                                            ranksize,
+                                                            params["Discretization"]["Distribution Type"])
     else
-        @timeit to "node_distribution" distribution, ptc,
-                                       ntype=node_distribution(nlist,
-                                                               ranksize)
+        @timeit "node_distribution" distribution, ptc,
+                                    ntype=node_distribution(nlist,
+                                                            ranksize)
     end
 
     el_distribution = nothing
@@ -919,7 +893,7 @@ function load_and_evaluate_mesh(params::Dict,
     end
     @debug "Finished distribution"
     @debug "Create Overlap"
-    @timeit to "overlap_map" overlap_map=create_overlap_map(distribution, ptc, ranksize)
+    @timeit "overlap_map" overlap_map=create_overlap_map(distribution, ptc, ranksize)
     @debug "Finished Overlap"
     return distribution,
            mesh,
@@ -936,7 +910,7 @@ end
 
 function create_consistent_neighborhoodlist(external_topology::DataFrame,
                                             params::Dict,
-                                            nlist::Vector{Vector{Int64}},
+                                            nlist::BondScalarState{Int64},
                                             dof::Int64)
     pd_neighbors::Bool = false
     if haskey(params, "Add Neighbor Search")
@@ -994,16 +968,16 @@ function create_neighborhoodlist(mesh::DataFrame, params::Dict, dof::Int64)
 end
 
 """
-    get_number_of_neighbornodes(nlist::Vector{Vector{Int64}})
+    get_number_of_neighbornodes(nlist::BondScalarState{Int64})
 
 Get the number of neighbors for each node.
 
 # Arguments
-- `nlist::Vector{Vector{Int64}}`: The neighborhood list of the mesh elements.
+- `nlist::BondScalarState{Int64}`: The neighborhood list of the mesh elements.
 # Returns
 - `length_nlist::Vector{Int64}`: The number of neighbors for each node.
 """
-function get_number_of_neighbornodes(nlist::Vector{Vector{Int64}}, filtered::Bool)
+function get_number_of_neighbornodes(nlist::BondScalarState{Int64}, filtered::Bool)
     len = length(nlist)
     length_nlist = zeros(Int64, len)
     for id in 1:len
@@ -1023,7 +997,7 @@ Create the distribution of the finite elements. Is needed to avoid multiple elem
 
 # Arguments
 - `topology::Vector{Vector{Int64}}`: The topology list of the mesh elements.
-- `nlist::Vector{Vector{Int64}}`: The neighborhood list of the mesh elements.
+- `nlist::BondScalarState{Int64}`: The neighborhood list of the mesh elements.
 - `size::Int64`: The number of ranks.
 # Returns
 - `distribution::Vector{Vector{Int64}}`: The distribution of the nodes.
@@ -1070,12 +1044,12 @@ function element_distribution(topology::Vector{Vector{Int64}},
 end
 
 """
-    node_distribution(nlist::Vector{Vector{Int64}}, size::Int64)
+    node_distribution(nlist::BondScalarState{Int64}, size::Int64)
 
 Create the distribution of the nodes.
 
 # Arguments
-- `nlist::Vector{Vector{Int64}}`: The neighborhood list of the mesh elements.
+- `nlist::BondScalarState{Int64}`: The neighborhood list of the mesh elements.
 - `size::Int64`: The number of ranks.
 - `distribution_type::String`: The distribution type.
 # Returns
@@ -1083,7 +1057,7 @@ Create the distribution of the nodes.
 - `ptc::Vector{Int64}`: Defines at which core / rank each node lies.
 - `ntype::Dict`: The type of the nodes.
 """
-function node_distribution(nlist::Vector{Vector{Int64}},
+function node_distribution(nlist::BondScalarState{Int64},
                            size::Int64,
                            distribution_type::String = "Neighbor based")
     nnodes = length(nlist)
@@ -1187,20 +1161,20 @@ function create_overlap_map(distribution::Vector{Vector{Int64}},
 end
 
 """
-    create_distribution_node_based(nnodes::Int64,nlist::Vector{Vector{Int64}}, size::Int64)
+    create_distribution_node_based(nnodes::Int64,nlist::BondScalarState{Int64}, size::Int64)
 
 Calculate the initial size of each chunk for a nearly equal number of nodes vs. cores this algorithm might lead to the problem, that the last core is not equally loaded
 
 # Arguments
 - `nnodes::Int64`: The number of nodes.
-- `nlist::Vector{Vector{Int64}}`: The neighborhood list.
+- `nlist::BondScalarState{Int64}`: The neighborhood list.
 - `size::Int64`: The number of cores.
 # Returns
 - `distribution::Array{Int64,1}`: The distribution of the nodes.
 - `point_to_core::Array{Int64,1}`: The number of nodes in each rank.
 """
 function create_distribution_node_based(nnodes::Int64,
-                                        nlist::Vector{Vector{Int64}},
+                                        nlist::BondScalarState{Int64},
                                         size::Int64)
     if size > nnodes
         @error "Number of cores $size exceeds number of nodes $nnodes."
@@ -1255,20 +1229,20 @@ function create_distribution_node_based(nnodes::Int64,
 end
 
 """
-    create_distribution_neighbor_based(nnodes::Int64,nlist::Vector{Vector{Int64}}, size::Int64)
+    create_distribution_neighbor_based(nnodes::Int64,nlist::BondScalarState{Int64}, size::Int64)
 
 Calculate the initial size of each chunk for a nearly equal number of nodes vs. cores this algorithm might lead to the problem, that the last core is not equally loaded
 
 # Arguments
 - `nnodes::Int64`: The number of nodes.
-- `nlist::Vector{Vector{Int64}}`: The neighborhood list.
+- `nlist::BondScalarState{Int64}`: The neighborhood list.
 - `size::Int64`: The number of cores.
 # Returns
 - `distribution::Array{Int64,1}`: The distribution of the nodes.
 - `point_to_core::Array{Int64,1}`: The number of nodes in each rank.
 """
 function create_distribution_neighbor_based(nnodes::Int64,
-                                            nlist::Vector{Vector{Int64}},
+                                            nlist::BondScalarState{Int64},
                                             size::Int64)
     if size > nnodes
         @error "Number of cores $size exceeds number of nodes $nnodes."

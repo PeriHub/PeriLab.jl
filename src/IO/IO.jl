@@ -3,11 +3,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module IO
-using TimerOutputs
 using MPI
 using DataFrames
 using PrettyTables
 using Logging
+using TimerOutputs: @timeit
+
+using ..Data_Manager
 
 include("read_inputdeck.jl")
 include("mesh_data.jl")
@@ -26,8 +28,10 @@ using ..MPI_Communication: send_single_value_from_vector, synch_responder_to_con
 using ..Helpers: progress_bar
 using ..Logging_Module: get_log_stream
 using ..Parameter_Handling: get_solver_steps, get_flush_file, get_write_after_damage,
-                            get_start_time, get_end_time, get_outputs, get_output_frequency,
-                            get_output_filenames, get_computes_names, get_computes, get_fem_block
+                            get_start_time, get_end_time, get_outputs,
+                            get_output_frequencies,
+                            get_output_filenames, get_computes_names, get_computes,
+                            get_fem_block
 using ..Geometry: rotation_tensor
 
 using OrderedCollections
@@ -194,21 +198,20 @@ function clearNP1(name::String)
 end
 
 """
-    get_results_mapping(params::Dict, path::String, datamanager::Module)
+    get_results_mapping(params::Dict, path::String)
 
 Gets the results mapping
 
 # Arguments
 - `params::Dict`: The parameters
 - `path::String`: The path
-- `datamanager::Module`: The datamanager
 # Returns
 - `output_mapping::Dict{Int64,Dict{}}`: The results mapping
 """
-function get_results_mapping(params::Dict, path::String, datamanager::Module)
+function get_results_mapping(params::Dict, path::String)
     compute_names = get_computes_names(params)
-    outputs = get_outputs(params, datamanager.get_all_field_keys(), compute_names)
-    computes = get_computes(params, datamanager.get_all_field_keys())
+    outputs = get_outputs(params, Data_Manager.get_all_field_keys(), compute_names)
+    computes = get_computes(params, Data_Manager.get_all_field_keys())
     output_mapping = Dict{Int64,Dict{}}()
 
     for (id, output) in enumerate(keys(outputs))
@@ -230,7 +233,7 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                 if fieldname[1] == key
                     fieldname[1] = computes[key]["Variable"]
                     fieldname[2] = "Constant"
-                    if datamanager.has_key(fieldname[1] * "NP1")
+                    if Data_Manager.has_key(fieldname[1] * "NP1")
                         fieldname[2] = "NP1"
                     end
                     compute_name = string(key)
@@ -241,13 +244,13 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                     elseif computes[key]["Compute Class"] == "Nearest_Point_Data"
                         #find neares_point_id and reduce over cores
 
-                        coor = datamanager.get_field("Coordinates")
+                        coor = Data_Manager.get_field("Coordinates")
                         point = [computes[key]["X"], computes[key]["Y"], computes[key]["Z"]]
                         tree = KDTree(coor'; leafsize = 2)
                         nearest_point_id, nearest_point_distance = nn(tree, point)
-                        if datamanager.get_mpi_active()
+                        if Data_Manager.get_mpi_active()
                             min_global_distance = nearest_point_distance
-                            find_and_set_core_value_min(datamanager.get_comm(),
+                            find_and_set_core_value_min(Data_Manager.get_comm(),
                                                         min_global_distance)
                             if min_global_distance != nearest_point_distance
                                 #Point on other core is closer to point
@@ -264,16 +267,21 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
             # end
 
             if fieldname[2] == "Constant"
-                field_type = datamanager.get_field_type(fieldname[1], false)
+                field_type = Data_Manager.get_field_type(fieldname[1], false)
             else
-                field_type = datamanager.get_field_type(fieldname[1]*fieldname[2], false)
+                field_type = Data_Manager.get_field_type(fieldname[1]*fieldname[2], false)
             end
 
-            if !(field_type in ["Node_Field", "Element_Field"])
+            if !(field_type in [
+                     "NodeScalarField",
+                     "NodeVectorField",
+                     "NodeTensorField",
+                     "Element_Field"
+                 ])
                 @error "Fieldtype $field_type of field $(fieldname[1]) is not supported."
             end
 
-            datafield = datamanager.get_field(fieldname[1], fieldname[2])
+            datafield = Data_Manager.get_field(fieldname[1], fieldname[2])
             sizedatafield = size(datafield)
             if isempty(sizedatafield)
                 @error "No field " * fieldname * " exists."
@@ -327,22 +335,22 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                 for dof in 1:i_ref_dof
                     if global_var
                         output_mapping[id]["Fields"][compute_name * get_paraview_coordinates(dof,
-                                                                                             i_ref_dof)] = Dict("fieldname" => fieldname[1],
-                                                                                                                "time" => fieldname[2],
-                                                                                                                "global_var" => global_var,
-                                                                                                                "dof" => dof,
-                                                                                                                "type" => typeof(datafield[1,
-                                                                                                                                           1]),
-                                                                                                                "compute_params" => compute_params,
-                                                                                                                "nodeset" => nodeset)
+                                                                                                                          i_ref_dof)] = Dict("fieldname" => fieldname[1],
+                                                                                                                     "time" => fieldname[2],
+                                                                                                                     "global_var" => global_var,
+                                                                                                                     "dof" => dof,
+                                                                                                                     "type" => typeof(datafield[1,
+                                                                                                                                                1]),
+                                                                                                                     "compute_params" => compute_params,
+                                                                                                                     "nodeset" => nodeset)
                     else
                         output_mapping[id]["Fields"][fieldname[1] * get_paraview_coordinates(dof,
-                                                                                             i_ref_dof)] = Dict("fieldname" => fieldname[1],
-                                                                                                                "time" => fieldname[2],
-                                                                                                                "global_var" => global_var,
-                                                                                                                "dof" => dof,
-                                                                                                                "type" => typeof(datafield[1,
-                                                                                                                                           1]))
+                                                                                                                          i_ref_dof)] = Dict("fieldname" => fieldname[1],
+                                                                                                                     "time" => fieldname[2],
+                                                                                                                     "global_var" => global_var,
+                                                                                                                     "dof" => dof,
+                                                                                                                     "type" => typeof(datafield[1,
+                                                                                                                                                1]))
                     end
                 end
             elseif length(sizedatafield) == 3
@@ -352,28 +360,28 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                     for j_dof in 1:j_ref_dof
                         if global_var
                             output_mapping[id]["Fields"][compute_name * get_paraview_coordinates(i_dof,
-                                                                                                 i_ref_dof) * get_paraview_coordinates(j_dof,
-                                                                                                                                       j_ref_dof)] = Dict("fieldname" => fieldname[1],
-                                                                                                                                                          "time" => fieldname[2],
-                                                                                                                                                          "global_var" => global_var,
-                                                                                                                                                          "i_dof" => i_dof,
-                                                                                                                                                          "j_dof" => j_dof,
-                                                                                                                                                          "type" => typeof(datafield[1,
-                                                                                                                                                                                     1,
-                                                                                                                                                                                     1]),
-                                                                                                                                                          "compute_params" => compute_params,
-                                                                                                                                                          "nodeset" => nodeset)
+                                                                                                                              i_ref_dof) * get_paraview_coordinates(j_dof,
+                                                                                                                                                                    j_ref_dof)] = Dict("fieldname" => fieldname[1],
+                                                                                                                                                                        "time" => fieldname[2],
+                                                                                                                                                                        "global_var" => global_var,
+                                                                                                                                                                        "i_dof" => i_dof,
+                                                                                                                                                                        "j_dof" => j_dof,
+                                                                                                                                                                        "type" => typeof(datafield[1,
+                                                                                                                                                                                                   1,
+                                                                                                                                                                                                   1]),
+                                                                                                                                                                        "compute_params" => compute_params,
+                                                                                                                                                                        "nodeset" => nodeset)
                         else
                             output_mapping[id]["Fields"][fieldname[1] * get_paraview_coordinates(i_dof,
-                                                                                                 i_ref_dof) * get_paraview_coordinates(j_dof,
-                                                                                                                                       j_ref_dof)] = Dict("fieldname" => fieldname[1],
-                                                                                                                                                          "time" => fieldname[2],
-                                                                                                                                                          "global_var" => global_var,
-                                                                                                                                                          "i_dof" => i_dof,
-                                                                                                                                                          "j_dof" => j_dof,
-                                                                                                                                                          "type" => typeof(datafield[1,
-                                                                                                                                                                                     1,
-                                                                                                                                                                                     1]))
+                                                                                                                              i_ref_dof) * get_paraview_coordinates(j_dof,
+                                                                                                                                                                    j_ref_dof)] = Dict("fieldname" => fieldname[1],
+                                                                                                                                                                        "time" => fieldname[2],
+                                                                                                                                                                        "global_var" => global_var,
+                                                                                                                                                                        "i_dof" => i_dof,
+                                                                                                                                                                        "j_dof" => j_dof,
+                                                                                                                                                                        "type" => typeof(datafield[1,
+                                                                                                                                                                                                   1,
+                                                                                                                                                                                                   1]))
                         end
                     end
                 end
@@ -384,61 +392,52 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
 end
 
 """
-    initialize_data(filename::String, filedirectory::String, datamanager::Module, comm::MPI.Comm, to::TimerOutputs.TimerOutput)
+    initialize_data(filename::String, filedirectory::String, comm::MPI.Comm)
 
 Initialize data.
 
 # Arguments
 - `filename::String`: The name of the input file.
 - `filedirectory::String`: The directory of the input file.
-- `datamanager::Module`: The datamanager
 - `comm::MPI.Comm`: The MPI communicator
-- `to::TimerOutputs.TimerOutput`: The TimerOutput
 # Returns
 - `data::Dict`: The data
 """
 function initialize_data(filename::String,
                          filedirectory::String,
-                         datamanager::Module,
-                         comm::MPI.Comm,
-                         to::TimerOutputs.TimerOutput)
-    datamanager.set_directory(filedirectory)
-    @timeit to "MPI init data" begin
-        datamanager.set_rank(MPI.Comm_rank(comm))
-        datamanager.set_max_rank(MPI.Comm_size(comm))
-        datamanager.set_comm(comm)
+                         comm::MPI.Comm)
+    Data_Manager.set_directory(filedirectory)
+    @timeit "MPI init data" begin
+        Data_Manager.set_rank(MPI.Comm_rank(comm))
+        Data_Manager.set_max_rank(MPI.Comm_size(comm))
+        Data_Manager.set_comm(comm)
     end
-    @timeit to "init_data" datamanager,
-                           params=init_data(read_input_file(filename),
-                                            filedirectory, datamanager, comm,
-                                            to)
+    @timeit "init_data" params=init_data(read_input_file(filename),
+                                         filedirectory, comm)
     steps = get_solver_steps(params)
-    return datamanager, params, steps
+    return params, steps
 end
 
 """
-    init_orientations(datamanager::Module)
+    init_orientations()
 
 Initialize orientations.
-
-# Arguments
-- `datamanager::Module`: The datamanager
 """
-function init_orientations(datamanager::Module)
-    rotation::Bool = datamanager.get_rotation()
-    element_rotation::Bool = datamanager.get_element_rotation()
+function init_orientations()
+    rotation::Bool = Data_Manager.get_rotation()
+    element_rotation::Bool = Data_Manager.get_element_rotation()
 
     if !rotation && !element_rotation
-        return datamanager
+        return
     end
-    dof = datamanager.get_dof()
-    nnodes = datamanager.get_nnodes()
-    orientations = datamanager.create_constant_node_field("Orientations", Float64, 3)
-    rotation_tensor_field = datamanager.create_constant_node_field("Rotation Tensor",
-                                                                   Float64,
-                                                                   dof,
-                                                                   VectorOrMatrix = "Matrix")
-    angles = datamanager.get_field("Angles")
+    dof = Data_Manager.get_dof()
+    nnodes = Data_Manager.get_nnodes()
+    orientations = Data_Manager.create_constant_node_vector_field("Orientations", Float64,
+                                                                  3)
+    rotation_tensor_field = Data_Manager.create_constant_node_tensor_field("Rotation Tensor",
+                                                                           Float64,
+                                                                           dof)
+    angles = Data_Manager.get_field("Angles")
 
     for iID in 1:nnodes
         rotation_tensor_field[iID, :, :] = rotation_tensor(angles[iID, :], dof)
@@ -449,11 +448,10 @@ function init_orientations(datamanager::Module)
             orientations[iID, :] = rotation_tensor_field[iID, :, 1]
         end
     end
-    return datamanager
 end
 
 """
-    init_write_results(params::Dict, output_dir::String, path::String, datamanager::Module, nsteps::Int64, PERILAB_VERSION::String)
+    init_write_results(params::Dict, output_dir::String, path::String, nsteps::Int64, PERILAB_VERSION::String)
 
 Initialize write results.
 
@@ -461,7 +459,6 @@ Initialize write results.
 - `params::Dict`: The parameters
 - `output_dir::String`: The output directory.
 - `path::String`: The path
-- `datamanager::Module`: The datamanager
 - `nsteps::Int64`: The number of steps
 # Returns
 - `result_files::Array`: The result files
@@ -470,7 +467,6 @@ Initialize write results.
 function init_write_results(params::Dict,
                             output_dir::String,
                             path::String,
-                            datamanager::Module,
                             PERILAB_VERSION::String)
     filenames = get_output_filenames(params, output_dir)
     if length(filenames) == 0
@@ -478,22 +474,22 @@ function init_write_results(params::Dict,
     end
     result_files::Vector{Dict} = []
 
-    nnodes = datamanager.get_nnodes()
-    global_ids = datamanager.loc_to_glob(1:nnodes)
-    dof = datamanager.get_dof()
-    nnsets = datamanager.get_nnsets()
-    coordinates = datamanager.get_field("Coordinates")
-    block_Id = datamanager.get_field("Block_Id")
+    nnodes = Data_Manager.get_nnodes()
+    global_ids = Data_Manager.loc_to_glob(1:nnodes)
+    dof = Data_Manager.get_dof()
+    nnsets = Data_Manager.get_nnsets()
+    coordinates = Data_Manager.get_field("Coordinates")
+    block_Id = Data_Manager.get_field("Block_Id")
 
-    comm = datamanager.get_comm()
+    comm = Data_Manager.get_comm()
 
-    block_name_list = datamanager.get_block_name_list()
-    block_id_list = datamanager.get_block_id_list()
+    block_name_list = Data_Manager.get_block_name_list()
+    block_id_list = Data_Manager.get_block_id_list()
 
-    if datamanager.get_mpi_active()
+    if Data_Manager.get_mpi_active()
         all_block_name_list = gather_values(comm, block_name_list)
         all_block_id_list = gather_values(comm, block_id_list)
-        if datamanager.get_rank() == 0
+        if Data_Manager.get_rank() == 0
             block_name_list = unique(vcat(all_block_name_list...))
             block_id_list = unique(vcat(all_block_id_list...))
         end
@@ -505,32 +501,32 @@ function init_write_results(params::Dict,
         block_name_list = block_name_list[sorted_indices]   # Reorder a using these indices
     end
 
-    nsets = datamanager.get_nsets()
-    outputs = get_results_mapping(params, path, datamanager)
+    nsets = Data_Manager.get_nsets()
+    outputs = get_results_mapping(params, path)
 
     topology = nothing
     fem_block = nothing
     num_elements = 0
     elem_global_ids = nothing
-    if datamanager.fem_active()
-        topology = datamanager.get_field("FE Topology")
-        fem_block = datamanager.get_field("FEM Block")
-        num_elements = datamanager.get_num_elements()
+    if Data_Manager.fem_active()
+        topology = Data_Manager.get_field("FE Topology")
+        fem_block = Data_Manager.get_field("FEM Block")
+        num_elements = Data_Manager.get_num_elements()
         num_nodes_in_topo = length(unique(topology))
         # @info nnodes, num_elements, num_nodes_in_topo
-        elem_global_ids = datamanager.loc_to_glob(1:(num_elements + nnodes - num_nodes_in_topo))
+        elem_global_ids = Data_Manager.loc_to_glob(1:(num_elements + nnodes - num_nodes_in_topo))
         # @info elem_global_ids
     end
     for name in eachindex(nsets)
         existing_nodes = intersect(global_ids, nsets[name])
-        nsets[name] = datamanager.get_local_nodes(existing_nodes)
+        nsets[name] = Data_Manager.get_local_nodes(existing_nodes)
     end
 
     for (id, filename) in enumerate(filenames)
-        rank = datamanager.get_rank()
-        max_rank = datamanager.get_max_rank()
+        rank = Data_Manager.get_rank()
+        max_rank = Data_Manager.get_max_rank()
         if ".e" == filename[(end - 1):end]
-            if datamanager.get_mpi_active()
+            if Data_Manager.get_mpi_active()
                 filename = filename *
                            "." *
                            string(max_rank) *
@@ -582,21 +578,19 @@ function init_write_results(params::Dict,
 end
 
 """
-    set_output_frequency(params::Dict, datamanager::Module, nsteps::Int64, step_id::Int64)
+    set_output_frequency(params::Dict, nsteps::Int64, step_id::Int64)
 
 Sets the output frequency.
 
 # Arguments
 - `params::Dict`: The parameters
-- `datamanager::Module`: The datamanager
 - `nsteps::Int64`: The number of steps
 - `step_id::Int64`: The step id
 """
 function set_output_frequency(params::Dict,
-                              datamanager::Module,
                               nsteps::Int64,
                               step_id::Union{Nothing,Int64} = nothing)
-    output_frequencies = get_output_frequency(params, nsteps)
+    output_frequencies = get_output_frequencies(params, nsteps)
     if isnothing(step_id) || step_id == 1
         output_frequency = []
         for id in eachindex(output_frequencies)
@@ -606,17 +600,17 @@ function set_output_frequency(params::Dict,
                                      "Step" => 1))
         end
     else
-        output_frequency = datamanager.get_output_frequency()
+        output_frequency = Data_Manager.get_output_frequency()
         for id in eachindex(output_frequencies)
             output_frequency[id]["Output Frequency"] = output_frequencies[id]
             output_frequency[id]["Counter"] = 0
         end
     end
-    datamanager.set_output_frequency(output_frequency)
+    Data_Manager.set_output_frequency(output_frequency)
 end
 
 """
-    write_results(result_files::Vector{Any}, time::Float64, max_damage::Float64, outputs::Dict, datamanager::Module)
+    write_results(result_files::Vector{Any}, time::Float64, max_damage::Float64, outputs::Dict)
 
 Write results.
 
@@ -625,15 +619,13 @@ Write results.
 - `time::Float64`: The time
 - `max_damage::Float64`: The maximum damage
 - `outputs::Dict`: The outputs
-- `datamanager::Module`: The datamanager
 # Returns
 - `result_files::Vector{Any}`: The result files
 """
 function write_results(result_files::Vector{Dict},
                        time::Float64,
                        max_damage::Float64,
-                       outputs::Dict,
-                       datamanager::Module)
+                       outputs::Dict)
     for id in eachindex(result_files)
         output_type = outputs[id]["Output File Type"]
         # step 1 ist the zero step?!
@@ -643,7 +635,7 @@ function write_results(result_files::Vector{Dict},
         if outputs[id]["start_time"] > time || outputs[id]["end_time"] < time
             continue
         end
-        output_frequency = datamanager.get_output_frequency()
+        output_frequency = Data_Manager.get_output_frequency()
         output_frequency[id]["Counter"] += 1
         if output_frequency[id]["Counter"] == output_frequency[id]["Output Frequency"]
             output_frequency[id]["Step"] += 1
@@ -656,7 +648,7 @@ function write_results(result_files::Vector{Dict},
                                   (key, value) in outputs[id]["Fields"]
                                   if (value["global_var"]))
             if outputs[id]["flush_file"] &&
-               ((datamanager.get_rank() == 0 && output_type == "CSV") ||
+               ((Data_Manager.get_rank() == 0 && output_type == "CSV") ||
                 output_type == "Exodus")
                 open_result_file(result_files[id])
             end
@@ -668,17 +660,16 @@ function write_results(result_files::Vector{Dict},
                                                                time)
                 result_files[id]["file"] = write_nodal_results_in_exodus(result_files[id]["file"],
                                                                          output_frequency[id]["Step"],
-                                                                         nodal_outputs,
-                                                                         datamanager)
+                                                                         nodal_outputs)
             end
             if length(global_outputs) > 0
-                global_values = get_global_values(global_outputs, datamanager)
+                global_values = get_global_values(global_outputs)
                 if output_type == "Exodus"
                     result_files[id]["file"] = write_global_results_in_exodus(result_files[id]["file"],
                                                                               output_frequency[id]["Step"],
                                                                               global_values)
                 end
-                if datamanager.get_rank() == 0
+                if Data_Manager.get_rank() == 0
                     if output_type == "CSV"
                         write_global_results_in_csv(result_files[id]["file"],
                                                     time,
@@ -688,7 +679,7 @@ function write_results(result_files::Vector{Dict},
             end
 
             if outputs[id]["flush_file"] &&
-               ((datamanager.get_rank() == 0 && output_type == "CSV") ||
+               ((Data_Manager.get_rank() == 0 && output_type == "CSV") ||
                 output_type == "Exodus")
                 close_result_file(result_files[id])
             end
@@ -700,20 +691,19 @@ function write_results(result_files::Vector{Dict},
 end
 
 """
-    get_global_values(output::Dict, datamanager::Module)
+    get_global_values(output::Dict,)
 
 Get global values.
 
 # Arguments
 - `output::Dict`: The output
-- `datamanager::Module`: The datamanager
 # Returns
 - `global_values::Vector`: The global values
 """
-function get_global_values(output::Dict, datamanager::Module)
+function get_global_values(output::Dict)
     global_values = []
-    block_ids = datamanager.get_block_id_list()
-    block_name_list = datamanager.get_block_name_list()
+    block_ids = Data_Manager.get_block_id_list()
+    block_name_list = Data_Manager.get_block_name_list()
     for varname in keys(sort!(OrderedDict(output)))
         compute_class = output[varname]["compute_params"]["Compute Class"]
         calculation_type = get(output[varname]["compute_params"], "Calculation Type",
@@ -721,10 +711,10 @@ function get_global_values(output::Dict, datamanager::Module)
         fieldname = output[varname]["compute_params"]["Variable"]
         extra_equation = get(output[varname]["compute_params"], "Equation", nothing)
         field_type = Float64
-        if datamanager.has_key(fieldname * "NP1")
-            field_type = datamanager.get_field_type(fieldname * "NP1")
+        if Data_Manager.has_key(fieldname * "NP1")
+            field_type = Data_Manager.get_field_type(fieldname * "NP1")
         else
-            field_type = datamanager.get_field_type(fieldname)
+            field_type = Data_Manager.get_field_type(fieldname)
         end
         global_value = field_type(0)
         nnodes = 0
@@ -742,28 +732,27 @@ function get_global_values(output::Dict, datamanager::Module)
             if block in block_name_list
                 block_id = block_ids[findfirst(==(block), block_name_list)]
                 global_value,
-                nnodes = calculate_block(datamanager, fieldname, dof,
+                nnodes = calculate_block(fieldname, dof,
                                          calculation_type, block_id)
             else
-                if datamanager.get_max_rank() <= 1
+                if Data_Manager.get_max_rank() <= 1
                     error("ERROR: Block name '$block' not found. Available blocks: $(join(block_name_list, ", "))")
                 end
             end
         elseif compute_class == "Node_Set_Data"
-            nsets = datamanager.get_nsets()
+            nsets = Data_Manager.get_nsets()
             node_set = output[varname]["nodeset"]
             global_value,
-            nnodes = calculate_nodelist(datamanager, fieldname, dof,
+            nnodes = calculate_nodelist(fieldname, dof,
                                         calculation_type, nsets[node_set])
         elseif compute_class == "Nearest_Point_Data"
             neares_point_id = output[varname]["nodeset"]
             global_value,
-            nnodes = calculate_nodelist(datamanager, fieldname, dof,
+            nnodes = calculate_nodelist(fieldname, dof,
                                         calculation_type, neares_point_id)
         end
-        if datamanager.get_mpi_active()
-            global_value = find_global_core_value!(global_value, calculation_type, nnodes,
-                                                   datamanager)
+        if Data_Manager.get_mpi_active()
+            global_value = find_global_core_value!(global_value, calculation_type, nnodes)
         end
         if !isnothing(extra_equation)
             global x = global_value
@@ -775,7 +764,7 @@ function get_global_values(output::Dict, datamanager::Module)
 end
 
 """
-    find_global_core_value!(global_value::Union{Int64,Float64}, calculation_type::String, nnodes::Int64, datamanager::Module)
+    find_global_core_value!(global_value::Union{Int64,Float64}, calculation_type::String, nnodes::Int64)
 
 Find global core value.
 
@@ -783,16 +772,14 @@ Find global core value.
 - `global_value::Union{Int64,Float64}`: The global value
 - `calculation_type::String`: The calculation type
 - `nnodes::Int64`: The number of nodes
-- `datamanager::Module`: The datamanager
 # Returns
 - `global_value::Union{Int64,Float64}`: The global value
 """
 function find_global_core_value!(global_value::T,
                                  calculation_type::String,
-                                 nnodes::Int64,
-                                 datamanager::Module)::Float64 where {T<:Union{Int64,
-                                                                               Float64}}
-    comm = datamanager.get_comm()
+                                 nnodes::Int64)::Float64 where {T<:Union{Int64,
+                                                                         Float64}}
+    comm = Data_Manager.get_comm()
     if calculation_type == "Sum"
         return find_and_set_core_value_sum(comm, global_value)
     elseif calculation_type == "Maximum"
@@ -827,7 +814,7 @@ function get_mpi_rank_string(rank::Int64, max_rank::Int64)
 end
 
 """
-    show_block_summary(solver_options::Dict, params::Dict, log_file::String, silent::Bool, comm::MPI.Comm, datamanager::Module)
+    show_block_summary(solver_options::Dict, params::Dict, log_file::String, silent::Bool, comm::MPI.Comm)
 
 Show block summary.
 
@@ -836,15 +823,13 @@ Show block summary.
 - `params::Dict`: The params
 - `log_file::String`: The log file
 - `silent::Bool`: The silent flag
-- `comm::MPI.Comm`: The comm
-- `datamanager::Module`: The datamanager
+- `comm::MPI.Comm`: The Comm_rank
 """
 function show_block_summary(solver_options::Dict,
                             params::Dict,
                             log_file::String,
                             silent::Bool,
-                            comm::MPI.Comm,
-                            datamanager::Module)
+                            comm::MPI.Comm)
     rank = MPI.Comm_rank(comm)
     size = MPI.Comm_size(comm)
 
@@ -876,10 +861,10 @@ function show_block_summary(solver_options::Dict,
     #types = [Int64, String, String, String, String, Float64, Float64, Int64]
     #df = DataFrame([header => Vector{t}() for (header, t) in zip(headers, types)])
     #---
-    block_Id = datamanager.get_field("Block_Id")
-    block_name_list = datamanager.get_block_name_list()
+    block_Id = Data_Manager.get_field("Block_Id")
+    block_name_list = Data_Manager.get_block_name_list()
 
-    if datamanager.fem_active()
+    if Data_Manager.fem_active()
         push!(headers, "PD/FEM")
     end
 
@@ -910,7 +895,7 @@ function show_block_summary(solver_options::Dict,
             push!(row, num_nodes)
         end
 
-        if datamanager.fem_active()
+        if Data_Manager.fem_active()
             fem_block = get_fem_block(params, id)
             if fem_block
                 push!(row, "FEM")
@@ -934,29 +919,29 @@ function show_block_summary(solver_options::Dict,
             push!(full_df, new_row)
         end
         if !silent
-            pretty_table(full_df; show_subheader = false)
+            pretty_table(full_df; show_first_column_label_only = true)
             stream = get_log_stream(2)
             if !isnothing(stream)
-                pretty_table(stream, full_df; show_subheader = false)
+                pretty_table(stream, full_df; show_first_column_label_only = true)
             end
         else
             stream = get_log_stream(1)
             if !isnothing(stream)
-                pretty_table(stream, full_df; show_subheader = false)
+                pretty_table(stream, full_df; show_first_column_label_only = true)
             end
         end
     else
         if log_file != ""
             if !silent
-                pretty_table(df; show_subheader = false)
+                pretty_table(df; show_first_column_label_only = true)
                 stream = get_log_stream(2)
                 if !isnothing(stream)
-                    pretty_table(stream, df; show_subheader = false)
+                    pretty_table(stream, df; show_first_column_label_only = true)
                 end
             else
                 stream = get_log_stream(1)
                 if !isnothing(stream)
-                    pretty_table(stream, df; show_subheader = false)
+                    pretty_table(stream, df; show_first_column_label_only = true)
                 end
             end
         end
@@ -964,7 +949,7 @@ function show_block_summary(solver_options::Dict,
 end
 
 """
-    show_mpi_summary(log_file::String, silent::Bool, comm::MPI.Comm, datamanager::Module)
+    show_mpi_summary(log_file::String, silent::Bool, comm::MPI.Comm)
 
 Show MPI summary.
 
@@ -972,12 +957,10 @@ Show MPI summary.
 - `log_file::String`: The log file
 - `silent::Bool`: The silent flag
 - `comm::MPI.Comm`: The comm
-- `datamanager::Module`: The datamanager
 """
 function show_mpi_summary(log_file::String,
                           silent::Bool,
-                          comm::MPI.Comm,
-                          datamanager::Module)
+                          comm::MPI.Comm)
     size = MPI.Comm_size(comm)
 
     if size == 1
@@ -986,13 +969,13 @@ function show_mpi_summary(log_file::String,
 
     rank = MPI.Comm_rank(comm)
 
-    block_Id = datamanager.get_field("Block_Id")
-    block_name_list = datamanager.get_block_name_list()
-    block_id_list = datamanager.get_block_id_list()
-    if datamanager.get_mpi_active()
+    block_Id = Data_Manager.get_field("Block_Id")
+    block_name_list = Data_Manager.get_block_name_list()
+    block_id_list = Data_Manager.get_block_id_list()
+    if Data_Manager.get_mpi_active()
         all_block_name_list = gather_values(comm, block_name_list)
         all_block_id_list = gather_values(comm, block_id_list)
-        if datamanager.get_rank() == 0
+        if Data_Manager.get_rank() == 0
             block_name_list = unique(vcat(all_block_name_list...))
             block_id_list = unique(vcat(all_block_id_list...))
         end
@@ -1000,7 +983,7 @@ function show_mpi_summary(log_file::String,
         block_id_list = broadcast_value(comm, block_id_list)
     end
 
-    nlist = datamanager.get_nlist()
+    nlist = Data_Manager.get_nlist()
     headers = ["Rank"]
     headers = vcat(headers, block_name_list)
     append!(headers, ["Total"])
@@ -1028,29 +1011,29 @@ function show_mpi_summary(log_file::String,
     if rank == 0
         merged_df = vcat(all_dfs...)
         if !silent
-            pretty_table(merged_df; show_subheader = false)
+            pretty_table(merged_df; show_first_column_label_only = true)
             stream = get_log_stream(2)
             if !isnothing(stream)
-                pretty_table(stream, merged_df; show_subheader = false)
+                pretty_table(stream, merged_df; show_first_column_label_only = true)
             end
         else
             stream = get_log_stream(1)
             if !isnothing(stream)
-                pretty_table(stream, merged_df; show_subheader = false)
+                pretty_table(stream, merged_df; show_first_column_label_only = true)
             end
         end
     else
         if log_file != ""
             if !silent
-                pretty_table(df; show_subheader = false)
+                pretty_table(df; show_first_column_label_only = true)
                 stream = get_log_stream(2)
                 if !isnothing(stream)
-                    pretty_table(stream, df; show_subheader = false)
+                    pretty_table(stream, df; show_first_column_label_only = true)
                 end
             else
                 stream = get_log_stream(1)
                 if !isnothing(stream)
-                    pretty_table(stream, df; show_subheader = false)
+                    pretty_table(stream, df; show_first_column_label_only = true)
                 end
             end
         end

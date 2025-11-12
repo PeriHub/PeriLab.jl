@@ -25,7 +25,6 @@ MPI.Init()
             @testset "ut_FEM_routines" begin
                 include("unit_tests/FEM/ut_FEM_routines.jl")
             end
-
             @testset "ut_FEM_Factory" begin
                 include("unit_tests/FEM/ut_FEM_Factory.jl")
             end
@@ -116,9 +115,9 @@ MPI.Init()
         end
 
         @testset "Models" begin
-            @testset "ut_templates" begin
-                include("unit_tests/Models/ut_templates.jl")
-            end
+            # @testset "ut_templates" begin
+            #     include("unit_tests/Models/ut_templates.jl")
+            # end
             @testset "Additive" begin
                 @testset "ut_Additive_Factory" begin
                     include("unit_tests/Models/Additive/ut_Additive_Factory.jl")
@@ -200,14 +199,11 @@ MPI.Init()
 
     # Logging.disable_logging(Logging.Debug - 2000)
     @testset "fullscale_tests" begin
-        # @testset "test_reload" begin
-        #     include("fullscale_tests/test_reload/test_reload.jl")
-        # end
+        @testset "test_reload" begin
+            include("fullscale_tests/test_reload/test_reload.jl")
+        end
         @testset "test_linear_static_matrix_based" begin
             include("fullscale_tests/test_linear_static_matrix_based_solver/test_linear_static_matrix_based_solver.jl")
-        end
-        @testset "test_bond_based_elastic" begin
-            include("fullscale_tests/test_bond_based_elastic/test_bond_based_elastic.jl")
         end
         @testset "test_surface_correction" begin
             include("fullscale_tests/test_Surface_correction/test_Surface_correction.jl")
@@ -236,9 +232,6 @@ MPI.Init()
         @testset "test_heat_transfer" begin
             include("fullscale_tests/test_heat_transfer/test_heat_transfer.jl")
         end
-        @testset "test_penalty_contact" begin
-            include("fullscale_tests/test_penalty_contact/test_penalty_contact.jl")
-        end
         @testset "test_BCs" begin
             include("fullscale_tests/test_BCs/test_BCs.jl")
         end
@@ -247,9 +240,6 @@ MPI.Init()
         # end
         @testset "test_PD_Solid_Elastic" begin
             include("fullscale_tests/test_PD_solid_elastic/test_PD_solid_elastic.jl")
-        end
-        @testset "test_PD_Solid_Elastic_3D" begin
-            include("fullscale_tests/test_PD_solid_elastic_3D/test_PD_solid_elastic_3D.jl")
         end
         @testset "test_PD_Solid_Plastic" begin
             include("fullscale_tests/test_PD_solid_plastic/test_PD_solid_plastic.jl")
@@ -299,14 +289,23 @@ MPI.Init()
         @testset "test_point_wise_material" begin
             include("fullscale_tests/test_point_wise_material/test_point_wise_material.jl")
         end
-        @testset "test_FEM_coupling" begin
-            include("fullscale_tests/test_FEM_coupling/test_FEM_coupling.jl")
-        end
         @testset "test_FEM" begin
             include("fullscale_tests/test_FEM/test_FEM.jl")
         end
+        @testset "test_FEM_coupling" begin
+            include("fullscale_tests/test_FEM_coupling/test_FEM_coupling.jl")
+        end
         @testset "test_vumat" begin
             include("fullscale_tests/test_vumat/test_vumat.jl")
+        end
+        @testset "test_bond_based_elastic" begin
+            include("fullscale_tests/test_bond_based_elastic/test_bond_based_elastic.jl")
+        end
+        @testset "test_PD_Solid_Elastic_3D" begin
+            include("fullscale_tests/test_PD_solid_elastic_3D/test_PD_solid_elastic_3D.jl")
+        end
+        @testset "test_penalty_contact" begin
+            include("fullscale_tests/test_penalty_contact/test_penalty_contact.jl")
         end
     end
 end

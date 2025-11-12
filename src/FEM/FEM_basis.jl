@@ -2,11 +2,15 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 module FEM_Basis
+
 using LinearAlgebra
 using StaticArrays
 using FastGaussQuadrature
 using Statistics
+
+using ....Data_Manager
 using ....Helpers: invert, determinant, voigt_to_matrix
+
 function get_FE_material_model(params::Dict{String,Any}, name::String)
     if !haskey(params["Material Models"], params["FEM"][name]["Material Model"])
         @error "Material model " *
@@ -19,32 +23,31 @@ function get_FE_material_model(params::Dict{String,Any}, name::String)
     return parameter
 end
 
-function compute_FEM(datamanager::Module,
-                     elements::AbstractVector{Int64},
+function compute_FEM(elements::AbstractVector{Int64},
                      params::Dict{String,Any},
                      compute_stresses,
                      time::Float64,
                      dt::Float64)
-    rotation::Bool = datamanager.get_element_rotation()
+    rotation::Bool = Data_Manager.get_element_rotation()
     if rotation
-        rotation_tensor = datamanager.get_field("Rotation Tensor")
+        rotation_tensor = Data_Manager.get_field("Rotation Tensor")
     end
-    dof = datamanager.get_dof()
+    dof = Data_Manager.get_dof()
 
-    forces = datamanager.get_field("Forces", "NP1")
-    uNP1 = datamanager.get_field("Displacements", "NP1")
-    strain_N = datamanager.get_field("Element Strain", "N")
-    strain_NP1 = datamanager.get_field("Element Strain", "NP1")
-    stress_N = datamanager.get_field("Element Stress", "N")
-    stress_NP1 = datamanager.get_field("Element Stress", "NP1")
-    strain_increment = datamanager.get_field("Element Strain Increment")
-    topology = datamanager.get_field("FE Topology")
-    jacobian = datamanager.get_field("Element Jacobi Matrix")
-    det_jacobian = datamanager.get_field("Element Jacobi Determinant")
+    forces = Data_Manager.get_field("Forces", "NP1")
+    uNP1 = Data_Manager.get_field("Displacements", "NP1")
+    strain_N = Data_Manager.get_field("Element Strain", "N")
+    strain_NP1 = Data_Manager.get_field("Element Strain", "NP1")
+    stress_N = Data_Manager.get_field("Element Stress", "N")
+    stress_NP1 = Data_Manager.get_field("Element Stress", "NP1")
+    strain_increment = Data_Manager.get_field("Element Strain Increment")
+    topology = Data_Manager.get_field("FE Topology")
+    jacobian = Data_Manager.get_field("Element Jacobi Matrix")
+    det_jacobian = Data_Manager.get_field("Element Jacobi Determinant")
     # not avveraged Cauchy stresses -> element stresses will be later available in Exodus
-    cauchy_stress = datamanager.get_field("Cauchy Stress", "NP1")
+    cauchy_stress = Data_Manager.get_field("Cauchy Stress", "NP1")
 
-    B_matrix = datamanager.get_field("B Matrix")
+    B_matrix = Data_Manager.get_field("B Matrix")
 
     stress_temp = @MVector zeros(3 * dof - 3)
     le::Int64 = 0
@@ -91,12 +94,10 @@ function compute_FEM(datamanager::Module,
         nnodes::Int64 = length(topo)
 
         for id_int in eachindex(B_matrix[1, :, 1, 1])
-            strain_NP1[id_el, id_int,
-                       :] = B_matrix[id_el, id_int, :, :]' *
-                            reshape((uNP1[topo, :])', le)
-            strain_increment[id_el, id_int,
-                             :] = strain_NP1[id_el, id_int, :] -
-                                  strain_N[id_el, id_int, :]
+            strain_NP1[id_el, id_int, :] = B_matrix[id_el, id_int, :, :]' *
+                                           reshape((uNP1[topo, :])', le)
+            strain_increment[id_el, id_int, :] = strain_NP1[id_el, id_int, :] -
+                                                 strain_N[id_el, id_int, :]
 
             if rotation
                 #tbd
@@ -106,26 +107,24 @@ function compute_FEM(datamanager::Module,
 
             # in future this part must be changed -> using set Modules
 
-            stress_NP1[id_el, id_int, :],
-            datamanager = compute_stresses(datamanager,
-                                           dof,
-                                           convert(Dict{String,Any},
-                                                   params["Material Model"]),
-                                           time,
-                                           dt,
-                                           strain_increment[id_el,
+            stress_NP1[id_el, id_int, :] = compute_stresses(dof,
+                                                            convert(Dict{String,Any},
+                                                                    params["Material Model"]),
+                                                            time,
+                                                            dt,
+                                                            strain_increment[id_el,
                                                             id_int,
                                                             :],
-                                           stress_N[id_el,
-                                                    id_int,
-                                                    :],
-                                           stress_NP1[id_el,
-                                                      id_int,
-                                                      :])
+                                                            stress_N[id_el,
+                                                            id_int,
+                                                            :],
+                                                            stress_NP1[id_el,
+                                                            id_int,
+                                                            :])
 
             #specifics = Dict{String,String}("Call Function" => "compute_stresses", "Name" => "material_name") -> tbd
             # material_model is missing
-            #stress_NP1, datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager, nodes, dof, material_parameter, time, dt, strain_increment, stress_N, stress_NP1))
+            #stress_NP1 = Set_modules.create_module_specifics(material_model, module_list, specifics, (nodes, dof, material_parameter, time, dt, strain_increment, stress_N, stress_NP1))
 
             if rotation
                 #tbd
@@ -134,10 +133,10 @@ function compute_FEM(datamanager::Module,
             # specific force density
 
             forces[topo,
-                   :] -= reshape(B_matrix[id_el, id_int, :, :] *
-                                 stress_NP1[id_el, id_int, :] .*
-                                 det_jacobian[id_el, id_int],
-                                 (dof, nnodes))' #./ volume[topo]
+            :] -= reshape(B_matrix[id_el, id_int, :, :] *
+                                       stress_NP1[id_el, id_int, :] .*
+                                       det_jacobian[id_el, id_int],
+                                       (dof, nnodes))' #./ volume[topo]
             # if you do not use permutedims you will get some index errors
             stress_temp .+= stress_NP1[id_el, id_int, :] .* det_jacobian[id_el, id_int]
         end
@@ -147,11 +146,10 @@ function compute_FEM(datamanager::Module,
         temp[:, :, 1:nnodes] .= voigt_to_matrix(stress_temp)
         # no avering over element borders
         cauchy_stress[topo, :,
-                      :] = permutedims(temp[:, :, 1:nnodes], (3, 1, 2)) ./
-                           sum(det_jacobian[id_el, :])
+        :] = permutedims(temp[:, :, 1:nnodes], (3, 1, 2)) ./
+                                    sum(det_jacobian[id_el, :])
         stress_temp .= 0
     end
-    return datamanager
 end
 
 function get_lumped_mass(elements::Vector{Int64},
@@ -270,12 +268,12 @@ function get_Jacobian(elements::Vector{Int64},
             for idof in 1:dof
                 for jdof in 1:dof
                     jacobian[id_el, id_int, idof,
-                             jdof] = dot(coordinates[topology[id_el,
+                    jdof] = dot(coordinates[topology[id_el,
                                                               :],
-                                                     idof],
-                                         B[id_int,
-                                           mapping .+ (jdof - 1),
-                                           jdof])
+                                                              idof],
+                                                              B[id_int,
+                                                              mapping .+ (jdof - 1),
+                                                              jdof])
                 end
             end
 
@@ -287,8 +285,8 @@ function get_Jacobian(elements::Vector{Int64},
                 return nothing, nothing
             end
             jacobian[id_el, id_int, :,
-                     :] = invert(jacobian[id_el, id_int, :, :],
-                                 "Jacobian in FEM Module is singular.")
+            :] = invert(jacobian[id_el, id_int, :, :],
+                                                   "Jacobian in FEM Module is singular.")
         end
     end
     return jacobian, determinant_jacobian
@@ -379,13 +377,13 @@ function create_B_matrix(elements::Vector{Int64},
         for id_int in eachindex(B[1, :, 1, 1])
             for id_nodes in 1:nnodes
                 B[id_el, id_int, ((id_nodes - 1) * dof + 1):((id_nodes) * dof),
-                  :] = jacobian[id_el,
-                                id_int,
-                                :,
-                                :] *
-                       B_elem[id_int,
-                              ((id_nodes - 1) * dof + 1):(id_nodes * dof),
-                              :]
+                :] = jacobian[id_el,
+                                                                                              id_int,
+                                                                                              :,
+                                                                                              :] *
+                                                                                     B_elem[id_int,
+                                                                                            ((id_nodes - 1) * dof + 1):(id_nodes * dof),
+                                                                                            :]
             end
         end
     end

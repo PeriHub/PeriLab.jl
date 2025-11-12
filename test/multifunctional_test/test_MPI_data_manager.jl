@@ -22,9 +22,9 @@ else
     nneighbors = [2, 3, 2, 5]
 end
 Data_Manager.set_num_controller(nnodes)
-nn = Data_Manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+nn = Data_Manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
 nn = nneighbors
-nlist = Data_Manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+nlist = Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
 @testset "init_distributed_lists rank $rank" begin
     for (id, list) in enumerate(nlist)
         @test length(list) == nneighbors[id]
@@ -39,6 +39,6 @@ create_global_to_local_mapping = create_global_to_local_mapping(distribution)
 @testset "init_data rank $rank" begin
     length_nlist = send_vector_from_root_to_core_i(comm, send_msg, length_nlist,
                                                    distribution)
-    nlist_core = Data_Manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist_core = Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
 end
 MPI.Finalize()

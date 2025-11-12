@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Thermal_Decomposition
-using TimerOutputs
+
+using .......Data_Manager
+
 export compute_model
 export degradation_name
 export init_model
@@ -30,34 +32,30 @@ function degradation_name()
 end
 
 """
-    compute_model(datamanager, nodes, degradation_parameter, block::Int64, time, dt)
+    compute_model(nodes, degradation_parameter, block::Int64, time, dt)
 
-Calculates the bond-based degradation model. This template has to be copied, the file renamed and edited by the user to create a new degradation. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Calculates the bond-based degradation model. This template has to be copied, the file renamed and edited by the user to create a new degradation. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `degradation parameter::Dict(String, Any)`: Dictionary with degradation parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 Example:
 ```julia
   ```
 """
-function compute_model(datamanager::Module,
-                       nodes::AbstractVector{Int64},
+function compute_model(nodes::AbstractVector{Int64},
                        degradation_parameter::Dict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    nlist = datamanager.get_nlist()
-    inverse_nlist = datamanager.get_inverse_nlist()
-    bond_damage = datamanager.get_bond_damage("NP1")
-    temperature = datamanager.get_field("Temperature", "NP1")
-    active = datamanager.get_field("Active")
-    number_of_neighbors = datamanager.get_field("Number of Neighbors")
+    nlist = Data_Manager.get_nlist()
+    inverse_nlist = Data_Manager.get_inverse_nlist()
+    bond_damage = Data_Manager.get_bond_damage("NP1")
+    temperature = Data_Manager.get_field("Temperature", "NP1")
+    active = Data_Manager.get_field("Active")
+    number_of_neighbors = Data_Manager.get_field("Number of Neighbors")
 
     decomp_temp = degradation_parameter["Decomposition Temperature"]
     nn::Int64 = 1
@@ -79,33 +77,26 @@ function compute_model(datamanager::Module,
             end
         end
     end
-
-    return datamanager
 end
 
 """
-    init_model(datamanager, nodes, block::Int64, degradation_parameter)
+    init_model(nodes, block::Int64, degradation_parameter)
 
-Inits the bond-based degradation model. This template has to be copied, the file renamed and edited by the user to create a new degradation. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Inits the bond-based degradation model. This template has to be copied, the file renamed and edited by the user to create a new degradation. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `degradation parameter::Dict(String, Any)`: Dictionary with degradation parameter.
 - `block::Int64`: The current block.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 
 """
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     degradation_parameter::Dict,
                     block::Int64)
-    return datamanager
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+    fields_for_local_synchronization(model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -114,11 +105,10 @@ Returns a user developer defined local synchronization. This happens before each
 # Arguments
 
 """
-function fields_for_local_synchronization(datamanager::Module, model::String)
+function fields_for_local_synchronization(model::String)
     #download_from_cores = false
     #upload_to_cores = true
-    #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
-    return datamanager
+    #Data_Manager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
 end
 
 end

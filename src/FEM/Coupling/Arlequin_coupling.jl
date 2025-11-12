@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Arlequin_Coupling
+
+using ......Data_Manager
 include("../Element_formulation/Lagrange_element.jl")
 using .Lagrange_element:
                          define_lagrangian_grid_space,
@@ -26,33 +28,33 @@ function coupling_name()
     return "Arlequin"
 end
 
-function init_coupling_model(datamanager::Module, nodes, fe_params::Dict{String,Any})
+function init_coupling_model(nodes, fe_params::Dict{String,Any})
     @info "Coupling $(coupling_name()) is active."
-    dof = datamanager.get_dof()
+    dof = Data_Manager.get_dof()
     p = get_polynomial_degree(fe_params, dof)
     if !haskey(fe_params["Coupling"], "PD Weight")
         fe_params["Coupling"]["PD Weight"] = 0.5
         @info "Weight for coupling is set to 0.5."
     end
 
-    el_topology = datamanager.get_field("FE Topology")
-    coordinates = datamanager.get_field("Coordinates")
+    el_topology = Data_Manager.get_field("FE Topology")
+    coordinates = Data_Manager.get_field("Coordinates")
 
-    pd_nodes = datamanager.get_field("PD Nodes")
-    fe_nodes = datamanager.get_field("FE Nodes")
+    pd_nodes = Data_Manager.get_field("PD Nodes")
+    fe_nodes = Data_Manager.get_field("FE Nodes")
     pd_nodes = find_active_nodes(fe_nodes, pd_nodes, nodes, false)
     if haskey(fe_params["Coupling"], "Coupling Block")
         @info "Pre defined coupling region is block $(fe_params["Coupling"]["Coupling Block"])"
         pd_nodes = get_coupling_zone(pd_nodes,
-                                     datamanager.get_field("Block_Id"),
+                                     Data_Manager.get_field("Block_Id"),
                                      fe_params["Coupling"]["Coupling Block"])
     end
-    lumped_mass = datamanager.get_field("Lumped Mass Matrix")
+    lumped_mass = Data_Manager.get_field("Lumped Mass Matrix")
 
     # TODO memory efficiency; create a mapping field and allocate only the memory of length coupling nodes
-    coupling_matrix = datamanager.create_constant_node_field("Coupling Matrix",
-                                                             Float64, (prod(p .+ 1) + 1),
-                                                             VectorOrMatrix = "Matrix")
+    coupling_matrix = Data_Manager.create_constant_node_tensor_field("Coupling Matrix",
+                                                                     Float64,
+                                                                     (prod(p .+ 1) + 1))
 
     if any(x -> x > 1, p)
         @error "Coupling is supported only for linear elements yet."
@@ -70,26 +72,25 @@ function init_coupling_model(datamanager::Module, nodes, fe_params::Dict{String,
 
     coupling_dict = find_point_in_elements(coordinates, el_topology, pd_nodes, dof)
     # point should be inside element -> for Arlequin; more stable
-    rho = datamanager.get_field("Density")
+    rho = Data_Manager.get_field("Density")
     @info "Create Coupling Matrix"
     for (coupling_node, coupling_element) in pairs(coupling_dict)
         coupling_matrix[coupling_node, :,
-                        :] = compute_coupling_matrix(coordinates,
-                                                     el_topology,
-                                                     coupling_node,
-                                                     coupling_element,
-                                                     kappa,
-                                                     p,
-                                                     dof)
+        :] = compute_coupling_matrix(coordinates,
+                                                                       el_topology,
+                                                                       coupling_node,
+                                                                       coupling_element,
+                                                                       kappa,
+                                                                       p,
+                                                                       dof)
         rho[coupling_node] *= (1 - weight_coefficient)
     end
-    datamanager.set_coupling_dict(coupling_dict)
+    Data_Manager.set_coupling_dict(coupling_dict)
     element_list = collect(values(coupling_dict))
     unique_fe_coupling_nodes = unique(el_topology[element_list, :])
     lumped_mass[unique_fe_coupling_nodes] .*= weight_coefficient
 
-    datamanager.set_coupling_fe_nodes(unique_fe_coupling_nodes)
-    return datamanager
+    Data_Manager.set_coupling_fe_nodes(unique_fe_coupling_nodes)
 end
 
 function get_coupling_zone(pd_nodes, blocks, ref_block)
@@ -122,18 +123,18 @@ end
 # 0.25 shape function check # TODO 0.25  -> not in FEM
 ##
 
-function compute_coupling(datamanager::Module, fem_params::Dict)
-    dof = datamanager.get_dof()
-    el_topology = datamanager.get_field("FE Topology")
-    force_densities = datamanager.get_field("Force Densities", "NP1")
-    displacements = datamanager.get_field("Displacements", "NP1")
-    volume = datamanager.get_field("Volume")
-    coupling_matrix = datamanager.get_field("Coupling Matrix")
+function compute_coupling(fem_params::Dict)
+    dof = Data_Manager.get_dof()
+    el_topology = Data_Manager.get_field("FE Topology")
+    force_densities = Data_Manager.get_field("Force Densities", "NP1")
+    displacements = Data_Manager.get_field("Displacements", "NP1")
+    volume = Data_Manager.get_field("Volume")
+    coupling_matrix = Data_Manager.get_field("Coupling Matrix")
     # EQ(13) in 10.1002/pamm.202400021 is fulfilled , also for the mass part.
     # F_i/rho = a ?! TODO check this assumption
     weight_coefficient = fem_params["Coupling"]["PD Weight"]
-    coupling_dict = datamanager.get_coupling_dict()
-    unique_fe_coupling_nodes = datamanager.get_coupling_fe_nodes()
+    coupling_dict = Data_Manager.get_coupling_dict()
+    unique_fe_coupling_nodes = Data_Manager.get_coupling_fe_nodes()
     force_densities[unique_fe_coupling_nodes, :] .*= weight_coefficient
 
     # TODO weights are not correct here see EQ(1)
@@ -143,8 +144,8 @@ function compute_coupling(datamanager::Module, fem_params::Dict)
         vol = vcat(volume[coupling_node], volume[el_topology[coupling_element, :]])
 
         force_densities[topo,
-                        :] -= coupling_matrix[coupling_node, :, :] *
-                              displacements[topo, :] ./ vol
+        :] -= coupling_matrix[coupling_node, :, :] *
+                                    displacements[topo, :] ./ vol
 
         #force_densities[topo, :] +=
 
@@ -152,8 +153,6 @@ function compute_coupling(datamanager::Module, fem_params::Dict)
         #force_densities[el_topology[coupling_element, :], :] += force_temp[2:5, :] ./ volume[coupling_node]^2
         ## TODO det(jacobi)
     end
-
-    return datamanager
 end
 
 function compute_coupling_matrix(coordinates,

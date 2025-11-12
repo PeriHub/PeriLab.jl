@@ -4,6 +4,8 @@
 
 module Correspondence_UMAT
 using StaticArrays
+
+using ......Data_Manager
 using ......Helpers: voigt_to_matrix, matrix_to_voigt
 using .....Material_Basis: get_Hooke_matrix
 using .....Global_Zero_Energy_Control: global_zero_energy_mode_stiffness
@@ -37,20 +39,15 @@ function fe_support()
 end
 
 """
-  init_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
 
 Initializes the material model.
 
 # Arguments
-  - `datamanager::Data_Manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-
-# Returns
-  - `datamanager::Data_Manager`: Datamanager.
 """
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     # set to 1 to avoid a later check if the state variable field exists or not
     num_state_vars::Int64 = 1
@@ -58,7 +55,7 @@ function init_model(datamanager::Module,
         @error "UMAT file is not defined."
         return nothing
     end
-    directory = datamanager.get_directory()
+    directory = Data_Manager.get_directory()
     material_parameter["File"] = joinpath(joinpath(pwd(), directory),
                                           material_parameter["File"])
     global umat_file_path = material_parameter["File"]
@@ -70,7 +67,12 @@ function init_model(datamanager::Module,
         num_state_vars = material_parameter["Number of State Variables"]
     end
     # State variables are used to transfer additional information to the next step
-    datamanager.create_constant_node_field("State Variables", Float64, num_state_vars)
+    if num_state_vars == 1
+        Data_Manager.create_constant_node_scalar_field("State Variables", Float64)
+    else
+        Data_Manager.create_constant_node_vector_field("State Variables", Float64,
+                                                       num_state_vars)
+    end
 
     if !haskey(material_parameter, "Number of Properties")
         @error "Number of Properties must be at least equal 1"
@@ -78,8 +80,8 @@ function init_model(datamanager::Module,
     end
     # properties include the material properties, etc.
     num_props = material_parameter["Number of Properties"]
-    properties = datamanager.create_constant_free_size_field("Properties", Float64,
-                                                             (num_props, 1))
+    properties = Data_Manager.create_constant_free_size_field("Properties", Float64,
+                                                              (num_props, 1))
 
     for iID in 1:num_props
         if !haskey(material_parameter, "Property_$iID")
@@ -103,54 +105,60 @@ function init_model(datamanager::Module,
         material_parameter["UMAT name"] = "UMAT"
     end
 
-    dof = datamanager.get_dof()
-    sse = datamanager.create_constant_node_field("Specific Elastic Strain Energy", Float64,
-                                                 1)
-    spd = datamanager.create_constant_node_field("Specific Plastic Dissipation", Float64, 1)
-    scd = datamanager.create_constant_node_field("Specific Creep Dissipation Energy",
-                                                 Float64,
-                                                 1)
-    rpl = datamanager.create_constant_node_field("Volumetric heat generation per unit time",
-                                                 Float64,
-                                                 1)
-    DDSDDT = datamanager.create_constant_node_field("Variation of the stress increments with respect to the temperature",
-                                                    Float64,
-                                                    3 * dof - 3)
-    DRPLDE = datamanager.create_constant_node_field("Variation of RPL with respect to the strain increment",
-                                                    Float64,
-                                                    3 * dof - 3)
-    DRPLDT = datamanager.create_constant_node_field("Variation of RPL with respect to the temperature",
-                                                    Float64,
-                                                    1)
-    DFGRD0 = datamanager.create_constant_node_field("DFGRD0", Float64, dof,
-                                                    VectorOrMatrix = "Matrix")
+    dof = Data_Manager.get_dof()
+    sse = Data_Manager.create_constant_node_scalar_field("Specific Elastic Strain Energy",
+                                                         Float64)
+    spd = Data_Manager.create_constant_node_scalar_field("Specific Plastic Dissipation",
+                                                         Float64)
+    scd = Data_Manager.create_constant_node_scalar_field("Specific Creep Dissipation Energy",
+                                                         Float64)
+    rpl = Data_Manager.create_constant_node_scalar_field("Volumetric heat generation per unit time",
+                                                         Float64)
+    DDSDDT = Data_Manager.create_constant_node_vector_field("Variation of the stress increments with respect to the temperature",
+                                                            Float64,
+                                                            3 * dof - 3)
+    DRPLDE = Data_Manager.create_constant_node_vector_field("Variation of RPL with respect to the strain increment",
+                                                            Float64,
+                                                            3 * dof - 3)
+    DRPLDT = Data_Manager.create_constant_node_scalar_field("Variation of RPL with respect to the temperature",
+                                                            Float64)
+    DFGRD0 = Data_Manager.create_constant_node_tensor_field("DFGRD0", Float64, dof)
     # is already initialized if thermal problems are adressed
-    datamanager.create_node_field("Temperature", Float64, 1)
-    deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
+    Data_Manager.create_node_scalar_field("Temperature", Float64)
+    deltaT = Data_Manager.create_constant_node_scalar_field("Delta Temperature", Float64)
     if haskey(material_parameter, "Predefined Field Names")
         field_names = split(material_parameter["Predefined Field Names"], " ")
-        fields = datamanager.create_constant_node_field("Predefined Fields",
-                                                        Float64,
-                                                        length(field_names))
+        n_fields = length(field_names)
+        if n_fields == 1
+            fields = Data_Manager.create_constant_node_scalar_field("Predefined Fields",
+                                                                    Float64)
+        else
+            fields = Data_Manager.create_constant_node_vector_field("Predefined Fields",
+                                                                    Float64,
+                                                                    n_fields)
+        end
         for (id, field_name) in enumerate(field_names)
-            if !datamanager.has_key(String(field_name))
+            if !Data_Manager.has_key(String(field_name))
                 @error "Predefined field ''$field_name'' is not defined in the mesh file."
                 return nothing
             end
             # view or copy and than deleting the old one
             # TODO check if an existing field is a bool.
-            fields[:, id] = datamanager.get_field(String(field_name))
+            fields[:, id] = Data_Manager.get_field(String(field_name))
         end
-        datamanager.create_constant_node_field("Predefined Fields Increment",
-                                               Float64,
-                                               length(field_names))
+        if n_fields == 1
+            fields = Data_Manager.create_constant_node_scalar_field("Predefined Fields Increment",
+                                                                    Float64)
+        else
+            fields = Data_Manager.create_constant_node_vector_field("Predefined Fields Increment",
+                                                                    Float64,
+                                                                    n_fields)
+        end
     end
 
-    zStiff = datamanager.create_constant_node_field("Zero Energy Stiffness",
-                                                    Float64,
-                                                    dof, VectorOrMatrix = "Matrix")
-
-    return datamanager
+    zStiff = Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",
+                                                            Float64,
+                                                            dof)
 end
 
 """
@@ -174,12 +182,11 @@ function correspondence_name()
 end
 
 """
-    compute_stresses(datamanager::Module, nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
+    compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
 
-Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `iID::Int64`: Node ID.
 - `dof::Int64`: Degrees of freedom
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
@@ -190,15 +197,13 @@ Calculates the stresses of the material. This template has to be copied, the fil
 - `stress_NP1::SubArray`: Stress of step N+1.
 - `iID_jID_nID::Tuple=(): (optional) are the index and node id information. The tuple is ordered iID as index of the point,  jID the index of the bond of iID and nID the neighborID.
 # Returns
-- `datamanager::Data_Manager`: Datamanager.
 - `stress_NP1::SubArray`: updated stresses
 
 Example:
 ```julia
 ```
 """
-function compute_stresses(datamanager::Module,
-                          nodes::AbstractVector{Int64},
+function compute_stresses(nodes::AbstractVector{Int64},
                           dof::Int64,
                           material_parameter::Dict,
                           time::Float64,
@@ -209,24 +214,24 @@ function compute_stresses(datamanager::Module,
     # the notation from the Abaqus Fortran subroutine is used.
     nstatev = material_parameter["Number of State Variables"]
     nprops = material_parameter["Number of Properties"]
-    props = datamanager.get_field("Properties")
+    props = Data_Manager.get_field("Properties")
 
-    statev = datamanager.get_field("State Variables")
+    statev = Data_Manager.get_field("State Variables")
 
     stress_temp::Vector{Float64} = zeros(Float64, 3 * dof - 3)
     DDSDDE = zeros(Float64, 3 * dof - 3, 3 * dof - 3)
-    SSE = datamanager.get_field("Specific Elastic Strain Energy")
-    SPD = datamanager.get_field("Specific Plastic Dissipation")
-    SCD = datamanager.get_field("Specific Creep Dissipation Energy")
-    RPL = datamanager.get_field("Volumetric heat generation per unit time")
-    DDSDDT = datamanager.get_field("Variation of the stress increments with respect to the temperature")
-    DRPLDE = datamanager.get_field("Variation of RPL with respect to the strain increment")
-    DRPLDT = datamanager.get_field("Variation of RPL with respect to the temperature")
-    strain_N = datamanager.get_field("Strain", "N")
-    temp = datamanager.get_field("Temperature", "N")
-    dtemp = datamanager.get_field("Delta Temperature")
-    PREDEF = datamanager.get_field_if_exists("Predefined Fields")
-    DPRED = datamanager.get_field_if_exists("Predefined Fields Increment")
+    SSE = Data_Manager.get_field("Specific Elastic Strain Energy")
+    SPD = Data_Manager.get_field("Specific Plastic Dissipation")
+    SCD = Data_Manager.get_field("Specific Creep Dissipation Energy")
+    RPL = Data_Manager.get_field("Volumetric heat generation per unit time")
+    DDSDDT = Data_Manager.get_field("Variation of the stress increments with respect to the temperature")
+    DRPLDE = Data_Manager.get_field("Variation of RPL with respect to the strain increment")
+    DRPLDT = Data_Manager.get_field("Variation of RPL with respect to the temperature")
+    strain_N = Data_Manager.get_field("Strain", "N")
+    temp = Data_Manager.get_field("Temperature", "N")
+    dtemp = Data_Manager.get_field("Delta Temperature")
+    PREDEF = Data_Manager.get_field_if_exists("Predefined Fields")
+    DPRED = Data_Manager.get_field_if_exists("Predefined Fields Increment")
 
     if isnothing(PREDEF)
         PREDEF = zeros(size(temp))
@@ -235,9 +240,9 @@ function compute_stresses(datamanager::Module,
 
     # only 80 characters are supported
     CMNAME::Cstring = malloc_cstring(material_parameter["UMAT Material Name"])
-    coords = datamanager.get_field("Coordinates")
-    zStiff = datamanager.get_field("Zero Energy Stiffness")
-    Kinv = datamanager.get_field("Inverse Shape Tensor")
+    coords = Data_Manager.get_field("Coordinates")
+    zStiff = Data_Manager.get_field("Zero Energy Stiffness")
+    Kinv = Data_Manager.get_field("Inverse Shape Tensor")
     # Number of normal stress components at this point
     ndi = dof
     # Number of engineering shear stress components
@@ -246,14 +251,14 @@ function compute_stresses(datamanager::Module,
     ntens = ndi + nshr
     not_supported_float::Float64 = 0.0
 
-    rot = datamanager.get_field_if_exists("Rotation Tensor")
-    # rot_NP1 = datamanager.get_field_if_exists("Rotation Tensor", "NP1")
+    rot = Data_Manager.get_field_if_exists("Rotation Tensor")
+    # rot_NP1 = Data_Manager.get_field_if_exists("Rotation Tensor", "NP1")
 
     DROT = isnothing(rot) ? zeros(length(temp), ntens, ntens) : rot #rot_NP1 - rot_N
 
-    DFGRD0 = datamanager.get_field("DFGRD0")
-    DFGRD1 = datamanager.get_field("Deformation Gradient")
-    JSTEP = datamanager.get_iteration()
+    DFGRD0 = Data_Manager.get_field("DFGRD0")
+    DFGRD1 = Data_Manager.get_field("Deformation Gradient")
+    JSTEP = Data_Manager.get_iteration()
     KINC::Int64 = 1
     not_supported_int::Int64 = 0
     for iID in nodes
@@ -369,9 +374,6 @@ UMAT interface
 - `KSPT::Int64`: Partition
 - `JSTEP::Int64`: Step
 - `KINC::Int64`: Increment
-
-# Returns
-- `datamanager`: Datamanager
 """
 function UMAT_interface(STRESS::Vector{Float64},
                         STATEV::Vector{Float64},
@@ -488,8 +490,7 @@ function UMAT_interface(STRESS::Vector{Float64},
           KINC)
 end
 
-function compute_stresses_ba(datamanager::Module,
-                             nodes,
+function compute_stresses_ba(nodes,
                              nlist,
                              dof::Int64,
                              material_parameter::Dict,
@@ -516,7 +517,7 @@ function malloc_cstring(s::String)
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+    fields_for_local_synchronization(model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -525,11 +526,10 @@ Returns a user developer defined local synchronization. This happens before each
 # Arguments
 
 """
-function fields_for_local_synchronization(datamanager::Module, model::String)
+function fields_for_local_synchronization(model::String)
     #download_from_cores = false
     #upload_to_cores = true
-    #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
-    return datamanager
+    #Data_Manager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
 end
 
 end

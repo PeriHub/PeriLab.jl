@@ -3,10 +3,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Correspondence_template
+
+using .......Data_Manager
+export compute_stresses
+export correspondence_name
 export fe_support
 export init_model
-export correspondence_name
-export compute_model
 export fields_for_local_synchronization
 
 """
@@ -30,25 +32,19 @@ function fe_support()
 end
 
 """
-  init_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict,
+  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict,
     block::Int64)
 
 Initializes the material model.
 
 # Arguments
-  - `datamanager::Data_Manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
   - `block::Int64`: Current block
-
-# Returns
-  - `datamanager::Data_Manager`: Datamanager.
 """
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict,
                     block::Int64)
-    return datamanager
 end
 
 """
@@ -72,48 +68,28 @@ function correspondence_name()
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+    compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
 
-Returns a user developer defined local synchronization. This happens before each model.
-
-
+Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-
-"""
-function fields_for_local_synchronization(datamanager::Module, model::String)
-    # download_from_cores = false
-    # upload_to_cores = true
-    # datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
-    return datamanager
-end
-
-"""
-    compute_stresses(datamanager::Module, nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
-
-Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
-
-# Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `iID::Int64`: Node ID.
 - `dof::Int64`: Degrees of freedom
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-- `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
+- `strainInc::Union{NodeTensorField{Float64,3},Array{Float64,6}}`: Strain increment.
 - `stress_N::SubArray`: Stress of step N.
 - `stress_NP1::SubArray`: Stress of step N+1.
 - `iID_jID_nID::Tuple=(): (optional) are the index and node id information. The tuple is ordered iID as index of the point,  jID the index of the bond of iID and nID the neighborID.
 # Returns
-- `datamanager::Data_Manager`: Datamanager.
 - `stress_NP1::SubArray`: updated stresses
 
 Example:
 ```julia
 ```
 """
-function compute_stresses(datamanager::Module,
-                          iID::Int64,
+function compute_stresses(iID::Int64,
                           dof::Int64,
                           material_parameter::Dict,
                           time::Float64,
@@ -125,56 +101,68 @@ function compute_stresses(datamanager::Module,
     @info "Please write a material name in material_name()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_model() and init_model() function."
-    @info "The datamanager and material_parameter holds all you need to solve your problem on material level."
+    @info "The Data_Manager and material_parameter holds all you need to solve your problem on material level."
     @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
-    return datamanager, stress_NP1
+    return stress_NP1
 end
 
 """
-    compute_stresses(datamanager::Module, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
+    compute_stresses(dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
 
-Calculates the stresses of a single node. Needed for FEM. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Calculates the stresses of a single node. Needed for FEM. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `dof::Int64`: Degrees of freedom
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-- `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
+- `strainInc::Union{NodeTensorField{Float64,3},Array{Float64,6}}`: Strain increment.
 - `stress_N::SubArray`: Stress of step N.
 - `stress_NP1::SubArray`: Stress of step N+1.
 # Returns
-- `datamanager::Data_Manager`: Datamanager.
 - `stress_NP1::SubArray`: updated stresses
 Example:
 ```julia
 ```
 """
-function compute_stresses(datamanager::Module,
-                          dof::Int64,
+function compute_stresses(dof::Int64,
                           material_parameter::Dict,
                           time::Float64,
                           dt::Float64,
                           strain_increment::Vector{Float64},
                           stress_N::Vector{Float64},
                           stress_NP1::Vector{Float64})
-    return stress_NP1, datamanager
+    return stress_NP1
 end
 
-function compute_stresses_ba(datamanager::Module,
-                             nodes,
+function compute_stresses_ba(nodes,
                              nlist,
                              dof::Int64,
                              material_parameter::Dict,
                              time::Float64,
                              dt::Float64,
-                             strain_increment::Union{SubArray,Array{Float64,3},
+                             strain_increment::Union{SubArray,NodeTensorField{Float64,3},
                                                      Vector{Float64}},
-                             stress_N::Union{SubArray,Array{Float64,3},Vector{Float64}},
-                             stress_NP1::Union{SubArray,Array{Float64,3},
+                             stress_N::Union{SubArray,NodeTensorField{Float64,3},Vector{Float64}},
+                             stress_NP1::Union{SubArray,NodeTensorField{Float64,3},
                                                Vector{Float64}})
     @error "$(correspondence_name()) not yet implemented for bond associated."
+end
+
+"""
+    fields_for_local_synchronization(model::String)
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+
+
+# Arguments
+
+"""
+function fields_for_local_synchronization(model::String)
+    # download_from_cores = false
+    # upload_to_cores = true
+    # Data_Manager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
 end
 
 end

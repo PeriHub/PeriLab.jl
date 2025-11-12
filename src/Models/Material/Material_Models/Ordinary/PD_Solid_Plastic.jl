@@ -3,8 +3,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module PD_Solid_Plastic
-using TimerOutputs
 
+using TimerOutputs: @timeit
+
+using ......Data_Manager
 using ....Material_Basis: get_symmetry
 using ......Helpers: add_in_place!, mul_in_place!, sub_in_place!
 using ..Ordinary: calculate_symmetry_params, get_bond_forces
@@ -35,29 +37,24 @@ function fe_support()
 end
 
 """
-  init_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
 
 Initializes the material model.
 
 # Arguments
-  - `datamanager::Data_Manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-
-# Returns
-  - `datamanager::Data_Manager`: Datamanager.
 """
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
-    horizon = datamanager.get_field("Horizon")
+    horizon = Data_Manager.get_field("Horizon")
 
     if !haskey(material_parameter, "Yield Stress")
         @error "Yield Stress is not defined in input deck"
         return nothing
     end
     yield_stress = material_parameter["Yield Stress"]
-    yield = datamanager.create_constant_node_field("Yield Value", Float64, 1)
+    yield = Data_Manager.create_constant_node_scalar_field("Yield Value", Float64)
 
     if get_symmetry(material_parameter) == "3D"
         yield[nodes] .= 25 * yield_stress * yield_stress ./ (8 * pi .* horizon[nodes] .^ 5)
@@ -66,13 +63,12 @@ function init_model(datamanager::Module,
         yield[nodes] .= 225 * yield_stress * yield_stress ./
                         (24 * thickness * pi .* horizon[nodes] .^ 4)
     end
-    datamanager.create_constant_bond_field("Deviatoric Plastic Extension State", Float64, 1)
-    datamanager.create_node_field("Lambda Plastic", Float64, 1)
-    datamanager.create_constant_node_field("TD Norm", Float64, 1)
-    datamanager.create_constant_bond_field("Bond Forces Deviatoric", Float64, 1)
-    datamanager.create_constant_bond_field("Bond Forces Isotropic", Float64, 1)
-
-    return datamanager
+    Data_Manager.create_constant_bond_scalar_state("Deviatoric Plastic Extension State",
+                                                   Float64)
+    Data_Manager.create_node_scalar_field("Lambda Plastic", Float64)
+    Data_Manager.create_constant_node_scalar_field("TD Norm", Float64)
+    Data_Manager.create_constant_bond_scalar_state("Bond Forces Deviatoric", Float64)
+    Data_Manager.create_constant_bond_scalar_state("Bond Forces Isotropic", Float64)
 end
 
 """
@@ -96,7 +92,7 @@ function material_name()
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+    fields_for_local_synchronization( model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -105,90 +101,83 @@ Returns a user developer defined local synchronization. This happens before each
 # Arguments
 
 """
-function fields_for_local_synchronization(datamanager::Module, model::String)
+function fields_for_local_synchronization(model::String)
     #download_from_cores = false
     #upload_to_cores = true
-    #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
-    return datamanager
+    #Data_Manager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
 end
 
 """
-    compute_model(datamanager, nodes, material_parameter, time, dt, to::TimerOutput)
+    compute_model(nodes, material_parameter, time, dt)
 
-Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 Example:
 ```julia
 ```
 """
-function compute_model(datamanager::Module,
-                       nodes::AbstractVector{Int64},
+function compute_model(nodes::AbstractVector{Int64},
                        material_parameter::Dict,
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
-    volume = datamanager.get_field("Volume")
-    nlist = datamanager.get_nlist()
+                       dt::Float64)
+    volume = Data_Manager.get_field("Volume")
+    nlist = Data_Manager.get_nlist()
     symmetry::String = get_symmetry(material_parameter)
-    deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
-    omega = datamanager.get_field("Influence Function")
-    bond_damage = datamanager.get_bond_damage("NP1")
-    bond_force = datamanager.get_field("Bond Forces")
-    temp = datamanager.get_field("Temporary Bond Field")
+    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
+    deformed_bond_length = Data_Manager.get_field("Deformed Bond Length", "NP1")
+    omega = Data_Manager.get_field("Influence Function")
+    bond_damage = Data_Manager.get_bond_damage("NP1")
+    bond_force = Data_Manager.get_field("Bond Forces")
+    temp = Data_Manager.get_field("Temporary Bond Field")
     shear_modulus = material_parameter["Shear Modulus"]
     bulk_modulus = material_parameter["Bulk Modulus"]
-    bond_force_deviatoric_part = datamanager.get_field("Bond Forces Deviatoric")
-    bond_force_isotropic_part = datamanager.get_field("Bond Forces Isotropic")
-    deviatoric_plastic_extension_state = datamanager.get_field("Deviatoric Plastic Extension State")
-    yield_value = datamanager.get_field("Yield Value")
-    td_norm = datamanager.get_field("TD Norm")
-    lambdaN = datamanager.get_field("Lambda Plastic", "N")
-    lambdaNP1 = datamanager.get_field("Lambda Plastic", "NP1")
+    bond_force_deviatoric_part = Data_Manager.get_field("Bond Forces Deviatoric")
+    bond_force_isotropic_part = Data_Manager.get_field("Bond Forces Isotropic")
+    deviatoric_plastic_extension_state = Data_Manager.get_field("Deviatoric Plastic Extension State")
+    yield_value = Data_Manager.get_field("Yield Value")
+    td_norm = Data_Manager.get_field("TD Norm")
+    lambdaN = Data_Manager.get_field("Lambda Plastic", "N")
+    lambdaNP1 = Data_Manager.get_field("Lambda Plastic", "NP1")
 
-    @timeit to "calculate_symmetry_params" alpha, gamma,
-                                           kappa=calculate_symmetry_params(symmetry,
-                                                                           shear_modulus,
-                                                                           bulk_modulus)
-    @timeit to "compute_deviatoric_force_state_norm" compute_deviatoric_force_state_norm!(td_norm,
-                                                                                          nodes,
-                                                                                          nlist,
-                                                                                          alpha,
-                                                                                          bond_force_deviatoric_part,
-                                                                                          bond_damage,
-                                                                                          omega,
-                                                                                          volume,
-                                                                                          deviatoric_plastic_extension_state,
-                                                                                          temp)
+    @timeit "calculate_symmetry_params" alpha, gamma,
+                                        kappa=calculate_symmetry_params(symmetry,
+                                                                        shear_modulus,
+                                                                        bulk_modulus)
+    @timeit "compute_deviatoric_force_state_norm" compute_deviatoric_force_state_norm!(td_norm,
+                                                                                       nodes,
+                                                                                       nlist,
+                                                                                       alpha,
+                                                                                       bond_force_deviatoric_part,
+                                                                                       bond_damage,
+                                                                                       omega,
+                                                                                       volume,
+                                                                                       deviatoric_plastic_extension_state,
+                                                                                       temp)
     lambdaNP1 = copy(lambdaN)
 
-    @timeit to "plastic" bond_force_deviatoric_part,
-                         deviatoric_plastic_extension_state=plastic(nodes,
-                                                                    td_norm,
-                                                                    yield_value,
-                                                                    lambdaNP1,
-                                                                    alpha,
-                                                                    omega,
-                                                                    bond_damage,
-                                                                    deviatoric_plastic_extension_state,
-                                                                    bond_force_deviatoric_part)
+    @timeit "plastic" bond_force_deviatoric_part,
+                      deviatoric_plastic_extension_state=plastic(nodes,
+                                                                 td_norm,
+                                                                 yield_value,
+                                                                 lambdaNP1,
+                                                                 alpha,
+                                                                 omega,
+                                                                 bond_damage,
+                                                                 deviatoric_plastic_extension_state,
+                                                                 bond_force_deviatoric_part)
     add_in_place!(temp, bond_force_deviatoric_part, bond_force_isotropic_part)
-    @timeit to "get_bond_forces" bond_force=get_bond_forces(nodes,
-                                                            temp,
-                                                            deformed_bond,
-                                                            deformed_bond_length,
-                                                            bond_force,
-                                                            temp)
-    return datamanager
+    @timeit "get_bond_forces" bond_force=get_bond_forces(nodes,
+                                                         temp,
+                                                         deformed_bond,
+                                                         deformed_bond_length,
+                                                         bond_force,
+                                                         temp)
 end
 
 """
@@ -219,14 +208,14 @@ Compute the norm of the deviatoric force state for each node.
 
 function compute_deviatoric_force_state_norm!(td_norm::Vector{Float64},
                                               nodes::AbstractVector{Int64},
-                                              nlist::Vector{Vector{Int64}},
+                                              nlist::BondScalarState{Int64},
                                               alpha::Float64,
-                                              bond_force_deviatoric::Vector{Vector{Float64}},
-                                              bond_damage::Vector{Vector{Float64}},
-                                              omega::Vector{Vector{Float64}},
-                                              volume::Vector{Float64},
-                                              deviatoric_plastic_extension_state::Vector{Vector{Float64}},
-                                              temp_field::Vector{Vector{Float64}})
+                                              bond_force_deviatoric::BondScalarState{Float64},
+                                              bond_damage::BondScalarState{Float64},
+                                              omega::BondScalarState{Float64},
+                                              volume::NodeScalarField{Float64},
+                                              deviatoric_plastic_extension_state::BondScalarState{Float64},
+                                              temp_field::BondScalarState{Float64})
     # not optimal allocation of memory, but not check of indices is needed
     # for iID in nodes
     # td_trial = bond_force_deviatoric[iID] -
@@ -245,14 +234,14 @@ end
 
 function compute_deviatoric_force_state_norm!(td_norm::Vector{Float64},
                                               nodes::AbstractVector{Int64},
-                                              nlist::Vector{Vector{Int64}},
+                                              nlist::BondScalarState{Int64},
                                               alpha::Vector{Float64},
-                                              bond_force_deviatoric::Vector{Vector{Float64}},
-                                              bond_damage::Vector{Vector{Float64}},
-                                              omega::Vector{Vector{Float64}},
-                                              volume::Vector{Float64},
-                                              deviatoric_plastic_extension_state::Vector{Vector{Float64}},
-                                              temp_field::Vector{Vector{Float64}})
+                                              bond_force_deviatoric::BondScalarState{Float64},
+                                              bond_damage::BondScalarState{Float64},
+                                              omega::BondScalarState{Float64},
+                                              volume::NodeScalarField{Float64},
+                                              deviatoric_plastic_extension_state::BondScalarState{Float64},
+                                              temp_field::BondScalarState{Float64})
     # not optimal allocation of memory, but not check of indices is needed
 
     # for iID in nodes
@@ -305,10 +294,10 @@ function plastic(nodes::AbstractVector{Int64},
                  yield_value::Vector{Float64},
                  lambdaNP1::AbstractVector{Float64},
                  alpha::Float64,
-                 omega::Vector{Vector{Float64}},
-                 bond_damage::Vector{Vector{Float64}},
-                 deviatoric_plastic_extension_state::Vector{Vector{Float64}},
-                 bond_force_deviatoric::Vector{Vector{Float64}})
+                 omega::BondScalarState{Float64},
+                 bond_damage::BondScalarState{Float64},
+                 deviatoric_plastic_extension_state::BondScalarState{Float64},
+                 bond_force_deviatoric::BondScalarState{Float64})
     for iID in nodes
         if td_norm[iID] * td_norm[iID] / 2 - yield_value[iID] < 0
             continue
@@ -329,10 +318,10 @@ function plastic(nodes::AbstractVector{Int64},
                  yield_value::Vector{Float64},
                  lambdaNP1::AbstractVector{Float64},
                  alpha::Vector{Float64},
-                 omega::Vector{Vector{Float64}},
-                 bond_damage::Vector{Vector{Float64}},
-                 deviatoric_plastic_extension_state::Vector{Vector{Float64}},
-                 bond_force_deviatoric::Vector{Vector{Float64}})
+                 omega::BondScalarState{Float64},
+                 bond_damage::BondScalarState{Float64},
+                 deviatoric_plastic_extension_state::BondScalarState{Float64},
+                 bond_force_deviatoric::BondScalarState{Float64})
     for iID in nodes
         if td_norm[iID] * td_norm[iID] / 2 - yield_value[iID] < 0
             continue

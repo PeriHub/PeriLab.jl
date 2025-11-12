@@ -4,6 +4,8 @@
 
 module Pre_Bond_Associated_Correspondence
 using DataStructures: OrderedDict
+
+using .......Data_Manager
 using .......Geometry: compute_weighted_deformation_gradient
 using LoopVectorization
 using StaticArrays: @MVector
@@ -35,83 +37,73 @@ function pre_calculation_name()
 end
 
 """
-    init_model(datamanager, nodes, parameter)
+    init_model(nodes, parameter)
 
 Inits the bond deformation gradient calculation.
 
 # Arguments
-- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `parameter::Dict(String, Any)`: Dictionary with parameter.
-# Returns
-- `datamanager::Data_Manager`: Datamanager.
 
 """
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     parameter::Union{Dict,OrderedDict},
                     block::Int64)
-    dof = datamanager.get_dof()
-    datamanager.create_constant_bond_field("Bond Associated Deformation Gradient",
-                                           Float64, dof,
-                                           VectorOrMatrix = "Matrix")
-    datamanager.create_constant_node_field("Deformation Gradient", Float64, dof,
-                                           VectorOrMatrix = "Matrix")
-    datamanager.create_constant_bond_field("Lagrangian Gradient Weights", Float64, dof)
-    datamanager.create_constant_node_field("Weighted Deformation Gradient",
-                                           Float64, dof,
-                                           VectorOrMatrix = "Matrix")
+    dof = Data_Manager.get_dof()
+    Data_Manager.create_constant_bond_tensor_state("Bond Associated Deformation Gradient",
+                                                   Float64, dof)
+    Data_Manager.create_constant_node_tensor_field("Deformation Gradient", Float64, dof)
+    Data_Manager.create_constant_bond_vector_state("Lagrangian Gradient Weights", Float64,
+                                                   dof)
+    Data_Manager.create_constant_node_tensor_field("Weighted Deformation Gradient",
+                                                   Float64, dof)
 
     #https://arxiv.org/pdf/2004.11477
     # maybe as static array
 
-    accuracy_order = datamanager.get_accuracy_order()
+    accuracy_order = Data_Manager.get_accuracy_order()
     dim = qdim(accuracy_order, dof)
-    if "Q Vector" in datamanager.get_all_field_keys()
-        return datamanager
+    if "Q Vector" in Data_Manager.get_all_field_keys()
+        return
     end
-    datamanager.create_constant_free_size_field("Q Vector", Float64, (dim,), 1)
-    datamanager.create_constant_free_size_field("Minv Matrix", Float64, (dim, dim))
-    datamanager.create_constant_free_size_field("M temporary Matrix", Float64, (dim, dim))
-    return datamanager
+    Data_Manager.create_constant_free_size_field("Q Vector", Float64, (dim,);
+                                                 default_value = 1)
+    Data_Manager.create_constant_free_size_field("Minv Matrix", Float64, (dim, dim))
+    Data_Manager.create_constant_free_size_field("M temporary Matrix", Float64, (dim, dim))
 end
 
 """
-    compute(datamanager, nodes)
+    compute(nodes)
 
 Compute the bond deformation gradient.
 
 # Arguments
-- `datamanager`: Datamanager.
 - `nodes`: List of nodes.
-# Returns
-- `datamanager`: Datamanager.
 """
 
-function compute(datamanager::Module,
-                 nodes::AbstractVector{Int64},
+function compute(nodes::AbstractVector{Int64},
                  parameter::Union{Dict,OrderedDict},
                  block::Int64)
-    dof = datamanager.get_dof()
-    nlist = datamanager.get_nlist()
-    volume = datamanager.get_field("Volume")
-    omega = datamanager.get_field("Influence Function")
-    bond_damage = datamanager.get_bond_damage("NP1")
-    bond_geometry = datamanager.get_field("Bond Geometry")
-    deformation_gradient = datamanager.get_field("Deformation Gradient")
-    displacement = datamanager.get_field("Displacements", "NP1")
-    gradient_weights = datamanager.get_field("Lagrangian Gradient Weights")
-    weighted_volume = datamanager.get_field("Weighted Volume")
-    bond_length = datamanager.get_field("Bond Length")
-    deformation_gradient = datamanager.get_field("Weighted Deformation Gradient")
-    horizon = datamanager.get_field("Horizon")
-    ba_deformation_gradient = datamanager.get_field("Bond Associated Deformation Gradient")
-    ba_rotation_tensor = datamanager.get_field("Bond Rotation Tensor", "NP1")
-    accuracy_order = datamanager.get_accuracy_order()
+    dof = Data_Manager.get_dof()
+    nlist = Data_Manager.get_nlist()
+    volume = Data_Manager.get_field("Volume")
+    omega = Data_Manager.get_field("Influence Function")
+    bond_damage = Data_Manager.get_bond_damage("NP1")
+    bond_geometry = Data_Manager.get_field("Bond Geometry")
+    deformation_gradient = Data_Manager.get_field("Deformation Gradient")
+    displacement = Data_Manager.get_field("Displacements", "NP1")
+    gradient_weights = Data_Manager.get_field("Lagrangian Gradient Weights")
+    weighted_volume = Data_Manager.get_field("Weighted Volume")
+    bond_length = Data_Manager.get_field("Bond Length")
+    deformation_gradient = Data_Manager.get_field("Weighted Deformation Gradient")
+    horizon = Data_Manager.get_field("Horizon")
+    ba_deformation_gradient = Data_Manager.get_field("Bond Associated Deformation Gradient")
+    ba_rotation_tensor = Data_Manager.get_field("Bond Rotation Tensor", "NP1")
+    accuracy_order = Data_Manager.get_accuracy_order()
 
-    Q = datamanager.get_field("Q Vector")
-    Minv = datamanager.get_field("Minv Matrix")
-    M = datamanager.get_field("M temporary Matrix")
+    Q = Data_Manager.get_field("Q Vector")
+    Minv = Data_Manager.get_field("Minv Matrix")
+    M = Data_Manager.get_field("M temporary Matrix")
 
     compute_weighted_volume!(weighted_volume, nodes, nlist, volume, bond_damage, omega)
 
@@ -134,16 +126,14 @@ function compute(datamanager::Module,
                                           gradient_weights,
                                           displacement,
                                           deformation_gradient)
-
-    return datamanager
 end
 
 function compute_weighted_volume!(weighted_volume::Vector{Float64},
                                   nodes::AbstractVector{Int64},
-                                  nlist::Union{Vector{Vector{Int64}},SubArray},
+                                  nlist::Union{BondScalarState{Int64},SubArray},
                                   volume::Vector{Float64},
-                                  bond_damage::Vector{Vector{Float64}},
-                                  omega::Vector{Vector{Float64}})
+                                  bond_damage::BondScalarState{Float64},
+                                  omega::BondScalarState{Float64})
     for iID in nodes
         weighted_volume[iID] = 0
         @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
@@ -224,12 +214,12 @@ function compute_Lagrangian_gradient_weights(nodes::AbstractVector{Int64},
                                              dof::Int64,
                                              accuracy_order::Int64,
                                              volume::AbstractVector{Float64},
-                                             nlist::Union{Vector{Vector{Int64}},SubArray},
+                                             nlist::Union{BondScalarState{Int64},SubArray},
                                              horizon::Union{SubArray,Vector{Float64}},
                                              bond_damage::Union{SubArray,
-                                                                Vector{Vector{Float64}}},
+                                                                BondScalarState{Float64}},
                                              omega::Union{SubArray,
-                                                          Vector{Vector{Float64}}},
+                                                          BondScalarState{Float64}},
                                              Q,
                                              M,
                                              Minv,
@@ -293,7 +283,7 @@ function compute_gradient_weights!(gradient_weights,
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+    fields_for_local_synchronization(model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -302,11 +292,10 @@ Returns a user developer defined local synchronization. This happens before each
 # Arguments
 
 """
-function fields_for_local_synchronization(datamanager::Module, model::String)
+function fields_for_local_synchronization(model::String)
     # download_from_cores = false
     # upload_to_cores = true
-    # datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
-    return datamanager
+    # Data_Manager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
 end
 
 end
