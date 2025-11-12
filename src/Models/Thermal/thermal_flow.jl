@@ -11,7 +11,7 @@ export thermal_model_name
 export init_model
 export fields_for_local_synchronization
 """
-    thermal_model_name()
+	thermal_model_name()
 
 Gives the model name. It is needed for comparison with the yaml input deck.
 
@@ -25,7 +25,7 @@ function thermal_model_name()
 end
 
 """
-    init_model(datamanager, nodes, thermal_parameter, block)
+	init_model(datamanager, nodes, thermal_parameter, block)
 
 Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -44,8 +44,8 @@ function init_model(datamanager::Module,
     dof = datamanager.get_dof()
     if !haskey(thermal_parameter, "Type") || (thermal_parameter["Type"] != "Bond based" &&
         thermal_parameter["Type"] != "Correspondence")
-        @error "No model type has beed defined; ''Type'': ''Bond based'' or Type: ''Correspondence''"
-        return nothing
+        @warn "No model type has beed defined; ''Type'': ''Bond based'' or Type: ''Correspondence'; \n ''Bond based'' is set as default.'"
+        thermal_parameter["Type"] = "Bond based"
     end
 
     if haskey(thermal_parameter, "Print Bed Temperature")
@@ -69,7 +69,7 @@ function init_model(datamanager::Module,
 end
 
 """
-    compute_model(datamanager, nodes, thermal_parameter, time, dt)
+	compute_model(datamanager, nodes, thermal_parameter, time, dt)
 
 Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -215,9 +215,9 @@ function compute_heat_flow_state_correspondence(nodes::AbstractVector{Int64},
 end
 
 """
-    compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64}, dof::Int64, nlist::Vector{Vector{Int64},
-      lambda::Union{Float64, Int64}, bond_damage::Vector{Vector{Float64}}, undeformed_bond::Vector{Matrix{Float64}}, horizon::Vector{Float64},
-      temperature::Vector{Float64}, heat_flow::Vector{Float64})
+	compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64}, dof::Int64, nlist::Vector{Vector{Int64},
+	  lambda::Union{Float64, Int64}, bond_damage::Vector{Vector{Float64}}, undeformed_bond::Vector{Matrix{Float64}}, horizon::Vector{Float64},
+	  temperature::Vector{Float64}, heat_flow::Vector{Float64})
 
 Calculate Heat Flow based on a bond-based model for thermal analysis.
 
@@ -293,7 +293,7 @@ function compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64},
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+	fields_for_local_synchronization(datamanager::Module, model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
