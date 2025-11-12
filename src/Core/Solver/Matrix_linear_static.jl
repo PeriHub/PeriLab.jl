@@ -394,8 +394,7 @@ function compute_displacements!(K::AbstractMatrix{Float64},
     BCs = setdiff(1:length(vec(u)), non_BCs)
 
     # 1. Total force on free DOFs (external + internal/thermal)
-    F_total = vec(F_ext) .+ vec(F_int)  # ✓ PLUS!
-
+    @views F_total = vec(F_ext) .- vec(F_int)
     # 2. Force contribution from prescribed displacements
     #if !isempty(BCs)
     #	F_from_BCs = K[non_BCs, BCs] * vec(u)[BCs]
