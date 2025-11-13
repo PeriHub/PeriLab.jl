@@ -36,8 +36,7 @@ using ..Model_Factory: compute_stiff_matrix_compatible_models
 
 include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
 using .Correspondence_matrix_based
-include("../../Models/Pre_calculation/bond_deformation.jl")
-using .Bond_Deformation
+using ..Model_Factory.Pre_Calculation.Bond_Deformation
 
 export init_solver
 export run_solver
