@@ -7,10 +7,10 @@ module Global_Zero_Energy_Control
 using StaticArrays: MMatrix, MVector
 using LoopVectorization
 
-using ........Data_Manager
-using ........Helpers: get_fourth_order
-using .....Material_Basis: get_Hooke_matrix
-using ........Geometry: rotation_tensor
+using ...Data_Manager
+using ...Helpers: get_fourth_order
+using ..Material_Basis: get_Hooke_matrix
+using ...Geometry: rotation_tensor
 
 export control_name
 export compute_control

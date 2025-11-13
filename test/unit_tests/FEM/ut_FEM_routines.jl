@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-include("../../../src/FEM/Element_formulation/Lagrange_element.jl")
 #include("../../../src/PeriLab.jl")
 # using .PeriLab
 using Test
@@ -49,7 +48,7 @@ using Test
 
     N,
     B = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof, p,
-                                                                     Lagrange_element.create_element_matrices)
+                                                                     PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices)
 
     jacobian = test_data_manager.create_constant_free_size_field("Element Jacobi Matrix",
                                                                  Float64,
@@ -208,7 +207,7 @@ end
 
     N[:],
     B[:] = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof, p,
-                                                                        Lagrange_element.create_element_matrices)
+                                                                        PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices)
     lumped_mass = test_data_manager.create_constant_node_scalar_field("Lumped Mass Matrix",
                                                                       Float64)
 
@@ -679,7 +678,7 @@ end
 
     N,
     B = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof, p,
-                                                                     Lagrange_element.create_element_matrices)
+                                                                     PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices)
 
     @test isnothing(N)
     @test isnothing(B)
@@ -692,13 +691,13 @@ end
                                                                                        1,
                                                                                        1
                                                                                    ]),
-                                                                     Lagrange_element.create_element_matrices)
+                                                                     PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices)
     @test isnothing(N)
     @test isnothing(B)
     dof = 2
     N,
     B = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof, p,
-                                                                     Lagrange_element.create_element_matrices)
+                                                                     PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices)
 
     @test size(N) == (4, 8, 2)
     @test size(B) == (4, 8, 3)
@@ -754,7 +753,7 @@ end
     p = [1, 1, 1]
     N,
     B = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof, p,
-                                                                     Lagrange_element.create_element_matrices)
+                                                                     PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices)
 
     @test size(N) == (8, 24, 3)
     @test size(B) == (8, 24, 6)
@@ -784,7 +783,7 @@ end
     p = [2, 1]
     N,
     B = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof, p,
-                                                                     Lagrange_element.create_element_matrices)
+                                                                     PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices)
 
     @test size(N) == (6, 12, 2)
     @test size(B) == (6, 12, 3)
@@ -792,7 +791,7 @@ end
     p = [5, 3, 1]
     N,
     B = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof, p,
-                                                                     Lagrange_element.create_element_matrices)
+                                                                     PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices)
 
     @test size(N) == (90, 144, 3)
     @test size(B) == (90, 144, 6)

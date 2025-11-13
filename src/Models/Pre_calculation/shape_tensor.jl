@@ -47,17 +47,17 @@ function init_model(nodes::AbstractVector{Int64},
                     parameter::Union{Dict,OrderedDict},
                     block::Int64)
     dof = Data_Manager.get_dof()
-    datamanager.create_constant_node_tensor_field("Shape Tensor", Float64, dof)
-    datamanager.create_constant_node_tensor_field("Inverse Shape Tensor", Float64, dof)
+    Data_Manager.create_constant_node_tensor_field("Shape Tensor", Float64, dof)
+    Data_Manager.create_constant_node_tensor_field("Inverse Shape Tensor", Float64, dof)
 
     # should be done here, because the shape tensor is needed for the matrix based correspondence models
-    nlist = datamanager.get_nlist()
-    volume = datamanager.get_field("Volume")
-    omega = datamanager.get_field("Influence Function")
-    bond_damage = datamanager.get_bond_damage("NP1")
-    undeformed_bond = datamanager.get_field("Bond Geometry")
-    shape_tensor = datamanager.get_field("Shape Tensor")
-    inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
+    nlist = Data_Manager.get_nlist()
+    volume = Data_Manager.get_field("Volume")
+    omega = Data_Manager.get_field("Influence Function")
+    bond_damage = Data_Manager.get_bond_damage("NP1")
+    undeformed_bond = Data_Manager.get_field("Bond Geometry")
+    shape_tensor = Data_Manager.get_field("Shape Tensor")
+    inverse_shape_tensor = Data_Manager.get_field("Inverse Shape Tensor")
 
     compute_shape_tensors!(shape_tensor,
                            inverse_shape_tensor,
@@ -67,8 +67,6 @@ function init_model(nodes::AbstractVector{Int64},
                            omega,
                            bond_damage,
                            undeformed_bond)
-
-    return datamanager
 end
 
 """

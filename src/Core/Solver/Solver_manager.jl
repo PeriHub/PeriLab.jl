@@ -132,12 +132,10 @@ function init(params::Dict,
                                                         bcs,
                                                         block_nodes)
     elseif solver_options["Solver"] == "Linear Static Matrix Based"
-        @timeit to "init_solver" Linear_static_matrix_based.init_solver(solver_options,
-                                                                        solver_params,
-                                                                        bcs,
-                                                                        datamanager,
-                                                                        block_nodes,
-                                                                        to)
+        @timeit "init_solver" Linear_static_matrix_based.init_solver(solver_options,
+                                                                     solver_params,
+                                                                     bcs,
+                                                                     block_nodes)
     end
 
     if Data_Manager.fem_active()
@@ -298,14 +296,12 @@ function solver(solver_options::Dict{Any,Any},
         return Static_Solver.run_solver(solver_options,
                                         block_nodes,
                                         bcs,
-                                        datamanager,
                                         outputs,
                                         result_files,
                                         synchronise_field,
                                         write_results,
                                         compute_parabolic_problems_before_model_evaluation,
                                         compute_parabolic_problems_after_model_evaluation,
-                                        to,
                                         silent)
     elseif solver_options["Solver"] == "Linear Static Matrix Based"
         return Linear_static_matrix_based.run_solver(solver_options,

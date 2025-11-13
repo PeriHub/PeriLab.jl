@@ -317,35 +317,29 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
 end
 
 """
-	compute_stiff_matrix_compatible_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field, to::TimerOutput)
+	compute_stiff_matrix_compatible_models(block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field)
 
 Computes the models models that are compatible with the stiffness matrix calculation.
 
 # Arguments
-- `datamanager::Module`: The datamanager
 - `block_nodes::Dict{Int64,Vector{Int64}}`: The block nodes
 - `dt::Float64`: The time step
 - `time::Float64`: The current time of the solver
 - `options::Vector{String}`: The options
 - `synchronise_field`: The synchronise field
-- `to::TimerOutput`: The timer output
-# Returns
-- `datamanager`: The datamanager
 """
-function compute_stiff_matrix_compatible_models(datamanager::Module,
-                                                block_nodes::Dict{Int64,Vector{Int64}},
+function compute_stiff_matrix_compatible_models(block_nodes::Dict{Int64,Vector{Int64}},
                                                 dt::Float64,
                                                 time::Float64,
                                                 options::Vector{String},
-                                                synchronise_field,
-                                                to::TimerOutput)
-    active_list = datamanager.get_field("Active")
+                                                synchronise_field)
+    active_list = Data_Manager.get_field("Active")
 
-    for (active_model_name, active_model) in pairs(datamanager.get_active_models())
+    for (active_model_name, active_model) in pairs(Data_Manager.get_active_models())
 
-        #local_synch(datamanager, active_model_name, "upload_to_cores", synchronise_field)
+        #local_synch(Data_Manager, active_model_name, "upload_to_cores", synchronise_field)
         # maybe not needed?
-        #local_synch(datamanager,
+        #local_synch(Data_Manager,
         #	active_model_name,
         #	"download_from_cores",
         #	synchronise_field)
@@ -356,108 +350,31 @@ function compute_stiff_matrix_compatible_models(datamanager::Module,
 
         for (block, nodes) in pairs(block_nodes)
             # "delete" the view of active nodes
-            active_nodes = datamanager.get_field("Active Nodes")
+            active_nodes = Data_Manager.get_field("Active Nodes")
 
             active_nodes = find_active_nodes(active_list,
                                              active_nodes,
                                              nodes,
                                              active_model_name != "Additive Model")
 
-            if datamanager.check_property(block, active_model_name)
+            if Data_Manager.check_property(block, active_model_name)
                 # synch
-                @timeit to "compute $active_model_name" datamanager=active_model.compute_model(datamanager,
-                                                                                               active_nodes,
-                                                                                               datamanager.get_properties(block,
-                                                                                                                          active_model_name),
-                                                                                               block,
-                                                                                               time,
-                                                                                               dt,
-                                                                                               to)
+                @timeit "compute $active_model_name" active_model.compute_model(active_nodes,
+                                                                                Data_Manager.get_properties(block,
+                                                                                                            active_model_name),
+                                                                                block,
+                                                                                time,
+                                                                                dt)
             end
         end
     end
 
     if ("Material" in options) && ("Thermal" in options)
-        active_nodes = datamanager.get_field("Active Nodes")
+        active_nodes = Data_Manager.get_field("Active Nodes")
         active_nodes = find_active_nodes(active_list, active_nodes,
-                                         1:datamanager.get_nnodes())
-        @timeit to "distribute_force_densities" Material.distribute_force_densities(datamanager,
-                                                                                    active_nodes,
-                                                                                    to)
+                                         1:Data_Manager.get_nnodes())
+        @timeit "distribute_force_densities" Material.distribute_force_densities(active_nodes)
     end
-    return datamanager
-end
-
-"""
-	compute_stiff_matrix_compatible_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field, to::TimerOutput)
-
-Computes the models models that are compatible with the stiffness matrix calculation.
-
-# Arguments
-- `datamanager::Module`: The datamanager
-- `block_nodes::Dict{Int64,Vector{Int64}}`: The block nodes
-- `dt::Float64`: The time step
-- `time::Float64`: The current time of the solver
-- `options::Vector{String}`: The options
-- `synchronise_field`: The synchronise field
-- `to::TimerOutput`: The timer output
-# Returns
-- `datamanager`: The datamanager
-"""
-function compute_stiff_matrix_compatible_models(datamanager::Module,
-                                                block_nodes::Dict{Int64,Vector{Int64}},
-                                                dt::Float64,
-                                                time::Float64,
-                                                options::Vector{String},
-                                                synchronise_field,
-                                                to::TimerOutput)
-    active_list = datamanager.get_field("Active")
-
-    for (active_model_name, active_model) in pairs(datamanager.get_active_models())
-
-        #local_synch(datamanager, active_model_name, "upload_to_cores", synchronise_field)
-        # maybe not needed?
-        #local_synch(datamanager,
-        #	active_model_name,
-        #	"download_from_cores",
-        #	synchronise_field)
-        if active_model_name == "Material Model" && !("Thermal" in options)
-            # we need here an activation trigger for mixed models in future
-            continue
-        end
-
-        for (block, nodes) in pairs(block_nodes)
-            # "delete" the view of active nodes
-            active_nodes = datamanager.get_field("Active Nodes")
-
-            active_nodes = find_active_nodes(active_list,
-                                             active_nodes,
-                                             nodes,
-                                             active_model_name != "Additive Model")
-
-            if datamanager.check_property(block, active_model_name)
-                # synch
-                @timeit to "compute $active_model_name" datamanager=active_model.compute_model(datamanager,
-                                                                                               active_nodes,
-                                                                                               datamanager.get_properties(block,
-                                                                                                                          active_model_name),
-                                                                                               block,
-                                                                                               time,
-                                                                                               dt,
-                                                                                               to)
-            end
-        end
-    end
-
-    if ("Material" in options) && ("Thermal" in options)
-        active_nodes = datamanager.get_field("Active Nodes")
-        active_nodes = find_active_nodes(active_list, active_nodes,
-                                         1:datamanager.get_nnodes())
-        @timeit to "distribute_force_densities" Material.distribute_force_densities(datamanager,
-                                                                                    active_nodes,
-                                                                                    to)
-    end
-    return datamanager
 end
 
 function get_update_nodes(active_list,

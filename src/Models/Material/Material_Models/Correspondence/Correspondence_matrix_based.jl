@@ -6,11 +6,14 @@ module Correspondence_matrix_based
 using Base.Threads
 using LinearAlgebra
 using LoopVectorization: @turbo
+using SparseArrays
+using StaticArrays: @MMatrix
+
+using ...Data_Manager
 using ...Material_Basis: get_Hooke_matrix
 using ....Helpers: get_fourth_order, progress_bar
 using ...Global_Zero_Energy_Control: create_zero_energy_mode_stiffness!
-using SparseArrays
-using StaticArrays: @MMatrix
+
 export init_model
 export add_zero_energy_stiff!
 export compute_bond_force
@@ -605,31 +608,28 @@ function compute_bond_force(bond_force::Vector{Vector{Vector{Float64}}},
     end
 end
 
-function init_model(datamanager::Module,
-                    nodes::AbstractVector{Int64},
+function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
-    if datamanager.get_max_rank()>1
+    if Data_Manager.get_max_rank()>1
         @error "Correspondence matrix based not implemented for parallel runs."
     end
-    return datamanager
 end
 
-function init_matrix(datamanager::Module)
-    nodes = collect(1:datamanager.get_nnodes())
-    dof = datamanager.get_dof()
-    zStiff = datamanager.create_constant_node_field("Zero Energy Stiffness",
-                                                    Float64,
-                                                    dof,
-                                                    VectorOrMatrix = "Matrix")
-    bond_geometry = datamanager.get_field("Bond Geometry")
-    inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
-    nlist = datamanager.get_nlist()
-    number_of_neighbors=datamanager.get_field("Number of Neighbors")
-    volume = datamanager.get_field("Volume")
-    omega = datamanager.get_field("Influence Function")
-    C_voigt = datamanager.get_field("Hooke Matrix")
-    bond_geometry_N = datamanager.get_field("Deformed Bond Geometry", "N")
-    bond_damage = datamanager.get_field("Bond Damage", "NP1")
+function init_matrix()
+    nodes = collect(1:Data_Manager.get_nnodes())
+    dof = Data_Manager.get_dof()
+    zStiff = Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",
+                                                            Float64,
+                                                            dof)
+    bond_geometry = Data_Manager.get_field("Bond Geometry")
+    inverse_shape_tensor = Data_Manager.get_field("Inverse Shape Tensor")
+    nlist = Data_Manager.get_nlist()
+    number_of_neighbors=Data_Manager.get_field("Number of Neighbors")
+    volume = Data_Manager.get_field("Volume")
+    omega = Data_Manager.get_field("Influence Function")
+    C_voigt = Data_Manager.get_field("Hooke Matrix")
+    bond_geometry_N = Data_Manager.get_field("Deformed Bond Geometry", "N")
+    bond_damage = Data_Manager.get_field("Bond Damage", "NP1")
 
     @info "Initializing stiffness matrix (mapping optimized)"
     index_x, index_y, vals,
@@ -645,8 +645,8 @@ function init_matrix(datamanager::Module)
                                    omega,
                                    bond_damage)
 
-    datamanager.init_stiffness_matrix(index_x, index_y, vals, total_dof)
-    K_sparse = datamanager.get_stiffness_matrix()
+    Data_Manager.init_stiffness_matrix(index_x, index_y, vals, total_dof)
+    K_sparse = Data_Manager.get_stiffness_matrix()
     create_zero_energy_mode_stiffness!(nodes, dof, C_voigt,
                                        inverse_shape_tensor, zStiff)
 
@@ -662,22 +662,22 @@ function init_matrix(datamanager::Module)
                            omega)
 end
 
-function compute_model(datamanager::Module, nodes::AbstractVector{Int64})
-    dof::Int64 = datamanager.get_dof()
-    C_voigt::Array{Float64,3} = datamanager.get_field("Hooke Matrix")
-    inverse_shape_tensor::Array{Float64,3} = datamanager.get_field("Inverse Shape Tensor")
-    nlist::Vector{Vector{Int64}} = datamanager.get_nlist()
-    volume::Vector{Float64} = datamanager.get_field("Volume")
-    bond_geometry_N::Vector{Vector{Vector{Float64}}} = datamanager.get_field("Deformed Bond Geometry",
-                                                                             "N")
-    number_of_neighbors::Vector{Int64} = datamanager.get_field("Number of Neighbors")
-    omega::Vector{Vector{Float64}} = datamanager.get_field("Influence Function")
-    bond_damage::Vector{Vector{Float64}} = datamanager.get_field("Bond Damage", "NP1")
+function compute_model(nodes::AbstractVector{Int64})
+    dof::Int64 = Data_Manager.get_dof()
+    C_voigt::Array{Float64,3} = Data_Manager.get_field("Hooke Matrix")
+    inverse_shape_tensor::Array{Float64,3} = Data_Manager.get_field("Inverse Shape Tensor")
+    nlist::Vector{Vector{Int64}} = Data_Manager.get_nlist()
+    volume::Vector{Float64} = Data_Manager.get_field("Volume")
+    bond_geometry_N::Vector{Vector{Vector{Float64}}} = Data_Manager.get_field("Deformed Bond Geometry",
+                                                                              "N")
+    number_of_neighbors::Vector{Int64} = Data_Manager.get_field("Number of Neighbors")
+    omega::Vector{Vector{Float64}} = Data_Manager.get_field("Influence Function")
+    bond_damage::Vector{Vector{Float64}} = Data_Manager.get_field("Bond Damage", "NP1")
 
-    zStiff = datamanager.get_field("Zero Energy Stiffness")
+    zStiff = Data_Manager.get_field("Zero Energy Stiffness")
     # TODO: optimize update
     index_x, index_y, vals,
-    total_dof = assemble_stiffness(collect(1:datamanager.get_nnodes()),
+    total_dof = assemble_stiffness(collect(1:Data_Manager.get_nnodes()),
                                    nodes,
                                    dof,
                                    C_voigt,
@@ -689,12 +689,12 @@ function compute_model(datamanager::Module, nodes::AbstractVector{Int64})
                                    omega,
                                    bond_damage)
 
-    datamanager.init_stiffness_matrix(index_x, index_y, vals, total_dof)
+    Data_Manager.init_stiffness_matrix(index_x, index_y, vals, total_dof)
 
     create_zero_energy_mode_stiffness!(nodes, dof, C_voigt,
                                        inverse_shape_tensor, zStiff)
 
-    K_sparse = datamanager.get_stiffness_matrix()
+    K_sparse = Data_Manager.get_stiffness_matrix()
     add_zero_energy_stiff!(K_sparse,
                            nodes,
                            dof,
