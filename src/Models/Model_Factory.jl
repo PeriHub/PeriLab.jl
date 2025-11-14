@@ -343,6 +343,7 @@ function compute_stiff_matrix_compatible_models(block_nodes::Dict{Int64,Vector{I
         #	active_model_name,
         #	"download_from_cores",
         #	synchronise_field)
+        #TODO: Change Thermal for Thermal Expansion only!
         if active_model_name == "Material Model" && !("Thermal" in options)
             # we need here an activation trigger for mixed models in future
             continue

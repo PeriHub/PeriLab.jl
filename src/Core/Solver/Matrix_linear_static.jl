@@ -213,7 +213,7 @@ function run_solver(solver_options::Dict{Any,Any},
     dof = Data_Manager.get_dof()
 
     volume = Data_Manager.get_field("Volume")
-    forces = Data_Manager.get_field("Forces", "NP1")
+    # forces = Data_Manager.get_field("Forces", "NP1")
 
     delta_u = Data_Manager.get_field("Delta Displacements")
     external_force_densities = Data_Manager.get_field("External Force Densities")
@@ -397,7 +397,7 @@ function compute_displacements!(K::AbstractMatrix{Float64},
     BCs = setdiff(1:length(vec(u)), non_BCs)
 
     # 1. Total force on free DOFs (external + internal/thermal)
-    @views F_total = vec(F_ext) .- vec(F_int)
+    # @views F_total = vec(F_ext) .- vec(F_int)
     # 2. Force contribution from prescribed displacements
     # TODO must be optimized
 
@@ -405,12 +405,12 @@ function compute_displacements!(K::AbstractMatrix{Float64},
         return nothing
     end
     if !isempty(BCs)
-        F_from_BCs = K[non_BCs, BCs] * vec(u)[BCs]
-    else
-        F_from_BCs = zeros(length(non_BCs))
+        F_int[non_BCs] = K[non_BCs, BCs] * vec(u)[BCs]
+        # else
+        #     F_from_BCs = zeros(length(non_BCs))
     end
     # 3. Modified force: F_total - K_fb * u_b
-    F_modified = F_total[non_BCs] .- F_from_BCs
+    F_modified = F_ext[non_BCs] .- F_int[non_BCs]
     #@info non_BCs
     # 4. Solve for free DOFs
     @views vec(u)[non_BCs] .= K[non_BCs, non_BCs] \ F_modified
