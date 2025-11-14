@@ -11,7 +11,7 @@ export additive_name
 export init_model
 export fields_for_local_synchronization
 """
-    additive_name()
+	additive_name()
 
 Gives the additive name. It is needed for comparison with the yaml input deck.
 
@@ -70,7 +70,7 @@ function compute_model(nodes::AbstractVector{Int64},
         if active[iID]
             continue
         end
-        if time - dt <= activation_time[iID] < time
+        if time - dt <= activation_time[iID] <= time
             active[iID] = true
             flux[iID] = add_flux[iID] / dt
             nlist_temp = nlist[iID]

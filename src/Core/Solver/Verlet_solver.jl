@@ -71,7 +71,7 @@ function compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64},
 end
 
 """
-    get_cs_denominator(volume::AbstractVector{Float64}, undeformed_bond::AbstractVector{Float64})
+	get_cs_denominator(volume::AbstractVector{Float64}, undeformed_bond::AbstractVector{Float64})
 
 Calculate the denominator for the critical time step calculation.
 
@@ -131,7 +131,7 @@ function compute_mechanical_critical_time_step(nodes::AbstractVector{Int64},
 end
 
 """
-    test_timestep(t::Float64, critical_time_step::Float64)
+	test_timestep(t::Float64, critical_time_step::Float64)
 
 Compare a time step `t` with a critical time step `critical_time_step` and update `critical_time_step` if `t` is smaller.
 
@@ -318,7 +318,7 @@ function init_solver(solver_options::Dict{Any,Any},
 end
 
 """
-    get_integration_steps(initial_time::Float64, end_time::Float64, dt::Float64)
+	get_integration_steps(initial_time::Float64, end_time::Float64, dt::Float64)
 
 Calculate the number of integration steps and the adjusted time step for a numerical integration process.
 
@@ -413,7 +413,6 @@ function run_solver(solver_options::Dict{Any,Any},
         lumped_mass = Data_Manager.get_field("Lumped Mass Matrix")
         fe_nodes = Data_Manager.get_field("FE Nodes")
     end
-    active = Data_Manager.get_field("Active")
 
     dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["Number of Steps"]

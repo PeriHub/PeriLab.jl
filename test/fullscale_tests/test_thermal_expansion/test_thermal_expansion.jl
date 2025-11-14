@@ -8,4 +8,6 @@ cd("fullscale_tests/" * folder_name) do
     run_perilab("thermal_expansion_PD_Solid", 1, true, folder_name)
     run_perilab("thermal_expansion_PD_Solid_static", 1, true, folder_name)
     run_perilab("thermal_expansion_bond_based", 1, true, folder_name)
+    run_perilab("thermal_expansion_lin_mat_var_T", 1, true, folder_name)
+    run_perilab("thermal_expansion_lin_mat_const_T", 1, true, folder_name)
 end

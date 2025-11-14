@@ -14,8 +14,9 @@ using Test
     test_data_manager = PeriLab.Data_Manager
 
     @test isnothing(PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3),
-                                                                                         Dict("a" => 1,
-                                                                                              "Thermal Conductivity" => 100)))
+                                                                                         Dict{String,
+                                                                                              Any}("a" => 1,
+                                                                                                   "Thermal Conductivity" => 100)))
     @test isnothing(PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3),
                                                                                          Dict("Type" => "a",
                                                                                               "Thermal Conductivity" => 100)))

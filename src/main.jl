@@ -10,5 +10,5 @@ if isfile("Project.toml") && isfile("Manifest.toml")
 end
 using MPI
 MPI.Init()
-import PeriLab
+using PeriLab: PeriLab
 PeriLab.main()

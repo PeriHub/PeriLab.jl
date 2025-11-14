@@ -17,7 +17,7 @@ export compute_model
 export thermal_model_name
 export init_model
 """
-    thermal_model_name()
+	thermal_model_name()
 
 Gives the expansion model name. It is needed for comparison with the yaml input deck.
 
@@ -28,12 +28,33 @@ Gives the expansion model name. It is needed for comparison with the yaml input 
 
 Example:
 ```julia
-println(flow_name())
 "Thermal Expansion"
 ```
 """
 function thermal_model_name()
     return "Thermal Expansion"
+end
+
+function thermal_expansion_matrix(alpha::T,
+                                  ::Val{2}) where {T<:Union{Float64,Matrix{Float64}}}
+    if length(alpha) == 1
+        return alpha_mat = SMatrix{2,2,Float64}(alpha, 0, 0, alpha)
+    elseif length(alpha) == 2
+        return alpha_mat = SMatrix{2,2,Float64}(alpha[1], 0, 0, alpha[2])
+    elseif length(alpha) == 4
+        @error "Full heat expansion matrix is not implemented yet."
+    end
+end
+function thermal_expansion_matrix(alpha::T,
+                                  ::Val{3}) where {T<:Union{Float64,Matrix{Float64}}}
+    if length(alpha) == 1
+        return alpha_mat = SMatrix{3,3,Float64}(alpha, 0, 0, 0, alpha, 0, 0, 0, alpha)
+    elseif length(alpha) == 3
+        return alpha_mat = SMatrix{3,3,Float64}(alpha[1], 0, 0, 0, alpha[2], 0, 0, 0,
+                                                alpha[3])
+    elseif length(alpha) == 9
+        @error "Full heat expansion matrix is not implemented yet."
+    end
 end
 
 """
@@ -75,31 +96,19 @@ function compute_model(nodes::AbstractVector{Int64},
     temperature_NP1 = Data_Manager.get_field("Temperature", "NP1")
     dof = Data_Manager.get_dof()
 
-    alpha = thermal_parameter["Thermal Expansion Coefficient"]
-    ref_temp = 0.0
-    if haskey(thermal_parameter, "Reference Temperature")
-        ref_temp = thermal_parameter["Reference Temperature"]
-    end
+    alpha_mat=thermal_expansion_matrix(thermal_parameter["Thermal Expansion Coefficient"],
+                                       Val(dof))
 
-    alpha_mat::Matrix{Float64} = @MMatrix zeros(Float64, dof, dof)
-    if length(alpha) == 1
-        alpha_mat = alpha .* I(dof)
-    elseif length(alpha) == dof || length(alpha) == 3
-        for i in 1:dof
-            alpha_mat[i, i] = alpha[i]
-        end
-    elseif length(alpha) == dof * dof || length(alpha) == 9
-        @error "Full heat expansion matrix is not implemented yet."
-    end
+    ref_temp = 0.0
+    ref_temp = get(thermal_parameter, "Reference Temperature", 0.0)
+
     undeformed_bond = Data_Manager.get_field("Bond Geometry")
     undeformed_bond_length = Data_Manager.get_field("Bond Length")
     deformed_bond = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
     deformed_bond_length = Data_Manager.get_field("Deformed Bond Length", "NP1")
 
-    temp_diff = 0.0
-
     for iID in nodes
-        temp_diff = temperature_NP1[iID] - ref_temp
+        temp_diff::Float64 = temperature_NP1[iID] - ref_temp
         @inbounds @fastmath @views for jID in eachindex(undeformed_bond[iID])
             for j in 1:dof
                 deformed_bond[iID][jID][j] -= temp_diff * alpha_mat[j, j] *

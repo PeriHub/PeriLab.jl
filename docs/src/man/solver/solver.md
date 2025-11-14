@@ -1,30 +1,28 @@
 # Solver
 
-| Parameter | Type | Optional | Description |
-|---|---|---|---|
-| Material Models  | Bool | Yes | Activates the time integration for materials and material evaluation |
-| Damage Models    | Bool | Yes | Activates the damage evaluation |
-| Thermal Models   | Bool | Yes | Activates the time integration for thermal models and thermal model evaluation |
-| Additive Models  | Bool | Yes | Activates the additive model evaluation |
-| Maximum Damage   | Float | Yes | Defines the maximum damage in one point |
-| Initial Time | Float | No | Defines the initial time |
-| Final Time | Float | No | Defines the final time |
-| Fixed dt    | Float | Yes | Defines a fixed time step |
-| Number of Steps   | Int | Yes | Defines a fixed number of steps |
-| Verlet | Dict | Yes | Defines the Verlet solver |
-| Static | Dict | Yes | Defines the Static solver |
+| Parameter       | Type  | Optional | Description                                                                    |
+| --------------- | ----- | -------- | ------------------------------------------------------------------------------ |
+| Material Models | Bool  | Yes      | Activates the time integration for materials and material evaluation           |
+| Damage Models   | Bool  | Yes      | Activates the damage evaluation                                                |
+| Thermal Models  | Bool  | Yes      | Activates the time integration for thermal models and thermal model evaluation |
+| Additive Models | Bool  | Yes      | Activates the additive model evaluation                                        |
+| Maximum Damage  | Float | Yes      | Defines the maximum damage in one point                                        |
+| Initial Time    | Float | No       | Defines the initial time                                                       |
+| Final Time      | Float | No       | Defines the final time                                                         |
+| Fixed dt        | Float | Yes      | Defines a fixed time step                                                      |
+| Number of Steps | Int   | Yes      | Defines a fixed number of steps                                                |
+| Verlet          | Dict  | Yes      | Defines the Verlet solver                                                      |
+| Static          | Dict  | Yes      | Defines the Static solver                                                      |
 
 ## Verlet
 
-| Parameter | Type | Optional | Description |
-|---|---|---|---|
-| Safety Factor  | Float | Yes | Defines a scaling factor for the time increment |
-| Numerical Damping | Float | Yes | Defines a damping factor |
-
+| Parameter         | Type  | Optional | Description                                     |
+| ----------------- | ----- | -------- | ----------------------------------------------- |
+| Safety Factor     | Float | Yes      | Defines a scaling factor for the time increment |
+| Numerical Damping | Float | Yes      | Defines a damping factor                        |
 
 !!! warning "Fixed dt"
-    If a fixed time step is defined, the time integration can become unstable.
-
+If a fixed time step is defined, the time integration can become unstable.
 
 The Verlet time integration is used as standard solver for dynamic hyperbolic differential equation of motion. It is also used in Peridigm [LittlewoodDJ2023](@cite). The displacements for step $i+1$ are solved as follows
 
@@ -46,19 +44,18 @@ For the time intergration a stable increment has to be determined.
 
 ## Static
 
+| Parameter                    | Type          | Optional | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ---------------------------- | ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| NLsolve                      | Bool          | Yes      | Place Holder                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Solution tolerance           | Float         | Yes      | Defines how much change between two iterations of the solution variable is allowed.                                                                                                                                                                                                                                                                                                                                                                                       |
+| Residual tolerance           | Float         | Yes      | Defines how much change between two iterations of the maximum residual variable is allowed.                                                                                                                                                                                                                                                                                                                                                                               |
+| Maximum number of iterations | Int           | Yes      | Maximum number of iteration of the solver.                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Show solver iteration        | Bool          | Yes      | Shows additional information                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Residual scaling             | Float         | Yes      | Scales the residual and the variable in same order. Should be in the range of the Young's modulus.                                                                                                                                                                                                                                                                                                                                                                        |
+| Solver Type                  | String        | Yes      | not implmented yet                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| m                            | Int           | Yes      | Only for Anderson solver; It does not use Jacobian information or linesearch, but has a history whose size is controlled by the m parameter: $m=0$ corresponds to the simple fixed-point iteration above, and higher values use a larger history size to accelerate the iterations. Higher values of m usually increase the speed of convergence, but increase the storage and computation requirements and might lead to instabilities. $m=15$ is set as standard value. |
+| Linear Start Value           | Vector{Float} | Yes      | Defines start and end values of a linear function over the length of the model (detailed explanation in the text)                                                                                                                                                                                                                                                                                                                                                         |
 
-
-| Parameter | Type | Optional | Description |
-|---|---|---|---|
-| NLsolve  | Bool | Yes | Place Holder |
-| Solution tolerance  | Float | Yes | Defines how much change between two iterations of the solution variable is allowed. |
-| Residual tolerance  | Float | Yes |  Defines how much change between two iterations of the maximum residual variable is allowed. |
-| Maximum number of iterations  | Int | Yes | Maximum number of iteration of the solver. |
-| Show solver iteration  | Bool | Yes | Shows additional information |
-| Residual scaling  | Float | Yes | Scales the residual and the variable in same order. Should be in the range of the Young's modulus. |
-| Solver Type  | String | Yes | not implmented yet |
-| m | Int | Yes | Only for Anderson solver;  It does not use Jacobian information or linesearch, but has a history whose size is controlled by the m parameter: $m=0$ corresponds to the simple fixed-point iteration above, and higher values use a larger history size to accelerate the iterations. Higher values of m usually increase the speed of convergence, but increase the storage and computation requirements and might lead to instabilities. $m=15$ is set as standard value.|
-| Linear Start Value | Vector{Float} | Yes | Defines start and end values of a linear function over the length of the model (detailed explanation in the text) |
 The static solver from [NLsolve.jl](https://github.com/JuliaNLSolvers/NLsolve.jl) has been included. Specifically the [method = :anderson](https://github.com/JuliaNLSolvers/NLsolve.jl#anderson-acceleration) is used.
 
 The solver computes the residual of the internal reaction force densities and the external applied force densities
@@ -70,9 +67,8 @@ $s_{Residual\,scaling}$ should be in the range of the Young's modulus and is tha
 
 $$s_{Residual\,scaling} /= minimum(volume)^2$$
 
-
 !!! warning "Multiphysics"
-    Currently only the mechanical solver is included!
+Currently only the mechanical solver is included!
 
 ---
 
@@ -98,7 +94,6 @@ where $A$ are amplitude values chosen by the user.
 
 With these values the field ''start_values'' is computed as
 
-
 $$start\_value(x,y,z (optional))= \frac{a(x,y,z(optional))\cdot coordinates+n(x,y,z(optional))}{nsteps}$$
 
 $$a(x,y,z (optional))=\frac{\text{max}(start_{val})-\text{min}(start_{val})}{\text{max}(coordinates)-\text{min}(coordinates)}$$
@@ -106,3 +101,25 @@ $$a(x,y,z (optional))=\frac{\text{max}(start_{val})-\text{min}(start_{val})}{\te
 and
 
 $$n(x,y,z (optional))=\text{max}(start_{val})-a(x,y,z (optional))\text{max}(coordinates)$$
+
+## Linear Static Matrix Based
+
+| Parameter     | Type | Optional | Description                                  |
+| ------------- | ---- | -------- | -------------------------------------------- |
+| Update Matrix | Bool | Yes      | Activates the update of the stiffness matrix |
+
+The solver computes the stiffness matrix of the problem. It is solved by
+
+$$ \mathbf{u} = \mathbf{K}_{PD}^{-1}\mathbf{F}_{external}$$
+
+The number of steps defines the virtual time step.
+
+### Update Matrix
+
+Uses the previous time step as original configuration. This allows the analysis of geometrically non-linear deformations. It must be updated if damages or additive models are used.
+
+!!! warning "Models"
+Not all models are fully tested yet in this framework.
+
+!!! warning "Models"
+Stress computations are not inclueded yet. Please check the issues.

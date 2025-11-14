@@ -49,6 +49,7 @@ function init_model(nodes::AbstractVector{Int64},
                                                                   Int64((dof * (dof + 1)) /
                                                                         2))
     symmetry = get(material_parameter, "Symmetry", "default")::String
+
     for iID in nodes
         @views hooke_matrix[iID, :,
         :] = get_Hooke_matrix(material_parameter,
@@ -58,7 +59,7 @@ function init_model(nodes::AbstractVector{Int64},
     end
 end
 """
-    correspondence_name()
+	correspondence_name()
 
 Gives the material name. It is needed for comparison with the yaml input deck.
 

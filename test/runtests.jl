@@ -202,6 +202,9 @@ MPI.Init()
         @testset "test_reload" begin
             include("fullscale_tests/test_reload/test_reload.jl")
         end
+        @testset "test_linear_static_matrix_based" begin
+            include("fullscale_tests/test_linear_static_matrix_based_solver/test_linear_static_matrix_based_solver.jl")
+        end
         @testset "test_surface_correction" begin
             include("fullscale_tests/test_Surface_correction/test_Surface_correction.jl")
         end
@@ -222,6 +225,9 @@ MPI.Init()
         end
         @testset "test_additive_simple" begin
             include("fullscale_tests/test_additive/test_additive.jl")
+        end
+        @testset "test_matrix_based_additive" begin
+            include("fullscale_tests/test_matrix_based_additive/test_matrix_based_additive.jl")
         end
         @testset "test_heat_transfer" begin
             include("fullscale_tests/test_heat_transfer/test_heat_transfer.jl")

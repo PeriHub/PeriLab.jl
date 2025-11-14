@@ -18,7 +18,7 @@ export get_nsteps
 export get_calculation_options
 
 """
-    get_solver_steps(params::Dict)
+	get_solver_steps(params::Dict)
 
 Get the solver steps
 
@@ -46,7 +46,7 @@ function get_solver_steps(params::Dict)
 end
 
 """
-    get_solver_params(params::Dict)
+	get_solver_params(params::Dict)
 
 Get the solver parameters
 
@@ -66,7 +66,7 @@ function get_solver_params(params::Dict, step_id)
 end
 
 """
-    get_solver_name(params::Dict)
+	get_solver_name(params::Dict)
 
 Get the name of the solver
 
@@ -80,8 +80,10 @@ function get_solver_name(params::Dict)
         return "Verlet"
     elseif haskey(params, "Static")
         return "Static"
+    elseif haskey(params, "Linear Static Matrix Based")
+        return "Linear Static Matrix Based"
     end
-    @error "Wrong or missing solvername. Verlet and Static are the options."
+    @error "Wrong or missing solvername. Verlet, Linear Static and Static are the options."
     return nothing
 end
 
@@ -110,7 +112,7 @@ function get_initial_time(params::Dict)
 end
 
 """
-    get_final_time(params::Dict)
+	get_final_time(params::Dict)
 
 Get the final time
 
@@ -130,7 +132,7 @@ function get_final_time(params::Dict)
 end
 
 """
-    get_safety_factor(params::Dict)
+	get_safety_factor(params::Dict)
 
 Get the safety factor
 
@@ -144,7 +146,7 @@ function get_safety_factor(params::Dict)
 end
 
 """
-    get_fixed_dt(params::Dict)
+	get_fixed_dt(params::Dict)
 
 Get the fixed time step
 
@@ -158,7 +160,7 @@ function get_fixed_dt(params::Dict)
 end
 
 """
-    get_nsteps(params::Dict)
+	get_nsteps(params::Dict)
 
 Get the fixed time step
 
@@ -172,7 +174,7 @@ function get_nsteps(params::Dict)
 end
 
 """
-    get_numerical_damping(params::Dict)
+	get_numerical_damping(params::Dict)
 
 Get the numerical damping
 
@@ -200,7 +202,7 @@ function get_max_damage(params::Dict)
 end
 
 """
-    get_model_options(params::Dict)
+	get_model_options(params::Dict)
 
 Get the solver options
 
@@ -241,7 +243,7 @@ function get_model_options(params::Dict)
 end
 
 """
-    get_calculation_options(params::Dict)
+	get_calculation_options(params::Dict)
 
 Get the calculation options
 

@@ -19,9 +19,11 @@ using ..Helpers
 include("../../Models/Material/Material_Basis.jl")
 include("../Module_inclusion/set_Modules.jl")
 include("../../FEM/FEM_Factory.jl")
+include("../../Models/Material/Material_Models/Zero_Energy_Control/global_control.jl")
 include("../../Models/Model_Factory.jl")
 include("../BC_manager.jl")
 include("Verlet_solver.jl")
+include("Matrix_linear_static.jl")
 include("Static_solver.jl")
 using ..MPI_Communication: synch_responder_to_controller,
                            synch_controller_to_responder,
@@ -33,6 +35,7 @@ include("../Influence_function.jl")
 using .Model_Factory: init_models, read_properties
 using .Boundary_Conditions: init_BCs
 using .Verlet_Solver
+using .Linear_static_matrix_based
 using .FEM
 using .Influence_Function
 
@@ -111,8 +114,12 @@ function init(params::Dict,
                                       solver_options,
                                       synchronise_field)
     @debug "Init Boundary Conditions"
+
     @timeit "init_BCs" bcs=init_BCs(params)
+    # get name and checks if it is there
     solver_options["Solver"] = get_solver_name(solver_params)
+
+    @info "Init " * get_solver_name(solver_params)
     if get_solver_name(solver_params) == "Verlet"
         @debug "Init " * get_solver_name(solver_params)
         @timeit "init_solver" Verlet_Solver.init_solver(solver_options,
@@ -120,15 +127,15 @@ function init(params::Dict,
                                                         bcs,
                                                         block_nodes)
     elseif solver_options["Solver"] == "Static"
-        @debug "Init " * get_solver_name(solver_params)
         @timeit "init_solver" Static_Solver.init_solver(solver_options,
                                                         solver_params,
                                                         bcs,
                                                         block_nodes)
-
-    else
-        @error get_solver_name(solver_params) * " is no valid solver."
-        return nothing
+    elseif solver_options["Solver"] == "Linear Static Matrix Based"
+        @timeit "init_solver" Linear_static_matrix_based.init_solver(solver_options,
+                                                                     solver_params,
+                                                                     bcs,
+                                                                     block_nodes)
     end
 
     if Data_Manager.fem_active()
@@ -214,7 +221,7 @@ function set_angles(params::Dict, block_nodes::Dict)
 end
 
 """
-    set_fem_block(params::Dict, block_nodes::Dict, fem_block::Vector{Bool})
+	set_fem_block(params::Dict, block_nodes::Dict, fem_block::Vector{Bool})
 
 Sets the fem_block of the nodes in the dictionary.
 
@@ -296,11 +303,22 @@ function solver(solver_options::Dict{Any,Any},
                                         compute_parabolic_problems_before_model_evaluation,
                                         compute_parabolic_problems_after_model_evaluation,
                                         silent)
+    elseif solver_options["Solver"] == "Linear Static Matrix Based"
+        return Linear_static_matrix_based.run_solver(solver_options,
+                                                     block_nodes,
+                                                     bcs,
+                                                     outputs,
+                                                     result_files,
+                                                     synchronise_field,
+                                                     write_results,
+                                                     compute_parabolic_problems_before_model_evaluation,
+                                                     compute_parabolic_problems_after_model_evaluation,
+                                                     silent)
     end
 end
 
 """
-    synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, synch_field::String, direction::String)
+	synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, synch_field::String, direction::String)
 
 Synchronises field.
 

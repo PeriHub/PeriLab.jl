@@ -87,7 +87,7 @@ function check_valid_bcs(bcs::Dict{String,Any})
             end
         end
         if !valid
-            @error "Boundary condition $bc is not valid: Variable $(bcs[bc]["Variable"]) not found."
+            @error "Boundary condition $bc is not valid: Variable $(bcs[bc]["Variable"]) not found. Please check if the physical model is activated."
             return nothing
         end
     end
@@ -307,7 +307,8 @@ Working with if-statements
 works for scalars. If you want to evaluate a vector, please use the Julia notation as input
 "ifelse.(x .> y, 10, 20)"
 """
-function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},NodeScalarField{Int64}},
+function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
+                                      NodeScalarField{Int64}},
                   bc::Union{Float64,Int64,String},
                   coordinates::Union{Matrix{Float64},Matrix{Int64}},
                   time::Float64,

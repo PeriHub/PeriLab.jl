@@ -14,6 +14,7 @@ using Test
     dof = 2
     test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
+    test_data_manager.set_dof(dof)
     test_data_manager.set_num_controller(2)
     nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
     nn[1] = 2

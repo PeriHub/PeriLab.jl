@@ -13,7 +13,7 @@ export thermal_model_name
 export init_model
 export fields_for_local_synchronization
 """
-    thermal_model_name()
+	thermal_model_name()
 
 Gives the model name. It is needed for comparison with the yaml input deck.
 
@@ -42,8 +42,8 @@ function init_model(nodes::AbstractVector{Int64},
     dof = Data_Manager.get_dof()
     if !haskey(thermal_parameter, "Type") || (thermal_parameter["Type"] != "Bond based" &&
         thermal_parameter["Type"] != "Correspondence")
-        @error "No model type has beed defined; ''Type'': ''Bond based'' or Type: ''Correspondence''"
-        return nothing
+        @warn "No model type has beed defined; ''Type'': ''Bond based'' or Type: ''Correspondence'; \n ''Bond based'' is set as default.'"
+        thermal_parameter["Type"] = "Bond based"
     end
 
     if haskey(thermal_parameter, "Print Bed Temperature")

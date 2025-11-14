@@ -31,7 +31,7 @@ export
        BondTensorState
 
 """
-    get_field(name::String, time::String)
+	get_field(name::String, time::String)
 
 Returns the field with the given name and time.
 
@@ -70,7 +70,7 @@ function get_field(name::String, time::String = "Constant")
 end
 
 """
-    get_field_if_exists(name::String, time::String)
+	get_field_if_exists(name::String, time::String)
 
 Returns the field with the given name if it exists.
 
@@ -85,7 +85,7 @@ function get_field_if_exists(name::String, time::String = "Constant")
 end
 
 """
-    _get_field(name::String)
+	_get_field(name::String)
 
 Returns the field with the given name.
 
@@ -100,13 +100,13 @@ function _get_field(name::String)::Union{Array,Nothing}
     catch
         @error "Field ''" *
                name *
-               "'' does not exist. Check if it is initialized as non-constant."
+               "'' does not exist. \n - Check if it is initialized as non-constant. \n - Check if the model is not actiavated in the solver options, e.g. Pre Calculation Models: False"
         return nothing
     end
 end
 
 """
-    get_all_field_keys()
+	get_all_field_keys()
 
 Returns a list of all field keys.
 """
