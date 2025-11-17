@@ -580,8 +580,10 @@ function run_solver(solver_options::Dict{Any,Any},
             # for file in result_files
             #     flush(file)
             # end
-            if rank == 0 && !silent && Data_Manager.get_cancel()
-                set_multiline_postfix(iter, "Simulation canceled!")
+            if Data_Manager.get_cancel()
+                if rank == 0 && !silent
+                    set_multiline_postfix(iter, "Simulation canceled!")
+                end
                 break
             end
             @timeit "switch_NP1_to_N" Data_Manager.switch_NP1_to_N()
