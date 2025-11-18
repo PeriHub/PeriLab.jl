@@ -405,7 +405,7 @@ function compute_displacements!(K::AbstractMatrix{Float64},
         return nothing
     end
     if !isempty(BCs)
-        F_int[non_BCs] = K[non_BCs, BCs] * vec(u)[BCs]
+        F_int[non_BCs] += K[non_BCs, BCs] * vec(u)[BCs]
         # else
         #     F_from_BCs = zeros(length(non_BCs))
     end
