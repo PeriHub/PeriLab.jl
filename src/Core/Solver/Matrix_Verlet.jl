@@ -26,6 +26,7 @@ using ...MPI_Communication: find_and_set_core_value_min, find_and_set_core_value
 using ..Model_Factory: compute_models
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann
 using ...Logging_Module: print_table
+using .Model_reduction: guyan_reduction
 include("../../Compute/compute_field_values.jl")
 
 function init_solver(solver_options::Dict{Any,Any},
@@ -47,17 +48,47 @@ function init_solver(solver_options::Dict{Any,Any},
     @timeit "init_matrix" Correspondence_matrix_based.init_matrix()
 
     density = Data_Manager.get_field("Density")
+    model_reduction = get(params["Solver"], "Model Reduction", false)
+    solver_options["Model Reduction"] = model_reduction
 
     K = Data_Manager.get_stiffness_matrix()
+    if model_reduction
+        master_nodes = Int64[]
+        slave_nodes = Int64[]
+        for (block, nodes) in pairs(block_nodes)
+            if reduce_blocks[block]
+                append!(master_nodes, nodes)
+            end
+        end
+        neighbors = Int64[]
+        for master in master_nodes
+            append!(neighbors, nlist[master])
+        end
+        append!(master_nodes, neighbors)
+        master_nodes = unique(master_nodes)
+        slave_nodes = setdiff(collect(1:Data_Manager.get_nnodes()), master_nodes)
+        if !master_nodes==[]
+            # create reduced M^-1*K for linear run
+            K_reduced = guyan_reduction(K, density, master_nodes, slave_nodes, dof)
+            Data_Manager.set_stiffness_matrix(K_reduced)
+            return
+        end
+        @warn "No master nodes defined for model reduction. Using full stiffness matrix."
+    end
+    datamanager.set_reduced_model_master(master_nodes)
     # create M^-1*K for linear run
     for (block, nodes) in pairs(block_nodes)
         for node in nodes
             for idof in 1:dof
-                K[(node-1)*dof+dof, (node-1)*dof+dof]/=density[node]
+                K[(node-1)*dof+idof, (node-1)*dof+idof]/=density[node]
             end
         end
     end
     Data_Manager.set_stiffness_matrix(K)
+    return
+
+    # reduced matrix
+
 end
 
 function run_solver(solver_options::Dict{Any,Any},
@@ -111,11 +142,21 @@ function run_solver(solver_options::Dict{Any,Any},
 
         # thermal model, usw.
 
-        mul!(a[active_nodes], K[active_nodes, active_nodes], uNP1[active_nodes])
-
+        #mul!(a[active_nodes], K[active_nodes, active_nodes], uNP1[active_nodes])
+        mul!(a, K, uNP1)
         # @timeit "download_from_cores" Data_Manager.synch_manager(synchronise_field,
         #                                                            "download_from_cores")
-
+        @views forces[active_nodes, :] += external_forces[active_nodes, :]
+        @views force_densities[active_nodes,
+        :] += external_force_densities[active_nodes,
+                                                                            :] .+
+                                                   external_forces[active_nodes,
+                                                                   :] ./
+                                                   volume[active_nodes]
+        @views a[active_nodes, :] += external_force_densities[active_nodes, :] .+
+                                     external_forces[active_nodes, :] ./
+                                     volume[active_nodes]
+        a[active_nodes, :] ./= density[active_nodes]
         @timeit "write_results" result_files=write_results(result_files, time,
                                                            max_damage, outputs)
         # for file in result_files

@@ -43,7 +43,7 @@ export init
 export solver
 
 """
-    init(params::Dict)
+	init(params::Dict)
 
 Initialize the solver
 
@@ -136,6 +136,11 @@ function init(params::Dict,
                                                                      solver_params,
                                                                      bcs,
                                                                      block_nodes)
+    elseif solver_options["Solver"] == "Verlet Matrix Based"
+        @timeit "init_solver" Linear_static_matrix_based.init_solver(solver_options,
+                                                                     solver_params,
+                                                                     bcs,
+                                                                     block_nodes)
     end
 
     if Data_Manager.fem_active()
@@ -156,7 +161,7 @@ function init(params::Dict,
 end
 
 """
-    set_density(params::Dict, block_nodes::Dict, density::NodeScalarField{Float64})
+	set_density(params::Dict, block_nodes::Dict, density::NodeScalarField{Float64})
 
 Sets the density of the nodes in the dictionary.
 
@@ -175,7 +180,7 @@ function set_density(params::Dict, block_nodes::Dict, density::NodeScalarField{F
 end
 
 """
-    set_angles(params::Dict, block_nodes::Dict)
+	set_angles(params::Dict, block_nodes::Dict)
 
 Sets the density of the nodes in the dictionary.
 
@@ -240,7 +245,7 @@ function set_fem_block(params::Dict, block_nodes::Dict, fem_block::Vector{Bool})
 end
 
 """
-    set_horizon(params::Dict, block_nodes::Dict, horizon::NodeScalarField{Float64})
+	set_horizon(params::Dict, block_nodes::Dict, horizon::NodeScalarField{Float64})
 
 Sets the horizon of the nodes in the dictionary.
 
@@ -259,7 +264,7 @@ function set_horizon(params::Dict, block_nodes::Dict, horizon::NodeScalarField{F
 end
 
 """
-    solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, silent::Bool)
+	solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, silent::Bool)
 
 Runs the solver.
 
@@ -375,7 +380,7 @@ function synchronise_field(comm,
 end
 
 """
-    remove_models(solver_options::Vector{String})
+	remove_models(solver_options::Vector{String})
 
 Sets the active models to false if they are deactivated in the solver. They can be active, because they are defined as model and in the blocks.
 
