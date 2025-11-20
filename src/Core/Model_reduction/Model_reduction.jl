@@ -2,8 +2,40 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-function guyan_reduction(K::AbstractMatrix{Float64}, m::Vector{Int64}, s::Vector{Int64})
-    return K[m, m] - K[m, s]/K[s, s]*K[s, m]
+module Model_reduction
+using SparseArrays
+function guyan_reduction(K::AbstractMatrix{Float64}, density::Vector{Float64},
+                         m::Vector{Int64}, s::Vector{Int64}, dof::Int64 = 1)
+    K_reduced = stiffness_reduction(K, m, s)
+    M_diag = reduce_mass_consistent(density, K, m, s)
+    nnodes = length(M_diag)
+
+    for node in eachindex(M_diag)
+        for idof in 1:dof
+            K_reduced[(node-1)*dof+idof, (node-1)*dof+idof]/=M_diag[node]
+        end
+    end
+
+    return sparse(K_reduced)
+end
+function stiffness_reduction(K::AbstractMatrix{Float64}, m::Vector{Int64}, s::Vector{Int64})
+    return K[m, m] - K[m, s]/Matrix(K[s, s])*K[s, m]
+end
+
+function reduce_mass_consistent(M_diag, K, master_nodes, slave_nodes)
+    # Transformationsmatrix: u_slave = T * u_master
+    # T = -K_ss^{-1} * K_sm
+    Ksm = K[slave_nodes, master_nodes]
+    Kss = K[slave_nodes, slave_nodes]
+    T = -Kss \ Matrix(Ksm)
+
+    # Massenreduktion: M_red = M_mm + T^T * M_ss * T
+    M_mm = Diagonal(M_diag[master_nodes])
+    M_ss = Diagonal(M_diag[slave_nodes])
+
+    M_reduced = M_mm + T' * M_ss * T
+
+    return diag(M_reduced)  # Zurück zu Vektor
 end
 
 function craig_bampton(K::AbstractMatrix{Float64}, M::AbstractMatrix{Float64},
@@ -52,4 +84,6 @@ function craig_bampton(K::AbstractMatrix{Float64}, M::AbstractMatrix{Float64},
     #           [...                     I     ]
 
     return K_craig, M_craig, Φ_c, Φ_n, λ_n
+end
+
 end

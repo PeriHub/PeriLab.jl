@@ -725,6 +725,7 @@ end
 function loc_to_glob(range::UnitRange{Int64})
     return data["distribution"][range]
 end
+
 """
 	init_properties()
 
@@ -1204,4 +1205,13 @@ function set_local_synch(model, name, download_from_cores, upload_to_cores, dof 
                                                                       "time" => "NP1")
     end
 end
+
+function set_reduced_model_master(master_nodes::Vector{Int64})
+    data["Reduced Nodes"] = master_nodes
+end
+
+function get_reduced_model_master()
+    return data["Reduced Nodes"]
+end
+
 end
