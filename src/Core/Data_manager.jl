@@ -20,7 +20,7 @@ struct DataField{T,D}
     data::D
 end
 
-struct PD_matrix
+mutable struct PD_matrix
     xID::Vector{Int64}
     yID::Vector{Int64}
     sparse_matrix::SparseMatrixCSC{Float64,Int64}

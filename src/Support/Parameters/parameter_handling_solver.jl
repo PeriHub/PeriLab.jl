@@ -82,13 +82,15 @@ function get_solver_name(params::Dict)
         return "Static"
     elseif haskey(params, "Linear Static Matrix Based")
         return "Linear Static Matrix Based"
+    elseif haskey(params, "Verlet Matrix Based")
+        return "Verlet Matrix Based"
     end
-    @error "Wrong or missing solvername. Verlet, Linear Static and Static are the options."
+    @error "Wrong or missing solvername. Verlet, Linear Static Matrix Based, Verlet Matrix Based and Static are the options."
     return nothing
 end
 
 """
-    get_initial_time(params::Dict)
+	get_initial_time(params::Dict)
 
 Get the initial time
 

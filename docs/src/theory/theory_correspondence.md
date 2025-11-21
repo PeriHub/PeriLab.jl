@@ -1,4 +1,5 @@
 # Non-ordinary state based Peridynamics
+
 ## Correspondence Peridynamics
 
 The correspondence formulation is a non-ordinary state-based formulation provided by [SillingSA2007](@cite). It has the goal to apply classical models to Peridynamics.
@@ -12,7 +13,7 @@ with the positive definite shape tensor as
 $$\mathbf{K}=\int_{\mathcal{H}}\underline{\omega}\langle \boldsymbol{\xi}\rangle\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle\otimes\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle dV$$
 
 !!! info "Positive definiteness in numerics"
-    In numerical applications if bonds break the shape tensor is positive semi definite. $\det\mathbf{K}=0$ can occur and the inversion of the shape tensor won't work.
+In numerical applications if bonds break the shape tensor is positive semi definite. $\det\mathbf{K}=0$ can occur and the inversion of the shape tensor won't work.
 
 Based on this definition strain measures can be created to calculate the Cauchy stresses
 
@@ -45,9 +46,12 @@ with $\underline{\mathbf{z}}$ as the non-uniform deformation state
 $$\underline{\mathbf{z}}\langle \boldsymbol{\xi}\rangle= \underline{\mathbf{Y}}\langle\boldsymbol{\xi} \rangle-\mathbf{F}\boldsymbol{\xi}$$
 
 caused by the zero-energy mode. If the approximated non-local deformation gradient
-$\mathbf{F}$ exactly maps each undeformed bond to the deformed configuration  no zero-energy mode occur. In that case the non-uniform deformation state is zero and the corrected force density state $\underline{\mathbf{T}}^C$ is equal to the force density state $\underline{\mathbf{T}}$. The second order tensor $\mathbf{C}_1$ is given as
+$\mathbf{F}$ exactly maps each undeformed bond to the deformed configuration no zero-energy mode occur. In that case the non-uniform deformation state is zero and the corrected force density state $\underline{\mathbf{T}}^C$ is equal to the force density state $\underline{\mathbf{T}}$. The second order tensor $\mathbf{C}_1$ is given as
 
 $$\mathbf{C}_1=\mathbf{C}\cdot\cdot\mathbf{K}^{-1},$$
 
 utilizing the elasticity tensor.
+
 ## Bond-associated correspondence Peridynamics
+
+## Matrix based approach

@@ -123,3 +123,22 @@ Not all models are fully tested yet in this framework.
 
 !!! warning "Models"
 Stress computations are not inclueded yet. Please check the issues.
+
+## Verlet Matrix Based
+
+It is the same solver as the Verlet based solver above. The main difference is, that the matrix style is used.
+
+!!! warning "Models"
+If update is active it is not very efficient, because the creation of new matrix is more costly than the material point approach.
+
+| Parameter       | Type | Optional | Description                                  |
+| --------------- | ---- | -------- | -------------------------------------------- |
+| Update Matrix   | Bool | Yes      | Activates the update of the stiffness matrix |
+| Model reduction | Dict | Yes      | Defines the model reduction options          |
+
+If model reduction
+
+| Parameter | Type   | Optional | Description                                              |
+| --------- | ------ | -------- | -------------------------------------------------------- |
+| Type      | String | No       | Defines the type of model redction (Gyan, Craig-Bampton) |
+| tbd       |        |          |                                                          |

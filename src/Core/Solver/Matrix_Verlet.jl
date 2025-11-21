@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Matrix_verlet
+module Matrix_Verlet
 using LinearAlgebra
 using TimerOutputs
 using ProgressBars: set_multiline_postfix, set_postfix
@@ -24,11 +24,13 @@ using ...Parameter_Handling:
 using ...MPI_Communication: find_and_set_core_value_min, find_and_set_core_value_max,
                             barrier
 using ..Model_Factory: compute_models
-using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann
+using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
 using ...Logging_Module: print_table
+include("../Model_reduction/Model_reduction.jl")
 using .Model_reduction: guyan_reduction
 include("../../Compute/compute_field_values.jl")
-
+include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
+using .Correspondence_matrix_based
 function init_solver(solver_options::Dict{Any,Any},
                      params::Dict,
                      bcs::Dict{Any,Any},
@@ -48,9 +50,9 @@ function init_solver(solver_options::Dict{Any,Any},
     @timeit "init_matrix" Correspondence_matrix_based.init_matrix()
 
     density = Data_Manager.get_field("Density")
-    model_reduction = get(params["Solver"], "Model Reduction", false)
+    model_reduction = get(params, "Model Reduction", false)
     solver_options["Model Reduction"] = model_reduction
-
+    solver_options["Numerical Damping"] = get(params, "Numerical Damping", 0.0)
     K = Data_Manager.get_stiffness_matrix()
     if model_reduction
         master_nodes = Int64[]
@@ -71,24 +73,38 @@ function init_solver(solver_options::Dict{Any,Any},
             # create reduced M^-1*K for linear run
             K_reduced = guyan_reduction(K, density, master_nodes, slave_nodes, dof)
             Data_Manager.set_stiffness_matrix(K_reduced)
+            Data_Manager.set_reduced_model_master(master_nodes)
             return
         end
         @warn "No master nodes defined for model reduction. Using full stiffness matrix."
     end
-    datamanager.set_reduced_model_master(master_nodes)
+    dof = Data_Manager.get_dof()
     # create M^-1*K for linear run
-    for (block, nodes) in pairs(block_nodes)
-        for node in nodes
-            for idof in 1:dof
-                K[(node-1)*dof+idof, (node-1)*dof+idof]/=density[node]
-            end
-        end
-    end
+    #for (block, nodes) in pairs(block_nodes)
+    #	for node in nodes
+    #		for idof in 1:dof
+    #			K[(node-1)*dof+idof, (node-1)*dof+idof]/=density[node]
+    #		end
+    #	end
+    #end
     Data_Manager.set_stiffness_matrix(K)
     return
 
     # reduced matrix
 
+end
+
+function create_permutation(nnodes::Int64, dof::Int64)
+    perm = Vector{Int}(undef, nnodes * dof)
+    idx = 1
+    for d in 1:dof
+        for n in 1:nnodes
+            old_idx = (n-1)*dof + d  # Row-major: node, dann dof
+            perm[idx] = old_idx
+            idx += 1
+        end
+    end
+    return perm
 end
 
 function run_solver(solver_options::Dict{Any,Any},
@@ -105,58 +121,75 @@ function run_solver(solver_options::Dict{Any,Any},
     nsteps::Int64 = solver_options["Number of Steps"]
     time::Float64 = solver_options["Initial Time"]
     step_time::Float64 = 0
-    max_cancel_damage::Float64 = solver_options["Maximum Damage"]
+    #max_cancel_damage::Float64 = solver_options["Maximum Damage"]
     numerical_damping::Float64 = solver_options["Numerical Damping"]
     max_damage::Float64 = 0
     damage_init::Bool = false
-    uN = Data_Manager.get_field("Displacements", "N")
-    uNP1 = Data_Manager.get_field("Displacements", "NP1")
-    deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
-    forces = Data_Manager.get_field("Forces", "NP1")
-    force_densities_N = Data_Manager.get_field("Force Densities", "N")
-    force_densities_NP1 = Data_Manager.get_field("Force Densities", "NP1")
-    volume = Data_Manager.get_field("Volume")
-    forces = Data_Manager.get_field("Forces", "NP1")
-    vN = Data_Manager.get_field("Velocity", "N")
-    vNP1 = Data_Manager.get_field("Velocity", "NP1")
-    external_force_densities = Data_Manager.get_field("External Force Densities")
-    a = Data_Manager.get_field("Acceleration")
-    perm = create_permutation(Data_Manager.get_nnodes(), Data_Manager.get_dof())
 
+    density = Data_Manager.get_field("Density")
+
+    coor = Data_Manager.get_field("Coordinates")
+
+    active_list = Data_Manager.get_field("Active")
+    volume = Data_Manager.get_field("Volume")
+
+    if "Material" in solver_options["Models"]
+        external_forces = Data_Manager.get_field("External Forces")
+        external_force_densities = Data_Manager.get_field("External Force Densities")
+        a = Data_Manager.get_field("Acceleration")
+    end
+    perm = create_permutation(Data_Manager.get_nnodes(), Data_Manager.get_dof())
+    comm = Data_Manager.get_comm()
     rank = Data_Manager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
     K = Data_Manager.get_stiffness_matrix()
 
     #nodes::Vector{Int64} = Vector{Int64}(1:Data_Manager.get_nnodes())
     @inbounds @fastmath for idt in iter
+        uN = Data_Manager.get_field("Displacements", "N")
+        uNP1 = Data_Manager.get_field("Displacements", "NP1")
+        forces = Data_Manager.get_field("Forces", "NP1")
+        deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
+        vN = Data_Manager.get_field("Velocity", "N")
+        vNP1 = Data_Manager.get_field("Velocity", "NP1")
+        force_densities_NP1 = Data_Manager.get_field("Force Densities", "NP1")
+        active_nodes = Data_Manager.get_field("Active Nodes")
+        active_nodes = find_active_nodes(active_list, active_nodes,
+                                         1:Data_Manager.get_nnodes())
         apply_bc_dirichlet(["Displacements", "Forces", "Force Densities"],
                            bcs, time,
                            step_time)
 
+        #numerical_damping = 0.0001
         vNP1[active_nodes, :] = (1 - numerical_damping) .*
                                 vN[active_nodes, :] .+
                                 0.5 * dt .* a[active_nodes, :]
+
         uNP1[active_nodes, :] = uN[active_nodes, :] .+
                                 dt .* vNP1[active_nodes, :]
         @views deformed_coorNP1 .= coor .+ uNP1
-
+        apply_bc_dirichlet(["Displacements", "Temperature"],
+                           bcs,
+                           time,
+                           step_time) #-> Dirichlet
         # thermal model, usw.
 
         #mul!(a[active_nodes], K[active_nodes, active_nodes], uNP1[active_nodes])
-        mul!(a, K, uNP1)
+
+        sa = size(a)
+        #mul!(a, K, vec(uNP1))
+        #force_densities_NP1=reshape(K[perm, perm]*vec(uNP1), sa...)
+
+        force_densities_NP1 = -reshape(K[perm, perm]*vec(uNP1), sa...)
+        .+ external_force_densities[active_nodes, :]
+        .+ external_forces[active_nodes, :] ./ volume[active_nodes]
         # @timeit "download_from_cores" Data_Manager.synch_manager(synchronise_field,
         #                                                            "download_from_cores")
-        @views forces[active_nodes, :] += external_forces[active_nodes, :]
-        @views force_densities[active_nodes,
-        :] += external_force_densities[active_nodes,
-                                                                            :] .+
-                                                   external_forces[active_nodes,
-                                                                   :] ./
-                                                   volume[active_nodes]
-        @views a[active_nodes, :] += external_force_densities[active_nodes, :] .+
-                                     external_forces[active_nodes, :] ./
-                                     volume[active_nodes]
-        a[active_nodes, :] ./= density[active_nodes]
+        #println(a)
+        #@views a[active_nodes, :] = external_force_densities[active_nodes, :] .+
+        #							external_forces[active_nodes, :] ./
+        #							volume[active_nodes]
+        a[active_nodes, :] = force_densities_NP1[active_nodes, :] ./ (density[active_nodes])
         @timeit "write_results" result_files=write_results(result_files, time,
                                                            max_damage, outputs)
         # for file in result_files
@@ -166,6 +199,7 @@ function run_solver(solver_options::Dict{Any,Any},
             set_multiline_postfix(iter, "Simulation canceled!")
             break
         end
+        @timeit "switch_NP1_to_N" Data_Manager.switch_NP1_to_N()
 
         time += dt
         step_time += dt
