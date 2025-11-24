@@ -3,20 +3,21 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Model_reduction
+using LinearAlgebra
 using SparseArrays
-function guyan_reduction(K::AbstractMatrix{Float64}, density::Vector{Float64},
+function guyan_reduction(K::AbstractMatrix{Float64}, mass::Vector{Float64},
                          m::Vector{Int64}, s::Vector{Int64}, dof::Int64 = 1)
     K_reduced = stiffness_reduction(K, m, s)
-    M_diag = reduce_mass_consistent(density, K, m, s)
-    nnodes = length(M_diag)
+    M_diag = reduce_mass_consistent(mass, K, m, s)
+    #nnodes = length(M_diag)
 
-    for node in eachindex(M_diag)
-        for idof in 1:dof
-            K_reduced[(node-1)*dof+idof, (node-1)*dof+idof]/=M_diag[node]
-        end
-    end
+    #for node in eachindex(M_diag)
+    #	for idof in 1:dof
+    #		K_reduced[(node-1)*dof+idof, (node-1)*dof+idof]/=M_diag[node]
+    #	end
+    #end
 
-    return sparse(K_reduced)
+    return sparse(K_reduced), M_diag
 end
 function stiffness_reduction(K::AbstractMatrix{Float64}, m::Vector{Int64}, s::Vector{Int64})
     return K[m, m] - K[m, s]/Matrix(K[s, s])*K[s, m]

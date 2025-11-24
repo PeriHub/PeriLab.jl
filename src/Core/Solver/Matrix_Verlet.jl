@@ -31,6 +31,7 @@ using .Model_reduction: guyan_reduction
 include("../../Compute/compute_field_values.jl")
 include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
 using .Correspondence_matrix_based
+export init_solver, run_solver
 function init_solver(solver_options::Dict{Any,Any},
                      params::Dict,
                      bcs::Dict{Any,Any},
@@ -48,37 +49,58 @@ function init_solver(solver_options::Dict{Any,Any},
         Correspondence_matrix_based.init_model(nodes, model_param)
     end
     @timeit "init_matrix" Correspondence_matrix_based.init_matrix()
-
+    dof = Data_Manager.get_dof()
     density = Data_Manager.get_field("Density")
-    model_reduction = get(params, "Model Reduction", false)
+    model_reduction = get(params["Verlet Matrix Based"], "Model Reduction", false)
     solver_options["Model Reduction"] = model_reduction
     solver_options["Numerical Damping"] = get(params, "Numerical Damping", 0.0)
     K = Data_Manager.get_stiffness_matrix()
-    if model_reduction
+
+    if model_reduction!=false
+        coor = Data_Manager.get_field("Coordinates")
         master_nodes = Int64[]
         slave_nodes = Int64[]
+        nlist = Data_Manager.get_nlist()
         for (block, nodes) in pairs(block_nodes)
-            if reduce_blocks[block]
-                append!(master_nodes, nodes)
+            # for testing
+            for node in nodes
+                if coor[node, 1]<3.0
+                    push!(master_nodes, node)
+                end
             end
+            # edit; how to define the reduction
+            #if reduce_blocks[block]
+            #	append!(master_nodes, nodes)
+            #end
         end
         neighbors = Int64[]
         for master in master_nodes
             append!(neighbors, nlist[master])
         end
         append!(master_nodes, neighbors)
-        master_nodes = unique(master_nodes)
+        master_nodes = sort(unique(master_nodes))
+
         slave_nodes = setdiff(collect(1:Data_Manager.get_nnodes()), master_nodes)
-        if !master_nodes==[]
+
+        if !(master_nodes==[])
+            perm_master = create_permutation(master_nodes, Data_Manager.get_dof())
+            perm_slave = create_permutation(slave_nodes, Data_Manager.get_dof())
             # create reduced M^-1*K for linear run
-            K_reduced = guyan_reduction(K, density, master_nodes, slave_nodes, dof)
+            #TODO adapt for mass matrix
+            density_mass = zeros(length(density)*Data_Manager.get_dof())
+            density_mass .= density[1]
+
+            K_reduced,
+            mass_reduced = guyan_reduction(K, density_mass, perm_master, perm_slave, dof)
             Data_Manager.set_stiffness_matrix(K_reduced)
+            Data_Manager.set_mass_matrix(mass_reduced)
             Data_Manager.set_reduced_model_master(master_nodes)
+            @info "Model reduction is applied"
             return
         end
         @warn "No master nodes defined for model reduction. Using full stiffness matrix."
     end
-    dof = Data_Manager.get_dof()
+
     # create M^-1*K for linear run
     #for (block, nodes) in pairs(block_nodes)
     #	for node in nodes
@@ -95,10 +117,23 @@ function init_solver(solver_options::Dict{Any,Any},
 end
 
 function create_permutation(nnodes::Int64, dof::Int64)
-    perm = Vector{Int}(undef, nnodes * dof)
+    perm = Vector{Int64}(undef, nnodes * dof)
     idx = 1
     for d in 1:dof
         for n in 1:nnodes
+            old_idx = (n-1)*dof + d  # Row-major: node, dann dof
+            perm[idx] = old_idx
+            idx += 1
+        end
+    end
+    return perm
+end
+
+function create_permutation(nodes::AbstractVector{Int64}, dof::Int64)
+    perm = Vector{Int64}(undef, length(nodes) * dof)
+    idx = 1
+    for d in 1:dof
+        for n in nodes
             old_idx = (n-1)*dof + d  # Row-major: node, dann dof
             perm[idx] = old_idx
             idx += 1
@@ -138,10 +173,17 @@ function run_solver(solver_options::Dict{Any,Any},
         external_force_densities = Data_Manager.get_field("External Force Densities")
         a = Data_Manager.get_field("Acceleration")
     end
-    perm = create_permutation(Data_Manager.get_nnodes(), Data_Manager.get_dof())
+
     comm = Data_Manager.get_comm()
     rank = Data_Manager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
+    if solver_options["Model Reduction"]!=false
+        master_nodes=Data_Manager.get_reduced_model_master()
+        perm = collect(1:(length(master_nodes) * Data_Manager.get_dof()))
+        mass = Data_Manager.get_mass_matrix()
+    else
+        perm = create_permutation(Data_Manager.get_nnodes(), Data_Manager.get_dof())
+    end
     K = Data_Manager.get_stiffness_matrix()
 
     #nodes::Vector{Int64} = Vector{Int64}(1:Data_Manager.get_nnodes())
@@ -160,7 +202,10 @@ function run_solver(solver_options::Dict{Any,Any},
                            bcs, time,
                            step_time)
 
-        #numerical_damping = 0.0001
+        if solver_options["Model Reduction"]!=false
+            active_nodes = master_nodes
+        end
+
         vNP1[active_nodes, :] = (1 - numerical_damping) .*
                                 vN[active_nodes, :] .+
                                 0.5 * dt .* a[active_nodes, :]
@@ -176,11 +221,13 @@ function run_solver(solver_options::Dict{Any,Any},
 
         #mul!(a[active_nodes], K[active_nodes, active_nodes], uNP1[active_nodes])
 
-        sa = size(a)
+        sa = size(a[active_nodes, :])
+
         #mul!(a, K, vec(uNP1))
         #force_densities_NP1=reshape(K[perm, perm]*vec(uNP1), sa...)
-
-        force_densities_NP1 = -reshape(K[perm, perm]*vec(uNP1), sa...)
+        force_densities_NP1[active_nodes, :] = -reshape(K[perm,
+                                                          perm]*vec(uNP1[active_nodes, :]),
+                                                        sa...)
         .+ external_force_densities[active_nodes, :]
         .+ external_forces[active_nodes, :] ./ volume[active_nodes]
         # @timeit "download_from_cores" Data_Manager.synch_manager(synchronise_field,
@@ -189,7 +236,13 @@ function run_solver(solver_options::Dict{Any,Any},
         #@views a[active_nodes, :] = external_force_densities[active_nodes, :] .+
         #							external_forces[active_nodes, :] ./
         #							volume[active_nodes]
-        a[active_nodes, :] = force_densities_NP1[active_nodes, :] ./ (density[active_nodes])
+        if solver_options["Model Reduction"]!=false
+            a[active_nodes, :] = reshape(vec(force_densities_NP1[active_nodes, :]) ./ mass,
+                                         sa...)
+        else
+            a[active_nodes, :] = force_densities_NP1[active_nodes, :] ./
+                                 (density[active_nodes])
+        end
         @timeit "write_results" result_files=write_results(result_files, time,
                                                            max_damage, outputs)
         # for file in result_files

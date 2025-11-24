@@ -1092,6 +1092,16 @@ function set_stiffness_matrix(sparse_mat)
     data["Stiffness Matrix"].sparse_matrix = sparse_mat
 end
 
+function set_mass_matrix(sparse_mat)
+    #data["Stiffness Matrix"] = PD_matrix(xID, yID, sparse_data,
+    #	data["Stiffness Matrix"].sparse_matrix)
+    data["Mass Matrix"] = sparse_mat
+end
+
+function get_mass_matrix()
+    return data["Mass Matrix"]
+end
+
 function get_stiffness_matrix()
     return data["Stiffness Matrix"].sparse_matrix
 end
