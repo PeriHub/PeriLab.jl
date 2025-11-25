@@ -1216,6 +1216,14 @@ function set_local_synch(model, name, download_from_cores, upload_to_cores, dof 
     end
 end
 
+function set_reduced_model_pd(master_nodes::Vector{Int64})
+    data["Reduced PD Nodes"] = master_nodes
+end
+
+function get_reduced_model_pd()
+    return data["Reduced PD Nodes"]
+end
+
 function set_reduced_model_master(master_nodes::Vector{Int64})
     data["Reduced Nodes"] = master_nodes
 end

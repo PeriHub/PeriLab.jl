@@ -33,7 +33,7 @@ export init_models
 export read_properties
 
 """
-    init_models(params::Dict, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
+	init_models(params::Dict, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
 
 Initialize models
 
@@ -131,7 +131,7 @@ function check_contact(params::Dict, time::Float64, dt::Float64)
 end
 
 """
-    compute_models(block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field)
+	compute_models(block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field)
 
 Computes the material point models
 
@@ -153,7 +153,6 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
     end
 
     active_list = Data_Manager.get_field("Active")
-
     # TODO check if pre calculation should run block wise. For mixed model applications it makes sense.
     # TODO add for pre calculation a whole model option, to get the neighbors as well, e.g. for bond associated
     # TODO check for loop order?
@@ -443,7 +442,7 @@ function get_block_model_definition(params::Dict,
 end
 
 """
-    read_properties(params::Dict, material_model::Bool)
+	read_properties(params::Dict, material_model::Bool)
 
 Read properties of material.
 
@@ -477,7 +476,7 @@ function read_properties(params::Dict, material_model::Bool)
 end
 
 """
-    set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::NodeScalarField{Float64})
+	set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::NodeScalarField{Float64})
 
 Sets the heat capacity of the nodes in the dictionary.
 
@@ -497,7 +496,7 @@ function set_heat_capacity(params::Dict, block_nodes::Dict,
 end
 
 """
-    add_model(model_name::String)
+	add_model(model_name::String)
 
 Includes the models in the Data_Manager and checks if the model definition is correct or not.
 

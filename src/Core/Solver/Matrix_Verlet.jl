@@ -36,6 +36,8 @@ function init_solver(solver_options::Dict{Any,Any},
                      params::Dict,
                      bcs::Dict{Any,Any},
                      block_nodes::Dict{Int64,Vector{Int64}})
+    horizon = Data_Manager.get_field("Horizon")
+
     find_bc_free_dof(bcs)
     solver_options["Initial Time"] = get_initial_time(params)
     solver_options["Final Time"] = get_final_time(params)
@@ -60,40 +62,61 @@ function init_solver(solver_options::Dict{Any,Any},
         coor = Data_Manager.get_field("Coordinates")
         master_nodes = Int64[]
         slave_nodes = Int64[]
+        pd_nodes = Int64[]
         nlist = Data_Manager.get_nlist()
+
+        pos = 0.5
+        pos_BC = 1.8
+        cn=Data_Manager.create_constant_node_scalar_field("Coupling Nodes", Int64)
         for (block, nodes) in pairs(block_nodes)
             # for testing
             for node in nodes
-                if coor[node, 1]<3.0
-                    push!(master_nodes, node)
+                if (-pos) < coor[node, 2] < (pos)
+                    push!(pd_nodes, node)
+                end
+
+                if coor[node, 1]<pos_BC
+                    push!(pd_nodes, node)
                 end
             end
-            # edit; how to define the reduction
-            #if reduce_blocks[block]
-            #	append!(master_nodes, nodes)
-            #end
         end
-        neighbors = Int64[]
-        for master in master_nodes
-            append!(neighbors, nlist[master])
+
+        ##TODO Testing
+
+        for master in pd_nodes
+            append!(master_nodes, nlist[master])
         end
-        append!(master_nodes, neighbors)
+        append!(master_nodes, pd_nodes)
         master_nodes = sort(unique(master_nodes))
 
         slave_nodes = setdiff(collect(1:Data_Manager.get_nnodes()), master_nodes)
+        cn[slave_nodes].=6
+        cn[master_nodes].=2
+        cn[pd_nodes].=1
+
+        for block in eachindex(block_nodes)
+            #block_nodes[block] = set_diff(block_nodes[block], master_nodes)
+
+            block_nodes[block] = intersect(block_nodes[block], pd_nodes)
+        end
 
         if !(master_nodes==[])
             perm_master = create_permutation(master_nodes, Data_Manager.get_dof())
             perm_slave = create_permutation(slave_nodes, Data_Manager.get_dof())
+            perm_pd_nodes = create_permutation(pd_nodes, Data_Manager.get_dof())
             # create reduced M^-1*K for linear run
             #TODO adapt for mass matrix
             density_mass = zeros(length(density)*Data_Manager.get_dof())
             density_mass .= density[1]
+            perm_pd_reduced = findall(in(perm_pd_nodes), perm_master)
 
             K_reduced,
             mass_reduced = guyan_reduction(K, density_mass, perm_master, perm_slave, dof)
+            K_reduced[perm_pd_reduced, :].=0
+            K_reduced[:, perm_pd_reduced].=0
             Data_Manager.set_stiffness_matrix(K_reduced)
             Data_Manager.set_mass_matrix(mass_reduced)
+            Data_Manager.set_reduced_model_pd(pd_nodes)
             Data_Manager.set_reduced_model_master(master_nodes)
             @info "Model reduction is applied"
             return
@@ -204,6 +227,8 @@ function run_solver(solver_options::Dict{Any,Any},
 
         if solver_options["Model Reduction"]!=false
             active_nodes = master_nodes
+            active_list.=false
+            active_list[Data_Manager.get_reduced_model_pd()].=true
         end
 
         vNP1[active_nodes, :] = (1 - numerical_damping) .*
@@ -212,11 +237,12 @@ function run_solver(solver_options::Dict{Any,Any},
 
         uNP1[active_nodes, :] = uN[active_nodes, :] .+
                                 dt .* vNP1[active_nodes, :]
-        @views deformed_coorNP1 .= coor .+ uNP1
+
         apply_bc_dirichlet(["Displacements", "Temperature"],
                            bcs,
                            time,
                            step_time) #-> Dirichlet
+        @views deformed_coorNP1 .= coor .+ uNP1
         # thermal model, usw.
 
         #mul!(a[active_nodes], K[active_nodes, active_nodes], uNP1[active_nodes])
@@ -225,11 +251,19 @@ function run_solver(solver_options::Dict{Any,Any},
 
         #mul!(a, K, vec(uNP1))
         #force_densities_NP1=reshape(K[perm, perm]*vec(uNP1), sa...)
-        force_densities_NP1[active_nodes, :] = -reshape(K[perm,
+
+        compute_models(block_nodes,
+                       dt,
+                       time,
+                       solver_options["Models"],
+                       synchronise_field)
+
+        force_densities_NP1[active_nodes, :] -= reshape(K[perm,
                                                           perm]*vec(uNP1[active_nodes, :]),
                                                         sa...)
         .+ external_force_densities[active_nodes, :]
         .+ external_forces[active_nodes, :] ./ volume[active_nodes]
+
         # @timeit "download_from_cores" Data_Manager.synch_manager(synchronise_field,
         #                                                            "download_from_cores")
         #println(a)
@@ -243,6 +277,7 @@ function run_solver(solver_options::Dict{Any,Any},
             a[active_nodes, :] = force_densities_NP1[active_nodes, :] ./
                                  (density[active_nodes])
         end
+
         @timeit "write_results" result_files=write_results(result_files, time,
                                                            max_damage, outputs)
         # for file in result_files
