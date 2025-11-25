@@ -59,15 +59,33 @@ function init_solver(solver_options::Dict{Any,Any},
     K = Data_Manager.get_stiffness_matrix()
 
     if model_reduction!=false
+        reduction_blocks = get(solver_options["Model Reduction"], "Reduction Blocks", [])
+        if reduction_blocks==[]
+            @warn "No reduction blocks defined for model reduction. Full matrix is used. \n If you want to use a reduced model please define 'Reduction Blocks' in the yaml input deck."
+        end
+        reduction_blocks = parse.(Int64,
+                                  filter(!isempty,
+                                         split(solver_options["Model Reduction"]["Reduction Blocks"],
+                                               r"[,\s]")))
+    end
+
+    if reduction_blocks!=[]
         coor = Data_Manager.get_field("Coordinates")
         master_nodes = Int64[]
         slave_nodes = Int64[]
         pd_nodes = Int64[]
         nlist = Data_Manager.get_nlist()
+        ##TODO Testing
 
+        cn=Data_Manager.create_constant_node_scalar_field("Coupling Nodes", Int64)
+        #for block in reduction_blocks
+        #	push!(pd_nodes, block_nodes[block])
+        #end
+
+        #--------------------------------------
         pos = 0.5
         pos_BC = 1.8
-        cn=Data_Manager.create_constant_node_scalar_field("Coupling Nodes", Int64)
+
         for (block, nodes) in pairs(block_nodes)
             # for testing
             for node in nodes
@@ -80,23 +98,23 @@ function init_solver(solver_options::Dict{Any,Any},
                 end
             end
         end
+        #---------------
 
-        ##TODO Testing
-
-        for master in pd_nodes
-            append!(master_nodes, nlist[master])
+        # create coupling zone
+        for node in pd_nodes
+            append!(master_nodes, nlist[node])
         end
+
         append!(master_nodes, pd_nodes)
         master_nodes = sort(unique(master_nodes))
-
+        #pd_nodes=Int64[]
         slave_nodes = setdiff(collect(1:Data_Manager.get_nnodes()), master_nodes)
+
         cn[slave_nodes].=6
         cn[master_nodes].=2
         cn[pd_nodes].=1
 
         for block in eachindex(block_nodes)
-            #block_nodes[block] = set_diff(block_nodes[block], master_nodes)
-
             block_nodes[block] = intersect(block_nodes[block], pd_nodes)
         end
 
@@ -113,12 +131,14 @@ function init_solver(solver_options::Dict{Any,Any},
             K_reduced,
             mass_reduced = guyan_reduction(K, density_mass, perm_master, perm_slave, dof)
             K_reduced[perm_pd_reduced, :].=0
-            K_reduced[:, perm_pd_reduced].=0
+            #K_reduced[:, perm_pd_reduced].=0
             Data_Manager.set_stiffness_matrix(K_reduced)
             Data_Manager.set_mass_matrix(mass_reduced)
             Data_Manager.set_reduced_model_pd(pd_nodes)
             Data_Manager.set_reduced_model_master(master_nodes)
-            @info "Model reduction is applied"
+            @info "Model reduction is applied \n
+             Slaves: $(length(slave_nodes)), Master: $(length(master_nodes)), PD: $(length(pd_nodes))."
+
             return
         end
         @warn "No master nodes defined for model reduction. Using full stiffness matrix."
