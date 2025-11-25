@@ -631,7 +631,7 @@ function init_matrix()
     bond_geometry_N = Data_Manager.get_field("Deformed Bond Geometry", "N")
     bond_damage = Data_Manager.get_field("Bond Damage", "NP1")
 
-    @info "Initializing stiffness matrix (mapping optimized)"
+    @info "Initializing stiffness matrix"
     index_x, index_y, vals,
     total_dof = assemble_stiffness(nodes,
                                    nodes,
