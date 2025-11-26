@@ -713,9 +713,9 @@ end
 Compute thermal forces from temperature changes.
 
 Thermal forces represent the equivalent nodal loads due to thermal expansion:
-	f_thermal = ∫ Bᵀ * σ_thermal dV
+	f_thermal = ∫ Bᵀ * sigma_thermal dV
 
-where σ_thermal = C : ε_thermal and ε_thermal = α * ΔT * I
+where sigma_thermal = C : ε_thermal and ε_thermal = α * ΔT * I
 
 # Arguments
 - `nodes`: Vector of node indices
@@ -779,10 +779,10 @@ function compute_thermal_forces(nodes::AbstractVector{Int64},
         end
 
         # Thermal stress in Voigt notation
-        σ_th_voigt = C_Voigt[i, :, :] * ε_th_voigt
+        sigma_th_voigt = C_Voigt[i, :, :] * ε_th_voigt
 
         # Convert to tensor form for force calculation
-        σ_th_tensor = voigt_to_tensor(σ_th_voigt, dof)
+        sigma_th_tensor = voigt_to_tensor(sigma_th_voigt, dof)
 
         # Get node properties
         D_inv_i = inverse_shape_tensor[i, :, :]
@@ -806,10 +806,10 @@ function compute_thermal_forces(nodes::AbstractVector{Int64},
             end
 
             # Thermal force on bond i→j
-            # Analogy to mechanical force: f = V_i * V_j * ω * σ * (D_inv * X)
+            # Analogy to mechanical force: f = V_i * V_j * ω * sigma * (D_inv * X)
             DX = D_inv_i * X_ij
-            σDX = σ_th_tensor * DX
-            f_ij = V_i * V_j * ω_ij * σDX
+            sigmaDX = sigma_th_tensor * DX
+            f_ij = V_i * V_j * ω_ij * sigmaDX
 
             # Apply forces (action-reaction)
             for d in 1:dof
@@ -825,16 +825,16 @@ end
 """
 Convert stress from Voigt notation to tensor form.
 """
-function voigt_to_tensor(σ_voigt::Vector{Float64}, dof::Int64)
+function voigt_to_tensor(sigma_voigt::Vector{Float64}, dof::Int64)
     if dof == 2
-        # Voigt: [σxx, σyy, σxy]
-        return [σ_voigt[1] σ_voigt[3];
-                σ_voigt[3] σ_voigt[2]]
+        # Voigt: [sigmaxx, sigmayy, sigmaxy]
+        return [sigma_voigt[1] sigma_voigt[3];
+                sigma_voigt[3] sigma_voigt[2]]
     else  # dof == 3
-        # Voigt: [σxx, σyy, σzz, σyz, σxz, σxy]
-        return [σ_voigt[1] σ_voigt[6] σ_voigt[5];
-                σ_voigt[6] σ_voigt[2] σ_voigt[4];
-                σ_voigt[5] σ_voigt[4] σ_voigt[3]]
+        # Voigt: [sigmaxx, sigmayy, sigmazz, sigmayz, sigmaxz, sigmaxy]
+        return [sigma_voigt[1] sigma_voigt[6] sigma_voigt[5];
+                sigma_voigt[6] sigma_voigt[2] sigma_voigt[4];
+                sigma_voigt[5] sigma_voigt[4] sigma_voigt[3]]
     end
 end
 

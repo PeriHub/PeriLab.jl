@@ -20,7 +20,8 @@ using LinearAlgebra
 using TimerOutputs: @timeit
 
 using ...Data_Manager
-using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
+using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style,
+                  create_permutation
 using ...MPI_Communication: barrier
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
 using ...Parameter_Handling:
@@ -418,29 +419,4 @@ function compute_displacements!(K::AbstractMatrix{Float64},
     return nothing
 end
 
-function create_permutation(nnodes::Int64, dof::Int64)
-    perm = Vector{Int}(undef, nnodes * dof)
-    idx = 1
-    for d in 1:dof
-        for n in 1:nnodes
-            old_idx = (n-1)*dof + d  # Row-major: node, dann dof
-            perm[idx] = old_idx
-            idx += 1
-        end
-    end
-    return perm
-end
-
-function create_permutation(nodes::AbstractVector{Int64}, dof::Int64)
-    perm = Vector{Int}(undef, length(nodes) * dof)
-    idx = 1
-    for d in 1:dof
-        for n in nodes
-            old_idx = (n-1)*dof + d  # Row-major: node, dann dof
-            perm[idx] = old_idx
-            idx += 1
-        end
-    end
-    return perm
-end
 end

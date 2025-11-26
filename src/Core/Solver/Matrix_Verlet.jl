@@ -12,7 +12,8 @@ using PrettyTables
 using Logging
 
 using ...Data_Manager
-using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
+using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style,
+                  create_permutation
 using ...Parameter_Handling:
                              get_initial_time,
                              get_fixed_dt,
@@ -157,32 +158,6 @@ function init_solver(solver_options::Dict{Any,Any},
 
     # reduced matrix
 
-end
-
-function create_permutation(nnodes::Int64, dof::Int64)
-    perm = Vector{Int64}(undef, nnodes * dof)
-    idx = 1
-    for d in 1:dof
-        for n in 1:nnodes
-            old_idx = (n-1)*dof + d  # Row-major: node, dann dof
-            perm[idx] = old_idx
-            idx += 1
-        end
-    end
-    return perm
-end
-
-function create_permutation(nodes::AbstractVector{Int64}, dof::Int64)
-    perm = Vector{Int64}(undef, length(nodes) * dof)
-    idx = 1
-    for d in 1:dof
-        for n in nodes
-            old_idx = (n-1)*dof + d  # Row-major: node, dann dof
-            perm[idx] = old_idx
-            idx += 1
-        end
-    end
-    return perm
 end
 
 function run_solver(solver_options::Dict{Any,Any},
