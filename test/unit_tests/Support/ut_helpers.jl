@@ -8,10 +8,22 @@ using LinearAlgebra
 using StaticArrays
 #using PeriLab
 
-function remove_ids(dict::Dict{Int64,Int64}, numbers::Vector{Int64})
-    for num in numbers
-        delete!(dict, num)
-    end
+@testset "ut_create_permutation" begin
+    nodes = [1, 2, 3]
+    dof = 2
+    perm = create_permutation(nodes, dof)
+    @test perm == [1, 3, 5, 2, 4, 6]
+    @test length(perm) == length(nodes) * dof
+    nodes = [2, 5, 7]
+    dof = 2
+    perm = create_permutation(nodes, dof)
+    @test perm == [3, 9, 13, 4, 10, 14]
+    nodes = collect(1:100)
+    dof = 3
+    perm = create_permutation(nodes, dof)
+
+    @test length(perm) == 300
+    @test all(1 .<= perm .<= 300)
 end
 
 @testset "ut_remove_ids" begin
@@ -24,7 +36,7 @@ end
     @test test_vec == [2, 3]
 end
 
-@testset "ut_sinv" begin
+@testset "ut_smat" begin
     @test PeriLab.Solver_Manager.Helpers.smat(zeros(2, 2)) == zeros(2, 2)
     @test PeriLab.Solver_Manager.Helpers.smat(zeros(3, 3)) == zeros(3, 3)
     @test PeriLab.Solver_Manager.Helpers.smat(zeros(4, 4)) == zeros(4, 4)
