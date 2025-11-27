@@ -138,7 +138,7 @@ If update is active it is not very efficient, because the creation of new matrix
 
 If model reduction
 
-| Parameter | Type   | Optional | Description                                              |
-| --------- | ------ | -------- | -------------------------------------------------------- |
-| Type      | String | No       | Defines the type of model redction (Gyan, Craig-Bampton) |
-| tbd       |        |          |                                                          |
+| Parameter        | Type          | Optional | Description                                                               |
+| ---------------- | ------------- | -------- | ------------------------------------------------------------------------- |
+| Type             | String        | No       | Defines the type of model redction (Static Condensationn)                 |
+| Redcution Blocks | String or Int | No       | Defines the blocks to be condensed; defintion are (4 or 1 2 4 or 1, 2, 4) |
