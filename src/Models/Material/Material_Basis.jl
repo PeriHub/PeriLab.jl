@@ -619,6 +619,7 @@ Return the symmetry information from the given material dictionary.
 ```julia
 material_dict = Dict("Symmetry" => "Cubic", "Color" => "Red")
 symmetry = get_sym(material_dict)
+```
 """
 function get_symmetry(material::Dict)
     if !haskey(material, "Symmetry")
