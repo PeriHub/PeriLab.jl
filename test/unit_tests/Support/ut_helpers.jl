@@ -11,16 +11,16 @@ using StaticArrays
 @testset "ut_create_permutation" begin
     nodes = [1, 2, 3]
     dof = 2
-    perm = create_permutation(nodes, dof)
+    perm = PeriLab.Solver_Manager.Helpers.create_permutation(nodes, dof)
     @test perm == [1, 3, 5, 2, 4, 6]
     @test length(perm) == length(nodes) * dof
     nodes = [2, 5, 7]
     dof = 2
-    perm = create_permutation(nodes, dof)
+    perm = PeriLab.Solver_Manager.Helpers.create_permutation(nodes, dof)
     @test perm == [3, 9, 13, 4, 10, 14]
     nodes = collect(1:100)
     dof = 3
-    perm = create_permutation(nodes, dof)
+    perm = PeriLab.Solver_Manager.Helpers.create_permutation(nodes, dof)
 
     @test length(perm) == 300
     @test all(1 .<= perm .<= 300)
