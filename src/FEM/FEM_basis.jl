@@ -193,6 +193,7 @@ Compute integration points and weights using Gauss-Legendre quadrature.
 dof = 3
 p = [2, 3, 1]
 x, w = get_weights_and_integration_points(dof, p)
+```
 """
 function get_weights_and_integration_points(dof::Int64, num_int::Vector{Int64})
     x::Matrix{Float64} = zeros(Float64, maximum(num_int), dof)
@@ -222,6 +223,7 @@ dof = 2
 p = [2, 3]
 value = rand(3, dof)
 result = get_multi_dimensional_integration_points(dof, p, value)
+```
 """
 function get_multi_dimensional_integration_point_data(dof::Int64,
                                                       num_int::Vector{Int64},

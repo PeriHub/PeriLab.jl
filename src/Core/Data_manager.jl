@@ -548,6 +548,7 @@ color_value = get_properties(1, "color")  # Returns "red"
 
 # Try to retrieve a non-existent property for block 2
 non_existent_value = get_properties(2, "width")  # Returns an empty dictionary
+```
 """
 function get_properties(block_id::Int64, property::String)::Dict{String,Any}
     if check_property(block_id, property)
@@ -569,10 +570,6 @@ This function retrieves a specific `value_name` associated with a specified `pro
 # Returns
 - `value`::Any: The value associated with the specified `value_name` within the `property` for the given `block_id`.
 - `nothing`: If the specified `block_id`, `property`, or `value_name` does not exist in the dictionary.
-
-# Example
-```julia
-
 """
 function get_property(block_id::Int64, property::String,
                       value_name::String)
@@ -594,6 +591,7 @@ This function returns the rank of the core.
 # Example
 ```julia
 current_rank = get_rank()
+```
 """
 function get_rank()::Int64
     return data["rank"]
@@ -610,6 +608,7 @@ This function returns the maximal rank of MPI the `max_rank`.
 # Example
 ```julia
 rank = get_max_rank()
+```
 """
 function get_max_rank()::Int64
     return data["max_rank"]
@@ -626,6 +625,7 @@ This function returns if MPI is active.
 # Example
 ```julia
 rank = get_mpi_active()
+```
 """
 function get_mpi_active()::Bool
     return data["mpi_active"]

@@ -32,6 +32,7 @@ To run a simulation using PeriLab, you can use the `main()` function, which take
 For example:
 ```julia
 main("examples/Dogbone/Dogbone.yaml"; output_dir="", dry_run=false, verbose=false, debug=false, silent=false, reload=false)
+```
 """
 
 module PeriLab
@@ -130,6 +131,7 @@ None.
 
 ```julia
 parsed_args = parse_commandline()
+```
 """
 
 function parse_commandline()

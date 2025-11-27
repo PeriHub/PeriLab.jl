@@ -44,6 +44,7 @@ Define a Lagrangian grid space for shape functions. The grid size is defined by 
 dof = 3
 p = [2, 3, 1]
 xi = define_lagrangian_grid_space(dof, p)
+```
 """
 function define_lagrangian_grid_space(dof::Int64, p::Vector{Int64})
     xi::Matrix{Float64} = zeros(Float64, dof, maximum(p) + 1)
@@ -80,6 +81,7 @@ xi = [0.0, 1.0, 2.0]
 element_coordinate = 1.5
 p = 2
 N = get_recursive_lagrange_shape_functions(xi, value, p)
+```
 """
 
 function get_recursive_lagrange_shape_functions(xi::Vector{Float64},

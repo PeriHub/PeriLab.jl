@@ -27,6 +27,7 @@ jl_files = find_jl_files("/path/to/modules")
 for jl_file in jl_files
     println("Found Julia file: ", jl_file)
 end
+```
 """
 function find_jl_files(directory::AbstractString)
     jl_files = Vector{String}()
@@ -78,6 +79,7 @@ for module_info in result
     println("Function found in module: ", module_info["Module Name"])
     println("Module file path: ", module_info["File"])
 end
+```
 """
 function find_module_files(directory::AbstractString, specific::String)
     files_in_folder = find_jl_files(directory)
@@ -118,6 +120,7 @@ module_list = Dict("Module1" => "Module1Name", "Module2" => "Module2Name")
 specifics = Dict("Module1Name" => "module1_function", "Module2Name" => "module2_function")
 values = (arg1, arg2)
 create_module_specifics("Module1Name", module_list, specifics, values)
+```
 """
 function create_module_specifics(name::Union{String,SubString},
                                  module_list::Vector{Any},

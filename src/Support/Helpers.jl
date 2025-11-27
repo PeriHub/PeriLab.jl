@@ -754,6 +754,7 @@ of the tensor.
 CVoigt = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
 dof = 3
 result = get_fourth_order(CVoigt, dof)
+```
 """
 function get_fourth_order(CVoigt::AbstractMatrix{Float64}, dof::Int64)
     if dof==2

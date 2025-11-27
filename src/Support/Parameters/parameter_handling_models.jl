@@ -51,6 +51,7 @@ if result !== nothing
 else
     println("Parameter not found.")
 end
+```
 """
 function get_model_parameter(params::Dict,
                              model::String,
@@ -84,9 +85,9 @@ function get_model_parameter(params::Dict,
                 params["Models"][model * "s"][id][key_name] = Dict()
                 params["Models"][model * "s"][id][key_name]["Field"] = header[1]
                 params["Models"][model * "s"][id][key_name]["Data"] = interpolation(data[!,
-                                                                                         1],
+                                                                                    1],
                                                                                     data[!,
-                                                                                         i])
+                                                                                    i])
             end
         end
         return params["Models"][model * "s"][id]

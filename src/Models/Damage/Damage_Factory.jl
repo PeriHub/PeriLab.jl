@@ -220,7 +220,7 @@ Initialize the damage models.
 # Example
 ```julia
 init_model(my_data_manager, [1, 2, 3], 1)
-
+```
 """
 function init_model(nodes::AbstractVector{Int64},
                     block::Int64)

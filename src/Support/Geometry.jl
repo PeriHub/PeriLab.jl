@@ -49,6 +49,7 @@ Calculate bond geometries between nodes based on their coordinates.
  undeformed_bond = zeros(Float64, length(nodes), length(nlist[1]), dof + 1)
 
  undeformed_bond(nodes, dof, nlist, coor, undeformed_bond)
+```
 """
 
 function bond_geometry!(undeformed_bond::BondVectorState{Float64},
@@ -116,6 +117,7 @@ bond_damage = zeros(Float64, length(nodes), length(nlist[1]))
 undeformed_bond = rand(Float64, length(nodes), length(nlist[1]), dof)
 shape_tensor = zeros(Float64, length(nodes), dof, dof)
 inverse_shape_tensor = zeros(Float64, length(nodes), dof, dof)
+```
 """
 function compute_shape_tensors!(shape_tensor::NodeTensorField{Float64,3},
                                 inverse_shape_tensor::NodeTensorField{Float64,3},
@@ -208,7 +210,7 @@ undeformed_bond = rand(Float64, length(nodes), length(nlist[1]), dof)
 deformed_bond = rand(Float64, length(nodes), length(nlist[1]), dof)
 inverse_shape_tensor = rand(Float64, length(nodes), dof, dof)
 deformation_gradient = zeros(Float64, length(nodes), dof, dof)
-
+```
 """
 
 function compute_deformation_gradients!(deformation_gradient::NodeTensorField{Float64,3},
