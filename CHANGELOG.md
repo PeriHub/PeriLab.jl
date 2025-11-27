@@ -8,6 +8,16 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.1] - 2025-11-27
+
+### Added
+
+- Exodus SPHERE element input type
+
+### Fixed
+
+- Cancellation for max. damage
+
 ## [1.5.0] - 2025-10-30
 
 ### Added
