@@ -450,7 +450,7 @@ A dictionary containing information about mesh elements, which can be used for
 further processing or uploading.
 
 # Example
-```julia
+`julia
 mesh_data = DataFrame(x1 = [1.0, 2.0, 3.0], x2 = [4.0, 5.0, 6.0], volume = [10.0, 20.0, 30.0])
 dof = 3
 result = check_mesh_elements(mesh_data, dof)
@@ -591,6 +591,23 @@ function read_mesh(filename::String, params::Dict)
                             block_id = Int64[])
         block_ids = read_ids(exo, Block)
 
+        nodal_var_names = read_names(exo, NodalVariable)
+        elem_var_names = read_names(exo, ElementVariable)
+        num_nodal_var = length(nodal_var_names)
+        num_elem_var = length(elem_var_names)
+        if num_nodal_var > 0
+            @info "Found $(num_nodal_var) nodal variables: $(nodal_var_names)"
+        end
+        if num_elem_var > 0
+            @info "Found $(num_elem_var) element variables: $(elem_var_names)"
+        end
+
+        nodals = Dict()
+        for nodal_var_name in nodal_var_names
+            nodals[nodal_var_name] = read_values(exo, NodalVariable, 1, 1, nodal_var_name)
+            nodals[nodal_var_name * "_sorted"] = []
+        end
+
         for (iID, block_id) in enumerate(block_ids)
             block = read_block(exo, block_id)
             block_id_map = Exodus.read_block_connectivity(exo,
@@ -625,9 +642,39 @@ function read_mesh(filename::String, params::Dict)
                            volume = volume,
                            block_id = Int64(block_id)))
                 end
+            elseif block.elem_type == "SPHERE"
+                volume_nodal_name = nothing
+                for name in nodal_var_names
+                    if lowercase(name) == "volume"
+                        volume_nodal_name = name
+                        break
+                    end
+                end
+                if volume_nodal_name === nothing
+                    @error "Volume is missing. Please define a 'Volume' for each point in the mesh file."
+                end
+
+                for i in 1:(block.num_elem)
+                    node_ids = block_id_map[i]
+                    vertices = coords[:, node_ids]
+                    volume = nodals[volume_nodal_name][node_ids]
+                    push!(mesh_df,
+                          (x = vertices[1],
+                           y = vertices[2],
+                           z = vertices[3],
+                           volume = volume,
+                           block_id = Int64(block_id)))
+                    for nodal_var_name in nodal_var_names
+                        append!(nodals[nodal_var_name * "_sorted"],
+                                nodals[nodal_var_name][node_ids])
+                    end
+                end
             else
                 @error "Element type $(block.elem_type) not supported"
             end
+        end
+        for nodal_var_name in nodal_var_names
+            mesh_df[!, nodal_var_name] = nodals[nodal_var_name * "_sorted"]
         end
 
         close(exo)
