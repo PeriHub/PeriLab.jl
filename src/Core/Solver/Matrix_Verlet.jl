@@ -38,7 +38,9 @@ function init_solver(solver_options::Dict{Any,Any},
                      bcs::Dict{Any,Any},
                      block_nodes::Dict{Int64,Vector{Int64}})
     horizon = Data_Manager.get_field("Horizon")
-
+    if Data_Manager.get_rank()>1
+        @warn "implementation might not work for MPI. Especially for coupling. It has to be tested."
+    end
     find_bc_free_dof(bcs)
     solver_options["Initial Time"] = get_initial_time(params)
     solver_options["Final Time"] = get_final_time(params)
@@ -56,18 +58,28 @@ function init_solver(solver_options::Dict{Any,Any},
     density = Data_Manager.get_field("Density")
     model_reduction = get(params["Verlet Matrix Based"], "Model Reduction", false)
     solver_options["Model Reduction"] = model_reduction
-    solver_options["Numerical Damping"] = get(params, "Numerical Damping", 0.0)
+    solver_options["Numerical Damping"] = get_numerical_damping(params)
     K = Data_Manager.get_stiffness_matrix()
-
+    reduction_blocks=[]
     if model_reduction!=false
         reduction_blocks = get(solver_options["Model Reduction"], "Reduction Blocks", [])
+
         if reduction_blocks==[]
-            @warn "No reduction blocks defined for model reduction. Full matrix is used. \n If you want to use a reduced model please define 'Reduction Blocks' in the yaml input deck."
+            model_reduction==false
+            @error "No reduction blocks defined for model reduction. If you want to use a reduced model please define 'Reduction Blocks' in the yaml input deck."
+        else
+            if reduction_blocks isa Float64
+                @error "Type Float is not supported for Reduction Blocks"
+            end
+            if reduction_blocks isa Int64
+                reduction_blocks = [reduction_blocks]
+            else
+                reduction_blocks = parse.(Int64,
+                                          filter(!isempty,
+                                                 split(solver_options["Model Reduction"]["Reduction Blocks"],
+                                                       r"[,\s]")))
+            end
         end
-        reduction_blocks = parse.(Int64,
-                                  filter(!isempty,
-                                         split(solver_options["Model Reduction"]["Reduction Blocks"],
-                                               r"[,\s]")))
     end
 
     if reduction_blocks!=[]
@@ -76,30 +88,11 @@ function init_solver(solver_options::Dict{Any,Any},
         slave_nodes = Int64[]
         pd_nodes = Int64[]
         nlist = Data_Manager.get_nlist()
-        ##TODO Testing
-
         cn=Data_Manager.create_constant_node_scalar_field("Coupling Nodes", Int64)
-        #for block in reduction_blocks
-        #	push!(pd_nodes, block_nodes[block])
-        #end
-
-        #--------------------------------------
-        pos = 0.5
-        pos_BC = 1.8
-
-        for (block, nodes) in pairs(block_nodes)
-            # for testing
-            for node in nodes
-                if (-pos) < coor[node, 2] < (pos)
-                    push!(pd_nodes, node)
-                end
-
-                if coor[node, 1]<pos_BC
-                    push!(pd_nodes, node)
-                end
-            end
+        full_blocks = setdiff(collect(keys(block_nodes)), reduction_blocks)
+        for block in full_blocks
+            append!(pd_nodes, block_nodes[block])
         end
-        #---------------
 
         # create coupling zone
         for node in pd_nodes
@@ -108,7 +101,6 @@ function init_solver(solver_options::Dict{Any,Any},
 
         append!(master_nodes, pd_nodes)
         master_nodes = sort(unique(master_nodes))
-        #pd_nodes=Int64[]
         slave_nodes = setdiff(collect(1:Data_Manager.get_nnodes()), master_nodes)
 
         cn[slave_nodes].=6
