@@ -47,7 +47,7 @@ function init_models(params::Dict,
                      solver_options::Dict,
                      synchronise_field)
     if "Pre_Calculation" in solver_options["Models"]
-        @info "Check pre calculation models are initialized for material models."
+        @info "Check pre calculation models are initialized for material models"
         Pre_Calculation.check_dependencies(block_nodes)
         if haskey(params["Models"], "Material Models")
             for mat in keys(params["Models"]["Material Models"])
@@ -79,6 +79,7 @@ function init_models(params::Dict,
     for (active_model_name, active_model) in pairs(Data_Manager.get_active_models())
         @info "Init $active_model_name"
 
+        model_used = false
         for block in eachindex(block_nodes)
             if Data_Manager.check_property(block, active_model_name)
                 @timeit "init $active_model_name models" active_model.init_model(block_nodes[block],
@@ -94,8 +95,12 @@ function init_models(params::Dict,
                                                 Data_Manager.get_properties(block,
                                                                             "Damage Model"))
                 end
+                model_used = true
                 # put it in Data_Manager
             end
+        end
+        if !model_used
+            @warn "$active_model_name is defined and activated, but not referenced in any block definition"
         end
     end
 
