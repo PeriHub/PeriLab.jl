@@ -4,7 +4,8 @@
 
 module Correspondence
 
-include("../Zero_Energy_Control/global_control.jl")
+#TODO: include here and not in Solver_manager
+# include("../Zero_Energy_Control/global_control.jl")
 
 using TimerOutputs: @timeit
 
@@ -24,7 +25,7 @@ using .Bond_Associated_Correspondence
 using ....Material_Basis: compute_Piola_Kirchhoff_stress!
 using .......Helpers: invert, rotate, determinant, smat, matrix_diff!, fast_mul!, mat_mul!
 using .......Geometry: compute_strain
-using .Global_Zero_Energy_Control
+using ....Global_Zero_Energy_Control
 
 export init_model
 export material_name

@@ -1032,6 +1032,15 @@ global expected_structure = Dict("PeriLab" => [
                                                                                        ]),
                                                                          false
                                                                      ],
+                                                                     "Linear Static Matrix Based" => [
+                                                                         Dict{Any,
+                                                                              Any}("Safety Factor" => [
+                                                                                       Union{Float64,
+                                                                                             Int64},
+                                                                                       false
+                                                                                   ]),
+                                                                         false
+                                                                     ],
                                                                      "Static" => [
                                                                          Dict{Any,Any}("Maximum number of iterations" => [
                                                                                            Int64,
@@ -1156,6 +1165,15 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                          false
                                                                                                      ],
                                                                                                      "Numerical Damping" => [
+                                                                                                         Union{Float64,
+                                                                                                               Int64},
+                                                                                                         false
+                                                                                                     ]),
+                                                                                           false
+                                                                                       ],
+                                                                                       "Linear Static Matrix Based" => [
+                                                                                           Dict{Any,
+                                                                                                Any}("Safety Factor" => [
                                                                                                          Union{Float64,
                                                                                                                Int64},
                                                                                                          false

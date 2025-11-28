@@ -1,0 +1,74 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Node Sets:
+      Node Set 1: 1 2 3 4
+      Node Set 2: 9 10 11 12
+      Node Set 3: 1 5 9
+    Type: "Text File"
+    Input Mesh File: "test_mesh_2D.txt"
+  Models:
+    Pre Calculation Global:
+      Deformed Bond Geometry: true
+      Deformation Gradient: true
+      Shape Tensor: true
+      Bond Associated Deformation Gradient: false
+    Material Models:
+      Mat_1:
+        Material Model: "Correspondence Elastic"
+        Symmetry: "isotropic plane stress"
+        Young's Modulus: 209695.43147208123
+        Poisson's Ratio: 0.2944
+      Mat_2:
+        Material Model: "Correspondence Elastic"
+        Symmetry: "isotropic plane stress"
+        Young's Modulus: 209695.43147208123
+        Poisson's Ratio: 0.2944
+  Blocks:
+    block_1:
+      Block ID: 1
+      Material Model: "Mat_1"
+      Density: 2.7e-9
+      Horizon: 2.1
+    block_2:
+      Block ID: 2
+      Material Model: "Mat_2"
+      Density: 2.7e-9
+      Horizon: 2.1
+  Boundary Conditions:
+    BC_1:
+      Variable: "Displacements"
+      Node Set: "Node Set 1"
+      Coordinate: "y"
+      Value: "0.0"
+      Type: Dirichlet
+    BC_2:
+      Variable: "Displacements"
+      Node Set: "Node Set 2"
+      Coordinate: "y"
+      Value: "0.001"
+      Type: Dirichlet
+    BC_3:
+      Variable: "Displacements"
+      Node Set: "Node Set 3"
+      Coordinate: "x"
+      Value: "0.0"
+      Type: Dirichlet
+  Solver:
+    Initial Time: 0.0
+    Final Time: 5.0e-6
+    Number of Steps: 10
+    Linear Static Matrix Based:
+      Safety Factor: 1.0
+  Outputs:
+    Output1:
+      Output File Type: Exodus
+      Output Filename: "linear_static_matrix_based_solver_2D"
+      Output Frequency: 1
+      Output Variables:
+        Displacements: True
+        Forces: True
+        Cauchy Stress: True

@@ -1,0 +1,85 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Blocks:
+    block_1:
+      Block ID: 1
+      Density: 270000
+      Horizon: 0.000752
+      Material Model: mat_1
+    block_2:
+      Block ID: 2
+      Density: 270000
+      Horizon: 0.000752
+      Material Model: mat_1
+    block_3:
+      Block ID: 3
+      Density: 270000
+      Horizon: 0.000752
+      Material Model: mat_1
+  Boundary Conditions:
+    BC_1:
+      Coordinate: x
+      Node Set: Node Set 1
+      Variable: Displacements
+      Value: -0.004*t
+      Type: Dirichlet
+    BC_2:
+      Coordinate: y
+      Node Set: Node Set 1
+      Variable: Displacements
+      Value: 0
+      Type: Dirichlet
+    BC_3:
+      Coordinate: x
+      Node Set: Node Set 2
+      Variable: Displacements
+      Value: 0
+      Type: Dirichlet
+    BC_4:
+      Coordinate: y
+      Node Set: Node Set 2
+      Variable: Displacements
+      Value: 0
+      Type: Dirichlet
+  Discretization:
+    Input Mesh File: mesh_3d.txt
+    Node Sets:
+      Node Set 1: nset_1_3d.txt
+      Node Set 2: nset_2_3d.txt
+    Type: Text File
+  Outputs:
+    Output1:
+      Output Frequency: 10
+      Output Filename: verlet_reduced_3D
+      Output File Type: Exodus
+      Output Variables:
+        Displacements: true
+        Forces: true
+        Number of Neighbors: true
+        Coupling Nodes: True
+  Models:
+    Material Models:
+      mat_1:
+        Material Model: "Correspondence Elastic"
+        Zero Energy Control: "Global"
+        Symmetry: isotropic plane stress
+        Young's Modulus: 1.2e08
+        Poisson's Ratio: 0.3
+    Pre Calculation Global:
+      Bond Associated Deformation Gradient: false
+      Deformation Gradient: false
+      Deformed Bond Geometry: true
+      Shape Tensor: false
+  Solver:
+    Final Time: 0.0003
+    Initial Time: 0.0
+    Number of Steps: 178
+    Material Models: true
+    Verlet Matrix Based:
+      Safety Factor: 1.0
+      Model Reduction:
+        Type: Static Condensation
+        Reduction Blocks: 2 3

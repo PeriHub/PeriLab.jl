@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """
-    PeriLab
+	PeriLab
 
 A module for managing and executing peridynamic simulations in PeriLab.
 
@@ -64,7 +64,7 @@ PERILAB_VERSION = "1.5.1"
 export main
 
 """
-    print_banner(mpi)
+	print_banner(mpi)
 
 Prints a banner displaying information about the PeriLab application.
 
@@ -103,7 +103,7 @@ function print_banner(mpi)
 end
 
 """
-    parse_commandline()
+	parse_commandline()
 
 Parse command-line arguments using the ArgParse package.
 
@@ -167,7 +167,7 @@ function parse_commandline()
 end
 
 """
-    main()
+	main()
 
 Entry point for the PeriLab application.
 
@@ -187,14 +187,14 @@ function main()::Cint
              verbose = parsed_args["verbose"],
              debug = parsed_args["debug"],
              silent = parsed_args["silent"],
-             reload = parsed_args["reload"],)
+             reload = parsed_args["reload"])
     end
     MPI.Finalize()
     return 0
 end
 
 """
-    get_examples()
+	get_examples()
 
 Copy the examples folder to the current directory.
 """
@@ -208,7 +208,7 @@ function get_examples()
 end
 
 """
-    main(filename::String, output_dir::String="", dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false, reload::Bool=false)
+	main(filename::String, output_dir::String="", dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false, reload::Bool=false)
 
 Entry point for the PeriLab application.
 
@@ -407,6 +407,7 @@ function main(filename::String;
         to = TimerOutputs.get_defaulttimer()
         TimerOutputs.complement!(to)
         @info to
+        reset_timer!(to)
     end
     @info Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
     @info "PeriLab finished"

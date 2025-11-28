@@ -9,7 +9,7 @@ using Meshes: Ring, Point, centroid
 #using Tensors
 using Dierckx: Spline1D, evaluate
 using ProgressBars: ProgressBar
-using LinearAlgebra: Adjoint, dot, det, norm
+using LinearAlgebra: Adjoint, dot, det, norm, rank, pinv
 using StaticArrays: MMatrix, MVector, SMatrix, @SMatrix, SVector, @SVector
 using LoopVectorization
 using Unitful: ustrip
@@ -73,7 +73,7 @@ function get_shared_horizon(id)
 end
 
 """
-     matrix_to_vector(mat::Matrix{T}) where {T<:Union{Float64,Int64}}
+	 matrix_to_vector(mat::Matrix{T}) where {T<:Union{Float64,Int64}}
 
 Transforming a matrix representation in a Vector{Vector} representation.
 
@@ -87,7 +87,7 @@ function matrix_to_vector(mat::Matrix{T}) where {T<:Union{Float64,Int64}}
 end
 
 """
-    compute_geometry(points::Union{Matrix{Float64},Matrix{Int64}})
+	compute_geometry(points::Union{Matrix{Float64},Matrix{Int64}})
 
 Returns a polyhedron object in 2D or 3D. To do so the matrix form of storing the geometry is transfered in a Vector{Vector}. This form is than transformed in a V-representation of the Polyhedra.jl package.
 
@@ -102,8 +102,8 @@ function compute_geometry(points::Union{Matrix{Float64},Matrix{Int64}})
 end
 
 """
-    compute_surface_nodes_and_connections(points::Union{Matrix{Float64},Matrix{Int64}},
-                                               poly, free_surfaces::Vector{Int64})
+	compute_surface_nodes_and_connections(points::Union{Matrix{Float64},Matrix{Int64}},
+											   poly, free_surfaces::Vector{Int64})
 
 Computes the points which are connected free surfaces (()).
 This function is used for contact search purposes. The free surface nodes are used to compute the nearest neighbors. The connections and underlying points are needed for the contact algorithm. They are a subset of the surface points to create the polyhedron and the only ones which can be in contact.
@@ -185,7 +185,7 @@ function nearest_point_id(p, points)
 end
 
 """
-    remove_ids(dict::Dict{Int64,Int64}, numbers::Vector{Int64})
+	remove_ids(dict::Dict{Int64,Int64}, numbers::Vector{Int64})
 
 Remove multiple keys in a Vector from a Dict.
 
@@ -207,7 +207,7 @@ function remove_ids(vec::Vector{Int64}, numbers::Vector{Int64})
 end
 
 """
-    get_block_nodes(block_ids, nnodes)
+	get_block_nodes(block_ids, nnodes)
 
 Returns a dictionary mapping block IDs to collections of nodes.
 
@@ -267,7 +267,7 @@ function find_point_in_hexagon(point, coor, topo)
 end
 
 """
-    get_hexagon(coor::Union{Matrix{Float64},Matrix{Int64}}, topo::Vector{Int64})
+	get_hexagon(coor::Union{Matrix{Float64},Matrix{Int64}}, topo::Vector{Int64})
 
 # Description
 This function gives the hexahedron model back to compute centroids of this surface and check if a point lies inside. The el_topology has to be transformed from PeriLab notation, to avoid overlapping.
@@ -291,7 +291,7 @@ function get_hexagon(coor::Union{Matrix{Float64},Matrix{Int64}}, topo::Vector{In
 end
 
 """
-    get_ring(coor::Union{Matrix{Float64},Matrix{Int64}}, topo::Vector{Int64})
+	get_ring(coor::Union{Matrix{Float64},Matrix{Int64}}, topo::Vector{Int64})
 
 # Description
 This function gives the ring model back to compute centroids of this surface and check if a point lies inside. The el_topology has to be transformed from PeriLab notation, to avoid overlapping.
@@ -319,10 +319,10 @@ function get_centroid(el, dof)
     end
 end
 """
-    create_centroid_and_search_radius(coor::Union{Matrix{Float64},Matrix{Int64}},
-                                      el_topology::Matrix{Int64},
-                                      dof::Int64,
-                                      fu)
+	create_centroid_and_search_radius(coor::Union{Matrix{Float64},Matrix{Int64}},
+									  el_topology::Matrix{Int64},
+									  dof::Int64,
+									  fu)
 
 Computes the centroid and Contact Radius for each element in a given mesh.
 
@@ -582,7 +582,7 @@ end
 # end
 
 """
-    qdim(order::Int64, dof::Int64)
+	qdim(order::Int64, dof::Int64)
 
 Calculate the number of terms in a polynomial expansion up to a specified accuracy order. Simplied first complex loop in Peridigm correspondence::computeLagrangianGradientWeights.
 In the unit test this values where tested.
@@ -609,7 +609,7 @@ function qdim(order::Int64, dof::Int64)
 end
 
 """
-    find_indices(vector, what)
+	find_indices(vector, what)
 
 Returns the indices of `vector` that are equal to `what`.
 
@@ -624,7 +624,7 @@ function find_indices(vector::Vector{T}, what::T) where {T<:Union{Int64,Float64,
 end
 
 """
-    get_active_update_nodes(active::Vector{Bool}, update_list::Vector{Bool}, nodes::Vector{Int64}, index::Vector{Int64})
+	get_active_update_nodes(active::Vector{Bool}, update_list::Vector{Bool}, nodes::Vector{Int64}, index::Vector{Int64})
 
 Returns the active nodes and the update nodes.
 
@@ -662,7 +662,7 @@ function find_active_nodes(active::AbstractVector{Bool},
 end
 
 """
-    find_files_with_ending(folder_path::AbstractString, file_ending::AbstractString)
+	find_files_with_ending(folder_path::AbstractString, file_ending::AbstractString)
 
 Returns a list of files in `folder_path` that end with `file_ending`.
 
@@ -679,7 +679,7 @@ function find_files_with_ending(folder_path::AbstractString, file_ending::Abstra
 end
 
 """
-    check_inf_or_nan(array, msg)
+	check_inf_or_nan(array, msg)
 
 Checks if the sum of the array is finite. If not, an error is raised.
 
@@ -701,6 +701,7 @@ function check_inf_or_nan(array::AbstractArray{T},
     end
     return false
 end
+
 function check_inf_or_nan(array::T,
                           msg::String) where {T<:Union{Int64,Float64}}
     if isnan(sum(array))
@@ -714,7 +715,7 @@ function check_inf_or_nan(array::T,
     return false
 end
 """
-    matrix_style(A)
+	matrix_style(A)
 
 Include a scalar or an array and reshape it to style needed for LinearAlgebra package
 
@@ -732,8 +733,34 @@ function matrix_style(A::T)::Matrix{T} where {T<:Union{Int64,Float64}}
     return reshape([A], 1, 1)
 end
 
+function create_permutation(nnodes::Int64, dof::Int64)
+    perm = Vector{Int}(undef, nnodes * dof)
+    idx = 1
+    for d in 1:dof
+        for n in 1:nnodes
+            old_idx = (n-1)*dof + d  # Row-major: node, dann dof
+            perm[idx] = old_idx
+            idx += 1
+        end
+    end
+    return perm
+end
+
+function create_permutation(nodes::AbstractVector{Int64}, dof::Int64)
+    perm = Vector{Int}(undef, length(nodes) * dof)
+    idx = 1
+    for d in 1:dof
+        for n in nodes
+            old_idx = (n-1)*dof + d  # Row-major: node, dann dof
+            perm[idx] = old_idx
+            idx += 1
+        end
+    end
+    return perm
+end
+
 """
-    get_fourth_order(CVoigt, dof)
+	get_fourth_order(CVoigt, dof)
 
 Constructs a symmetric fourth-order tensor from a Voigt notation vector. It uses Tensors.jl package.
 
@@ -756,12 +783,14 @@ dof = 3
 result = get_fourth_order(CVoigt, dof)
 ```
 """
+const GLOBAL_TENSOR_2D = zeros(Float64, 2, 2, 2, 2)
+const GLOBAL_TENSOR_3D = zeros(Float64, 3, 3, 3, 3)
+
 function get_fourth_order(CVoigt::AbstractMatrix{Float64}, dof::Int64)
     if dof==2
-        return voigt_to_tensor4_2d!(zeros(Float64, 2, 2, 2, 2), CVoigt)
-
+        return voigt_to_tensor4_2d!(GLOBAL_TENSOR_2D, CVoigt)
     elseif dof==3
-        return voigt_to_tensor4_3d!(zeros(Float64, 3, 3, 3, 3), CVoigt)
+        return voigt_to_tensor4_3d!(GLOBAL_TENSOR_3D, CVoigt)
     else
         @error "$dof is not a valid option. Only dof 2 and 3 are supported."
         return zeros(Float64, 0, 0, 0, 0)
@@ -843,7 +872,7 @@ function voigt_to_tensor4_3d!(T4::Array{Float64,4}, C_voigt::AbstractMatrix{Floa
 end
 
 """
-    find_inverse_bond_id(nlist::BondScalarState{Int64})
+	find_inverse_bond_id(nlist::BondScalarState{Int64})
 
 Finds the inverse of the bond id in the nlist.
 
@@ -916,7 +945,7 @@ function interpol_data(x::Union{Vector{Float64},Vector{Int64},Float64,Int64},
 end
 
 """
-    invert(A::Union{Matrix{Float64},Matrix{Int64}}, error_message::String="Matrix is singular")
+	invert(A::Union{Matrix{Float64},Matrix{Int64}}, error_message::String="Matrix is singular")
 
 Invert a n x n matrix. Throws an error if A is singular.
 
@@ -929,11 +958,11 @@ Invert a n x n matrix. Throws an error if A is singular.
 """
 function invert(A::AbstractMatrix{Float64},
                 error_message::String = "Matrix is singular")
-    try
-        return inv(smat(A))
-    catch e
-        @error error_message
+    if rank(A)<size(A)[1]
+        #  @warn "$error_message \n - rank is $(rank(A))"
+        return pinv(smat(A))
     end
+    return inv(smat(A))
 end
 
 function determinant(A::AbstractMatrix{Float64})
@@ -976,7 +1005,7 @@ function find_local_neighbors(nID::Int64,
 end
 
 """
-    progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
+	progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
 
 Create a progress bar if the rank is 0. The progress bar ranges from 1 to nsteps + 1.
 
@@ -996,7 +1025,7 @@ function progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
 end
 
 """
-    rotate(nodes::AbstractVector{Int64}, dof::Int64, matrix::AbstractArray{Float64,3}, angles::SubArray, back::Bool)
+	rotate(nodes::AbstractVector{Int64}, dof::Int64, matrix::AbstractArray{Float64,3}, angles::SubArray, back::Bool)
 
 Rotates the matrix.
 
@@ -1021,7 +1050,7 @@ function rotate(nodes::AbstractVector{Int64},
 end
 
 """
-    rotate_second_order_tensor(angles::Union{Vector{Float64},Vector{Int64}}, tensor::Matrix{Float64}, dof::Int64, back::Bool)
+	rotate_second_order_tensor(angles::Union{Vector{Float64},Vector{Int64}}, tensor::Matrix{Float64}, dof::Int64, back::Bool)
 
 Rotates the second order tensor.
 

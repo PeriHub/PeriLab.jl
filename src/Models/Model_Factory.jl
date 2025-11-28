@@ -33,7 +33,7 @@ export init_models
 export read_properties
 
 """
-    init_models(params::Dict, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
+	init_models(params::Dict, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
 
 Initialize models
 
@@ -131,9 +131,9 @@ function check_contact(params::Dict, time::Float64, dt::Float64)
 end
 
 """
-    compute_models(block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field)
+	compute_models(block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field)
 
-Computes the models models
+Computes the material point models
 
 # Arguments
 - `block_nodes::Dict{Int64,Vector{Int64}}`: The block nodes
@@ -153,7 +153,6 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
     end
 
     active_list = Data_Manager.get_field("Active")
-
     # TODO check if pre calculation should run block wise. For mixed model applications it makes sense.
     # TODO add for pre calculation a whole model option, to get the neighbors as well, e.g. for bond associated
     # TODO check for loop order?
@@ -267,6 +266,7 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
                                                   1:Data_Manager.get_nnodes(), true))
         end
     end
+
     if "Material" in options
         if "Damage" in options
             for (block, nodes) in pairs(block_nodes)
@@ -315,6 +315,68 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
     end
 end
 
+"""
+	compute_stiff_matrix_compatible_models(block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field)
+
+Computes the models models that are compatible with the stiffness matrix calculation.
+
+# Arguments
+- `block_nodes::Dict{Int64,Vector{Int64}}`: The block nodes
+- `dt::Float64`: The time step
+- `time::Float64`: The current time of the solver
+- `options::Vector{String}`: The options
+- `synchronise_field`: The synchronise field
+"""
+function compute_stiff_matrix_compatible_models(block_nodes::Dict{Int64,Vector{Int64}},
+                                                dt::Float64,
+                                                time::Float64,
+                                                options::Vector{String},
+                                                synchronise_field)
+    active_list = Data_Manager.get_field("Active")
+
+    for (active_model_name, active_model) in pairs(Data_Manager.get_active_models())
+
+        #local_synch(Data_Manager, active_model_name, "upload_to_cores", synchronise_field)
+        # maybe not needed?
+        #local_synch(Data_Manager,
+        #	active_model_name,
+        #	"download_from_cores",
+        #	synchronise_field)
+        #TODO: Change Thermal for Thermal Expansion only!
+        if active_model_name == "Material Model" && !("Thermal" in options)
+            # we need here an activation trigger for mixed models in future
+            continue
+        end
+
+        for (block, nodes) in pairs(block_nodes)
+            # "delete" the view of active nodes
+            active_nodes = Data_Manager.get_field("Active Nodes")
+
+            active_nodes = find_active_nodes(active_list,
+                                             active_nodes,
+                                             nodes,
+                                             active_model_name != "Additive Model")
+
+            if Data_Manager.check_property(block, active_model_name)
+                # synch
+                @timeit "compute $active_model_name" active_model.compute_model(active_nodes,
+                                                                                Data_Manager.get_properties(block,
+                                                                                                            active_model_name),
+                                                                                block,
+                                                                                time,
+                                                                                dt)
+            end
+        end
+    end
+
+    if ("Material" in options) && ("Thermal" in options)
+        active_nodes = Data_Manager.get_field("Active Nodes")
+        active_nodes = find_active_nodes(active_list, active_nodes,
+                                         1:Data_Manager.get_nnodes())
+        @timeit "distribute_force_densities" Material.distribute_force_densities(active_nodes)
+    end
+end
+
 function get_update_nodes(active_list,
                           update_list,
                           nodes,
@@ -329,7 +391,7 @@ function get_update_nodes(active_list,
 end
 
 """
-    get_block_model_definition(params::Dict, block_id_list::Int64, prop_keys::Vector{String}, properties)
+	get_block_model_definition(params::Dict, block_id_list::Int64, prop_keys::Vector{String}, properties)
 
 Get block model definition.
 
@@ -380,7 +442,7 @@ function get_block_model_definition(params::Dict,
 end
 
 """
-    read_properties(params::Dict, material_model::Bool)
+	read_properties(params::Dict, material_model::Bool)
 
 Read properties of material.
 
@@ -414,7 +476,7 @@ function read_properties(params::Dict, material_model::Bool)
 end
 
 """
-    set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::NodeScalarField{Float64})
+	set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::NodeScalarField{Float64})
 
 Sets the heat capacity of the nodes in the dictionary.
 
@@ -425,7 +487,8 @@ Sets the heat capacity of the nodes in the dictionary.
 # Returns
 - `heat_capacity::SubArray`: The heat capacity array
 """
-function set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::NodeScalarField{Float64})
+function set_heat_capacity(params::Dict, block_nodes::Dict,
+                           heat_capacity::NodeScalarField{Float64})
     for block in eachindex(block_nodes)
         heat_capacity[block_nodes[block]] .= get_heat_capacity(params, block)
     end
@@ -433,7 +496,7 @@ function set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::NodeS
 end
 
 """
-    add_model(model_name::String)
+	add_model(model_name::String)
 
 Includes the models in the Data_Manager and checks if the model definition is correct or not.
 

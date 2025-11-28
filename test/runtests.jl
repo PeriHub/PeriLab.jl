@@ -67,6 +67,10 @@ MPI.Init()
             @testset "ut_data_manager" begin
                 include("unit_tests/Core/ut_data_manager.jl")
             end
+            @testset "ut_data_manager" begin
+                include("unit_tests/Core/Model_reduction/ut_Model_reduction.jl")
+            end
+
             @testset "ut_influence_function" begin
                 include("unit_tests/Core/ut_Influence_function.jl")
             end
@@ -202,6 +206,9 @@ MPI.Init()
         @testset "test_reload" begin
             include("fullscale_tests/test_reload/test_reload.jl")
         end
+        @testset "test_linear_static_matrix_based" begin
+            include("fullscale_tests/test_linear_static_matrix_based_solver/test_linear_static_matrix_based_solver.jl")
+        end
         @testset "test_surface_correction" begin
             include("fullscale_tests/test_Surface_correction/test_Surface_correction.jl")
         end
@@ -222,6 +229,9 @@ MPI.Init()
         end
         @testset "test_additive_simple" begin
             include("fullscale_tests/test_additive/test_additive.jl")
+        end
+        @testset "test_matrix_based_additive" begin
+            include("fullscale_tests/test_matrix_based_additive/test_matrix_based_additive.jl")
         end
         @testset "test_heat_transfer" begin
             include("fullscale_tests/test_heat_transfer/test_heat_transfer.jl")
@@ -285,6 +295,9 @@ MPI.Init()
         end
         @testset "test_FEM" begin
             include("fullscale_tests/test_FEM/test_FEM.jl")
+        end
+        @testset "test_matrix_Verlet" begin
+            include("fullscale_tests/test_model_reduction_Verlet_matrix/test_model_reduction_Verlet_matrix.jl")
         end
         @testset "test_FEM_coupling" begin
             include("fullscale_tests/test_FEM_coupling/test_FEM_coupling.jl")
