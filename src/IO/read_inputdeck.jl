@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using YAML: load_file
+using YAML: load_file, ParserError
 using ...Parameter_Handling: validate_yaml
 
 export read_input_file
@@ -21,9 +21,9 @@ function read_input(filename::String)
     try
         return load_file(filename)
     catch e
-        # if isa(e, YAML.ParserError)
-        #     @error "Yaml Parser Error. Make sure the yaml file is valid."
-        # end
+        if isa(e, ParserError)
+            @error "Yaml Parser Error. Make sure the yaml file is valid."
+        end
         @error "Failed to read $filename."
         return nothing
     end
