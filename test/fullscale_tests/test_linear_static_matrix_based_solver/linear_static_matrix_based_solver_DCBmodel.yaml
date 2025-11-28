@@ -39,18 +39,6 @@ PeriLab:
       Variable: Displacements
       Value: -4.4*t
       Type: Dirichlet
-    BC_3:
-      Coordinate: x
-      Node Set: Node Set 1
-      Variable: Displacements
-      Value: 0
-      Type: Dirichlet
-    BC_4:
-      Coordinate: x
-      Node Set: Node Set 2
-      Variable: Displacements
-      Value: 0
-      Type: Dirichlet
   Compute Class Parameters:
     External_Forces:
       Compute Class: Block_Data
@@ -85,7 +73,7 @@ PeriLab:
   Outputs:
     Output1:
       Output Frequency: 1
-      Output Filename: linear_static_matrix_based_solver_DCBmodel_verlet_reduced
+      Output Filename: linear_static_matrix_based_solver_DCBmodel
       Output File Type: Exodus
       Output Variables:
         Damage: true
@@ -116,15 +104,13 @@ PeriLab:
   Solver:
     Final Time: 0.0002
     Initial Time: 0.0
-    Number of Steps: 200
+    Number of Steps: 2
     Material Models: true
     Damage Models: true
-    Verlet Matrix Based:
+    Linear Static Matrix Based:
       Safety Factor: 1.0
-      Model Reduction:
-        Type: Static Condensation
-#
-#Verlet:
-#  Safety Factor: 0.9
-#  Numerical Damping: 5.0e-06
+
+    #Verlet:
+    #  Safety Factor: 0.9
+    #  Numerical Damping: 5.0e-06
 #
