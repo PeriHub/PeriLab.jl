@@ -118,4 +118,4 @@ The yield stress can be spatially reduced using a flaw function:
 
 $$\sigma_y^{reduced} = f_{flaw}(\mathbf{x}) \cdot \sigma_y$$
 
-This allows modeling of material defects, damage, or heterogeneity.
+This allows modeling of material defects, damage, or heterogeneity in a simple way.
