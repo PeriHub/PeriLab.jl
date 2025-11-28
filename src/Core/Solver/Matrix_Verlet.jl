@@ -39,7 +39,7 @@ function init_solver(solver_options::Dict{Any,Any},
                      block_nodes::Dict{Int64,Vector{Int64}})
     horizon = Data_Manager.get_field("Horizon")
     if Data_Manager.get_rank()>1
-        @warn "implementation might not work for MPI. Especially for coupling. It has to be tested."
+        @warn "Implementation might not work for MPI. Especially for coupling. It has to be tested."
     end
     find_bc_free_dof(bcs)
     solver_options["Initial Time"] = get_initial_time(params)
@@ -80,6 +80,11 @@ function init_solver(solver_options::Dict{Any,Any},
                                                        r"[,\s]")))
             end
         end
+    else
+        for block in eachindex(block_nodes)
+            block_nodes[block] = []
+        end
+        @warn "No other models work with full matrix Verlet right now."
     end
 
     if reduction_blocks!=[]
