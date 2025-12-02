@@ -2,16 +2,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# Notizen
-# die matrix soll über eine nodes liste aufgebau werden. Nachbarn die dort nicht existieren, sollen nicht berücksichtigt werden
-# die knoten nummern sollen so bleiben. d.h. die Matrixgröße bleibt
-# dann gibt es einen active node filter. der muss die randbedingungen berücksichtigen und die reduzierte matrix
-# nutzen. die reduzierte matrix greift nur auf die werte zu welche existieren
-# Herausforderung
-#   I,J -> müssten auf Null einträge zeigen können, da die indizierung vorher bestimmt wird
-#   idx muss richtig berechnet werden, auch wenn schleifen geskippt werden
-#   bc ist ein nodes x dof Feld auf globaler indizierung; diese muss auf die lokale aktivierte indizierung gemappt werden
-
 module Linear_static_matrix_based
 using ProgressBars: set_multiline_postfix, set_postfix
 using Printf
@@ -352,6 +342,7 @@ function run_solver(solver_options::Dict{Any,Any},
     end
     return result_files
 end
+
 function filter_and_map_bc(non_BCs, active_nodes, dof, nnodes::Int64)
     filtered = []
     for i in eachindex(active_nodes)

@@ -46,13 +46,6 @@ function contraction!(C::Array{Float64,4}, B::Array{Float64,3}, dof::Int64,
                 CB[m, n, q] += C[m, n, o, p] * B_opq
             end
         end
-    else
-        @inbounds for q in 1:dof, p in 1:dof, o in 1:dof
-            B_opq = B[o, p, q]
-            for n in 1:dof, m in 1:dof
-                CB[m, n, q] += C[m, n, o, p] * B_opq
-            end
-        end
     end
 end
 function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
