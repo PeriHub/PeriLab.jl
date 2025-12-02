@@ -27,8 +27,6 @@ Memory-optimized with pre-allocated mapping structure:
 - mapping[i][k_idx+1] → start index in V for block (i, nlist[i][k_idx])
 """
 
-kronecker_delta(x::Int64, y::Int64) = ==(x, y)
-
 function contraction!(C::Array{Float64,4}, B::Array{Float64,3}, dof::Int64,
                       CB::AbstractArray{Float64,3})
     fill!(CB, 0.0)
@@ -258,24 +256,6 @@ function create_mapping_structure(nodes::AbstractVector{Int64},
 end
 
 """
-	add_block_direct!(V, start_idx, block, dof)
-
-Add dof×dof block directly to V at start_idx.
-"""
-@inline function add_block_direct!(V::Vector{Float64},
-                                   start_idx::Int64,
-                                   block::AbstractMatrix{Float64},
-                                   dof::Int64)
-    idx = start_idx
-    @inbounds for n in 1:dof
-        for m in 1:dof
-            V[idx] += block[m, n]
-            idx += 1
-        end
-    end
-end
-
-"""
 	assemble_stiffness(...)
 
 Optimized assembly with mapping vector structure.
@@ -445,7 +425,7 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
     # TODO: not very memory efficient
     S_matrices = Vector{Matrix{Float64}}(undef, maximum(active_nodes))
     D_inv_X = Vector{Vector{Vector{Float64}}}(undef, maximum(active_nodes))
-    1
+
     for i in active_nodes
         neighbors = nlist[i]
         n_neighbors = length(neighbors)
@@ -472,10 +452,6 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
         V_i = volume[i]
 
         for (idx_j, j) in enumerate(neighbors)
-            if i == j
-                continue
-            end
-
             scalar_sum_j = 0.0
             for idx_k in eachindex(neighbors)
                 k = neighbors[idx_k]
@@ -487,7 +463,7 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
             add_block_to_coo!(I_indices, J_indices, values, K_ji, j, i, dof)
 
             for (idx_k, k) in enumerate(neighbors)
-                if k == i || k == j
+                if k == j
                     continue
                 end
 
@@ -505,17 +481,9 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
         V_i = volume[i]
 
         for (idx_j, j) in enumerate(neighbors)
-            if i == j
-                continue
-            end
-
             K_ij_total = zeros(dof, dof)
 
             for (idx_bond, bond_node) in enumerate(neighbors)
-                if bond_node == i
-                    continue
-                end
-
                 if idx_bond == idx_j
                     s_jj = S_matrices[i][idx_j, idx_j]
                     K_ij_total .-= V_i *
@@ -590,10 +558,6 @@ function compute_bond_force(bond_force::Vector{Vector{Vector{Float64}}},
         i_offset = (i-1)*dof
 
         for (j_idx, j) in enumerate(ni)
-            if i == j
-                continue
-            end
-
             j_offset = (j-1)*dof
             f_ij = zeros(dof)
 
