@@ -79,6 +79,9 @@ end
             cmn += diff * diff
         end
         bond_norm[m] = sqrt(cmn)
+        if bond_norm[m] == 0.0
+            @error "Initial bond length is zero, check your mesh! Node ID: $iID"
+        end
     end
 end
 """
