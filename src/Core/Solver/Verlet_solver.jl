@@ -184,8 +184,8 @@ function compute_crititical_time_step(block_nodes::Dict{Int64,Vector{Int64}},
             # if Cv and lambda are not defined it is valid, because an analysis can take place, if material is still analysed
             if isnothing(lambda)
                 if !mechanical
-                    @error "No time step can be calculated, because the heat conduction is not defined."
-                    return nothing
+                    @warn "No time step can be calculated, because the heat conduction is not defined."
+                    return critical_time_step
                 end
             else
                 t = compute_thermodynamic_critical_time_step(block_nodes[iblock],
@@ -340,7 +340,7 @@ A tuple `(nsteps, dt)` where:
 - Throws an error if the `dt` is less than or equal to zero.
 """
 function get_integration_steps(initial_time::Float64, end_time::Float64, dt::Float64)
-    if dt <= 0
+    if 1e50 <= dt <= 0
         @error "Time step $dt [s] is not valid"
         return nothing
     end
