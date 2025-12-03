@@ -276,8 +276,8 @@ function init_solver(solver_options::Dict{Any,Any},
     final_time = get_final_time(params)
     safety_factor = get_safety_factor(params)
     fixed_dt = get_fixed_dt(params)
+    min_dt = compute_crititical_time_step(block_nodes, mechanical, thermal)
     if fixed_dt == -1.0
-        min_dt = compute_crititical_time_step(block_nodes, mechanical, thermal)
         nsteps, dt = get_integration_steps(initial_time, final_time, safety_factor * min_dt)
     else
         nsteps, dt = get_integration_steps(initial_time, final_time, fixed_dt)
@@ -295,7 +295,8 @@ function init_solver(solver_options::Dict{Any,Any},
                 "Final time" "."^10 final_time "s"]
         if fixed_dt != -1.0
             data = vcat(data,
-                        ["Fixed time increment" "."^10 fixed_dt "s";])
+                        ["Minimal time increment" "."^10 min_dt "s"
+                         "Fixed time increment" "."^10 fixed_dt "s"])
         else
             data = vcat(data,
                         ["Minimal time increment" "."^10 min_dt "s"
@@ -307,6 +308,9 @@ function init_solver(solver_options::Dict{Any,Any},
                      "Numerical Damping" "."^10 numerical_damping ""])
 
         print_table(data)
+    end
+    if fixed_dt > min_dt
+        @warn "Fixed time increment is larger than minimal time increment. This could lead to instability."
     end
     solver_options["Initial Time"] = initial_time
     solver_options["Final Time"] = final_time
