@@ -340,7 +340,7 @@ A tuple `(nsteps, dt)` where:
 - Throws an error if the `dt` is less than or equal to zero.
 """
 function get_integration_steps(initial_time::Float64, end_time::Float64, dt::Float64)
-    if 1e50 <= dt <= 0
+    if !(0<dt<1e50)
         @error "Time step $dt [s] is not valid"
         return nothing
     end
