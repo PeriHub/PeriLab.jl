@@ -15,7 +15,7 @@ RUN apt-get update \
     && apt-get install -yq build-essential libxml2 \
     && julia --project=@. -e 'import Pkg; Pkg.add("PackageCompiler")'
 
-RUN julia --project=@. -e 'using PackageCompiler; create_app(".", "build", executables=["PeriLab" => "main", "get_examples" => "get_examples"], force=true)'
+RUN julia --project=@. -e 'using PackageCompiler; create_app(".", "build", executables=["PeriLab" => "main", "get_examples" => "get_examples", "get_version" => "get_version"], force=true)'
 
 #TODO: use alpine
 FROM debian:trixie-slim AS main
@@ -30,7 +30,8 @@ COPY --from=build /env/build /app/PeriLab
 
 # Move the build folder, set permissions, and delete the rest
 RUN chmod +x /app/PeriLab/bin/PeriLab \
-    && chmod +x /app/PeriLab/bin/get_examples
+    && chmod +x /app/PeriLab/bin/get_examples \
+    && chmod +x /app/PeriLab/bin/get_version
 
 ENV PATH="/app/PeriLab/bin:${PATH}"
 
