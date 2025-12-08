@@ -208,15 +208,6 @@ function get_examples()
 end
 
 """
-	get_version()
-
-Get the version of the PeriLab package.
-"""
-function get_version()
-    return PERILAB_VERSION
-end
-
-"""
 	main(filename::String, output_dir::String="", dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false, reload::Bool=false)
 
 Entry point for the PeriLab application.
