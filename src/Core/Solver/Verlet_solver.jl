@@ -21,7 +21,7 @@ using ...Parameter_Handling:
                              get_max_damage
 using ...MPI_Communication: find_and_set_core_value_min, find_and_set_core_value_max,
                             barrier
-using ..Model_Factory: compute_models
+using ..Model_Factory: compute_models, compute_crititical_time_step
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann
 using ...Logging_Module: print_table
 include("../../Compute/compute_field_values.jl")
@@ -29,212 +29,7 @@ export init_solver
 export run_solver
 
 """
-    compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64}, lambda::Float64, Cv::Float64)
-
-Calculate the critical time step for a thermodynamic simulation based on  [OterkusS2014](@cite).
-
-This function iterates over a collection of nodes and computes the critical time step for each node using provided input data and parameters.
-
-# Arguments
-- `nodes::AbstractVector{Int64}`: The collection of nodes to calculate the critical time step for.
-- `lambda::Float64`: The material parameter used in the calculations.
-- `Cv::Float64`: The heat capacity at constant volume used in the calculations.
-
-# Returns
-- `Float64`: The calculated critical time step for the thermodynamic simulation.
-
-# Dependencies
-This function depends on the following data fields from the `Data_Manager` module:
-- `get_nlist()`: Returns the neighbor list.
-- `get_field("Density")`: Returns the density field.
-- `get_field("Bond Length")`: Returns the bond distance field.
-- `get_field("Volume")`: Returns the volume field.
-- `get_field("Number of Neighbors")`: Returns the number of neighbors field.
-"""
-function compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64},
-                                                  lambda::Union{Float64,Int64})
-    critical_time_step::Float64 = 1.0e50
-    nlist = Data_Manager.get_nlist()
-    density = Data_Manager.get_field("Density")
-    undeformed_bond_length = Data_Manager.get_field("Bond Length")
-    volume = Data_Manager.get_field("Volume")
-    Cv = Data_Manager.get_field("Specific Heat Capacity")
-    lambda = matrix_style(lambda)
-    eigLam = maximum(eigvals(lambda))
-
-    for iID in nodes
-        denominator = get_cs_denominator(volume[nlist[iID]], undeformed_bond_length[iID])
-        t = density[iID] * Cv[iID] / (eigLam * denominator)
-        critical_time_step = test_timestep(t, critical_time_step)
-    end
-    return sqrt(critical_time_step)
-end
-
-"""
-	get_cs_denominator(volume::AbstractVector{Float64}, undeformed_bond::AbstractVector{Float64})
-
-Calculate the denominator for the critical time step calculation.
-
-# Arguments
-- `volume::AbstractVector{Float64}`: The volume field.
-- `undeformed_bond::Union{SubArray,Vector{Float64},Vector{Int64}}`: The undeformed bond field.
-# Returns
-- `Float64`: The denominator for the critical time step calculation.
-"""
-function get_cs_denominator(volume::AbstractVector{Float64},
-                            undeformed_bond::AbstractVector{Float64})::Float64
-    return sum(volume ./ undeformed_bond)
-end
-
-"""
-    compute_mechanical_critical_time_step(nodes::AbstractVector{Int64}, bulk_modulus::Float64)
-
-Calculate the critical time step for a mechanical simulation using a bond-based approximation [LittlewoodDJ2013](@cite).
-
-This function iterates over a collection of nodes and computes the critical time step for each node based on the given input data and parameters.
-
-# Arguments
-- `nodes::AbstractVector{Int64}`: The collection of nodes to calculate the critical time step for.
-- `bulk_modulus::Float64`: The bulk modulus used in the calculations.
-
-# Returns
-- `Float64`: The calculated critical time step for the mechanical simulation.
-
-# Dependencies
-This function depends on the following data fields from the `Data_Manager` module:
-- `get_nlist()`: Returns the neighbor list.
-- `get_field("Density")`: Returns the density field.
-- `get_field("Bond Length")`: Returns the bond distance field.
-- `get_field("Volume")`: Returns the volume field.
-- `get_field("Horizon")`: Returns the horizon field.
-"""
-function compute_mechanical_critical_time_step(nodes::AbstractVector{Int64},
-                                               bulk_modulus::Union{Float64,Int64,SubArray,
-                                                                   Vector{Float64}})
-    critical_time_step::Float64 = 1.0e50
-    nlist = Data_Manager.get_nlist()
-    density = Data_Manager.get_field("Density")
-    undeformed_bond_length = Data_Manager.get_field("Bond Length")
-    volume = Data_Manager.get_field("Volume")
-    horizon = Data_Manager.get_field("Horizon")
-
-    for iID in nodes
-        denominator = get_cs_denominator(volume[nlist[iID]], undeformed_bond_length[iID])
-        # TODO Adapt to 2D applications
-        springConstant = 18.0 * maximum(bulk_modulus) /
-                         (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
-
-        t = density[iID] / (denominator * springConstant)
-        critical_time_step = test_timestep(t, critical_time_step)
-    end
-    return sqrt(2 * critical_time_step)
-end
-
-"""
-	test_timestep(t::Float64, critical_time_step::Float64)
-
-Compare a time step `t` with a critical time step `critical_time_step` and update `critical_time_step` if `t` is smaller.
-
-# Arguments
-- `t::Float64`: The time step to compare with `critical_time_step`.
-- `critical_time_step::Float64`: The current critical time step.
-
-# Returns
-- `critical_time_step::Float64`: The updated critical time step, which is either the original `critical_time_step` or `t`, whichever is smaller.
-"""
-function test_timestep(t::Float64, critical_time_step::Float64)
-    if t < critical_time_step
-        critical_time_step = t
-    end
-    return critical_time_step
-end
-
-"""
-    compute_crititical_time_step(block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
-
-Calculate the critical time step for a simulation considering both mechanical and thermodynamic aspects.
-
-This function computes the critical time step by considering mechanical and thermodynamic properties of different blocks. The resulting critical time step is based on the smallest critical time step found among the blocks.
-
-# Arguments
-- `block_nodes::Dict{Int64, Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
-- `mechanical::Bool`: If `true`, mechanical properties are considered in the calculation.
-- `thermo::Bool`: If `true`, thermodynamic properties are considered in the calculation.
-
-# Returns
-- `Float64`: The calculated critical time step based on the smallest critical time step found among the blocks.
-
-# Dependencies
-This function may depend on the following functions:
-- `compute_thermodynamic_critical_time_step`: Used if `thermo` is `true` to calculate thermodynamic critical time steps.
-- `compute_mechanical_critical_time_step`: Used if `mechanical` is `true` to calculate mechanical critical time steps.
-- The availability of specific properties from the data manager module.
-
-# Errors
-- If required properties are not available in the data manager, it may raise an error message.
-"""
-function compute_crititical_time_step(block_nodes::Dict{Int64,Vector{Int64}},
-                                      mechanical::Bool,
-                                      thermal::Bool)
-    critical_time_step::Float64 = 1.0e50
-    for iblock in eachindex(block_nodes)
-        if thermal
-            lambda = Data_Manager.get_property(iblock, "Thermal Model",
-                                               "Thermal Conductivity")
-            # if Cv and lambda are not defined it is valid, because an analysis can take place, if material is still analysed
-            if isnothing(lambda)
-                if !mechanical
-                    @warn "No time step can be calculated, because the heat conduction is not defined."
-                    return critical_time_step
-                end
-            else
-                t = compute_thermodynamic_critical_time_step(block_nodes[iblock],
-                                                             lambda)
-                critical_time_step = test_timestep(t, critical_time_step)
-            end
-        end
-        if mechanical
-            bulk_modulus = Data_Manager.get_property(iblock, "Material Model",
-                                                     "Bulk Modulus")
-            nu_xy = Data_Manager.get_property(iblock, "Material Model",
-                                              "Poisson's Ratio XY")
-            nu_yz = Data_Manager.get_property(iblock, "Material Model",
-                                              "Poisson's Ratio YZ")
-            nu_xz = Data_Manager.get_property(iblock, "Material Model",
-                                              "Poisson's Ratio XZ")
-            E_x = Data_Manager.get_property(iblock, "Material Model", "Young's Modulus X")
-            E_y = Data_Manager.get_property(iblock, "Material Model", "Young's Modulus Y")
-            E_z = Data_Manager.get_property(iblock, "Material Model", "Young's Modulus Z")
-            c_44 = Data_Manager.get_property(iblock, "Material Model", "C44")
-            c_55 = Data_Manager.get_property(iblock, "Material Model", "C55")
-            c_66 = Data_Manager.get_property(iblock, "Material Model", "C66")
-            if !isnothing(bulk_modulus)
-                bulk_modulus = bulk_modulus
-            elseif !isnothing(nu_xy) && !isnothing(nu_yz) && !isnothing(nu_xz)
-                s11 = 1 / E_x
-                s22 = 1 / E_y
-                s33 = 1 / E_z
-                s12 = -nu_xy / E_x
-                s23 = -nu_yz / E_z
-                s13 = -nu_xz / E_z
-                bulk_modulus = 1 / (s11 + s22 + s33 + 2 * (s12 + s23 + s13))
-            elseif !isnothing(c_44) && !isnothing(c_55) && !isnothing(c_66)
-                bulk_modulus = maximum([c_44 / 2, c_55 / 2, c_66 / 2])
-                #TODO: temporary solution!!!
-            else
-                @error "No time step for material is determined because of missing properties."
-                return nothing
-            end
-            t = compute_mechanical_critical_time_step(block_nodes[iblock],
-                                                      bulk_modulus)
-            critical_time_step = test_timestep(t, critical_time_step)
-        end
-    end
-    return critical_time_step
-end
-
-"""
-    init_solver(params::Dict, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+	init_solver(params::Dict, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
 Initialize the Verlet solver for a simulation.
 
@@ -350,16 +145,16 @@ function get_integration_steps(initial_time::Float64, end_time::Float64, dt::Flo
 end
 
 """
-    run_solver(
-        solver_options::Dict{Any,Any},
-        block_nodes::Dict{Int64,Vector{Int64}},
-        bcs::Dict{Any,Any},
-        outputs::Dict{Int64,Dict{}},
-        result_files::Vector{Any},
-        synchronise_field,
-        write_results,
-        silent::Bool
-    )
+	run_solver(
+		solver_options::Dict{Any,Any},
+		block_nodes::Dict{Int64,Vector{Int64}},
+		bcs::Dict{Any,Any},
+		outputs::Dict{Int64,Dict{}},
+		result_files::Vector{Any},
+		synchronise_field,
+		write_results,
+		silent::Bool
+	)
 
 Run the Verlet solver for a simulation based on the strategy provided in [BobaruF2016](@cite) and  [LittlewoodDJ2023](@cite).
 

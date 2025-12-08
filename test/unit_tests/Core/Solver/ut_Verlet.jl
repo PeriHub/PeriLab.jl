@@ -95,19 +95,6 @@ blocks = test_data_manager.set_block_name_list(blocks)
 testValmech = 0.0002853254715348906
 testVal = 72.82376628733019
 
-# from Peridigm
-@testset "ut_mechanical_critical_time_step" begin
-    t = PeriLab.Solver_Manager.Verlet_Solver.compute_mechanical_critical_time_step(Vector{Int64}(1:nnodes),
-                                                                                   Float64(140.0))
-    @test t == 1.4142135623730952e25 # not sure if this is right :D
-end
-# from Peridigm
-@testset "ut_thermodynamic_crititical_time_step" begin
-    t = PeriLab.Solver_Manager.Verlet_Solver.compute_thermodynamic_critical_time_step(Vector{Int64}(1:nnodes),
-                                                                                      Float64(0.12))
-    @test t == 1e25
-end
-
 # test_data_manager.init_properties()
 # test_data_manager.set_property(1, "Material Model", "Bulk Modulus", Float64(140.0))
 # test_data_manager.set_property(2, "Material Model", "Bulk Modulus", Float64(140.0))

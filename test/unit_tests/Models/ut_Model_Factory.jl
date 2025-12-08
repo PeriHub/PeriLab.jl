@@ -59,6 +59,19 @@ using Test
           params["Models"]["Additive Models"]["add"]["bool"]
 end
 
+# from Peridigm
+@testset "ut_mechanical_critical_time_step" begin
+    t = PeriLab.Solver_Manager.Model_Factory.compute_mechanical_critical_time_step(Vector{Int64}(1:5),
+                                                                                   Float64(140.0))
+    @test t == 1.4142135623730952e25 # not sure if this is right :D
+end
+# from Peridigm
+@testset "ut_thermodynamic_crititical_time_step" begin
+    t = PeriLab.Solver_Manager.Model_Factory.compute_thermodynamic_critical_time_step(Vector{Int64}(1:5),
+                                                                                      Float64(0.12))
+    @test t == 1e25
+end
+
 @testset "ut_read_properties" begin
     test_data_manager_read_properties = PeriLab.Data_Manager
     block_list = ["block_1", "block_2", "block_3"]
