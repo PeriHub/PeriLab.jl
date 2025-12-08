@@ -10,7 +10,7 @@ using Printf
 using LoopVectorization
 using PrettyTables
 using Logging
-
+using LinearAlgebra: lu
 using ...Data_Manager
 using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style,
                   create_permutation
@@ -24,7 +24,7 @@ using ...Parameter_Handling:
                              get_nsteps
 using ...MPI_Communication: find_and_set_core_value_min, find_and_set_core_value_max,
                             barrier
-using ..Model_Factory: compute_models
+using ..Model_Factory: compute_models, compute_crititical_time_step
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
 using ...Logging_Module: print_table
 include("../Model_reduction/Model_reduction.jl")
@@ -33,6 +33,7 @@ include("../../Compute/compute_field_values.jl")
 include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
 using .Correspondence_matrix_based
 export init_solver, run_solver
+
 function init_solver(solver_options::Dict{Any,Any},
                      params::Dict,
                      bcs::Dict{Any,Any},
@@ -46,8 +47,18 @@ function init_solver(solver_options::Dict{Any,Any},
     solver_options["Final Time"] = get_final_time(params)
 
     solver_options["Number of Steps"] = get_nsteps(params)
-    solver_options["dt"] = (solver_options["Final Time"] - solver_options["Initial Time"]) /
-                           solver_options["Number of Steps"]
+
+    #solver_options["dt"] = (solver_options["Final Time"] - solver_options["Initial Time"]) /
+    #					   solver_options["Number of Steps"]
+
+    mechanical = "Material" in solver_options["Models"]
+    thermal = "Thermal" in solver_options["Models"]
+
+    solver_options["dt"] = compute_crititical_time_step(block_nodes, mechanical, thermal)
+
+    solver_options["Number of Steps"] = Int(ceil((solver_options["Final Time"] -
+                                                  solver_options["Initial Time"]) /
+                                                 solver_options["dt"]))
 
     for (block, nodes) in pairs(block_nodes)
         model_param = Data_Manager.get_properties(block, "Material Model")
@@ -60,6 +71,14 @@ function init_solver(solver_options::Dict{Any,Any},
     solver_options["Model Reduction"] = model_reduction
     solver_options["Numerical Damping"] = get_numerical_damping(params)
     K = Data_Manager.get_stiffness_matrix()
+
+    @info "Solver parameter"
+    @info "Initial Time: $(solver_options["Initial Time"])"
+    @info "Final Time: $(solver_options["Final Time"])"
+    @info "Number of Steps: $(solver_options["Number of Steps"])"
+    @info "dt: $(solver_options["dt"])"
+    @info "Numerical Damping: $(solver_options["Numerical Damping"])"
+
     reduction_blocks=[]
     if model_reduction!=false
         reduction_blocks = get(solver_options["Model Reduction"], "Reduction Blocks", [])
@@ -81,6 +100,7 @@ function init_solver(solver_options::Dict{Any,Any},
             end
         end
     else
+        # might lead to issues, because neighbors outside the block are included in
         for block in eachindex(block_nodes)
             block_nodes[block] = []
         end
@@ -132,11 +152,11 @@ function init_solver(solver_options::Dict{Any,Any},
             #K_reduced[:, perm_pd_reduced].=0
             Data_Manager.set_stiffness_matrix(K_reduced)
             Data_Manager.set_mass_matrix(mass_reduced)
+
             Data_Manager.set_reduced_model_pd(pd_nodes)
             Data_Manager.set_reduced_model_master(master_nodes)
-            @info "Model reduction is applied \n
-             Slaves: $(length(slave_nodes)), Master: $(length(master_nodes)), PD: $(length(pd_nodes))."
-
+            @info "Model reduction is applied"
+            @info "Slaves: $(length(slave_nodes)), Master: $(length(master_nodes)), PD: $(length(pd_nodes))."
             return
         end
         @warn "No master nodes defined for model reduction. Using full stiffness matrix."
@@ -200,100 +220,106 @@ function run_solver(solver_options::Dict{Any,Any},
         perm = create_permutation(Data_Manager.get_nnodes(), Data_Manager.get_dof())
     end
     K = Data_Manager.get_stiffness_matrix()
-
+    M_fact = lu(mass[perm, perm])
     #nodes::Vector{Int64} = Vector{Int64}(1:Data_Manager.get_nnodes())
-    @inbounds @fastmath for idt in iter
-        uN = Data_Manager.get_field("Displacements", "N")
-        uNP1 = Data_Manager.get_field("Displacements", "NP1")
-        forces = Data_Manager.get_field("Forces", "NP1")
-        deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
-        vN = Data_Manager.get_field("Velocity", "N")
-        vNP1 = Data_Manager.get_field("Velocity", "NP1")
-        force_densities_NP1 = Data_Manager.get_field("Force Densities", "NP1")
-        active_nodes = Data_Manager.get_field("Active Nodes")
-        active_nodes = find_active_nodes(active_list, active_nodes,
-                                         1:Data_Manager.get_nnodes())
-        apply_bc_dirichlet(["Displacements", "Forces", "Force Densities"],
-                           bcs, time,
-                           step_time)
+    @timeit "Matrix Verlet" begin
+        @inbounds @fastmath for idt in iter
+            uN = Data_Manager.get_field("Displacements", "N")
+            uNP1 = Data_Manager.get_field("Displacements", "NP1")
+            forces = Data_Manager.get_field("Forces", "NP1")
+            deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
+            vN = Data_Manager.get_field("Velocity", "N")
+            vNP1 = Data_Manager.get_field("Velocity", "NP1")
+            force_densities_NP1 = Data_Manager.get_field("Force Densities", "NP1")
+            active_nodes = Data_Manager.get_field("Active Nodes")
+            active_nodes = find_active_nodes(active_list, active_nodes,
+                                             1:Data_Manager.get_nnodes())
+            apply_bc_dirichlet(["Displacements", "Forces", "Force Densities"],
+                               bcs, time,
+                               step_time)
 
-        if solver_options["Model Reduction"]!=false
-            active_nodes = master_nodes
-            active_list.=false
-            active_list[Data_Manager.get_reduced_model_pd()].=true
-        end
+            if solver_options["Model Reduction"]!=false
+                active_nodes = master_nodes
+                active_list.=false
+                active_list[Data_Manager.get_reduced_model_pd()].=true
+            end
 
-        vNP1[active_nodes, :] = (1 - numerical_damping) .*
-                                vN[active_nodes, :] .+
-                                0.5 * dt .* a[active_nodes, :]
+            vNP1[active_nodes, :] = (1 - numerical_damping) .*
+                                    vN[active_nodes, :] .+
+                                    0.5 * dt .* a[active_nodes, :]
 
-        uNP1[active_nodes, :] = uN[active_nodes, :] .+
-                                dt .* vNP1[active_nodes, :]
+            uNP1[active_nodes, :] = uN[active_nodes, :] .+
+                                    dt .* vNP1[active_nodes, :]
 
-        apply_bc_dirichlet(["Displacements", "Temperature"],
-                           bcs,
+            apply_bc_dirichlet(["Displacements", "Temperature"],
+                               bcs,
+                               time,
+                               step_time) #-> Dirichlet
+            @views deformed_coorNP1 .= coor .+ uNP1
+            # thermal model, usw.
+
+            #mul!(a[active_nodes], K[active_nodes, active_nodes], uNP1[active_nodes])
+
+            sa = size(a[active_nodes, :])
+
+            #mul!(a, K, vec(uNP1))
+            #force_densities_NP1=reshape(K[perm, perm]*vec(uNP1), sa...)
+
+            compute_models(block_nodes,
+                           dt,
                            time,
-                           step_time) #-> Dirichlet
-        @views deformed_coorNP1 .= coor .+ uNP1
-        # thermal model, usw.
+                           solver_options["Models"],
+                           synchronise_field)
+            @timeit "Force matrix computations" begin
+                f_int = reshape(K[perm,
+                                  perm]*vec(uNP1[active_nodes, :]),
+                                sa...)
 
-        #mul!(a[active_nodes], K[active_nodes, active_nodes], uNP1[active_nodes])
+                force_densities_NP1[active_nodes, :] -= f_int .+
+                                                        .+ external_force_densities[active_nodes, :]
+                .+ external_forces[active_nodes, :] ./ volume[active_nodes]
+            end
+            # @timeit "download_from_cores" Data_Manager.synch_manager(synchronise_field,
+            #                                                            "download_from_cores")
+            #println(a)
+            #@views a[active_nodes, :] = external_force_densities[active_nodes, :] .+
+            #							external_forces[active_nodes, :] ./
+            #							volume[active_nodes]
+            @timeit "Accelaration computation" begin
+                if solver_options["Model Reduction"]!=false
+                    a[active_nodes, :] = reshape(M_fact \
+                                                 vec(force_densities_NP1[active_nodes, :]),
+                                                 sa...)
+                else
+                    a[active_nodes, :] = force_densities_NP1[active_nodes, :] ./
+                                         (density[active_nodes])
+                end
+            end
+            @timeit "write_results" result_files=write_results(result_files, time,
+                                                               max_damage, outputs)
+            # for file in result_files
+            #     flush(file)
+            # end
+            if rank == 0 && !silent && Data_Manager.get_cancel()
+                set_multiline_postfix(iter, "Simulation canceled!")
+                break
+            end
+            @timeit "switch_NP1_to_N" Data_Manager.switch_NP1_to_N()
 
-        sa = size(a[active_nodes, :])
+            time += dt
+            step_time += dt
+            Data_Manager.set_current_time(time)
 
-        #mul!(a, K, vec(uNP1))
-        #force_densities_NP1=reshape(K[perm, perm]*vec(uNP1), sa...)
+            if idt % ceil(nsteps / 100) == 0
+                @info "Step: $idt / $(nsteps+1) [$time s]"
+            end
+            if rank == 0 && !silent
+                set_postfix(iter, t = @sprintf("%.4e", time))
+            end
 
-        compute_models(block_nodes,
-                       dt,
-                       time,
-                       solver_options["Models"],
-                       synchronise_field)
-
-        force_densities_NP1[active_nodes, :] -= reshape(K[perm,
-                                                          perm]*vec(uNP1[active_nodes, :]),
-                                                        sa...)
-        .+ external_force_densities[active_nodes, :]
-        .+ external_forces[active_nodes, :] ./ volume[active_nodes]
-
-        # @timeit "download_from_cores" Data_Manager.synch_manager(synchronise_field,
-        #                                                            "download_from_cores")
-        #println(a)
-        #@views a[active_nodes, :] = external_force_densities[active_nodes, :] .+
-        #							external_forces[active_nodes, :] ./
-        #							volume[active_nodes]
-        if solver_options["Model Reduction"]!=false
-            a[active_nodes, :] = reshape(vec(force_densities_NP1[active_nodes, :]) ./ mass,
-                                         sa...)
-        else
-            a[active_nodes, :] = force_densities_NP1[active_nodes, :] ./
-                                 (density[active_nodes])
+            barrier(comm)
+            #a+= + fexternal / density
         end
-
-        @timeit "write_results" result_files=write_results(result_files, time,
-                                                           max_damage, outputs)
-        # for file in result_files
-        #     flush(file)
-        # end
-        if rank == 0 && !silent && Data_Manager.get_cancel()
-            set_multiline_postfix(iter, "Simulation canceled!")
-            break
-        end
-        @timeit "switch_NP1_to_N" Data_Manager.switch_NP1_to_N()
-
-        time += dt
-        step_time += dt
-        Data_Manager.set_current_time(time)
-
-        if idt % ceil(nsteps / 100) == 0
-            @info "Step: $idt / $(nsteps+1) [$time s]"
-        end
-        if rank == 0 && !silent
-            set_postfix(iter, t = @sprintf("%.4e", time))
-        end
-
-        barrier(comm)
-        #a+= + fexternal / density
     end
 end
 

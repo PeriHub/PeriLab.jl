@@ -36,7 +36,7 @@ function reduce_mass_consistent(M_diag, K, master_nodes, slave_nodes)
 
     M_reduced = M_mm + T' * M_ss * T
 
-    return diag(M_reduced)  # Zurück zu Vektor
+    return sparse(M_reduced)
 end
 
 function craig_bampton(K::AbstractMatrix{Float64}, M::AbstractMatrix{Float64},
