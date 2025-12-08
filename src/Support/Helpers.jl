@@ -9,7 +9,7 @@ using Meshes: Ring, Point, centroid
 #using Tensors
 using Dierckx: Spline1D, evaluate
 using ProgressBars: ProgressBar
-using LinearAlgebra: Adjoint, dot, det, norm, rank, pinv
+using LinearAlgebra: Adjoint, dot, det, norm, rank, pinv, eigvals
 using StaticArrays: MMatrix, MVector, SMatrix, @SMatrix, SVector, @SVector
 using LoopVectorization
 using Unitful: ustrip

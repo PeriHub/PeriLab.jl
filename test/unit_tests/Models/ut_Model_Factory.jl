@@ -60,14 +60,68 @@ using Test
 end
 
 # from Peridigm
+
+nnodes = 5
+dof = 2
+test_data_manager = PeriLab.Data_Manager
+test_data_manager.initialize_data()
+test_data_manager.set_num_controller(5)
+test_data_manager.set_dof(2)
+blocks = test_data_manager.create_constant_node_scalar_field("Block_Id", Int64)
+horizon = test_data_manager.create_constant_node_scalar_field("Horizon", Float64)
+coor = test_data_manager.create_constant_node_vector_field("Coordinates", Float64, 2)
+density = test_data_manager.create_constant_node_scalar_field("Density", Float64)
+volume = test_data_manager.create_constant_node_scalar_field("Volume", Float64)
+length_nlist = test_data_manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                   Int64)
+length_nlist .= 4
+
+nlist = test_data_manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
+undeformed_bond = test_data_manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                      Float64,
+                                                                      dof)
+undeformed_bond_length = test_data_manager.create_constant_bond_scalar_state("Bond Length",
+                                                                             Float64)
+heat_capacity = test_data_manager.create_constant_node_scalar_field("Specific Heat Capacity",
+                                                                    Float64;
+                                                                    default_value = 18000)
+nlist[1] = [2, 3, 4, 5]
+nlist[2] = [1, 3, 4, 5]
+nlist[3] = [1, 2, 4, 5]
+nlist[4] = [1, 2, 3, 5]
+nlist[5] = [1, 2, 3, 4]
+
+coor[1, 1] = 0;
+coor[1, 2] = 0;
+coor[2, 1] = 0.5;
+coor[2, 2] = 0.5;
+coor[3, 1] = 1;
+coor[3, 2] = 0;
+coor[4, 1] = 0;
+coor[4, 2] = 1;
+coor[5, 1] = 1;
+coor[5, 2] = 1;
+
+volume = [0.5, 0.5, 0.5, 0.5, 0.5]
+density = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
+horizon = [3.1, 3.1, 3.1, 3.1, 3.1]
+
+PeriLab.Geometry.bond_geometry!(undeformed_bond,
+                                undeformed_bond_length,
+                                Vector(1:nnodes),
+                                nlist,
+                                coor)
+
+blocks = ["1", "2"]
+blocks = test_data_manager.set_block_name_list(blocks)
 @testset "ut_mechanical_critical_time_step" begin
-    t = PeriLab.Solver_Manager.Model_Factory.compute_mechanical_critical_time_step(Vector{Int64}(1:5),
+    t = PeriLab.Solver_Manager.Model_Factory.compute_mechanical_critical_time_step(Vector{Int64}(1:nnodes),
                                                                                    Float64(140.0))
     @test t == 1.4142135623730952e25 # not sure if this is right :D
 end
 # from Peridigm
 @testset "ut_thermodynamic_crititical_time_step" begin
-    t = PeriLab.Solver_Manager.Model_Factory.compute_thermodynamic_critical_time_step(Vector{Int64}(1:5),
+    t = PeriLab.Solver_Manager.Model_Factory.compute_thermodynamic_critical_time_step(Vector{Int64}(1:nnodes),
                                                                                       Float64(0.12))
     @test t == 1e25
 end
@@ -133,4 +187,23 @@ end
     test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     @test isnothing(PeriLab.Solver_Manager.Model_Factory.add_model("Test"))
+end
+
+@testset "ut_test_timestep" begin
+    @test PeriLab.Solver_Manager.Model_Factory.test_timestep(1.0, 2.0) == 1
+    @test PeriLab.Solver_Manager.Model_Factory.test_timestep(2.0, 1.1) == 1.1
+    @test PeriLab.Solver_Manager.Model_Factory.test_timestep(2.0, 2.0) == 2
+end
+
+@testset "ut_get_cs_denominator" begin
+    volume = Float64[1, 2, 3]
+    undeformed_bond = [1.0, 2, 3]
+    @test PeriLab.Solver_Manager.Model_Factory.get_cs_denominator(volume,
+                                                                  undeformed_bond) == 3
+    undeformed_bond = [2.0, 4, 6]
+    @test PeriLab.Solver_Manager.Model_Factory.get_cs_denominator(volume,
+                                                                  undeformed_bond) == 1.5
+    undeformed_bond = [1.0, 0.5, 2]
+    @test PeriLab.Solver_Manager.Model_Factory.get_cs_denominator(volume,
+                                                                  undeformed_bond) == 6.5
 end
