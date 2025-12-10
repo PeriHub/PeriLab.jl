@@ -8,7 +8,7 @@ using TimerOutputs: @timeit
 using ...Data_Manager
 using ...Helpers:
                   check_inf_or_nan, find_active_nodes, get_active_update_nodes, invert,
-                  determinant
+                  determinant, matrix_style, eigvals
 include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("./Surface_correction/Surface_correction.jl")
 include("./Contact/Contact_Factory.jl")

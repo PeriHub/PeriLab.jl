@@ -99,7 +99,6 @@ A tuple `(initial_time, dt, nsteps, numerical_damping)` where:
 # Dependencies
 This function may depend on the following functions:
 - `get_initial_time`, `get_final_time`, `get_safety_factor`, `get_fixed_dt`: Used to retrieve simulation parameters.
-- `compute_crititical_time_step`: Used to calculate the critical time step if `dt` is not fixed.
 - `get_integration_steps`: Used to determine the number of integration steps and adjust the time step.
 - `find_and_set_core_value_min` and `find_and_set_core_value_max`: Used to set core values in a distributed computing environment.
 """

@@ -216,11 +216,12 @@ function run_solver(solver_options::Dict{Any,Any},
         master_nodes=Data_Manager.get_reduced_model_master()
         perm = collect(1:(length(master_nodes) * Data_Manager.get_dof()))
         mass = Data_Manager.get_mass_matrix()
+        M_fact = lu(mass[perm, perm])
     else
         perm = create_permutation(Data_Manager.get_nnodes(), Data_Manager.get_dof())
     end
     K = Data_Manager.get_stiffness_matrix()
-    M_fact = lu(mass[perm, perm])
+
     #nodes::Vector{Int64} = Vector{Int64}(1:Data_Manager.get_nnodes())
     @timeit "Matrix Verlet" begin
         @inbounds @fastmath for idt in iter
@@ -271,12 +272,12 @@ function run_solver(solver_options::Dict{Any,Any},
                            solver_options["Models"],
                            synchronise_field)
             @timeit "Force matrix computations" begin
-                f_int = reshape(K[perm,
-                                  perm]*vec(uNP1[active_nodes, :]),
-                                sa...)
+                # check if valid if volume is different
 
-                force_densities_NP1[active_nodes, :] -= f_int .+
-                                                        .+ external_force_densities[active_nodes, :]
+                force_densities_NP1[active_nodes, :] = -f_int(K[perm, perm],
+                                                              vec(uNP1[active_nodes, :]),
+                                                              volume[active_nodes], sa) .+
+                                                       .+ external_force_densities[active_nodes, :]
                 .+ external_forces[active_nodes, :] ./ volume[active_nodes]
             end
             # @timeit "download_from_cores" Data_Manager.synch_manager(synchronise_field,
@@ -323,8 +324,9 @@ function run_solver(solver_options::Dict{Any,Any},
     end
 end
 
-function te(a, K, u)
-    a.=K*u
+function f_int(K::AbstractMatrix{Float64}, u::AbstractVector{Float64},
+               volume::AbstractVector{Float64}, sa::Tuple{Int64,Int64})
+    return reshape(K*u, sa...) .* volume
 end
 
 end
