@@ -26,7 +26,7 @@ function control_name()
 end
 
 """
-    compute_control( nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
+	compute_control( nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
 
 Computes the zero energy control
 
@@ -52,12 +52,12 @@ function compute_control(nodes::AbstractVector{Int64},
                             3} = Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",
                                                                                 Float64,
                                                                                 dof)
-    rotation = Data_Manager.get_rotation()::Bool
+    rotation::Bool = Data_Manager.get_rotation()
 
-    symmetry = material_parameter["Symmetry"]::String
-    CVoigt = get_Hooke_matrix(material_parameter,
-                              symmetry,
-                              dof)
+    symmetry::String = material_parameter["Symmetry"]
+    CVoigt::AbstractMatrix{Float64} = get_Hooke_matrix(material_parameter,
+                                                       symmetry,
+                                                       dof)
     if !haskey(material_parameter, "UMAT Material Name")
         if rotation
             angles = Data_Manager.get_field("Angles")

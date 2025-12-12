@@ -44,11 +44,14 @@ Initializes the material model.
 """
 function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
-    dof = Data_Manager.get_dof()
-    hooke_matrix = Data_Manager.create_constant_node_tensor_field("Hooke Matrix", Float64,
-                                                                  Int64((dof * (dof + 1)) /
-                                                                        2))
-    symmetry = get(material_parameter, "Symmetry", "default")::String
+    dof::Int64 = Data_Manager.get_dof()
+    hooke_matrix::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Hooke Matrix",
+                                                                                            Float64,
+                                                                                            Int64((dof *
+                                                                                                   (dof +
+                                                                                                    1)) /
+                                                                                                  2))
+    symmetry::String = get(material_parameter, "Symmetry", "default")
 
     for iID in nodes
         @views hooke_matrix[iID, :,
@@ -79,7 +82,7 @@ function correspondence_name()
 end
 
 """
-    compute_stresses(iID:Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
+	compute_stresses(iID:Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
 
 Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
@@ -107,7 +110,7 @@ function compute_stresses(nodes::AbstractVector{Int64},
                           strain_increment::NodeTensorField{Float64},
                           stress_N::NodeTensorField{Float64},
                           stress_NP1::NodeTensorField{Float64})
-    mapping = get_mapping(dof)
+    mapping::AbstractMatrix{Int64} = get_mapping(dof)
     hooke_matrix::NodeTensorField{Float64} = Data_Manager.get_field("Hooke Matrix")
     for iID in nodes
         @views sNP1 = stress_NP1[iID, :, :]
@@ -142,7 +145,7 @@ function compute_stresses_ba(nodes,
 end
 
 """
-    compute_stresses(dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
+	compute_stresses(dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
 
 Calculates the stresses of a single node. Needed for FEM. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 # Arguments
@@ -174,7 +177,7 @@ function compute_stresses(dof::Int64,
 end
 
 """
-    fields_for_local_synchronization(model::String)
+	fields_for_local_synchronization(model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 

@@ -140,7 +140,6 @@ function init_solver(solver_options::Dict{Any,Any},
             intersect!(block_nodes[block], pd_nodes)
         end
         if solver_options["Model Reduction"]!=false
-            master_nodes=Data_Manager.get_reduced_model_master()
             perm = collect(1:(length(master_nodes) * Data_Manager.get_dof()))
         else
             perm = create_permutation(Data_Manager.get_nnodes(), Data_Manager.get_dof())
@@ -161,7 +160,7 @@ function init_solver(solver_options::Dict{Any,Any},
             K_reduced[perm_pd_reduced, :].=0
             #K_reduced[:, perm_pd_reduced].=0
             Data_Manager.set_stiffness_matrix(sparse(K_reduced[perm, perm]))
-            Data_Manager.set_mass_matrix(sparse(lu(mass_reduced[perm, perm])))
+            Data_Manager.set_mass_matrix(lu(sparse(mass_reduced[perm, perm])))
 
             Data_Manager.set_reduced_model_pd(pd_nodes)
             Data_Manager.set_reduced_model_master(master_nodes)
@@ -225,13 +224,12 @@ function run_solver(solver_options::Dict{Any,Any},
 
     if solver_options["Model Reduction"]!=false
         master_nodes=Data_Manager.get_reduced_model_master()
-        perm = collect(1:(length(master_nodes) * Data_Manager.get_dof()))
         M_fact = Data_Manager.get_mass_matrix()
-
+        temp = zeros(length(master_nodes)*Data_Manager.get_dof())
     else
-        perm = create_permutation(Data_Manager.get_nnodes(), Data_Manager.get_dof())
+        temp=zeros(0)
     end
-    K = Data_Manager.get_stiffness_matrix()
+    K::AbstractMatrix{Float64} = Data_Manager.get_stiffness_matrix()
 
     #nodes::Vector{Int64} = Vector{Int64}(1:Data_Manager.get_nnodes())
 
@@ -240,12 +238,13 @@ function run_solver(solver_options::Dict{Any,Any},
             uN::Matrix{Float64} = Data_Manager.get_field("Displacements", "N")
             uNP1::Matrix{Float64} = Data_Manager.get_field("Displacements", "NP1")
             forces::Matrix{Float64} = Data_Manager.get_field("Forces", "NP1")
-            deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
+            deformed_coorNP1::Matrix{Float64} = Data_Manager.get_field("Deformed Coordinates",
+                                                                       "NP1")
             vN::Matrix{Float64} = Data_Manager.get_field("Velocity", "N")
             vNP1::Matrix{Float64} = Data_Manager.get_field("Velocity", "NP1")
             force_densities_NP1::Matrix{Float64} = Data_Manager.get_field("Force Densities",
                                                                           "NP1")
-            active_nodes = Data_Manager.get_field("Active Nodes")
+            active_nodes::Vector{Int64} = Data_Manager.get_field("Active Nodes")
             active_nodes = find_active_nodes(active_list, active_nodes,
                                              1:Data_Manager.get_nnodes())
             apply_bc_dirichlet(["Displacements", "Forces", "Force Densities"],
@@ -287,12 +286,14 @@ function run_solver(solver_options::Dict{Any,Any},
             @timeit "Force matrix computations" begin
                 # check if valid if volume is different
 
-                @views force_densities_NP1[active_nodes, :] += -f_int(K,
-                                                                      vec(uNP1[active_nodes,
-                                                                               :]), sa)F .+
+                @views force_densities_NP1[active_nodes, :] -= f_int(K,
+                                                                     vec(uNP1[active_nodes,
+                                                                              :]), sa) +
                                                                external_force_densities[active_nodes,
-                                                                                        :]
-                .+ external_forces[active_nodes, :] ./ volume[active_nodes]
+                                                                                        :] .+
+                                                               external_forces[active_nodes,
+                                                                               :] ./
+                                                               volume[active_nodes]
             end
             # @timeit "download_from_cores" Data_Manager.synch_manager(synchronise_field,
             #                                                            "download_from_cores")
@@ -344,6 +345,15 @@ end
 function f_int(K::AbstractMatrix{Float64}, u::AbstractVector{Float64},
                sa::Tuple{Int64,Int64})
     return reshape(K*u, sa...)
+end
+
+function f_int_inplace!(result::AbstractMatrix{Float64},
+                        temp::AbstractVector{Float64},
+                        K::SparseMatrixCSC{Float64,Int64},
+                        u::AbstractVector{Float64})
+    mul!(temp, K, u)
+    # Direktes reshape ohne Kopie
+    result .+= reshape(temp, size(result))
 end
 
 end
