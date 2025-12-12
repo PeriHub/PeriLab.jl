@@ -286,14 +286,17 @@ function run_solver(solver_options::Dict{Any,Any},
             @timeit "Force matrix computations" begin
                 # check if valid if volume is different
 
-                @views force_densities_NP1[active_nodes, :] -= f_int(K,
-                                                                     vec(uNP1[active_nodes,
-                                                                              :]), sa) +
-                                                               external_force_densities[active_nodes,
-                                                                                        :] .+
-                                                               external_forces[active_nodes,
-                                                                               :] ./
-                                                               volume[active_nodes]
+                @views fNP1 = force_densities_NP1[active_nodes, :]
+
+                #-= f_int(K,
+                #	vec(uNP1[active_nodes,
+                #		:]), sa)
+                f_int_inplace!(fNP1, temp, K, vec(uNP1[active_nodes, :]), sa)
+                fNP1 .+= external_force_densities[active_nodes,
+                                                  :] .+
+                         external_forces[active_nodes,
+                                         :] ./
+                         volume[active_nodes]
             end
             # @timeit "download_from_cores" Data_Manager.synch_manager(synchronise_field,
             #                                                            "download_from_cores")
@@ -347,13 +350,12 @@ function f_int(K::AbstractMatrix{Float64}, u::AbstractVector{Float64},
     return reshape(K*u, sa...)
 end
 
-function f_int_inplace!(result::AbstractMatrix{Float64},
+function f_int_inplace!(F::AbstractMatrix{Float64},
                         temp::AbstractVector{Float64},
                         K::SparseMatrixCSC{Float64,Int64},
-                        u::AbstractVector{Float64})
+                        u::AbstractVector{Float64}, sa::Tuple{Int64,Int64})
     mul!(temp, K, u)
-    # Direktes reshape ohne Kopie
-    result .+= reshape(temp, size(result))
+    F .-= reshape(temp, sa)
 end
 
 end
