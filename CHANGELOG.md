@@ -8,6 +8,19 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.2] - 2025-12-08
+
+### Added
+
+- Matrix based prototype
+- Gyan reduction prototype
+- Improved dt assumption and warnings
+
+### Fixed
+
+- Zero bond length input handling
+
+
 ## [1.5.1] - 2025-11-27
 
 ### Added

@@ -59,7 +59,7 @@ import .Logging_Module
 import .IO
 using .Solver_Manager
 
-PERILAB_VERSION = "1.5.2"
+PERILAB_VERSION = "1.5.3"
 
 export main
 
@@ -205,15 +205,6 @@ function get_examples()
     if isdir(examples_dir)
         cp(examples_dir, dest_folder)
     end
-end
-
-"""
-	get_version()
-
-Get the version of the PeriLab package.
-"""
-function get_version()
-    return PERILAB_VERSION
 end
 
 """
