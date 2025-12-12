@@ -4,6 +4,7 @@
 
 module Matrix_Verlet
 using LinearAlgebra
+using SparseArrays
 using TimerOutputs
 using ProgressBars: set_multiline_postfix, set_postfix
 using Printf
@@ -125,6 +126,9 @@ function init_solver(solver_options::Dict{Any,Any},
         end
 
         append!(master_nodes, pd_nodes)
+        # for testing
+        #pd_nodes = Int64[]
+
         master_nodes = sort(unique(master_nodes))
         slave_nodes = setdiff(collect(1:Data_Manager.get_nnodes()), master_nodes)
 
@@ -133,9 +137,14 @@ function init_solver(solver_options::Dict{Any,Any},
         cn[pd_nodes].=1
 
         for block in eachindex(block_nodes)
-            block_nodes[block] = intersect(block_nodes[block], pd_nodes)
+            intersect!(block_nodes[block], pd_nodes)
         end
-
+        if solver_options["Model Reduction"]!=false
+            master_nodes=Data_Manager.get_reduced_model_master()
+            perm = collect(1:(length(master_nodes) * Data_Manager.get_dof()))
+        else
+            perm = create_permutation(Data_Manager.get_nnodes(), Data_Manager.get_dof())
+        end
         if !(master_nodes==[])
             perm_master = create_permutation(master_nodes, Data_Manager.get_dof())
             perm_slave = create_permutation(slave_nodes, Data_Manager.get_dof())
@@ -144,14 +153,15 @@ function init_solver(solver_options::Dict{Any,Any},
             #TODO adapt for mass matrix
             density_mass = zeros(length(density)*Data_Manager.get_dof())
             density_mass .= density[1]
+
             perm_pd_reduced = findall(in(perm_pd_nodes), perm_master)
 
             K_reduced,
             mass_reduced = guyan_reduction(K, density_mass, perm_master, perm_slave, dof)
             K_reduced[perm_pd_reduced, :].=0
             #K_reduced[:, perm_pd_reduced].=0
-            Data_Manager.set_stiffness_matrix(K_reduced)
-            Data_Manager.set_mass_matrix(mass_reduced)
+            Data_Manager.set_stiffness_matrix(sparse(K_reduced[perm, perm]))
+            Data_Manager.set_mass_matrix(sparse(lu(mass_reduced[perm, perm])))
 
             Data_Manager.set_reduced_model_pd(pd_nodes)
             Data_Manager.set_reduced_model_master(master_nodes)
@@ -212,26 +222,29 @@ function run_solver(solver_options::Dict{Any,Any},
     comm = Data_Manager.get_comm()
     rank = Data_Manager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
+
     if solver_options["Model Reduction"]!=false
         master_nodes=Data_Manager.get_reduced_model_master()
         perm = collect(1:(length(master_nodes) * Data_Manager.get_dof()))
-        mass = Data_Manager.get_mass_matrix()
-        M_fact = lu(mass[perm, perm])
+        M_fact = Data_Manager.get_mass_matrix()
+
     else
         perm = create_permutation(Data_Manager.get_nnodes(), Data_Manager.get_dof())
     end
     K = Data_Manager.get_stiffness_matrix()
 
     #nodes::Vector{Int64} = Vector{Int64}(1:Data_Manager.get_nnodes())
+
     @timeit "Matrix Verlet" begin
         @inbounds @fastmath for idt in iter
-            uN = Data_Manager.get_field("Displacements", "N")
-            uNP1 = Data_Manager.get_field("Displacements", "NP1")
-            forces = Data_Manager.get_field("Forces", "NP1")
+            uN::Matrix{Float64} = Data_Manager.get_field("Displacements", "N")
+            uNP1::Matrix{Float64} = Data_Manager.get_field("Displacements", "NP1")
+            forces::Matrix{Float64} = Data_Manager.get_field("Forces", "NP1")
             deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
-            vN = Data_Manager.get_field("Velocity", "N")
-            vNP1 = Data_Manager.get_field("Velocity", "NP1")
-            force_densities_NP1 = Data_Manager.get_field("Force Densities", "NP1")
+            vN::Matrix{Float64} = Data_Manager.get_field("Velocity", "N")
+            vNP1::Matrix{Float64} = Data_Manager.get_field("Velocity", "NP1")
+            force_densities_NP1::Matrix{Float64} = Data_Manager.get_field("Force Densities",
+                                                                          "NP1")
             active_nodes = Data_Manager.get_field("Active Nodes")
             active_nodes = find_active_nodes(active_list, active_nodes,
                                              1:Data_Manager.get_nnodes())
@@ -263,21 +276,22 @@ function run_solver(solver_options::Dict{Any,Any},
 
             sa = size(a[active_nodes, :])
 
-            #mul!(a, K, vec(uNP1))
-            #force_densities_NP1=reshape(K[perm, perm]*vec(uNP1), sa...)
+            force_densities_NP1 .= 0.0
 
             compute_models(block_nodes,
                            dt,
                            time,
                            solver_options["Models"],
                            synchronise_field)
+            #force_densities_NP1[active_nodes, :] .*= volume[active_nodes]
             @timeit "Force matrix computations" begin
                 # check if valid if volume is different
 
-                force_densities_NP1[active_nodes, :] = -f_int(K[perm, perm],
-                                                              vec(uNP1[active_nodes, :]),
-                                                              volume[active_nodes], sa) .+
-                                                       .+ external_force_densities[active_nodes, :]
+                @views force_densities_NP1[active_nodes, :] += -f_int(K,
+                                                                      vec(uNP1[active_nodes,
+                                                                               :]), sa)F .+
+                                                               external_force_densities[active_nodes,
+                                                                                        :]
                 .+ external_forces[active_nodes, :] ./ volume[active_nodes]
             end
             # @timeit "download_from_cores" Data_Manager.synch_manager(synchronise_field,
@@ -286,10 +300,13 @@ function run_solver(solver_options::Dict{Any,Any},
             #@views a[active_nodes, :] = external_force_densities[active_nodes, :] .+
             #							external_forces[active_nodes, :] ./
             #							volume[active_nodes]
+            forces[active_nodes, :] .= force_densities_NP1[active_nodes, :] .*
+                                       volume[active_nodes]
             @timeit "Accelaration computation" begin
                 if solver_options["Model Reduction"]!=false
                     a[active_nodes, :] = reshape(M_fact \
-                                                 vec(force_densities_NP1[active_nodes, :]),
+                                                 vec(force_densities_NP1[active_nodes, :] .*
+                                                     volume[active_nodes]),
                                                  sa...)
                 else
                     a[active_nodes, :] = force_densities_NP1[active_nodes, :] ./
@@ -325,8 +342,8 @@ function run_solver(solver_options::Dict{Any,Any},
 end
 
 function f_int(K::AbstractMatrix{Float64}, u::AbstractVector{Float64},
-               volume::AbstractVector{Float64}, sa::Tuple{Int64,Int64})
-    return reshape(K*u, sa...) .* volume
+               sa::Tuple{Int64,Int64})
+    return reshape(K*u, sa...)
 end
 
 end
