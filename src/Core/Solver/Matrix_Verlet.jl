@@ -139,12 +139,9 @@ function init_solver(solver_options::Dict{Any,Any},
         for block in eachindex(block_nodes)
             intersect!(block_nodes[block], pd_nodes)
         end
-        if solver_options["Model Reduction"]!=false
-            perm = collect(1:(length(master_nodes) * Data_Manager.get_dof()))
-        else
-            perm = create_permutation(Data_Manager.get_nnodes(), Data_Manager.get_dof())
-        end
+
         if !(master_nodes==[])
+            perm = collect(1:(length(master_nodes) * Data_Manager.get_dof()))
             perm_master = create_permutation(master_nodes, Data_Manager.get_dof())
             perm_slave = create_permutation(slave_nodes, Data_Manager.get_dof())
             perm_pd_nodes = create_permutation(pd_nodes, Data_Manager.get_dof())
@@ -179,7 +176,8 @@ function init_solver(solver_options::Dict{Any,Any},
     #		end
     #	end
     #end
-    Data_Manager.set_stiffness_matrix(K)
+    perm = create_permutation(Data_Manager.get_nnodes(), Data_Manager.get_dof())
+    Data_Manager.set_stiffness_matrix(K[perm, perm])
     return
 
     # reduced matrix
@@ -227,7 +225,7 @@ function run_solver(solver_options::Dict{Any,Any},
         M_fact = Data_Manager.get_mass_matrix()
         temp = zeros(length(master_nodes)*Data_Manager.get_dof())
     else
-        temp=zeros(0)
+        temp=zeros(Data_Manager.get_dof()*Data_Manager.get_nnodes())
     end
     K::AbstractMatrix{Float64} = Data_Manager.get_stiffness_matrix()
 
