@@ -122,7 +122,7 @@ $$\mathbf{f}_{master}=c_{Penalty}\frac{(r_{contact}-d)}{\delta_{slave}}\mathbf{n
 
 $$\mathbf{f}_{slave} = -c_{Penalty}\frac{(r_{contact}-d)}{\delta_{slave}}\mathbf{n}V_{master}$$
 
-Within PeriLab the functions compute_master_force_density and compute_slave_force_density are used to apply the force to the correct postions. This is needed, becaus if a parallel process is run, master and slave nodes not necessarily are on the same core.
+Within PeriLab the functions compute_master_force\_\_density and compute\_\_slave\_\_force\_\_density are used to apply the force to the correct postions. This is needed, because if a parallel process is run, master and slave nodes not necessarily are on the same core.
 
 ### Friction Contact
 
