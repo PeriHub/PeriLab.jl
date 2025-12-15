@@ -85,20 +85,19 @@ The structure tries to minimize the search and the communication between cores.
 
 **Synchronization**
 All cores (except core 1) send it's displacement values to core 1. Core 1 sends them back.
+
 !!! note "Efficiency"
 Smaller contact areas are more efficient in numerical analysis, because less synchronisation have to occur.
-
----
 
 ## Contact Models
 
 | Contact Model     | Penalty Contact |
-| ----------------- | :-------------: |
-| Contact Stiffness |       ✔️        |
+| ----------------- | --------------- |
+| Contact Stiffness | ✔️              |
 
 ## Penalty Contact
 
-A bond-based contact formulation is computed. The contact stiffness $ c\_{contact}$ is defined in YAML input file. Based on that utilzing the horizon $\delta$ the penalty stiffness shown in the table is computed. These parameter are comparable to the [bond-based formulation](@ref "Bond-based Peridynamics"). The algorithm was taken from [Peridigm](https://github.com/peridigm/peridigm/blob/master/src/contact/Peridigm_ShortRangeForceContactModel.cpp)
+A bond-based contact formulation is computed. The contact stiffness $c\_{contact}$ is defined in YAML input file. Based on that utilzing the horizon $\delta$ the penalty stiffness shown in the table is computed. These parameter are comparable to the [bond-based formulation](@ref "Bond-based Peridynamics"). The algorithm was taken from [Peridigm](https://github.com/peridigm/peridigm/blob/master/src/contact/Peridigm_ShortRangeForceContactModel.cpp)
 
 | Dimension     | Penalty Stiffness                                             |
 | ------------- | ------------------------------------------------------------- |
@@ -130,21 +129,19 @@ Within PeriLab the functions compute_master_force\_\_density and compute\_\_slav
 | ------------------ | :-------------: |
 | Friction Coeffient |       ✔️        |
 
-The model is computed if the ""Friction Coeffient"" is greater than zero.
-For friction the normal forces
+The model is computed if the ""Friction Coeffient"" is greater than zero. For friction the normal forces
+
 $$\mathbf{f}_n=c_{Penalty}\frac{(r_{contact}-d)}{\delta_{slave}}\mathbf{n}$$
 are used. The tangential direction must be computed. Following the [Peridigm](https://github.com/peridigm/peridigm/blob/master/src/contact/Peridigm_ShortRangeForceContactModel.cpp) algorithm, the normal velocity of the master node $m$ and the slave node $s$ are
 
-$$
-\begin{matrix}v_{m} = \mathbf{v}_m\mathbf{n}\\v_{s} = \mathbf{v}_s\mathbf{n}
-\end{matrix}
-$$
+$$\begin{matrix}v_{m} = \mathbf{v}_m\mathbf{n}\\v_{s} = \mathbf{v}_s\mathbf{n}\end{matrix}$$
 
 To obtain the tangential part $tan$ this value hmust be substrated from the velocity.
 
 $$\begin{matrix}\mathbf{v}_{tan-m} = \mathbf{v}_m - v_{m}\mathbf{n}\\\mathbf{v}_{tan-s} = \mathbf{v}_s - v_{s}\mathbf{n}\end{matrix}$$
 
 Tanking the average
+
 $$\mathbf{v}_{avg} = 0.5(\mathbf{v}_{tan-m}+\mathbf{v}_{tan-s})$$
 the relative velocity of each point can be determined.
 
