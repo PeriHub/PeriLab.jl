@@ -6,7 +6,7 @@ export find_module_files
 export create_module_specifics
 
 """
-    find_jl_files(directory::AbstractString)
+	find_jl_files(directory::AbstractString)
 
 Recursively find Julia files (.jl) in a directory.
 
@@ -25,7 +25,7 @@ specified directory and its subdirectories.
 ```julia
 jl_files = find_jl_files("/path/to/modules")
 for jl_file in jl_files
-    println("Found Julia file: ", jl_file)
+	println("Found Julia file: ", jl_file)
 end
 ```
 """
@@ -54,7 +54,7 @@ function find_jl_files(directory::AbstractString)
 end
 
 """
-    find_module_files(directory::AbstractString, specific::String)
+	find_module_files(directory::AbstractString, specific::String)
 
 Search for Julia modules containing a specific function in a given directory.
 
@@ -76,8 +76,8 @@ An array of dictionaries, where each dictionary has the following keys:
 ```julia
 result = find_module_files("/path/to/modules", "my_function")
 for module_info in result
-    println("Function found in module: ", module_info["Module Name"])
-    println("Module file path: ", module_info["File"])
+	println("Function found in module: ", module_info["Module Name"])
+	println("Module file path: ", module_info["File"])
 end
 ```
 """
@@ -102,7 +102,7 @@ function find_module_files(directory::AbstractString, specific::String)
 end
 
 """
-    create_module_specifics(name::String, module_list::Dict{String,AbstractString}(),specifics::Dict{String,String}(), values::Tuple)
+	create_module_specifics(name::String, module_list::Dict{String,AbstractString}(),specifics::Dict{String,String}(), values::Tuple)
 
 Searches for a specific function within a list of modules and calls that function if found.
 
@@ -123,7 +123,7 @@ create_module_specifics("Module1Name", module_list, specifics, values)
 ```
 """
 function create_module_specifics(name::Union{String,SubString},
-                                 module_list::Vector{Any},
+                                 module_list::Vector{Dict{String,AbstractString}},
                                  own_module::Module,
                                  specifics::Dict{String,String},
                                  values::Tuple)
@@ -139,11 +139,11 @@ function create_module_specifics(name::Union{String,SubString},
     return nothing
 end
 """
-    create_module_specifics(name::String, module_list::Dict{String,AbstractString}(),specifics::Dict{String,String}())
-    # Returns: the function itself
+	create_module_specifics(name::String, module_list::Dict{String,AbstractString}(),specifics::Dict{String,String}())
+	# Returns: the function itself
 """
 function create_module_specifics(name::Union{String,SubString},
-                                 module_list::Vector{Any},
+                                 module_list::Vector{Dict{String,AbstractString}},
                                  own_module::Module,
                                  specifics::Dict{String,String})
     for m in module_list
@@ -159,7 +159,7 @@ function create_module_specifics(name::Union{String,SubString},
 end
 # only module
 function create_module_specifics(name::Union{String,SubString},
-                                 module_list::Vector{Any},
+                                 module_list::Vector{Dict{String,AbstractString}},
                                  own_module::Module,
                                  get_model_name::String)
     for m in module_list
