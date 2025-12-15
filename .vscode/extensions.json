@@ -1,0 +1,7 @@
+{
+  "recommendations": [
+    "julialang.language-julia",
+    "esbenp.prettier-vscode",
+    "gruntfuggly.todo-tree"
+  ]
+}

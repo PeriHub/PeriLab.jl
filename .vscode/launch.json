@@ -1,0 +1,34 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "julia",
+      "request": "launch",
+      "name": "Run active Julia file",
+      "program": "${file}",
+      "stopOnEntry": false,
+      "cwd": "${workspaceFolder}",
+      "env": {},
+      "juliaEnv": "${command:activeJuliaEnvironment}"
+    },
+    {
+      "type": "julia",
+      "request": "launch",
+      "name": "Run Model",
+      "program": "${workspaceFolder}/src/main.jl",
+      "args": ["Input.yaml", "-v"],
+      "stopOnEntry": false,
+      "cwd": "${workspaceFolder}/examples/Small",
+      "juliaEnv": "${command:activeJuliaEnvironment}"
+    },
+    {
+      "type": "julia",
+      "request": "launch",
+      "name": "Run Tests",
+      "program": "${workspaceFolder}/test/runtests.jl",
+      "stopOnEntry": false,
+      "cwd": "${workspaceFolder}",
+      "juliaEnv": "${command:activeJuliaEnvironment}"
+    }
+  ]
+}

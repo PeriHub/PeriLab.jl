@@ -2,14 +2,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-*.vscode
 *.log
 *.cov
 *build/
 Manifest.toml
 *.e*
 *.csv
-*.json
 *.out
 *.sbatch
 !**/Reference/*.e*
