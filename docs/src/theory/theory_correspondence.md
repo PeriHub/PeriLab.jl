@@ -121,34 +121,25 @@ $$
 
 with the explicit index notation:
 
-$$
-K_{ij,mo} = -\underline{\omega}_{ij} V_j V_k \underline{\omega}_{ik} \sum_{n,p} [\mathbf{C} : \mathbf{B}_{ik}]_{mno} [D_i^{-1}]_{np} X_{ij,p}
-$$
+$$K_{ij,mo} = -\underline{\omega}_{ij} V_j V_k \underline{\omega}_{ik} \sum_{n,p} [\mathbf{C} : \mathbf{B}_{ik}]_{mno} [D_i^{-1}]_{np} X_{ij,p}$$
 
 ### Zero energy mode compensation
 
-The global control [WanJ2019](@cite) is introcuded in matrix form .
+The global control [WanJ2019](@cite) is introcuded in matrix form.
 
 The corrected force density state $\underline{\mathbf{T}}^C$ combines the original correspondence force with a stabilization term:
 
 $$\underline{\mathbf{T}}^C=\underline{\mathbf{T}}+\underline{\mathbf{T}}^S$$
 
-where $\underline{\mathbf{T}}$ is the original correspondence force density state and $\underline{\mathbf{T}}^S$ is the suppression force density state. Following Wan et al. \cite{WanJ2019}, the suppression force density state is defined as:
+where $\underline{\mathbf{T}}$ is the original correspondence force density state and $\underline{\mathbf{T}}^S$ is the suppression force density state. Following Wan et al. [WanJ2019](@cite), the suppression force density state is defined as:
 
-$$
-\underline{\mathbf{T}}^S\langle \boldsymbol{\xi}\rangle =
-\underline{\omega}\langle
-\boldsymbol{\xi}\rangle\mathbf{Z}\underline{\mathbf{z}}
-$$
+$$\underline{\mathbf{T}}^S\langle \boldsymbol{\xi}\rangle =\underline{\omega}\langle\boldsymbol{\xi}\rangle\mathbf{Z}\underline{\mathbf{z}}$$
 
 where $\mathbf{Z}$ is the zero-energy stiffness tensor and $\underline{\mathbf{z}}$ is the non-uniform deformation state.
 
 The non-uniform deformation state $\underline{\mathbf{z}}$ quantifies the deviation between the actual deformed configuration and the configuration predicted by the correspondence deformation gradient:
 
-$$
-\underline{\mathbf{z}}\langle \boldsymbol{\xi}\rangle=
-\underline{\mathbf{Y}}\langle\boldsymbol{\xi} \rangle-\mathbf{F}\boldsymbol{\xi}
-$$
+$$\underline{\mathbf{z}}\langle \boldsymbol{\xi}\rangle=\underline{\mathbf{Y}}\langle\boldsymbol{\xi} \rangle-\mathbf{F}\boldsymbol{\xi}$$
 
 The second-order zero-energy stiffness tensor $\mathbf{Z}$ is constructed using the elasticity tensor from the constitutive relation:
 
@@ -158,22 +149,9 @@ where $\mathbf{C}$ is the elasticity tensor and $\mathbf{D}^{-1}$ is the inverse
 
 For the discrete implementation, the non-uniform deformation state for bond $ij$ is expressed in terms of displacement differences:
 
-$$
-\begin{aligned}
-\underline{\mathbf{z}}_{ij} &= \underline{\mathbf{Y}}_{ij}-\mathbf{F}\underline{\mathbf{X}}_{ij}\\
-&= \underline{\mathbf{X}}_{ij}+\underline{\mathbf{U}}_{ij}-\mathbf{F}\underline{\mathbf{X}}_{ij}\\
-&= \underline{\mathbf{U}}_{ij} - \left( \sum_{k \in \mathcal{H}_i} \underline{\omega}_{ik} V_k \underline{\mathbf{U}}_{ik} \otimes \underline{\mathbf{X}}_{ik}\right) \mathbf{D}_i^{-1}\underline{\mathbf{X}}_{ij}\\
-&= \underline{\mathbf{U}}_{ij} - \sum_{k \in \mathcal{H}_i} \underline{\omega}_{ik} V_k \underline{\mathbf{U}}_{ik} (\underline{\mathbf{X}}_{ik}^T \mathbf{D}_i^{-1}\underline{\mathbf{X}}_{ij})\\
-&=\underline{\mathbf{U}}_{ij}\left[\mathbf{I} - \sum_{k \in \mathcal{H}_i} \underline{\omega}_{ik} V_k (\underline{\mathbf{X}}_{ik}^T \mathbf{D}_i^{-1}\underline{\mathbf{X}}_{ij})\right]
-\end{aligned}
-$$
+$$\begin{aligned}\underline{\mathbf{z}}_{ij} &= \underline{\mathbf{Y}}_{ij}-\mathbf{F}\underline{\mathbf{X}}_{ij}\\&= \underline{\mathbf{X}}_{ij}+\underline{\mathbf{U}}_{ij}-\mathbf{F}\underline{\mathbf{X}}_{ij}\\&= \underline{\mathbf{U}}_{ij} - \left( \sum_{k \in \mathcal{H}_i} \underline{\omega}_{ik} V_k \underline{\mathbf{U}}_{ik} \otimes \underline{\mathbf{X}}_{ik}\right) \mathbf{D}_i^{-1}\underline{\mathbf{X}}_{ij}\\&= \underline{\mathbf{U}}_{ij} - \sum_{k \in \mathcal{H}_i} \underline{\omega}_{ik} V_k \underline{\mathbf{U}}_{ik} (\underline{\mathbf{X}}_{ik}^T \mathbf{D}_i^{-1}\underline{\mathbf{X}}_{ij})\\&=\underline{\mathbf{U}}_{ij}\left[\mathbf{I} - \sum_{k \in \mathcal{H}_i} \underline{\omega}_{ik} V_k (\underline{\mathbf{X}}_{ik}^T \mathbf{D}_i^{-1}\underline{\mathbf{X}}_{ij})\right]\end{aligned}$$
 
-$$
-\begin{aligned}
-\underline{\mathbf{T}}^S_{ij} &= \mathbf{Z}_i\underline{\mathbf{U}}_{ij}\left[\mathbf{I} - \sum_{k \in \mathcal{H}_i} \underline{\omega}_{ik} V_k (\underline{\mathbf{X}}_{ik} \otimes \mathbf{D}_i^{-1}\underline{\mathbf{X}}_{ij})\right]  \\
-&=(\mathbf{C}_i:\mathbf{D}_i^{-1})\underline{\mathbf{U}}_{ij}\left[\mathbf{I} - \sum_{k \in \mathcal{H}_i} \underline{\omega}_{ik} V_k (\underline{\mathbf{X}}_{ik}^T \mathbf{D}_i^{-1}\underline{\mathbf{X}}_{ij})\right]
-\end{aligned}
-$$
+$$\begin{aligned}\underline{\mathbf{T}}^S_{ij} &= \mathbf{Z}_i\underline{\mathbf{U}}_{ij}\left[\mathbf{I}- \sum_{k \in \mathcal{H}_i} \underline{\omega}_{ik} V_k (\underline{\mathbf{X}}_{ik} \otimes \mathbf{D}_i^{-1}\underline{\mathbf{X}}_{ij})\right]\\&=(\mathbf{C}_i:\mathbf{D}_i^{-1})\underline{\mathbf{U}}_{ij}\left[\mathbf{I}-\sum_{k \in \mathcal{H}_i} \underline{\omega}_{ik} V_k (\underline{\mathbf{X}}_{ik}^T \mathbf{D}_i^{-1}\underline{\mathbf{X}}_{ij})\right]\end{aligned}$$
 
 The stabilization terms can be directly incorporated into the matrix formulation. The additional stiffness matrix components arising from the zero-energy mode compensation are:
 
