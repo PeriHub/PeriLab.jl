@@ -681,13 +681,13 @@ end
 """
 	check_inf_or_nan(array, msg)
 
-Checks if the sum of the array is finite. If not, an error is raised.
+Checks if the sum of an array is finite and has only numbers. If not, an error is raised.
 
 # Arguments
 - `array`: The array to check.
 - `msg`: The error message to raise.
 # Returns
-- `Bool`: `true` if the sum of the array is finite, `false` otherwise.
+- `Bool`: `true` if the scalar is finite and has only numbers, `false` otherwise.
 """
 function check_inf_or_nan(array::AbstractArray{T},
                           msg::String) where {T<:Union{Int64,Float64}}
@@ -701,15 +701,25 @@ function check_inf_or_nan(array::AbstractArray{T},
     end
     return false
 end
+"""
+	check_inf_or_nan(scalar, msg)
 
-function check_inf_or_nan(array::T,
+Checks if a scalar is finite and a number. If not, an error is raised.
+
+# Arguments
+- `scalar`: The scalar to check.
+- `msg`: The error message to raise.
+# Returns
+- `Bool`: `true` if the scalar is finite, `false` otherwise.
+"""
+function check_inf_or_nan(scalar::T,
                           msg::String) where {T<:Union{Int64,Float64}}
-    if isnan(sum(array))
-        @error "Field ''$msg'' has NaN elements."
+    if isnan(scalar)
+        @error "Scalar Value ''$msg'' is NaN."
         return true
     end
-    if !isfinite(sum(array))
-        @error "Field ''$msg'' is infinite."
+    if !isfinite(scalar)
+        @error "Scalar value ''$msg'' is infinite."
         return true
     end
     return false

@@ -13,7 +13,7 @@ with the positive definite shape tensor as
 $$\mathbf{K}=\int_{\mathcal{H}}\underline{\omega}\langle \boldsymbol{\xi}\rangle\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle\otimes\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle dV$$
 
 !!! info "Positive definiteness in numerics"
-In numerical applications if bonds break the shape tensor is positive semi definite. $\det\mathbf{K}=0$ can occur and the inversion of the shape tensor won't work.
+    In numerical applications if bonds break the shape tensor is positive semi definite. $\det\mathbf{K}=0$ can occur and the inversion of the shape tensor won't work.
 
 Based on this definition strain measures can be created to calculate the Cauchy stresses
 
@@ -56,8 +56,8 @@ utilizing the elasticity tensor.
 
 ## Matrix based approach
 
-!!! info "Redifinition of shape tensor"
-For the derivation the shape tensor is defined as $\mathbf{D}$
+!!! info "Redefinition of shape tensor"
+    For the derivation the shape tensor is defined as $\mathbf{D}$.
 
 In the discretized form, the shape tensor for material point $i$ is computed as the weighted sum over all neighbors:
 $$\mathbf{D}_i = \sum_{j \in \mathcal{H}_i} \underline{\omega}_{ij} V_j \underline{\mathbf{X}}_{ij} \otimes \underline{\mathbf{X}}_{ij}$$
@@ -89,10 +89,7 @@ $$\mathbf{B}_{2,ik} = \mathbf{D}_i^{-T} \underline{\mathbf{X}}_{ik}$$
 
 The strain-displacement operator $\mathbf{B}_{ik}$ is constructed as a third-order tensor with components:
 
-$$
-B_{ik,mnp} = \frac{1}{2}\left(
-\delta_{mp} B_{1,ik,n} + \delta_{np} B_{2,ik,m}\right)
-$$
+$$B_{ik,mnp} = \frac{1}{2}\left(\delta_{mp} B_{1,ik,n} + \delta_{np} B_{2,ik,m}\right)$$
 
 where $\delta_{ij}$ is the Kronecker delta, and $m,n,p$ are spatial indices. This tensor formulation allows the strain computation to be expressed compactly in index notation:
 
@@ -100,14 +97,12 @@ $$\varepsilon_{i,mn} = \sum_{k \in \mathcal{H}_i} V_k\underline{\omega}_{ik} B_{
 
 The bond force density vector is computed using the linearized constitutive relation:
 
-$$
-\begin{aligned}
+$$\begin{aligned}
 \underline{\mathbf{T}}_{ij} &= \underline{\omega}_{ij}\boldsymbol{\sigma}_i \mathbf{D}_i^{-1}\underline{\mathbf{X}}_{ij}  \\
 &= \underline{\omega}_{ij}\left(\mathbf{C}_i:\boldsymbol{\varepsilon}_i\right) \mathbf{D}_i^{-1}\underline{\mathbf{X}}_{ij}  \\
  &=  \underline{\omega}_{ij}\underline{\mathbf{X}}_{ij}^T \mathbf{D}_i^{-T} (\mathbf{C}_i:\boldsymbol{\varepsilon}_i)^T\\
  &=  \underline{\omega}_{ij}\underline{\mathbf{X}}_{ij}^T \mathbf{D}^{-1}_i (\mathbf{C}_i:\boldsymbol{\varepsilon}_i)
-\end{aligned}
-$$
+\end{aligned}$$
 
 The stiffness matrix components are derived separating the displacement vector from the strain tensor. To do so, the tensor contraction $\mathbf{C}_i : \mathbf{B}_{ik}$ in index notation becomes:
 
@@ -115,9 +110,7 @@ $$[\mathbf{C} : \mathbf{B}_{ik}]_{mnq} = C_{i,mnop} B_{ik,opq}$$
 
 Combining the strain-displacement relationship with the force calculation from the stiffness matrix components are:
 
-$$
-\mathbf{K}_{ij} = -\underline{\omega}_{ij} V_j V_k \underline{\omega}_{ik} \mathbf{D}_i^{-1} \underline{\mathbf{X}}_{ij} [\mathbf{C} : \mathbf{B}_{ik}]
-$$
+$$\mathbf{K}_{ij} = -\underline{\omega}_{ij} V_j V_k \underline{\omega}_{ik} \mathbf{D}_i^{-1} \underline{\mathbf{X}}_{ij} [\mathbf{C} : \mathbf{B}_{ik}]$$
 
 with the explicit index notation:
 
