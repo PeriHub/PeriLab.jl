@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 module MockModule
-struct TestType end
 get_name() = "existing_function"
 call_function(args...) = sum(args)
 end
@@ -65,9 +64,8 @@ end
 
     filename::AbstractString = "MockModule.jl"
 
-    module_list = [
-        Dict{String,AbstractString}("File" => filename,
-                                    "Module Name" => "MockModule"),
+    module_list::Vector{Any} = [Dict(("File" => filename,
+                                      "Module Name" => "MockModule")),
     ]
 
     specifics = Dict("Name" => "get_name",

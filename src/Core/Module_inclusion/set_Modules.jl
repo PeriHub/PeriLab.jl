@@ -123,7 +123,7 @@ create_module_specifics("Module1Name", module_list, specifics, values)
 ```
 """
 function create_module_specifics(name::Union{String,SubString},
-                                 module_list::Vector{Dict{String,AbstractString}},
+                                 module_list::Vector{Any},
                                  own_module::Module,
                                  specifics::Dict{String,String},
                                  values::Tuple)
@@ -143,7 +143,7 @@ end
 	# Returns: the function itself
 """
 function create_module_specifics(name::Union{String,SubString},
-                                 module_list::Vector{Dict{String,AbstractString}},
+                                 module_list::Vector{Any},
                                  own_module::Module,
                                  specifics::Dict{String,String})
     for m in module_list
@@ -159,7 +159,7 @@ function create_module_specifics(name::Union{String,SubString},
 end
 # only module
 function create_module_specifics(name::Union{String,SubString},
-                                 module_list::Vector{Dict{String,AbstractString}},
+                                 module_list::Vector{Any},
                                  own_module::Module,
                                  get_model_name::String)
     for m in module_list
