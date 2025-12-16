@@ -91,7 +91,7 @@ function compute_model(nodes::AbstractVector{Int64},
         if !active
             continue
         end
-        mod = Data_Manager.get_model_module(pre_calculation_model)
+        mod::Module = Data_Manager.get_model_module(pre_calculation_model)
 
         @timeit "compute $pre_calculation_model" mod.compute(nodes,
                                                              model_param,

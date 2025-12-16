@@ -38,6 +38,9 @@ function compute_control(nodes::AbstractVector{Int64},
                          dt::Float64)
     for zero_energy_model in Data_Manager.get_analysis_model("Zero Energy Control Model",
                                         block)
+        if zero_energy_model == ""
+            continue
+        end
         mod = Data_Manager.get_model_module(zero_energy_model)
 
         mod.compute_control(nodes,

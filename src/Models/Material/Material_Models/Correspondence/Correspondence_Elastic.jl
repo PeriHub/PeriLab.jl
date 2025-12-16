@@ -110,13 +110,26 @@ function compute_stresses(nodes::AbstractVector{Int64},
                           strain_increment::NodeTensorField{Float64},
                           stress_N::NodeTensorField{Float64},
                           stress_NP1::NodeTensorField{Float64})
-    mapping::AbstractMatrix{Int64} = get_mapping(dof)
+    mapping = get_mapping(dof)
     hooke_matrix::NodeTensorField{Float64} = Data_Manager.get_field("Elasticity Matrix")
-    for iID in nodes
-        @views sNP1 = stress_NP1[iID, :, :]
-        @views sInc = strain_increment[iID, :, :]
-        @views sN = stress_N[iID, :, :]
-        @views fast_mul!(sNP1, hooke_matrix[iID, :, :], sInc, sN, mapping)
+
+    n_map = size(mapping, 1)
+    map_i = @view mapping[:, 1]
+    map_j = @view mapping[:, 2]
+
+    @inbounds for iID in nodes
+        @fastmath for m in 1:n_map
+            i = map_i[m]
+            j = map_j[m]
+            sNP1::Float64 = stress_N[iID, i, j]
+            for k in 1:n_map
+                sNP1 += hooke_matrix[iID, m, k] * strain_increment[iID, map_i[k], map_j[k]]
+            end
+            stress_NP1[iID, i, j] = sNP1
+            if i != j
+                stress_NP1[iID, j, i] = sNP1
+            end
+        end
     end
 end
 

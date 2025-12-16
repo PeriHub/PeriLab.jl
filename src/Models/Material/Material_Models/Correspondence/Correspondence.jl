@@ -184,9 +184,10 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
 
     # material_models = split(material_parameter["Material Model"], "+")
     # material_models = map(r -> strip(r), material_models)
-    @timeit "Calculated material" begin
-        for material_model in Data_Manager.get_analysis_model("Correspondence Model", block)
-            mod = Data_Manager.get_model_module(material_model)
+    @timeit "Calculate material" begin
+        for material_model in Data_Manager.get_analysis_model("Correspondence Model",
+                                                              block)
+            mod::Module = Data_Manager.get_model_module(material_model)
 
             mod.compute_stresses(nodes,
                                  dof,
@@ -202,14 +203,14 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
     if rotation
         stress_NP1 = rotate(nodes, stress_NP1, rotation_tensor, true)
     end
-    @timeit "Calculated bond force" calculate_bond_force!(nodes,
-                                                          dof,
-                                                          deformation_gradient,
-                                                          undeformed_bond,
-                                                          bond_damage,
-                                                          inverse_shape_tensor,
-                                                          stress_NP1,
-                                                          bond_force)
+    @timeit "Compute bond force" calculate_bond_force!(nodes,
+                                                       dof,
+                                                       deformation_gradient,
+                                                       undeformed_bond,
+                                                       bond_damage,
+                                                       inverse_shape_tensor,
+                                                       stress_NP1,
+                                                       bond_force)
 
     @timeit "zero energy" Zero_Energy_Control.compute_control(nodes,
                                                               material_parameter,
