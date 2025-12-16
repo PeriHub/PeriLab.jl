@@ -20,7 +20,7 @@ using .CorrespondenceStiffnessMatrix: assemble_stiffness_contributions_sparse,
 using .Data_manager
 using SparseArrays
 using LinearAlgebra
-dm.create_constant_node_field("Hooke Matrix", Float64,
+dm.create_constant_node_field("Elasticity Matrix", Float64,
                               Int64((dof * (dof + 1)) / 2),
                               VectorOrMatrix = "Matrix")
 
@@ -30,7 +30,7 @@ hm = elasticity_matrix_2d_plane_stress(material) # is in PeriLab
 #    else
 #        C_voigt = elasticity_matrix_2d_plane_strain(mat)
 #    end
-C_voigt = dm.get_field("Hooke Matrix")
+C_voigt = dm.get_field("Elasticity Matrix")
 
 for i in 1:nodes
     C_voigt[i, :, :] = hm

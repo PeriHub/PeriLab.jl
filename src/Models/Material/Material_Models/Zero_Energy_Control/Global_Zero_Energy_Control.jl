@@ -25,6 +25,31 @@ function control_name()
     return "Global"
 end
 
+function init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
+    dof::Int64 = Data_Manager.get_dof()
+    Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",
+                                                   Float64,
+                                                   dof)
+    if "Elasticity Matrix" in Data_Manager.get_all_field_keys()
+        return
+    end
+    hooke_matrix::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Elasticity Matrix",
+                                                                                            Float64,
+                                                                                            Int64((dof *
+                                                                                                   (dof +
+                                                                                                    1)) /
+                                                                                                  2))
+    symmetry::String = get(material_parameter, "Symmetry", "default")
+
+    for iID in nodes
+        @views hooke_matrix[iID, :,
+        :] = get_Hooke_matrix(material_parameter,
+                                                          symmetry,
+                                                          dof,
+                                                          iID)
+    end
+end
+
 """
 	compute_control( nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
 
@@ -35,7 +60,12 @@ Computes the zero energy control
 - `material_parameter::Dict`: The material parameter
 - `time::Float64`: The current time
 - `dt::Float64`: The current time step
+
+
+Global - J. Wan et al., "Improved method for zero-energy mode suppression in peridynamic correspondence model in Acta Mechanica Sinica https://doi.org/10.1007/s10409-019-00873-y
+
 """
+
 function compute_control(nodes::AbstractVector{Int64},
                          material_parameter::Dict{String,Any},
                          time::Float64,
@@ -48,23 +78,18 @@ function compute_control(nodes::AbstractVector{Int64},
     deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
                                                                      "NP1")
     Kinv::NodeTensorField{Float64,3} = Data_Manager.get_field("Inverse Shape Tensor")
-    zStiff::NodeTensorField{Float64,
-                            3} = Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",
-                                                                                Float64,
-                                                                                dof)
+
+    hooke_matrix::NodeTensorField{Float64} = Data_Manager.get_field("Elasticity Matrix")
+    zStiff::NodeTensorField{Float64,3} = Data_Manager.get_field("Zero Energy Stiffness")
     rotation::Bool = Data_Manager.get_rotation()
 
-    symmetry::String = material_parameter["Symmetry"]
-    CVoigt::AbstractMatrix{Float64} = get_Hooke_matrix(material_parameter,
-                                                       symmetry,
-                                                       dof)
     if !haskey(material_parameter, "UMAT Material Name")
         if rotation
             angles = Data_Manager.get_field("Angles")
-            create_zero_energy_mode_stiffness!(nodes, dof, CVoigt, angles, Kinv,
+            create_zero_energy_mode_stiffness!(nodes, dof, hooke_matrix, angles, Kinv,
                                                zStiff)
         else
-            create_zero_energy_mode_stiffness!(nodes, dof, CVoigt, Kinv, zStiff)
+            create_zero_energy_mode_stiffness!(nodes, dof, hooke_matrix, Kinv, zStiff)
         end
     end
 
@@ -178,16 +203,6 @@ Creates the zero energy mode stiffness
 # Returns
 - `zStiff::SubArray`: The zero energy stiffness
 """
-function create_zero_energy_mode_stiffness!(nodes::AbstractVector{Int64},
-                                            dof::Int64,
-                                            CVoigt::MMatrix{N,N,Float64,N2},
-                                            Kinv::NodeTensorField{Float64,3},
-                                            zStiff::NodeTensorField{Float64,3}) where {N,N2}
-    C = get_fourth_order(CVoigt, dof)  # construct once, if it's always same!
-    for iID in nodes
-        global_zero_energy_mode_stiffness(iID, C, Kinv, zStiff)
-    end
-end
 
 function create_zero_energy_mode_stiffness!(nodes::AbstractVector{Int64},
                                             dof::Int64,
@@ -246,13 +261,13 @@ Creates the zero energy mode stiffness
 """
 function create_zero_energy_mode_stiffness!(nodes::AbstractVector{Int64},
                                             dof::Int64,
-                                            CVoigt::MMatrix{N,N,Float64,N2},
+                                            CVoigt::AbstractArray{Float64,3},
                                             angles::AbstractArray{Float64},
                                             Kinv::AbstractArray{Float64,3},
                                             zStiff::AbstractArray{Float64,3}) where {N,
                                                                                      N2}
-    C = get_fourth_order(CVoigt, dof)
     for iID in nodes
+        @views C = get_fourth_order(CVoigt[iID, :, :], dof)
         @views C = rotate_fourth_order_tensor(angles[iID, :], C, dof, false)
         global_zero_energy_mode_stiffness(iID, C, Kinv, zStiff)
     end

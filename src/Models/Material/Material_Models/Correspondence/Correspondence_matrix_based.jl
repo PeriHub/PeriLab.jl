@@ -12,7 +12,7 @@ using StaticArrays: @MMatrix
 using ...Data_Manager
 using ...Material_Basis: get_Hooke_matrix
 using ....Helpers: get_fourth_order, progress_bar
-using ...Global_Zero_Energy_Control: create_zero_energy_mode_stiffness!
+using ...Zero_Energy_Control: create_zero_energy_mode_stiffness!
 
 export init_model
 export add_zero_energy_stiff!
@@ -584,7 +584,7 @@ function init_matrix()
     number_of_neighbors=Data_Manager.get_field("Number of Neighbors")
     volume = Data_Manager.get_field("Volume")
     omega = Data_Manager.get_field("Influence Function")
-    C_voigt = Data_Manager.get_field("Hooke Matrix")
+    C_voigt = Data_Manager.get_field("Elasticity Matrix")
     bond_geometry_N = Data_Manager.get_field("Deformed Bond Geometry", "N")
     bond_damage = Data_Manager.get_field("Bond Damage", "NP1")
 
@@ -604,24 +604,29 @@ function init_matrix()
 
     Data_Manager.init_stiffness_matrix(index_x, index_y, vals, total_dof)
     K_sparse = Data_Manager.get_stiffness_matrix()
-    create_zero_energy_mode_stiffness!(nodes, dof, C_voigt,
-                                       inverse_shape_tensor, zStiff)
 
-    add_zero_energy_stiff!(K_sparse,
-                           nodes,
-                           dof,
-                           zStiff,
-                           inverse_shape_tensor,
-                           nlist,
-                           volume,
-                           bond_geometry_N,
-                           bond_damage,
-                           omega)
+    if Data_Manager.get_analysis_model("Zero Energy Control Model", 1) != "Global"
+        @warn "Global Energy Control Model is not active for block 1. Must be for all blocks, when used."
+    else
+        create_zero_energy_mode_stiffness!(nodes, dof, C_voigt,
+                                           inverse_shape_tensor, zStiff)
+
+        add_zero_energy_stiff!(K_sparse,
+                               nodes,
+                               dof,
+                               zStiff,
+                               inverse_shape_tensor,
+                               nlist,
+                               volume,
+                               bond_geometry_N,
+                               bond_damage,
+                               omega)
+    end
 end
 
 function compute_model(nodes::AbstractVector{Int64})
     dof::Int64 = Data_Manager.get_dof()
-    C_voigt::Array{Float64,3} = Data_Manager.get_field("Hooke Matrix")
+    C_voigt::Array{Float64,3} = Data_Manager.get_field("Elasticity Matrix")
     inverse_shape_tensor::Array{Float64,3} = Data_Manager.get_field("Inverse Shape Tensor")
     nlist::Vector{Vector{Int64}} = Data_Manager.get_nlist()
     volume::Vector{Float64} = Data_Manager.get_field("Volume")

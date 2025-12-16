@@ -45,7 +45,7 @@ Initializes the material model.
 function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     dof::Int64 = Data_Manager.get_dof()
-    hooke_matrix::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Hooke Matrix",
+    hooke_matrix::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Elasticity Matrix",
                                                                                             Float64,
                                                                                             Int64((dof *
                                                                                                    (dof +
@@ -111,7 +111,7 @@ function compute_stresses(nodes::AbstractVector{Int64},
                           stress_N::NodeTensorField{Float64},
                           stress_NP1::NodeTensorField{Float64})
     mapping::AbstractMatrix{Int64} = get_mapping(dof)
-    hooke_matrix::NodeTensorField{Float64} = Data_Manager.get_field("Hooke Matrix")
+    hooke_matrix::NodeTensorField{Float64} = Data_Manager.get_field("Elasticity Matrix")
     for iID in nodes
         @views sNP1 = stress_NP1[iID, :, :]
         @views sInc = strain_increment[iID, :, :]

@@ -4,12 +4,10 @@
 
 module Correspondence
 
-#TODO: include here and not in Solver_manager
-# include("../Zero_Energy_Control/global_control.jl")
-
 using TimerOutputs: @timeit
 
 using .....Data_Manager
+using ....Zero_Energy_Control
 using ....Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "correspondence_name")
 for mod in module_list
@@ -25,7 +23,6 @@ using .Bond_Associated_Correspondence
 using ....Material_Basis: compute_Piola_Kirchhoff_stress!
 using .......Helpers: invert, rotate, determinant, smat, matrix_diff!, fast_mul!, mat_mul!
 using .......Geometry: compute_strain
-using ....Global_Zero_Energy_Control
 
 export init_model
 export material_name
@@ -71,14 +68,14 @@ function init_model(nodes::AbstractVector{Int64},
             return nothing
         end
         Data_Manager.set_model_module(material_model, mod)
-        mod.init_model(nodes,
-                       material_parameter)
+        mod.init_model(nodes, material_parameter)
     end
     if haskey(material_parameter, "Bond Associated") &&
        material_parameter["Bond Associated"]
         return Bond_Associated_Correspondence.init_model(nodes,
                                                          material_parameter)
     end
+    Zero_Energy_Control.init_model(nodes, material_parameter, block)
     material_parameter["Bond Associated"] = false
 end
 
@@ -213,40 +210,12 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
                                                           inverse_shape_tensor,
                                                           stress_NP1,
                                                           bond_force)
-    # TODO general interface, because it might be a flexbile Set_modules interface in future
-    @timeit "zero energy" zero_energy_mode_compensation(nodes,
-                                                        material_parameter,
-                                                        time, dt)
-end
 
-"""
-    zero_energy_mode_compensation(nodes::AbstractVector{Int64}, material_parameter::Dict{String,Any}, time::Float64, dt::Float64)
-
-Global - J. Wan et al., "Improved method for zero-energy mode suppression in peridynamic correspondence model in Acta Mechanica Sinica https://doi.org/10.1007/s10409-019-00873-y
-
-# Arguments
-- `nodes::AbstractVector{Int64}`: List of block nodes.
-- `material_parameter::Dict{String, Any}`: Dictionary with material parameter.
-- `time::Float64`: The current time.
-- `dt::Float64`: The current time step.
-"""
-function zero_energy_mode_compensation(nodes::AbstractVector{Int64},
-                                       material_parameter::Dict{String,Any},
-                                       time::Float64,
-                                       dt::Float64)
-    if !haskey(material_parameter, "Zero Energy Control")
-        if time == 0
-            @warn "No zero energy control activated for corresponcence."
-        end
-        return
-    end
-    if material_parameter["Zero Energy Control"]::String ==
-       Global_Zero_Energy_Control.control_name()::String
-        Global_Zero_Energy_Control.compute_control(nodes,
-                                                   material_parameter,
-                                                   time,
-                                                   dt)
-    end
+    @timeit "zero energy" Zero_Energy_Control.compute_control(nodes,
+                                                              material_parameter,
+                                                              block,
+                                                              time,
+                                                              dt)
 end
 
 """
