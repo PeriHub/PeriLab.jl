@@ -177,7 +177,7 @@ MPI.Init()
                     include("unit_tests/Models/Material/ut_Material_Factory.jl")
                 end
                 @testset "ut_control" begin
-                    include("unit_tests/Models/Material/Zero_Energy_Control/ut_global_control.jl")
+                    include("unit_tests/Models/Material/Zero_Energy_Control/ut_Global_Zero_Energy_Control.jl")
                 end
                 @testset "ut_material_basis" begin
                     include("unit_tests/Models/Material/ut_material_basis.jl")

@@ -7,11 +7,12 @@ module Global_Zero_Energy_Control
 using StaticArrays: MMatrix, MVector
 using LoopVectorization
 
-using ...Data_Manager
-using ...Helpers: get_fourth_order
-using ..Material_Basis: get_Hooke_matrix
-using ...Geometry: rotation_tensor
+using ....Data_Manager
+using ....Helpers: get_fourth_order
+using ...Material_Basis: get_Hooke_matrix
+using ....Geometry: rotation_tensor
 
+export init_model
 export control_name
 export compute_control
 export global_zero_energy_mode_stiffness
@@ -264,8 +265,7 @@ function create_zero_energy_mode_stiffness!(nodes::AbstractVector{Int64},
                                             CVoigt::AbstractArray{Float64,3},
                                             angles::AbstractArray{Float64},
                                             Kinv::AbstractArray{Float64,3},
-                                            zStiff::AbstractArray{Float64,3}) where {N,
-                                                                                     N2}
+                                            zStiff::AbstractArray{Float64,3})
     for iID in nodes
         @views C = get_fourth_order(CVoigt[iID, :, :], dof)
         @views C = rotate_fourth_order_tensor(angles[iID, :], C, dof, false)
