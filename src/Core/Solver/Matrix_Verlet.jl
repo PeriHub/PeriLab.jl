@@ -40,7 +40,7 @@ function init_solver(solver_options::Dict{Any,Any},
                      bcs::Dict{Any,Any},
                      block_nodes::Dict{Int64,Vector{Int64}})
     horizon = Data_Manager.get_field("Horizon")
-    if Data_Manager.get_rank()>1
+    if Data_Manager.get_rank() > 1
         @warn "Implementation might not work for MPI. Especially for coupling. It has to be tested."
     end
     find_bc_free_dof(bcs)
@@ -63,7 +63,7 @@ function init_solver(solver_options::Dict{Any,Any},
 
     for (block, nodes) in pairs(block_nodes)
         model_param = Data_Manager.get_properties(block, "Material Model")
-        Correspondence_matrix_based.init_model(nodes, model_param)
+        Correspondence_matrix_based.init_model(nodes, model_param, block)
     end
     @timeit "init_matrix" Correspondence_matrix_based.init_matrix()
     dof = Data_Manager.get_dof()
@@ -80,12 +80,12 @@ function init_solver(solver_options::Dict{Any,Any},
     @info "dt: $(solver_options["dt"])"
     @info "Numerical Damping: $(solver_options["Numerical Damping"])"
 
-    reduction_blocks=[]
-    if model_reduction!=false
+    reduction_blocks = []
+    if model_reduction != false
         reduction_blocks = get(solver_options["Model Reduction"], "Reduction Blocks", [])
 
-        if reduction_blocks==[]
-            model_reduction==false
+        if reduction_blocks == []
+            model_reduction == false
             @error "No reduction blocks defined for model reduction. If you want to use a reduced model please define 'Reduction Blocks' in the yaml input deck."
         else
             if reduction_blocks isa Float64
@@ -108,13 +108,13 @@ function init_solver(solver_options::Dict{Any,Any},
         @warn "No other models work with full matrix Verlet right now."
     end
 
-    if reduction_blocks!=[]
+    if reduction_blocks != []
         coor = Data_Manager.get_field("Coordinates")
         master_nodes = Int64[]
         slave_nodes = Int64[]
         pd_nodes = Int64[]
         nlist = Data_Manager.get_nlist()
-        cn=Data_Manager.create_constant_node_scalar_field("Coupling Nodes", Int64)
+        cn = Data_Manager.create_constant_node_scalar_field("Coupling Nodes", Int64)
         full_blocks = setdiff(collect(keys(block_nodes)), reduction_blocks)
         for block in full_blocks
             append!(pd_nodes, block_nodes[block])
@@ -132,29 +132,29 @@ function init_solver(solver_options::Dict{Any,Any},
         master_nodes = sort(unique(master_nodes))
         slave_nodes = setdiff(collect(1:Data_Manager.get_nnodes()), master_nodes)
 
-        cn[slave_nodes].=6
-        cn[master_nodes].=2
-        cn[pd_nodes].=1
+        cn[slave_nodes] .= 6
+        cn[master_nodes] .= 2
+        cn[pd_nodes] .= 1
 
         for block in eachindex(block_nodes)
             intersect!(block_nodes[block], pd_nodes)
         end
 
-        if !(master_nodes==[])
+        if !(master_nodes == [])
             perm = collect(1:(length(master_nodes) * Data_Manager.get_dof()))
             perm_master = create_permutation(master_nodes, Data_Manager.get_dof())
             perm_slave = create_permutation(slave_nodes, Data_Manager.get_dof())
             perm_pd_nodes = create_permutation(pd_nodes, Data_Manager.get_dof())
             # create reduced M^-1*K for linear run
             #TODO adapt for mass matrix
-            density_mass = zeros(length(density)*Data_Manager.get_dof())
+            density_mass = zeros(length(density) * Data_Manager.get_dof())
             density_mass .= density[1]
 
             perm_pd_reduced = findall(in(perm_pd_nodes), perm_master)
 
             K_reduced,
             mass_reduced = guyan_reduction(K, density_mass, perm_master, perm_slave, dof)
-            K_reduced[perm_pd_reduced, :].=0
+            K_reduced[perm_pd_reduced, :] .= 0
             #K_reduced[:, perm_pd_reduced].=0
             Data_Manager.set_stiffness_matrix(sparse(K_reduced[perm, perm]))
             Data_Manager.set_mass_matrix(lu(sparse(mass_reduced[perm, perm])))
@@ -220,12 +220,12 @@ function run_solver(solver_options::Dict{Any,Any},
     rank = Data_Manager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
 
-    if solver_options["Model Reduction"]!=false
-        master_nodes=Data_Manager.get_reduced_model_master()
+    if solver_options["Model Reduction"] != false
+        master_nodes = Data_Manager.get_reduced_model_master()
         M_fact = Data_Manager.get_mass_matrix()
-        temp = zeros(length(master_nodes)*Data_Manager.get_dof())
+        temp = zeros(length(master_nodes) * Data_Manager.get_dof())
     else
-        temp=zeros(Data_Manager.get_dof()*Data_Manager.get_nnodes())
+        temp = zeros(Data_Manager.get_dof() * Data_Manager.get_nnodes())
     end
     K::AbstractMatrix{Float64} = Data_Manager.get_stiffness_matrix()
 
@@ -249,10 +249,10 @@ function run_solver(solver_options::Dict{Any,Any},
                                bcs, time,
                                step_time)
 
-            if solver_options["Model Reduction"]!=false
+            if solver_options["Model Reduction"] != false
                 active_nodes = master_nodes
-                active_list.=false
-                active_list[Data_Manager.get_reduced_model_pd()].=true
+                active_list .= false
+                active_list[Data_Manager.get_reduced_model_pd()] .= true
             end
 
             vNP1[active_nodes, :] = (1 - numerical_damping) .*
@@ -305,7 +305,7 @@ function run_solver(solver_options::Dict{Any,Any},
             forces[active_nodes, :] .= force_densities_NP1[active_nodes, :] .*
                                        volume[active_nodes]
             @timeit "Accelaration computation" begin
-                if solver_options["Model Reduction"]!=false
+                if solver_options["Model Reduction"] != false
                     a[active_nodes, :] = reshape(M_fact \
                                                  vec(force_densities_NP1[active_nodes, :] .*
                                                      volume[active_nodes]),
@@ -345,7 +345,7 @@ end
 
 function f_int(K::AbstractMatrix{Float64}, u::AbstractVector{Float64},
                sa::Tuple{Int64,Int64})
-    return reshape(K*u, sa...)
+    return reshape(K * u, sa...)
 end
 
 function f_int_inplace!(F::AbstractMatrix{Float64},
