@@ -26,8 +26,7 @@ function init_model(nodes::AbstractVector{Int64}, material_parameter::Dict, bloc
         Data_Manager.set_model_module(zero_energy_model, mod)
         mod.init_model(nodes, material_parameter)
     else
-        Data_Manager.set_analysis_model("Zero Energy Control Model", block, [])
-
+        Data_Manager.set_analysis_model("Zero Energy Control Model", block, "")
         @warn "No zero energy control activated for corresponcence in block $block. This might cause errors."
     end
 end
@@ -57,8 +56,7 @@ function create_zero_energy_mode_stiffness!(nodes::AbstractVector{Int64},
                                             Kinv::Array{Float64,3},
                                             zStiff::Array{Float64,3})
     zero_energy_model = Data_Manager.get_analysis_model("Zero Energy Control Model", 1)
-    mod = Data_Manager.get_model_module(zero_energy_model)
-    return mod.create_zero_energy_mode_stiffness!(nodes, dof, CVoigt,
-                                                  Kinv, zStiff)
+    mod = Data_Manager.get_model_module(zero_energy_model[1])
+    return mod.create_zero_energy_mode_stiffness!(nodes, dof, CVoigt, Kinv, zStiff)
 end
 end

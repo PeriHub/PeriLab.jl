@@ -122,7 +122,7 @@ function init_solver(solver_options::Dict{Any,Any},
 
     for (block, nodes) in pairs(block_nodes)
         model_param = Data_Manager.get_properties(block, "Material Model")
-        Correspondence_matrix_based.init_model(nodes, model_param)
+        Correspondence_matrix_based.init_model(nodes, model_param, block)
     end
     @timeit "init_matrix" Correspondence_matrix_based.init_matrix()
 
@@ -217,7 +217,7 @@ function run_solver(solver_options::Dict{Any,Any},
                                      nodes)
 
     if matrix_update
-        @timeit "update stiffness matrix" K = compute_matrix(active_nodes)
+        @timeit "update stiffness matrix" K=compute_matrix(active_nodes)
     else
         K = Data_Manager.get_stiffness_matrix()
     end
@@ -227,13 +227,16 @@ function run_solver(solver_options::Dict{Any,Any},
 
             # reshape
             # All 2 time steps fields must be in the loop, because switch NP1 to N changes the adresses
-            uN = Data_Manager.get_field("Displacements", "N")
-            uNP1 = Data_Manager.get_field("Displacements", "NP1")
-            velocities = Data_Manager.get_field("Velocity", "NP1")
-            deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
-            forces = Data_Manager.get_field("Forces", "NP1")
-            force_densities_N = Data_Manager.get_field("Force Densities", "N")
-            force_densities_NP1 = Data_Manager.get_field("Force Densities", "NP1")
+            uN::NodeVectorField{Float64} = Data_Manager.get_field("Displacements", "N")
+            uNP1::NodeVectorField{Float64} = Data_Manager.get_field("Displacements", "NP1")
+            velocities::NodeVectorField{Float64} = Data_Manager.get_field("Velocity", "NP1")
+            deformed_coorNP1::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
+                                                                                "NP1")
+            forces::NodeVectorField{Float64} = Data_Manager.get_field("Forces", "NP1")
+            force_densities_N::NodeVectorField{Float64} = Data_Manager.get_field("Force Densities",
+                                                                                 "N")
+            force_densities_NP1::NodeVectorField{Float64} = Data_Manager.get_field("Force Densities",
+                                                                                   "NP1")
 
             non_BCs = Data_Manager.get_bc_free_dof()
             #force_densities_NP1[active_nodes, :] .= force_densities_N[active_nodes, :]
@@ -258,6 +261,7 @@ function run_solver(solver_options::Dict{Any,Any},
                                step_time)
 
             external_force_densities .= external_forces ./ volume # it must be delta external forces
+            deformed_coorNP1 .= coor .+ uNP1
 
             @timeit "compute_models" compute_stiff_matrix_compatible_models(block_nodes,
                                                                             dt,
@@ -272,7 +276,7 @@ function run_solver(solver_options::Dict{Any,Any},
                                              nodes)
 
             if matrix_update
-                @timeit "update stiffness matrix" K = compute_matrix(active_nodes)
+                @timeit "update stiffness matrix" K=compute_matrix(active_nodes)
 
             else
                 K = Data_Manager.get_stiffness_matrix()
@@ -346,8 +350,8 @@ function filter_and_map_bc(non_BCs, active_nodes, dof, nnodes::Int64)
     filtered = []
     for i in eachindex(active_nodes)
         for j in 1:dof
-            if active_nodes[i] + (j - 1)*nnodes in non_BCs
-                push!(filtered, i+(j - 1) * length(active_nodes))
+            if active_nodes[i] + (j - 1) * nnodes in non_BCs
+                push!(filtered, i + (j - 1) * length(active_nodes))
             end
         end
     end
@@ -356,7 +360,7 @@ function filter_and_map_bc(non_BCs, active_nodes, dof, nnodes::Int64)
 end
 
 function compute_matrix(nodes::AbstractVector{Int64})
-    if length(nodes)==0
+    if length(nodes) == 0
         return Data_Manager.get_stiffness_matrix()
     end
     Bond_Deformation.compute(nodes,

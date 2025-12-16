@@ -30,7 +30,7 @@ PeriLab:
         Poisson's Ratio: 0.33
         Young's Modulus: 3.0e+9
         Symmetry: isotropic plane stress
-        Zero Energy Control: Global
+        Zero Energy Control: "Global"
     Thermal Models:
       Thermal Test:
         Environmental Temperature: 25.0

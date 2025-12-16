@@ -22,11 +22,13 @@ PeriLab:
         Symmetry: "isotropic plane stress"
         Young's Modulus: 209695.43147208123
         Poisson's Ratio: 0.2944
+        Zero Energy Control: "Global"
       Mat_2:
         Material Model: "Correspondence Elastic"
         Symmetry: "isotropic plane stress"
         Young's Modulus: 209695.43147208123
         Poisson's Ratio: 0.2944
+        Zero Energy Control: "Global"
   Blocks:
     block_1:
       Block ID: 1

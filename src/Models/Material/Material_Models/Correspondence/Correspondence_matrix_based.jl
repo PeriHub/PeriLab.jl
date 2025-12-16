@@ -12,7 +12,7 @@ using StaticArrays: @MMatrix
 using ...Data_Manager
 using ...Material_Basis: get_Hooke_matrix
 using ....Helpers: get_fourth_order, progress_bar
-using ...Zero_Energy_Control: create_zero_energy_mode_stiffness!
+using ...Zero_Energy_Control
 
 export init_model
 export add_zero_energy_stiff!
@@ -129,36 +129,45 @@ function compute_linearized_operator(CB_ik::AbstractArray{Float64,3},
         factor = omega_ij * V_k * omega_ik
 
         @inbounds begin
-            K_ijk[1, 1] = factor * (CB_ik[1, 1, 1]*DX_1 + CB_ik[1, 2, 1]*DX_2)
-            K_ijk[1, 2] = factor * (CB_ik[1, 1, 2]*DX_1 + CB_ik[1, 2, 2]*DX_2)
-            K_ijk[2, 1] = factor * (CB_ik[2, 1, 1]*DX_1 + CB_ik[2, 2, 1]*DX_2)
-            K_ijk[2, 2] = factor * (CB_ik[2, 1, 2]*DX_1 + CB_ik[2, 2, 2]*DX_2)
+            K_ijk[1, 1] = factor * (CB_ik[1, 1, 1] * DX_1 + CB_ik[1, 2, 1] * DX_2)
+            K_ijk[1, 2] = factor * (CB_ik[1, 1, 2] * DX_1 + CB_ik[1, 2, 2] * DX_2)
+            K_ijk[2, 1] = factor * (CB_ik[2, 1, 1] * DX_1 + CB_ik[2, 2, 1] * DX_2)
+            K_ijk[2, 2] = factor * (CB_ik[2, 1, 2] * DX_1 + CB_ik[2, 2, 2] * DX_2)
         end
     elseif dof == 3
-        DX_1 = D_inv_i[1, 1]*X_ij[1] + D_inv_i[1, 2]*X_ij[2] + D_inv_i[1, 3]*X_ij[3]
-        DX_2 = D_inv_i[2, 1]*X_ij[1] + D_inv_i[2, 2]*X_ij[2] + D_inv_i[2, 3]*X_ij[3]
-        DX_3 = D_inv_i[3, 1]*X_ij[1] + D_inv_i[3, 2]*X_ij[2] + D_inv_i[3, 3]*X_ij[3]
+        DX_1 = D_inv_i[1, 1] * X_ij[1] + D_inv_i[1, 2] * X_ij[2] + D_inv_i[1, 3] * X_ij[3]
+        DX_2 = D_inv_i[2, 1] * X_ij[1] + D_inv_i[2, 2] * X_ij[2] + D_inv_i[2, 3] * X_ij[3]
+        DX_3 = D_inv_i[3, 1] * X_ij[1] + D_inv_i[3, 2] * X_ij[2] + D_inv_i[3, 3] * X_ij[3]
         factor = omega_ij * V_k * omega_ik
 
         @inbounds begin
             K_ijk[1, 1] = factor *
-                          (CB_ik[1, 1, 1]*DX_1 + CB_ik[1, 2, 1]*DX_2 + CB_ik[1, 3, 1]*DX_3)
+                          (CB_ik[1, 1, 1] * DX_1 + CB_ik[1, 2, 1] * DX_2 +
+                           CB_ik[1, 3, 1] * DX_3)
             K_ijk[1, 2] = factor *
-                          (CB_ik[1, 1, 2]*DX_1 + CB_ik[1, 2, 2]*DX_2 + CB_ik[1, 3, 2]*DX_3)
+                          (CB_ik[1, 1, 2] * DX_1 + CB_ik[1, 2, 2] * DX_2 +
+                           CB_ik[1, 3, 2] * DX_3)
             K_ijk[1, 3] = factor *
-                          (CB_ik[1, 1, 3]*DX_1 + CB_ik[1, 2, 3]*DX_2 + CB_ik[1, 3, 3]*DX_3)
+                          (CB_ik[1, 1, 3] * DX_1 + CB_ik[1, 2, 3] * DX_2 +
+                           CB_ik[1, 3, 3] * DX_3)
             K_ijk[2, 1] = factor *
-                          (CB_ik[2, 1, 1]*DX_1 + CB_ik[2, 2, 1]*DX_2 + CB_ik[2, 3, 1]*DX_3)
+                          (CB_ik[2, 1, 1] * DX_1 + CB_ik[2, 2, 1] * DX_2 +
+                           CB_ik[2, 3, 1] * DX_3)
             K_ijk[2, 2] = factor *
-                          (CB_ik[2, 1, 2]*DX_1 + CB_ik[2, 2, 2]*DX_2 + CB_ik[2, 3, 2]*DX_3)
+                          (CB_ik[2, 1, 2] * DX_1 + CB_ik[2, 2, 2] * DX_2 +
+                           CB_ik[2, 3, 2] * DX_3)
             K_ijk[2, 3] = factor *
-                          (CB_ik[2, 1, 3]*DX_1 + CB_ik[2, 2, 3]*DX_2 + CB_ik[2, 3, 3]*DX_3)
+                          (CB_ik[2, 1, 3] * DX_1 + CB_ik[2, 2, 3] * DX_2 +
+                           CB_ik[2, 3, 3] * DX_3)
             K_ijk[3, 1] = factor *
-                          (CB_ik[3, 1, 1]*DX_1 + CB_ik[3, 2, 1]*DX_2 + CB_ik[3, 3, 1]*DX_3)
+                          (CB_ik[3, 1, 1] * DX_1 + CB_ik[3, 2, 1] * DX_2 +
+                           CB_ik[3, 3, 1] * DX_3)
             K_ijk[3, 2] = factor *
-                          (CB_ik[3, 1, 2]*DX_1 + CB_ik[3, 2, 2]*DX_2 + CB_ik[3, 3, 2]*DX_3)
+                          (CB_ik[3, 1, 2] * DX_1 + CB_ik[3, 2, 2] * DX_2 +
+                           CB_ik[3, 3, 2] * DX_3)
             K_ijk[3, 3] = factor *
-                          (CB_ik[3, 1, 3]*DX_1 + CB_ik[3, 2, 3]*DX_2 + CB_ik[3, 3, 3]*DX_3)
+                          (CB_ik[3, 1, 3] * DX_1 + CB_ik[3, 2, 3] * DX_2 +
+                           CB_ik[3, 3, 3] * DX_3)
         end
     end
 end
@@ -224,19 +233,19 @@ function create_mapping_structure(nodes::AbstractVector{Int64},
         mapping[i][1] = idx
         for n in 1:dof
             for m in 1:dof
-                I[idx] = (i-1)*dof + m
-                J[idx] = (i-1)*dof + n
+                I[idx] = (i - 1) * dof + m
+                J[idx] = (i - 1) * dof + n
                 idx += 1
             end
         end
 
         # Blocks (i, k) for k ∈ nlist[i]
         for (k_idx, k) in enumerate(ni)
-            mapping[i][k_idx+1] = idx
+            mapping[i][k_idx + 1] = idx
             for n in 1:dof
                 for m in 1:dof
-                    I[idx] = (i-1)*dof + m
-                    J[idx] = (k-1)*dof + n
+                    I[idx] = (i - 1) * dof + m
+                    J[idx] = (k - 1) * dof + n
                     idx += 1
                 end
             end
@@ -322,7 +331,7 @@ function assemble_stiffness(nodes::AbstractVector{Int64},
             mapping_i = mapping[i]
 
             for (j_idx, j) in enumerate(ni)
-                omega_ij = omega[i][j_idx]*bond_damage[i][j_idx]
+                omega_ij = omega[i][j_idx] * bond_damage[i][j_idx]
                 V_j = volume[j]
                 X_ij = bond_geometry[i][j_idx]
 
@@ -331,7 +340,7 @@ function assemble_stiffness(nodes::AbstractVector{Int64},
                 mapping_j = mapping[j]
 
                 for (k_idx, k) in enumerate(ni)
-                    omega_ik = omega[i][k_idx]*bond_damage[i][k_idx]
+                    omega_ik = omega[i][k_idx] * bond_damage[i][k_idx]
                     V_k = volume[k]
 
                     compute_linearized_operator(@view(CB_k[k_idx, :, :, :]),
@@ -341,7 +350,7 @@ function assemble_stiffness(nodes::AbstractVector{Int64},
                     # Row j entries
                     i_pos_in_j = neighbor_pos_j[i]
                     if i_pos_in_j != 0
-                        add_block_scaled!(V_thread, mapping_j[i_pos_in_j+1],
+                        add_block_scaled!(V_thread, mapping_j[i_pos_in_j + 1],
                                           buffers.K_block, V_i, dof)
                     end
 
@@ -350,14 +359,14 @@ function assemble_stiffness(nodes::AbstractVector{Int64},
                     else
                         k_pos_in_j = neighbor_pos_j[k]
                         if k_pos_in_j != 0
-                            add_block_scaled!(V_thread, mapping_j[k_pos_in_j+1],
+                            add_block_scaled!(V_thread, mapping_j[k_pos_in_j + 1],
                                               buffers.K_block, -V_i, dof)
                         end
                     end
 
                     # Row i entries
                     add_block_scaled!(V_thread, i_diag_idx, buffers.K_block, -V_j, dof)
-                    add_block_scaled!(V_thread, mapping_i[k_idx+1], buffers.K_block, V_j,
+                    add_block_scaled!(V_thread, mapping_i[k_idx + 1], buffers.K_block, V_j,
                                       dof)
                 end
             end
@@ -396,7 +405,7 @@ end
 
 @inline function add_block_scaled!(V, start_idx, block, scale, dof)
     @turbo for i in 1:dof, j in 1:dof
-        V[start_idx+(j-1)*dof+i-1] += scale * block[i, j]
+        V[start_idx + (j - 1) * dof + i - 1] += scale * block[i, j]
     end
 end
 
@@ -500,11 +509,11 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
         K_ii_block = zeros(dof, dof)
 
         for d1 in 1:dof
-            row = (i-1)*dof + d1
+            row = (i - 1) * dof + d1
             for j in active_nodes
                 if i != j
                     for d2 in 1:dof
-                        col = (j-1)*dof + d2
+                        col = (j - 1) * dof + d2
                         K_ii_block[d1, d2] -= K_stab[row, col]
                     end
                 end
@@ -513,8 +522,8 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
 
         for d1 in 1:dof
             for d2 in 1:dof
-                row = (i-1)*dof + d1
-                col = (i-1)*dof + d2
+                row = (i - 1) * dof + d1
+                col = (i - 1) * dof + d2
                 K[row, col] += K_ii_block[d1, d2]
             end
         end
@@ -534,8 +543,8 @@ function add_block_to_coo!(I_indices::Vector{Int},
     for d1 in 1:dof
         for d2 in 1:dof
             if abs(block[d1, d2]) > 1e-14
-                push!(I_indices, (i-1)*dof + d1)
-                push!(J_indices, (j-1)*dof + d2)
+                push!(I_indices, (i - 1) * dof + d1)
+                push!(J_indices, (j - 1) * dof + d2)
                 push!(values, block[d1, d2])
             end
         end
@@ -548,15 +557,15 @@ function compute_bond_force(bond_force::Vector{Vector{Vector{Float64}}},
                             dof::Int64)
     @inbounds for i in nodes
         ni = nlist[i]
-        i_offset = (i-1)*dof
+        i_offset = (i - 1) * dof
 
         for (j_idx, j) in enumerate(ni)
-            j_offset = (j-1)*dof
+            j_offset = (j - 1) * dof
             f_ij = zeros(dof)
 
             for m in 1:dof
                 for n in 1:dof
-                    f_ij[m] += K[i_offset+m, j_offset+n] * (u[j, n] - u[i, n])
+                    f_ij[m] += K[i_offset + m, j_offset + n] * (u[j, n] - u[i, n])
                 end
             end
 
@@ -566,8 +575,9 @@ function compute_bond_force(bond_force::Vector{Vector{Vector{Float64}}},
 end
 
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
-    if Data_Manager.get_max_rank()>1
+                    material_parameter::Dict, block_id::Int64)
+    Zero_Energy_Control.init_model(nodes, material_parameter, block_id)
+    if Data_Manager.get_max_rank() > 1
         @error "Correspondence matrix based not implemented for parallel runs."
     end
 end
@@ -581,9 +591,10 @@ function init_matrix()
     bond_geometry = Data_Manager.get_field("Bond Geometry")
     inverse_shape_tensor = Data_Manager.get_field("Inverse Shape Tensor")
     nlist = Data_Manager.get_nlist()
-    number_of_neighbors=Data_Manager.get_field("Number of Neighbors")
+    number_of_neighbors = Data_Manager.get_field("Number of Neighbors")
     volume = Data_Manager.get_field("Volume")
     omega = Data_Manager.get_field("Influence Function")
+    # using the elasticity matrix allows the introduction of heterogeneous materials
     C_voigt = Data_Manager.get_field("Elasticity Matrix")
     bond_geometry_N = Data_Manager.get_field("Deformed Bond Geometry", "N")
     bond_damage = Data_Manager.get_field("Bond Damage", "NP1")
@@ -604,23 +615,26 @@ function init_matrix()
 
     Data_Manager.init_stiffness_matrix(index_x, index_y, vals, total_dof)
     K_sparse = Data_Manager.get_stiffness_matrix()
+    if haskey(Data_Manager.get_properties(1, "Material Model"), "Zero Energy Control")
+        if Data_Manager.get_properties(1, "Material Model")["Zero Energy Control"] ==
+           "Global"
+            Zero_Energy_Control.create_zero_energy_mode_stiffness!(nodes, dof, C_voigt,
+                                                                   inverse_shape_tensor,
+                                                                   zStiff)
 
-    if Data_Manager.get_analysis_model("Zero Energy Control Model", 1) != "Global"
-        @warn "Global Energy Control Model is not active for block 1. Must be for all blocks, when used."
+            add_zero_energy_stiff!(K_sparse,
+                                   nodes,
+                                   dof,
+                                   zStiff,
+                                   inverse_shape_tensor,
+                                   nlist,
+                                   volume,
+                                   bond_geometry_N,
+                                   bond_damage,
+                                   omega)
+        end
     else
-        create_zero_energy_mode_stiffness!(nodes, dof, C_voigt,
-                                           inverse_shape_tensor, zStiff)
-
-        add_zero_energy_stiff!(K_sparse,
-                               nodes,
-                               dof,
-                               zStiff,
-                               inverse_shape_tensor,
-                               nlist,
-                               volume,
-                               bond_geometry_N,
-                               bond_damage,
-                               omega)
+        @warn "Global Energy Control Model is not active for block 1. Must be for all blocks, when used."
     end
 end
 
@@ -653,8 +667,8 @@ function compute_model(nodes::AbstractVector{Int64})
 
     Data_Manager.init_stiffness_matrix(index_x, index_y, vals, total_dof)
 
-    create_zero_energy_mode_stiffness!(nodes, dof, C_voigt,
-                                       inverse_shape_tensor, zStiff)
+    Zero_Energy_Control.create_zero_energy_mode_stiffness!(nodes, dof, C_voigt,
+                                                           inverse_shape_tensor, zStiff)
 
     K_sparse = Data_Manager.get_stiffness_matrix()
     add_zero_energy_stiff!(K_sparse,
