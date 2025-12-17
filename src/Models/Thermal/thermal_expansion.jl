@@ -96,8 +96,8 @@ function compute_model(nodes::AbstractVector{Int64},
     temperature_NP1 = Data_Manager.get_field("Temperature", "NP1")
     dof = Data_Manager.get_dof()
 
-    alpha_mat=thermal_expansion_matrix(thermal_parameter["Thermal Expansion Coefficient"],
-                                       Val(dof))
+    alpha_mat = thermal_expansion_matrix(thermal_parameter["Thermal Expansion Coefficient"],
+                                         Val(dof))
 
     ref_temp = 0.0
     ref_temp = get(thermal_parameter, "Reference Temperature", 0.0)
@@ -120,6 +120,7 @@ function compute_model(nodes::AbstractVector{Int64},
     end
 
     if Data_Manager.has_key("Deformation Gradient")
+        #TODO all forces computed are from the original configuration
         Deformation_Gradient.compute(nodes, Dict(), block)
     end
 end
