@@ -200,11 +200,11 @@ end
                                     nlist,
                                     coor)
     coor[1:2, 1:2] .= 1
-    PeriLab.Geometry.calculate_bond_length!(undeformed_bond[1:2],
-                                            undeformed_bond_length[1:2],
-                                            1:2,
+    PeriLab.Geometry.calculate_bond_length!(undeformed_bond[1],
+                                            undeformed_bond_length[1],
+                                            1,
                                             coor,
-                                            nlist[1:2]) == 1
+                                            nlist[1]) == 1
     coor .= 0
     @test PeriLab.Geometry.calculate_bond_length!(undeformed_bond[1],
                                                   undeformed_bond_length[1],
