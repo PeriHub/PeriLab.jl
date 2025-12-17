@@ -128,6 +128,11 @@ function init_solver(solver_options::Dict{Any,Any},
 
     solver_options["Matrix update"] = get(params["Linear Static Matrix Based"],
                                           "Matrix update", false)
+    deformed_coorN = Data_Manager.get_field("Deformed Coordinates", "N")
+    deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
+    coor = Data_Manager.get_field("Coordinates")
+    deformed_coorN .= coor
+    deformed_coorNP1 .= coor
 
     ### for coupled thermal analysis
 
@@ -215,12 +220,7 @@ function run_solver(solver_options::Dict{Any,Any},
 
     active_nodes = find_active_nodes(active_list, active_nodes,
                                      nodes)
-
-    if matrix_update
-        @timeit "update stiffness matrix" K=compute_matrix(active_nodes)
-    else
-        K = Data_Manager.get_stiffness_matrix()
-    end
+    K = Data_Manager.get_stiffness_matrix()
     for idt in iter
         Data_Manager.set_iteration(idt)
         @timeit "Linear Static" begin
@@ -230,8 +230,11 @@ function run_solver(solver_options::Dict{Any,Any},
             uN::NodeVectorField{Float64} = Data_Manager.get_field("Displacements", "N")
             uNP1::NodeVectorField{Float64} = Data_Manager.get_field("Displacements", "NP1")
             velocities::NodeVectorField{Float64} = Data_Manager.get_field("Velocity", "NP1")
+            deformed_coorN::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
+                                                                              "N")
             deformed_coorNP1::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
                                                                                 "NP1")
+
             forces::NodeVectorField{Float64} = Data_Manager.get_field("Forces", "NP1")
             force_densities_N::NodeVectorField{Float64} = Data_Manager.get_field("Force Densities",
                                                                                  "N")
@@ -239,15 +242,15 @@ function run_solver(solver_options::Dict{Any,Any},
                                                                                    "NP1")
 
             non_BCs = Data_Manager.get_bc_free_dof()
-            #force_densities_NP1[active_nodes, :] .= force_densities_N[active_nodes, :]
+            # if not we get additional forces from deformation if thermal expansion is active
+            deformed_coorNP1 .= coor
 
-            # das muss in model evaluation; dann funktioniert die Reihenfolge auch. in material
-            @timeit "compute bond forces" Correspondence_matrix_based.compute_bond_force(bond_force,
-                                                                                         K,
-                                                                                         uN,
-                                                                                         active_nodes,
-                                                                                         nlist,
-                                                                                         dof)
+            #@timeit "compute bond forces" Correspondence_matrix_based.compute_bond_force(bond_force,
+            #                                                                             K,
+            #                                                                             uN,
+            #                                                                             active_nodes,
+            #                                                                             nlist,
+            #                                                                             dof)
 
             compute_parabolic_problems_before_model_evaluation(active_nodes, solver_options)
             apply_bc_dirichlet([
@@ -261,7 +264,6 @@ function run_solver(solver_options::Dict{Any,Any},
                                step_time)
 
             external_force_densities .= external_forces ./ volume # it must be delta external forces
-            deformed_coorNP1 .= coor .+ uNP1
 
             @timeit "compute_models" compute_stiff_matrix_compatible_models(block_nodes,
                                                                             dt,
@@ -274,26 +276,24 @@ function run_solver(solver_options::Dict{Any,Any},
 
             active_nodes = find_active_nodes(active_list, active_nodes,
                                              nodes)
-
             if matrix_update
-                @timeit "update stiffness matrix" K=compute_matrix(active_nodes)
-
-            else
-                K = Data_Manager.get_stiffness_matrix()
+                @timeit "update stiffness matrix" compute_matrix(active_nodes)
             end
+            K = Data_Manager.get_stiffness_matrix()
 
             #@views external_force_densities[active_nodes, :] += force_densities_NP1[active_nodes, :]
             perm = create_permutation(active_nodes, Data_Manager.get_dof()) # only active node dofs are there
 
             filtered_perm = filter_and_map_bc(non_BCs, active_nodes, dof,
                                               Data_Manager.get_nnodes())
-            #@info (filtered_perm)
+
+            #  @info (filtered_perm)
             @timeit "compute_displacements" @views compute_displacements!(K[perm, perm],
                                                                           filtered_perm,
                                                                           uNP1[active_nodes,
                                                                                :],
-                                                                          force_densities_NP1[active_nodes,
-                                                                                              :],
+                                                                          -force_densities_NP1[active_nodes,
+                                                                                               :],
                                                                           external_force_densities[active_nodes,
                                                                                                    :])
 
@@ -363,10 +363,7 @@ function compute_matrix(nodes::AbstractVector{Int64})
     if length(nodes) == 0
         return Data_Manager.get_stiffness_matrix()
     end
-    Bond_Deformation.compute(nodes,
-                             Dict(),
-                             0) # not needed here
-    return Correspondence_matrix_based.compute_model(nodes)
+    Correspondence_matrix_based.compute_model(nodes)
 end
 """
 	compute_displacements!(K, non_BCs, u, F, F_temp, K_reduced, lu_fact, temp)

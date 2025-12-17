@@ -432,6 +432,7 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
         neighbors = nlist[i]
         n_neighbors = length(neighbors)
         @views D_inv_i = inverse_shape_tensor[i, :, :]
+        #
         D_inv_X[i] = [D_inv_i * bond_geometry[i][idx] for idx in 1:n_neighbors]
 
         S_matrices[i] = zeros(n_neighbors, n_neighbors)
@@ -443,7 +444,8 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
                 if bond_damage[i][q] == 0
                     continue
                 end
-                S_matrices[i][p, q] = dot(bond_geometry[i][p], D_inv_X[i][q])
+                #TODO bond geometry must be zero for some reason??
+                S_matrices[i][p, q] = 0.0 .* dot(bond_geometry[i][p], D_inv_X[i][q])
             end
         end
     end
@@ -597,6 +599,7 @@ function init_matrix()
     # using the elasticity matrix allows the introduction of heterogeneous materials
     C_voigt = Data_Manager.get_field("Elasticity Matrix")
     bond_geometry_N = Data_Manager.get_field("Deformed Bond Geometry", "N")
+    #bond_geometry_N = Data_Manager.get_field("Bond Geometry")
     bond_damage = Data_Manager.get_field("Bond Damage", "NP1")
 
     @info "Initializing stiffness matrix"
@@ -640,17 +643,20 @@ end
 
 function compute_model(nodes::AbstractVector{Int64})
     dof::Int64 = Data_Manager.get_dof()
-    C_voigt::Array{Float64,3} = Data_Manager.get_field("Elasticity Matrix")
-    inverse_shape_tensor::Array{Float64,3} = Data_Manager.get_field("Inverse Shape Tensor")
-    nlist::Vector{Vector{Int64}} = Data_Manager.get_nlist()
-    volume::Vector{Float64} = Data_Manager.get_field("Volume")
-    bond_geometry_N::Vector{Vector{Vector{Float64}}} = Data_Manager.get_field("Deformed Bond Geometry",
-                                                                              "N")
-    number_of_neighbors::Vector{Int64} = Data_Manager.get_field("Number of Neighbors")
-    omega::Vector{Vector{Float64}} = Data_Manager.get_field("Influence Function")
-    bond_damage::Vector{Vector{Float64}} = Data_Manager.get_field("Bond Damage", "NP1")
+    C_voigt::NodeTensorField{Float64,3} = Data_Manager.get_field("Elasticity Matrix")
+    inverse_shape_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Inverse Shape Tensor")
+    nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
+    volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
+    #bond_geometry_N::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
+    #                                                                   "N")
+    #
+    bond_geometry_N = Data_Manager.get_field("Bond Geometry")
+    number_of_neighbors::NodeScalarField{Int64} = Data_Manager.get_field("Number of Neighbors")
+    omega::BondScalarState{Float64} = Data_Manager.get_field("Influence Function")
+    bond_damage::BondScalarState{Float64} = Data_Manager.get_field("Bond Damage", "NP1")
 
-    zStiff = Data_Manager.get_field("Zero Energy Stiffness")
+    zStiff::NodeTensorField{Float64} = Data_Manager.get_field("Zero Energy Stiffness")
+    K_stiff = Data_Manager.get_stiffness_matrix()
     # TODO: optimize update
     index_x, index_y, vals,
     total_dof = assemble_stiffness(collect(1:Data_Manager.get_nnodes()),
@@ -669,8 +675,8 @@ function compute_model(nodes::AbstractVector{Int64})
 
     Zero_Energy_Control.create_zero_energy_mode_stiffness!(nodes, dof, C_voigt,
                                                            inverse_shape_tensor, zStiff)
-
     K_sparse = Data_Manager.get_stiffness_matrix()
+
     add_zero_energy_stiff!(K_sparse,
                            nodes,
                            dof,
@@ -682,120 +688,7 @@ function compute_model(nodes::AbstractVector{Int64})
                            bond_damage,
                            omega)
 
-    return K_sparse
-end
-
-"""
-Compute thermal forces from temperature changes.
-
-Thermal forces represent the equivalent nodal loads due to thermal expansion:
-	f_thermal = ∫ Bᵀ * sigma_thermal dV
-
-where sigma_thermal = C : ε_thermal and ε_thermal = α * ΔT * I
-
-# Arguments
-- `nodes`: Vector of node indices
-- `dof`: Degrees of freedom (2 or 3)
-- `C_Voigt`: Hooke matrix in Voigt notation [n_nodes, voigt_size, voigt_size]
-- `inverse_shape_tensor`: Inverse shape tensor [n_nodes, dof, dof]
-- `nlist`: Neighbor list for each node
-- `volume`: Volume of each node
-- `bond_geometry`: Bond vectors in reference configuration
-- `omega`: Influence function values
-- `bond_damage`: Bond damage values (0-1)
-- `alpha`: Thermal expansion coefficient (scalar or vector per node)
-- `ΔT`: Temperature change per node
-
-# Returns
-- `f_thermal`: Thermal forces [n_nodes, dof]
-"""
-function compute_thermal_forces(nodes::AbstractVector{Int64},
-                                dof::Int64,
-                                C_Voigt::Array{Float64,3},
-                                inverse_shape_tensor::Array{Float64,3},
-                                nlist::Vector{Vector{Int64}},
-                                volume::Vector{Float64},
-                                bond_geometry::Vector{Vector{Vector{Float64}}},
-                                omega::Vector{Vector{Float64}},
-                                bond_damage::Vector{Vector{Float64}},
-                                alpha::Union{Vector{Float64},Array{Float64,2}},  # Scalar or [n_nodes, dof] for anisotropic
-                                ΔT::Vector{Float64})
-    n_nodes = maximum(nodes)
-    f_thermal = zeros(Float64, n_nodes, dof)
-
-    # Voigt notation size
-    voigt_size = dof == 2 ? 3 : 6
-
-    # Check if alpha is isotropic (vector) or anisotropic (matrix)
-    is_isotropic = alpha isa Vector{Float64} && length(alpha) == n_nodes
-
-    for i in nodes
-        # Skip if no temperature change
-        if abs(ΔT[i]) < 1e-14
-            continue
-        end
-
-        # Get thermal expansion coefficient
-        if is_isotropic
-            α_i = alpha[i]
-            # Isotropic thermal strain in Voigt notation
-            if dof == 2
-                ε_th_voigt = α_i * ΔT[i] * [1.0, 1.0, 0.0]
-            else  # dof == 3
-                ε_th_voigt = α_i * ΔT[i] * [1.0, 1.0, 1.0, 0.0, 0.0, 0.0]
-            end
-        else
-            # Anisotropic thermal strain
-            α_i = alpha[i, :]
-            if dof == 2
-                ε_th_voigt = ΔT[i] * [α_i[1], α_i[2], 0.0]
-            else  # dof == 3
-                ε_th_voigt = ΔT[i] * [α_i[1], α_i[2], α_i[3], 0.0, 0.0, 0.0]
-            end
-        end
-
-        # Thermal stress in Voigt notation
-        sigma_th_voigt = C_Voigt[i, :, :] * ε_th_voigt
-
-        # Convert to tensor form for force calculation
-        sigma_th_tensor = voigt_to_tensor(sigma_th_voigt, dof)
-
-        # Get node properties
-        D_inv_i = inverse_shape_tensor[i, :, :]
-        V_i = volume[i]
-        ni = nlist[i]
-
-        # Loop over all bonds from node i
-        for (j_idx, j) in enumerate(ni)
-            if i == j
-                continue
-            end
-
-            # Bond properties
-            X_ij = bond_geometry[i][j_idx]
-            ω_ij = omega[i][j_idx] * bond_damage[i][j_idx]
-            V_j = volume[j]
-
-            # Skip if bond is broken or has no influence
-            if ω_ij < 1e-14
-                continue
-            end
-
-            # Thermal force on bond i→j
-            # Analogy to mechanical force: f = V_i * V_j * ω * sigma * (D_inv * X)
-            DX = D_inv_i * X_ij
-            sigmaDX = sigma_th_tensor * DX
-            f_ij = V_i * V_j * ω_ij * sigmaDX
-
-            # Apply forces (action-reaction)
-            for d in 1:dof
-                f_thermal[i, d] += f_ij[d]
-                f_thermal[j, d] -= f_ij[d]
-            end
-        end
-    end
-
-    return f_thermal
+    K_sparse = Data_Manager.get_stiffness_matrix()
 end
 
 """
