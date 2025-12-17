@@ -80,7 +80,13 @@ end
         end
         bond_norm[m] = sqrt(cmn)
         if bond_norm[m] == 0.0
-            @error "Initial bond length is zero, check your mesh! Node ID: $iID"
+            if count(!iszero, coor) == 0
+                @error "All bonds will get zero length, because all coordinates or deformed coordinates are zero. This might be an implementation error."
+                return 1
+            else
+                @error "Bond length is zero, check your mesh! Node ID: $iID"
+                return 2
+            end
         end
     end
 end

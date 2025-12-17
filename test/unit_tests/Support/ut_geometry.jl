@@ -199,6 +199,18 @@ end
                                     Vector(1:nnodes),
                                     nlist,
                                     coor)
+    coor[1:2, 1:2] .= 1
+    PeriLab.Geometry.calculate_bond_length!(undeformed_bond[1],
+                                            undeformed_bond_length[1],
+                                            1,
+                                            coor,
+                                            nlist[1]) == 1
+    coor .= 0
+    @test PeriLab.Geometry.calculate_bond_length!(undeformed_bond[1],
+                                                  undeformed_bond_length[1],
+                                                  1,
+                                                  coor,
+                                                  nlist[1]) == 2
 end
 
 @testset "ut_compute_left_stretch_tensor" begin
