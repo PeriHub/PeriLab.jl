@@ -1,5 +1,24 @@
 # Datamanager
-The datamanager is a central part of PeriLab. You can create fields as you need them.
+The datamanager is a central part of PeriLab. You can create fields as you need them based on the following data types.
+
+## Data types
+Specific data types are defined to simplify the headers of PeriLab functions and to make them more readable. For nodes these type are
+
+```julia
+const NodeScalarField = Vector{T} where {T<:Union{Int64,Float64,Bool}}
+const NodeVectorField = Matrix{T} where {T<:Union{Int64,Float64,Bool}}
+const NodeTensorField = Array{T,N} where {T<:Union{Int64,Float64,Bool},N}
+```
+
+and for bonds the types are given as
+
+```julia
+const BondScalarState = Vector{Vector{T}} where {T<:Union{Int64,Float64,Bool}}
+const BondVectorState = Vector{Vector{Vector{T}}} where {T<:Union{Int64,Float64,Bool}}
+const BondTensorState = Vector{Array{T,N}} where {T<:Union{Int64,Float64,Bool},N}
+```
+
+
 ## Create constant node fields
 Constant node fields are fields with the length of the number of nodes. It return one vector of type `Type_of_variable`.
 
