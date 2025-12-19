@@ -182,28 +182,28 @@ function apply_bc_dirichlet(allowed_variables::Vector{String},
             if haskey(dof_mapping, bc["Coordinate"])
                 @views field_to_apply_bc = field[bc["Node Set"],
                 dof_mapping[bc["Coordinate"]]]
-                eval_bc!(field_to_apply_bc,
-                         bc["Value"],
-                         coordinates[bc["Node Set"], :],
-                         time,
-                         step_time,
-                         dof,
-                         bc["Initial"],
-                         name)
+                bc["Value"] = eval_bc!(field_to_apply_bc,
+                                       bc["Value"],
+                                       coordinates[bc["Node Set"], :],
+                                       time,
+                                       step_time,
+                                       dof,
+                                       bc["Initial"],
+                                       name)
             else
                 @error "Coordinate in boundary condition must be x,y or z."
                 return nothing
             end
         else
             @views field_to_apply_bc = field[bc["Node Set"]]
-            eval_bc!(field_to_apply_bc,
-                     bc["Value"],
-                     coordinates[bc["Node Set"], :],
-                     time,
-                     step_time,
-                     dof,
-                     bc["Initial"],
-                     name)
+            bc["Value"] = eval_bc!(field_to_apply_bc,
+                                   bc["Value"],
+                                   coordinates[bc["Node Set"], :],
+                                   time,
+                                   step_time,
+                                   dof,
+                                   bc["Initial"],
+                                   name)
         end
     end
 end
@@ -233,30 +233,30 @@ function apply_bc_neumann(bcs::Dict, time::Float64, step_time::Float64)
             if haskey(dof_mapping, bc["Coordinate"])
                 @views field_to_apply_bc = field[bc["Node Set"],
                 dof_mapping[bc["Coordinate"]]]
-                eval_bc!(field_to_apply_bc,
-                         bc["Value"],
-                         coordinates[bc["Node Set"], :],
-                         time,
-                         step_time,
-                         dof,
-                         bc["Initial"],
-                         name,
-                         true)
+                bc["Value"] = eval_bc!(field_to_apply_bc,
+                                       bc["Value"],
+                                       coordinates[bc["Node Set"], :],
+                                       time,
+                                       step_time,
+                                       dof,
+                                       bc["Initial"],
+                                       name,
+                                       true)
             else
                 @error "Coordinate in boundary condition must be x,y or z."
                 return nothing
             end
         else
             @views field_to_apply_bc = field[bc["Node Set"]]
-            eval_bc!(field_to_apply_bc,
-                     bc["Value"],
-                     coordinates[bc["Node Set"], :],
-                     time,
-                     step_time,
-                     dof,
-                     bc["Initial"],
-                     name,
-                     true)
+            bc["Value"] = eval_bc!(field_to_apply_bc,
+                                   bc["Value"],
+                                   coordinates[bc["Node Set"], :],
+                                   time,
+                                   step_time,
+                                   dof,
+                                   bc["Initial"],
+                                   name,
+                                   true)
         end
     end
 end
@@ -345,6 +345,7 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
                                   (coordinates[:, 1], coordinates[:, 2], coordinates[:, 3],
                                    time,
                                    step_time)...)
+        bc = dynamic_bc_3D_func
     else
         func_args = [:x, :y, :t, :st]
         dynamic_func_expr = quote
@@ -352,6 +353,72 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
         end
         dynamic_2D_bc_func = Base.eval(@__MODULE__, dynamic_func_expr)
         value = Base.invokelatest(dynamic_2D_bc_func,
+                                  (coordinates[:, 1], coordinates[:, 2],
+                                   time,
+                                   step_time)...)
+        bc = dynamic_2D_bc_func
+    end
+
+    if isnothing(value) || (initial && time != 0.0)
+        return
+    end
+
+    if value isa Number
+        if neumann
+            field_values .+= value
+        else
+            fill!(field_values, value)
+        end
+    else
+        copyto!(field_values, value)
+    end
+    return bc
+end
+
+"""
+    eval_bc!(field_values::Union{NodeScalarField{Float64},NodeScalarField{Int64}}, bc::Union{Float64,Float64,Int64,String}, coordinates::Matrix{Float64}, time::Float64, dof::Int64)
+Working with if-statements
+"if t>2 0 else 20 end"
+works for scalars. If you want to evaluate a vector, please use the Julia notation as input
+"ifelse.(x .> y, 10, 20)"
+"""
+function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
+                                      NodeScalarField{Int64}},
+                  bc::Function,
+                  coordinates::Union{Matrix{Float64},Matrix{Int64}},
+                  time::Float64,
+                  step_time::Float64,
+                  dof::Int64,
+                  initial::Bool,
+                  name::String = "BC_1",
+                  neumann::Bool = false)
+    # reason for global
+    # https://stackoverflow.com/questions/60105828/julia-local-variable-not-defined-in-expression-eval
+    # the yaml input allows multiple types. But for further use this input has to be a string
+
+    if length(coordinates) == 0
+        # @warn "Ignoring boundary condition $name.\n No nodes found, check Input Deck and or Node Sets."
+        return
+    end
+
+    if dof > 2
+        #func_args = [:x, :y, :z, :t, :st]
+        #dynamic_func_expr = quote
+        #    ($(func_args...),) -> $bc_value
+        #end
+        #dynamic_bc_3D_func = Base.eval(@__MODULE__, dynamic_func_expr)
+
+        value = Base.invokelatest(bc,
+                                  (coordinates[:, 1], coordinates[:, 2], coordinates[:, 3],
+                                   time,
+                                   step_time)...)
+    else
+        #func_args = [:x, :y, :t, :st]
+        #dynamic_func_expr = quote
+        #    ($(func_args...),) -> $bc_value
+        #end
+        #dynamic_2D_bc_func = Base.eval(@__MODULE__, dynamic_func_expr)
+        value = Base.invokelatest(bc,
                                   (coordinates[:, 1], coordinates[:, 2],
                                    time,
                                    step_time)...)
@@ -370,6 +437,7 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
     else
         copyto!(field_values, value)
     end
+    return bc
 end
 
 end

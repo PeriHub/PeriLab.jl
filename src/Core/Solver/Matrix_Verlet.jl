@@ -189,10 +189,10 @@ function run_solver(solver_options::Dict{Any,Any},
                     bcs::Dict{Any,Any},
                     outputs::Dict{Int64,Dict{}},
                     result_files::Vector{Dict},
-                    synchronise_field,
-                    write_results,
-                    compute_parabolic_problems_before_model_evaluation,
-                    compute_parabolic_problems_after_model_evaluation,
+                    synchronise_field::Function,
+                    write_results::Function,
+                    compute_parabolic_problems_before_model_evaluation::Function,
+                    compute_parabolic_problems_after_model_evaluation::Function,
                     silent::Bool)
     dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["Number of Steps"]
@@ -203,17 +203,17 @@ function run_solver(solver_options::Dict{Any,Any},
     max_damage::Float64 = 0
     damage_init::Bool = false
 
-    density = Data_Manager.get_field("Density")
+    density::NodeScalarField{Float64} = Data_Manager.get_field("Density")
 
-    coor = Data_Manager.get_field("Coordinates")
+    coor::NodeVectorField{Float64} = Data_Manager.get_field("Coordinates")
 
-    active_list = Data_Manager.get_field("Active")
-    volume = Data_Manager.get_field("Volume")
+    active_list::NodeScalarField{Bool} = Data_Manager.get_field("Active")
+    volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
 
     if "Material" in solver_options["Models"]
-        external_forces = Data_Manager.get_field("External Forces")
-        external_force_densities = Data_Manager.get_field("External Force Densities")
-        a = Data_Manager.get_field("Acceleration")
+        external_forces::NodeVectorField{Float64} = Data_Manager.get_field("External Forces")
+        external_force_densities::NodeVectorField{Float64} = Data_Manager.get_field("External Force Densities")
+        a::NodeVectorField{Float64} = Data_Manager.get_field("Acceleration")
     end
 
     comm = Data_Manager.get_comm()
@@ -233,55 +233,53 @@ function run_solver(solver_options::Dict{Any,Any},
 
     @timeit "Matrix Verlet" begin
         @inbounds @fastmath for idt in iter
-            uN::Matrix{Float64} = Data_Manager.get_field("Displacements", "N")
-            uNP1::Matrix{Float64} = Data_Manager.get_field("Displacements", "NP1")
-            forces::Matrix{Float64} = Data_Manager.get_field("Forces", "NP1")
-            deformed_coorNP1::Matrix{Float64} = Data_Manager.get_field("Deformed Coordinates",
-                                                                       "NP1")
-            vN::Matrix{Float64} = Data_Manager.get_field("Velocity", "N")
-            vNP1::Matrix{Float64} = Data_Manager.get_field("Velocity", "NP1")
-            force_densities_NP1::Matrix{Float64} = Data_Manager.get_field("Force Densities",
-                                                                          "NP1")
-            active_nodes::Vector{Int64} = Data_Manager.get_field("Active Nodes")
-            active_nodes = find_active_nodes(active_list, active_nodes,
-                                             1:Data_Manager.get_nnodes())
-            apply_bc_dirichlet(["Displacements", "Forces", "Force Densities"],
-                               bcs, time,
-                               step_time)
+            @timeit "solver start" begin
+                uN::Matrix{Float64} = Data_Manager.get_field("Displacements", "N")
+                uNP1::Matrix{Float64} = Data_Manager.get_field("Displacements", "NP1")
+                forces::Matrix{Float64} = Data_Manager.get_field("Forces", "NP1")
+                deformed_coorNP1::Matrix{Float64} = Data_Manager.get_field("Deformed Coordinates",
+                                                                           "NP1")
+                vN::Matrix{Float64} = Data_Manager.get_field("Velocity", "N")
+                vNP1::Matrix{Float64} = Data_Manager.get_field("Velocity", "NP1")
+                force_densities_NP1::Matrix{Float64} = Data_Manager.get_field("Force Densities",
+                                                                              "NP1")
+                active_nodes::Vector{Int64} = Data_Manager.get_field("Active Nodes")
+                @timeit "active nodes" active_nodes=find_active_nodes(active_list,
+                                                                      active_nodes,
+                                                                      1:Data_Manager.get_nnodes())
 
-            if solver_options["Model Reduction"] != false
-                active_nodes = master_nodes
-                active_list .= false
-                active_list[Data_Manager.get_reduced_model_pd()] .= true
+                if solver_options["Model Reduction"] != false
+                    active_nodes = master_nodes
+                    active_list .= false
+                    active_list[Data_Manager.get_reduced_model_pd()] .= true
+                end
             end
+            @timeit "compute Velocity" begin
+                @views vNP1[active_nodes, :] = (1 - numerical_damping) .*
+                                               vN[active_nodes, :] .+
+                                               0.5 * dt .* a[active_nodes, :]
 
-            vNP1[active_nodes, :] = (1 - numerical_damping) .*
-                                    vN[active_nodes, :] .+
-                                    0.5 * dt .* a[active_nodes, :]
-
-            uNP1[active_nodes, :] = uN[active_nodes, :] .+
-                                    dt .* vNP1[active_nodes, :]
-
-            apply_bc_dirichlet(["Displacements", "Temperature"],
-                               bcs,
-                               time,
-                               step_time) #-> Dirichlet
-            @views deformed_coorNP1 .= coor .+ uNP1
+                @views uNP1[active_nodes, :] = uN[active_nodes, :] .+
+                                               dt .* vNP1[active_nodes, :]
+            end
+            @timeit "apply BC" apply_bc_dirichlet(["Displacements", "Temperature"],
+                                                  bcs,
+                                                  time,
+                                                  step_time) #-> Dirichlet
+            @timeit "deformed coor" @views deformed_coorNP1 .= coor .+ uNP1
             # thermal model, usw.
 
             #mul!(a[active_nodes], K[active_nodes, active_nodes], uNP1[active_nodes])
 
-            sa = size(a[active_nodes, :])
+            @timeit "sa" sa=size(a[active_nodes, :])
 
-            force_densities_NP1 .= 0.0
-
-            compute_models(block_nodes,
-                           dt,
-                           time,
-                           solver_options["Models"],
-                           synchronise_field)
+            @timeit "compute models" compute_models(block_nodes,
+                                                    dt,
+                                                    time,
+                                                    solver_options["Models"],
+                                                    synchronise_field)
             #force_densities_NP1[active_nodes, :] .*= volume[active_nodes]
-            @timeit "Force matrix computations" begin
+            @timeit "Force computations" begin
                 # check if valid if volume is different
 
                 @views fNP1 = force_densities_NP1[active_nodes, :]
@@ -289,30 +287,27 @@ function run_solver(solver_options::Dict{Any,Any},
                 #-= f_int(K,
                 #	vec(uNP1[active_nodes,
                 #		:]), sa)
-                f_int_inplace!(fNP1, temp, K, vec(uNP1[active_nodes, :]), sa)
-                fNP1 .+= external_force_densities[active_nodes,
-                                                  :] .+
-                         external_forces[active_nodes,
-                                         :] ./
-                         volume[active_nodes]
+                @timeit "Force matrix computations" f_int_inplace!(fNP1, temp, K,
+                                                                   vec(uNP1[active_nodes,
+                                                                            :]), sa)
+                @views fNP1 .+= external_force_densities[active_nodes,
+                                                         :] .+
+                                external_forces[active_nodes,
+                                                :] ./ volume[active_nodes]
+
+                @views forces[active_nodes, :] .= force_densities_NP1[active_nodes, :] .*
+                                                  volume[active_nodes]
             end
-            # @timeit "download_from_cores" Data_Manager.synch_manager(synchronise_field,
-            #                                                            "download_from_cores")
-            #println(a)
-            #@views a[active_nodes, :] = external_force_densities[active_nodes, :] .+
-            #							external_forces[active_nodes, :] ./
-            #							volume[active_nodes]
-            forces[active_nodes, :] .= force_densities_NP1[active_nodes, :] .*
-                                       volume[active_nodes]
             @timeit "Accelaration computation" begin
                 if solver_options["Model Reduction"] != false
-                    a[active_nodes, :] = reshape(M_fact \
-                                                 vec(force_densities_NP1[active_nodes, :] .*
-                                                     volume[active_nodes]),
-                                                 sa...)
+                    @views a[active_nodes, :] = reshape(M_fact \
+                                                        vec(force_densities_NP1[active_nodes,
+                                                                                :] .*
+                                                            volume[active_nodes]),
+                                                        sa...)
                 else
-                    a[active_nodes, :] = force_densities_NP1[active_nodes, :] ./
-                                         (density[active_nodes])
+                    @views a[active_nodes, :] = force_densities_NP1[active_nodes, :] ./
+                                                (density[active_nodes])
                 end
             end
             @timeit "write_results" result_files=write_results(result_files, time,
@@ -325,19 +320,20 @@ function run_solver(solver_options::Dict{Any,Any},
                 break
             end
             @timeit "switch_NP1_to_N" Data_Manager.switch_NP1_to_N()
+            @timeit "final solver steps" begin
+                time += dt
+                step_time += dt
+                Data_Manager.set_current_time(time)
 
-            time += dt
-            step_time += dt
-            Data_Manager.set_current_time(time)
+                if idt % ceil(nsteps / 100) == 0
+                    @info "Step: $idt / $(nsteps+1) [$time s]"
+                end
+                if rank == 0 && !silent
+                    set_postfix(iter, t = @sprintf("%.4e", time))
+                end
 
-            if idt % ceil(nsteps / 100) == 0
-                @info "Step: $idt / $(nsteps+1) [$time s]"
+                barrier(comm)
             end
-            if rank == 0 && !silent
-                set_postfix(iter, t = @sprintf("%.4e", time))
-            end
-
-            barrier(comm)
             #a+= + fexternal / density
         end
     end

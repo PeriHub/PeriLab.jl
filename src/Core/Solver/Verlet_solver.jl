@@ -135,7 +135,7 @@ A tuple `(nsteps, dt)` where:
 - Throws an error if the `dt` is less than or equal to zero.
 """
 function get_integration_steps(initial_time::Float64, end_time::Float64, dt::Float64)
-    if !(0<dt<1e50)
+    if !(0 < dt < 1e50)
         @error "Time step $dt [s] is not valid"
         return nothing
     end
@@ -187,10 +187,10 @@ function run_solver(solver_options::Dict{Any,Any},
                     bcs::Dict{Any,Any},
                     outputs::Dict{Int64,Dict{}},
                     result_files::Vector{Dict},
-                    synchronise_field,
-                    write_results,
-                    compute_parabolic_problems_before_model_evaluation,
-                    compute_parabolic_problems_after_model_evaluation,
+                    synchronise_field::Function,
+                    write_results::Function,
+                    compute_parabolic_problems_before_model_evaluation::Function,
+                    compute_parabolic_problems_after_model_evaluation::Function,
                     silent::Bool)
     atexit(() -> Data_Manager.set_cancel(true))
 

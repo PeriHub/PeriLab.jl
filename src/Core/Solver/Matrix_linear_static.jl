@@ -176,10 +176,10 @@ function run_solver(solver_options::Dict{Any,Any},
                     bcs::Dict{Any,Any},
                     outputs::Dict{Int64,Dict{}},
                     result_files::Vector{Dict},
-                    synchronise_field,
-                    write_results,
-                    compute_parabolic_problems_before_model_evaluation,
-                    compute_parabolic_problems_after_model_evaluation,
+                    synchronise_field::Function,
+                    write_results::Function,
+                    compute_parabolic_problems_before_model_evaluation::Function,
+                    compute_parabolic_problems_after_model_evaluation::Function,
                     silent::Bool)
     atexit(() -> Data_Manager.set_cancel(true))
 
