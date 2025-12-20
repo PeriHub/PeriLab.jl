@@ -1,7 +1,7 @@
 name = "PeriLab"
 uuid = "2ecefcea-59f0-46dd-9cfd-1d2b8cc5f112"
-authors = ["Christian Willberg <christian.willberg@dlr.de>", "Jan-Timo Hesse <jan-timo.hesse@dlr.de>"]
 version = "1.5.3"
+authors = ["Christian Willberg <christian.willberg@dlr.de>", "Jan-Timo Hesse <jan-timo.hesse@dlr.de>"]
 
 [deps]
 AbaqusReader = "bc6b9049-e460-56d6-94b4-a597b2c0390d"
@@ -67,7 +67,7 @@ LoggingExtras = "1"
 LoopVectorization = "0.12"
 MPI = "0.20"
 MPIPreferences = "0.1"
-Meshes = "0.51, 0.53, 0.54, 0.55"
+Meshes = "0.51, 0.53, 0.54, 0.55, 0.56"
 NLsolve = "4.5"
 NearestNeighbors = "0.4"
 OrderedCollections = "1"
