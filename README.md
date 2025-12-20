@@ -58,6 +58,11 @@ Welcome to `PeriLab`, a comprehensive platform for working with peridynamics, de
   PeriLab_additive      --><img align="middle" src="https://raw.githubusercontent.com/PeriHub/PeriLab.jl/main/assets/PeriLab_additive.gif" width="50%">
 </p>
 
+## Merry Christmas and a Happy new year
+
+![](https://cbrajkovich.com/wp-content/uploads/2012/12/xmas2012.png)
+
+
 ## Overview
 - [Features](#features)
 - [Documentation](#documentation)
