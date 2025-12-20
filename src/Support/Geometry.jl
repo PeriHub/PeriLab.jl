@@ -7,7 +7,7 @@ using LinearAlgebra: mul!
 using Combinatorics: levicivita
 using StaticArrays
 using Rotations
-
+using LoopVectorization: @avx, @fastmath, @simd
 using ...Data_Manager
 using ...Helpers: invert, smat, mat_mul_transpose_mat!
 
@@ -73,12 +73,14 @@ end
                                         nlist::Vector{Int64})
     @inbounds @fastmath for (m, nID) in enumerate(nlist)
         cmn = 0.0
-        @inbounds @fastmath for n in axes(coor, 2)
+        @simd for n in axes(coor, 2)
             diff = coor[nID, n] - coor[iID, n]
             bond_vectors[m][n] = diff
             cmn += diff * diff
         end
         bond_norm[m] = sqrt(cmn)
+    end
+    @inbounds for m in eachindex(bond_norm)
         if bond_norm[m] == 0.0
             if count(!iszero, coor) == 0
                 @error "All bonds will get zero length, because all coordinates or deformed coordinates are zero. This might be an implementation error."
@@ -88,7 +90,9 @@ end
             return 1
         end
     end
+    return 0
 end
+
 """
 	compute_shape_tensors!(nodes::AbstractVector{Int64}, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 
@@ -143,12 +147,6 @@ function compute_shape_tensors!(shape_tensor::NodeTensorField{Float64,3},
                                      undeformed_bond[iID],
                                      iID)
 
-        #mul!(
-        #    shape_tensor[iID, :, :],
-        #    (bond_damage[iID] .* volume[nlist[iID]] .* omega[iID] .* undeformed_bond[iID])',
-        #    undeformed_bond[iID],
-        #)
-
         @views inverse_shape_tensor[iID, :,
         :] .= invert(shape_tensor[iID, :, :],
                                                          "Shape Tensor is singular and cannot be inverted.\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds.")
@@ -168,8 +166,8 @@ function compute_shape_tensor!(shape_tensor::NodeTensorField{Float64,3},
                                undeformed_bond::BondScalarState{Float64},
                                iID::Int64)
     @inbounds @fastmath for m in axes(shape_tensor, 2), n in axes(shape_tensor, 3)
-        Cmn = zero(eltype(shape_tensor))
-        @inbounds @fastmath for k in axes(undeformed_bond, 1)
+        Cmn = zero(Float64)
+        @simd for k in axes(undeformed_bond, 1)
             Cmn += undeformed_bond[k][m] *
                    undeformed_bond[k][n] *
                    volume[k] *

@@ -310,7 +310,7 @@ works for scalars. If you want to evaluate a vector, please use the Julia notati
 function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
                                       NodeScalarField{Int64}},
                   bc::Union{Float64,Int64,String},
-                  coordinates::Union{Matrix{Float64},Matrix{Int64}},
+                  coordinates::Matrix{Float64},
                   time::Float64,
                   step_time::Float64,
                   dof::Int64,
@@ -323,9 +323,9 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
 
     if length(coordinates) == 0
         # @warn "Ignoring boundary condition $name.\n No nodes found, check Input Deck and or Node Sets."
-        return
+        return bc
     end
-
+    bc_out = bc
     bc = string(bc)
     bc = clean_up(bc)
     if dof < 2 && "z" in bc
@@ -339,28 +339,31 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
         dynamic_func_expr = quote
             ($(func_args...),) -> $bc_value
         end
+
         dynamic_bc_3D_func = Base.eval(@__MODULE__, dynamic_func_expr)
 
         value = Base.invokelatest(dynamic_bc_3D_func,
                                   (coordinates[:, 1], coordinates[:, 2], coordinates[:, 3],
                                    time,
                                    step_time)...)
-        bc = dynamic_bc_3D_func
+        bc_out = dynamic_bc_3D_func
     else
         func_args = [:x, :y, :t, :st]
         dynamic_func_expr = quote
             ($(func_args...),) -> $bc_value
         end
+
         dynamic_2D_bc_func = Base.eval(@__MODULE__, dynamic_func_expr)
+
         value = Base.invokelatest(dynamic_2D_bc_func,
                                   (coordinates[:, 1], coordinates[:, 2],
                                    time,
                                    step_time)...)
-        bc = dynamic_2D_bc_func
+        bc_out = dynamic_2D_bc_func
     end
 
     if isnothing(value) || (initial && time != 0.0)
-        return
+        return bc
     end
 
     if value isa Number
@@ -372,20 +375,18 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
     else
         copyto!(field_values, value)
     end
-    return bc
+
+    return bc_out
 end
 
 """
-    eval_bc!(field_values::Union{NodeScalarField{Float64},NodeScalarField{Int64}}, bc::Union{Float64,Float64,Int64,String}, coordinates::Matrix{Float64}, time::Float64, dof::Int64)
-Working with if-statements
-"if t>2 0 else 20 end"
-works for scalars. If you want to evaluate a vector, please use the Julia notation as input
-"ifelse.(x .> y, 10, 20)"
+    eval_bc!(field_values::Union{NodeScalarField{Float64},NodeScalarField{Int64}}, bc::Function, coordinates::Matrix{Float64}, time::Float64, dof::Int64)
+uses the already created bc function"
 """
 function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
                                       NodeScalarField{Int64}},
                   bc::Function,
-                  coordinates::Union{Matrix{Float64},Matrix{Int64}},
+                  coordinates::Matrix{Float64},
                   time::Float64,
                   step_time::Float64,
                   dof::Int64,
@@ -398,7 +399,7 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
 
     if length(coordinates) == 0
         # @warn "Ignoring boundary condition $name.\n No nodes found, check Input Deck and or Node Sets."
-        return
+        return bc
     end
 
     if dof > 2
@@ -425,7 +426,7 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
     end
 
     if isnothing(value) || (initial && time != 0.0)
-        return
+        return bc
     end
 
     if value isa Number

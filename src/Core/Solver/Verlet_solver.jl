@@ -280,6 +280,9 @@ function run_solver(solver_options::Dict{Any,Any},
                 @views deformed_coorNP1[active_nodes,
                 :] = coor[active_nodes, :] .+
                                                            uNP1[active_nodes, :]
+            else
+                deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
+                @views deformed_coorNP1[active_nodes, :] = coor[active_nodes, :]
             end
             @timeit "upload_to_cores" Data_Manager.synch_manager(synchronise_field,
                                                                  "upload_to_cores")

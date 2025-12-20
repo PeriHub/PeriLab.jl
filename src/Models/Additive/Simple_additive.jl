@@ -83,6 +83,7 @@ function compute_model(nodes::AbstractVector{Int64},
                 bond_damage[iID][jID] = 1.0
                 if haskey(inverse_nlist[neighborID], iID)
                     bond_damage[neighborID][inverse_nlist[neighborID][iID]] = 1.0
+                    #TODO inlcude bond geometry -> current bond deformation
                 end
             end
         end

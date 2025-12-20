@@ -9,7 +9,7 @@ using Meshes: Ring, Point, centroid
 #using Tensors
 using Dierckx: Spline1D, evaluate
 using ProgressBars: ProgressBar
-using LinearAlgebra: Adjoint, dot, det, norm, rank, pinv, eigvals
+using LinearAlgebra: Adjoint, dot, det, norm, pinv, eigvals
 using StaticArrays: MMatrix, MVector, SMatrix, @SMatrix, SVector, @SVector
 using LoopVectorization
 using Unitful: ustrip
@@ -748,7 +748,7 @@ function create_permutation(nnodes::Int64, dof::Int64)
     idx = 1
     for d in 1:dof
         for n in 1:nnodes
-            old_idx = (n-1)*dof + d  # Row-major: node, dann dof
+            old_idx = (n - 1) * dof + d  # Row-major: node, dann dof
             perm[idx] = old_idx
             idx += 1
         end
@@ -761,7 +761,7 @@ function create_permutation(nodes::AbstractVector{Int64}, dof::Int64)
     idx = 1
     for d in 1:dof
         for n in nodes
-            old_idx = (n-1)*dof + d  # Row-major: node, dann dof
+            old_idx = (n - 1) * dof + d  # Row-major: node, dann dof
             perm[idx] = old_idx
             idx += 1
         end
@@ -797,9 +797,9 @@ const GLOBAL_TENSOR_2D = zeros(Float64, 2, 2, 2, 2)
 const GLOBAL_TENSOR_3D = zeros(Float64, 3, 3, 3, 3)
 
 function get_fourth_order(CVoigt::AbstractMatrix{Float64}, dof::Int64)
-    if dof==2
+    if dof == 2
         return voigt_to_tensor4_2d!(GLOBAL_TENSOR_2D, CVoigt)
-    elseif dof==3
+    elseif dof == 3
         return voigt_to_tensor4_3d!(GLOBAL_TENSOR_3D, CVoigt)
     else
         @error "$dof is not a valid option. Only dof 2 and 3 are supported."
@@ -968,7 +968,7 @@ Invert a n x n matrix. Throws an error if A is singular.
 """
 function invert(A::AbstractMatrix{Float64},
                 error_message::String = "Matrix is singular")
-    if rank(A)<size(A)[1]
+    if abs(determinant(A)) < 1e-10
         #  @warn "$error_message \n - rank is $(rank(A))"
         return pinv(smat(A))
     end
