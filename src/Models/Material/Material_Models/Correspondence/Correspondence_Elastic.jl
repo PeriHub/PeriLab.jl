@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Correspondence_Elastic
-
 using .......Data_Manager
 using .....Material_Basis: get_Hooke_matrix
 using .......Helpers: get_fourth_order, fast_mul!, get_mapping
@@ -110,7 +109,14 @@ function compute_stresses(nodes::AbstractVector{Int64},
                           strain_increment::NodeTensorField{Float64},
                           stress_N::NodeTensorField{Float64},
                           stress_NP1::NodeTensorField{Float64})
-    mapping = get_mapping(dof)
+    mapping = if dof == 2
+        get_mapping(2)::SMatrix{3,2,Int64,6}
+    elseif dof == 3
+        get_mapping(3)::SMatrix{6,2,Int64,12}
+    else
+        get_mapping(dof)
+    end
+
     hooke_matrix::NodeTensorField{Float64} = Data_Manager.get_field("Elasticity Matrix")
 
     n_map = size(mapping, 1)

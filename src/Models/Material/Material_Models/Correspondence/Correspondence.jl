@@ -22,7 +22,7 @@ include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
 using ....Material_Basis: compute_Piola_Kirchhoff_stress!
 using .......Helpers: invert, rotate, determinant, smat, matrix_diff!, fast_mul!, mat_mul!
-using .......Geometry: compute_strain
+using .......Geometry: compute_strain!
 
 export init_model
 export material_name
@@ -161,7 +161,7 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
                                       time::Float64,
                                       dt::Float64)
     rotation::Bool = Data_Manager.get_rotation()
-    dof = Data_Manager.get_dof()
+    dof::Int64 = Data_Manager.get_dof()
     deformation_gradient::NodeTensorField{Float64} = Data_Manager.get_field("Deformation Gradient")
     bond_force::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
     bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
@@ -173,8 +173,10 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
     stress_N::NodeTensorField{Float64} = Data_Manager.get_field("Cauchy Stress", "N")
     stress_NP1::NodeTensorField{Float64} = Data_Manager.get_field("Cauchy Stress", "NP1")
     strain_increment::NodeTensorField{Float64} = Data_Manager.get_field("Strain Increment")
-    compute_strain(nodes, deformation_gradient, strain_NP1)
-    matrix_diff!(strain_increment, nodes, strain_NP1, strain_N)
+
+    @timeit "compute strain" compute_strain!(nodes, deformation_gradient, strain_NP1)
+    @timeit "compute matrix diff" matrix_diff!(strain_increment, nodes, strain_NP1,
+                                               strain_N)
 
     if rotation
         rotation_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Rotation Tensor")
@@ -184,7 +186,7 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
 
     # material_models = split(material_parameter["Material Model"], "+")
     # material_models = map(r -> strip(r), material_models)
-    @timeit "Calculate material" begin
+    @timeit "compute material" begin
         for material_model in Data_Manager.get_analysis_model("Correspondence Model",
                                                               block)
             mod::Module = Data_Manager.get_model_module(material_model)
@@ -201,9 +203,9 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
     end
 
     if rotation
-        stress_NP1 = rotate(nodes, stress_NP1, rotation_tensor, true)
+        rotate(nodes, stress_NP1, rotation_tensor, true)
     end
-    @timeit "Compute bond force" calculate_bond_force!(nodes,
+    @timeit "compute bond force" calculate_bond_force!(nodes,
                                                        dof,
                                                        deformation_gradient,
                                                        undeformed_bond,

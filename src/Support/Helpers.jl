@@ -15,7 +15,7 @@ using LoopVectorization
 using Unitful: ustrip
 using CDDLib
 using Polyhedra: MixedMatHRep, polyhedron, vrep, hrep
-
+using Base.Threads: @threads
 using ..Data_Manager
 
 export qdim
@@ -43,7 +43,6 @@ export fastdot
 export fast_mul!
 export mat_mul!
 export get_mapping
-export mat_mul_transpose_mat!
 export get_ring
 export get_hexagon
 export nearest_point_id
@@ -371,9 +370,8 @@ end
 function matrix_diff!(s3::AbstractArray{Float64,3}, nodes::AbstractVector{Int64},
                       s2::AbstractArray{Float64,3},
                       s1::AbstractArray{Float64,3})
-    @views @inbounds for iID in nodes
-        @inbounds @fastmath @views for m in axes(s1, 2),
-                                       n in axes(s1, 3)
+    @inbounds for iID in nodes
+        @inbounds @fastmath for m in axes(s1, 2), n in axes(s1, 3)
             s3[iID, m, n] = s2[iID, m, n] - s1[iID, m, n]
         end
     end
@@ -413,16 +411,7 @@ function mat_mul!(C::AbstractMatrix{T}, A::AbstractMatrix{T},
         C[m, n] = Cmn
     end
 end
-function mat_mul_transpose_mat!(C::AbstractMatrix{T}, A::AbstractMatrix{T},
-                                B::AbstractMatrix{T}) where {T<:Float64}
-    @inbounds @fastmath for m in axes(A, 1), n in axes(B, 2)
-        Cmn = zero(T)
-        @inbounds @fastmath for k in axes(A, 2)
-            Cmn += A[k, m] * B[k, n]
-        end
-        C[m, n] = 0.5 * Cmn
-    end
-end
+
 function add_in_place!(C::AbstractMatrix{T},
                        A::Vector{Vector{T}},
                        B::Vector{Vector{T}},

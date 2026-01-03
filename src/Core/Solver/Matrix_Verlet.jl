@@ -56,7 +56,7 @@ function init_solver(solver_options::Dict{Any,Any},
     thermal = "Thermal" in solver_options["Models"]
 
     solver_options["dt"] = compute_crititical_time_step(block_nodes, mechanical, thermal)
-
+    #solver_options["dt"] = 1e-8
     solver_options["Number of Steps"] = Int(ceil((solver_options["Final Time"] -
                                                   solver_options["Initial Time"]) /
                                                  solver_options["dt"]))

@@ -632,7 +632,7 @@ function init_matrix()
                                    inverse_shape_tensor,
                                    nlist,
                                    volume,
-                                   bond_geometry_N,
+                                   bond_geometry,
                                    bond_damage,
                                    omega)
         end

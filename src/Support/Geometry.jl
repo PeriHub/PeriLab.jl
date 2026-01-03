@@ -9,7 +9,7 @@ using StaticArrays
 using Rotations
 using LoopVectorization: @avx, @fastmath, @simd
 using ...Data_Manager
-using ...Helpers: invert, smat, mat_mul_transpose_mat!
+using ...Helpers: invert, smat
 
 export bond_geometry!
 export compute_shape_tensors!
@@ -340,7 +340,9 @@ function deformation_gradient_decomposition(nodes::Union{Base.OneTo{Int64},Vecto
 end
 
 """
-	function compute_strain(nodes::Union{Base.OneTo{Int64},Vector{Int64}, SubArray}, deformation_gradient, strain)
+	function compute_strain!(nodes::AbstractVector{Int64},
+                         deformation_gradient::NodeTensorField{Float64},
+                         strain::NodeTensorField{Float64})
 
 Calculate strains for specified nodes based on deformation gradients.
 
@@ -355,17 +357,26 @@ Calculate strains for specified nodes based on deformation gradients.
 This function iterates over the specified nodes and computes strain at each node using the given deformation gradients.
 
 """
-function compute_strain(nodes::AbstractVector{Int64},
-                        deformation_gradient::NodeTensorField{Float64},
-                        strain::NodeTensorField{Float64})
-    # https://en.wikipedia.org/wiki/Strain_(mechanics)
+function compute_strain!(nodes::AbstractVector{Int64},
+                         deformation_gradient::NodeTensorField{Float64},
+                         strain::NodeTensorField{Float64})
+    # Green-Lagrange strain: E = 0.5*(F^T*F - I)
+
     for iID in nodes
-        @views mat_mul_transpose_mat!(strain[iID, :, :],
-                                      deformation_gradient[iID, :, :],
-                                      deformation_gradient[iID, :, :])
-        if !all(deformation_gradient[iID, :, :] .== 0.0)
-            @inbounds @fastmath for m in axes(strain, 2)
-                strain[iID, m, m] -= 0.5
+        F = @view deformation_gradient[iID, :, :]
+        E = @view strain[iID, :, :]
+
+        @inbounds @fastmath for m in axes(F, 1)
+            for n in m:size(F, 2)  # n >= m
+                Cmn = m == n ? -1.0 : 0.0
+                @inbounds @fastmath for k in axes(F, 2)
+                    Cmn += F[k, m] * F[k, n]
+                end
+                E[m, n] = 0.5 * Cmn
+                # Symmetry: E[n, m] = E[m, n]
+                if m != n
+                    E[n, m] = E[m, n]
+                end
             end
         end
     end

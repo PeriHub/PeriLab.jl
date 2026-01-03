@@ -12,7 +12,7 @@ using ........Helpers:
                        find_local_neighbors, invert, rotate, determinant, smat,
                        matrix_diff!
 using ........Geometry:
-                        compute_strain,
+                        compute_strain!,
                         compute_bond_level_rotation_tensor,
                         compute_bond_level_deformation_gradient
 using ....Pre_Calculation.Pre_Bond_Associated_Correspondence: compute_weighted_volume!
@@ -269,8 +269,8 @@ function compute_bond_strain(nodes,
                              strain_N,
                              strain_increment)
     for iID in nodes
-        compute_strain(eachindex(nlist[iID]), deformation_gradient[iID],
-                       strain_NP1[iID])
+        compute_strain!(eachindex(nlist[iID]), deformation_gradient[iID],
+                        strain_NP1[iID])
         matrix_diff!(strain_increment[iID],
                      eachindex(nlist[iID]),
                      strain_NP1[iID],
