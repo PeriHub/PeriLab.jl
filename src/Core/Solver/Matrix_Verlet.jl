@@ -262,6 +262,7 @@ function run_solver(solver_options::Dict{Any,Any},
                 @views uNP1[active_nodes, :] = uN[active_nodes, :] .+
                                                dt .* vNP1[active_nodes, :]
             end
+
             @timeit "apply BC" apply_bc_dirichlet(["Displacements", "Temperature"],
                                                   bcs,
                                                   time,
@@ -337,6 +338,8 @@ function run_solver(solver_options::Dict{Any,Any},
             #a+= + fexternal / density
         end
     end
+    Data_Manager.set_current_time(time-dt)
+    return result_files
 end
 
 function f_int(K::AbstractMatrix{Float64}, u::AbstractVector{Float64},

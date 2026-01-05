@@ -403,6 +403,7 @@ function run_solver(solver_options::Dict{Any,Any},
             barrier(comm)
         end
     end
+    Data_Manager.set_current_time(time-dt)
     return result_files
 end
 
