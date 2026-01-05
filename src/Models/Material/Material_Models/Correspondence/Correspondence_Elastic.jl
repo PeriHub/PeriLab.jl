@@ -6,6 +6,7 @@ module Correspondence_Elastic
 using .......Data_Manager
 using .....Material_Basis: get_Hooke_matrix
 using .......Helpers: get_fourth_order, fast_mul!, get_mapping
+using StaticArrays: SMatrix
 export compute_stresses
 export correspondence_name
 export fe_support
