@@ -693,7 +693,7 @@ function compute_Piola_Kirchhoff_stress!(pk_stress::AbstractMatrix{Float64},
 
     mat_mul!(pk_stress,
              smat(stress),
-             invert(deformation_gradient,
+             invert(transpose(deformation_gradient),
                     "Deformation gradient is singular and cannot be inverted."))
     pk_stress .*= determinant(deformation_gradient)
     #return determinant(deformation_gradient) .* smat(stress) * invert(deformation_gradient,
