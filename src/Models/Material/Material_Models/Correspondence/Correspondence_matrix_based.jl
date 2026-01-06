@@ -643,7 +643,7 @@ end
 
 function compute_model(nodes::AbstractVector{Int64})
     dof::Int64 = Data_Manager.get_dof()
-    C_voigt::NodeTensorField{Float64,3} = Data_Manager.get_field("Elasticity Matrix")
+    C_voigt::NodeTensorField{Float64} = Data_Manager.get_field("Elasticity Matrix")
     inverse_shape_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Inverse Shape Tensor")
     nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
     volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")

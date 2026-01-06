@@ -92,7 +92,7 @@ Calculates the stresses of the material. This template has to be copied, the fil
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-- `strainInc::Union{NodeTensorField{Float64,3},Array{Float64,6}}`: Strain increment.
+- `strainInc::Union{NodeTensorField{Float64},Array{Float64,6}}`: Strain increment.
 - `stress_N::SubArray`: Stress of step N.
 - `stress_NP1::SubArray`: Stress of step N+1.
 - `iID_jID_nID::Tuple=(): (optional) are the index and node id information. The tuple is ordered iID as index of the point,  jID the index of the bond of iID and nID the neighborID.
@@ -102,6 +102,7 @@ Example:
 ```julia
 ```
 """
+
 function compute_stresses(nodes::AbstractVector{Int64},
                           dof::Int64,
                           material_parameter::Dict,
@@ -120,18 +121,20 @@ function compute_stresses(nodes::AbstractVector{Int64},
 
     hooke_matrix::NodeTensorField{Float64} = Data_Manager.get_field("Elasticity Matrix")
 
-    n_map = size(mapping, 1)
-    map_i = @view mapping[:, 1]
-    map_j = @view mapping[:, 2]
-
     @inbounds for iID in nodes
-        @fastmath for m in 1:n_map
-            i = map_i[m]
-            j = map_j[m]
-            sNP1::Float64 = stress_N[iID, i, j]
-            for k in 1:n_map
-                sNP1 += hooke_matrix[iID, m, k] * strain_increment[iID, map_i[k], map_j[k]]
+        # Schleife über alle Stress-Komponenten (Voigt-Notation)
+        for m in axes(mapping, 1)
+            i = mapping[m, 1]
+            j = mapping[m, 2]
+
+            sNP1 = stress_N[iID, i, j]
+
+            # Konstitutive Beziehung: σ_ij^(n+1) = σ_ij^n + C_ijkl * Δε_kl
+            for k in axes(mapping, 1)
+                sNP1 += hooke_matrix[iID, m, k] *
+                        strain_increment[iID, mapping[k, 1], mapping[k, 2]]
             end
+
             stress_NP1[iID, i, j] = sNP1
             if i != j
                 stress_NP1[iID, j, i] = sNP1
@@ -173,7 +176,7 @@ Calculates the stresses of a single node. Needed for FEM. This template has to b
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-- `strainInc::Union{NodeTensorField{Float64,3},Array{Float64,6}}`: Strain increment.
+- `strainInc::Union{NodeTensorField{Float64},Array{Float64,6}}`: Strain increment.
 - `stress_N::SubArray`: Stress of step N.
 - `stress_NP1::SubArray`: Stress of step N+1.
 # Returns

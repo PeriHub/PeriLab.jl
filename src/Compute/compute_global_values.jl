@@ -104,18 +104,19 @@ function calculate_block(field_key::String,
 end
 
 """
-    global_value_sum(field::Union{NodeScalarField{Float64},NodeVectorField{Float64},NodeTensorField{Float64,3}}, dof::Union{Int64,Vector{Int64}}, nodes::AbstractVector{Int64})
+    global_value_sum(field::Union{NodeScalarField{Float64},NodeVectorField{Float64},NodeTensorField{Float64}}, dof::Union{Int64,Vector{Int64}}, nodes::AbstractVector{Int64})
 
 Calculate the global sum of a field for given nodes.
 
 # Arguments
-- `field::Union{NodeScalarField{Float64},NodeVectorField{Float64},NodeTensorField{Float64,3}}`: Field.
+- `field::Union{NodeScalarField{Float64},NodeVectorField{Float64},NodeTensorField{Float64}}`: Field.
 - `dof::Union{Int64,Vector{Int64}`: Degree of freedom
 - `nodes::AbstractVector{Int64}`: Nodes.
 # Returns
 - `returnValue::Vector`: Global value.
 """
-function global_value_sum(field::Union{NodeScalarField{Float64},NodeVectorField{Float64},NodeTensorField{Float64,3}},
+function global_value_sum(field::Union{NodeScalarField{Float64},NodeVectorField{Float64},
+                                       NodeTensorField{Float64}},
                           dof::Union{Int64,Vector{Int64}},
                           nodes::AbstractVector{Int64})
     if dof isa Int64

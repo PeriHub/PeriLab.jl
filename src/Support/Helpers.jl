@@ -9,7 +9,7 @@ using Meshes: Ring, Point, centroid
 #using Tensors
 using Dierckx: Spline1D, evaluate
 using ProgressBars: ProgressBar
-using LinearAlgebra: Adjoint, dot, det, norm, pinv, eigvals
+using LinearAlgebra: Adjoint, dot, det, norm, pinv, eigvals, inv
 using StaticArrays: MMatrix, MVector, SMatrix, @SMatrix, SVector, @SVector
 using LoopVectorization
 using Unitful: ustrip
@@ -17,7 +17,7 @@ using CDDLib
 using Polyhedra: MixedMatHRep, polyhedron, vrep, hrep
 using Base.Threads: @threads
 using ..Data_Manager
-
+using TimerOutputs: @timeit
 export qdim
 export check_inf_or_nan
 export compute_geometry
@@ -955,13 +955,27 @@ Invert a n x n matrix. Throws an error if A is singular.
 # Returns
 - inverted matrix or nothing if not inverable.
 """
-function invert(A::AbstractMatrix{Float64},
+
+function invert(Ainv::AbstractMatrix{Float64}, A::AbstractMatrix{Float64},
                 error_message::String = "Matrix is singular")
-    if abs(determinant(A)) < 1e-10
-        #  @warn "$error_message \n - rank is $(rank(A))"
-        return pinv(smat(A))
+    n = size(A, 1)
+    detA::Float64 = if n == 2
+        det_2x2(A)
+    else  # n == 3
+        det_3x3(A)
     end
-    return inv(smat(A))
+
+    if abs(detA) < 1e-10
+        #  @warn "$error_message \n - rank is $(rank(A))"
+        Ainv .= pinv(smat(A))
+        return
+    end
+
+    if n == 2
+        inv_2x2_with_det!(Ainv, A, detA)
+    else
+        inv_3x3_with_det!(Ainv, A, detA)
+    end
 end
 
 function determinant(A::AbstractMatrix{Float64})
@@ -1021,6 +1035,55 @@ progress_bar_stable_type(::Val{false}, nsteps::Int64) = 1:(nsteps + 1)          
 function progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
     show_progress = rank == 0 && !silent
     return progress_bar_stable_type(Val(show_progress), nsteps)
+end
+
+using StaticArrays
+
+@inline function det_2x2(A::AbstractMatrix{Float64})
+    return A[1, 1] * A[2, 2] - A[1, 2] * A[2, 1]
+end
+
+@inline function det_3x3(A::AbstractMatrix{Float64})
+    a11, a12, a13 = A[1, 1], A[1, 2], A[1, 3]
+    a21, a22, a23 = A[2, 1], A[2, 2], A[2, 3]
+    a31, a32, a33 = A[3, 1], A[3, 2], A[3, 3]
+
+    return a11 * (a22 * a33 - a23 * a32) -
+           a12 * (a21 * a33 - a23 * a31) +
+           a13 * (a21 * a32 - a22 * a31)
+end
+
+@inline function inv_2x2_with_det!(Ainv::AbstractMatrix{Float64},
+                                   A::AbstractMatrix{Float64},
+                                   det::Float64)
+    inv_det = 1.0 / det
+    @inbounds begin
+        Ainv[1, 1] = A[2, 2] * inv_det
+        Ainv[1, 2] = -A[1, 2] * inv_det
+        Ainv[2, 1] = -A[2, 1] * inv_det
+        Ainv[2, 2] = A[1, 1] * inv_det
+    end
+end
+
+@inline function inv_3x3_with_det!(Ainv::AbstractMatrix{Float64},
+                                   A::AbstractMatrix{Float64},
+                                   det::Float64)
+    inv_det = 1.0 / det
+    @inbounds begin
+        a11, a12, a13 = A[1, 1], A[1, 2], A[1, 3]
+        a21, a22, a23 = A[2, 1], A[2, 2], A[2, 3]
+        a31, a32, a33 = A[3, 1], A[3, 2], A[3, 3]
+
+        Ainv[1, 1] = (a22 * a33 - a23 * a32) * inv_det
+        Ainv[1, 2] = (a13 * a32 - a12 * a33) * inv_det
+        Ainv[1, 3] = (a12 * a23 - a13 * a22) * inv_det
+        Ainv[2, 1] = (a23 * a31 - a21 * a33) * inv_det
+        Ainv[2, 2] = (a11 * a33 - a13 * a31) * inv_det
+        Ainv[2, 3] = (a13 * a21 - a11 * a23) * inv_det
+        Ainv[3, 1] = (a21 * a32 - a22 * a31) * inv_det
+        Ainv[3, 2] = (a12 * a31 - a11 * a32) * inv_det
+        Ainv[3, 3] = (a11 * a22 - a12 * a21) * inv_det
+    end
 end
 
 """

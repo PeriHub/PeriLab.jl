@@ -186,8 +186,9 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
     # material_models = split(material_parameter["Material Model"], "+")
     # material_models = map(r -> strip(r), material_models)
     @timeit "compute material" begin
-        for material_model in Data_Manager.get_analysis_model("Correspondence Model",
-                                                              block)
+        material_models::Vector{String} = Data_Manager.get_analysis_model("Correspondence Model",
+                                                                          block)
+        for material_model in material_models
             mod::Module = Data_Manager.get_model_module(material_model)
 
             mod.compute_stresses(nodes,
@@ -238,11 +239,11 @@ Calculate bond forces for specified nodes based on deformation gradients.
 """
 function calculate_bond_force!(nodes::AbstractVector{Int64},
                                dof::Int64,
-                               deformation_gradient::NodeTensorField{Float64,3},
+                               deformation_gradient::NodeTensorField{Float64},
                                undeformed_bond::BondVectorState{Float64},
                                bond_damage::BondScalarState{Float64},
-                               inverse_shape_tensor::NodeTensorField{Float64,3},
-                               stress_NP1::NodeTensorField{Float64,3},
+                               inverse_shape_tensor::NodeTensorField{Float64},
+                               stress_NP1::NodeTensorField{Float64},
                                bond_force::BondVectorState{Float64})
     if dof == 2
         return calculate_bond_force_2d!(bond_force,
@@ -265,49 +266,37 @@ end
 
 function calculate_bond_force_2d!(bond_force::BondVectorState{Float64},
                                   nodes::AbstractVector{Int64},
-                                  deformation_gradient::NodeTensorField{Float64,3},
+                                  deformation_gradient::NodeTensorField{Float64},
                                   undeformed_bond::BondVectorState{Float64},
                                   bond_damage::BondScalarState{Float64},
-                                  inverse_shape_tensor::NodeTensorField{Float64,3},
-                                  stress_NP1::NodeTensorField{Float64,3})
+                                  inverse_shape_tensor::NodeTensorField{Float64},
+                                  stress_NP1::NodeTensorField{Float64})
     pk11, pk12, pk21, pk22 = 0.0, 0.0, 0.0, 0.0
     t11, t12, t21, t22 = 0.0, 0.0, 0.0, 0.0
 
     @inbounds for iID in nodes
-        has_deformation = false
-        for i in 1:2, j in 1:2
-            if deformation_gradient[iID, i, j] != 0.0
-                has_deformation = true
-                break
-            end
-        end
+        F11 = deformation_gradient[iID, 1, 1]
+        F12 = deformation_gradient[iID, 1, 2]
+        F21 = deformation_gradient[iID, 2, 1]
+        F22 = deformation_gradient[iID, 2, 2]
 
-        if has_deformation
-            F11 = deformation_gradient[iID, 1, 1]
-            F12 = deformation_gradient[iID, 1, 2]
-            F21 = deformation_gradient[iID, 2, 1]
-            F22 = deformation_gradient[iID, 2, 2]
+        sigma11 = stress_NP1[iID, 1, 1]
+        sigma12 = stress_NP1[iID, 1, 2]
+        sigma21 = stress_NP1[iID, 2, 1]
+        sigma22 = stress_NP1[iID, 2, 2]
+        # optimized calculation of inverse of 2x2 matrix
+        detF = F11 * F22 - F12 * F21
+        if abs(detF) > 1e-15
+            inv_detF = 1.0 / detF
+            Finv11 = F22 * inv_detF
+            Finv12 = -F12 * inv_detF
+            Finv21 = -F21 * inv_detF
+            Finv22 = F11 * inv_detF
 
-            sigma11 = stress_NP1[iID, 1, 1]
-            sigma12 = stress_NP1[iID, 1, 2]
-            sigma21 = stress_NP1[iID, 2, 1]
-            sigma22 = stress_NP1[iID, 2, 2]
-
-            detF = F11 * F22 - F12 * F21
-            if abs(detF) > 1e-15
-                inv_detF = 1.0 / detF
-                Finv11 = F22 * inv_detF
-                Finv12 = -F12 * inv_detF
-                Finv21 = -F21 * inv_detF
-                Finv22 = F11 * inv_detF
-
-                pk11 = sigma11 * Finv11 + sigma12 * Finv21
-                pk12 = sigma11 * Finv12 + sigma12 * Finv22
-                pk21 = sigma21 * Finv11 + sigma22 * Finv21
-                pk22 = sigma21 * Finv12 + sigma22 * Finv22
-            else
-                pk11 = pk12 = pk21 = pk22 = 0.0
-            end
+            pk11 = sigma11 * Finv11 + sigma12 * Finv21
+            pk12 = sigma11 * Finv12 + sigma12 * Finv22
+            pk21 = sigma21 * Finv11 + sigma22 * Finv21
+            pk22 = sigma21 * Finv12 + sigma22 * Finv22
         else
             pk11 = pk12 = pk21 = pk22 = 0.0
         end
@@ -333,19 +322,16 @@ function calculate_bond_force_2d!(bond_force::BondVectorState{Float64},
             bond_force[iID][jID][2] = bd * (t21 * xi1 + t22 * xi2)
         end
     end
-
     return nothing
 end
 
 function calculate_bond_force_3d!(bond_force::BondVectorState{Float64},
                                   nodes::AbstractVector{Int64},
-                                  deformation_gradient::NodeTensorField{Float64,3},
+                                  deformation_gradient::NodeTensorField{Float64},
                                   undeformed_bond::BondVectorState{Float64},
                                   bond_damage::BondScalarState{Float64},
-                                  inverse_shape_tensor::NodeTensorField{Float64,3},
-                                  stress_NP1::NodeTensorField{Float64,3})
-
-    # Pre-allokierte lokale Variablen außerhalb der Schleife
+                                  inverse_shape_tensor::NodeTensorField{Float64},
+                                  stress_NP1::NodeTensorField{Float64})
     pk11, pk12, pk13 = 0.0, 0.0, 0.0
     pk21, pk22, pk23 = 0.0, 0.0, 0.0
     pk31, pk32, pk33 = 0.0, 0.0, 0.0
@@ -355,74 +341,54 @@ function calculate_bond_force_3d!(bond_force::BondVectorState{Float64},
     t31, t32, t33 = 0.0, 0.0, 0.0
 
     @inbounds for iID in nodes
-        # Prüfe auf Deformation (ohne all())
-        has_deformation = false
-        for i in 1:3, j in 1:3
-            if deformation_gradient[iID, i, j] != 0.0
-                has_deformation = true
-                break
-            end
-        end
+        F11 = deformation_gradient[iID, 1, 1]
+        F12 = deformation_gradient[iID, 1, 2]
+        F13 = deformation_gradient[iID, 1, 3]
+        F21 = deformation_gradient[iID, 2, 1]
+        F22 = deformation_gradient[iID, 2, 2]
+        F23 = deformation_gradient[iID, 2, 3]
+        F31 = deformation_gradient[iID, 3, 1]
+        F32 = deformation_gradient[iID, 3, 2]
+        F33 = deformation_gradient[iID, 3, 3]
 
-        if has_deformation
-            # Deformationsgradient laden
-            F11 = deformation_gradient[iID, 1, 1]
-            F12 = deformation_gradient[iID, 1, 2]
-            F13 = deformation_gradient[iID, 1, 3]
-            F21 = deformation_gradient[iID, 2, 1]
-            F22 = deformation_gradient[iID, 2, 2]
-            F23 = deformation_gradient[iID, 2, 3]
-            F31 = deformation_gradient[iID, 3, 1]
-            F32 = deformation_gradient[iID, 3, 2]
-            F33 = deformation_gradient[iID, 3, 3]
+        sigma11 = stress_NP1[iID, 1, 1]
+        sigma12 = stress_NP1[iID, 1, 2]
+        sigma13 = stress_NP1[iID, 1, 3]
+        sigma21 = stress_NP1[iID, 2, 1]
+        sigma22 = stress_NP1[iID, 2, 2]
+        sigma23 = stress_NP1[iID, 2, 3]
+        sigma31 = stress_NP1[iID, 3, 1]
+        sigma32 = stress_NP1[iID, 3, 2]
+        sigma33 = stress_NP1[iID, 3, 3]
 
-            # Cauchy Stress laden
-            sigma11 = stress_NP1[iID, 1, 1]
-            sigma12 = stress_NP1[iID, 1, 2]
-            sigma13 = stress_NP1[iID, 1, 3]
-            sigma21 = stress_NP1[iID, 2, 1]
-            sigma22 = stress_NP1[iID, 2, 2]
-            sigma23 = stress_NP1[iID, 2, 3]
-            sigma31 = stress_NP1[iID, 3, 1]
-            sigma32 = stress_NP1[iID, 3, 2]
-            sigma33 = stress_NP1[iID, 3, 3]
+        detF = F11 * (F22 * F33 - F23 * F32) -
+               F12 * (F21 * F33 - F23 * F31) +
+               F13 * (F21 * F32 - F22 * F31)
 
-            # Determinante von F
-            detF = F11 * (F22 * F33 - F23 * F32) -
-                   F12 * (F21 * F33 - F23 * F31) +
-                   F13 * (F21 * F32 - F22 * F31)
+        if abs(detF) > 1e-15
+            inv_detF = 1.0 / detF
 
-            if abs(detF) > 1e-15
-                inv_detF = 1.0 / detF
+            Finv11 = (F22 * F33 - F23 * F32) * inv_detF
+            Finv12 = (F13 * F32 - F12 * F33) * inv_detF
+            Finv13 = (F12 * F23 - F13 * F22) * inv_detF
+            Finv21 = (F23 * F31 - F21 * F33) * inv_detF
+            Finv22 = (F11 * F33 - F13 * F31) * inv_detF
+            Finv23 = (F13 * F21 - F11 * F23) * inv_detF
+            Finv31 = (F21 * F32 - F22 * F31) * inv_detF
+            Finv32 = (F12 * F31 - F11 * F32) * inv_detF
+            Finv33 = (F11 * F22 - F12 * F21) * inv_detF
 
-                # Inverse von F (Adjugate / det)
-                Finv11 = (F22 * F33 - F23 * F32) * inv_detF
-                Finv12 = (F13 * F32 - F12 * F33) * inv_detF
-                Finv13 = (F12 * F23 - F13 * F22) * inv_detF
-                Finv21 = (F23 * F31 - F21 * F33) * inv_detF
-                Finv22 = (F11 * F33 - F13 * F31) * inv_detF
-                Finv23 = (F13 * F21 - F11 * F23) * inv_detF
-                Finv31 = (F21 * F32 - F22 * F31) * inv_detF
-                Finv32 = (F12 * F31 - F11 * F32) * inv_detF
-                Finv33 = (F11 * F22 - F12 * F21) * inv_detF
+            pk11 = sigma11 * Finv11 + sigma12 * Finv21 + sigma13 * Finv31
+            pk12 = sigma11 * Finv12 + sigma12 * Finv22 + sigma13 * Finv32
+            pk13 = sigma11 * Finv13 + sigma12 * Finv23 + sigma13 * Finv33
 
-                # PK-Stress: P = sigma * F^(-T)
-                pk11 = sigma11 * Finv11 + sigma12 * Finv21 + sigma13 * Finv31
-                pk12 = sigma11 * Finv12 + sigma12 * Finv22 + sigma13 * Finv32
-                pk13 = sigma11 * Finv13 + sigma12 * Finv23 + sigma13 * Finv33
+            pk21 = sigma21 * Finv11 + sigma22 * Finv21 + sigma23 * Finv31
+            pk22 = sigma21 * Finv12 + sigma22 * Finv22 + sigma23 * Finv32
+            pk23 = sigma21 * Finv13 + sigma22 * Finv23 + sigma23 * Finv33
 
-                pk21 = sigma21 * Finv11 + sigma22 * Finv21 + sigma23 * Finv31
-                pk22 = sigma21 * Finv12 + sigma22 * Finv22 + sigma23 * Finv32
-                pk23 = sigma21 * Finv13 + sigma22 * Finv23 + sigma23 * Finv33
-
-                pk31 = sigma31 * Finv11 + sigma32 * Finv21 + sigma33 * Finv31
-                pk32 = sigma31 * Finv12 + sigma32 * Finv22 + sigma33 * Finv32
-                pk33 = sigma31 * Finv13 + sigma32 * Finv23 + sigma33 * Finv33
-            else
-                pk11 = pk12 = pk13 = 0.0
-                pk21 = pk22 = pk23 = 0.0
-                pk31 = pk32 = pk33 = 0.0
-            end
+            pk31 = sigma31 * Finv11 + sigma32 * Finv21 + sigma33 * Finv31
+            pk32 = sigma31 * Finv12 + sigma32 * Finv22 + sigma33 * Finv32
+            pk33 = sigma31 * Finv13 + sigma32 * Finv23 + sigma33 * Finv33
         else
             pk11 = pk12 = pk13 = 0.0
             pk21 = pk22 = pk23 = 0.0

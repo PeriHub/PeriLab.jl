@@ -10,7 +10,6 @@ using Rotations
 using LoopVectorization: @avx, @fastmath, @simd
 using ...Data_Manager
 using ...Helpers: invert, smat
-
 export bond_geometry!
 export compute_shape_tensors!
 export compute_deformation_gradients!
@@ -131,8 +130,8 @@ shape_tensor = zeros(Float64, length(nodes), dof, dof)
 inverse_shape_tensor = zeros(Float64, length(nodes), dof, dof)
 ```
 """
-function compute_shape_tensors!(shape_tensor::NodeTensorField{Float64,3},
-                                inverse_shape_tensor::NodeTensorField{Float64,3},
+function compute_shape_tensors!(shape_tensor::NodeTensorField{Float64},
+                                inverse_shape_tensor::NodeTensorField{Float64},
                                 nodes::AbstractVector{Int64},
                                 nlist::BondScalarState{Int64},
                                 volume::NodeScalarField{Float64},
@@ -147,9 +146,9 @@ function compute_shape_tensors!(shape_tensor::NodeTensorField{Float64,3},
                                      undeformed_bond[iID],
                                      iID)
 
-        @views inverse_shape_tensor[iID, :,
-        :] .= invert(shape_tensor[iID, :, :],
-                                                         "Shape Tensor is singular and cannot be inverted.\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds.")
+        @views invert(inverse_shape_tensor[iID, :,
+                                           :], shape_tensor[iID, :, :],
+                      "Shape Tensor is singular and cannot be inverted.\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds.")
     end
 end
 
@@ -159,7 +158,7 @@ end
 #
 #end
 
-function compute_shape_tensor!(shape_tensor::NodeTensorField{Float64,3},
+function compute_shape_tensor!(shape_tensor::NodeTensorField{Float64},
                                volume::AbstractVector{Float64},
                                omega::NodeScalarField{Float64},
                                bond_damage::NodeScalarField{Float64},
@@ -219,7 +218,7 @@ deformation_gradient = zeros(Float64, length(nodes), dof, dof)
 ```
 """
 
-function compute_deformation_gradients!(deformation_gradient::NodeTensorField{Float64,3},
+function compute_deformation_gradients!(deformation_gradient::NodeTensorField{Float64},
                                         nodes::AbstractVector{Int64},
                                         dof::Int64,
                                         nlist::BondScalarState{Int64},
@@ -228,7 +227,7 @@ function compute_deformation_gradients!(deformation_gradient::NodeTensorField{Fl
                                         bond_damage::BondScalarState{Float64},
                                         deformed_bond::BondVectorState{Float64},
                                         undeformed_bond::BondVectorState{Float64},
-                                        inverse_shape_tensor::NodeTensorField{Float64,3})
+                                        inverse_shape_tensor::NodeTensorField{Float64})
     if dof == 2
         temp = @MMatrix zeros(2, 2)
     else

@@ -222,8 +222,8 @@ function compute_stress_integral(nodes::AbstractVector{Int64},
                                  weighted_volume::NodeScalarField{Float64},
                                  bond_geometry::BondVectorState{Float64},
                                  bond_length::BondScalarState{Float64},
-                                 bond_stresses::BondTensorState{Float64,3},
-                                 deformation_gradient::BondTensorState{Float64,3},
+                                 bond_stresses::BondTensorState{Float64},
+                                 deformation_gradient::BondTensorState{Float64},
                                  stress_integral::Array{Float64,3})
     if dof == 2
         temp = @MMatrix zeros(2, 2)

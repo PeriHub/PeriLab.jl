@@ -2,6 +2,10 @@
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "[julia]": {
-    "editor.defaultFormatter": "julialang.language-julia"
-  }
+    "editor.defaultFormatter": "julialang.language-julia",
+    "editor.formatOnSave": true
+  },
+  "julia.enableCrashReporter": false,
+  "julia.useCustomSysimage": false,
+  "julia.NumThreads": 4
 }

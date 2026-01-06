@@ -7,7 +7,7 @@ Specific data types are defined to simplify the headers of PeriLab functions and
 ```julia
 const NodeScalarField = Vector{T} where {T<:Union{Int64,Float64,Bool}}
 const NodeVectorField = Matrix{T} where {T<:Union{Int64,Float64,Bool}}
-const NodeTensorField = Array{T,N} where {T<:Union{Int64,Float64,Bool},N}
+const NodeTensorField = Array{T,3} where {T<:Union{Int64,Float64,Bool}}
 ```
 
 and for bonds the types are given as
@@ -15,7 +15,7 @@ and for bonds the types are given as
 ```julia
 const BondScalarState = Vector{Vector{T}} where {T<:Union{Int64,Float64,Bool}}
 const BondVectorState = Vector{Vector{Vector{T}}} where {T<:Union{Int64,Float64,Bool}}
-const BondTensorState = Vector{Array{T,N}} where {T<:Union{Int64,Float64,Bool},N}
+const BondTensorState = Vector{Array{T,3}} where {T<:Union{Int64,Float64,Bool},3}
 ```
 
 
