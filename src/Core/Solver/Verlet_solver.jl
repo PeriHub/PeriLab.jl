@@ -236,7 +236,6 @@ function run_solver(solver_options::Dict{Any,Any},
                 vN = Data_Manager.get_field("Velocity", "N")
                 vNP1 = Data_Manager.get_field("Velocity", "NP1")
                 deformed_coorN = Data_Manager.get_field("Deformed Coordinates", "N")
-                forces = Data_Manager.get_field("Forces", "NP1")
             end
 
             # if "Degradation" in solver_options["Models"]
@@ -340,7 +339,7 @@ function run_solver(solver_options::Dict{Any,Any},
                                                      false)
                 end
 
-                @views forces[active_nodes, :] += external_forces[active_nodes, :]
+                @views forces[active_nodes, :] = external_forces[active_nodes, :]
                 @views force_densities[active_nodes,
                 :] += external_force_densities[active_nodes,
                                                                                     :] .+
@@ -351,8 +350,8 @@ function run_solver(solver_options::Dict{Any,Any},
                 :] = force_densities[active_nodes, :] ./
                                             density[active_nodes] # element wise
                 @views forces[active_nodes,
-                :] = force_densities[active_nodes, :] .*
-                                                 volume[active_nodes]
+                :] += force_densities[active_nodes, :] .*
+                                                  volume[active_nodes]
             end
 
             compute_parabolic_problems_after_model_evaluation(active_nodes, solver_options,

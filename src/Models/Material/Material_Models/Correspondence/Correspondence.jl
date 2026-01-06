@@ -15,8 +15,7 @@ for mod in module_list
 end
 
 using LinearAlgebra
-using StaticArrays
-using LoopVectorization
+a = using LoopVectorization
 using Rotations
 include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
@@ -262,7 +261,6 @@ function calculate_bond_force!(nodes::AbstractVector{Int64},
                                         inverse_shape_tensor,
                                         stress_NP1)
     end
-    #return bond_force
 end
 
 function calculate_bond_force_2d!(bond_force::BondVectorState{Float64},
@@ -272,32 +270,71 @@ function calculate_bond_force_2d!(bond_force::BondVectorState{Float64},
                                   bond_damage::BondScalarState{Float64},
                                   inverse_shape_tensor::NodeTensorField{Float64,3},
                                   stress_NP1::NodeTensorField{Float64,3})
-    pk_stress = MMatrix{2,2}(zeros(2, 2))
-    temp = MMatrix{2,2}(zeros(Float64, 2, 2))
-    @inbounds @fastmath for iID in nodes
-        if !all(deformation_gradient[iID, :, :] .== 0.0)
-            @views compute_Piola_Kirchhoff_stress!(pk_stress,
-                                                   SMatrix{2,2}(@views stress_NP1[iID, :,
-                                                                                  :]),
-                                                   SMatrix{2,2}(@views deformation_gradient[iID,
-                                                                                            :,
-                                                                                            :]))
-        end
-        mat_mul!(temp, SMatrix{2,2}(pk_stress),
-                 SMatrix{2,2}(@views inverse_shape_tensor[iID, :, :]))
+    pk11, pk12, pk21, pk22 = 0.0, 0.0, 0.0, 0.0
+    t11, t12, t21, t22 = 0.0, 0.0, 0.0, 0.0
 
-        @views @inbounds @fastmath for jID in axes(bond_damage[iID], 1)
-            @inbounds @fastmath for idof in 1:2
-                b_fi = Float64(0.0)
-                @inbounds @fastmath for jdof in 1:2
-                    b_fi += temp[idof, jdof] *
-                            bond_damage[iID][jID] *
-                            undeformed_bond[iID][jID][jdof]
-                end
-                bond_force[iID][jID][idof] = b_fi
+    @inbounds for iID in nodes
+        has_deformation = false
+        for i in 1:2, j in 1:2
+            if deformation_gradient[iID, i, j] != 0.0
+                has_deformation = true
+                break
             end
         end
+
+        if has_deformation
+            F11 = deformation_gradient[iID, 1, 1]
+            F12 = deformation_gradient[iID, 1, 2]
+            F21 = deformation_gradient[iID, 2, 1]
+            F22 = deformation_gradient[iID, 2, 2]
+
+            sigma11 = stress_NP1[iID, 1, 1]
+            sigma12 = stress_NP1[iID, 1, 2]
+            sigma21 = stress_NP1[iID, 2, 1]
+            sigma22 = stress_NP1[iID, 2, 2]
+
+            detF = F11 * F22 - F12 * F21
+            if abs(detF) > 1e-15
+                inv_detF = 1.0 / detF
+                Finv11 = F22 * inv_detF
+                Finv12 = -F12 * inv_detF
+                Finv21 = -F21 * inv_detF
+                Finv22 = F11 * inv_detF
+
+                pk11 = sigma11 * Finv11 + sigma12 * Finv21
+                pk12 = sigma11 * Finv12 + sigma12 * Finv22
+                pk21 = sigma21 * Finv11 + sigma22 * Finv21
+                pk22 = sigma21 * Finv12 + sigma22 * Finv22
+            else
+                pk11 = pk12 = pk21 = pk22 = 0.0
+            end
+        else
+            pk11 = pk12 = pk21 = pk22 = 0.0
+        end
+
+        # temp = pk_stress * K^(-1) (inline)
+        K11 = inverse_shape_tensor[iID, 1, 1]
+        K12 = inverse_shape_tensor[iID, 1, 2]
+        K21 = inverse_shape_tensor[iID, 2, 1]
+        K22 = inverse_shape_tensor[iID, 2, 2]
+
+        t11 = pk11 * K11 + pk12 * K21
+        t12 = pk11 * K12 + pk12 * K22
+        t21 = pk21 * K11 + pk22 * K21
+        t22 = pk21 * K12 + pk22 * K22
+
+        # Bond forces (inline)
+        @fastmath for jID in eachindex(bond_damage[iID])
+            bd = bond_damage[iID][jID]
+            xi1 = undeformed_bond[iID][jID][1]
+            xi2 = undeformed_bond[iID][jID][2]
+
+            bond_force[iID][jID][1] = bd * (t11 * xi1 + t12 * xi2)
+            bond_force[iID][jID][2] = bd * (t21 * xi1 + t22 * xi2)
+        end
     end
+
+    return nothing
 end
 
 function calculate_bond_force_3d!(bond_force::BondVectorState{Float64},
@@ -307,31 +344,128 @@ function calculate_bond_force_3d!(bond_force::BondVectorState{Float64},
                                   bond_damage::BondScalarState{Float64},
                                   inverse_shape_tensor::NodeTensorField{Float64,3},
                                   stress_NP1::NodeTensorField{Float64,3})
-    pk_stress = MMatrix{3,3}(zeros(3, 3))
-    temp = MMatrix{3,3}(zeros(Float64, 3, 3))
-    @inbounds @fastmath for iID in nodes
-        if !all(deformation_gradient[iID, :, :] .== 0.0)
-            @views compute_Piola_Kirchhoff_stress!(pk_stress,
-                                                   SMatrix{3,3}(stress_NP1[iID, :,
-                                                                           :]),
-                                                   SMatrix{3,3}(deformation_gradient[iID,
-                                                                                     :,
-                                                                                     :]))
-        end
-        mat_mul!(temp, SMatrix{3,3}(pk_stress),
-                 SMatrix{3,3}(inverse_shape_tensor[iID, :, :]))
-        @views @inbounds @fastmath for jID in axes(bond_damage[iID], 1)
-            @inbounds @fastmath for idof in 1:3
-                b_fi = Float64(0.0)
-                @inbounds @fastmath for jdof in 1:3
-                    @views b_fi += temp[idof, jdof] *
-                                   bond_damage[iID][jID] *
-                                   undeformed_bond[iID][jID][jdof]
-                end
-                bond_force[iID][jID][idof] = b_fi
+
+    # Pre-allokierte lokale Variablen außerhalb der Schleife
+    pk11, pk12, pk13 = 0.0, 0.0, 0.0
+    pk21, pk22, pk23 = 0.0, 0.0, 0.0
+    pk31, pk32, pk33 = 0.0, 0.0, 0.0
+
+    t11, t12, t13 = 0.0, 0.0, 0.0
+    t21, t22, t23 = 0.0, 0.0, 0.0
+    t31, t32, t33 = 0.0, 0.0, 0.0
+
+    @inbounds for iID in nodes
+        # Prüfe auf Deformation (ohne all())
+        has_deformation = false
+        for i in 1:3, j in 1:3
+            if deformation_gradient[iID, i, j] != 0.0
+                has_deformation = true
+                break
             end
         end
+
+        if has_deformation
+            # Deformationsgradient laden
+            F11 = deformation_gradient[iID, 1, 1]
+            F12 = deformation_gradient[iID, 1, 2]
+            F13 = deformation_gradient[iID, 1, 3]
+            F21 = deformation_gradient[iID, 2, 1]
+            F22 = deformation_gradient[iID, 2, 2]
+            F23 = deformation_gradient[iID, 2, 3]
+            F31 = deformation_gradient[iID, 3, 1]
+            F32 = deformation_gradient[iID, 3, 2]
+            F33 = deformation_gradient[iID, 3, 3]
+
+            # Cauchy Stress laden
+            sigma11 = stress_NP1[iID, 1, 1]
+            sigma12 = stress_NP1[iID, 1, 2]
+            sigma13 = stress_NP1[iID, 1, 3]
+            sigma21 = stress_NP1[iID, 2, 1]
+            sigma22 = stress_NP1[iID, 2, 2]
+            sigma23 = stress_NP1[iID, 2, 3]
+            sigma31 = stress_NP1[iID, 3, 1]
+            sigma32 = stress_NP1[iID, 3, 2]
+            sigma33 = stress_NP1[iID, 3, 3]
+
+            # Determinante von F
+            detF = F11 * (F22 * F33 - F23 * F32) -
+                   F12 * (F21 * F33 - F23 * F31) +
+                   F13 * (F21 * F32 - F22 * F31)
+
+            if abs(detF) > 1e-15
+                inv_detF = 1.0 / detF
+
+                # Inverse von F (Adjugate / det)
+                Finv11 = (F22 * F33 - F23 * F32) * inv_detF
+                Finv12 = (F13 * F32 - F12 * F33) * inv_detF
+                Finv13 = (F12 * F23 - F13 * F22) * inv_detF
+                Finv21 = (F23 * F31 - F21 * F33) * inv_detF
+                Finv22 = (F11 * F33 - F13 * F31) * inv_detF
+                Finv23 = (F13 * F21 - F11 * F23) * inv_detF
+                Finv31 = (F21 * F32 - F22 * F31) * inv_detF
+                Finv32 = (F12 * F31 - F11 * F32) * inv_detF
+                Finv33 = (F11 * F22 - F12 * F21) * inv_detF
+
+                # PK-Stress: P = sigma * F^(-T)
+                pk11 = sigma11 * Finv11 + sigma12 * Finv21 + sigma13 * Finv31
+                pk12 = sigma11 * Finv12 + sigma12 * Finv22 + sigma13 * Finv32
+                pk13 = sigma11 * Finv13 + sigma12 * Finv23 + sigma13 * Finv33
+
+                pk21 = sigma21 * Finv11 + sigma22 * Finv21 + sigma23 * Finv31
+                pk22 = sigma21 * Finv12 + sigma22 * Finv22 + sigma23 * Finv32
+                pk23 = sigma21 * Finv13 + sigma22 * Finv23 + sigma23 * Finv33
+
+                pk31 = sigma31 * Finv11 + sigma32 * Finv21 + sigma33 * Finv31
+                pk32 = sigma31 * Finv12 + sigma32 * Finv22 + sigma33 * Finv32
+                pk33 = sigma31 * Finv13 + sigma32 * Finv23 + sigma33 * Finv33
+            else
+                pk11 = pk12 = pk13 = 0.0
+                pk21 = pk22 = pk23 = 0.0
+                pk31 = pk32 = pk33 = 0.0
+            end
+        else
+            pk11 = pk12 = pk13 = 0.0
+            pk21 = pk22 = pk23 = 0.0
+            pk31 = pk32 = pk33 = 0.0
+        end
+
+        # temp = pk_stress * K^(-1) (inline)
+        K11 = inverse_shape_tensor[iID, 1, 1]
+        K12 = inverse_shape_tensor[iID, 1, 2]
+        K13 = inverse_shape_tensor[iID, 1, 3]
+        K21 = inverse_shape_tensor[iID, 2, 1]
+        K22 = inverse_shape_tensor[iID, 2, 2]
+        K23 = inverse_shape_tensor[iID, 2, 3]
+        K31 = inverse_shape_tensor[iID, 3, 1]
+        K32 = inverse_shape_tensor[iID, 3, 2]
+        K33 = inverse_shape_tensor[iID, 3, 3]
+
+        t11 = pk11 * K11 + pk12 * K21 + pk13 * K31
+        t12 = pk11 * K12 + pk12 * K22 + pk13 * K32
+        t13 = pk11 * K13 + pk12 * K23 + pk13 * K33
+
+        t21 = pk21 * K11 + pk22 * K21 + pk23 * K31
+        t22 = pk21 * K12 + pk22 * K22 + pk23 * K32
+        t23 = pk21 * K13 + pk22 * K23 + pk23 * K33
+
+        t31 = pk31 * K11 + pk32 * K21 + pk33 * K31
+        t32 = pk31 * K12 + pk32 * K22 + pk33 * K32
+        t33 = pk31 * K13 + pk32 * K23 + pk33 * K33
+
+        # Bond forces (inline)
+        @fastmath for jID in eachindex(bond_damage[iID])
+            bd = bond_damage[iID][jID]
+            xi1 = undeformed_bond[iID][jID][1]
+            xi2 = undeformed_bond[iID][jID][2]
+            xi3 = undeformed_bond[iID][jID][3]
+
+            bond_force[iID][jID][1] = bd * (t11 * xi1 + t12 * xi2 + t13 * xi3)
+            bond_force[iID][jID][2] = bd * (t21 * xi1 + t22 * xi2 + t23 * xi3)
+            bond_force[iID][jID][3] = bd * (t31 * xi1 + t32 * xi2 + t33 * xi3)
+        end
     end
+
+    return nothing
 end
 
 end

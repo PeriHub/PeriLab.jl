@@ -297,7 +297,8 @@ function run_solver(solver_options::Dict{Any,Any},
                                                 :] ./ volume[active_nodes]
 
                 @views forces[active_nodes, :] .= force_densities_NP1[active_nodes, :] .*
-                                                  volume[active_nodes]
+                                                  volume[active_nodes] +
+                                                  external_forces[active_nodes, :]
             end
             @timeit "Accelaration computation" begin
                 if solver_options["Model Reduction"] != false
