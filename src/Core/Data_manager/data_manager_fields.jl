@@ -100,7 +100,7 @@ function _get_field(name::String)::Union{Array,Nothing}
     catch
         @error "Field ''" *
                name *
-               "'' does not exist. \n - Check if it is initialized as non-constant. \n - Check if the model is not actiavated in the solver options, e.g. Pre Calculation Models: False"
+               "'' does not exist. \n - Check if it is initialized as non-constant. \n - Check if the model is not activated in the solver options, e.g. Pre Calculation Models: False"
         return nothing
     end
 end
