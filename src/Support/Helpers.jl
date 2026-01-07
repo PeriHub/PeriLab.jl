@@ -943,6 +943,15 @@ function interpol_data(x::Union{Vector{Float64},Vector{Int64},Float64,Int64},
     return evaluate(values["spl"], x)
 end
 
+function invert(A::AbstractMatrix{Float64},
+                error_message::String = "Matrix is singular")
+    if abs(det(smat(A))) < 1e-15
+        @error "$error_message "
+        return
+    end
+    return inv(smat(A))
+end
+
 """
 	invert(A::Union{Matrix{Float64},Matrix{Int64}}, error_message::String="Matrix is singular")
 

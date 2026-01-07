@@ -50,13 +50,16 @@ end
 end
 
 @testset "ut_invert" begin
+    test_inv = zeros(2, 2)
     PeriLab.Solver_Manager.Helpers.invert(zeros(Float64, 4, 4),
                                           "test Float is singular.")
 
-    @test PeriLab.Solver_Manager.Helpers.invert([1.0 0; 0 1]) == inv([1 0; 0 1])
-    @test PeriLab.Solver_Manager.Helpers.invert([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0],
-                                                "test Int is singular.") ==
-          inv([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0])
+    PeriLab.Solver_Manager.Helpers.invert(test_inv, [1.0 0; 0 1])
+    @test test_inv == inv([1 0; 0 1])
+    test_inv = zeros(3, 3)
+    PeriLab.Solver_Manager.Helpers.invert(test_inv, [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0],
+                                          "test Int is singular.")
+    @test test_inv == inv([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0])
 end
 
 @testset "ut_find_local_neighbors" begin
@@ -295,7 +298,7 @@ end
     @test PeriLab.Solver_Manager.Helpers.check_inf_or_nan(a, "a") == false
     a = NaN
     @test PeriLab.Solver_Manager.Helpers.check_inf_or_nan(a, "a")
-    a = 1/0
+    a = 1 / 0
     @test PeriLab.Solver_Manager.Helpers.check_inf_or_nan(a, "a") == true
 end
 @testset "get_matrix_style" begin

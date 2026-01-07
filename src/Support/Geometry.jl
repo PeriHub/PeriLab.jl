@@ -296,7 +296,7 @@ Therefore,
 
 """
 
-function compute_left_stretch_tensor(deformation_gradient::Matrix{Float64})
+function compute_left_stretch_tensor(deformation_gradient::AbstractMatrix{Float64})
     return sqrt(deformation_gradient * deformation_gradient')
 end
 
@@ -328,12 +328,13 @@ function deformation_gradient_decomposition(nodes::Union{Base.OneTo{Int64},Vecto
                                             rot_tensor)
     for iID in nodes
         # EQ (15) in https://doi.org/10.1016/j.ijsolstr.2008.10.029
-        rot_tensor[iID, :,
-        :] = invert(compute_left_stretch_tensor(deformation_gradient[iID,
-                                                                                        :,
-                                                                                        :]),
-                                       "Inversion of left stretch tensor fails in function deformation_gradient_decomposition.") *
-                                deformation_gradient[iID, :, :]
+        @views rot_tensor[iID, :, :] = invert(rot_tensor[iID, :,
+                                                         :],
+                                              compute_left_stretch_tensor(deformation_gradient[iID,
+                                                                                               :,
+                                                                                               :]),
+                                              "Inversion of left stretch tensor fails in function deformation_gradient_decomposition.") *
+                                       deformation_gradient[iID, :, :]
     end
     return rot_tensor
 end

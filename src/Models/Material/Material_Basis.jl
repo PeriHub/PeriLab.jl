@@ -403,7 +403,7 @@ function get_2D_Hooke_matrix(aniso_matrix::MMatrix{T}, symmetry::String,
         matrix[3, 3] = aniso_matrix[6, 6]
         return matrix
     elseif occursin("plane stress", symmetry)
-        inv_aniso = invert(aniso_matrix, "Hooke matrix not invertable")
+        invert(inv_aniso, aniso_matrix, "Hooke matrix not invertable")
         matrix = get_MMatrix(36)
         matrix[1:2, 1:2] = inv_aniso[1:2, 1:2]
         matrix[3, 1:2] = inv_aniso[6, 1:2]

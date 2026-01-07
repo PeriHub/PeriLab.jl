@@ -125,8 +125,7 @@ function calculate_stresses(block_nodes::Dict{Int64,Vector{Int64}},
                                            material_parameter["Symmetry"],
                                            Data_Manager.get_dof())
             calculate_strain(active_nodes,
-                             invert(hookeMatrix,
-                                    "Hooke matrix not invertable"))
+                             inv(hookeMatrix))
         end
     end
 end
