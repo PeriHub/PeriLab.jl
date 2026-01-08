@@ -224,18 +224,24 @@ function run_solver(solver_options::Dict{Any,Any},
     rank = Data_Manager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
     #nodes::Vector{Int64} = Vector{Int64}(1:Data_Manager.get_nnodes())
+
     @inbounds @fastmath for idt in iter
         Data_Manager.set_iteration(idt)
         @timeit "Verlet" begin
             if "Material" in solver_options["Models"]
-                uNP1 = Data_Manager.get_field("Displacements", "NP1")
-                deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
-                forces = Data_Manager.get_field("Forces", "NP1")
-                force_densities = Data_Manager.get_field("Force Densities", "NP1")
-                uN = Data_Manager.get_field("Displacements", "N")
-                vN = Data_Manager.get_field("Velocity", "N")
-                vNP1 = Data_Manager.get_field("Velocity", "NP1")
-                deformed_coorN = Data_Manager.get_field("Deformed Coordinates", "N")
+                uNP1::NodeVectorField{Float64} = Data_Manager.get_field("Displacements",
+                                                                        "NP1")
+                deformed_coorNP1::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
+                                                                                    "NP1")
+                forces::NodeVectorField{Float64} = Data_Manager.get_field("Forces",
+                                                                          "NP1")
+                force_densities::NodeVectorField{Float64} = Data_Manager.get_field("Force Densities",
+                                                                                   "NP1")
+                uN::NodeVectorField{Float64} = Data_Manager.get_field("Displacements",
+                                                                      "N")
+                vN::NodeVectorField{Float64} = Data_Manager.get_field("Velocity", "N")
+                vNP1::NodeVectorField{Float64} = Data_Manager.get_field("Velocity",
+                                                                        "NP1")
             end
 
             # if "Degradation" in solver_options["Models"]
@@ -248,19 +254,25 @@ function run_solver(solver_options::Dict{Any,Any},
                 damage = Data_Manager.get_damage("NP1")
             end
             active_nodes = Data_Manager.get_field("Active Nodes")
-            active_nodes = find_active_nodes(active_list, active_nodes,
-                                             1:Data_Manager.get_nnodes())
+            active_nodes::Vector{Int64} = find_active_nodes(active_list,
+                                                            active_nodes,
+                                                            1:Data_Manager.get_nnodes())
+
             # one step more, because of init step (time = 0)
             if "Material" in solver_options["Models"]
-                @views vNP1[active_nodes,
-                :] = (1 - numerical_damping) .*
-                                               vN[active_nodes, :] .+
-                                               0.5 * dt .* a[active_nodes, :]
+                c = 0.5 * dt
+                @. @views vNP1[active_nodes, :] = vN[active_nodes, :] +
+                                                  c * a[active_nodes, :]
+
+                # @views vNP1[active_nodes, :] .= (1 - numerical_damping) .*
+                #                                 vN[active_nodes, :] .+
+                #                                 0.5 * dt .*
+                #                                 a[active_nodes, :]
                 apply_bc_dirichlet(["Velocity"], bcs, time,
                                    step_time)
-                @views uNP1[active_nodes,
+                @. @views uNP1[active_nodes,
                 :] = uN[active_nodes, :] .+
-                                               dt .* vNP1[active_nodes, :]
+                                                  dt .* vNP1[active_nodes, :]
             end
 
             compute_parabolic_problems_before_model_evaluation(active_nodes,
@@ -276,12 +288,12 @@ function run_solver(solver_options::Dict{Any,Any},
             #needed because of optional deformation_gradient, Deformed bonds, etc.
             # all points to guarantee that the neighbors have coor as coordinates if they are not active
             if "Material" in solver_options["Models"]
-                @views deformed_coorNP1[active_nodes,
+                @. @views deformed_coorNP1[active_nodes,
                 :] = coor[active_nodes, :] .+
-                                                           uNP1[active_nodes, :]
+                                                              uNP1[active_nodes, :]
             else
                 deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
-                @views deformed_coorNP1[active_nodes, :] = coor[active_nodes, :]
+                @. @views deformed_coorNP1[active_nodes, :] = coor[active_nodes, :]
             end
             @timeit "upload_to_cores" Data_Manager.synch_manager(synchronise_field,
                                                                  "upload_to_cores")
@@ -322,15 +334,16 @@ function run_solver(solver_options::Dict{Any,Any},
                                                      active_nodes,
                                                      1:Data_Manager.get_nnodes())
 
-                    forces[active_nodes, :] += external_forces[active_nodes, :]
-                    force_densities[active_nodes,
+                    @. forces[active_nodes, :] += external_forces[active_nodes, :]
+                    @. force_densities[active_nodes,
                     :] += external_force_densities[active_nodes,
-                                                                                 :] .+
-                                                        external_forces[active_nodes, :] ./
-                                                        volume[active_nodes]
-                    a[active_nodes,
+                                                                                    :] .+
+                                                           external_forces[active_nodes,
+                                                                           :] ./
+                                                           volume[active_nodes]
+                    @. a[active_nodes,
                     :] = force_densities[active_nodes, :] ./
-                                         lumped_mass[active_nodes] # element wise
+                                            lumped_mass[active_nodes] # element wise
 
                     active_nodes = Data_Manager.get_field("Active Nodes")
                     active_nodes = find_active_nodes(fe_nodes,
@@ -339,19 +352,19 @@ function run_solver(solver_options::Dict{Any,Any},
                                                      false)
                 end
 
-                @views forces[active_nodes, :] = external_forces[active_nodes, :]
-                @views force_densities[active_nodes,
+                @. @views forces[active_nodes, :] = external_forces[active_nodes, :]
+                @. @views force_densities[active_nodes,
                 :] += external_force_densities[active_nodes,
-                                                                                    :] .+
-                                                           external_forces[active_nodes,
-                                                                           :] ./
-                                                           volume[active_nodes]
-                @views a[active_nodes,
+                                                                                       :] .+
+                                                              external_forces[active_nodes,
+                                                                              :] ./
+                                                              volume[active_nodes]
+                @. @views a[active_nodes,
                 :] = force_densities[active_nodes, :] ./
-                                            density[active_nodes] # element wise
-                @views forces[active_nodes,
+                                               density[active_nodes] # element wise
+                @. @views forces[active_nodes,
                 :] += force_densities[active_nodes, :] .*
-                                                  volume[active_nodes]
+                                                     volume[active_nodes]
             end
 
             compute_parabolic_problems_after_model_evaluation(active_nodes, solver_options,
@@ -402,7 +415,7 @@ function run_solver(solver_options::Dict{Any,Any},
             barrier(comm)
         end
     end
-    Data_Manager.set_current_time(time-dt)
+    Data_Manager.set_current_time(time - dt)
     return result_files
 end
 

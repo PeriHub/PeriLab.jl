@@ -291,9 +291,9 @@ function run_solver(solver_options::Dict{Any,Any},
 
         force_densities = Data_Manager.get_field("Force Densities", "NP1")
 
-        @views forces[active_nodes,
+        @. @views forces[active_nodes,
         :] = force_densities[active_nodes, :] .*
-                                         volume[active_nodes]
+                                            volume[active_nodes]
 
         @timeit "write_results" result_files=write_results(result_files, time,
                                                            max_damage, outputs)
@@ -311,7 +311,7 @@ function run_solver(solver_options::Dict{Any,Any},
         # end
         barrier(comm)
     end
-    Data_Manager.set_current_time(time-dt)
+    Data_Manager.set_current_time(time - dt)
     return result_files
 end
 

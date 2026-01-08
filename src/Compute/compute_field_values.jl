@@ -65,7 +65,8 @@ function calculate_von_mises_stress(nodes::AbstractVector{Int64})
     end
 end
 
-@inline function von_Mises_2d!(von_Mises_stress, stress_NP1, iID)
+@inline function von_Mises_2d!(von_Mises_stress::Vector{Float64},
+                               stress_NP1::Array{Float64,3}, iID::Int64)
     @inbounds begin
         sigma11 = stress_NP1[iID, 1, 1]
         sigma22 = stress_NP1[iID, 2, 2]
@@ -77,7 +78,8 @@ end
     end
 end
 
-@inline function von_Mises_3d!(von_Mises_stress, stress_NP1, iID)
+@inline function von_Mises_3d!(von_Mises_stress::Vector{Float64},
+                               stress_NP1::Array{Float64,3}, iID::Int64)
     @inbounds begin
         sigma11 = stress_NP1[iID, 1, 1]
         sigma22 = stress_NP1[iID, 2, 2]
@@ -145,7 +147,7 @@ function calculate_stresses(block_nodes::Dict{Int64,Vector{Int64}},
                                            material_parameter["Symmetry"],
                                            Data_Manager.get_dof())
             calculate_strain(active_nodes,
-                             inv(hookeMatrix))
+                             invert(hookeMatrix))
         end
     end
 end

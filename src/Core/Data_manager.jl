@@ -28,7 +28,7 @@ mutable struct PD_matrix
     # Konstruktor 1: Erstellt sparse_matrix aus Daten
     function PD_matrix(I::Vector{Int64}, J::Vector{Int64}, V::Vector{Float64},
                        N::Int64)
-        sparse_matrix=sparse(I, J, V, N, N)
+        sparse_matrix = sparse(I, J, V, N, N)
         new(I, J, sparse_matrix)
     end
 end
