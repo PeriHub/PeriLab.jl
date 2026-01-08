@@ -8,6 +8,7 @@ using StaticArrays: MMatrix, SMatrix
 using ..Material_Basis:
                         get_strain, get_Hooke_matrix,
                         compute_deviatoric_and_spherical_stresses
+
 """
     get_forces_from_force_density()
 
@@ -53,25 +54,44 @@ function calculate_von_mises_stress(nodes::AbstractVector{Int64})
     stress_NP1 = Data_Manager.get_field("Cauchy Stress", "NP1")
     von_Mises_stress = Data_Manager.get_field("von Mises Stress", "NP1")
 
-    for iID in nodes
-        @views von_Mises_stress[iID] = von_Mises(von_Mises_stress[iID],
-                                                 stress_NP1[iID, :, :], dof)
-    end
-end
-function von_Mises(von_Mises_stress, stress, dof)
-    # faster than putting the first loop in the second one
-    von_Mises_stress = 0
-    for i in 1:dof
-        von_Mises_stress += stress[i, i] * stress[i, i]
-    end
-    for i in 1:dof
-        for j in (i + 1):dof
-            von_Mises_stress += -stress[i, i] * stress[j, j] +
-                                3 * stress[i, j] * stress[i, j]
+    if dof == 2
+        for iID in nodes
+            von_Mises_2d!(von_Mises_stress, stress_NP1, iID)
+        end
+    else  # dof == 3
+        for iID in nodes
+            von_Mises_3d!(von_Mises_stress, stress_NP1, iID)
         end
     end
-    von_Mises_stress = sqrt(von_Mises_stress)
-    return von_Mises_stress
+end
+
+@inline function von_Mises_2d!(von_Mises_stress, stress_NP1, iID)
+    @inbounds begin
+        sigma11 = stress_NP1[iID, 1, 1]
+        sigma22 = stress_NP1[iID, 2, 2]
+        sigma12 = stress_NP1[iID, 1, 2]
+
+        vm = sigma11 * sigma11 + sigma22 * sigma22 - sigma11 * sigma22 +
+             3 * sigma12 * sigma12
+        von_Mises_stress[iID] = sqrt(vm)
+    end
+end
+
+@inline function von_Mises_3d!(von_Mises_stress, stress_NP1, iID)
+    @inbounds begin
+        sigma11 = stress_NP1[iID, 1, 1]
+        sigma22 = stress_NP1[iID, 2, 2]
+        sigma33 = stress_NP1[iID, 3, 3]
+        sigma12 = stress_NP1[iID, 1, 2]
+        sigma13 = stress_NP1[iID, 1, 3]
+        sigma23 = stress_NP1[iID, 2, 3]
+
+        vm = sigma11 * sigma11 + sigma22 * sigma22 + sigma33 * sigma33 -
+             sigma11 * sigma22 - sigma11 * sigma33 - sigma22 * sigma33 +
+             3 * (sigma12 * sigma12 + sigma13 * sigma13 + sigma23 * sigma23)
+
+        von_Mises_stress[iID] = sqrt(vm)
+    end
 end
 
 """

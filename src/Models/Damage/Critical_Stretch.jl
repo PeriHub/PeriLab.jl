@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Critical_Stretch
-
 using .....Data_Manager
 using .....Helpers: sub_in_place!, div_in_place!
 
@@ -52,13 +51,14 @@ function compute_model(nodes::AbstractVector{Int64},
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    nlist = Data_Manager.get_nlist()
-    bond_damageNP1 = Data_Manager.get_bond_damage("NP1")
-    update_list = Data_Manager.get_field("Update")
-    undeformed_bond_length = Data_Manager.get_field("Bond Length")
-    deformed_bond_length = Data_Manager.get_field("Deformed Bond Length", "NP1")
-    block_ids = Data_Manager.get_field("Block_Id")
-    temp = Data_Manager.get_field("Temporary Bond Field")
+    nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
+    bond_damageNP1::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
+    update_list::NodeScalarField{Bool} = Data_Manager.get_field("Update")
+    undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
+    deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
+                                                                            "NP1")
+    block_ids::NodeScalarField{Int64} = Data_Manager.get_field("Block_Id")
+    temp::BondScalarState{Float64} = Data_Manager.get_field("Temporary Bond Field")
     critical_field = Data_Manager.has_key("Critical_Value")
     if critical_field
         critical_stretch = Data_Manager.get_field("Critical_Value")
@@ -74,14 +74,9 @@ function compute_model(nodes::AbstractVector{Int64},
     sub_in_place!(temp, deformed_bond_length, undeformed_bond_length)
     div_in_place!(temp, temp, undeformed_bond_length)
 
-    if !critical_field
-        if !any(any(x -> x > critical_stretch, tension ? vec : abs.(vec)) for vec in temp)
-            # return if no stretch value is larger than critical_stretch
-            return
-        end
-    end
     stretch::Float64 = 0.0
     crit_stretch::Float64 = 0.0
+
     for iID in nodes
         @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
             # stretch = (deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID]) /
