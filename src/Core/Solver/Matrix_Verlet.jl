@@ -148,6 +148,7 @@ function init_solver(solver_options::Dict{Any,Any},
             # create reduced M^-1*K for linear run
             #TODO adapt for mass matrix
             density_mass = zeros(length(density) * Data_Manager.get_dof())
+            @warn "Constant mass density for model reduction is assumed."
             density_mass .= density[1]
 
             perm_pd_reduced = findall(in(perm_pd_nodes), perm_master)
@@ -178,6 +179,12 @@ function init_solver(solver_options::Dict{Any,Any},
     #end
     perm = create_permutation(Data_Manager.get_nnodes(), Data_Manager.get_dof())
     Data_Manager.set_stiffness_matrix(K[perm, perm])
+    density_mass = zeros(length(density) * Data_Manager.get_dof())
+    @warn "TBD Constant mass density for matrix modelis assumed."
+    density_mass .= density[1]
+    mass = Diagonal(density_mass)
+    perm = collect(1:(Data_Manager.get_nnodes() * Data_Manager.get_dof()))
+    Data_Manager.set_mass_matrix(lu(sparse(mass[perm, perm])))
     return
 
     # reduced matrix
@@ -219,10 +226,9 @@ function run_solver(solver_options::Dict{Any,Any},
     comm = Data_Manager.get_comm()
     rank = Data_Manager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
-
+    M_fact = Data_Manager.get_mass_matrix()
     if solver_options["Model Reduction"] != false
         master_nodes = Data_Manager.get_reduced_model_master()
-        M_fact = Data_Manager.get_mass_matrix()
         temp = zeros(length(master_nodes) * Data_Manager.get_dof())
     else
         temp = zeros(Data_Manager.get_dof() * Data_Manager.get_nnodes())
@@ -255,12 +261,12 @@ function run_solver(solver_options::Dict{Any,Any},
                 end
             end
             @timeit "compute Velocity" begin
-                @. @views vNP1[active_nodes, :] = (1 - numerical_damping) .*
-                                                  vN[active_nodes, :] .+
-                                                  0.5 * dt .* a[active_nodes, :]
+                @. @views vNP1[active_nodes, :] = (1 - numerical_damping) *
+                                                  vN[active_nodes, :] +
+                                                  0.5 * dt * a[active_nodes, :]
 
-                @. @views uNP1[active_nodes, :] = uN[active_nodes, :] .+
-                                                  dt .* vNP1[active_nodes, :]
+                @. @views uNP1[active_nodes, :] = uN[active_nodes, :] +
+                                                  dt * vNP1[active_nodes, :]
             end
 
             @timeit "apply BC" apply_bc_dirichlet(["Displacements", "Temperature"],
@@ -283,7 +289,7 @@ function run_solver(solver_options::Dict{Any,Any},
             @timeit "Force computations" begin
                 # check if valid if volume is different
 
-                @. @views fNP1 = force_densities_NP1[active_nodes, :]
+                @views fNP1 = force_densities_NP1[active_nodes, :]
 
                 #-= f_int(K,
                 #	vec(uNP1[active_nodes,
@@ -292,25 +298,20 @@ function run_solver(solver_options::Dict{Any,Any},
                                                                    vec(uNP1[active_nodes,
                                                                             :]), sa)
                 @. @views fNP1 .+= external_force_densities[active_nodes,
-                                                            :] .+
+                                                            :] +
                                    external_forces[active_nodes,
-                                                   :] ./ volume[active_nodes]
+                                                   :] / volume[active_nodes]
 
-                @. @views forces[active_nodes, :] .= force_densities_NP1[active_nodes, :] .*
+                @. @views forces[active_nodes, :] .= force_densities_NP1[active_nodes, :] *
                                                      volume[active_nodes] +
                                                      external_forces[active_nodes, :]
             end
             @timeit "Accelaration computation" begin
-                if solver_options["Model Reduction"] != false
-                    @views a[active_nodes, :] = reshape(M_fact \
-                                                        vec(force_densities_NP1[active_nodes,
-                                                                                :] .*
-                                                            volume[active_nodes]),
-                                                        sa...)
-                else
-                    @views a[active_nodes, :] = force_densities_NP1[active_nodes, :] ./
-                                                (density[active_nodes])
-                end
+                @views a[active_nodes, :] = reshape(M_fact \
+                                                    vec(force_densities_NP1[active_nodes,
+                                                                            :] .*
+                                                        volume[active_nodes]),
+                                                    sa...)
             end
             @timeit "write_results" result_files=write_results(result_files, time,
                                                                max_damage, outputs)
@@ -353,7 +354,7 @@ function f_int_inplace!(F::AbstractMatrix{Float64},
                         K::SparseMatrixCSC{Float64,Int64},
                         u::AbstractVector{Float64}, sa::Tuple{Int64,Int64})
     mul!(temp, K, u)
-    F .-= reshape(temp, sa)
+    F .= reshape(temp, sa)
 end
 
 end

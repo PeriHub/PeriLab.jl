@@ -134,6 +134,10 @@ function init_solver(solver_options::Dict{Any,Any},
     deformed_coorN .= coor
     deformed_coorNP1 .= coor
 
+    K = Data_Manager.get_stiffness_matrix()
+    perm = create_permutation(Data_Manager.get_nnodes(), Data_Manager.get_dof())
+    Data_Manager.set_stiffness_matrix(K[perm, perm])
+
     ### for coupled thermal analysis
 
     #critical_time_step::Float64 = 1.0e50
@@ -221,6 +225,8 @@ function run_solver(solver_options::Dict{Any,Any},
     active_nodes = find_active_nodes(active_list, active_nodes,
                                      nodes)
     K = Data_Manager.get_stiffness_matrix()
+
+    displacement_solver_cache = DisplacementSolverCache(Data_Manager.get_nnodes() * dof)
     for idt in iter
         Data_Manager.set_iteration(idt)
         @timeit "Linear Static" begin
@@ -263,7 +269,7 @@ function run_solver(solver_options::Dict{Any,Any},
                                time,
                                step_time)
 
-            external_force_densities .= external_forces ./ volume # it must be delta external forces
+            @. external_force_densities = external_forces / volume # it must be delta external forces
 
             @timeit "compute_models" compute_stiff_matrix_compatible_models(block_nodes,
                                                                             dt,
@@ -282,20 +288,22 @@ function run_solver(solver_options::Dict{Any,Any},
             K = Data_Manager.get_stiffness_matrix()
 
             #@views external_force_densities[active_nodes, :] += force_densities_NP1[active_nodes, :]
-            perm = create_permutation(active_nodes, Data_Manager.get_dof()) # only active node dofs are there
+            active_dofs::Vector{Int64} = get_active_dof(active_nodes,
+                                                        Data_Manager.get_dof(),
+                                                        Data_Manager.get_nnodes())
+            active_non_BCS::Vector{Int64} = filter_and_map_bc(non_BCs, active_dofs)
 
-            filtered_perm = filter_and_map_bc(non_BCs, active_nodes, dof,
-                                              Data_Manager.get_nnodes())
-
-            #  @info (filtered_perm)
-            @timeit "compute_displacements" @views compute_displacements!(K[perm, perm],
-                                                                          filtered_perm,
+            # - force_densities_NP1 because the internal forces come from thermal analysis. For static cases they are zero
+            @timeit "compute_displacements" @views compute_displacements!(K,                                      # Volle K-Matrix
+                                                                          active_dofs,                            # z.B. DOFs entsprechend active_nodes
+                                                                          active_non_BCS,                         # Lokal indexiert
                                                                           uNP1[active_nodes,
                                                                                :],
                                                                           -force_densities_NP1[active_nodes,
                                                                                                :],
                                                                           external_force_densities[active_nodes,
-                                                                                                   :])
+                                                                                                   :],
+                                                                          displacement_solver_cache)
 
             active_nodes = Data_Manager.get_field("Active Nodes")
             active_list = Data_Manager.get_field("Active")
@@ -307,11 +315,11 @@ function run_solver(solver_options::Dict{Any,Any},
                                                               dt)
 
             for iID in nodes
-                @views forces[iID, :] .= force_densities_NP1[iID, :] .* volume[iID]
+                @. @views forces[iID, :] = force_densities_NP1[iID, :] * volume[iID]
             end
 
-            velocities .= (uNP1 - uN) ./ dt
-            @views deformed_coorNP1 .= coor .+ uNP1
+            @. velocities = (uNP1 - uN) / dt
+            @. @views deformed_coorNP1 = coor + uNP1
 
             # @timeit "download_from_cores" Data_Manager.synch_manager(synchronise_field,
             #                                                            "download_from_cores")
@@ -343,21 +351,22 @@ function run_solver(solver_options::Dict{Any,Any},
             barrier(comm)
         end
     end
-    Data_Manager.set_current_time(time-dt)
+    Data_Manager.set_current_time(time - dt)
     return result_files
 end
 
-function filter_and_map_bc(non_BCs, active_nodes, dof, nnodes::Int64)
-    filtered = []
-    for i in eachindex(active_nodes)
+function get_active_dof(active_nodes, dof, nnodes)
+    active_dofs = []
+    for iD in active_nodes
         for j in 1:dof
-            if active_nodes[i] + (j - 1) * nnodes in non_BCs
-                push!(filtered, i + (j - 1) * length(active_nodes))
-            end
+            push!(active_dofs, j + (iD - 1) * dof)
         end
     end
+    return active_dofs
+end
 
-    return filtered
+function filter_and_map_bc(non_BCs, active_dof)
+    return intersect(non_BCs, active_dof)
 end
 
 function compute_matrix(nodes::AbstractVector{Int64})
@@ -365,7 +374,32 @@ function compute_matrix(nodes::AbstractVector{Int64})
         return Data_Manager.get_stiffness_matrix()
     end
     Correspondence_matrix_based.compute_model(nodes)
+    K = Data_Manager.get_stiffness_matrix()
+    perm = create_permutation(Data_Manager.get_nnodes(), Data_Manager.get_dof())
+    Data_Manager.set_stiffness_matrix(K[perm, perm])
 end
+
+mutable struct DisplacementSolverCache
+    # Workspace
+    F_modified::Vector{Float64}
+    bc_mask::BitVector
+    temp::Vector{Float64}
+    u_free::Vector{Float64}
+
+    # LU cache
+    K_free_lu::Union{Nothing,Any}
+    last_non_BCs::Vector{Int}
+
+    # Active DOFs cache
+    K_active_cached::Union{Nothing,AbstractMatrix{Float64}}
+    last_active_dofs::Vector{Int}
+
+    function DisplacementSolverCache(n_total::Int)
+        new(Float64[], BitVector(undef, n_total), Float64[], Float64[],
+            nothing, Int[], nothing, Int[])
+    end
+end
+
 """
 	compute_displacements!(K, non_BCs, u, F, F_temp, K_reduced, lu_fact, temp)
 
@@ -380,33 +414,62 @@ Arguments:
 - F_temp: Temporary force vector (pre-allocated)
 
 """
-function compute_displacements!(K::AbstractMatrix{Float64},
-                                non_BCs,
-                                u::AbstractMatrix{Float64},
-                                F_int::AbstractMatrix{Float64},
-                                F_ext::AbstractMatrix{Float64})
+function compute_displacements!(K::AbstractMatrix{Float64},           # VOLLE K-Matrix
+                                active_dofs::AbstractVector{Int64},     # Aktive DOFs
+                                active_non_BCS::AbstractVector{Int64},  # Non-BC DOFs (lokal indexiert)
+                                u_active::AbstractMatrix{Float64},
+                                F_int_active::AbstractMatrix{Float64},
+                                F_ext_active::AbstractMatrix{Float64},
+                                solver::DisplacementSolverCache)
+    isempty(active_non_BCS) && return nothing
 
-    # Get BC DOFs
-    BCs = setdiff(1:length(vec(u)), non_BCs)
+    u_vec = vec(u_active)
+    F_int_vec = vec(F_int_active)
+    F_ext_vec = vec(F_ext_active)
+    n_total = length(u_vec)
+    n_free = length(active_non_BCS)
 
-    # 1. Total force on free DOFs (external + internal/thermal)
-    # @views F_total = vec(F_ext) .- vec(F_int)
-    # 2. Force contribution from prescribed displacements
-    # TODO must be optimized
+    length(solver.F_modified) != n_free && resize!(solver.F_modified, n_free)
+    length(solver.bc_mask) != n_total && resize!(solver.bc_mask, n_total)
 
-    if isempty(non_BCs)
-        return nothing
+    has_BCs = n_free < n_total
+
+    if has_BCs
+        fill!(solver.bc_mask, true)
+        @inbounds for i in active_non_BCS
+            solver.bc_mask[i] = false
+        end
+
+        K_sub = K_active[active_non_BCS, solver.bc_mask]
+        u_bc = @view u_vec[solver.bc_mask]
+
+        length(solver.temp) != n_free && resize!(solver.temp, n_free)
+        mul!(solver.temp, K_sub, u_bc)
+
+        @inbounds for (idx, i) in enumerate(active_non_BCS)
+            F_int_vec[i] += solver.temp[idx]
+        end
     end
-    if !isempty(BCs)
-        F_int[non_BCs] += K[non_BCs, BCs] * vec(u)[BCs]
-        # else
-        #     F_from_BCs = zeros(length(non_BCs))
+
+    @inbounds for (idx, i) in enumerate(active_non_BCS)
+        solver.F_modified[idx] = F_ext_vec[i] - F_int_vec[i]
     end
-    # 3. Modified force: F_total - K_fb * u_b
-    F_modified = F_ext[non_BCs] .- F_int[non_BCs]
-    #@info non_BCs
-    # 4. Solve for free DOFs
-    @views vec(u)[non_BCs] .= K[non_BCs, non_BCs] \ F_modified
+
+    if solver.K_free_lu === nothing || solver.last_non_BCs != active_non_BCS
+        @timeit "LU factorization" begin
+            K_free = K_active[active_non_BCS, active_non_BCS]
+            solver.K_free_lu = lu(K_free)
+            solver.last_non_BCs = copy(active_non_BCS)
+        end
+    end
+
+    length(solver.u_free) != n_free && resize!(solver.u_free, n_free)
+
+    @timeit "ldiv" ldiv!(solver.u_free, solver.K_free_lu, solver.F_modified)
+
+    @inbounds for (idx, i) in enumerate(active_non_BCS)
+        u_vec[i] = solver.u_free[idx]
+    end
 
     return nothing
 end
