@@ -408,9 +408,6 @@ end
         V[start_idx + (j - 1) * dof + i - 1] += scale * block[i, j]
     end
 end
-
-# [Include all other functions from working version]
-
 function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
                                 active_nodes::AbstractVector{Int64},
                                 dof::Int64,
@@ -424,112 +421,98 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
     I_indices = Int[]
     J_indices = Int[]
     values = Float64[]
-    # TODO: not very memory efficient
-    S_matrices = Vector{Matrix{Float64}}(undef, maximum(active_nodes))
-    D_inv_X = Vector{Vector{Vector{Float64}}}(undef, maximum(active_nodes))
 
-    for i in active_nodes
+    # Pre-compute α_ipj = ω_ip * V_p * (X_ip^T * D_i^{-1} * X_ij)
+    alpha_matrices = Vector{Matrix{Float64}}(undef, maximum(active_nodes))
+
+    # 1. Compute all α coefficients
+    @inbounds for i in active_nodes
         neighbors = nlist[i]
         n_neighbors = length(neighbors)
-        @views D_inv_i = inverse_shape_tensor[i, :, :]
-        #
-        D_inv_X[i] = [D_inv_i * bond_geometry[i][idx] for idx in 1:n_neighbors]
+        D_inv_i = @view inverse_shape_tensor[i, :, :]
 
-        S_matrices[i] = zeros(n_neighbors, n_neighbors)
-        for p in 1:n_neighbors
-            if bond_damage[i][p] == 0
+        # Pre-compute D^{-1} * X_iq for all bonds
+        D_inv_X = [D_inv_i * bond_geometry[i][q_idx] for q_idx in 1:n_neighbors]
+
+        alpha_matrices[i] = zeros(n_neighbors, n_neighbors)
+
+        for p_idx in 1:n_neighbors
+            if bond_damage[i][p_idx] == 0.0
                 continue
             end
-            for q in 1:n_neighbors
-                if bond_damage[i][q] == 0
-                    continue
-                end
-                #TODO bond geometry must be zero for some reason??
-                S_matrices[i][p, q] = 0.0 .* dot(bond_geometry[i][p], D_inv_X[i][q])
+
+            p = neighbors[p_idx]
+            V_p = volume[p]
+            ω_ip = omega[i][p_idx] * bond_damage[i][p_idx]
+
+            for q_idx in 1:n_neighbors
+                # α_ipj = ω_ip * V_p * (X_ip^T * D_i^{-1} * X_ij)
+                alpha_matrices[i][p_idx, q_idx] = ω_ip * V_p *
+                                                  dot(bond_geometry[i][p_idx],
+                                                      D_inv_X[q_idx])
             end
         end
     end
 
-    for i in active_nodes
+    # 2. Assemble stiffness matrix
+    @inbounds for i in active_nodes
         neighbors = nlist[i]
-        @views Z_i = zStiff[i, :, :]
-        V_i = volume[i]
+        Z_i = @view zStiff[i, :, :]
 
         for (idx_j, j) in enumerate(neighbors)
-            scalar_sum_j = 0.0
-            for idx_k in eachindex(neighbors)
-                k = neighbors[idx_k]
-                scalar_sum_j += omega[i][idx_k] * bond_damage[i][idx_k] * volume[k] *
-                                S_matrices[i][idx_k, idx_j]
+            if bond_damage[i][idx_j] == 0.0
+                continue
             end
 
-            K_ji = -V_i * (1.0 - scalar_sum_j) * Z_i
-            add_block_to_coo!(I_indices, J_indices, values, K_ji, j, i, dof)
+            ω_ij = omega[i][idx_j] * bond_damage[i][idx_j]
 
-            for (idx_k, k) in enumerate(neighbors)
-                if k == j
+            # K^S_ij = ω_ij * Z_i * (1 - α_ijj) - Σ_{p≠j} ω_ip * Z_i * α_ijp
+
+            # First term: ω_ij * Z_i * (1 - α_ijj)
+            α_ijj = alpha_matrices[i][idx_j, idx_j]
+            K_ij = ω_ij * (1.0 - α_ijj) * Z_i
+
+            # Second term: subtract contributions from other neighbors
+            for (idx_p, p) in enumerate(neighbors)
+                if idx_p == idx_j || bond_damage[i][idx_p] == 0.0
                     continue
                 end
 
-                s_value = omega[i][idx_k] * bond_damage[i][idx_k] * volume[k] *
-                          S_matrices[i][idx_k, idx_j]
-                K_jk = -V_i * s_value * Z_i
-                add_block_to_coo!(I_indices, J_indices, values, K_jk, j, k, dof)
+                ω_ip = omega[i][idx_p] * bond_damage[i][idx_p]
+                α_ijp = alpha_matrices[i][idx_j, idx_p]
+
+                K_ij .-= ω_ip * α_ijp * Z_i
             end
+
+            add_block_to_coo!(I_indices, J_indices, values, K_ij, i, j, dof)
         end
     end
 
-    for i in active_nodes
-        neighbors = nlist[i]
-        @views Z_i = zStiff[i, :, :]
-        V_i = volume[i]
-
-        for (idx_j, j) in enumerate(neighbors)
-            K_ij_total = zeros(dof, dof)
-
-            for (idx_bond, bond_node) in enumerate(neighbors)
-                if idx_bond == idx_j
-                    s_jj = S_matrices[i][idx_j, idx_j]
-                    K_ij_total .-= V_i *
-                                   (1.0 -
-                                    omega[i][idx_j] * bond_damage[i][idx_j] * volume[j] *
-                                    s_jj) * Z_i
-                else
-                    s_kj = S_matrices[i][idx_bond, idx_j]
-                    K_ij_total .+= V_i * omega[i][idx_j] * bond_damage[i][idx_j] *
-                                   volume[j] * s_kj * Z_i
-                end
-            end
-
-            add_block_to_coo!(I_indices, J_indices, values, K_ij_total, i, j, dof)
-        end
-    end
-
+    # 3. Build sparse matrix from COO format
     K_stab = sparse(I_indices, J_indices, values, size(K)...)
 
-    for i in active_nodes
+    # 4. Compute diagonal terms to ensure equilibrium
+    @inbounds for i in active_nodes
         K_ii_block = zeros(dof, dof)
 
         for d1 in 1:dof
             row = (i - 1) * dof + d1
-            for j in active_nodes
-                if i != j
-                    for d2 in 1:dof
-                        col = (j - 1) * dof + d2
-                        K_ii_block[d1, d2] -= K_stab[row, col]
-                    end
+            for j in 1:size(K_stab, 2)
+                if div(j - 1, dof) + 1 != i  # if column node != i
+                    K_ii_block[d1, (j - 1) % dof + 1] -= K_stab[row, j]
                 end
             end
         end
 
-        for d1 in 1:dof
-            for d2 in 1:dof
-                row = (i - 1) * dof + d1
-                col = (i - 1) * dof + d2
-                K[row, col] += K_ii_block[d1, d2]
-            end
+        # Add diagonal block to K
+        for d1 in 1:dof, d2 in 1:dof
+            row = (i - 1) * dof + d1
+            col = (i - 1) * dof + d2
+            K[row, col] += K_ii_block[d1, d2]
         end
     end
+
+    # 5. Add off-diagonal stabilization terms
     K .+= K_stab
 
     return nothing

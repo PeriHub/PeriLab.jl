@@ -255,12 +255,12 @@ function run_solver(solver_options::Dict{Any,Any},
                 end
             end
             @timeit "compute Velocity" begin
-                @. @views vNP1[active_nodes, :] = (1 - numerical_damping) .*
-                                                  vN[active_nodes, :] .+
-                                                  0.5 * dt .* a[active_nodes, :]
+                @. @views vNP1[active_nodes, :] = (1 - numerical_damping) *
+                                                  vN[active_nodes, :] +
+                                                  0.5 * dt * a[active_nodes, :]
 
-                @. @views uNP1[active_nodes, :] = uN[active_nodes, :] .+
-                                                  dt .* vNP1[active_nodes, :]
+                @. @views uNP1[active_nodes, :] = uN[active_nodes, :] +
+                                                  dt * vNP1[active_nodes, :]
             end
 
             @timeit "apply BC" apply_bc_dirichlet(["Displacements", "Temperature"],
@@ -283,7 +283,7 @@ function run_solver(solver_options::Dict{Any,Any},
             @timeit "Force computations" begin
                 # check if valid if volume is different
 
-                @. @views fNP1 = force_densities_NP1[active_nodes, :]
+                @views fNP1 = force_densities_NP1[active_nodes, :]
 
                 #-= f_int(K,
                 #	vec(uNP1[active_nodes,
@@ -292,11 +292,11 @@ function run_solver(solver_options::Dict{Any,Any},
                                                                    vec(uNP1[active_nodes,
                                                                             :]), sa)
                 @. @views fNP1 .+= external_force_densities[active_nodes,
-                                                            :] .+
+                                                            :] +
                                    external_forces[active_nodes,
-                                                   :] ./ volume[active_nodes]
+                                                   :] / volume[active_nodes]
 
-                @. @views forces[active_nodes, :] .= force_densities_NP1[active_nodes, :] .*
+                @. @views forces[active_nodes, :] .= force_densities_NP1[active_nodes, :] *
                                                      volume[active_nodes] +
                                                      external_forces[active_nodes, :]
             end

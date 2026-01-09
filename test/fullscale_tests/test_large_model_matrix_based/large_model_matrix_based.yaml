@@ -1,0 +1,124 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Input Mesh File: Dogbone.txt
+    Node Sets:
+      Node Set 1: ns_Dogbone_1.txt
+      Node Set 2: ns_Dogbone_2.txt
+    Type: Text File
+  Models:
+    Pre Calculation Global:
+      Deformed Bond Geometry: true
+      Deformation Gradient: false
+      Shape Tensor: false
+      Bond Associated Deformation Gradient: false
+    Material Models:
+      PMMA:
+        Material Model: "Correspondence Elastic"
+        Symmetry: "isotropic plane stress"
+        Young's Modulus: 7.0e+5
+        Poisson's Ratio: 0.33
+        Zero Energy Control: "Global"
+    Damage Models:
+      Damage:
+        Critical Value: 0.00003
+        Damage Model: Critical Stretch
+  Boundary Conditions:
+    BC_1:
+      Coordinate: x
+      Node Set: Node Set 1
+      Variable: Displacements
+      Value: 0.0
+      Type: Dirichlet
+    BC_2:
+      Coordinate: x
+      Node Set: Node Set 2
+      Variable: Displacements
+      Value: 4.5*t
+      Type: Dirichlet
+    BC_3:
+      Coordinate: y
+      Node Set: Node Set 1
+      Variable: Displacements
+      Value: 0
+      Type: Dirichlet
+    BC_4:
+      Coordinate: y
+      Node Set: Node Set 2
+      Variable: Displacements
+      Value: 0
+      Type: Dirichlet
+  Blocks:
+    block_1:
+      Block ID: 1
+      Density: 1.4e-8
+      Horizon: 0.211
+      Material Model: PMMA
+    block_2:
+      Block ID: 2
+      Density: 1.4e-8
+      Horizon: 0.211
+      Material Model: PMMA
+    block_3:
+      Block ID: 3
+      Density: 1.4e-8
+      Horizon: 0.211
+      Material Model: PMMA
+      Damage Model: Damage
+    block_4:
+      Block ID: 4
+      Density: 1.4e-8
+      Horizon: 0.211
+      Material Model: PMMA
+    block_5:
+      Block ID: 5
+      Density: 1.4e-8
+      Horizon: 0.211
+      Material Model: PMMA
+    block_6:
+      Block ID: 6
+      Density: 1.4e-8
+      Horizon: 0.211
+      Material Model: PMMA
+    block_7:
+      Block ID: 7
+      Density: 1.4e-8
+      Horizon: 0.211
+      Material Model: PMMA
+  Compute Class Parameters:
+    External_Forces:
+      Compute Class: "Block_Data"
+      Calculation Type: "Sum"
+      Block: "block_5"
+      Variable: "Forces"
+    External_Displacements:
+      Compute Class: "Block_Data"
+      Calculation Type: "Maximum"
+      Block: "block_5"
+      Variable: "Displacements"
+  Outputs:
+    Output:
+      Number of Output Steps: 100
+      Output File Type: Exodus
+      Output Filename: large_model_matrix_based
+      Output Variables:
+        Damage: true
+        Displacements: true
+        Forces: true
+        Cauchy Stress: True
+        Number of Neighbors: true
+        External_Forces: True
+        External_Displacements: True
+        Coupling Nodes: True
+  Multistep Solver:
+    Step 1:
+      Step ID: 1
+      Initial Time: 0.0
+      Final Time: 50e-5
+      Number of Steps: 2
+      Material Models: true
+      Linear Static Matrix Based:
+        Safety Factor: 1.0
