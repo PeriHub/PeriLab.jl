@@ -6,17 +6,17 @@ PeriLab:
   Blocks:
     block_1:
       Block ID: 1
-      Density: 270000
+      Density: 2700
       Horizon: 0.000752
       Material Model: mat_1
     block_2:
       Block ID: 2
-      Density: 270000
+      Density: 2700
       Horizon: 0.000752
       Material Model: mat_1
     block_3:
       Block ID: 3
-      Density: 270000
+      Density: 2700
       Horizon: 0.000752
       Material Model: mat_1
   Boundary Conditions:
@@ -66,7 +66,7 @@ PeriLab:
         Material Model: "Correspondence Elastic"
         Zero Energy Control: "Global"
         Symmetry: isotropic plane stress
-        Young's Modulus: 1.2e08
+        Young's Modulus: 1.2e07
         Poisson's Ratio: 0.3
     Pre Calculation Global:
       Bond Associated Deformation Gradient: false
@@ -79,4 +79,4 @@ PeriLab:
     Number of Steps: 178
     Material Models: true
     Verlet Matrix Based:
-      Safety Factor: 1.0
+      Safety Factor: 0.001
