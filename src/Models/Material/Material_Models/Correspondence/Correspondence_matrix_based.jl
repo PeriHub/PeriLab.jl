@@ -497,6 +497,7 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
 
         for d1 in 1:dof
             row = (i - 1) * dof + d1
+
             for j in axes(K_stab, 2)
                 if div(j - 1, dof) + 1 != i  # if column node != i
                     K_ii_block[d1, (j - 1) % dof + 1] -= K_stab[row, j]

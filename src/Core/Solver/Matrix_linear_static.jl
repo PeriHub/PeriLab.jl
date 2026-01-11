@@ -288,6 +288,7 @@ function run_solver(solver_options::Dict{Any,Any},
             K = Data_Manager.get_stiffness_matrix()
 
             #@views external_force_densities[active_nodes, :] += force_densities_NP1[active_nodes, :]
+
             active_dofs::Vector{Int64} = get_active_dof(active_nodes,
                                                         Data_Manager.get_dof(),
                                                         Data_Manager.get_nnodes())
