@@ -5,7 +5,7 @@
 module Thermal_Flow
 using LinearAlgebra
 using StaticArrays
-
+using TimerOutputs: @timeit
 using .....Data_Manager
 using .....Helpers: rotate_second_order_tensor
 export compute_model
@@ -119,23 +119,22 @@ function compute_model(nodes::AbstractVector{Int64},
         if length(lambda) > 1
             lambda = lambda[1]
         end
-        heat_flow = compute_heat_flow_state_bond_based(nodes,
-                                                       dof,
-                                                       nlist,
-                                                       lambda,
-                                                       apply_print_bed,
-                                                       t_bed,
-                                                       lambda_bed,
-                                                       print_bed_z_coord,
-                                                       coordinates,
-                                                       bond_damage,
-                                                       active,
-                                                       undeformed_bond,
-                                                       undeformed_bond_length,
-                                                       horizon,
-                                                       temperature,
-                                                       volume,
-                                                       heat_flow)
+        @timeit "heat_flow" heat_flow=compute_heat_flow_state_bond_based(nodes,
+                                                                         dof,
+                                                                         nlist,
+                                                                         lambda,
+                                                                         apply_print_bed,
+                                                                         t_bed,
+                                                                         lambda_bed,
+                                                                         print_bed_z_coord,
+                                                                         coordinates,
+                                                                         bond_damage,
+                                                                         active,
+                                                                         undeformed_bond_length,
+                                                                         horizon,
+                                                                         temperature,
+                                                                         volume,
+                                                                         heat_flow)
         return
 
     elseif thermal_parameter["Type"] == "Correspondence"
@@ -150,17 +149,17 @@ function compute_model(nodes::AbstractVector{Int64},
                 lambda_matrix[i, i] = lambda[i]
             end
         end
-        heat_flow = compute_heat_flow_state_correspondence(nodes,
-                                                           dof,
-                                                           nlist,
-                                                           lambda_matrix,
-                                                           rotation_tensor,
-                                                           bond_damage,
-                                                           undeformed_bond,
-                                                           Kinv,
-                                                           temperature,
-                                                           volume,
-                                                           heat_flow)
+        @timeit "heat_flow_correspondence" heat_flow=compute_heat_flow_state_correspondence(nodes,
+                                                                                            dof,
+                                                                                            nlist,
+                                                                                            lambda_matrix,
+                                                                                            rotation_tensor,
+                                                                                            bond_damage,
+                                                                                            undeformed_bond,
+                                                                                            Kinv,
+                                                                                            temperature,
+                                                                                            volume,
+                                                                                            heat_flow)
     end
 end
 
@@ -245,7 +244,6 @@ function compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64},
                                             coordinates::Matrix{Float64},
                                             bond_damage::BondScalarState{Float64},
                                             active::Vector{Bool},
-                                            undeformed_bond::BondVectorState{Float64},
                                             undeformed_bond_length::BondScalarState{Float64},
                                             horizon::NodeScalarField{Float64},
                                             temperature::NodeScalarField{Float64},
@@ -265,7 +263,8 @@ function compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64},
             print_bed_distance = coordinates[iID, 3] - print_bed_z_coord
             if print_bed_distance < horizon[iID]
                 temp_state = t_bed - temperature[iID]
-                print_bed_volume = (pi*print_bed_distance^2/3)*(3*horizon[iID]-print_bed_distance) #Partial spherical volume below print bed
+                print_bed_volume = (pi * print_bed_distance^2 / 3) *
+                                   (3 * horizon[iID] - print_bed_distance) #Partial spherical volume below print bed
                 heat_flow[iID] -= lambda_bed * kernel * temp_state * print_bed_volume /
                                   print_bed_distance
             end
@@ -277,10 +276,9 @@ function compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64},
             temp_state = bond_damage[iID][jID] *
                          (temperature[neighborID] - temperature[iID])
             heat_flow[iID] -= lambda * kernel * temp_state *
-                              volume[neighborID]/undeformed_bond_length[iID][jID]
+                              volume[neighborID] / undeformed_bond_length[iID][jID]
         end
     end
-    return heat_flow
 end
 
 """

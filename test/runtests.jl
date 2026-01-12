@@ -296,7 +296,7 @@ MPI.Init()
         @testset "test_FEM" begin
             include("fullscale_tests/test_FEM/test_FEM.jl")
         end
-        @testset "test_matrix_Verlet" begin
+        @testset "test_model_reduction_Verlet_matrix" begin
             include("fullscale_tests/test_model_reduction_Verlet_matrix/test_model_reduction_Verlet_matrix.jl")
         end
         @testset "test_large_model_matrix_model_based" begin

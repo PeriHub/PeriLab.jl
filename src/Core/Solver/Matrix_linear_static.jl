@@ -415,15 +415,27 @@ Arguments:
 - F_temp: Temporary force vector (pre-allocated)
 
 """
-function compute_displacements!(K::AbstractMatrix{Float64},           # VOLLE K-Matrix
-                                active_dofs::AbstractVector{Int64},     # Aktive DOFs
-                                active_non_BCS::AbstractVector{Int64},  # Non-BC DOFs (lokal indexiert)
+function compute_displacements!(K::AbstractMatrix{Float64},
+                                active_dofs::AbstractVector{Int},
+                                active_non_BCS::AbstractVector{Int},
                                 u_active::AbstractMatrix{Float64},
                                 F_int_active::AbstractMatrix{Float64},
                                 F_ext_active::AbstractMatrix{Float64},
                                 solver::DisplacementSolverCache)
     isempty(active_non_BCS) && return nothing
 
+    # SCHRITT 1: Cache K[active_dofs, active_dofs] if active_dofs changed
+    if solver.K_active_cached === nothing || solver.last_active_dofs != active_dofs
+        @timeit "extract K_active" begin
+            solver.K_active_cached = K[active_dofs, active_dofs]
+            solver.last_active_dofs = copy(active_dofs)
+        end
+        solver.K_free_lu = nothing
+    end
+
+    K_active = solver.K_active_cached
+
+    # Step 2: Modify force vector to account for prescribed displacements
     u_vec = vec(u_active)
     F_int_vec = vec(F_int_active)
     F_ext_vec = vec(F_ext_active)
@@ -456,6 +468,7 @@ function compute_displacements!(K::AbstractMatrix{Float64},           # VOLLE K-
         solver.F_modified[idx] = F_ext_vec[i] - F_int_vec[i]
     end
 
+    # Step 3: LU cachen
     if solver.K_free_lu === nothing || solver.last_non_BCs != active_non_BCS
         @timeit "LU factorization" begin
             K_free = K_active[active_non_BCS, active_non_BCS]

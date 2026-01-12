@@ -5,6 +5,7 @@
 module Thermal
 
 using ....Data_Manager
+using TimerOutputs: @timeit
 using ...Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "thermal_model_name")
 for mod in module_list
@@ -52,7 +53,7 @@ function compute_model(nodes::AbstractVector{Int64},
     thermal_models = map(r -> strip(r), thermal_models)
     for thermal_model in thermal_models
         mod = get_model_module(thermal_model)
-        mod.compute_model(nodes, model_param, block, time, dt)
+        @timeit "$thermal_model" mod.compute_model(nodes, model_param, block, time, dt)
     end
 end
 
@@ -71,10 +72,10 @@ function init_model(nodes::AbstractVector{Int64},
     thermal_models = split(model_param["Thermal Model"], "+")
     thermal_models = map(r -> strip(r), thermal_models)
     for thermal_model in thermal_models
-        mod = create_module_specifics(thermal_model,
-                                      module_list,
-                                      @__MODULE__,
-                                      "thermal_model_name")
+        @timeit "$thermal_model" mod=create_module_specifics(thermal_model,
+                                                             module_list,
+                                                             @__MODULE__,
+                                                             "thermal_model_name")
         if isnothing(mod)
             @error "No thermal model of name " * thermal_model * " exists."
             return nothing

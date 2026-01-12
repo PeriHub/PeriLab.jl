@@ -9,7 +9,7 @@
 module Thermal_Expansion
 using LinearAlgebra
 using StaticArrays
-
+using TimerOutputs: @timeit
 using .....Data_Manager
 using ...Pre_Calculation.Deformation_Gradient
 export fields_for_local_synchronization
