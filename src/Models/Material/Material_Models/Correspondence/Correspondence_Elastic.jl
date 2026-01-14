@@ -122,14 +122,14 @@ function compute_stresses(nodes::AbstractVector{Int64},
     hooke_matrix::NodeTensorField{Float64} = Data_Manager.get_field("Elasticity Matrix")
 
     @inbounds for iID in nodes
-        # Schleife über alle Stress-Komponenten (Voigt-Notation)
+        # Voigt-Notation
         for m in axes(mapping, 1)
             i = mapping[m, 1]
             j = mapping[m, 2]
 
             sNP1 = stress_N[iID, i, j]
 
-            # Konstitutive Beziehung: σ_ij^(n+1) = σ_ij^n + C_ijkl * Δε_kl
+            # Constitutive Relation: σ_ij^(n+1) = σ_ij^n + C_ijkl * Δε_kl
             for k in axes(mapping, 1)
                 sNP1 += hooke_matrix[iID, m, k] *
                         strain_increment[iID, mapping[k, 1], mapping[k, 2]]
