@@ -177,8 +177,7 @@ function init_solver(solver_options::Dict{Any,Any},
     #		end
     #	end
     #end
-    perm = create_permutation(Data_Manager.get_nnodes(), Data_Manager.get_dof())
-    Data_Manager.set_stiffness_matrix(K[perm, perm])
+
     density_mass = zeros(length(density) * Data_Manager.get_dof())
     @warn "TBD Constant mass density for matrix modelis assumed."
     density_mass .= density[1]

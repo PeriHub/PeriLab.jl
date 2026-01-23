@@ -134,10 +134,6 @@ function init_solver(solver_options::Dict{Any,Any},
     deformed_coorN .= coor
     deformed_coorNP1 .= coor
 
-    K = Data_Manager.get_stiffness_matrix()
-    perm = create_permutation(Data_Manager.get_nnodes(), Data_Manager.get_dof())
-    Data_Manager.set_stiffness_matrix(K[perm, perm])
-
     ### for coupled thermal analysis
 
     #critical_time_step::Float64 = 1.0e50
@@ -160,6 +156,7 @@ function init_solver(solver_options::Dict{Any,Any},
     #	end
     #end
 end
+
 function filter_dofs_to_active_nodes(non_BCs::AbstractVector{Int64},
                                      active_nodes::AbstractVector{Int64},
                                      dof::Int64)
@@ -193,12 +190,10 @@ function run_solver(solver_options::Dict{Any,Any},
     coor = Data_Manager.get_field("Coordinates")
     bond_force = Data_Manager.get_field("Bond Forces")
     comm = Data_Manager.get_comm()
-    # needed to bring K_sparse into the consistent style of the transformation matrix -> vector
 
     if "Material" in solver_options["Models"]
         external_forces = Data_Manager.get_field("External Forces")
         external_force_densities = Data_Manager.get_field("External Force Densities")
-        a = Data_Manager.get_field("Acceleration")
     end
 
     dt::Float64 = solver_options["dt"]
@@ -208,12 +203,10 @@ function run_solver(solver_options::Dict{Any,Any},
     rank = Data_Manager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
     nodes::Vector{Int64} = collect(1:Data_Manager.get_nnodes())
-    nlist = Data_Manager.get_nlist()
     dof = Data_Manager.get_dof()
+    nnodes = Data_Manager.get_nnodes()
 
     volume = Data_Manager.get_field("Volume")
-    # forces = Data_Manager.get_field("Forces", "NP1")
-
     delta_u = Data_Manager.get_field("Delta Displacements")
     external_force_densities = Data_Manager.get_field("External Force Densities")
 
@@ -222,17 +215,19 @@ function run_solver(solver_options::Dict{Any,Any},
     active_nodes = Data_Manager.get_field("Active Nodes")
     active_list = Data_Manager.get_field("Active")
 
-    active_nodes = find_active_nodes(active_list, active_nodes,
-                                     nodes)
+    active_nodes = find_active_nodes(active_list, active_nodes, nodes)
     K = Data_Manager.get_stiffness_matrix()
 
-    displacement_solver_cache = DisplacementSolverCache(Data_Manager.get_nnodes() * dof)
+    displacement_solver_cache = DisplacementSolverCache(nnodes * dof)
+
+    # Bestimme ob alle Knoten aktiv sind
+    all_nodes_active = length(active_nodes) == nnodes
+
+    non_BCs_global = Data_Manager.get_bc_free_dof()
+
     for idt in iter
         Data_Manager.set_iteration(idt)
         @timeit "Linear Static" begin
-
-            # reshape
-            # All 2 time steps fields must be in the loop, because switch NP1 to N changes the adresses
             uN::NodeVectorField{Float64} = Data_Manager.get_field("Displacements", "N")
             uNP1::NodeVectorField{Float64} = Data_Manager.get_field("Displacements", "NP1")
             velocities::NodeVectorField{Float64} = Data_Manager.get_field("Velocity", "NP1")
@@ -247,16 +242,7 @@ function run_solver(solver_options::Dict{Any,Any},
             force_densities_NP1::NodeVectorField{Float64} = Data_Manager.get_field("Force Densities",
                                                                                    "NP1")
 
-            non_BCs = Data_Manager.get_bc_free_dof()
-            # if not we get additional forces from deformation if thermal expansion is active
             deformed_coorNP1 .= coor
-
-            #@timeit "compute bond forces" Correspondence_matrix_based.compute_bond_force(bond_force,
-            #                                                                             K,
-            #                                                                             uN,
-            #                                                                             active_nodes,
-            #                                                                             nlist,
-            #                                                                             dof)
 
             compute_parabolic_problems_before_model_evaluation(active_nodes, solver_options)
             apply_bc_dirichlet([
@@ -269,7 +255,7 @@ function run_solver(solver_options::Dict{Any,Any},
                                time,
                                step_time)
 
-            @. external_force_densities = external_forces / volume # it must be delta external forces
+            @. external_force_densities = external_forces / volume
 
             @timeit "compute_models" compute_stiff_matrix_compatible_models(block_nodes,
                                                                             dt,
@@ -279,58 +265,74 @@ function run_solver(solver_options::Dict{Any,Any},
 
             active_nodes = Data_Manager.get_field("Active Nodes")
             active_list = Data_Manager.get_field("Active")
+            active_nodes = find_active_nodes(active_list, active_nodes, nodes)
 
-            active_nodes = find_active_nodes(active_list, active_nodes,
-                                             nodes)
-            if matrix_update
-                @timeit "update stiffness matrix" compute_matrix(active_nodes)
+            # test status
+            current_all_active = length(active_nodes) == nnodes
+
+            if !current_all_active
+                @timeit "rebuild matrix (partial active)" begin
+                    compute_matrix(active_nodes)
+                    K = Data_Manager.get_stiffness_matrix()
+                end
+
+                # Lokale Indizierung für reduzierte Matrix
+                active_dofs_local,
+                local_to_global = get_active_dof(active_nodes, dof,
+                                                 nnodes)
+                active_non_BCs_local = filter_and_map_bc(non_BCs_global, local_to_global)
+
+                @timeit "compute_displacements (partial)" begin
+                    @views compute_displacements!(K,
+                                                  active_dofs_local,
+                                                  active_non_BCs_local,
+                                                  uNP1[active_nodes, :],
+                                                  force_densities_NP1[active_nodes, :],
+                                                  external_force_densities[active_nodes, :],
+                                                  displacement_solver_cache)
+                    for iID in active_nodes
+                        @. @views forces[iID, :] = force_densities_NP1[iID, :] * volume[iID]
+                    end
+                end
+            else
+                # all nodes are active
+                if matrix_update
+                    @timeit "update matrix (all active)" begin
+                        compute_matrix(active_nodes)
+                        K = Data_Manager.get_stiffness_matrix()
+                    end
+                end
+
+                all_dofs = collect(1:(nnodes * dof))
+
+                @timeit "compute_displacements (all active)" begin
+                    @views compute_displacements!(K,
+                                                  all_dofs,
+                                                  non_BCs_global,
+                                                  uNP1,
+                                                  force_densities_NP1,
+                                                  external_force_densities,
+                                                  displacement_solver_cache)
+                end
             end
-            K = Data_Manager.get_stiffness_matrix()
 
-            #@views external_force_densities[active_nodes, :] += force_densities_NP1[active_nodes, :]
-
-            active_dofs::Vector{Int64} = get_active_dof(active_nodes,
-                                                        Data_Manager.get_dof(),
-                                                        Data_Manager.get_nnodes())
-            active_non_BCS::Vector{Int64} = filter_and_map_bc(non_BCs, active_dofs)
-
-            # - force_densities_NP1 because the internal forces come from thermal analysis. For static cases they are zero
-            @timeit "compute_displacements" @views compute_displacements!(K,                                      # Volle K-Matrix
-                                                                          active_dofs,                            # z.B. DOFs entsprechend active_nodes
-                                                                          active_non_BCS,                         # Lokal indexiert
-                                                                          uNP1[active_nodes,
-                                                                               :],
-                                                                          -force_densities_NP1[active_nodes,
-                                                                                               :],
-                                                                          external_force_densities[active_nodes,
-                                                                                                   :],
-                                                                          displacement_solver_cache)
+            all_nodes_active = current_all_active
 
             active_nodes = Data_Manager.get_field("Active Nodes")
             active_list = Data_Manager.get_field("Active")
-
-            active_nodes = find_active_nodes(active_list, active_nodes,
-                                             1:Data_Manager.get_nnodes())
+            active_nodes = find_active_nodes(active_list, active_nodes, 1:nnodes)
 
             compute_parabolic_problems_after_model_evaluation(active_nodes, solver_options,
                                                               dt)
-
             for iID in nodes
                 @. @views forces[iID, :] = force_densities_NP1[iID, :] * volume[iID]
             end
-
             @. velocities = (uNP1 - uN) / dt
             @. @views deformed_coorNP1 = coor + uNP1
-
-            # @timeit "download_from_cores" Data_Manager.synch_manager(synchronise_field,
-            #                                                            "download_from_cores")
 
             @timeit "write_results" result_files=write_results(result_files, time,
                                                                max_damage, outputs)
 
-            # for file in result_files
-            #     flush(file)
-            # end
             if rank == 0 && !silent && Data_Manager.get_cancel()
                 set_multiline_postfix(iter, "Simulation canceled!")
                 break
@@ -356,28 +358,40 @@ function run_solver(solver_options::Dict{Any,Any},
     return result_files
 end
 
-function get_active_dof(active_nodes, dof, nnodes)
-    active_dofs = []
-    for iD in active_nodes
+function get_active_dof(active_nodes::AbstractVector{Int64}, dof::Int64, nnodes::Int64)
+    n_active = length(active_nodes)
+
+    active_dofs_local = collect(1:(n_active * dof))
+    local_to_global = Dict{Int,Int}()
+
+    for (iD, global_iD) in enumerate(active_nodes)
         for j in 1:dof
-            push!(active_dofs, j + (iD - 1) * dof)
+            local_idx = iD + (j - 1) * n_active
+            global_idx = global_iD + (j - 1) * nnodes
+            local_to_global[local_idx] = global_idx
         end
     end
-    return active_dofs
+
+    return active_dofs_local, local_to_global
 end
 
-function filter_and_map_bc(non_BCs, active_dof)
-    return intersect(non_BCs, active_dof)
-end
+function filter_and_map_bc(non_BCs_global::AbstractVector{Int64},
+                           local_to_global::Dict{Int,Int})
+    active_non_BCs_local = Int[]
 
+    for (local_idx, global_idx) in pairs(local_to_global)
+        if global_idx in non_BCs_global
+            push!(active_non_BCs_local, local_idx)
+        end
+    end
+
+    return sort(active_non_BCs_local)
+end
 function compute_matrix(nodes::AbstractVector{Int64})
     if length(nodes) == 0
         return Data_Manager.get_stiffness_matrix()
     end
     Correspondence_matrix_based.compute_model(nodes)
-    K = Data_Manager.get_stiffness_matrix()
-    perm = create_permutation(Data_Manager.get_nnodes(), Data_Manager.get_dof())
-    Data_Manager.set_stiffness_matrix(K[perm, perm])
 end
 
 mutable struct DisplacementSolverCache
@@ -424,10 +438,10 @@ function compute_displacements!(K::AbstractMatrix{Float64},
                                 solver::DisplacementSolverCache)
     isempty(active_non_BCS) && return nothing
 
-    # SCHRITT 1: Cache K[active_dofs, active_dofs] if active_dofs changed
+    # STEP 1: Cache K[active_dofs, active_dofs] if active_dofs changed
     if solver.K_active_cached === nothing || solver.last_active_dofs != active_dofs
         @timeit "extract K_active" begin
-            solver.K_active_cached = K[active_dofs, active_dofs]
+            solver.K_active_cached = K
             solver.last_active_dofs = copy(active_dofs)
         end
         solver.K_free_lu = nothing
@@ -472,7 +486,11 @@ function compute_displacements!(K::AbstractMatrix{Float64},
     if solver.K_free_lu === nothing || solver.last_non_BCs != active_non_BCS
         @timeit "LU factorization" begin
             K_free = K_active[active_non_BCS, active_non_BCS]
-            solver.K_free_lu = lu(K_free)
+            try
+                solver.K_free_lu = lu(K_free)
+            catch e
+                @error "LU factorization failed. The stiffness matrix may be singular, please check the boundary conditions."
+            end
             solver.last_non_BCs = copy(active_non_BCS)
         end
     end

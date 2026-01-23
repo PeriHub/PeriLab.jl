@@ -11,7 +11,7 @@ using LinearAlgebra
 using StaticArrays
 using TimerOutputs: @timeit
 using .....Data_Manager
-using ...Pre_Calculation.Deformation_Gradient
+using ...Pre_Calculation.Deformation_Gradient: compute
 export fields_for_local_synchronization
 export compute_model
 export thermal_model_name
@@ -93,36 +93,89 @@ function compute_model(nodes::AbstractVector{Int64},
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    temperature_NP1 = Data_Manager.get_field("Temperature", "NP1")
+    temperature_NP1::NodeScalarField{Float64} = Data_Manager.get_field("Temperature",
+                                                                       "NP1")
     dof = Data_Manager.get_dof()
 
-    alpha_mat = thermal_expansion_matrix(thermal_parameter["Thermal Expansion Coefficient"],
-                                         Val(dof))
+    @timeit "thermal_expansion_matrix" alpha_mat::AbstractMatrix{Float64}=thermal_expansion_matrix(thermal_parameter["Thermal Expansion Coefficient"],
+                                                                                                   Val(dof))
+    ref_temp::Float64 = get(thermal_parameter, "Reference Temperature", 0.0)
 
-    ref_temp = 0.0
-    ref_temp = get(thermal_parameter, "Reference Temperature", 0.0)
+    undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
+    undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
+    deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
+                                                                     "NP1")
+    deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
+                                                                            "NP1")
 
-    undeformed_bond = Data_Manager.get_field("Bond Geometry")
-    undeformed_bond_length = Data_Manager.get_field("Bond Length")
-    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
-    deformed_bond_length = Data_Manager.get_field("Deformed Bond Length", "NP1")
+    @timeit "apply_thermal_expansion!" apply_thermal_expansion!(deformed_bond,
+                                                                deformed_bond_length,
+                                                                nodes,
+                                                                temperature_NP1,
+                                                                ref_temp,
+                                                                alpha_mat,
+                                                                undeformed_bond,
+                                                                undeformed_bond_length,
+                                                                dof)
+
+    if Data_Manager.has_key("Deformation Gradient")
+        #TODO all forces computed are from the original configuration
+        @timeit "Deformation_Gradient" compute(nodes, Dict(), block)
+    end
+end
+
+"""
+    apply_thermal_expansion!(deformed_bond, deformed_bond_length, nodes,
+                            temperature_NP1, ref_temp, alpha_mat,
+                            undeformed_bond, undeformed_bond_length, dof)
+
+Apply thermal expansion corrections to deformed bonds and bond lengths.
+
+# Arguments
+- `deformed_bond`: Array of deformed bond vectors (modified in-place)
+- `deformed_bond_length`: Array of deformed bond lengths (modified in-place)
+- `nodes`: Node indices to process
+- `temperature_NP1`: Current temperature field
+- `ref_temp`: Reference temperature
+- `alpha_mat`: Thermal expansion coefficient matrix
+- `undeformed_bond`: Array of undeformed bond vectors
+- `undeformed_bond_length`: Array of undeformed bond lengths
+- `dof`: Degrees of freedom
+"""
+function apply_thermal_expansion!(deformed_bond::BondVectorState{Float64},
+                                  deformed_bond_length::BondScalarState{Float64},
+                                  nodes::AbstractVector{Int64},
+                                  temperature_NP1::NodeScalarField{Float64},
+                                  ref_temp::Float64,
+                                  alpha_mat::AbstractMatrix{Float64},
+                                  undeformed_bond::BondVectorState{Float64},
+                                  undeformed_bond_length::BondScalarState{Float64},
+                                  dof::Int64)
+    # Precompute average thermal expansion coefficient
+    avg_alpha = sum(alpha_mat) / dof
 
     for iID in nodes
         temp_diff::Float64 = temperature_NP1[iID] - ref_temp
+
+        # Skip if no temperature difference
+        if iszero(temp_diff)
+            continue
+        end
+
+        # Apply thermal expansion to bond vectors
         @inbounds @fastmath @views for jID in eachindex(undeformed_bond[iID])
             for j in 1:dof
                 deformed_bond[iID][jID][j] -= temp_diff * alpha_mat[j, j] *
                                               undeformed_bond[iID][jID][j]
             end
         end
-        deformed_bond_length[iID] .-= sum(alpha_mat) / dof * temp_diff .*
+
+        # Apply thermal expansion to bond lengths
+        deformed_bond_length[iID] .-= avg_alpha * temp_diff .*
                                       undeformed_bond_length[iID]
     end
 
-    if Data_Manager.has_key("Deformation Gradient")
-        #TODO all forces computed are from the original configuration
-        Deformation_Gradient.compute(nodes, Dict(), block)
-    end
+    return nothing
 end
 
 """
