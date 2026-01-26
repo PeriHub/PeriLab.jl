@@ -293,9 +293,11 @@ function run_solver(solver_options::Dict{Any,Any},
                 #-= f_int(K,
                 #	vec(uNP1[active_nodes,
                 #		:]), sa)
+
                 @timeit "Force matrix computations" f_int_inplace!(fNP1, temp, K,
                                                                    vec(uNP1[active_nodes,
                                                                             :]), sa)
+
                 @. @views fNP1 .+= external_force_densities[active_nodes,
                                                             :] +
                                    external_forces[active_nodes,
@@ -308,8 +310,7 @@ function run_solver(solver_options::Dict{Any,Any},
             @timeit "Accelaration computation" begin
                 @views a[active_nodes, :] = reshape(M_fact \
                                                     vec(force_densities_NP1[active_nodes,
-                                                                            :] .*
-                                                        volume[active_nodes]),
+                                                                            :]),
                                                     sa...)
             end
             @timeit "write_results" result_files=write_results(result_files, time,
