@@ -124,7 +124,7 @@ function init_solver(solver_options::Dict{Any,Any},
         model_param = Data_Manager.get_properties(block, "Material Model")
         Correspondence_matrix_based.init_model(nodes, model_param, block)
     end
-    @timeit "init_matrix" Correspondence_matrix_based.init_matrix()
+    Correspondence_matrix_based.init_matrix()
 
     solver_options["Matrix update"] = get(params["Linear Static Matrix Based"],
                                           "Matrix update", false)
