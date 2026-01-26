@@ -8,7 +8,7 @@ using LinearAlgebra
 using LoopVectorization: @turbo
 using SparseArrays
 using StaticArrays: @MMatrix
-
+using Random, Statistics
 using ...Data_Manager
 using ...Material_Basis: get_Hooke_matrix
 using ....Helpers: get_fourth_order, progress_bar
@@ -19,7 +19,6 @@ export add_zero_energy_stiff!
 export compute_bond_force
 export init_matrix
 export get_dof_index_block_style
-export get_dof_index_interleaved
 
 function contraction!(C::Array{Float64,4}, B::Array{Float64,3}, dof::Int64,
                       CB::AbstractArray{Float64,3})
@@ -186,10 +185,6 @@ end
     return (dof_component - 1) * nnodes + node_id
 end
 
-@inline function get_dof_index_interleaved(node_id::Int, dof_component::Int, dof::Int)
-    return (node_id - 1) * dof + dof_component
-end
-
 function assemble_stiffness(nodes::AbstractVector{Int64},
                             active_nodes::AbstractVector{Int64},
                             dof::Int64,
@@ -298,7 +293,7 @@ function assemble_stiffness(nodes::AbstractVector{Int64},
         V_i = volume[i]
         ni = nlist[i]
 
-        for j in nodes
+        for j in active_nodes
             if j == i
                 continue
             end
@@ -410,71 +405,26 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
                                 omega::Vector{Vector{Float64}},
                                 use_block_style::Bool = true)
     nnodes = Data_Manager.get_nnodes()
-
     n_total = nnodes * dof
 
     I_indices = Int[]
     J_indices = Int[]
     values = Float64[]
 
-    # zStiff ist bereits Z = C : D^{-1} !!!
+    # Z_i = C : D_i^(-1)
     Z = Vector{Matrix{Float64}}(undef, maximum(active_nodes))
     for i in active_nodes
-        Z[i] = @view zStiff[i, :, :]  # Nur View, keine Kontraktion!
+        Z[i] = @view zStiff[i, :, :]
     end
 
-    # Compute alpha coefficients: α_{ipq} = ω_{ip} V_p (X_{ip}^T D_i^{-1} X_{iq})
-    alpha = Dict{Tuple{Int,Int,Int},Float64}()
+    # =================================================================
+    # FORWARD bonds assembly
+    # =================================================================
 
     @inbounds for i in active_nodes
         neighbors_i = nlist[i]
         D_inv_i = @view inverse_shape_tensor[i, :, :]
-
-        for (p_idx, p) in enumerate(neighbors_i)
-            if bond_damage[i][p_idx] == 0.0
-                continue
-            end
-
-            X_ip = bond_geometry[i][p_idx]
-            ω_ip = omega[i][p_idx] * bond_damage[i][p_idx]
-            V_p = volume[p]
-
-            for (q_idx, q) in enumerate(neighbors_i)
-                if bond_damage[i][q_idx] == 0.0
-                    continue
-                end
-
-                X_iq = bond_geometry[i][q_idx]
-                alpha[(i, p, q)] = ω_ip * V_p * dot(X_ip, D_inv_i * X_iq)
-            end
-        end
-    end
-
-    # Compute beta and gamma coefficients
-    beta = Dict{Tuple{Int,Int},Float64}()
-    gamma = Dict{Tuple{Int,Int},Float64}()
-
-    @inbounds for i in active_nodes
-        neighbors_i = nlist[i]
-
-        for (j_idx, j) in enumerate(neighbors_i)
-            if bond_damage[i][j_idx] == 0.0
-                continue
-            end
-
-            sum_alpha = sum(get(alpha, (i, p, j), 0.0)
-                            for (p_idx, p) in enumerate(neighbors_i)
-                            if bond_damage[i][p_idx] > 0)
-            beta[(i, j)] = 1.0 - sum_alpha
-            gamma[(i, j)] = 1.0 - get(alpha, (i, j, j), 0.0)
-        end
-    end
-
-    # FORWARD bonds assembly - MIT NEGATIVEM VORZEICHEN
-    @inbounds for i in active_nodes
-        neighbors_i = nlist[i]
         Z_i = Z[i]
-        V_i = volume[i]
 
         for (j_idx, j) in enumerate(neighbors_i)
             if bond_damage[i][j_idx] == 0.0
@@ -483,41 +433,72 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
 
             ω_ij = omega[i][j_idx] * bond_damage[i][j_idx]
             V_j = volume[j]
-            β = beta[(i, j)]
-            γ = gamma[(i, j)]
+            X_ij = bond_geometry[i][j_idx]
 
             K_S_ij = zeros(dof, n_total)
+            K_block = zeros(dof, dof)
 
-            for (k_idx, k) in enumerate(neighbors_i)
-                if bond_damage[i][k_idx] == 0.0
+            D_inv_X_ij = D_inv_i * X_ij
+
+            # ================================================
+            # Compute γ_ij = 1 - α_ijj
+            # where α_ijj = ω_ij * V_j * (X_ij^T * D_inv * X_ij)
+            # ================================================
+
+            α_ijj = ω_ij * V_j * dot(X_ij, D_inv_X_ij)
+            γ_ij = 1.0 - α_ijj
+
+            # ================================================
+            # Term 1: γ_ij * U_ij contribution
+            # z_ij has: +γ_ij * U_ij = +γ_ij * (u_j - u_i)
+            # ================================================
+
+            K_block = ω_ij * γ_ij * Z_i
+
+            for m in 1:dof, o in 1:dof
+                if use_block_style
+                    col_i = get_dof_index_block_style(i, o, nnodes, dof)
+                    col_j = get_dof_index_block_style(j, o, nnodes, dof)
+                else
+                    col_i = get_dof_index_interleaved(i, o, dof)
+                    col_j = get_dof_index_interleaved(j, o, dof)
+                end
+
+                K_S_ij[m, col_i] += K_block[m, o]  # -u_i
+                K_S_ij[m, col_j] -= K_block[m, o]  # +u_j
+            end
+
+            # ================================================
+            # Term 2: -Σ_{p≠j} [ω_ip * V_p * (X_ip^T D_inv X_ij) * U_ip]
+            # ================================================
+
+            for (p_idx, p) in enumerate(neighbors_i)
+                if bond_damage[i][p_idx] == 0.0 || p == j
                     continue
                 end
 
-                if k == i
-                    coeff = β
-                elseif k == j
-                    coeff = γ
-                else
-                    coeff = -get(alpha, (i, k, j), 0.0)
-                end
+                X_ip = bond_geometry[i][p_idx]
+                ω_ip = omega[i][p_idx] * bond_damage[i][p_idx]
+                V_p = volume[p]
 
-                K_S_block = ω_ij * coeff * Z_i
+                coeff = dot(X_ip, D_inv_X_ij)
+                K_block = -ω_ij * ω_ip * V_p * coeff * Z_i
 
                 for m in 1:dof, o in 1:dof
                     if use_block_style
                         col_i = get_dof_index_block_style(i, o, nnodes, dof)
-                        col_k = get_dof_index_block_style(k, o, nnodes, dof)
+                        col_p = get_dof_index_block_style(p, o, nnodes, dof)
                     else
                         col_i = get_dof_index_interleaved(i, o, dof)
-                        col_k = get_dof_index_interleaved(k, o, dof)
+                        col_p = get_dof_index_interleaved(p, o, dof)
                     end
 
-                    K_S_ij[m, col_i] += K_S_block[m, o]
-                    K_S_ij[m, col_k] -= K_S_block[m, o]
+                    K_S_ij[m, col_i] += K_block[m, o]
+                    K_S_ij[m, col_p] -= K_block[m, o]
                 end
             end
 
-            # NEGATIV assemblieren (Forward auch mit Minus!)
+            # Add to global matrix (scaled by V_j)
             for m in 1:dof
                 if use_block_style
                     row = get_dof_index_block_style(i, m, nnodes, dof)
@@ -526,7 +507,7 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
                 end
 
                 for n_col in 1:n_total
-                    val = -K_S_ij[m, n_col]   # NEGATIV!
+                    val = K_S_ij[m, n_col] * V_j
                     if abs(val) > 1e-14
                         push!(I_indices, row)
                         push!(J_indices, n_col)
@@ -537,11 +518,14 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
         end
     end
 
+    # =================================================================
     # BACKWARD bonds assembly
+    # =================================================================
+
     @inbounds for i in active_nodes
         V_i = volume[i]
 
-        for j in 1:nnodes
+        for j in active_nodes
             if j == i
                 continue
             end
@@ -553,43 +537,73 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
                 continue
             end
 
+            D_inv_j = @view inverse_shape_tensor[j, :, :]
             Z_j = Z[j]
             ω_ji = omega[j][i_pos_in_j] * bond_damage[j][i_pos_in_j]
-            β = beta[(j, i)]
-            γ = gamma[(j, i)]
+            X_ji = bond_geometry[j][i_pos_in_j]
 
             K_S_ji = zeros(dof, n_total)
+            K_block = zeros(dof, dof)
 
-            for (k_idx, k) in enumerate(neighbors_j)
-                if bond_damage[j][k_idx] == 0.0
+            D_inv_X_ji = D_inv_j * X_ji
+
+            # ================================================
+            # Compute γ_ji = 1 - α_jii
+            # ================================================
+
+            α_jii = ω_ji * V_i * dot(X_ji, D_inv_X_ji)
+            γ_ji = 1.0 - α_jii
+
+            # ================================================
+            # Term 1: γ_ji * U_ji contribution
+            # ================================================
+
+            K_block = ω_ji * γ_ji * Z_j
+
+            for m in 1:dof, o in 1:dof
+                if use_block_style
+                    col_j = get_dof_index_block_style(j, o, nnodes, dof)
+                    col_i = get_dof_index_block_style(i, o, nnodes, dof)
+                else
+                    col_j = get_dof_index_interleaved(j, o, dof)
+                    col_i = get_dof_index_interleaved(i, o, dof)
+                end
+
+                K_S_ji[m, col_j] += K_block[m, o]
+                K_S_ji[m, col_i] -= K_block[m, o]
+            end
+
+            # ================================================
+            # Term 2: -Σ_{p≠i} [ω_jp * V_p * (X_jp^T D_inv X_ji) * U_jp]
+            # ================================================
+
+            for (p_idx, p) in enumerate(neighbors_j)
+                if bond_damage[j][p_idx] == 0.0 || p == i
                     continue
                 end
 
-                if k == j
-                    coeff = β
-                elseif k == i
-                    coeff = γ
-                else
-                    coeff = -get(alpha, (j, k, i), 0.0)
-                end
+                X_jp = bond_geometry[j][p_idx]
+                ω_jp = omega[j][p_idx] * bond_damage[j][p_idx]
+                V_p = volume[p]
 
-                K_S_block = ω_ji * coeff * Z_j
+                coeff = dot(X_jp, D_inv_X_ji)
+                K_block = -ω_ji * ω_jp * V_p * coeff * Z_j
 
                 for m in 1:dof, o in 1:dof
                     if use_block_style
                         col_j = get_dof_index_block_style(j, o, nnodes, dof)
-                        col_k = get_dof_index_block_style(k, o, nnodes, dof)
+                        col_p = get_dof_index_block_style(p, o, nnodes, dof)
                     else
                         col_j = get_dof_index_interleaved(j, o, dof)
-                        col_k = get_dof_index_interleaved(k, o, dof)
+                        col_p = get_dof_index_interleaved(p, o, dof)
                     end
 
-                    K_S_ji[m, col_j] += K_S_block[m, o]
-                    K_S_ji[m, col_k] -= K_S_block[m, o]
+                    K_S_ji[m, col_j] += K_block[m, o]
+                    K_S_ji[m, col_p] -= K_block[m, o]
                 end
             end
 
-            # POSITIV assemblieren (Backward: -(-...) = +)
+            # Subtract from global matrix
             for m in 1:dof
                 if use_block_style
                     row = get_dof_index_block_style(i, m, nnodes, dof)
@@ -598,7 +612,7 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
                 end
 
                 for n_col in 1:n_total
-                    val = K_S_ji[m, n_col]  # POSITIV!
+                    val = -K_S_ji[m, n_col] * V_i
                     if abs(val) > 1e-14
                         push!(I_indices, row)
                         push!(J_indices, n_col)
@@ -609,17 +623,29 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
         end
     end
 
+    # =================================================================
+    # Assemble and verify
+    # =================================================================
+
     K_stab = sparse(I_indices, J_indices, values, size(K)...)
     K_combined = K + K_stab
+
+    # Check eigenvalues
+    λ_stab = eigvals(Matrix(K_stab))
+    small_eigs_stab = sort(abs.(λ_stab))[1:5]
+
+    @info "K_stab: 5 smallest |eigenvalues|:"
+    for (idx, val) in enumerate(small_eigs_stab)
+        @info "  λ[$idx] = $val"
+    end
 
     expected_rank = nnodes * dof - Int(dof * (dof + 1) / 2)
     actual_rank = rank(K_combined)
 
     if actual_rank != expected_rank
-        @warn "Stiffness matrix rank is $actual_rank, expected $expected_rank (K: $(rank(K)), K_stab: $(rank(K_stab)))"
-        @info "K_stab symmetry check: max|K-K'| = $(maximum(abs.(K_stab - K_stab')))"
+        @warn "Stiffness matrix rank is $actual_rank, expected $expected_rank"
     else
-        @info "Stiffness matrix assembly successful: rank = $actual_rank"
+        @info "✓ Stiffness matrix assembly successful: rank = $actual_rank"
     end
 
     Data_Manager.set_stiffness_matrix(-K_combined)
