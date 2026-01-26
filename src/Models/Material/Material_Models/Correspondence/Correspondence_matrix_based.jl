@@ -8,7 +8,7 @@ using LinearAlgebra
 using LoopVectorization: @turbo
 using SparseArrays
 using StaticArrays: @MMatrix
-using Random, Statistics
+using TimerOutputs: @timeit
 using ...Data_Manager
 using ...Material_Basis: get_Hooke_matrix
 using ....Helpers: get_fourth_order, progress_bar
@@ -404,251 +404,226 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
                                 bond_damage::Vector{Vector{Float64}},
                                 omega::Vector{Vector{Float64}},
                                 use_block_style::Bool = true)
-    nnodes = Data_Manager.get_nnodes()
-    n_total = nnodes * dof
+    @timeit "zero_energy_stiff" begin
+        nnodes = Data_Manager.get_nnodes()
+        n_total = nnodes * dof
 
-    I_indices = Int[]
-    J_indices = Int[]
-    values = Float64[]
+        # Pre-allocate with estimated size (avg ~20 neighbors * 4 entries per bond * nnodes)
+        @timeit "initialization" begin
+            est_size = nnodes * 80 * dof * dof
+            I_indices = sizehint!(Int[], est_size)
+            J_indices = sizehint!(Int[], est_size)
+            values = sizehint!(Float64[], est_size)
 
-    # Z_i = C : D_i^(-1)
-    Z = Vector{Matrix{Float64}}(undef, maximum(active_nodes))
-    for i in active_nodes
-        Z[i] = @view zStiff[i, :, :]
-    end
-
-    # =================================================================
-    # FORWARD bonds assembly
-    # =================================================================
-
-    @inbounds for i in active_nodes
-        neighbors_i = nlist[i]
-        D_inv_i = @view inverse_shape_tensor[i, :, :]
-        Z_i = Z[i]
-
-        for (j_idx, j) in enumerate(neighbors_i)
-            if bond_damage[i][j_idx] == 0.0
-                continue
+            # Z_i = C : D_i^(-1) - use views instead of copies
+            Z = Vector{SubArray{Float64,2}}(undef, maximum(active_nodes))
+            for i in active_nodes
+                Z[i] = @view zStiff[i, :, :]
             end
+        end
 
-            ω_ij = omega[i][j_idx] * bond_damage[i][j_idx]
-            V_j = volume[j]
-            X_ij = bond_geometry[i][j_idx]
-
-            K_S_ij = zeros(dof, n_total)
+        # Reusable buffers to avoid allocations
+        @timeit "buffer_allocation" begin
             K_block = zeros(dof, dof)
+            D_inv_X = Vector{Float64}(undef, dof)
+        end
 
-            D_inv_X_ij = D_inv_i * X_ij
+        # =================================================================
+        # FORWARD bonds assembly
+        # =================================================================
 
-            # ================================================
-            # Compute γ_ij = 1 - α_ijj
-            # where α_ijj = ω_ij * V_j * (X_ij^T * D_inv * X_ij)
-            # ================================================
+        @timeit "forward_assembly" begin
+            @inbounds for i in active_nodes
+                neighbors_i = nlist[i]
+                D_inv_i = @view inverse_shape_tensor[i, :, :]
+                Z_i = Z[i]
+                n_neighbors = length(neighbors_i)
 
-            α_ijj = ω_ij * V_j * dot(X_ij, D_inv_X_ij)
-            γ_ij = 1.0 - α_ijj
-
-            # ================================================
-            # Term 1: γ_ij * U_ij contribution
-            # z_ij has: +γ_ij * U_ij = +γ_ij * (u_j - u_i)
-            # ================================================
-
-            K_block = ω_ij * γ_ij * Z_i
-
-            for m in 1:dof, o in 1:dof
-                if use_block_style
-                    col_i = get_dof_index_block_style(i, o, nnodes, dof)
-                    col_j = get_dof_index_block_style(j, o, nnodes, dof)
-                else
-                    col_i = get_dof_index_interleaved(i, o, dof)
-                    col_j = get_dof_index_interleaved(j, o, dof)
-                end
-
-                K_S_ij[m, col_i] += K_block[m, o]  # -u_i
-                K_S_ij[m, col_j] -= K_block[m, o]  # +u_j
-            end
-
-            # ================================================
-            # Term 2: -Σ_{p≠j} [ω_ip * V_p * (X_ip^T D_inv X_ij) * U_ip]
-            # ================================================
-
-            for (p_idx, p) in enumerate(neighbors_i)
-                if bond_damage[i][p_idx] == 0.0 || p == j
-                    continue
-                end
-
-                X_ip = bond_geometry[i][p_idx]
-                ω_ip = omega[i][p_idx] * bond_damage[i][p_idx]
-                V_p = volume[p]
-
-                coeff = dot(X_ip, D_inv_X_ij)
-                K_block = -ω_ij * ω_ip * V_p * coeff * Z_i
-
-                for m in 1:dof, o in 1:dof
-                    if use_block_style
-                        col_i = get_dof_index_block_style(i, o, nnodes, dof)
-                        col_p = get_dof_index_block_style(p, o, nnodes, dof)
-                    else
-                        col_i = get_dof_index_interleaved(i, o, dof)
-                        col_p = get_dof_index_interleaved(p, o, dof)
+                for (j_idx, j) in enumerate(neighbors_i)
+                    if bond_damage[i][j_idx] == 0.0
+                        continue
                     end
 
-                    K_S_ij[m, col_i] += K_block[m, o]
-                    K_S_ij[m, col_p] -= K_block[m, o]
-                end
-            end
+                    ω_ij = omega[i][j_idx] * bond_damage[i][j_idx]
+                    V_j = volume[j]
+                    X_ij = bond_geometry[i][j_idx]
 
-            # Add to global matrix (scaled by V_j)
-            for m in 1:dof
-                if use_block_style
-                    row = get_dof_index_block_style(i, m, nnodes, dof)
-                else
-                    row = get_dof_index_interleaved(i, m, dof)
-                end
+                    # Precompute D_inv * X_ij once - reuse buffer
+                    mul!(D_inv_X, D_inv_i, X_ij)
 
-                for n_col in 1:n_total
-                    val = K_S_ij[m, n_col] * V_j
-                    if abs(val) > 1e-14
-                        push!(I_indices, row)
-                        push!(J_indices, n_col)
-                        push!(values, val)
+                    # Compute γ_ij = 1 - α_ijj
+                    α_ijj = ω_ij * V_j * dot(X_ij, D_inv_X)
+                    γ_ij = 1.0 - α_ijj
+
+                    # ================================================
+                    # Term 1: γ_ij * U_ij - direct assembly
+                    # ================================================
+
+                    factor1 = ω_ij * γ_ij * V_j
+
+                    for m in 1:dof, o in 1:dof
+                        val = factor1 * Z_i[m, o]
+                        if abs(val) > 1e-14
+                            row = get_dof_index_block_style(i, m, nnodes, dof)
+                            col_i = get_dof_index_block_style(i, o, nnodes, dof)
+                            col_j = get_dof_index_block_style(j, o, nnodes, dof)
+
+                            push!(I_indices, row)
+                            push!(J_indices, col_i)
+                            push!(values, val)
+
+                            push!(I_indices, row)
+                            push!(J_indices, col_j)
+                            push!(values, -val)
+                        end
+                    end
+
+                    # ================================================
+                    # Term 2: -Σ_{p≠j} - direct assembly
+                    # ================================================
+
+                    for (p_idx, p) in enumerate(neighbors_i)
+                        if bond_damage[i][p_idx] == 0.0 || p == j
+                            continue
+                        end
+
+                        X_ip = bond_geometry[i][p_idx]
+                        ω_ip = omega[i][p_idx] * bond_damage[i][p_idx]
+                        V_p = volume[p]
+
+                        coeff = dot(X_ip, D_inv_X)
+                        factor2 = -ω_ij * V_j * ω_ip * V_p * coeff
+
+                        for m in 1:dof, o in 1:dof
+                            val = factor2 * Z_i[m, o]
+                            if abs(val) > 1e-14
+                                row = get_dof_index_block_style(i, m, nnodes, dof)
+                                col_i = get_dof_index_block_style(i, o, nnodes, dof)
+                                col_p = get_dof_index_block_style(p, o, nnodes, dof)
+
+                                push!(I_indices, row)
+                                push!(J_indices, col_i)
+                                push!(values, val)
+
+                                push!(I_indices, row)
+                                push!(J_indices, col_p)
+                                push!(values, -val)
+                            end
+                        end
                     end
                 end
             end
         end
-    end
 
-    # =================================================================
-    # BACKWARD bonds assembly
-    # =================================================================
+        # =================================================================
+        # BACKWARD bonds assembly
+        # =================================================================
 
-    @inbounds for i in active_nodes
-        V_i = volume[i]
+        @timeit "backward_assembly" begin
+            @inbounds for i in active_nodes
+                V_i = volume[i]
 
-        for j in active_nodes
-            if j == i
-                continue
-            end
-
-            neighbors_j = nlist[j]
-            i_pos_in_j = findfirst(==(i), neighbors_j)
-
-            if i_pos_in_j === nothing || bond_damage[j][i_pos_in_j] == 0.0
-                continue
-            end
-
-            D_inv_j = @view inverse_shape_tensor[j, :, :]
-            Z_j = Z[j]
-            ω_ji = omega[j][i_pos_in_j] * bond_damage[j][i_pos_in_j]
-            X_ji = bond_geometry[j][i_pos_in_j]
-
-            K_S_ji = zeros(dof, n_total)
-            K_block = zeros(dof, dof)
-
-            D_inv_X_ji = D_inv_j * X_ji
-
-            # ================================================
-            # Compute γ_ji = 1 - α_jii
-            # ================================================
-
-            α_jii = ω_ji * V_i * dot(X_ji, D_inv_X_ji)
-            γ_ji = 1.0 - α_jii
-
-            # ================================================
-            # Term 1: γ_ji * U_ji contribution
-            # ================================================
-
-            K_block = ω_ji * γ_ji * Z_j
-
-            for m in 1:dof, o in 1:dof
-                if use_block_style
-                    col_j = get_dof_index_block_style(j, o, nnodes, dof)
-                    col_i = get_dof_index_block_style(i, o, nnodes, dof)
-                else
-                    col_j = get_dof_index_interleaved(j, o, dof)
-                    col_i = get_dof_index_interleaved(i, o, dof)
-                end
-
-                K_S_ji[m, col_j] += K_block[m, o]
-                K_S_ji[m, col_i] -= K_block[m, o]
-            end
-
-            # ================================================
-            # Term 2: -Σ_{p≠i} [ω_jp * V_p * (X_jp^T D_inv X_ji) * U_jp]
-            # ================================================
-
-            for (p_idx, p) in enumerate(neighbors_j)
-                if bond_damage[j][p_idx] == 0.0 || p == i
-                    continue
-                end
-
-                X_jp = bond_geometry[j][p_idx]
-                ω_jp = omega[j][p_idx] * bond_damage[j][p_idx]
-                V_p = volume[p]
-
-                coeff = dot(X_jp, D_inv_X_ji)
-                K_block = -ω_ji * ω_jp * V_p * coeff * Z_j
-
-                for m in 1:dof, o in 1:dof
-                    if use_block_style
-                        col_j = get_dof_index_block_style(j, o, nnodes, dof)
-                        col_p = get_dof_index_block_style(p, o, nnodes, dof)
-                    else
-                        col_j = get_dof_index_interleaved(j, o, dof)
-                        col_p = get_dof_index_interleaved(p, o, dof)
+                for j in active_nodes
+                    if j == i
+                        continue
                     end
 
-                    K_S_ji[m, col_j] += K_block[m, o]
-                    K_S_ji[m, col_p] -= K_block[m, o]
-                end
-            end
+                    neighbors_j = nlist[j]
+                    i_pos_in_j = findfirst(==(i), neighbors_j)
 
-            # Subtract from global matrix
-            for m in 1:dof
-                if use_block_style
-                    row = get_dof_index_block_style(i, m, nnodes, dof)
-                else
-                    row = get_dof_index_interleaved(i, m, dof)
-                end
+                    if i_pos_in_j === nothing || bond_damage[j][i_pos_in_j] == 0.0
+                        continue
+                    end
 
-                for n_col in 1:n_total
-                    val = -K_S_ji[m, n_col] * V_i
-                    if abs(val) > 1e-14
-                        push!(I_indices, row)
-                        push!(J_indices, n_col)
-                        push!(values, val)
+                    D_inv_j = @view inverse_shape_tensor[j, :, :]
+                    Z_j = Z[j]
+                    ω_ji = omega[j][i_pos_in_j] * bond_damage[j][i_pos_in_j]
+                    X_ji = bond_geometry[j][i_pos_in_j]
+
+                    # Reuse buffer
+                    mul!(D_inv_X, D_inv_j, X_ji)
+
+                    # Compute γ_ji
+                    α_jii = ω_ji * V_i * dot(X_ji, D_inv_X)
+                    γ_ji = 1.0 - α_jii
+
+                    # Term 1: Direct assembly
+                    factor1 = -ω_ji * γ_ji * V_i
+
+                    for m in 1:dof, o in 1:dof
+                        val = factor1 * Z_j[m, o]
+                        if abs(val) > 1e-14
+                            row = get_dof_index_block_style(i, m, nnodes, dof)
+                            col_j = get_dof_index_block_style(j, o, nnodes, dof)
+                            col_i = get_dof_index_block_style(i, o, nnodes, dof)
+
+                            push!(I_indices, row)
+                            push!(J_indices, col_j)
+                            push!(values, val)
+
+                            push!(I_indices, row)
+                            push!(J_indices, col_i)
+                            push!(values, -val)
+                        end
+                    end
+
+                    # Term 2: Direct assembly
+                    for (p_idx, p) in enumerate(neighbors_j)
+                        if bond_damage[j][p_idx] == 0.0 || p == i
+                            continue
+                        end
+
+                        X_jp = bond_geometry[j][p_idx]
+                        ω_jp = omega[j][p_idx] * bond_damage[j][p_idx]
+                        V_p = volume[p]
+
+                        coeff = dot(X_jp, D_inv_X)
+                        factor2 = ω_ji * V_i * ω_jp * V_p * coeff
+
+                        for m in 1:dof, o in 1:dof
+                            val = factor2 * Z_j[m, o]
+                            if abs(val) > 1e-14
+                                row = get_dof_index_block_style(i, m, nnodes, dof)
+                                col_j = get_dof_index_block_style(j, o, nnodes, dof)
+                                col_p = get_dof_index_block_style(p, o, nnodes, dof)
+
+                                push!(I_indices, row)
+                                push!(J_indices, col_j)
+                                push!(values, val)
+
+                                push!(I_indices, row)
+                                push!(J_indices, col_p)
+                                push!(values, -val)
+                            end
+                        end
                     end
                 end
             end
         end
+
+        # =================================================================
+        # Sparse assembly
+        # =================================================================
+
+        @timeit "sparse_assembly" begin
+            K_stab = sparse(I_indices, J_indices, values, size(K)...)
+            K_combined = K + K_stab
+        end
+
+        @timeit "verification" begin
+            expected_rank = nnodes * dof - Int(dof * (dof + 1) / 2)
+            actual_rank = rank(K_combined)
+
+            if actual_rank != expected_rank
+                @warn "Stiffness matrix rank is $actual_rank, expected $expected_rank"
+            else
+                @info "✓ Zero-energy stabilization: rank = $actual_rank"
+            end
+        end
+
+        Data_Manager.set_stiffness_matrix(-K_combined)
     end
 
-    # =================================================================
-    # Assemble and verify
-    # =================================================================
-
-    K_stab = sparse(I_indices, J_indices, values, size(K)...)
-    K_combined = K + K_stab
-
-    # Check eigenvalues
-    λ_stab = eigvals(Matrix(K_stab))
-    small_eigs_stab = sort(abs.(λ_stab))[1:5]
-
-    @info "K_stab: 5 smallest |eigenvalues|:"
-    for (idx, val) in enumerate(small_eigs_stab)
-        @info "  λ[$idx] = $val"
-    end
-
-    expected_rank = nnodes * dof - Int(dof * (dof + 1) / 2)
-    actual_rank = rank(K_combined)
-
-    if actual_rank != expected_rank
-        @warn "Stiffness matrix rank is $actual_rank, expected $expected_rank"
-    else
-        @info "✓ Stiffness matrix assembly successful: rank = $actual_rank"
-    end
-
-    Data_Manager.set_stiffness_matrix(-K_combined)
     return nothing
 end
 
