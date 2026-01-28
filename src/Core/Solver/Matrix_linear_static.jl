@@ -32,6 +32,27 @@ using ..Model_Factory.Pre_Calculation.Bond_Deformation
 export init_solver
 export run_solver
 
+mutable struct DisplacementSolverCache
+    # Workspace
+    F_modified::Vector{Float64}
+    bc_mask::BitVector
+    temp::Vector{Float64}
+    u_free::Vector{Float64}
+
+    # LU cache
+    K_free_lu::Union{Nothing,Any}
+    last_non_BCs::Vector{Int}
+
+    # Active DOFs cache
+    K_active_cached::Union{Nothing,AbstractMatrix{Float64}}
+    last_active_dofs::Vector{Int}
+
+    function DisplacementSolverCache(n_total::Int)
+        new(Float64[], BitVector(undef, n_total), Float64[], Float64[],
+            nothing, Int[], nothing, Int[])
+    end
+end
+
 """
 	compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64}, lambda::Float64, Cv::Float64)
 
@@ -124,7 +145,8 @@ function init_solver(solver_options::Dict{Any,Any},
         model_param = Data_Manager.get_properties(block, "Material Model")
         Correspondence_matrix_based.init_model(nodes, model_param, block)
     end
-    Correspondence_matrix_based.init_matrix()
+
+    @timeit "init matrix" Correspondence_matrix_based.init_matrix()
 
     solver_options["Matrix update"] = get(params["Linear Static Matrix Based"],
                                           "Matrix update", false)
@@ -206,9 +228,7 @@ function run_solver(solver_options::Dict{Any,Any},
     dof = Data_Manager.get_dof()
     nnodes = Data_Manager.get_nnodes()
 
-    volume = Data_Manager.get_field("Volume")
     delta_u = Data_Manager.get_field("Delta Displacements")
-    external_force_densities = Data_Manager.get_field("External Force Densities")
 
     matrix_update::Bool = solver_options["Matrix update"]
 
@@ -220,7 +240,7 @@ function run_solver(solver_options::Dict{Any,Any},
 
     displacement_solver_cache = DisplacementSolverCache(nnodes * dof)
 
-    # Bestimme ob alle Knoten aktiv sind
+    # Determine if all nodes are active
     all_nodes_active = length(active_nodes) == nnodes
 
     non_BCs_global = Data_Manager.get_bc_free_dof()
@@ -267,7 +287,7 @@ function run_solver(solver_options::Dict{Any,Any},
             active_list = Data_Manager.get_field("Active")
             active_nodes = find_active_nodes(active_list, active_nodes, nodes)
 
-            # test status
+            # Test current status
             current_all_active = length(active_nodes) == nnodes
 
             if !current_all_active
@@ -276,26 +296,69 @@ function run_solver(solver_options::Dict{Any,Any},
                     K = Data_Manager.get_stiffness_matrix()
                 end
 
-                # Lokale Indizierung für reduzierte Matrix
-                active_dofs_local,
-                local_to_global = get_active_dof(active_nodes, dof,
-                                                 nnodes)
-                active_non_BCs_local = filter_and_map_bc(non_BCs_global, local_to_global)
+                # Build global DOF indices for active nodes
+                # Using block-style indexing: global_idx = (d - 1) * nnodes + node
+                active_dofs_global = Vector{Int}(undef, length(active_nodes) * dof)
+                idx = 1
+                for d in 1:dof
+                    for node in active_nodes
+                        active_dofs_global[idx] = (d - 1) * nnodes + node
+                        idx += 1
+                    end
+                end
+                sort!(active_dofs_global)
+
+                # Filter non_BCs to active DOFs
+                active_non_BCs_global = intersect(non_BCs_global, active_dofs_global)
 
                 @timeit "compute_displacements (partial)" begin
-                    @views compute_displacements!(K,
-                                                  active_dofs_local,
-                                                  active_non_BCs_local,
-                                                  uNP1[active_nodes, :],
-                                                  force_densities_NP1[active_nodes, :],
-                                                  external_force_densities[active_nodes, :],
-                                                  displacement_solver_cache)
-                    for iID in active_nodes
-                        @. @views forces[iID, :] = force_densities_NP1[iID, :] * volume[iID]
+                    if length(active_non_BCs_global) > 0
+                        # Create views to active node data in matrix form
+                        u_active_nodes = @view uNP1[active_nodes, :]
+                        F_int_active_nodes = @view force_densities_NP1[active_nodes, :]
+                        F_ext_active_nodes = @view external_force_densities[active_nodes, :]
+
+                        # Build mapping from global to active indices
+                        global_to_active = Dict{Int,Int}()
+                        sizehint!(global_to_active, length(active_dofs_global))
+                        for (active_idx, global_idx) in enumerate(active_dofs_global)
+                            global_to_active[global_idx] = active_idx
+                        end
+
+                        # Map BC indices to active system
+                        active_non_BCs_local = Vector{Int}(undef,
+                                                           length(active_non_BCs_global))
+                        @inbounds for (i, g) in enumerate(active_non_BCs_global)
+                            active_non_BCs_local[i] = global_to_active[g]
+                        end
+
+                        # Extract submatrix for active DOFs
+                        K_active = K[active_dofs_global, active_dofs_global]
+
+                        # Solve system using same structure as reference
+                        # but with mapping for active nodes
+                        compute_displacements_active_subset!(K_active,
+                                                             active_dofs_global,
+                                                             active_non_BCs_local,
+                                                             u_active_nodes,
+                                                             F_int_active_nodes,
+                                                             F_ext_active_nodes,
+                                                             volume[active_nodes],
+                                                             active_nodes,
+                                                             nnodes,
+                                                             dof,
+                                                             displacement_solver_cache)
+                    end
+
+                    # Update forces for active nodes
+                    @inbounds for iID in active_nodes
+                        for d in 1:dof
+                            forces[iID, d] = force_densities_NP1[iID, d] * volume[iID]
+                        end
                     end
                 end
             else
-                # all nodes are active
+                # All nodes are active
                 if matrix_update
                     @timeit "update matrix (all active)" begin
                         compute_matrix(active_nodes)
@@ -313,6 +376,13 @@ function run_solver(solver_options::Dict{Any,Any},
                                                   force_densities_NP1,
                                                   external_force_densities,
                                                   displacement_solver_cache)
+
+                    # Update forces for all nodes
+                    @inbounds for iID in nodes
+                        for d in 1:dof
+                            forces[iID, d] = force_densities_NP1[iID, d] * volume[iID]
+                        end
+                    end
                 end
             end
 
@@ -324,9 +394,7 @@ function run_solver(solver_options::Dict{Any,Any},
 
             compute_parabolic_problems_after_model_evaluation(active_nodes, solver_options,
                                                               dt)
-            for iID in nodes
-                @. @views forces[iID, :] = force_densities_NP1[iID, :] * volume[iID]
-            end
+
             @. velocities = (uNP1 - uN) / dt
             @. @views deformed_coorNP1 = coor + uNP1
 
@@ -345,7 +413,7 @@ function run_solver(solver_options::Dict{Any,Any},
             Data_Manager.set_current_time(time)
 
             if idt % ceil(nsteps / 100) == 0
-                @info "Step: $idt / $(nsteps+1) [$time s]"
+                @info "Step: $idt / $(nsteps) [$time s]"
             end
             if rank == 0 && !silent
                 set_postfix(iter, t = @sprintf("%.4e", time))
@@ -356,6 +424,145 @@ function run_solver(solver_options::Dict{Any,Any},
     end
     Data_Manager.set_current_time(time - dt)
     return result_files
+end
+
+# New function for active subset that mimics reference implementation
+function compute_displacements_active_subset!(K_active::AbstractMatrix{Float64},
+                                              active_dofs_global::AbstractVector{Int},
+                                              active_non_BCs::AbstractVector{Int},
+                                              u_active::AbstractMatrix{Float64},
+                                              F_int_active::AbstractMatrix{Float64},
+                                              F_ext_active::AbstractMatrix{Float64},
+                                              volume_active::AbstractVector{Float64},
+                                              active_nodes::AbstractVector{Int},
+                                              nnodes::Int,
+                                              dof::Int,
+                                              solver::DisplacementSolverCache)
+    isempty(active_non_BCs) && return nothing
+
+    n_active_nodes = length(active_nodes)
+    n_active_dofs = n_active_nodes * dof
+
+    # Vectorize matrices (same as reference)
+    u_vec = vec(u_active)
+    F_int_vec = vec(F_int_active)
+    F_ext_vec = vec(F_ext_active)
+
+    n_free = length(active_non_BCs)
+    has_BCs = n_free < n_active_dofs
+
+    # Resize buffers
+    length(solver.F_modified) != n_free && resize!(solver.F_modified, n_free)
+    length(solver.bc_mask) != n_active_dofs && resize!(solver.bc_mask, n_active_dofs)
+
+    # Modify force vector to account for prescribed displacements (same as reference)
+    if has_BCs
+        fill!(solver.bc_mask, true)
+        @inbounds for i in active_non_BCs
+            solver.bc_mask[i] = false
+        end
+
+        K_sub = K_active[active_non_BCs, solver.bc_mask]
+        u_bc = @view u_vec[solver.bc_mask]
+
+        length(solver.temp) != n_free && resize!(solver.temp, n_free)
+        mul!(solver.temp, K_sub, u_bc)
+
+        @inbounds for (idx, i) in enumerate(active_non_BCs)
+            F_int_vec[i] += solver.temp[idx]
+        end
+    end
+
+    # Build modified force vector (same as reference)
+    @inbounds for (idx, i) in enumerate(active_non_BCs)
+        solver.F_modified[idx] = F_ext_vec[i] - F_int_vec[i]
+    end
+
+    # LU factorization and solve (same as reference)
+    @timeit "LU factorization" begin
+        K_free = K_active[active_non_BCs, active_non_BCs]
+        try
+            solver.K_free_lu = lu(K_free)
+        catch e
+            @error "LU factorization failed for reduced system"
+            @error "Matrix size: $(size(K_free))"
+            @error "Rank: $(rank(K_free))"
+            rethrow(e)
+        end
+    end
+
+    length(solver.u_free) != n_free && resize!(solver.u_free, n_free)
+
+    @timeit "ldiv" ldiv!(solver.u_free, solver.K_free_lu, solver.F_modified)
+
+    # Write solution back (same as reference)
+    @inbounds for (idx, i) in enumerate(active_non_BCs)
+        u_vec[i] = solver.u_free[idx]
+    end
+
+    return nothing
+end
+
+# Neue Hilfsfunktion für reduziertes System
+function compute_displacements_reduced!(K_active::AbstractMatrix{Float64},
+                                        active_non_BCS::AbstractVector{Int},
+                                        u_active::AbstractVector{Float64},
+                                        F_int_active::AbstractVector{Float64},
+                                        F_ext_active::AbstractVector{Float64},
+                                        solver::DisplacementSolverCache)
+    isempty(active_non_BCS) && return nothing
+
+    n_total = length(u_active)
+    n_free = length(active_non_BCS)
+
+    length(solver.F_modified) != n_free && resize!(solver.F_modified, n_free)
+    length(solver.bc_mask) != n_total && resize!(solver.bc_mask, n_total)
+
+    has_BCs = n_free < n_total
+
+    if has_BCs
+        fill!(solver.bc_mask, true)
+        @inbounds for i in active_non_BCS
+            solver.bc_mask[i] = false
+        end
+
+        K_sub = K_active[active_non_BCS, solver.bc_mask]
+        u_bc = @view u_active[solver.bc_mask]
+
+        length(solver.temp) != n_free && resize!(solver.temp, n_free)
+        mul!(solver.temp, K_sub, u_bc)
+
+        @inbounds for (idx, i) in enumerate(active_non_BCS)
+            F_int_active[i] += solver.temp[idx]
+        end
+    end
+
+    @inbounds for (idx, i) in enumerate(active_non_BCS)
+        solver.F_modified[idx] = F_ext_active[i] - F_int_active[i]
+    end
+
+    # LU factorization
+    @timeit "LU factorization" begin
+        K_free = K_active[active_non_BCS, active_non_BCS]
+        try
+            solver.K_free_lu = lu(K_free)
+        catch e
+            @error "LU factorization failed: $e"
+            @error "Matrix size: $(size(K_free))"
+            @error "Condition number: $(cond(K_free))"
+            rethrow(e)
+        end
+    end
+
+    length(solver.u_free) != n_free && resize!(solver.u_free, n_free)
+
+    @timeit "ldiv" ldiv!(solver.u_free, solver.K_free_lu, solver.F_modified)
+
+    @inbounds for (idx, i) in enumerate(active_non_BCS)
+        u_active[i] = solver.u_free[idx]
+    end
+
+    return nothing
 end
 
 function get_active_dof(active_nodes::AbstractVector{Int64}, dof::Int64, nnodes::Int64)
@@ -392,27 +599,6 @@ function compute_matrix(nodes::AbstractVector{Int64})
         return Data_Manager.get_stiffness_matrix()
     end
     Correspondence_matrix_based.compute_model(nodes)
-end
-
-mutable struct DisplacementSolverCache
-    # Workspace
-    F_modified::Vector{Float64}
-    bc_mask::BitVector
-    temp::Vector{Float64}
-    u_free::Vector{Float64}
-
-    # LU cache
-    K_free_lu::Union{Nothing,Any}
-    last_non_BCs::Vector{Int}
-
-    # Active DOFs cache
-    K_active_cached::Union{Nothing,AbstractMatrix{Float64}}
-    last_active_dofs::Vector{Int}
-
-    function DisplacementSolverCache(n_total::Int)
-        new(Float64[], BitVector(undef, n_total), Float64[], Float64[],
-            nothing, Int[], nothing, Int[])
-    end
 end
 
 """
@@ -486,6 +672,7 @@ function compute_displacements!(K::AbstractMatrix{Float64},
     if solver.K_free_lu === nothing || solver.last_non_BCs != active_non_BCS
         @timeit "LU factorization" begin
             K_free = K_active[active_non_BCS, active_non_BCS]
+
             try
                 solver.K_free_lu = lu(K_free)
             catch e
