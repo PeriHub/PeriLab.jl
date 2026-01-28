@@ -8,8 +8,8 @@ cd("fullscale_tests/" * folder_name) do
     run_perilab("linear_static_matrix_based_solver_3D", 1, true, folder_name)
     run_perilab("linear_static_matrix_based_solver_DCBmodel", 1, true, folder_name)
     run_perilab("linear_static_matrix_based_solver_switch_DCBmodel", 1, true, folder_name)
-    run_perilab("linear_static_matrix_based_shear", 1, true, folder_name)
     run_perilab("linear_static_matrix_based_tension", 1, true, folder_name)
     run_perilab("linear_static_matrix_based_thermal_expansion", 1, true, folder_name)
     run_perilab("linear_static_matrix_based_bending", 1, true, folder_name)
+    run_perilab("linear_static_matrix_based_shear", 1, true, folder_name)
 end

@@ -7,7 +7,7 @@ PeriLab:
     All:
       Additive Model: Additive Model 1
       Block ID: 1
-      Density: 1000
+      Density: 100000
       Material Model: PLA
       Horizon: 0.001505
       Specific Heat Capacity: 3000.33
@@ -16,9 +16,7 @@ PeriLab:
     Input Mesh File: mesh.txt
     Type: Text File
     Node Sets:
-      Node Set 1: x<0.0001
-      Node Set 2: y<0.0001
-      Node Set 3: x>-10.01
+      Node Set 1: y<0.0001
   Models:
     Additive Models:
       Additive Model 1:
@@ -39,28 +37,23 @@ PeriLab:
         #Print Bed Y Coordinate: 0.0
         Thermal Conductivity: 0.15
         Thermal Conductivity Print Bed: 1.2
-        Thermal Expansion Coefficient: 2.5e-6
+        Thermal Expansion Coefficient: 2.5e-9
         Reference Temperature: 0.0
         Thermal Model: Thermal Expansion + Thermal Flow + Heat Transfer
 
   Boundary Conditions:
     BC_1:
       Variable: "Displacements"
-      Node Set: "Node Set 2"
+      Node Set: "Node Set 1"
       Coordinate: "x"
       Value: "0.0"
       Type: "Dirichlet"
     BC_2:
       Variable: "Displacements"
-      Node Set: "Node Set 2"
+      Node Set: "Node Set 1"
       Coordinate: "y"
       Value: "0.0"
       Type: "Dirichlet"
-    # BC_3:
-    #   Variable: "Temperature"
-    #   Node Set: "Node Set 3"
-    #   Value: "100.0*t"
-    #   Type: "Dirichlet"
   Outputs:
     Output1:
       Number of Output Steps: 400

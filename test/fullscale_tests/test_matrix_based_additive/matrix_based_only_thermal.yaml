@@ -17,7 +17,8 @@ PeriLab:
     Node Sets:
       Node Set 1: x<0.0001
       Node Set 2: y<0.0001
-      Node Set 3: x>-10.01
+      #Node Set 3: x>-10.01
+      Node Set 3: x>-0.0099
   Models:
     Material Models:
       PLA:
@@ -34,14 +35,14 @@ PeriLab:
         #Print Bed Y Coordinate: 0.0
         Thermal Conductivity: 0.15
         Thermal Conductivity Print Bed: 1.2
-        Thermal Expansion Coefficient: 2.5e-8
+        Thermal Expansion Coefficient: 1e-6
         Reference Temperature: 0.0
-        Thermal Model: Thermal Expansion + Thermal Flow + Heat Transfer
+        Thermal Model: Thermal Expansion
 
   Boundary Conditions:
     BC_1:
       Variable: "Displacements"
-      Node Set: "Node Set 2"
+      Node Set: "Node Set 1"
       Coordinate: "x"
       Value: "0.0"
       Type: "Dirichlet"
@@ -51,10 +52,16 @@ PeriLab:
       Coordinate: "y"
       Value: "0.0"
       Type: "Dirichlet"
-    # BC_3:
-    #   Variable: "Temperature"
+    BC_3:
+      Variable: "Temperature"
+      Node Set: "Node Set 3"
+      Value: "100"
+      Type: "Dirichlet"
+    #BC_3:
+    #   Variable: "Displacements"
     #   Node Set: "Node Set 3"
-    #   Value: "100.0*t"
+    #   Coordinate: "x"
+    #   Value: "0.001"
     #   Type: "Dirichlet"
   Outputs:
     Output1:
@@ -68,12 +75,15 @@ PeriLab:
         Temperature: true
         Specific Volume: true
         Volume: true
+        Strain: true
   Solver:
     Additive Models: false
-    Final Time: 20
+    Final Time: 1
     Initial Time: 0.0
     Number of Steps: 20
     Material Models: true
     Thermal Models: true
     Linear Static Matrix Based:
-      Matrix update: true
+      Matrix update: false
+    #Verlet:
+    #  Safty Factor: 1.0
