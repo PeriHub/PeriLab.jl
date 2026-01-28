@@ -3,22 +3,31 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Correspondence_matrix_based
-using Base.Threads
 using LinearAlgebra
 using LoopVectorization: @turbo
 using SparseArrays
-using StaticArrays: @MMatrix
 using TimerOutputs: @timeit
 using ...Data_Manager
 using ...Material_Basis: get_Hooke_matrix
-using ....Helpers: get_fourth_order, progress_bar
+using ....Helpers: get_fourth_order
 using ...Zero_Energy_Control
 
 export init_model
-export add_zero_energy_stiff!
-export compute_bond_force
+export compute_model
 export init_matrix
-export get_dof_index_block_style
+
+# =============================================================================
+# Type-stable helper functions
+# =============================================================================
+
+@inline function get_dof_index_block_style(node_id::Int, dof_component::Int,
+                                           nnodes::Int, ::Int)
+    return (dof_component - 1) * nnodes + node_id
+end
+
+# =============================================================================
+# Tensor computation kernels
+# =============================================================================
 
 function contraction!(C::Array{Float64,4}, B::Array{Float64,3}, dof::Int64,
                       CB::AbstractArray{Float64,3})
@@ -180,537 +189,300 @@ function precompute_CB_tensors!(CB_k::AbstractArray{Float64,4},
     return nothing
 end
 
-@inline function get_dof_index_block_style(node_id::Int, dof_component::Int,
-                                           nnodes::Int, dof::Int)
-    return (dof_component - 1) * nnodes + node_id
-end
+# =============================================================================
+# Precomputation phase (type-stable)
+# =============================================================================
 
-function assemble_stiffness(nodes::AbstractVector{Int64},
-                            active_nodes::AbstractVector{Int64},
-                            dof::Int64,
-                            C_Voigt::Array{Float64,3},
-                            inverse_shape_tensor::Array{Float64,3},
-                            number_of_neighbors::Vector{Int64},
-                            nlist::Vector{Vector{Int64}},
-                            volume::Vector{Float64},
-                            bond_geometry::Vector{Vector{Vector{Float64}}},
-                            omega::Vector{Vector{Float64}},
-                            bond_damage::Vector{Vector{Float64}},
-                            use_block_style::Bool = true)
-    nnodes = maximum(nodes)
-    n_total = nnodes * dof
+function precompute_CB_all_nodes!(all_CB_tensors::Vector{Array{Float64,4}},
+                                  nodes::AbstractVector{Int64},
+                                  C_Voigt::Array{Float64,3},
+                                  inverse_shape_tensor::Array{Float64,3},
+                                  nlist::Vector{Vector{Int64}},
+                                  volume::Vector{Float64},
+                                  bond_geometry::Vector{Vector{Vector{Float64}}},
+                                  omega::Vector{Vector{Float64}},
+                                  bond_damage::Vector{Vector{Float64}},
+                                  dof::Int64)
+    B_temp = dof == 2 ? zeros(2, 2, 2) : zeros(3, 3, 3)
 
-    I_indices = Int[]
-    J_indices = Int[]
-    values = Float64[]
-
-    # Precompute CB tensors
-    max_neighbors = maximum(number_of_neighbors)
-    all_CB_tensors = [zeros(max_neighbors, dof, dof, dof) for _ in nodes]
-
-    for i in nodes
+    @inbounds for i in nodes
         D_inv = @view inverse_shape_tensor[i, :, :]
         C_tensor = get_fourth_order(@view(C_Voigt[i, :, :]), dof)
         ni = nlist[i]
 
-        B_temp = dof == 2 ? zeros(2, 2, 2) : zeros(3, 3, 3)
         CB_k = @view all_CB_tensors[i][eachindex(ni), :, :, :]
         @views precompute_CB_tensors!(CB_k, C_tensor, D_inv, ni, volume,
                                       bond_geometry[i], omega[i], bond_damage[i], dof,
                                       B_temp)
     end
-
-    # FORWARD bonds assembly - exactly like development code
-    for i in active_nodes
-        D_inv_i = @view inverse_shape_tensor[i, :, :]
-        V_i = volume[i]
-        ni = nlist[i]
-        CB_k_i = @view all_CB_tensors[i][eachindex(ni), :, :, :]
-
-        # For each neighbor j, build K_ij matrix
-        for (j_idx, j) in enumerate(ni)
-            if bond_damage[i][j_idx] == 0.0
-                continue
-            end
-
-            ω_ij = omega[i][j_idx] * bond_damage[i][j_idx]
-            V_j = volume[j]
-            X_ij = bond_geometry[i][j_idx]
-
-            # Build local K_ij matrix for this bond
-            K_ij = zeros(dof, nnodes * dof)
-            K_block = zeros(dof, dof)
-
-            for (k_idx, k) in enumerate(ni)
-                if bond_damage[i][k_idx] == 0.0
-                    continue
-                end
-
-                ω_ik = omega[i][k_idx] * bond_damage[i][k_idx]
-                V_k = volume[k]
-
-                compute_stiffness_contribution(@view(CB_k_i[k_idx, :, :, :]),
-                                               D_inv_i, X_ij, ω_ij, 1.0,
-                                               ω_ik, V_k, dof, K_block)
-
-                # Fill K_ij with +/- pattern
-                for m in 1:dof, o in 1:dof
-                    if use_block_style
-                        col_i = get_dof_index_block_style(i, o, nnodes, dof)
-                        col_k = get_dof_index_block_style(k, o, nnodes, dof)
-                    else
-                        col_i = get_dof_index_interleaved(i, o, dof)
-                        col_k = get_dof_index_interleaved(k, o, dof)
-                    end
-
-                    K_ij[m, col_i] += K_block[m, o]
-                    K_ij[m, col_k] -= K_block[m, o]
-                end
-            end
-
-            # Add to global matrix (scaled by V_j)
-            for m in 1:dof
-                if use_block_style
-                    row = get_dof_index_block_style(i, m, nnodes, dof)
-                else
-                    row = get_dof_index_interleaved(i, m, dof)
-                end
-
-                for n_col in 1:n_total
-                    val = K_ij[m, n_col] * V_j
-                    if abs(val) > 1e-14
-                        push!(I_indices, row)
-                        push!(J_indices, n_col)
-                        push!(values, val)
-                    end
-                end
-            end
-        end
-    end
-
-    # BACKWARD bonds assembly - exactly like development code
-    for i in active_nodes
-        V_i = volume[i]
-        ni = nlist[i]
-
-        for j in active_nodes
-            if j == i
-                continue
-            end
-
-            j_neighbors = nlist[j]
-            i_pos_in_j = findfirst(==(i), j_neighbors)
-
-            if i_pos_in_j === nothing ||
-               omega[j][i_pos_in_j] * bond_damage[j][i_pos_in_j] == 0.0
-                continue
-            end
-
-            ω_ji = omega[j][i_pos_in_j] * bond_damage[j][i_pos_in_j]
-            X_ji = bond_geometry[j][i_pos_in_j]
-            D_inv_j = @view inverse_shape_tensor[j, :, :]
-            CB_k_j = @view all_CB_tensors[j][eachindex(j_neighbors), :, :, :]
-
-            K_ji = zeros(dof, nnodes * dof)
-            K_block = zeros(dof, dof)
-
-            for (k_idx, k) in enumerate(j_neighbors)
-                if omega[j][k_idx] * bond_damage[j][k_idx] == 0.0
-                    continue
-                end
-
-                ω_jk = omega[j][k_idx] * bond_damage[j][k_idx]
-                V_k = volume[k]
-
-                compute_stiffness_contribution(@view(CB_k_j[k_idx, :, :, :]),
-                                               D_inv_j, X_ji, ω_ji, 1.0,
-                                               ω_jk, V_k, dof, K_block)
-
-                for m in 1:dof, o in 1:dof
-                    if use_block_style
-                        col_j = get_dof_index_block_style(j, o, nnodes, dof)
-                        col_k = get_dof_index_block_style(k, o, nnodes, dof)
-                    else
-                        col_j = get_dof_index_interleaved(j, o, dof)
-                        col_k = get_dof_index_interleaved(k, o, dof)
-                    end
-
-                    K_ji[m, col_j] += K_block[m, o]
-                    K_ji[m, col_k] -= K_block[m, o]
-                end
-            end
-
-            # Subtract from global matrix (scaled by V_i)
-            for m in 1:dof
-                if use_block_style
-                    row = get_dof_index_block_style(i, m, nnodes, dof)
-                else
-                    row = get_dof_index_interleaved(i, m, dof)
-                end
-
-                for n_col in 1:n_total
-                    val = -K_ji[m, n_col] * V_i
-                    if abs(val) > 1e-14
-                        push!(I_indices, row)
-                        push!(J_indices, n_col)
-                        push!(values, val)
-                    end
-                end
-            end
-        end
-    end
-
-    return I_indices, J_indices, values, n_total
-end
-
-function partition_by_workload(nodes, workloads, n_threads)
-    total_work = sum(workloads)
-    target_work = total_work / n_threads
-
-    partitions = [Int64[] for _ in 1:n_threads]
-    current_thread = 1
-    current_work = 0.0
-
-    for (i, node) in enumerate(nodes)
-        if current_thread < n_threads && current_work >= target_work
-            current_thread += 1
-            current_work = 0.0
-        end
-        push!(partitions[current_thread], node)
-        current_work += workloads[i]
-    end
-
-    return partitions
-end
-
-function contract_C_Dinv(C::Array{Float64,4}, D_inv::AbstractMatrix{Float64}, d::Int)
-    Z = zeros(d, d)
-    for m in 1:d, n in 1:d
-        for o in 1:d, p in 1:d
-            Z[m, n] += C[m, n, o, p] * D_inv[o, p]
-        end
-    end
-    return Z
-end
-
-function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
-                                active_nodes::AbstractVector{Int64},
-                                dof::Int64,
-                                zStiff::Array{Float64,3},
-                                inverse_shape_tensor::Array{Float64,3},
-                                nlist::Vector{Vector{Int}},
-                                volume::Vector{Float64},
-                                bond_geometry::Vector{Vector{Vector{Float64}}},
-                                bond_damage::Vector{Vector{Float64}},
-                                omega::Vector{Vector{Float64}},
-                                use_block_style::Bool = true)
-    @timeit "zero_energy_stiff" begin
-        nnodes = Data_Manager.get_nnodes()
-        n_total = nnodes * dof
-
-        # Pre-allocate with estimated size (avg ~20 neighbors * 4 entries per bond * nnodes)
-        @timeit "initialization" begin
-            est_size = nnodes * 80 * dof * dof
-            I_indices = sizehint!(Int[], est_size)
-            J_indices = sizehint!(Int[], est_size)
-            values = sizehint!(Float64[], est_size)
-
-            # Z_i = C : D_i^(-1) - use views instead of copies
-            Z = Vector{SubArray{Float64,2}}(undef, maximum(active_nodes))
-            for i in active_nodes
-                Z[i] = @view zStiff[i, :, :]
-            end
-        end
-
-        # Reusable buffers to avoid allocations
-        @timeit "buffer_allocation" begin
-            K_block = zeros(dof, dof)
-            D_inv_X = Vector{Float64}(undef, dof)
-        end
-
-        # =================================================================
-        # FORWARD bonds assembly
-        # =================================================================
-
-        @timeit "forward_assembly" begin
-            @inbounds for i in active_nodes
-                neighbors_i = nlist[i]
-                D_inv_i = @view inverse_shape_tensor[i, :, :]
-                Z_i = Z[i]
-                n_neighbors = length(neighbors_i)
-
-                for (j_idx, j) in enumerate(neighbors_i)
-                    if bond_damage[i][j_idx] == 0.0
-                        continue
-                    end
-
-                    ω_ij = omega[i][j_idx] * bond_damage[i][j_idx]
-                    V_j = volume[j]
-                    X_ij = bond_geometry[i][j_idx]
-
-                    # Precompute D_inv * X_ij once - reuse buffer
-                    mul!(D_inv_X, D_inv_i, X_ij)
-
-                    # Compute γ_ij = 1 - α_ijj
-                    α_ijj = ω_ij * V_j * dot(X_ij, D_inv_X)
-                    γ_ij = 1.0 - α_ijj
-
-                    # ================================================
-                    # Term 1: γ_ij * U_ij - direct assembly
-                    # ================================================
-
-                    factor1 = ω_ij * γ_ij * V_j
-
-                    for m in 1:dof, o in 1:dof
-                        val = factor1 * Z_i[m, o]
-                        if abs(val) > 1e-14
-                            row = get_dof_index_block_style(i, m, nnodes, dof)
-                            col_i = get_dof_index_block_style(i, o, nnodes, dof)
-                            col_j = get_dof_index_block_style(j, o, nnodes, dof)
-
-                            push!(I_indices, row)
-                            push!(J_indices, col_i)
-                            push!(values, val)
-
-                            push!(I_indices, row)
-                            push!(J_indices, col_j)
-                            push!(values, -val)
-                        end
-                    end
-
-                    # ================================================
-                    # Term 2: -Σ_{p≠j} - direct assembly
-                    # ================================================
-
-                    for (p_idx, p) in enumerate(neighbors_i)
-                        if bond_damage[i][p_idx] == 0.0 || p == j
-                            continue
-                        end
-
-                        X_ip = bond_geometry[i][p_idx]
-                        ω_ip = omega[i][p_idx] * bond_damage[i][p_idx]
-                        V_p = volume[p]
-
-                        coeff = dot(X_ip, D_inv_X)
-                        factor2 = -ω_ij * V_j * ω_ip * V_p * coeff
-
-                        for m in 1:dof, o in 1:dof
-                            val = factor2 * Z_i[m, o]
-                            if abs(val) > 1e-14
-                                row = get_dof_index_block_style(i, m, nnodes, dof)
-                                col_i = get_dof_index_block_style(i, o, nnodes, dof)
-                                col_p = get_dof_index_block_style(p, o, nnodes, dof)
-
-                                push!(I_indices, row)
-                                push!(J_indices, col_i)
-                                push!(values, val)
-
-                                push!(I_indices, row)
-                                push!(J_indices, col_p)
-                                push!(values, -val)
-                            end
-                        end
-                    end
-                end
-            end
-        end
-
-        # =================================================================
-        # BACKWARD bonds assembly
-        # =================================================================
-
-        @timeit "backward_assembly" begin
-            @inbounds for i in active_nodes
-                V_i = volume[i]
-
-                for j in active_nodes
-                    if j == i
-                        continue
-                    end
-
-                    neighbors_j = nlist[j]
-                    i_pos_in_j = findfirst(==(i), neighbors_j)
-
-                    if i_pos_in_j === nothing || bond_damage[j][i_pos_in_j] == 0.0
-                        continue
-                    end
-
-                    D_inv_j = @view inverse_shape_tensor[j, :, :]
-                    Z_j = Z[j]
-                    ω_ji = omega[j][i_pos_in_j] * bond_damage[j][i_pos_in_j]
-                    X_ji = bond_geometry[j][i_pos_in_j]
-
-                    # Reuse buffer
-                    mul!(D_inv_X, D_inv_j, X_ji)
-
-                    # Compute γ_ji
-                    α_jii = ω_ji * V_i * dot(X_ji, D_inv_X)
-                    γ_ji = 1.0 - α_jii
-
-                    # Term 1: Direct assembly
-                    factor1 = -ω_ji * γ_ji * V_i
-
-                    for m in 1:dof, o in 1:dof
-                        val = factor1 * Z_j[m, o]
-                        if abs(val) > 1e-14
-                            row = get_dof_index_block_style(i, m, nnodes, dof)
-                            col_j = get_dof_index_block_style(j, o, nnodes, dof)
-                            col_i = get_dof_index_block_style(i, o, nnodes, dof)
-
-                            push!(I_indices, row)
-                            push!(J_indices, col_j)
-                            push!(values, val)
-
-                            push!(I_indices, row)
-                            push!(J_indices, col_i)
-                            push!(values, -val)
-                        end
-                    end
-
-                    # Term 2: Direct assembly
-                    for (p_idx, p) in enumerate(neighbors_j)
-                        if bond_damage[j][p_idx] == 0.0 || p == i
-                            continue
-                        end
-
-                        X_jp = bond_geometry[j][p_idx]
-                        ω_jp = omega[j][p_idx] * bond_damage[j][p_idx]
-                        V_p = volume[p]
-
-                        coeff = dot(X_jp, D_inv_X)
-                        factor2 = ω_ji * V_i * ω_jp * V_p * coeff
-
-                        for m in 1:dof, o in 1:dof
-                            val = factor2 * Z_j[m, o]
-                            if abs(val) > 1e-14
-                                row = get_dof_index_block_style(i, m, nnodes, dof)
-                                col_j = get_dof_index_block_style(j, o, nnodes, dof)
-                                col_p = get_dof_index_block_style(p, o, nnodes, dof)
-
-                                push!(I_indices, row)
-                                push!(J_indices, col_j)
-                                push!(values, val)
-
-                                push!(I_indices, row)
-                                push!(J_indices, col_p)
-                                push!(values, -val)
-                            end
-                        end
-                    end
-                end
-            end
-        end
-
-        # =================================================================
-        # Sparse assembly
-        # =================================================================
-
-        @timeit "sparse_assembly" begin
-            K_stab = sparse(I_indices, J_indices, values, size(K)...)
-            K_combined = K + K_stab
-        end
-
-        @timeit "verification" begin
-            expected_rank = nnodes * dof - Int(dof * (dof + 1) / 2)
-            actual_rank = rank(K_combined)
-
-            if actual_rank != expected_rank
-                @warn "Stiffness matrix rank is $actual_rank, expected $expected_rank"
-            else
-                @info "✓ Zero-energy stabilization: rank = $actual_rank"
-            end
-        end
-
-        Data_Manager.set_stiffness_matrix(-K_combined)
-    end
-
     return nothing
 end
 
-function compute_bond_force(bond_force::Vector{Vector{Vector{Float64}}},
-                            K::SparseMatrixCSC{Float64,Int64},
-                            u::Matrix{Float64},
-                            nodes::AbstractVector{Int64},
-                            nlist::Vector{Vector{Int64}},
-                            dof::Int64,
-                            use_block_style::Bool = true)
-    nnodes = size(u, 1)
+function setup_zero_energy_views(include_zero_energy::Bool,
+                                 zStiff::Union{Array{Float64,3},Nothing},
+                                 active_nodes::AbstractVector{Int64},
+                                 nnodes::Int)::Union{Vector{Union{SubArray{Float64,2},
+                                                                  Nothing}},
+                                                     Nothing}
+    if !include_zero_energy || zStiff === nothing
+        return nothing
+    end
 
-    @inbounds for i in nodes
-        ni = nlist[i]
+    Z_views = Vector{Union{SubArray{Float64,2},Nothing}}(nothing, nnodes)
+    @inbounds for i in active_nodes
+        Z_views[i] = @view zStiff[i, :, :]
+    end
+    return Z_views
+end
 
-        for (j_idx, j) in enumerate(ni)
-            f_ij = zeros(dof)
+# =============================================================================
+# Assembly subfunctions (type-stable)
+# =============================================================================
 
+function assemble_normal_stiffness_forward!(stiffness_dict::Dict{Tuple{Int,Int},Float64},
+                                            i::Int,
+                                            ni::Vector{Int64},
+                                            CB_k_i::SubArray,
+                                            D_inv_i::SubArray,
+                                            volume::Vector{Float64},
+                                            bond_geometry_i::Vector{Vector{Float64}},
+                                            omega_i::Vector{Float64},
+                                            bond_damage_i::Vector{Float64},
+                                            nnodes::Int,
+                                            dof::Int,
+                                            K_block::Matrix{Float64})
+    @inbounds for (j_idx, j) in enumerate(ni)
+        bond_damage_i[j_idx] == 0.0 && continue
+
+        ω_ij = omega_i[j_idx] * bond_damage_i[j_idx]
+        V_j = volume[j]
+        X_ij = bond_geometry_i[j_idx]
+
+        for (k_idx, k) in enumerate(ni)
+            bond_damage_i[k_idx] == 0.0 && continue
+
+            ω_ik = omega_i[k_idx] * bond_damage_i[k_idx]
+            V_k = volume[k]
+
+            compute_stiffness_contribution(@view(CB_k_i[k_idx, :, :, :]),
+                                           D_inv_i, X_ij, ω_ij, 1.0, ω_ik, V_k, dof,
+                                           K_block)
+
+            factor = V_j
             for m in 1:dof
-                if use_block_style
-                    i_idx = get_dof_index_block_style(i, m, nnodes, dof)
-                else
-                    i_idx = get_dof_index_interleaved(i, m, dof)
-                end
+                row = (m - 1) * nnodes + i
+                for o in 1:dof
+                    val_block = K_block[m, o] * factor
+                    abs(val_block) <= 1e-14 && continue
 
-                for n in 1:dof
-                    if use_block_style
-                        j_idx_global = get_dof_index_block_style(j, n, nnodes, dof)
-                    else
-                        j_idx_global = get_dof_index_interleaved(j, n, dof)
-                    end
+                    col_i = (o - 1) * nnodes + i
+                    col_k = (o - 1) * nnodes + k
 
-                    f_ij[m] += K[i_idx, j_idx_global] * (u[j, n] - u[i, n])
+                    key_i = (row, col_i)
+                    key_k = (row, col_k)
+                    stiffness_dict[key_i] = get(stiffness_dict, key_i, 0.0) + val_block
+                    stiffness_dict[key_k] = get(stiffness_dict, key_k, 0.0) - val_block
                 end
             end
-
-            bond_force[i][j_idx] = f_ij
         end
     end
+    return nothing
 end
 
-function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict, block_id::Int64)
-    Zero_Energy_Control.init_model(nodes, material_parameter, block_id)
-    if Data_Manager.get_max_rank() > 1
-        @error "Correspondence matrix based not implemented for parallel runs."
+function assemble_zero_energy_forward!(stiffness_dict::Dict{Tuple{Int,Int},Float64},
+                                       i::Int,
+                                       j::Int,
+                                       ni::Vector{Int64},
+                                       Z_i::SubArray{Float64,2},
+                                       D_inv_i::SubArray,
+                                       X_ij::Vector{Float64},
+                                       ω_ij::Float64,
+                                       V_j::Float64,
+                                       bond_geometry_i::Vector{Vector{Float64}},
+                                       omega_i::Vector{Float64},
+                                       bond_damage_i::Vector{Float64},
+                                       volume::Vector{Float64},
+                                       nnodes::Int,
+                                       dof::Int,
+                                       D_inv_X::Vector{Float64})
+    # Precompute D_inv * X_ij
+    mul!(D_inv_X, D_inv_i, X_ij)
+
+    # Compute γ_ij
+    α_ijj = ω_ij * V_j * dot(X_ij, D_inv_X)
+    γ_ij = 1.0 - α_ijj
+    factor1 = ω_ij * γ_ij * V_j
+
+    # Term 1: γ_ij * U_ij
+    @inbounds for m in 1:dof
+        row = (m - 1) * nnodes + i
+        for o in 1:dof
+            val = factor1 * Z_i[m, o]
+            abs(val) <= 1e-14 && continue
+
+            col_i = (o - 1) * nnodes + i
+            col_j = (o - 1) * nnodes + j
+
+            key_i = (row, col_i)
+            key_j = (row, col_j)
+            stiffness_dict[key_i] = get(stiffness_dict, key_i, 0.0) + val
+            stiffness_dict[key_j] = get(stiffness_dict, key_j, 0.0) - val
+        end
     end
+
+    # Term 2: Coupling terms
+    @inbounds for (p_idx, p) in enumerate(ni)
+        (bond_damage_i[p_idx] == 0.0 || p == j) && continue
+
+        X_ip = bond_geometry_i[p_idx]
+        ω_ip = omega_i[p_idx] * bond_damage_i[p_idx]
+        V_p = volume[p]
+
+        coeff = dot(X_ip, D_inv_X)
+        factor2 = -ω_ij * V_j * ω_ip * V_p * coeff
+
+        for m in 1:dof
+            row = (m - 1) * nnodes + i
+            for o in 1:dof
+                val = factor2 * Z_i[m, o]
+                abs(val) <= 1e-14 && continue
+
+                col_i = (o - 1) * nnodes + i
+                col_p = (o - 1) * nnodes + p
+
+                key_i = (row, col_i)
+                key_p = (row, col_p)
+                stiffness_dict[key_i] = get(stiffness_dict, key_i, 0.0) + val
+                stiffness_dict[key_p] = get(stiffness_dict, key_p, 0.0) - val
+            end
+        end
+    end
+    return nothing
 end
 
+function assemble_normal_stiffness_backward!(stiffness_dict::Dict{Tuple{Int,Int},Float64},
+                                             i::Int,
+                                             j::Int,
+                                             CB_k_j::SubArray,
+                                             D_inv_j::SubArray,
+                                             X_ji::Vector{Float64},
+                                             ω_ji::Float64,
+                                             V_i::Float64,
+                                             j_neighbors::Vector{Int64},
+                                             volume::Vector{Float64},
+                                             omega_j::Vector{Float64},
+                                             bond_damage_j::Vector{Float64},
+                                             nnodes::Int,
+                                             dof::Int,
+                                             K_block::Matrix{Float64})
+    @inbounds for (k_idx, k) in enumerate(j_neighbors)
+        (omega_j[k_idx] * bond_damage_j[k_idx] == 0.0) && continue
+
+        ω_jk = omega_j[k_idx] * bond_damage_j[k_idx]
+        V_k = volume[k]
+
+        compute_stiffness_contribution(@view(CB_k_j[k_idx, :, :, :]),
+                                       D_inv_j, X_ji, ω_ji, 1.0, ω_jk, V_k, dof, K_block)
+
+        factor = -V_i
+        for m in 1:dof
+            row = (m - 1) * nnodes + i
+            for o in 1:dof
+                val_block = K_block[m, o] * factor
+                abs(val_block) <= 1e-14 && continue
+
+                col_j = (o - 1) * nnodes + j
+                col_k = (o - 1) * nnodes + k
+
+                key_j = (row, col_j)
+                key_k = (row, col_k)
+                stiffness_dict[key_j] = get(stiffness_dict, key_j, 0.0) + val_block
+                stiffness_dict[key_k] = get(stiffness_dict, key_k, 0.0) - val_block
+            end
+        end
+    end
+    return nothing
+end
+
+function assemble_zero_energy_backward!(stiffness_dict::Dict{Tuple{Int,Int},Float64},
+                                        i::Int,
+                                        j::Int,
+                                        Z_j::SubArray{Float64,2},
+                                        D_inv_j::SubArray,
+                                        X_ji::Vector{Float64},
+                                        ω_ji::Float64,
+                                        V_i::Float64,
+                                        j_neighbors::Vector{Int64},
+                                        bond_geometry_j::Vector{Vector{Float64}},
+                                        omega_j::Vector{Float64},
+                                        bond_damage_j::Vector{Float64},
+                                        volume::Vector{Float64},
+                                        nnodes::Int,
+                                        dof::Int,
+                                        D_inv_X::Vector{Float64})
+    mul!(D_inv_X, D_inv_j, X_ji)
+
+    α_jii = ω_ji * V_i * dot(X_ji, D_inv_X)
+    γ_ji = 1.0 - α_jii
+    factor1 = -ω_ji * γ_ji * V_i
+
+    # Term 1
+    @inbounds for m in 1:dof
+        row = (m - 1) * nnodes + i
+        for o in 1:dof
+            val = factor1 * Z_j[m, o]
+            abs(val) <= 1e-14 && continue
+
+            col_j = (o - 1) * nnodes + j
+            col_i = (o - 1) * nnodes + i
+
+            key_j = (row, col_j)
+            key_i = (row, col_i)
+            stiffness_dict[key_j] = get(stiffness_dict, key_j, 0.0) + val
+            stiffness_dict[key_i] = get(stiffness_dict, key_i, 0.0) - val
+        end
+    end
+
+    # Term 2
+    @inbounds for (p_idx, p) in enumerate(j_neighbors)
+        (bond_damage_j[p_idx] == 0.0 || p == i) && continue
+
+        X_jp = bond_geometry_j[p_idx]
+        ω_jp = omega_j[p_idx] * bond_damage_j[p_idx]
+        V_p = volume[p]
+
+        coeff = dot(X_jp, D_inv_X)
+        factor2 = ω_ji * V_i * ω_jp * V_p * coeff
+
+        for m in 1:dof
+            row = (m - 1) * nnodes + i
+            for o in 1:dof
+                val = factor2 * Z_j[m, o]
+                abs(val) <= 1e-14 && continue
+
+                col_j = (o - 1) * nnodes + j
+                col_p = (o - 1) * nnodes + p
+
+                key_j = (row, col_j)
+                key_p = (row, col_p)
+                stiffness_dict[key_j] = get(stiffness_dict, key_j, 0.0) + val
+                stiffness_dict[key_p] = get(stiffness_dict, key_p, 0.0) - val
+            end
+        end
+    end
+    return nothing
+end
+
+# =============================================================================
+# Main assembly function (type-stable)
+# =============================================================================
+
 """
-    assemble_stiffness_with_zero_energy(nodes, active_nodes, dof, C_Voigt,
-                                        inverse_shape_tensor, number_of_neighbors,
-                                        nlist, volume, bond_geometry, omega,
-                                        bond_damage, zStiff,
-                                        include_zero_energy::Bool,
-                                        use_block_style::Bool = true)
+    assemble_stiffness_with_zero_energy(...)
 
-Assemble stiffness matrix with optional zero-energy stabilization in a single pass.
-Memory-optimized by combining both contributions into a single triplet list assembly.
-
-# Arguments
-- `nodes`: All node IDs in the system
-- `active_nodes`: Subset of nodes to assemble (typically active/damaged nodes)
-- `dof`: Degrees of freedom per node (2 or 3)
-- `C_Voigt`: Elasticity matrix in Voigt notation [nnodes × dof × dof]
-- `inverse_shape_tensor`: Inverse shape tensor for each node [nnodes × dof × dof]
-- `number_of_neighbors`: Number of neighbors per node
-- `nlist`: Neighbor list for each node
-- `volume`: Nodal volumes
-- `bond_geometry`: Bond geometry vectors
-- `omega`: Influence function values
-- `bond_damage`: Bond damage values (0 = broken, 1 = intact)
-- `zStiff`: Zero-energy stiffness tensor Z = C : D⁻¹ [nnodes × dof × dof]
-- `include_zero_energy`: If true, adds zero-energy mode stabilization
-- `use_block_style`: If true, uses block-style DOF indexing, otherwise interleaved
-
-# Returns
-- `I_indices, J_indices, values, n_total`: Triplet lists for sparse matrix assembly
-
-# Memory optimization strategy
-- Single triplet list for both contributions
-- Reusable buffers for tensor operations
-- Views instead of copies for submatrices
-- Pre-allocated CB tensors shared between forward/backward passes
-- Direct assembly without intermediate K_ij matrices for zero-energy terms
+Assemble stiffness matrix with optional zero-energy stabilization.
+Type-stable version using dictionary accumulation and subfunctions.
 """
-
 function assemble_stiffness_with_zero_energy(nodes::AbstractVector{Int64},
                                              active_nodes::AbstractVector{Int64},
                                              dof::Int64,
@@ -722,316 +494,120 @@ function assemble_stiffness_with_zero_energy(nodes::AbstractVector{Int64},
                                              bond_geometry::Vector{Vector{Vector{Float64}}},
                                              omega::Vector{Vector{Float64}},
                                              bond_damage::Vector{Vector{Float64}},
-                                             zStiff::Union{Array{Float64,3},Nothing} = nothing,
-                                             include_zero_energy::Bool = false,
-                                             use_block_style::Bool = true)
-    nnodes = maximum(nodes)
-    n_total = nnodes * dof
+                                             zStiff::Union{Array{Float64,3},Nothing},
+                                             include_zero_energy::Bool,
+                                             use_block_style::Bool)::Tuple{Vector{Int},
+                                                                           Vector{Int},
+                                                                           Vector{Float64},
+                                                                           Int}
+    nnodes::Int = maximum(nodes)
+    n_total::Int = nnodes * dof
 
-    # Validate zero-energy input
-    if include_zero_energy && (zStiff === nothing)
+    # Validate input
+    if include_zero_energy && zStiff === nothing
         @error "Zero-energy stabilization requested but zStiff not provided"
         return Int[], Int[], Float64[], n_total
     end
 
-    # Calculate accurate size estimate
-    est_size = sum((length(nlist[i]) + 1)^2 * dof^2 for i in active_nodes)
-
-    # Use Dictionary to accumulate entries - automatically handles duplicates
+    # Initialize dictionary with size hint
+    est_size::Int = sum((length(nlist[i]) + 1)^2 * dof^2 for i in active_nodes)
     stiffness_dict = Dict{Tuple{Int,Int},Float64}()
     sizehint!(stiffness_dict, est_size)
 
-    # =================================================================
-    # PRECOMPUTATION PHASE
-    # =================================================================
-
-    # Precompute CB tensors for normal stiffness
-    max_neighbors = maximum(number_of_neighbors)
+    # Precompute CB tensors
+    max_neighbors::Int = maximum(number_of_neighbors)
     all_CB_tensors = [zeros(max_neighbors, dof, dof, dof) for _ in 1:nnodes]
 
-    @timeit "precompute_CB_tensors" begin
-        @inbounds for i in nodes
-            D_inv = @view inverse_shape_tensor[i, :, :]
-            C_tensor = get_fourth_order(@view(C_Voigt[i, :, :]), dof)
-            ni = nlist[i]
+    @timeit "precompute_CB" precompute_CB_all_nodes!(all_CB_tensors, nodes, C_Voigt,
+                                                     inverse_shape_tensor, nlist, volume,
+                                                     bond_geometry, omega, bond_damage,
+                                                     dof)
 
-            B_temp = dof == 2 ? zeros(2, 2, 2) : zeros(3, 3, 3)
-            CB_k = @view all_CB_tensors[i][eachindex(ni), :, :, :]
-            @views precompute_CB_tensors!(CB_k, C_tensor, D_inv, ni, volume,
-                                          bond_geometry[i], omega[i], bond_damage[i], dof,
-                                          B_temp)
-        end
-    end
+    # Setup zero-energy views
+    @timeit "setup_Z" Z=setup_zero_energy_views(include_zero_energy, zStiff,
+                                                active_nodes, nnodes)
 
-    @timeit "precompute_Z_views" begin
-        # Precompute Z_i views for zero-energy (if needed)
-        Z = if include_zero_energy
-            Z_views = Vector{Union{SubArray{Float64,2},Nothing}}(nothing, nnodes)
-            for i in active_nodes
-                Z_views[i] = @view zStiff[i, :, :]
-            end
-            Z_views
-        else
-            nothing
-        end
-    end
-
-    # Reusable buffers to minimize allocations
+    # Reusable buffers
     K_block = zeros(dof, dof)
     D_inv_X = Vector{Float64}(undef, dof)
 
-    # Helper function to add/accumulate entry
-    @inline function add_entry!(row::Int, col::Int, val::Float64)
-        if abs(val) > 1e-14
-            key = (row, col)
-            stiffness_dict[key] = get(stiffness_dict, key, 0.0) + val
-        end
-    end
-
-    # =================================================================
-    # FORWARD BONDS ASSEMBLY - Memory optimized
-    # =================================================================
-    @timeit "forward_assembly" begin
+    # Forward assembly
+    @timeit "forward" begin
         @inbounds for i in active_nodes
-            D_inv_i = @view inverse_shape_tensor[i, :, :]
-            V_i = volume[i]
             ni = nlist[i]
+            D_inv_i = @view inverse_shape_tensor[i, :, :]
             CB_k_i = @view all_CB_tensors[i][eachindex(ni), :, :, :]
-            Z_i = include_zero_energy ? Z[i] : nothing
 
-            # Loop over neighbors j
-            for (j_idx, j) in enumerate(ni)
-                if bond_damage[i][j_idx] == 0.0
-                    continue
-                end
+            # Normal stiffness
+            assemble_normal_stiffness_forward!(stiffness_dict, i, ni, CB_k_i, D_inv_i,
+                                               volume, bond_geometry[i], omega[i],
+                                               bond_damage[i], nnodes, dof, K_block)
 
-                ω_ij = omega[i][j_idx] * bond_damage[i][j_idx]
-                V_j = volume[j]
-                X_ij = bond_geometry[i][j_idx]
+            # Zero-energy (if enabled)
+            if include_zero_energy
+                Z_i = Z[i]
+                for (j_idx, j) in enumerate(ni)
+                    bond_damage[i][j_idx] == 0.0 && continue
 
-                # ============================================================
-                # NORMAL STIFFNESS CONTRIBUTION - Direct assembly
-                # ============================================================
+                    ω_ij = omega[i][j_idx] * bond_damage[i][j_idx]
+                    V_j = volume[j]
+                    X_ij = bond_geometry[i][j_idx]
 
-                for (k_idx, k) in enumerate(ni)
-                    if bond_damage[i][k_idx] == 0.0
-                        continue
-                    end
-
-                    ω_ik = omega[i][k_idx] * bond_damage[i][k_idx]
-                    V_k = volume[k]
-
-                    compute_stiffness_contribution(@view(CB_k_i[k_idx, :, :, :]),
-                                                   D_inv_i, X_ij, ω_ij, 1.0, ω_ik, V_k, dof,
-                                                   K_block)
-
-                    # Direct assembly via dictionary
-                    factor = V_j
-                    for m in 1:dof
-                        row = get_dof_index_block_style(i, m, nnodes, dof)
-                        for o in 1:dof
-                            val_block = K_block[m, o] * factor
-                            if abs(val_block) > 1e-14
-                                col_i = get_dof_index_block_style(i, o, nnodes, dof)
-                                col_k = get_dof_index_block_style(k, o, nnodes, dof)
-
-                                add_entry!(row, col_i, val_block)
-                                add_entry!(row, col_k, -val_block)
-                            end
-                        end
-                    end
-                end
-
-                # ============================================================
-                # ZERO-ENERGY CONTRIBUTION (if enabled)
-                # ============================================================
-
-                if include_zero_energy
-                    # Precompute D_inv * X_ij
-                    mul!(D_inv_X, D_inv_i, X_ij)
-
-                    # Compute γ_ij = 1 - α_ijj
-                    α_ijj = ω_ij * V_j * dot(X_ij, D_inv_X)
-                    γ_ij = 1.0 - α_ijj
-
-                    # Term 1: γ_ij * U_ij - direct assembly
-                    factor1 = ω_ij * γ_ij * V_j
-
-                    for m in 1:dof
-                        row = get_dof_index_block_style(i, m, nnodes, dof)
-                        for o in 1:dof
-                            val = factor1 * Z_i[m, o]
-                            if abs(val) > 1e-14
-                                col_i = get_dof_index_block_style(i, o, nnodes, dof)
-                                col_j = get_dof_index_block_style(j, o, nnodes, dof)
-
-                                add_entry!(row, col_i, val)
-                                add_entry!(row, col_j, -val)
-                            end
-                        end
-                    end
-
-                    # Term 2: -Σ_{p≠j} coupling terms
-                    for (p_idx, p) in enumerate(ni)
-                        if bond_damage[i][p_idx] == 0.0 || p == j
-                            continue
-                        end
-
-                        X_ip = bond_geometry[i][p_idx]
-                        ω_ip = omega[i][p_idx] * bond_damage[i][p_idx]
-                        V_p = volume[p]
-
-                        coeff = dot(X_ip, D_inv_X)
-                        factor2 = -ω_ij * V_j * ω_ip * V_p * coeff
-
-                        for m in 1:dof
-                            row = get_dof_index_block_style(i, m, nnodes, dof)
-                            for o in 1:dof
-                                val = factor2 * Z_i[m, o]
-                                if abs(val) > 1e-14
-                                    col_i = get_dof_index_block_style(i, o, nnodes, dof)
-                                    col_p = get_dof_index_block_style(p, o, nnodes, dof)
-
-                                    add_entry!(row, col_i, val)
-                                    add_entry!(row, col_p, -val)
-                                end
-                            end
-                        end
-                    end
+                    assemble_zero_energy_forward!(stiffness_dict, i, j, ni, Z_i, D_inv_i,
+                                                  X_ij, ω_ij, V_j, bond_geometry[i],
+                                                  omega[i], bond_damage[i], volume, nnodes,
+                                                  dof, D_inv_X)
                 end
             end
         end
     end
 
-    # =================================================================
-    # BACKWARD BONDS ASSEMBLY - Memory optimized
-    # =================================================================
-    @timeit "backward_assembly" begin
+    # Backward assembly
+    @timeit "backward" begin
         @inbounds for i in active_nodes
             V_i = volume[i]
-            Z_i = include_zero_energy ? Z[i] : nothing
 
             for j in active_nodes
-                if j == i
-                    continue
-                end
+                j == i && continue
 
                 j_neighbors = nlist[j]
                 i_pos_in_j = findfirst(==(i), j_neighbors)
 
-                if i_pos_in_j === nothing ||
-                   omega[j][i_pos_in_j] * bond_damage[j][i_pos_in_j] == 0.0
-                    continue
-                end
+                (i_pos_in_j === nothing ||
+                 omega[j][i_pos_in_j] * bond_damage[j][i_pos_in_j] == 0.0) && continue
 
                 ω_ji = omega[j][i_pos_in_j] * bond_damage[j][i_pos_in_j]
                 X_ji = bond_geometry[j][i_pos_in_j]
                 D_inv_j = @view inverse_shape_tensor[j, :, :]
                 CB_k_j = @view all_CB_tensors[j][eachindex(j_neighbors), :, :, :]
-                Z_j = include_zero_energy ? Z[j] : nothing
 
-                # ============================================================
-                # NORMAL STIFFNESS CONTRIBUTION - Direct assembly
-                # ============================================================
+                # Normal stiffness
+                assemble_normal_stiffness_backward!(stiffness_dict, i, j, CB_k_j, D_inv_j,
+                                                    X_ji, ω_ji, V_i, j_neighbors, volume,
+                                                    omega[j], bond_damage[j], nnodes, dof,
+                                                    K_block)
 
-                for (k_idx, k) in enumerate(j_neighbors)
-                    if omega[j][k_idx] * bond_damage[j][k_idx] == 0.0
-                        continue
-                    end
-
-                    ω_jk = omega[j][k_idx] * bond_damage[j][k_idx]
-                    V_k = volume[k]
-
-                    compute_stiffness_contribution(@view(CB_k_j[k_idx, :, :, :]),
-                                                   D_inv_j, X_ji, ω_ji, 1.0, ω_jk, V_k, dof,
-                                                   K_block)
-
-                    # Direct assembly via dictionary
-                    factor = -V_i
-                    for m in 1:dof
-                        row = get_dof_index_block_style(i, m, nnodes, dof)
-                        for o in 1:dof
-                            val_block = K_block[m, o] * factor
-                            if abs(val_block) > 1e-14
-                                col_j = get_dof_index_block_style(j, o, nnodes, dof)
-                                col_k = get_dof_index_block_style(k, o, nnodes, dof)
-
-                                add_entry!(row, col_j, val_block)
-                                add_entry!(row, col_k, -val_block)
-                            end
-                        end
-                    end
-                end
-
-                # ============================================================
-                # ZERO-ENERGY CONTRIBUTION (if enabled)
-                # ============================================================
-
+                # Zero-energy (if enabled)
                 if include_zero_energy
-                    # Precompute D_inv * X_ji (reuse buffer)
-                    mul!(D_inv_X, D_inv_j, X_ji)
-
-                    # Compute γ_ji = 1 - α_jii
-                    α_jii = ω_ji * V_i * dot(X_ji, D_inv_X)
-                    γ_ji = 1.0 - α_jii
-
-                    # Term 1: backward bond contribution
-                    factor1 = -ω_ji * γ_ji * V_i
-
-                    for m in 1:dof
-                        row = get_dof_index_block_style(i, m, nnodes, dof)
-                        for o in 1:dof
-                            val = factor1 * Z_j[m, o]
-                            if abs(val) > 1e-14
-                                col_j = get_dof_index_block_style(j, o, nnodes, dof)
-                                col_i = get_dof_index_block_style(i, o, nnodes, dof)
-
-                                add_entry!(row, col_j, val)
-                                add_entry!(row, col_i, -val)
-                            end
-                        end
-                    end
-
-                    # Term 2: coupling with j's other neighbors
-                    for (p_idx, p) in enumerate(j_neighbors)
-                        if bond_damage[j][p_idx] == 0.0 || p == i
-                            continue
-                        end
-
-                        X_jp = bond_geometry[j][p_idx]
-                        ω_jp = omega[j][p_idx] * bond_damage[j][p_idx]
-                        V_p = volume[p]
-
-                        coeff = dot(X_jp, D_inv_X)
-                        factor2 = ω_ji * V_i * ω_jp * V_p * coeff
-
-                        for m in 1:dof
-                            row = get_dof_index_block_style(i, m, nnodes, dof)
-                            for o in 1:dof
-                                val = factor2 * Z_j[m, o]
-                                if abs(val) > 1e-14
-                                    col_j = get_dof_index_block_style(j, o, nnodes, dof)
-                                    col_p = get_dof_index_block_style(p, o, nnodes, dof)
-
-                                    add_entry!(row, col_j, val)
-                                    add_entry!(row, col_p, -val)
-                                end
-                            end
-                        end
-                    end
+                    Z_j = Z[j]
+                    assemble_zero_energy_backward!(stiffness_dict, i, j, Z_j, D_inv_j,
+                                                   X_ji, ω_ji, V_i, j_neighbors,
+                                                   bond_geometry[j], omega[j],
+                                                   bond_damage[j], volume, nnodes, dof,
+                                                   D_inv_X)
                 end
             end
         end
     end
 
-    # Convert dictionary to triplet format
-    @timeit "dict_to_triplets" begin
-        n_entries = length(stiffness_dict)
+    # Convert to triplets
+    @timeit "to_triplets" begin
+        n_entries::Int = length(stiffness_dict)
         I_indices = Vector{Int}(undef, n_entries)
         J_indices = Vector{Int}(undef, n_entries)
         values = Vector{Float64}(undef, n_entries)
 
-        idx = 1
+        idx::Int = 1
         for ((row, col), val) in stiffness_dict
             I_indices[idx] = row
             J_indices[idx] = col
@@ -1043,12 +619,24 @@ function assemble_stiffness_with_zero_energy(nodes::AbstractVector{Int64},
     return I_indices, J_indices, values, n_total
 end
 
+# =============================================================================
+# Public interface
+# =============================================================================
+
+function init_model(nodes::AbstractVector{Int64},
+                    material_parameter::Dict, block_id::Int64)
+    Zero_Energy_Control.init_model(nodes, material_parameter, block_id)
+    if Data_Manager.get_max_rank() > 1
+        @error "Correspondence matrix based not implemented for parallel runs."
+    end
+end
+
 function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = true)
     nodes = collect(1:Data_Manager.get_nnodes())
     dof = Data_Manager.get_dof()
     nnodes = length(nodes)
 
-    # Get all required fields
+    # Get fields
     bond_geometry = Data_Manager.get_field("Bond Geometry")
     inverse_shape_tensor = Data_Manager.get_field("Inverse Shape Tensor")
     nlist = Data_Manager.get_nlist()
@@ -1058,7 +646,7 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
     C_voigt = Data_Manager.get_field("Elasticity Matrix")
     bond_damage = Data_Manager.get_field("Bond Damage", "NP1")
 
-    # Check if zero-energy control is requested
+    # Setup zero-energy
     use_zero_energy = false
     zStiff = nothing
 
@@ -1074,40 +662,31 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
                                                                        zStiff)
             end
         end
-    else
-        if include_zero_energy
-            @warn "Zero-energy control requested but not active in material model"
-        end
     end
 
-    @timeit "assemble_stiffness_with_zero_energy" begin
-        index_x, index_y, vals,
-        total_dof = assemble_stiffness_with_zero_energy(nodes,
-                                                        nodes, dof,
-                                                        C_voigt,
-                                                        inverse_shape_tensor,
-                                                        number_of_neighbors,
-                                                        nlist,
-                                                        volume,
-                                                        bond_geometry,
-                                                        omega,
-                                                        bond_damage,
-                                                        zStiff,
-                                                        use_zero_energy,
-                                                        use_block_style)
-    end
+    @timeit "assemble" index_x, index_y, vals,
+                       total_dof=assemble_stiffness_with_zero_energy(nodes,
+                                                                     nodes,
+                                                                     dof,
+                                                                     C_voigt,
+                                                                     inverse_shape_tensor,
+                                                                     number_of_neighbors,
+                                                                     nlist,
+                                                                     volume,
+                                                                     bond_geometry,
+                                                                     omega,
+                                                                     bond_damage,
+                                                                     zStiff,
+                                                                     use_zero_energy,
+                                                                     use_block_style)
 
     Data_Manager.init_stiffness_matrix(index_x, index_y, vals, total_dof)
     K_sparse = Data_Manager.get_stiffness_matrix()
-
-    # Apply negative sign convention
     Data_Manager.set_stiffness_matrix(-K_sparse)
 
-    # Verify rank if zero-energy stabilization was used
     if use_zero_energy
         expected_rank = nnodes * dof - Int(dof * (dof + 1) / 2)
         actual_rank = rank(-K_sparse)
-
         if actual_rank != expected_rank
             @warn "Stiffness matrix rank is $actual_rank, expected $expected_rank"
         else
@@ -1122,7 +701,6 @@ function compute_model(nodes::AbstractVector{Int64},
     dof::Int64 = Data_Manager.get_dof()
     nnodes = Data_Manager.get_nnodes()
 
-    # Get fields
     C_voigt = Data_Manager.get_field("Elasticity Matrix")
     inverse_shape_tensor = Data_Manager.get_field("Inverse Shape Tensor")
     nlist = Data_Manager.get_nlist()
@@ -1132,7 +710,6 @@ function compute_model(nodes::AbstractVector{Int64},
     omega = Data_Manager.get_field("Influence Function")
     bond_damage = Data_Manager.get_field("Bond Damage", "NP1")
 
-    # Setup zero-energy if needed
     zStiff = include_zero_energy ? Data_Manager.get_field("Zero Energy Stiffness") : nothing
 
     if include_zero_energy && zStiff !== nothing
@@ -1140,37 +717,25 @@ function compute_model(nodes::AbstractVector{Int64},
                                                                inverse_shape_tensor, zStiff)
     end
 
-    # Assemble combined stiffness matrix
-    @timeit "assemble_stiffness_with_zero_energy update" index_x, index_y, vals,
-                                                         total_dof=assemble_stiffness_with_zero_energy(collect(1:nnodes),
-                                                                                                       nodes,
-                                                                                                       dof,
-                                                                                                       C_voigt,
-                                                                                                       inverse_shape_tensor,
-                                                                                                       number_of_neighbors,
-                                                                                                       nlist,
-                                                                                                       volume,
-                                                                                                       bond_geometry_N,
-                                                                                                       omega,
-                                                                                                       bond_damage,
-                                                                                                       zStiff,
-                                                                                                       include_zero_energy,
-                                                                                                       use_block_style)
+    @timeit "assemble" index_x, index_y, vals,
+                       total_dof=assemble_stiffness_with_zero_energy(collect(1:nnodes),
+                                                                     nodes,
+                                                                     dof,
+                                                                     C_voigt,
+                                                                     inverse_shape_tensor,
+                                                                     number_of_neighbors,
+                                                                     nlist,
+                                                                     volume,
+                                                                     bond_geometry_N,
+                                                                     omega,
+                                                                     bond_damage,
+                                                                     zStiff,
+                                                                     include_zero_energy,
+                                                                     use_block_style)
 
     Data_Manager.init_stiffness_matrix(index_x, index_y, vals, total_dof)
     K_sparse = Data_Manager.get_stiffness_matrix()
     Data_Manager.set_stiffness_matrix(-K_sparse)
-end
-
-function voigt_to_tensor(sigma_voigt::Vector{Float64}, dof::Int64)
-    if dof == 2
-        return [sigma_voigt[1] sigma_voigt[3];
-                sigma_voigt[3] sigma_voigt[2]]
-    else
-        return [sigma_voigt[1] sigma_voigt[6] sigma_voigt[5];
-                sigma_voigt[6] sigma_voigt[2] sigma_voigt[4];
-                sigma_voigt[5] sigma_voigt[4] sigma_voigt[3]]
-    end
 end
 
 end # module

@@ -76,6 +76,7 @@ PeriLab:
         Specific Volume: true
         Volume: true
         Strain: true
+        Forces: true
   Solver:
     Additive Models: false
     Final Time: 1
