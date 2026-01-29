@@ -709,6 +709,8 @@ function compute_crititical_time_step(block_nodes::Dict{Int64,Vector{Int64}},
             E_x = Data_Manager.get_property(iblock, "Material Model", "Young's Modulus X")
             E_y = Data_Manager.get_property(iblock, "Material Model", "Young's Modulus Y")
             E_z = Data_Manager.get_property(iblock, "Material Model", "Young's Modulus Z")
+            g_xy = Data_Manager.get_property(iblock, "Material Model", "Shear Modulus XY")
+            g_yz = Data_Manager.get_property(iblock, "Material Model", "Shear Modulus YZ")
             c_44 = Data_Manager.get_property(iblock, "Material Model", "C44")
             c_55 = Data_Manager.get_property(iblock, "Material Model", "C55")
             c_66 = Data_Manager.get_property(iblock, "Material Model", "C66")
@@ -724,6 +726,9 @@ function compute_crititical_time_step(block_nodes::Dict{Int64,Vector{Int64}},
                 bulk_modulus = 1 / (s11 + s22 + s33 + 2 * (s12 + s23 + s13))
             elseif !isnothing(c_44) && !isnothing(c_55) && !isnothing(c_66)
                 bulk_modulus = maximum([c_44 / 2, c_55 / 2, c_66 / 2])
+                #TODO: temporary solution!!!
+            elseif !isnothing(g_xy)
+                bulk_modulus = g_xy / 2
                 #TODO: temporary solution!!!
             else
                 @error "No time step for material is determined because of missing properties."

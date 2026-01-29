@@ -173,17 +173,42 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
         poissons = true
     end
     if haskey(parameter, "Symmetry")
-        if occursin("anisotropic", lowercase(parameter["Symmetry"]))
+        symmetry = lowercase(parameter["Symmetry"])
+        if occursin("anisotropic", symmetry)
             for iID in 1:6
                 for jID in iID:6
-                    if !("C" * string(iID) * string(jID) in keys(parameter))
+                    if !haskey(parameter, "C" * string(iID) * string(jID))
                         @error "C" * string(iID) * string(jID) * " not defined"
                         return nothing
                     end
                 end
             end
             return
-        elseif occursin("orthotropic", lowercase(parameter["Symmetry"]))
+        elseif occursin("transverse isotropic", symmetry)
+            E_x = haskey(parameter, "Young's Modulus X")
+            E_y = haskey(parameter, "Young's Modulus Y")
+            nu_xy = haskey(parameter, "Poisson's Ratio XY")
+            nu_yz = haskey(parameter, "Poisson's Ratio YZ")
+            g_xy = haskey(parameter, "Shear Modulus XY")
+            g_yz = haskey(parameter, "Shear Modulus YZ")
+            if occursin("plane strain", symmetry)
+                if !E_x || !E_y || !nu_xy || !nu_yz || !g_xy
+                    @error "Transverse isotropic material requires Young's Modulus X, Y, Poisson's Ratio XY, YZ, Shear Modulus XY"
+                    return nothing
+                end
+            elseif occursin("plane stress", symmetry)
+                if !E_x || !E_y || !nu_xy || !g_xy
+                    @error "Transverse isotropic material requires Young's Modulus X, Y, Poisson's Ratio XY, Shear Modulus XY"
+                    return nothing
+                end
+            else
+                if !E_x || !E_y || !nu_xy || !nu_yz || !g_xy || !g_yz
+                    @error "Transverse isotropic material requires Young's Modulus X, Y, Poisson's Ratio XY, YZ, Shear Modulus XY, YZ"
+                    return nothing
+                end
+            end
+            return
+        elseif occursin("orthotropic", symmetry)
             E_x = haskey(parameter, "Young's Modulus X")
             E_y = haskey(parameter, "Young's Modulus Y")
             E_z = haskey(parameter, "Young's Modulus Z")
@@ -276,7 +301,8 @@ function get_Hooke_matrix(parameter::Dict,
                           symmetry::String,
                           dof::Int64,
                           ID::Int64 = 1)
-    """https://www.efunda.com/formulae/solid_mechanics/mat_mechanics/hooke_plane_stress.cfm"""
+    """https://www.efunda.com/formulae/solid_mechanics/mat_mechanics/hooke_plane_stress.cfm
+        https://de.wikipedia.org/wiki/Transversale_Isotropie"""
 
     symmetry = lowercase(symmetry)
     if occursin("anisotropic", symmetry)
@@ -328,6 +354,86 @@ function get_Hooke_matrix(parameter::Dict,
         aniso_matrix[6, 6] = 2 * g_xy
 
         return get_2D_Hooke_matrix(aniso_matrix, symmetry, dof)
+    elseif occursin("transverse isotropic", symmetry)
+        if dof == 3
+            aniso_matrix = get_MMatrix(36)
+
+            E_x = get_dependent_value("Young's Modulus X", parameter, ID)
+            E_y = get_dependent_value("Young's Modulus Y", parameter, ID)
+            nu_xy = get_dependent_value("Poisson's Ratio XY", parameter, ID)
+            nu_yz = get_dependent_value("Poisson's Ratio YZ", parameter, ID)
+            g_xy = get_dependent_value("Shear Modulus XY", parameter, ID)
+            g_yz = get_dependent_value("Shear Modulus YZ", parameter, ID)
+
+            nu_yx = nu_xy * E_y / E_x
+
+            delta = ((nu_xy * nu_yx + nu_yz) /
+                     ((1 - nu_yz - 2 * nu_xy * nu_yx) * (1 + nu_yz))) *
+                    E_y
+
+            aniso_matrix[1, 1] = ((1 - nu_yz) / (1 - nu_yz - 2 * nu_xy * nu_yx)) * E_x
+            aniso_matrix[2, 2] = delta + 2 * g_yz
+
+            aniso_matrix[1, 2] = 2 * nu_xy * (delta + g_yz)
+            aniso_matrix[2, 1] = aniso_matrix[1, 2]
+
+            aniso_matrix[1, 3] = aniso_matrix[1, 2]
+            aniso_matrix[3, 1] = aniso_matrix[1, 2]
+
+            aniso_matrix[2, 3] = delta
+            aniso_matrix[3, 2] = delta
+
+            aniso_matrix[3, 3] = delta + 2 * g_yz
+
+            aniso_matrix[4, 4] = 2 * g_yz
+            aniso_matrix[5, 5] = 2 * g_xy
+            aniso_matrix[6, 6] = 2 * g_xy
+
+            return aniso_matrix
+        elseif occursin("plane strain", symmetry)
+            aniso_matrix = get_MMatrix(9)
+
+            E_x = get_dependent_value("Young's Modulus X", parameter, ID)
+            E_y = get_dependent_value("Young's Modulus Y", parameter, ID)
+            nu_xy = get_dependent_value("Poisson's Ratio XY", parameter, ID)
+            nu_yz = get_dependent_value("Poisson's Ratio YZ", parameter, ID)
+            g_xy = get_dependent_value("Shear Modulus XY", parameter, ID)
+
+            nu_yx = nu_xy * E_y / E_x
+            D = (1 + nu_yz) * (1 - nu_yz - 2 * nu_xy * nu_yx)
+
+            aniso_matrix[1, 1] = ((1 - nu_yz * nu_yz) / D) * E_x
+            aniso_matrix[2, 2] = ((1 - nu_yx * nu_xy) / D) * E_y
+
+            aniso_matrix[1, 2] = ((nu_yx * (1 + nu_yz)) / D) * E_x
+            aniso_matrix[2, 1] = ((nu_xy * (1 + nu_yz)) / D) * E_y
+
+            aniso_matrix[3, 3] = 2 * g_xy
+
+            return aniso_matrix
+        elseif occursin("plane stress", symmetry)
+            aniso_matrix = get_MMatrix(9)
+
+            E_x = get_dependent_value("Young's Modulus X", parameter, ID)
+            E_y = get_dependent_value("Young's Modulus Y", parameter, ID)
+            nu_xy = get_dependent_value("Poisson's Ratio XY", parameter, ID)
+            g_xy = get_dependent_value("Shear Modulus XY", parameter, ID)
+
+            nu_yx = nu_xy * E_y / E_x
+
+            aniso_matrix[1, 1] = E_x / (1 - nu_xy * nu_yx)
+            aniso_matrix[2, 2] = E_y / (1 - nu_xy * nu_yx)
+
+            aniso_matrix[1, 2] = (nu_yx * E_x) / (1 - nu_xy * nu_yx)
+            aniso_matrix[2, 1] = (nu_xy * E_y) / (1 - nu_xy * nu_yx)
+
+            aniso_matrix[3, 3] = 2 * g_xy
+
+            return aniso_matrix
+        else
+            @error "2D model defintion is missing; plane stress or plane strain "
+            return nothing
+        end
     end
 
     iID = ID
@@ -403,7 +509,7 @@ function get_2D_Hooke_matrix(aniso_matrix::MMatrix{T}, symmetry::String,
         matrix[3, 3] = aniso_matrix[6, 6]
         return matrix
     elseif occursin("plane stress", symmetry)
-        invert(inv_aniso, aniso_matrix, "Hooke matrix not invertable")
+        inv_aniso = invert(aniso_matrix, "Hooke matrix not invertable")
         matrix = get_MMatrix(36)
         matrix[1:2, 1:2] = inv_aniso[1:2, 1:2]
         matrix[3, 1:2] = inv_aniso[6, 1:2]
