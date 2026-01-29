@@ -52,7 +52,7 @@ PeriLab:
     Type: Text File
   Outputs:
     Output1:
-      Output Frequency: 10
+      Output Frequency: 100
       Output Filename: verlet_reduced_3D
       Output File Type: Exodus
       Output Variables:

@@ -1,0 +1,67 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Blocks:
+    All:
+      Block ID: 1
+      Density: 1000
+      Material Model: PLA
+      Horizon: 0.001505
+      Specific Heat Capacity: 3000.33
+  Discretization:
+    Input Mesh File: mesh.txt
+    Type: Text File
+    Node Sets:
+      Node Set 1: x<0.0001
+      Node Set 2: y<0.0001
+      Node Set 3: x>0.0099
+  Models:
+    Material Models:
+      PLA:
+        Material Model: Correspondence Elastic
+        Poisson's Ratio: 0.33
+        Young's Modulus: 3.0e+9
+        Symmetry: isotropic plane stress
+        Zero Energy Control: "Global"
+  Boundary Conditions:
+    BC_1:
+      Variable: "Displacements"
+      Node Set: "Node Set 1"
+      Coordinate: "x"
+      Value: "0.0"
+      Type: "Dirichlet"
+    BC_2:
+      Variable: "Displacements"
+      Node Set: "Node Set 2"
+      Coordinate: "y"
+      Value: "0.0"
+      Type: "Dirichlet"
+    BC_3:
+      Variable: "Displacements"
+      Node Set: "Node Set 3"
+      Coordinate: "x"
+      Value: "0.001"
+      Type: "Dirichlet"
+  Outputs:
+    Output1:
+      Number of Output Steps: 400
+      Output File Type: Exodus
+      Output Filename: linear_static_matrix_based_tension
+      Output Variables:
+        Activation_Time: true
+        Active: true
+        Displacements: true
+        Temperature: true
+        Specific Volume: true
+        Volume: true
+        Strain: true
+        Forces: true
+  Solver:
+    Final Time: 1
+    Initial Time: 0.0
+    Number of Steps: 20
+    Material Models: true
+    Linear Static Matrix Based:
+      Matrix update: false
