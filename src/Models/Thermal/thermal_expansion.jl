@@ -38,22 +38,26 @@ end
 function thermal_expansion_matrix(alpha::T,
                                   ::Val{2}) where {T<:Union{Float64,Matrix{Float64}}}
     if length(alpha) == 1
-        return alpha_mat = SMatrix{2,2,Float64}(alpha, 0, 0, alpha)
+        return alpha_mat = SMatrix{2,2,Float64}(alpha, 0.0, 0.0, alpha)
     elseif length(alpha) == 2
-        return alpha_mat = SMatrix{2,2,Float64}(alpha[1], 0, 0, alpha[2])
+        return alpha_mat = SMatrix{2,2,Float64}(alpha[1], 0.0, 0.0, alpha[2])
     elseif length(alpha) == 4
         @error "Full heat expansion matrix is not implemented yet."
+        return alpha_mat = SMatrix{2,2,Float64}(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
     end
 end
 function thermal_expansion_matrix(alpha::T,
                                   ::Val{3}) where {T<:Union{Float64,Matrix{Float64}}}
     if length(alpha) == 1
-        return alpha_mat = SMatrix{3,3,Float64}(alpha, 0, 0, 0, alpha, 0, 0, 0, alpha)
+        return alpha_mat = SMatrix{3,3,Float64}(alpha, 0.0, 0.0, 0.0, alpha, 0.0, 0.0, 0.0,
+                                                alpha)
     elseif length(alpha) == 3
-        return alpha_mat = SMatrix{3,3,Float64}(alpha[1], 0, 0, 0, alpha[2], 0, 0, 0,
+        return alpha_mat = SMatrix{3,3,Float64}(alpha[1], 0.0, 0.0, 0.0, alpha[2], 0.0, 0.0,
+                                                0.0,
                                                 alpha[3])
     elseif length(alpha) == 9
         @error "Full heat expansion matrix is not implemented yet."
+        return alpha_mat = SMatrix{3,3,Float64}(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
     end
 end
 
@@ -95,7 +99,7 @@ function compute_model(nodes::AbstractVector{Int64},
                        dt::Float64)
     temperature_NP1::NodeScalarField{Float64} = Data_Manager.get_field("Temperature",
                                                                        "NP1")
-    dof = Data_Manager.get_dof()
+    dof::Int64 = Data_Manager.get_dof()
 
     @timeit "thermal_expansion_matrix" alpha_mat::AbstractMatrix{Float64}=thermal_expansion_matrix(thermal_parameter["Thermal Expansion Coefficient"],
                                                                                                    Val(dof))
