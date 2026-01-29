@@ -343,7 +343,7 @@ function main(filename::String;
                 if verbose
                     fields = Data_Manager.get_all_field_keys()
                     @info "Found " * string(length(fields)) * " Fields"
-                    @info fields
+                    @info sort(fields)
                 end
                 if dry_run
                     nsteps = solver_options["Number of Steps"]
