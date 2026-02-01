@@ -11,7 +11,7 @@ using StaticArrays
 @testset "ut_create_permutation" begin
     nnodes = 3
     dof = 2
-    perm = PeriLab.Solver_Manager.Helpers.create_permutation(nodes, dof)
+    perm = PeriLab.Solver_Manager.Helpers.create_permutation(nnodes, dof)
     @test perm == [1, 2, 3, 4, 5, 6]
     @test length(perm) == length(nodes) * dof
     nodes = [2, 5, 7]
