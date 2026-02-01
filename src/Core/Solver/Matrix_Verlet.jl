@@ -109,10 +109,10 @@ function init_solver(solver_options::Dict{Any,Any},
     end
 
     if reduction_blocks != []
-        coor = Data_Manager.get_field("Coordinates")
         master_nodes = Int64[]
         slave_nodes = Int64[]
         pd_nodes = Int64[]
+        temp = []
         nlist = Data_Manager.get_nlist()
         cn = Data_Manager.create_constant_node_scalar_field("Coupling Nodes", Int64)
         full_blocks = setdiff(collect(keys(block_nodes)), reduction_blocks)
@@ -120,18 +120,20 @@ function init_solver(solver_options::Dict{Any,Any},
             append!(pd_nodes, block_nodes[block])
         end
 
-        # create coupling zone
         for node in pd_nodes
             append!(master_nodes, nlist[node])
         end
 
         append!(master_nodes, pd_nodes)
-        # for testing
-        #pd_nodes = Int64[]
 
         master_nodes = sort(unique(master_nodes))
-        slave_nodes = setdiff(collect(1:Data_Manager.get_nnodes()), master_nodes)
+        coupling_nodes = setdiff(unique(master_nodes), pd_nodes)
 
+        for node in coupling_nodes
+            append!(temp, nlist[node])
+        end
+        append!(coupling_nodes, temp)
+        slave_nodes = setdiff(1:Data_Manager.get_nnodes(), unique(master_nodes))
         cn[slave_nodes] .= 6
         cn[master_nodes] .= 2
         cn[pd_nodes] .= 1
@@ -141,27 +143,51 @@ function init_solver(solver_options::Dict{Any,Any},
         end
 
         if !(master_nodes == [])
-            perm = collect(1:(length(master_nodes) * Data_Manager.get_dof()))
-            perm_master = create_permutation(master_nodes, Data_Manager.get_dof())
-            perm_slave = create_permutation(slave_nodes, Data_Manager.get_dof())
-            perm_pd_nodes = create_permutation(pd_nodes, Data_Manager.get_dof())
+            nnodes = Data_Manager.get_nnodes()
+            # complete region of analysis with coupling
+            perm_master = create_permutation(master_nodes, Data_Manager.get_dof(), nnodes)
+            # complete region of reduction
+            perm_slave = create_permutation(slave_nodes, Data_Manager.get_dof(), nnodes)
+
+            # indices of pd nodes in global system of PD nodes for crack propagation and BCs application
+            perm_pd_nodes = create_permutation(pd_nodes, Data_Manager.get_dof(), nnodes)
+            # indices of deletes in global system
             # create reduced M^-1*K for linear run
             #TODO adapt for mass matrix
             density_mass = zeros(length(density) * Data_Manager.get_dof())
             @warn "Constant mass density for model reduction is assumed."
             density_mass .= density[1]
-
+            # find indices of pd nodes and coupling nodes in reduced system; using master ids vector
             perm_pd_reduced = findall(in(perm_pd_nodes), perm_master)
 
             K_reduced,
             mass_reduced = guyan_reduction(K, density_mass, perm_master, perm_slave, dof)
+            #
+            # K_reduced[:, perm_pd_reduced] .= 0
             K_reduced[perm_pd_reduced, :] .= 0
-            #K_reduced[:, perm_pd_reduced].=0
-            Data_Manager.set_stiffness_matrix(sparse(K_reduced[perm, perm]))
-            Data_Manager.set_mass_matrix(lu(sparse(mass_reduced[perm, perm])))
+
+            #for pd in perm_pd_reduced
+            #    mass_reduced[pd,:].=0.0
+            #    mass_reduced[:,pd].=0.0
+            #    mass_reduced[pd,pd]=density[1]
+            #end
+            dropzeros!(mass_reduced)
+
+            # K_reduced[perm_delete_reduced, perm_delete_reduced] .= 0
+
+            #-> der Rest der keine cn als nachbarn hat; cn reduced einfach nur multipl.
+
+            # K_reduced[:, perm_cn_reduced] .= 0
+            #  @info length(perm_delete_reduced), length(perm_pd_reduced)
+            # readline()
+            dropzeros!(K_reduced)
+
+            Data_Manager.set_stiffness_matrix(sparse(K_reduced))
+            Data_Manager.set_mass_matrix(lu(sparse(mass_reduced)))
 
             Data_Manager.set_reduced_model_pd(pd_nodes)
             Data_Manager.set_reduced_model_master(master_nodes)
+
             @info "Model reduction is applied"
             @info "Slaves: $(length(slave_nodes)), Master: $(length(master_nodes)), PD: $(length(pd_nodes))."
             return
@@ -249,14 +275,16 @@ function run_solver(solver_options::Dict{Any,Any},
                 force_densities_NP1::Matrix{Float64} = Data_Manager.get_field("Force Densities",
                                                                               "NP1")
                 active_nodes::Vector{Int64} = Data_Manager.get_field("Active Nodes")
-                @timeit "active nodes" active_nodes=find_active_nodes(active_list,
-                                                                      active_nodes,
-                                                                      1:Data_Manager.get_nnodes())
 
                 if solver_options["Model Reduction"] != false
                     active_nodes = master_nodes
                     active_list .= false
                     active_list[Data_Manager.get_reduced_model_pd()] .= true
+
+                else
+                    @timeit "active nodes" active_nodes=find_active_nodes(active_list,
+                                                                          active_nodes,
+                                                                          1:Data_Manager.get_nnodes())
                 end
             end
             @timeit "compute Velocity" begin
@@ -288,11 +316,13 @@ function run_solver(solver_options::Dict{Any,Any},
             @timeit "Force computations" begin
                 # check if valid if volume is different
 
-                @views fNP1 = force_densities_NP1[active_nodes, :]
-
                 #-= f_int(K,
                 #	vec(uNP1[active_nodes,
                 #		:]), sa)
+                # hier muss pd nodes rein
+
+                #1D testen
+                @views fNP1 = force_densities_NP1[active_nodes, :]
 
                 @timeit "Force matrix computations" f_int_inplace!(fNP1, temp, K,
                                                                    vec(uNP1[active_nodes,
@@ -344,17 +374,12 @@ function run_solver(solver_options::Dict{Any,Any},
     return result_files
 end
 
-function f_int(K::AbstractMatrix{Float64}, u::AbstractVector{Float64},
-               sa::Tuple{Int64,Int64})
-    return reshape(K * u, sa...)
-end
-
 function f_int_inplace!(F::AbstractMatrix{Float64},
                         temp::AbstractVector{Float64},
                         K::SparseMatrixCSC{Float64,Int64},
                         u::AbstractVector{Float64}, sa::Tuple{Int64,Int64})
     mul!(temp, K, u)
-    F .= reshape(temp, sa)
+    F .+= reshape(temp, sa)
 end
 
 end

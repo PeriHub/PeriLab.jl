@@ -524,7 +524,8 @@ function assemble_stiffness_with_zero_energy(nodes::AbstractVector{Int64},
                                                      dof)
 
     # Setup zero-energy views
-    @timeit "setup_Z" Z=setup_zero_energy_views(include_zero_energy, zStiff,
+    @timeit "setup_Z" Z=setup_zero_energy_views(include_zero_energy,
+                                                zStiff,
                                                 active_nodes, nnodes)
 
     # Reusable buffers
@@ -601,21 +602,22 @@ function assemble_stiffness_with_zero_energy(nodes::AbstractVector{Int64},
     end
 
     # Convert to triplets
-    @timeit "to_triplets" begin
-        n_entries::Int = length(stiffness_dict)
-        I_indices = Vector{Int}(undef, n_entries)
-        J_indices = Vector{Int}(undef, n_entries)
-        values = Vector{Float64}(undef, n_entries)
+    @timeit "to_triplets" return to_triplets(stiffness_dict, n_total)
+end
 
-        idx::Int = 1
-        for ((row, col), val) in stiffness_dict
-            I_indices[idx] = row
-            J_indices[idx] = col
-            values[idx] = val
-            idx += 1
-        end
+function to_triplets(stiffness_dict::Dict{Tuple{Int,Int},Float64}, n_total::Int64)
+    n_entries::Int = length(stiffness_dict)
+    I_indices = Vector{Int}(undef, n_entries)
+    J_indices = Vector{Int}(undef, n_entries)
+    values = Vector{Float64}(undef, n_entries)
+
+    idx::Int = 1
+    for ((row, col), val) in stiffness_dict
+        I_indices[idx] = row
+        J_indices[idx] = col
+        values[idx] = val
+        idx += 1
     end
-
     return I_indices, J_indices, values, n_total
 end
 
