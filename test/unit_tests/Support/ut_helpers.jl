@@ -13,7 +13,7 @@ using StaticArrays
     dof = 2
     perm = PeriLab.Solver_Manager.Helpers.create_permutation(nnodes, dof)
     @test perm == [1, 2, 3, 4, 5, 6]
-    @test length(perm) == length(nodes) * dof
+    @test length(perm) == nnodes * dof
     nodes = [2, 5, 7]
     dof = 2
     perm = PeriLab.Solver_Manager.Helpers.create_permutation(nodes, dof, 7)
