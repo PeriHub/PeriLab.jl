@@ -733,11 +733,11 @@ function matrix_style(A::T)::Matrix{T} where {T<:Union{Int64,Float64}}
 end
 
 function create_permutation(nnodes::Int64, dof::Int64)
-    perm = Vector{Int}(undef, nnodes * dof)
+    perm = Vector{Int64}(undef, nnodes * dof)
     idx = 1
     for d in 1:dof
         for n in 1:nnodes
-            old_idx = (n - 1) * dof + d  # Row-major: node, dann dof
+            old_idx = n + (d - 1) * nnodes  # Row-major: node, dann dof
             perm[idx] = old_idx
             idx += 1
         end
@@ -745,12 +745,16 @@ function create_permutation(nnodes::Int64, dof::Int64)
     return perm
 end
 
-function create_permutation(nodes::AbstractVector{Int64}, dof::Int64)
+function create_permutation(nodes::AbstractVector{Int64}, dof::Int64, nnodes::Int64 = 0)
+    if nnodes == 0
+        @warn "Number of nodes not provided. Using maximum index of provided nodes."
+        nnodes = maximum(nodes)
+    end
     perm = Vector{Int}(undef, length(nodes) * dof)
     idx = 1
     for d in 1:dof
         for n in nodes
-            old_idx = (n - 1) * dof + d  # Row-major: node, dann dof
+            old_idx = n + (d - 1) * nnodes  # Row-major: node, dann dof
             perm[idx] = old_idx
             idx += 1
         end
