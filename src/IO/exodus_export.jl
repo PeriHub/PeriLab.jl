@@ -147,14 +147,17 @@ function init_results_in_exodus(exo::ExodusDatabase,
                                 nsets::Dict{String,Vector{Int64}},
                                 global_ids::Vector{Int64},
                                 PERILAB_VERSION::String,
+                                qa_vector::Vector{String},
                                 fem_block::Union{Nothing,Vector{Bool}} = nothing,
                                 topology::Union{Nothing,Matrix{Int64}} = nothing,
                                 elem_global_ids::Union{Nothing,Vector{Int64}} = nothing)
-    qa = Matrix{String}(undef, 1, 4)
-    qa[1] = "PeriLab"
-    qa[2] = "$PERILAB_VERSION"
-    qa[3] = Dates.format(Dates.now(), "mm/dd/yyyy")
-    qa[4] = Dates.format(Dates.now(), "HH:MM:SS")
+    qa = Matrix{String}(undef, 1, 2 + length(qa_vector))
+    # Only 4 entries with 32 chars possible!
+    qa[1] = "PeriLab $PERILAB_VERSION"
+    qa[2] = Dates.format(Dates.now(), "mm/dd/yyyy HH:MM")
+    for (id, entry) in enumerate(qa_vector)
+        qa[2 + id] = entry
+    end
     write_qa(exo, qa)
 
     info = [

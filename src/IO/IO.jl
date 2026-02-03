@@ -269,7 +269,7 @@ function get_results_mapping(params::Dict, path::String)
             if fieldname[2] == "Constant"
                 field_type = Data_Manager.get_field_type(fieldname[1], false)
             else
-                field_type = Data_Manager.get_field_type(fieldname[1]*fieldname[2], false)
+                field_type = Data_Manager.get_field_type(fieldname[1] * fieldname[2], false)
             end
 
             if !(field_type in [
@@ -467,7 +467,8 @@ Initialize write results.
 function init_write_results(params::Dict,
                             output_dir::String,
                             path::String,
-                            PERILAB_VERSION::String)
+                            PERILAB_VERSION::String,
+                            qa_vector::Vector{String})
     filenames = get_output_filenames(params, output_dir)
     if length(filenames) == 0
         @warn "No output file or output defined"
@@ -564,6 +565,7 @@ function init_write_results(params::Dict,
                                                               nsets,
                                                               global_ids,
                                                               PERILAB_VERSION,
+                                                              qa_vector,
                                                               fem_block,
                                                               topology,
                                                               elem_global_ids)

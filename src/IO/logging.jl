@@ -269,24 +269,30 @@ function get_current_git_info(repo_path::AbstractString = ".")
     tag_list = LibGit2.tag_list(repo)
 
     info = ""
+    qa_vector = []
 
     if head_name == "main"
-        info *= "Commit: $head_oid"
+        info *= "Commit: $(string(head_oid)[1:7])"
+        push!(qa_vector, "Commit: $(string(head_oid)[1:7])")
     else
-        info *= "Branch: $head_name, Commit: $head_oid"
+        info *= "Branch: $head_name, Commit: $(string(head_oid)[1:7])"
+        push!(qa_vector, "Commit: $(string(head_oid)[1:7])")
+        push!(qa_vector, "Branch: $(string(head_name)[1:24])")
     end
 
     for tag in tag_list
         tag_hash = LibGit2.target(LibGit2.GitObject(repo, tag))
         if tag_hash == head_oid
             info *= ", Tag: $tag"
+            push!(qa_vector, "Tag: $tag")
             break
         end
     end
 
     if dirty
         info *= ", Local changes detected"
+        push!(qa_vector, "Local changes detected")
     end
-    return dirty, info
+    return dirty, info, qa_vector
 end
 end

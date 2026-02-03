@@ -241,6 +241,7 @@ function main(filename::String;
 
         result_files = nothing
         outputs = nothing
+        qa_vector::Vector{String} = []
 
         try
             # atexit(() -> cleanup(comm))
@@ -257,15 +258,16 @@ function main(filename::String;
                 @info Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
                 try
                     dirty,
-                    git_info = Logging_Module.get_current_git_info(joinpath(@__DIR__,
-                                                                            ".."))
+                    git_info,
+                    qa_vector = Logging_Module.get_current_git_info(joinpath(@__DIR__,
+                                                                             ".."))
                     if dirty
                         @warn git_info
                     else
                         @info git_info
                     end
                 catch e
-                    if !isa(e, LibGit2.GitError)
+                    if isa(e, LibGit2.GitError)
                         @warn "No current git info."
                     end
                 end
@@ -335,7 +337,8 @@ function main(filename::String;
                                                     outputs=IO.init_write_results(params,
                                                                                   output_dir,
                                                                                   filedirectory,
-                                                                                  PERILAB_VERSION)
+                                                                                  PERILAB_VERSION,
+                                                                                  qa_vector)
                 end
                 IO.set_output_frequency(params,
                                         solver_options["Number of Steps"],
