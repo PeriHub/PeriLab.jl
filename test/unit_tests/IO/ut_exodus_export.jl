@@ -205,6 +205,7 @@ exo1["file"] = PeriLab.IO.init_results_in_exodus(exo1["file"],
                                                  nsets,
                                                  [1, 2, 3, 4, 5],
                                                  "1.0.0",
+                                                 ["Commit: 1234567"],
                                                  fem_block,
                                                  topology,
                                                  [1, 2])
@@ -217,7 +218,8 @@ exo["file"] = PeriLab.IO.init_results_in_exodus(exo["file"],
                                                 ["Block_1", "Block_2"],
                                                 nsets,
                                                 [1, 2, 3, 4, 5],
-                                                "1.0.0")
+                                                "1.0.0",
+                                                ["Commit: 1234567"])
 result_files = []
 push!(result_files, exo)
 result_files[1]["file"] = PeriLab.IO.write_step_and_time(result_files[1]["file"], 2, 2.2)
