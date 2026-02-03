@@ -98,7 +98,7 @@ end
 @testset "ut_init_write_result_and_write_results" begin
     result_files,
     outputs = PeriLab.IO.init_write_results(params, "", "",
-                                            "1.0.0")
+                                            "1.0.0", ["Commit: 1234567", ""])
     @test length(result_files) == 3
     @test length(result_files[2]["file"].nodal_var_name_dict) == 6
     entries = collect(keys(result_files[2]["file"].nodal_var_name_dict))
