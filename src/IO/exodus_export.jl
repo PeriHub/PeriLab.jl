@@ -151,7 +151,7 @@ function init_results_in_exodus(exo::ExodusDatabase,
                                 fem_block::Union{Nothing,Vector{Bool}} = nothing,
                                 topology::Union{Nothing,Matrix{Int64}} = nothing,
                                 elem_global_ids::Union{Nothing,Vector{Int64}} = nothing)
-    qa = Matrix{String}(undef, 1, 2 + length(qa_vector))
+    qa = Matrix{String}(undef, 1, 4)
     # Only 4 entries with 32 chars possible!
     qa[1] = "PeriLab $PERILAB_VERSION"
     qa[2] = Dates.format(Dates.now(), "mm/dd/yyyy HH:MM")
