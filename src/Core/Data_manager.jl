@@ -195,6 +195,7 @@ function initialize_data()
     data["Synchronization List"] = Dict{Int64,Int64}()
     data["Global Master Search Nodes"] = Dict()
     data["Global Slave Search Nodes"] = Dict()
+    data["matrix_exists"] = false
     fields[Int64] = Dict()
     fields[Float64] = Dict()
     fields[Bool] = Dict()
@@ -1083,10 +1084,12 @@ end
 
 function init_stiffness_matrix(xID::Vector{Int64}, yID::Vector{Int64},
                                vals::Vector{Float64}, N::Int64)
+    data["matrix_exists"] = true
     data["Stiffness Matrix"] = PD_matrix(xID, yID, vals, N)
 end
 #
 function set_stiffness_matrix(sparse_mat)
+    data["matrix_exists"] = true
     #data["Stiffness Matrix"] = PD_matrix(xID, yID, sparse_data,
     #	data["Stiffness Matrix"].sparse_matrix)
     data["Stiffness Matrix"].sparse_matrix = sparse_mat
@@ -1103,7 +1106,10 @@ function get_mass_matrix()
 end
 
 function get_stiffness_matrix()
-    return data["Stiffness Matrix"].sparse_matrix
+    if data["matrix_exists"]
+        return data["Stiffness Matrix"].sparse_matrix
+    end
+    return nothing
 end
 
 function get_stiffness_matrix_indices()

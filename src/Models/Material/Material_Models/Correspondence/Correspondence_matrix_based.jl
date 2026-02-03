@@ -294,7 +294,7 @@ function assemble_zero_energy_forward!(stiffness_dict::Dict{Tuple{Int,Int},Float
                                        j::Int,
                                        ni::Vector{Int64},
                                        Z_i::SubArray{Float64,2},
-                                       D_inv_i::SubArray,
+                                       D_inv_i::SubArray{Float64,2},
                                        X_ij::Vector{Float64},
                                        ω_ij::Float64,
                                        V_j::Float64,
@@ -506,7 +506,6 @@ function assemble_stiffness_with_zero_energy(nodes::AbstractVector{Int64},
     # Validate input
     if include_zero_energy && zStiff === nothing
         @error "Zero-energy stabilization requested but zStiff not provided"
-        return Int[], Int[], Float64[], n_total
     end
 
     # Initialize dictionary with size hint
@@ -516,7 +515,12 @@ function assemble_stiffness_with_zero_energy(nodes::AbstractVector{Int64},
 
     # Precompute CB tensors
     max_neighbors::Int = maximum(number_of_neighbors)
-    all_CB_tensors = [zeros(max_neighbors, dof, dof, dof) for _ in 1:nnodes]
+    all_CB_tensors = Vector{Array{Float64,4}}(undef, nnodes)
+    @timeit "all_CB_tensors" begin
+        @inbounds for i in 1:nnodes
+            all_CB_tensors[i] = zeros(Float64, max_neighbors, dof, dof, dof)
+        end
+    end
 
     @timeit "precompute_CB" precompute_CB_all_nodes!(all_CB_tensors, nodes, C_Voigt,
                                                      inverse_shape_tensor, nlist, volume,
@@ -536,28 +540,50 @@ function assemble_stiffness_with_zero_energy(nodes::AbstractVector{Int64},
     @timeit "forward" begin
         @inbounds for i in active_nodes
             ni = nlist[i]
+
             D_inv_i = @view inverse_shape_tensor[i, :, :]
+
             CB_k_i = @view all_CB_tensors[i][eachindex(ni), :, :, :]
 
             # Normal stiffness
-            assemble_normal_stiffness_forward!(stiffness_dict, i, ni, CB_k_i, D_inv_i,
-                                               volume, bond_geometry[i], omega[i],
-                                               bond_damage[i], nnodes, dof, K_block)
+            assemble_normal_stiffness_forward!(stiffness_dict,
+                                               i, ni,
+                                               CB_k_i,
+                                               D_inv_i,
+                                               volume,
+                                               bond_geometry[i],
+                                               omega[i],
+                                               bond_damage[i],
+                                               nnodes,
+                                               dof,
+                                               K_block)
 
             # Zero-energy (if enabled)
             if include_zero_energy
                 Z_i = Z[i]
+
                 for (j_idx, j) in enumerate(ni)
                     bond_damage[i][j_idx] == 0.0 && continue
 
-                    ω_ij = omega[i][j_idx] * bond_damage[i][j_idx]
-                    V_j = volume[j]
-                    X_ij = bond_geometry[i][j_idx]
+                    @timeit "compute_omega" ω_ij=omega[i][j_idx] * bond_damage[i][j_idx]
 
-                    assemble_zero_energy_forward!(stiffness_dict, i, j, ni, Z_i, D_inv_i,
-                                                  X_ij, ω_ij, V_j, bond_geometry[i],
-                                                  omega[i], bond_damage[i], volume, nnodes,
-                                                  dof, D_inv_X)
+                    @timeit "get_volume" V_j=volume[j]
+
+                    @timeit "get_geometry" X_ij=bond_geometry[i][j_idx]
+
+                    @timeit "assemble_zero_forward" assemble_zero_energy_forward!(stiffness_dict,
+                                                                                  i, j, ni,
+                                                                                  Z_i,
+                                                                                  D_inv_i,
+                                                                                  X_ij,
+                                                                                  ω_ij, V_j,
+                                                                                  bond_geometry[i],
+                                                                                  omega[i],
+                                                                                  bond_damage[i],
+                                                                                  volume,
+                                                                                  nnodes,
+                                                                                  dof,
+                                                                                  D_inv_X)
                 end
             end
         end

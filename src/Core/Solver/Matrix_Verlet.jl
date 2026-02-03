@@ -60,18 +60,20 @@ function init_solver(solver_options::Dict{Any,Any},
     solver_options["Number of Steps"] = Int(ceil((solver_options["Final Time"] -
                                                   solver_options["Initial Time"]) /
                                                  solver_options["dt"]))
-
-    for (block, nodes) in pairs(block_nodes)
-        model_param = Data_Manager.get_properties(block, "Material Model")
-        Correspondence_matrix_based.init_model(nodes, model_param, block)
+    K = Data_Manager.get_stiffness_matrix()
+    if isnothing(K)
+        for (block, nodes) in pairs(block_nodes)
+            model_param = Data_Manager.get_properties(block, "Material Model")
+            Correspondence_matrix_based.init_model(nodes, model_param, block)
+        end
+        @timeit "init_matrix" Correspondence_matrix_based.init_matrix()
+        K = Data_Manager.get_stiffness_matrix()
     end
-    @timeit "init_matrix" Correspondence_matrix_based.init_matrix()
     dof = Data_Manager.get_dof()
     density = Data_Manager.get_field("Density")
     model_reduction = get(params["Verlet Matrix Based"], "Model Reduction", false)
     solver_options["Model Reduction"] = model_reduction
     solver_options["Numerical Damping"] = get_numerical_damping(params)
-    K = Data_Manager.get_stiffness_matrix()
 
     @info "Solver parameter"
     @info "Initial Time: $(solver_options["Initial Time"])"
@@ -160,8 +162,9 @@ function init_solver(solver_options::Dict{Any,Any},
             # find indices of pd nodes and coupling nodes in reduced system; using master ids vector
             perm_pd_reduced = findall(in(perm_pd_nodes), perm_master)
 
-            K_reduced,
-            mass_reduced = guyan_reduction(K, density_mass, perm_master, perm_slave, dof)
+            @timeit "gyan" K_reduced,
+                           mass_reduced=guyan_reduction(K, density_mass,
+                                                        perm_master, perm_slave)
             #
             # K_reduced[:, perm_pd_reduced] .= 0
             K_reduced[perm_pd_reduced, :] .= 0
