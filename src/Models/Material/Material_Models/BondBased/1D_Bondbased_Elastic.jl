@@ -66,7 +66,7 @@ Calculate the elastic bond force for each node.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 """
-function compute_model(odes::AbstractVector{Int64},
+function compute_model(nodes::AbstractVector{Int64},
                        material_parameter::Dict{String,Any},
                        block::Int64,
                        time::Float64,

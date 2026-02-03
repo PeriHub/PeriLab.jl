@@ -262,36 +262,43 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
 end
 
 function get_current_git_info(repo_path::AbstractString = ".")
-    repo = LibGit2.GitRepo(repo_path)
-    head_name = LibGit2.headname(repo)
-    head_oid = LibGit2.head_oid(repo)
-    dirty = LibGit2.isdirty(repo)
-    tag_list = LibGit2.tag_list(repo)
-
+    dirty = false
     info = ""
     qa_vector = ["", ""]
 
-    if head_name == "main"
-        info *= "Commit: $(string(head_oid)[1:7])"
-        qa_vector[1] = "Commit: $(string(head_oid)[1:7])"
-    else
-        info *= "Branch: $head_name, Commit: $(string(head_oid)[1:7])"
-        qa_vector[1] = "Commit: $(string(head_oid)[1:7])"
-        qa_vector[2] = "Branch: $(string(head_name)[1:24])"
-    end
+    try
+        repo = LibGit2.GitRepo(repo_path)
+        head_name = LibGit2.headname(repo)
+        head_oid = LibGit2.head_oid(repo)
+        dirty = LibGit2.isdirty(repo)
+        tag_list = LibGit2.tag_list(repo)
 
-    for tag in tag_list
-        tag_hash = LibGit2.target(LibGit2.GitObject(repo, tag))
-        if tag_hash == head_oid
-            info *= ", Tag: $tag"
-            qa_vector[1] = "Tag: $tag"
-            break
+        if head_name == "main"
+            info *= "Commit: $(string(head_oid)[1:7])"
+            qa_vector[1] = "Commit: $(string(head_oid)[1:7])"
+        else
+            info *= "Branch: $head_name, Commit: $(string(head_oid)[1:7])"
+            qa_vector[1] = "Commit: $(string(head_oid)[1:7])"
+            qa_vector[2] = "Branch: $(string(head_name)[1:24])"
         end
-    end
 
-    if dirty
-        info *= ", Local changes detected"
-        qa_vector[2] = "Local changes detected"
+        for tag in tag_list
+            tag_hash = LibGit2.target(LibGit2.GitObject(repo, tag))
+            if tag_hash == head_oid
+                info *= ", Tag: $tag"
+                qa_vector[1] = "Tag: $tag"
+                break
+            end
+        end
+
+        if dirty
+            info *= ", Local changes detected"
+            qa_vector[2] = "Local changes detected"
+        end
+    catch e
+        if isa(e, LibGit2.GitError)
+            @warn "No current git info."
+        end
     end
     return dirty, info, qa_vector
 end

@@ -241,7 +241,6 @@ function main(filename::String;
 
         result_files = nothing
         outputs = nothing
-        qa_vector::Vector{String} = []
 
         try
             # atexit(() -> cleanup(comm))
@@ -250,26 +249,20 @@ function main(filename::String;
                 silent = false
             end
             Logging_Module.init_logging(filename, debug, silent, rank, size)
+            dirty,
+            git_info,
+            qa_vector = Logging_Module.get_current_git_info(joinpath(@__DIR__,
+                                                                     ".."))
             if rank == 0
                 if !silent
                     print_banner(size > 1)
                 end
                 @info "\n PeriLab version: $PERILAB_VERSION\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n GitHub: https://github.com/PeriHub/PeriLab.jl\n DOI: 10.1016/j.softx.2024.101700\n License: BSD-3-Clause\n ---------------------------------------------------------------\n"
                 @info Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
-                try
-                    dirty,
-                    git_info,
-                    qa_vector = Logging_Module.get_current_git_info(joinpath(@__DIR__,
-                                                                             ".."))
-                    if dirty
-                        @warn git_info
-                    else
-                        @info git_info
-                    end
-                catch e
-                    if isa(e, LibGit2.GitError)
-                        @warn "No current git info."
-                    end
+                if dirty
+                    @warn git_info
+                else
+                    @info git_info
                 end
                 if size > 1
                     @info "MPI: Running on " * string(size) * " processes"
