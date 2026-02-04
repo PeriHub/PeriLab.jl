@@ -15,7 +15,7 @@ end
 function init_model(nodes::AbstractVector{Int64}, material_parameter::Dict, block::Int64)
     if haskey(material_parameter, "Zero Energy Control")
         zero_energy_model = material_parameter["Zero Energy Control"]
-        @info "Init zero energy control model ''$zero_energy_model'' at block $block."
+        @debug "Init zero energy control model ''$zero_energy_model'' at block $block."
         Data_Manager.set_analysis_model("Zero Energy Control Model", block,
                                         zero_energy_model)
 
