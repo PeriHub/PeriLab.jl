@@ -275,7 +275,7 @@ function run_solver(solver_options::Dict{Any,Any},
                                time,
                                step_time)
 
-            @. external_force_densities = external_forces / volume
+            @. external_force_densities += external_forces / volume
 
             @timeit "compute_models" compute_stiff_matrix_compatible_models(block_nodes,
                                                                             dt,
