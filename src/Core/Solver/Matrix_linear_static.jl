@@ -665,7 +665,7 @@ function compute_displacements!(K::AbstractMatrix{Float64},
     end
 
     @inbounds for (idx, i) in enumerate(active_non_BCS)
-        solver.F_modified[idx] = F_ext_vec[i] - F_int_vec[i]
+        solver.F_modified[idx] = -F_ext_vec[i] - F_int_vec[i]
     end
 
     # Step 3: LU cachen
