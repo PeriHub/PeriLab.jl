@@ -111,7 +111,11 @@ function compute_model(nodes::AbstractVector{Int64},
             end
 
             neighborID::Int64 = nlist[iID][jID]
+            if !haskey(inverse_nlist[neighborID], iID)
+                continue
+            end
             inverse_neighborID::Int64 = inverse_nlist[neighborID][iID]
+
             neighbor_block_id::Int64 = block_ids[neighborID]
 
             # check if the bond also exist at other node, due to different horizons
@@ -133,7 +137,8 @@ function compute_model(nodes::AbstractVector{Int64},
             if critical_field
                 critical_energy_value = critical_energy[iID]
             elseif inter_block_damage
-                critical_energy_value = inter_critical_energy[block_ids[iID], neighbor_block_id, block]
+                critical_energy_value = inter_critical_energy[block_ids[iID],
+                neighbor_block_id, block]
 
                 # param_name = "Interblock Critical Value " * string(block_ids[iID]) * "_" *
                 #              string(block_ids[neighborID])

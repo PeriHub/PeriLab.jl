@@ -131,12 +131,11 @@ function compute_model(nodes::AbstractVector{Int64},
 
             @views neighborID = nlist[iID][jID]
 
-            # check if the bond also exist at other node, due to different horizons
-            try
-                neighbor_bond_force .= bond_forces[neighborID][inverse_nlist[neighborID][iID]]
-            catch e
-                # Handle the case when the key doesn't exist
+            if !haskey(inverse_nlist[neighborID], iID)
+                continue
             end
+
+            neighbor_bond_force .= bond_forces[neighborID][inverse_nlist[neighborID][iID]]
 
             bond_force .= bond_force_vec[jID]
             bond_force_delta .= bond_force .- neighbor_bond_force

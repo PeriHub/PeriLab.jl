@@ -12,7 +12,7 @@ using ..Data_Manager
 include("bond_filters.jl")
 include("gcode.jl")
 include("volume.jl")
-using ..Helpers: fastdot, get_nearest_neighbors
+using ..Helpers: fastdot, get_nearest_neighbors, find_inverse_bond_id
 using ..Logging_Module: print_table
 using ..Parameter_Handling: get_mesh_name, get_header, get_node_sets,
                             get_external_topology_name, get_horizon
@@ -143,6 +143,8 @@ function init_data(params::Dict,
         @debug "Finish init data"
     end
     # barrier(comm)
+    nlist = Data_Manager.get_nlist()
+    Data_Manager.set_inverse_nlist(find_inverse_bond_id(nlist))
     mesh = nothing
     return params
 end
