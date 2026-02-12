@@ -53,9 +53,9 @@ function compute_contact_model(cg, params, compute_master_force_density,
             horizon = get_shared_horizon(slave_id) # needed to get the correct contact horizon
             # TODO symmetry needed
             if params["Symmetry"] == "plane stress"
-                stiffness = 9 / (pi * horizon^4) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
+                stiffness = 9 / (pi * horizon^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
             elseif params["Symmetry"] == "plane strain"
-                stiffness = 48 / (5 * pi * horizon^4) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
+                stiffness = 48 / (5 * pi * horizon^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
             else
                 stiffness = 9 / (pi * horizon^5)  # -> from Peridigm
                 #stiffness = 12 / (pi * horizon^4)  # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
