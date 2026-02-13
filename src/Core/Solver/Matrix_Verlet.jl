@@ -192,7 +192,7 @@ function init_solver(solver_options::Dict{Any,Any},
             Data_Manager.set_reduced_model_master(master_nodes)
 
             @info "Model reduction is applied"
-            @info "Slaves: $(length(slave_nodes)), Master: $(length(master_nodes)), PD: $(length(pd_nodes))."
+            @info "Condensed: $(length(slave_nodes)), Master: $(length(master_nodes)), PD: $(length(pd_nodes))."
             return
         end
         @warn "No master nodes defined for model reduction. Using full stiffness matrix."
@@ -379,7 +379,7 @@ end
 
 function f_int_inplace!(F::AbstractMatrix{Float64},
                         temp::AbstractVector{Float64},
-                        K::SparseMatrixCSC{Float64,Int64},
+                        K,
                         u::AbstractVector{Float64}, sa::Tuple{Int64,Int64})
     mul!(temp, K, u)
     F .+= reshape(temp, sa)
