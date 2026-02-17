@@ -1001,7 +1001,7 @@ function show_mpi_summary(log_file::String,
             push!(row, "")
             continue
         end
-        num_nodes = string(sum(length.(nlist[findall(x -> x == id, block_Id)])))
+        num_nodes = string(length(unique(vcat(nlist[findall(x -> x == id, block_Id)]...))))
         push!(row, num_nodes)
         total += parse(Int64, num_nodes)
     end
