@@ -179,8 +179,9 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
 
     if rotation
         rotation_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Rotation Tensor")
-        stress_N = rotate(nodes, stress_N, rotation_tensor, false)
-        strain_increment = rotate(nodes, strain_increment, rotation_tensor, false)
+        rotate(nodes, stress_N, rotation_tensor, false)
+        rotate(nodes, strain_increment,
+               rotation_tensor, false)
     end
 
     # material_models = split(material_parameter["Material Model"], "+")

@@ -1117,37 +1117,36 @@ function rotate(nodes::AbstractVector{Int64},
                 rot::AbstractArray{Float64},
                 back::Bool)
     for iID in nodes
-        matrix[iID, :,
-        :] = rotate_second_order_tensor(rot[iID, :, :], matrix[iID, :, :],
-                                                       back)
+        @views rotate_second_order_tensor(rot[iID, :, :], matrix[iID, :, :],
+                                          back)
     end
-    return matrix
 end
 
 """
-	rotate_second_order_tensor(angles::Union{Vector{Float64},Vector{Int64}}, tensor::Matrix{Float64}, dof::Int64, back::Bool)
-
+	rotate_second_order_tensor(R::AbstractMatrix{Float64}, tensor::AbstractMatrix{Float64},
+                                    back::Bool)
 Rotates the second order tensor.
 
 # Arguments
-- `angles::Union{Vector{Float64},Vector{Int64}}`: Angles.
-- `tensor::Matrix{Float64}`: Second order tensor.
-- `dof::Int64`: Degree of freedom.
+- `R::AbstractMatrix{Float64}`: Rotation tensor.
+- `tensor::AbstractMatrix{Float64}`: Second order tensor.
 - `back::Bool`: Back.
 # Returns
-- `tensor::Matrix{Float64}`: Second order tensor.
+
 """
-function rotate_second_order_tensor(R::Matrix{Float64}, tensor::Matrix{Float64}, back::Bool)
+function rotate_second_order_tensor(R::AbstractMatrix{Float64},
+                                    tensor::AbstractMatrix{Float64},
+                                    back::Bool)
     if back
         rotation(R', tensor)
     else
         rotation(R, tensor)
     end
-    return tensor
+    #return tensor
 end
 
-function rotation(R::Union{Adjoint{Float64,Matrix{Float64}},Matrix{Float64}},
-                  tensor::Matrix{Float64})
+function rotation(R::AbstractMatrix{Float64},
+                  tensor::AbstractMatrix{Float64})
     @inbounds @fastmath for m in axes(tensor, 1)
         @inbounds @fastmath for n in axes(tensor, 1)
             tmn = zero(eltype(tensor))

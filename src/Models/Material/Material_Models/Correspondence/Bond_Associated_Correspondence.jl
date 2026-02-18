@@ -151,14 +151,14 @@ function compute_model(nodes::AbstractVector{Int64},
                                                                 ba_rotation_tensor)
         nneighbors = Data_Manager.get_field("Number of Neighbors")
         for iID in nodes
-            stress_N[iID] = rotate(Vector{Int64}(1:nneighbors[iID]),
-                                   stress_N[iID],
-                                   ba_rotation_tensor[iID],
-                                   false)
-            strain_increment[iID] = rotate(Vector{Int64}(1:nneighbors[iID]),
-                                           strain_increment[iID],
-                                           ba_rotation_tensor[iID],
-                                           false)
+            rotate(Vector{Int64}(1:nneighbors[iID]),
+                   stress_N[iID],
+                   ba_rotation_tensor[iID],
+                   false)
+            rotate(Vector{Int64}(1:nneighbors[iID]),
+                   strain_increment[iID],
+                   ba_rotation_tensor[iID],
+                   false)
         end
     end
 

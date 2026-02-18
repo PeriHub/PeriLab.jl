@@ -101,8 +101,8 @@ function compute_FEM(elements::AbstractVector{Int64},
 
             if rotation
                 #tbd
-                # stress_N = rotate(nodes, stress_N, rotation_tensor, false)
-                # strain_increment = rotate(nodes, strain_increment, rotation_tensor, false)
+                # rotate(nodes, stress_N, rotation_tensor, false)
+                # rotate(nodes, strain_increment, rotation_tensor, false)
             end
 
             # in future this part must be changed -> using set Modules
@@ -128,7 +128,7 @@ function compute_FEM(elements::AbstractVector{Int64},
 
             if rotation
                 #tbd
-                #stress_NP1 = rotate(nodes, stress_NP1, rotation_tensor, true)
+                #rotate(nodes, stress_NP1, rotation_tensor, true)
             end
             # specific force density
 
