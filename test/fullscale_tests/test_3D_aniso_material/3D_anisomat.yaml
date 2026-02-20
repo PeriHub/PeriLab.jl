@@ -1,0 +1,145 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Blocks:
+    block_1:
+      Block ID: 1
+      Density: 1.95e-08
+      Horizon: 2.01
+      Material Model: Cuboid_mat
+      Angle X: 0.0
+      Angle Y: 0.0
+      Angle Z: 45.0
+    block_2:
+      Block ID: 2
+      Density: 1.95e-08
+      Horizon: 2.01
+      Material Model: Cuboid_mat
+      Damage Model: Damage
+      Angle X: 0.0
+      Angle Y: 0.0
+      Angle Z: 45.0
+    block_3:
+      Block ID: 3
+      Density: 1.95e-08
+      Horizon: 2.01
+      Material Model: Cuboid_mat
+      Angle X: 0.0
+      Angle Y: 0.0
+      Angle Z: 45.0
+    block_4:
+      Block ID: 4
+      Density: 1.95e-08
+      Horizon: 2.01
+      Material Model: Cuboid_mat
+      Angle X: 0.0
+      Angle Y: 0.0
+      Angle Z: -45.0
+    block_5:
+      Block ID: 5
+      Density: 1.95e-08
+      Horizon: 2.01
+      Material Model: Cuboid_mat
+      Damage Model: Damage
+      Angle X: 0.0
+      Angle Y: 0.0
+      Angle Z: -45.0
+    block_6:
+      Block ID: 6
+      Density: 1.95e-08
+      Horizon: 2.01
+      Material Model: Cuboid_mat
+      Angle X: 0.0
+      Angle Y: 0.0
+      Angle Z: -45.0
+  Boundary Conditions:
+    BC_1:
+      Coordinate: x
+      Node Set: Node Set 1
+      Variable: Displacements
+      Value: 0.01*t
+      Type: Dirichlet
+    BC_2:
+      Coordinate: x
+      Node Set: Node Set 2
+      Variable: Displacements
+      Value: 0
+      Type: Dirichlet
+    BC_3:
+      Coordinate: y
+      Node Set: Node Set 2
+      Variable: Displacements
+      Value: 0
+      Type: Dirichlet
+    BC_4:
+      Coordinate: z
+      Node Set: Node Set 2
+      Variable: Displacements
+      Value: 0
+      Type: Dirichlet
+  Discretization:
+    Input Mesh File: cuboid_mesh.txt
+    Node Sets:
+      Node Set 1: ns_cuboid_right.txt
+      Node Set 2: ns_cuboid_left.txt
+    Type: Text File
+  Outputs:
+    Output1:
+      Output Frequency: 1
+      Output Filename: 3D_aniso
+      Output File Type: Exodus
+      Output Variables:
+        Displacements: true
+        Forces: true
+        Damage: true
+        Velocity: true
+        Number of Neighbors: true
+        Strain: true
+        Cauchy Stress: true
+  Models:
+    Damage Models:
+      Damage:
+        Anisotropic Damage:
+          Critical Value X: 5.2
+          Critical Value Y: 2.1
+        Critical Value: 10.0
+        Damage Model: Critical Energy Anisotropic
+    Material Models:
+      Cuboid_mat:
+        Material Model: "Correspondence Elastic"
+        Zero Energy Control: "Global"
+        Symmetry: orthotropic
+        Young's Modulus X: 1.35e5
+        Young's Modulus Y: 9.0e3
+        Young's Modulus Z: 9.0e3
+        Poisson's Ratio XY: 0.27
+        Poisson's Ratio YZ: 0.40
+        Poisson's Ratio XZ: 0.27
+        Shear Modulus XY: 4.5e3 # [MPa]
+        Shear Modulus YZ: 3.0e3 # [MPa]
+        Shear Modulus XZ: 4.5e3 # [MPa]
+    Pre Calculation Global:
+      Bond Associated Deformation Gradient: false
+      Deformation Gradient: false
+      Deformed Bond Geometry: true
+      Shape Tensor: false
+  Multistep Solver:
+    Step 1:
+      Step ID: 1
+      Initial Time: 0.0
+      Final Time: 0.5
+      Number of Steps: 2
+      Material Models: true
+      Linear Static Matrix Based:
+        Safety Factor: 0.8
+    Step 2:
+      Step ID: 2
+      Initial Time: 0.0
+      Final Time: 0.500001
+      Number of Steps: 2
+      Material Models: true
+      Damage Models: true
+      Verlet:
+        Safety Factor: 1.0
