@@ -6,7 +6,7 @@ module Data_Manager
 using MPI
 using SparseArrays
 using DataStructures: OrderedDict
-
+using ExtendableSparse
 ##########################
 # Variables
 ##########################
@@ -1082,17 +1082,17 @@ function set_verbose(value::Bool)
     data["verbose"] = value
 end
 
-function init_stiffness_matrix(xID::Vector{Int64}, yID::Vector{Int64},
-                               vals::Vector{Float64}, N::Int64)
+function init_stiffness_matrix(nnodes::Int64, dof::Int64)
+    n_total = nnodes * dof
     data["matrix_exists"] = true
-    data["Stiffness Matrix"] = PD_matrix(xID, yID, vals, N)
+    data["Stiffness Matrix"] = ExtendableSparseMatrix{Float64,Int}(n_total, n_total)
 end
 #
 function set_stiffness_matrix(sparse_mat)
     data["matrix_exists"] = true
     #data["Stiffness Matrix"] = PD_matrix(xID, yID, sparse_data,
     #	data["Stiffness Matrix"].sparse_matrix)
-    data["Stiffness Matrix"].sparse_matrix = sparse_mat
+    data["Stiffness Matrix"] = sparse_mat
 end
 
 function set_mass_matrix(sparse_mat)
@@ -1107,7 +1107,7 @@ end
 
 function get_stiffness_matrix()
     if data["matrix_exists"]
-        return data["Stiffness Matrix"].sparse_matrix
+        return data["Stiffness Matrix"]
     end
     return nothing
 end

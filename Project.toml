@@ -1,7 +1,7 @@
 name = "PeriLab"
 uuid = "2ecefcea-59f0-46dd-9cfd-1d2b8cc5f112"
-authors = ["Christian Willberg <christian.willberg@dlr.de>", "Jan-Timo Hesse <jan-timo.hesse@dlr.de>"]
 version = "1.5.3"
+authors = ["Christian Willberg <christian.willberg@dlr.de>", "Jan-Timo Hesse <jan-timo.hesse@dlr.de>"]
 
 [deps]
 AbaqusReader = "bc6b9049-e460-56d6-94b4-a597b2c0390d"
@@ -14,6 +14,7 @@ DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Dierckx = "39dd38d3-220a-591b-8e3c-4c3a8c710a94"
 Exodus = "f57ae99e-f805-4780-bdca-96e224be1e5a"
+ExtendableSparse = "95c220a8-a1cf-11e9-0c77-dbfce5f500b3"
 FastGaussQuadrature = "442a2c76-b920-505d-bb47-c5924d526838"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 LazyGrids = "7031d0ef-c40d-4431-b2f8-61a8d2f650db"
@@ -57,6 +58,7 @@ DataStructures = "0.18, 0.19"
 Dates = "1"
 Dierckx = "0.5"
 Exodus = "0.13"
+ExtendableSparse = "2.0.1"
 FastGaussQuadrature = "1"
 JSON3 = "1"
 LazyGrids = "1"
