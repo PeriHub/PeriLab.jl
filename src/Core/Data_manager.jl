@@ -516,7 +516,7 @@ end
 
 Get the fields to synchronize
 """
-function get_synch_fields()
+function get_synch_fields()::Dict{String,Any}
     return data["fields_to_synch"]
 end
 
