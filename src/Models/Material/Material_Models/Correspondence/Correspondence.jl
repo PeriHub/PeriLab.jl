@@ -178,10 +178,12 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
                                                strain_N)
 
     if rotation
-        rotation_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Rotation Tensor")
-        rotate(nodes, stress_N, rotation_tensor, false)
-        rotate(nodes, strain_increment,
-               rotation_tensor, false)
+        @timeit "rotate forward" begin
+            rotation_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Rotation Tensor")
+            rotate(nodes, stress_N, rotation_tensor, false)
+            rotate(nodes, strain_increment,
+                   rotation_tensor, false)
+        end
     end
 
     # material_models = split(material_parameter["Material Model"], "+")
@@ -204,7 +206,9 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
     end
 
     if rotation
-        rotate(nodes, stress_NP1, rotation_tensor, true)
+        @timeit "rotate back" begin
+            rotate(nodes, stress_NP1, rotation_tensor, true)
+        end
     end
     @timeit "compute bond force" calculate_bond_force!(nodes,
                                                        dof,

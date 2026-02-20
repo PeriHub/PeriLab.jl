@@ -8,7 +8,6 @@ using LoopVectorization: @turbo
 using SparseArrays
 using TimerOutputs: @timeit
 using ...Data_Manager
-using ...Material_Basis: get_Hooke_matrix
 using ....Helpers: get_fourth_order
 using ...Zero_Energy_Control
 
@@ -659,6 +658,32 @@ function init_model(nodes::AbstractVector{Int64},
     end
 end
 
+function rotation_voigt_3D(R::AbstractMatrix{Float64}, C::AbstractMatrix{Float64})
+    l1, m1, n1 = R[1, 1], R[1, 2], R[1, 3]
+    l2, m2, n2 = R[2, 1], R[2, 2], R[2, 3]
+    l3, m3, n3 = R[3, 1], R[3, 2], R[3, 3]
+
+    M = [l1^2 m1^2 n1^2 2m1*n1 2l1*n1 2l1*m1;
+         l2^2 m2^2 n2^2 2m2*n2 2l2*n2 2l2*m2;
+         l3^2 m3^2 n3^2 2m3*n3 2l3*n3 2l3*m3;
+         l2*l3 m2*m3 n2*n3 m2 * n3+m3 * n2 l2 * n3+l3 * n2 l2 * m3+l3 * m2;
+         l1*l3 m1*m3 n1*n3 m1 * n3+m3 * n1 l1 * n3+l3 * n1 l1 * m3+l3 * m1;
+         l1*l2 m1*m2 n1*n2 m1 * n2+m2 * n1 l1 * n2+l2 * n1 l1 * m2+l2 * m1]
+
+    return M * C * M'
+end
+
+function rotation_voigt_2D(R::AbstractMatrix{Float64}, C::AbstractMatrix{Float64})
+    l1, m1 = R[1, 1], R[1, 2]
+    l2, m2 = R[2, 1], R[2, 2]
+
+    M = [l1^2 m1^2 2l1*m1;
+         l2^2 m2^2 2l2*m2;
+         l1*l2 m1*m2 l1 * m2+l2 * m1]
+
+    return M * C * M'
+end
+
 function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = true)
     nodes = collect(1:Data_Manager.get_nnodes())
     dof = Data_Manager.get_dof()
@@ -674,6 +699,24 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
     C_voigt = Data_Manager.get_field("Elasticity Matrix")
     bond_damage = Data_Manager.get_field("Bond Damage", "NP1")
 
+    if Data_Manager.get_rotation()
+        C_voigt_trafo = similar(C_voigt)
+        rotation_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Rotation Tensor")
+        if dof == 2
+            for i in 1:nnodes
+                @views C_voigt_trafo[i, :, :] = rotation_voigt_2D(rotation_tensor[i, :, :],
+                                                                  C_voigt[i, :, :])
+            end
+
+        elseif dof == 3
+            for i in 1:nnodes
+                @views C_voigt_trafo[i, :, :] = rotation_voigt_3D(rotation_tensor[i, :, :],
+                                                                  C_voigt[i, :, :])
+            end
+        end
+    else
+        @views C_voigt_trafo .= C_voigt
+    end
     # Setup zero-energy
     use_zero_energy = false
     zStiff = nothing
@@ -685,7 +728,8 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
             if use_zero_energy
                 zStiff = Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",
                                                                         Float64, dof)
-                Zero_Energy_Control.create_zero_energy_mode_stiffness!(nodes, dof, C_voigt,
+                Zero_Energy_Control.create_zero_energy_mode_stiffness!(nodes, dof,
+                                                                       C_voigt_trafo,
                                                                        inverse_shape_tensor,
                                                                        zStiff)
             end
@@ -696,7 +740,7 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
                        total_dof=assemble_stiffness_with_zero_energy(nodes,
                                                                      nodes,
                                                                      dof,
-                                                                     C_voigt,
+                                                                     C_voigt_trafo,
                                                                      inverse_shape_tensor,
                                                                      number_of_neighbors,
                                                                      nlist,
@@ -711,16 +755,6 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
     Data_Manager.init_stiffness_matrix(index_x, index_y, vals, total_dof)
     K_sparse = Data_Manager.get_stiffness_matrix()
     Data_Manager.set_stiffness_matrix(-K_sparse)
-
-    if use_zero_energy
-        expected_rank = nnodes * dof - Int(dof * (dof + 1) / 2)
-        actual_rank = rank(-K_sparse)
-        if actual_rank != expected_rank
-            @warn "Stiffness matrix rank is $actual_rank, expected $expected_rank"
-        else
-            @info "✓ Zero-energy stabilization successful: rank = $actual_rank"
-        end
-    end
 end
 
 function compute_model(nodes::AbstractVector{Int64},
