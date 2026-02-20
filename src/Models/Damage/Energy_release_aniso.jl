@@ -92,6 +92,7 @@ function compute_model(nodes::AbstractVector{Int64},
     end
 
     aniso_crit_values = Data_Manager.get_aniso_crit_values()
+
     # bond_damage_aniso = Data_Manager.get_field("Bond Damage Anisotropic", "NP1")
     # bond_norm::Float64 = 0.0
     rotation_tensor = Data_Manager.get_field("Rotation Tensor")
@@ -169,7 +170,7 @@ function compute_model(nodes::AbstractVector{Int64},
                 critical_energy_value = critical_energy
             end
 
-            rotation_temp = rotation_tensor[iID, :, :]
+            @views rotation_temp = rotation_tensor[iID, :, :]
             if all(rotation_temp .== 0)
                 @views rotated_bond = deformed_bond[iID][jID]
             else
