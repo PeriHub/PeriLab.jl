@@ -194,7 +194,7 @@ end
     angles = test_data_manager.create_constant_node_scalar_field("Angles", Float64;
                                                                  default_value = 90)
     test_data_manager.set_rotation(true)
-    PeriLab.IO.init_orientations()
+    PeriLab.IO.init_orientations(Dict())
     orientations = test_data_manager.get_field("Orientations")
     @test isapprox(orientations[1, 1], 0; atol = 0.00001)
     @test isapprox(orientations[1, 2], 1; atol = 0.00001)
@@ -232,7 +232,7 @@ end
     angles = test_data_manager.create_constant_node_vector_field("Angles", Float64, 3;
                                                                  default_value = 90)
     test_data_manager.set_rotation(true)
-    PeriLab.IO.init_orientations()
+    PeriLab.IO.init_orientations(Dict())
     orientations = test_data_manager.get_field("Orientations")
     @test isapprox(orientations[1, 1], 0; atol = 0.00001)
     @test isapprox(orientations[1, 2], 0; atol = 0.00001)
