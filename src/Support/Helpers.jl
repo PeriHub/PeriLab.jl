@@ -1116,49 +1116,106 @@ function rotate(nodes::AbstractVector{Int64},
                 matrix::AbstractArray{Float64},
                 rot::AbstractArray{Float64},
                 back::Bool)
-    for iID in nodes
-        matrix[iID, :,
-        :] = rotate_second_order_tensor(rot[iID, :, :], matrix[iID, :, :],
-                                                       back)
+    if size(matrix, 2) == 2
+        for iID in nodes
+            @views rotate_second_order_tensor2x2(rot[iID, :, :], matrix[iID, :, :],
+                                                 back)
+        end
+        return
     end
-    return matrix
+    for iID in nodes
+        @views rotate_second_order_tensor3x3(rot[iID, :, :], matrix[iID, :, :],
+                                             back)
+    end
 end
 
 """
-	rotate_second_order_tensor(angles::Union{Vector{Float64},Vector{Int64}}, tensor::Matrix{Float64}, dof::Int64, back::Bool)
-
+	rotate_second_order_tensor2x2(R::AbstractMatrix{Float64}, tensor::AbstractMatrix{Float64},
+                                    back::Bool)
 Rotates the second order tensor.
 
 # Arguments
-- `angles::Union{Vector{Float64},Vector{Int64}}`: Angles.
-- `tensor::Matrix{Float64}`: Second order tensor.
-- `dof::Int64`: Degree of freedom.
+- `R::AbstractMatrix{Float64}`: Rotation tensor.
+- `tensor::AbstractMatrix{Float64}`: Second order tensor.
 - `back::Bool`: Back.
 # Returns
-- `tensor::Matrix{Float64}`: Second order tensor.
+
 """
-function rotate_second_order_tensor(R::Matrix{Float64}, tensor::Matrix{Float64}, back::Bool)
+function rotate_second_order_tensor2x2(R::AbstractMatrix{Float64},
+                                       tensor::AbstractMatrix{Float64},
+                                       back::Bool)
     if back
-        rotation(R', tensor)
+        rotation2x2!(R', tensor)
     else
-        rotation(R, tensor)
+        rotation2x2!(R, tensor)
     end
-    return tensor
+    return nothing
+end
+function rotate_second_order_tensor3x3(R::AbstractMatrix{Float64},
+                                       tensor::AbstractMatrix{Float64},
+                                       back::Bool)
+    if back
+        rotation3x3!(R', tensor)
+    else
+        rotation3x3!(R, tensor)
+    end
+    return nothing
+end
+function rotation3x3!(R::AbstractMatrix{Float64}, T::AbstractMatrix{Float64})
+    t11, t12, t13 = T[1, 1], T[1, 2], T[1, 3]
+    t21, t22, t23 = T[2, 1], T[2, 2], T[2, 3]
+    t31, t32, t33 = T[3, 1], T[3, 2], T[3, 3]
+
+    r11, r12, r13 = R[1, 1], R[1, 2], R[1, 3]
+    r21, r22, r23 = R[2, 1], R[2, 2], R[2, 3]
+    r31, r32, r33 = R[3, 1], R[3, 2], R[3, 3]
+
+    @inbounds @fastmath begin
+        T[1, 1] = r11 * (r11 * t11 + r12 * t21 + r13 * t31) +
+                  r12 * (r11 * t12 + r12 * t22 + r13 * t32) +
+                  r13 * (r11 * t13 + r12 * t23 + r13 * t33)
+        T[1, 2] = r21 * (r11 * t11 + r12 * t21 + r13 * t31) +
+                  r22 * (r11 * t12 + r12 * t22 + r13 * t32) +
+                  r23 * (r11 * t13 + r12 * t23 + r13 * t33)
+        T[1, 3] = r31 * (r11 * t11 + r12 * t21 + r13 * t31) +
+                  r32 * (r11 * t12 + r12 * t22 + r13 * t32) +
+                  r33 * (r11 * t13 + r12 * t23 + r13 * t33)
+        T[2, 1] = r11 * (r21 * t11 + r22 * t21 + r23 * t31) +
+                  r12 * (r21 * t12 + r22 * t22 + r23 * t32) +
+                  r13 * (r21 * t13 + r22 * t23 + r23 * t33)
+        T[2, 2] = r21 * (r21 * t11 + r22 * t21 + r23 * t31) +
+                  r22 * (r21 * t12 + r22 * t22 + r23 * t32) +
+                  r23 * (r21 * t13 + r22 * t23 + r23 * t33)
+        T[2, 3] = r31 * (r21 * t11 + r22 * t21 + r23 * t31) +
+                  r32 * (r21 * t12 + r22 * t22 + r23 * t32) +
+                  r33 * (r21 * t13 + r22 * t23 + r23 * t33)
+        T[3, 1] = r11 * (r31 * t11 + r32 * t21 + r33 * t31) +
+                  r12 * (r31 * t12 + r32 * t22 + r33 * t32) +
+                  r13 * (r31 * t13 + r32 * t23 + r33 * t33)
+        T[3, 2] = r21 * (r31 * t11 + r32 * t21 + r33 * t31) +
+                  r22 * (r31 * t12 + r32 * t22 + r33 * t32) +
+                  r23 * (r31 * t13 + r32 * t23 + r33 * t33)
+        T[3, 3] = r31 * (r31 * t11 + r32 * t21 + r33 * t31) +
+                  r32 * (r31 * t12 + r32 * t22 + r33 * t32) +
+                  r33 * (r31 * t13 + r32 * t23 + r33 * t33)
+    end
+    return nothing
 end
 
-function rotation(R::Union{Adjoint{Float64,Matrix{Float64}},Matrix{Float64}},
-                  tensor::Matrix{Float64})
-    @inbounds @fastmath for m in axes(tensor, 1)
-        @inbounds @fastmath for n in axes(tensor, 1)
-            tmn = zero(eltype(tensor))
-            @inbounds @fastmath for i in axes(tensor, 1)
-                @inbounds @fastmath for j in axes(tensor, 1)
-                    tmn += tensor[i, j] * R[i, m] * R[j, n]
-                end
-            end
-            tensor[m, n] = tmn
-        end
+function rotation2x2!(R::AbstractMatrix{Float64}, T::AbstractMatrix{Float64})
+    t11, t12 = T[1, 1], T[1, 2]
+    t21, t22 = T[2, 1], T[2, 2]
+
+    r11, r12 = R[1, 1], R[1, 2]
+    r21, r22 = R[2, 1], R[2, 2]
+
+    @inbounds @fastmath begin
+        T[1, 1] = r11 * (r11 * t11 + r12 * t21) + r12 * (r11 * t12 + r12 * t22)
+        T[1, 2] = r21 * (r11 * t11 + r12 * t21) + r22 * (r11 * t12 + r12 * t22)
+        T[2, 1] = r11 * (r21 * t11 + r22 * t21) + r12 * (r21 * t12 + r22 * t22)
+        T[2, 2] = r21 * (r21 * t11 + r22 * t21) + r22 * (r21 * t12 + r22 * t22)
     end
+    return nothing
 end
 
 """

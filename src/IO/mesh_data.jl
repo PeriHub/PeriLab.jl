@@ -15,7 +15,7 @@ include("volume.jl")
 using ..Helpers: fastdot, get_nearest_neighbors, find_inverse_bond_id
 using ..Logging_Module: print_table
 using ..Parameter_Handling: get_mesh_name, get_header, get_node_sets,
-                            get_external_topology_name, get_horizon
+                            get_external_topology_name, get_horizon, get_angles
 using ..Geometry: bond_geometry!
 
 #export read_mesh
@@ -39,7 +39,7 @@ Initializes the data for the mesh.
 function init_data(params::Dict,
                    path::String,
                    comm::MPI.Comm)
-    @timeit "init_data - mesh_data,jl" begin
+    @timeit "init_data - mesh_data.jl" begin
         size = MPI.Comm_size(comm)
         rank = MPI.Comm_rank(comm) + 1
         fem_active::Bool = false
@@ -147,6 +147,52 @@ function init_data(params::Dict,
     Data_Manager.set_inverse_nlist(find_inverse_bond_id(nlist))
     mesh = nothing
     return params
+end
+
+"""
+	set_angles(params::Dict, block_nodes::Dict)
+
+Sets the density of the nodes in the dictionary.
+
+# Arguments
+- `params::Dict`: The parameters
+- `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
+"""
+function set_angles(params::Dict)
+    block_ids = Data_Manager.get_field("Block_Id")
+    blocks = unique(block_ids)
+    mesh_angles = false
+    if "Angles" in Data_Manager.get_all_field_keys()
+        Data_Manager.set_rotation(true)
+        mesh_angles = true
+    end
+    if "Element Angles" in Data_Manager.get_all_field_keys()
+        Data_Manager.set_element_rotation(true)
+    end
+
+    block_rotation = false
+    dof = Data_Manager.get_dof()
+    for block in blocks
+        if get_angles(params, block, dof) !== nothing
+            block_rotation = true
+            break
+        end
+    end
+    if block_rotation
+        if mesh_angles
+            @warn "Angles defined in mesh will be overwritten by block angles"
+        end
+        Data_Manager.set_rotation(true)
+        angles = Data_Manager.create_constant_node_vector_field("Angles", Float64, dof)
+
+        for iID in 1:Data_Manager.get_nnodes()
+            angles_global = get_angles(params, block_ids[iID], dof)
+            if isnothing(angles_global)
+                angles_global = 0.0
+            end
+            angles[iID, :] .= angles_global
+        end
+    end
 end
 
 """

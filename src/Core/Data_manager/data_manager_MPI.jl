@@ -44,8 +44,8 @@ Synchronises the fields.
 - `synchronise_field`: The function to synchronise the field.
 - `direction::String`: The direction of the synchronisation.
 """
-function synch_manager(synchronise_field, direction::String)
-    synch_fields = get_synch_fields()
+function synch_manager(synchronise_field::Function, direction::String)
+    synch_fields::Dict{String,Any} = get_synch_fields()
     # @debug synch_fields
     for synch_field in keys(synch_fields)
         synchronise_field(get_comm(),

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Critical_Energy_Aniso
-
+using TimerOutputs: @timeit
 using LinearAlgebra: mul!, dot
 using StaticArrays
 
@@ -64,7 +64,7 @@ function compute_model(nodes::AbstractVector{Int64},
     nlist = Data_Manager.get_nlist()
     block_ids = Data_Manager.get_field("Block_Id")
     update_list = Data_Manager.get_field("Update")
-    bond_damage = Data_Manager.get_bond_damage("NP1")
+    bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
 
     undeformed_bond = Data_Manager.get_field("Bond Geometry")
     undeformed_bond_length = Data_Manager.get_field("Bond Length")
@@ -77,7 +77,7 @@ function compute_model(nodes::AbstractVector{Int64},
                       damage_parameter["Critical Value"]
     critical_energy_value = 0.0
     quad_horizons = Data_Manager.get_field("Quad Horizon")
-    inverse_nlist = Data_Manager.get_inverse_nlist()
+    inverse_nlist::Vector{Dict{Int64,Int64}} = Data_Manager.get_inverse_nlist()
 
     dependend_value,
     dependent_field = is_dependent("Critical Value", damage_parameter)
@@ -92,135 +92,125 @@ function compute_model(nodes::AbstractVector{Int64},
     end
 
     aniso_crit_values = Data_Manager.get_aniso_crit_values()
+
     # bond_damage_aniso = Data_Manager.get_field("Bond Damage Anisotropic", "NP1")
     # bond_norm::Float64 = 0.0
     rotation_tensor = Data_Manager.get_field("Rotation Tensor")
-    rotation_temp::Matrix{Float64} = zeros(Float64, dof, dof)
-    rotated_bond::Vector{Float64} = zeros(Float64, dof)
-    bond_norm_all::Vector{Float64} = zeros(Float64, dof)
-    condition::Vector{Bool} = zeros(Bool, dof)
-    temp::Vector{Float64} = zeros(Float64, dof)
-    temp2::Vector{Float64} = zeros(Float64, dof)
+    @timeit "preallocate arrays" begin
+        rotation_temp::Matrix{Float64} = zeros(Float64, dof, dof)
+        rotated_bond::Vector{Float64} = zeros(Float64, dof)
+        bond_norm_all::Vector{Float64} = zeros(Float64, dof)
+        condition::Vector{Bool} = zeros(Bool, dof)
+        temp::Vector{Float64} = zeros(Float64, dof)
+        temp2::Vector{Float64} = zeros(Float64, dof)
 
-    bond_energy::Float64 = 0.0
-    norm_displacement::Float64 = 0.0
-    product::Float64 = 0.0
-    x_vector::Vector{Float64} = @SVector zeros(Float64, dof)
-    x_vector[1] = 1.0
+        bond_energy::Float64 = 0.0
+        norm_displacement::Float64 = 0.0
+        product::Float64 = 0.0
+        x_vector::Vector{Float64} = @SVector zeros(Float64, dof)
+        x_vector[1] = 1.0
 
-    bond_force::Vector{Float64} = zeros(Float64, dof)
-    neighbor_bond_force::Vector{Float64} = zeros(Float64, dof)
-    bond_force_delta::Vector{Float64} = zeros(Float64, dof)
-    projected_force::Vector{Float64} = zeros(Float64, dof)
-    relative_displacement::Vector{Float64} = zeros(Float64, dof)
-
+        bond_force::Vector{Float64} = zeros(Float64, dof)
+        neighbor_bond_force::Vector{Float64} = zeros(Float64, dof)
+        bond_force_delta::Vector{Float64} = zeros(Float64, dof)
+        projected_force::Vector{Float64} = zeros(Float64, dof)
+        relative_displacement::Vector{Float64} = zeros(Float64, dof)
+    end
     sub_in_place!(bond_displacements, deformed_bond, undeformed_bond)
     warning_flag = true
 
     for iID in nodes
-        bond_displacement = bond_displacements[iID]
-        bond_force_vec = bond_forces[iID]
-        quad_horizon = quad_horizons[iID]
-        @fastmath @inbounds for jID in eachindex(nlist[iID])
-            relative_displacement = bond_displacement[jID]
-            norm_displacement = dot(relative_displacement, relative_displacement)
-            if norm_displacement == 0 || (tension &&
-                deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0)
-                continue
-            end
+        @views bond_displacement = bond_displacements[iID]
+        @views bond_force_vec = bond_forces[iID]
+        @views quad_horizon = quad_horizons[iID]
+        @timeit "loop" begin
+            @fastmath @inbounds for jID in eachindex(nlist[iID])
+                @views relative_displacement = bond_displacement[jID]
+                norm_displacement = dot(relative_displacement, relative_displacement)
 
-            @views neighborID = nlist[iID][jID]
-
-            if !haskey(inverse_nlist[neighborID], iID)
-                continue
-            end
-
-            neighbor_bond_force .= bond_forces[neighborID][inverse_nlist[neighborID][iID]]
-
-            bond_force .= bond_force_vec[jID]
-            bond_force_delta .= bond_force .- neighbor_bond_force
-
-            product = dot(bond_force_delta, relative_displacement)
-            mul!(projected_force, product / norm_displacement, relative_displacement)
-            product = fastdot(projected_force, relative_displacement, true)
-            bond_energy = 0.25 * product
-
-            if critical_field
-                critical_energy_value = critical_energy[iID]
-            elseif inter_block_damage
-                critical_energy_value = inter_critical_energy[block_ids[iID],
-                block_ids[neighborID], block]
-
-                param_name = "Interblock Critical Value " * string(block_ids[iID]) * "_" *
-                             string(block_ids[neighborID])
-
-                dependend_value,
-                dependent_field = is_dependent(param_name, damage_parameter)
-                if dependend_value
-                    critical_energy_value = interpol_data(dependent_field[iID],
-                                                          damage_parameter[param_name]["Data"],
-                                                          warning_flag)
+                if norm_displacement == 0 || (tension &&
+                    deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] <
+                    0)
+                    continue
                 end
-            elseif dependend_value
-                critical_energy_value = interpol_data(dependent_field[iID],
-                                                      damage_parameter["Critical Value"]["Data"],
-                                                      warning_flag)
-            else
-                critical_energy_value = critical_energy
+
+                neighborID = nlist[iID][jID]
+                @timeit "1" begin
+                    if !haskey(inverse_nlist[neighborID], iID)
+                        continue
+                    end
+                end
+                inID::Int64 = inverse_nlist[neighborID][iID]
+                neighbor_bond_force = bond_forces[neighborID][inID]
+
+                @views bond_force = bond_force_vec[jID]
+                bond_force_delta .= bond_force .- neighbor_bond_force
+
+                product = dot(bond_force_delta, relative_displacement)
+                mul!(projected_force, product / norm_displacement, relative_displacement)
+                product = fastdot(projected_force, relative_displacement, true)
+                bond_energy = 0.25 * product
+                @timeit "compute critical energy value" begin
+                    if critical_field
+                        critical_energy_value = critical_energy[iID]
+                    elseif inter_block_damage
+                        critical_energy_value = inter_critical_energy[block_ids[iID],
+                        block_ids[neighborID],
+                        block]
+
+                        param_name = "Interblock Critical Value " * string(block_ids[iID]) *
+                                     "_" *
+                                     string(block_ids[neighborID])
+
+                        dependend_value,
+                        dependent_field = is_dependent(param_name, damage_parameter)
+                        if dependend_value
+                            critical_energy_value = interpol_data(dependent_field[iID],
+                                                                  damage_parameter[param_name]["Data"],
+                                                                  warning_flag)
+                        end
+                    elseif dependend_value
+                        critical_energy_value = interpol_data(dependent_field[iID],
+                                                              damage_parameter["Critical Value"]["Data"],
+                                                              warning_flag)
+                    else
+                        critical_energy_value = critical_energy
+                    end
+                end
+                @views rotation_temp = rotation_tensor[iID, :, :]
+                if all(rotation_temp .== 0)
+                    @views rotated_bond = deformed_bond[iID][jID]
+                else
+                    mul!(rotated_bond, rotation_temp, deformed_bond[iID][jID])
+                end
+                # Compute bond_norm for all components at once
+                div_in_place!(bond_norm_all,
+                              rotated_bond,
+                              deformed_bond_length[iID][jID],
+                              true)
+
+                mul!(temp, bond_energy, bond_norm_all)
+                # Compute the condition for all components at once
+                mul!(temp2, aniso_crit_values[block_ids[iID]], quad_horizon)
+                condition .= temp .> temp2
+
+                # Update bond_damage, bond_damage_aniso, and update_list in a vectorized manner
+                mul_in_place!(temp, bond_norm_all, condition)
+
+                update_bond_damage!(bond_damage, iID, jID, temp)
+
+                # bond_damage_aniso[iID][jID] .= 0 .+ condition
+                update_list[iID] = any(condition)
             end
-
-            rotation_temp = rotation_tensor[iID, :, :]
-            if all(rotation_temp .== 0)
-                @views rotated_bond = deformed_bond[iID][jID]
-            else
-                rotation_temp = rotation_temp'
-                mul!(rotated_bond, rotation_temp', deformed_bond[iID][jID])
-            end
-            # Compute bond_norm for all components at once
-            div_in_place!(bond_norm_all,
-                          rotated_bond,
-                          deformed_bond_length[iID][jID],
-                          true)
-
-            mul!(temp, bond_energy, bond_norm_all)
-            # Compute the condition for all components at once
-            mul!(temp2, aniso_crit_values[block_ids[iID]], quad_horizon)
-            condition .= temp .> temp2
-
-            # Update bond_damage, bond_damage_aniso, and update_list in a vectorized manner
-            mul_in_place!(temp, bond_norm_all, condition)
-            bond_damage[iID][jID] -= sum(temp)
-            bond_damage[iID][jID] = max.(bond_damage[iID][jID], 0) # Ensure non-negative
-            # bond_damage_aniso[iID][jID] .= 0 .+ condition
-            update_list[iID] = any(condition)
-
-            ###################################################################################################
-
-            # x = abs(bond_norm_all[1]) / sum(abs.(bond_norm_all))
-            # crit_energy = 6.41640733892757 + 43.447538762292922x - 48.899767470904678x^2 + 18.972581432264228x^3
-            # # crit_energy = eval(Meta.parse(aniso_crit_values[block_ids[iID]]))
-            # if (bond_energy / quad_horizon[iID]) > crit_energy
-            #     bond_damage[iID][jID] = 0.0
-            #     update_list[iID] = true
-            # end
-
-            ###################################################################################################
-            # for i in 1:dof
-            #     if bond_damage_aniso[iID][jID, i] == 0 || rotated_bond[i] == 0
-            #         continue
-            #     end
-            #     bond_norm = abs(rotated_bond[i]) / deformed_bond_length[iID][jID]
-            #     # @info "Norm: " * string(bond_norm)
-            #     # @info "bond_energy: " * string(bond_energy / quad_horizon[iID] * bond_norm)
-            #     # @info "aniso_crit_values: " * string(aniso_crit_values[block_ids[iID]][i])
-            #     if bond_energy / quad_horizon[iID] * bond_norm > aniso_crit_values[block_ids[iID]][i]
-            #         bond_damage[iID][jID] -= bond_norm # TODO: check if this is correct
-            #         bond_damage[iID][jID] = max(bond_damage[iID][jID], 0) # Ensure non-negative
-            #         bond_damage_aniso[iID][jID, i] = 0
-            #         update_list[iID] = true
-            #     end
-            # end
         end
+    end
+end
+
+@inline function update_bond_damage!(bond_damage::BondScalarState{Float64}, iID::Int64,
+                                     jID::Int64, temp::Vector{Float64})
+    bond_damage[iID][jID] -= sum(temp)
+    if bond_damage[iID][jID] < 0
+        bond_damage[iID][jID] = 0.0
     end
 end
 

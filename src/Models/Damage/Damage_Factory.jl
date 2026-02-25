@@ -185,18 +185,22 @@ Initialize the anisotropic critical values
 - `block_id::Int64`: current block
 """
 function init_aniso_crit_values(damage_parameter::Dict,
-                                block_id::Int64)
-    aniso_crit::Dict{Int64,Any} = Dict()
+                                block_id::Int64, dof::Int64)
+    aniso_crit::Dict{Int64,Any} = Data_Manager.get_aniso_crit_values()
 
-    crit_0 = damage_parameter["Critical Value"]
-    crit_90 = damage_parameter["Critical Value"]
     if !haskey(damage_parameter, "Anisotropic Damage")
+        @warn "has no anisotropic damage"
         return
     end
-    crit_0 = damage_parameter["Anisotropic Damage"]["Critical Value X"]
-    crit_90 = damage_parameter["Anisotropic Damage"]["Critical Value Y"]
-    aniso_crit[block_id] = [crit_0, crit_90]
 
+    crit_x = damage_parameter["Anisotropic Damage"]["Critical Value X"]
+    crit_y = damage_parameter["Anisotropic Damage"]["Critical Value Y"]
+    if dof == 2
+        aniso_crit[block_id] = [crit_x, crit_y]
+    else
+        crit_z = get(damage_parameter["Anisotropic Damage"], "Critical Value Z", crit_y)
+        aniso_crit[block_id] = [crit_x, crit_y, crit_z]
+    end
     Data_Manager.set_aniso_crit_values(aniso_crit)
 
     # if !haskey(damage_parameter, "Anisotropic Damage")
@@ -241,6 +245,7 @@ function init_model(nodes::AbstractVector{Int64},
     mod.init_model(nodes, model_param, block)
     mod.fields_for_local_synchronization("Damage Model")
     Damage.init_interface_crit_values(model_param, block)
-    Damage.init_aniso_crit_values(model_param, block)
+
+    Damage.init_aniso_crit_values(model_param, block, Data_Manager.get_dof())
 end
 end

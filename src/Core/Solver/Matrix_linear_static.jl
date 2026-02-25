@@ -147,7 +147,7 @@ function init_solver(solver_options::Dict{Any,Any},
     end
 
     @timeit "init matrix" Correspondence_matrix_based.init_matrix()
-
+    Data_Manager.create_node_scalar_field("Damage", Float64)
     solver_options["Matrix update"] = get(params["Linear Static Matrix Based"],
                                           "Matrix update", false)
     deformed_coorN = Data_Manager.get_field("Deformed Coordinates", "N")

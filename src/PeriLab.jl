@@ -303,6 +303,7 @@ function main(filename::String;
                 Data_Manager.set_cancel(false)
                 Data_Manager.set_step(step_id)
                 @info "Init Solver"
+                @timeit "IO.init orientations" IO.init_orientations(params)
                 @timeit "Solver_Manager.init" block_nodes,
                                               bcs,
                                               solver_options=Solver_Manager.init(params,
@@ -315,7 +316,7 @@ function main(filename::String;
                     @info "Initial time not reached. Skipping step " * string(step_id)
                     continue
                 end
-                @timeit "IO.init orientations" IO.init_orientations()
+
                 IO.show_block_summary(solver_options,
                                       params,
                                       Logging_Module.get_log_file(),

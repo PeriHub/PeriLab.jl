@@ -6,7 +6,7 @@ module Data_Manager
 using MPI
 using SparseArrays
 using DataStructures: OrderedDict
-
+using ExtendableSparse
 ##########################
 # Variables
 ##########################
@@ -357,8 +357,8 @@ Get the bond damage
 # Returns
 - `damage::Field`: The bond damage field.
 """
-function get_bond_damage(time::String)
-    bond_damage = get_field("Bond Damage", time)
+function get_bond_damage(time::String)::BondScalarState{Float64}
+    bond_damage::BondScalarState{Float64} = get_field("Bond Damage", time)
     # bond_damage_aniso = get_field("Bond Damage Anisotropic", time, false)
     # return isnothing(bond_damage_aniso) ? bond_damage : bond_damage_aniso
     return bond_damage
@@ -516,7 +516,7 @@ end
 
 Get the fields to synchronize
 """
-function get_synch_fields()
+function get_synch_fields()::Dict{String,Any}
     return data["fields_to_synch"]
 end
 
@@ -1082,17 +1082,17 @@ function set_verbose(value::Bool)
     data["verbose"] = value
 end
 
-function init_stiffness_matrix(xID::Vector{Int64}, yID::Vector{Int64},
-                               vals::Vector{Float64}, N::Int64)
+function init_stiffness_matrix(nnodes::Int64, dof::Int64)
+    n_total = nnodes * dof
     data["matrix_exists"] = true
-    data["Stiffness Matrix"] = PD_matrix(xID, yID, vals, N)
+    data["Stiffness Matrix"] = ExtendableSparseMatrix{Float64,Int}(n_total, n_total)
 end
 #
 function set_stiffness_matrix(sparse_mat)
     data["matrix_exists"] = true
     #data["Stiffness Matrix"] = PD_matrix(xID, yID, sparse_data,
     #	data["Stiffness Matrix"].sparse_matrix)
-    data["Stiffness Matrix"].sparse_matrix = sparse_mat
+    data["Stiffness Matrix"] = sparse_mat
 end
 
 function set_mass_matrix(sparse_mat)
@@ -1107,7 +1107,7 @@ end
 
 function get_stiffness_matrix()
     if data["matrix_exists"]
-        return data["Stiffness Matrix"].sparse_matrix
+        return data["Stiffness Matrix"]
     end
     return nothing
 end

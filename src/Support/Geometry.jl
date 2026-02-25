@@ -406,7 +406,7 @@ function rotation_tensor(angles::T,
     end
     # return RotXYZ(0, 0, angles[1] / 180 * pi)
     if dof != 2
-        @error "Rotation tensor not defined for 3D, make sure that you define Angles_x, Angles_y and Angles_z"
+        @error "Rotation tensor not defined for 3D, make sure that you define Angles_x, Angles_y and Angles_z in yaml or in mesh file."
         return nothing
     end
     return Angle2d(angles[1] / 180 * pi)

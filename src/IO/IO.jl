@@ -423,7 +423,8 @@ end
 
 Initialize orientations.
 """
-function init_orientations()
+function init_orientations(params::Dict)
+    set_angles(params)
     rotation::Bool = Data_Manager.get_rotation()
     element_rotation::Bool = Data_Manager.get_element_rotation()
 

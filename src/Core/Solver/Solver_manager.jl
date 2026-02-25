@@ -357,39 +357,41 @@ function synchronise_field(comm,
                            synch_field::String,
                            direction::String)
     # might not needed
-    if !haskey(synch_fields, synch_field)
-        @error "Field $synch_field does not exist in synch_field dictionary"
-        return nothing
-    end
-    if direction == "download_from_cores"
-        if synch_fields[synch_field][direction]
-            vector = get_field(synch_field, synch_fields[synch_field]["time"])
-            return synch_responder_to_controller(comm,
-                                                 overlap_map,
-                                                 vector,
-                                                 synch_fields[synch_field]["dof"])
+    @timeit "synchronise_field" begin
+        if !haskey(synch_fields, synch_field)
+            @error "Field $synch_field does not exist in synch_field dictionary"
+            return nothing
         end
-        return nothing
-    end
-    if direction == "upload_to_cores"
-        if synch_fields[synch_field][direction]
-            vector = get_field(synch_field, synch_fields[synch_field]["time"])
-            if occursin("Bond", synch_field)
-                return synch_controller_bonds_to_responder_flattened(comm,
-                                                                     overlap_map,
-                                                                     vector,
-                                                                     synch_fields[synch_field]["dof"])
-            else
-                return synch_controller_to_responder(comm,
-                                                     overlap_map,
-                                                     vector,
-                                                     synch_fields[synch_field]["dof"])
+        if direction == "download_from_cores"
+            if synch_fields[synch_field][direction]
+                vector = get_field(synch_field, synch_fields[synch_field]["time"])
+                @timeit "synch_responder_to_controller" return synch_responder_to_controller(comm,
+                                                                                             overlap_map,
+                                                                                             vector,
+                                                                                             synch_fields[synch_field]["dof"])
             end
+            return nothing
         end
+        if direction == "upload_to_cores"
+            if synch_fields[synch_field][direction]
+                vector = get_field(synch_field, synch_fields[synch_field]["time"])
+                if occursin("Bond", synch_field)
+                    @timeit "synch_controller_bonds_to_responder_flattened" return synch_controller_bonds_to_responder_flattened(comm,
+                                                                                                                                 overlap_map,
+                                                                                                                                 vector,
+                                                                                                                                 synch_fields[synch_field]["dof"])
+                else
+                    @timeit "synch_controller_to_responder" return synch_controller_to_responder(comm,
+                                                                                                 overlap_map,
+                                                                                                 vector,
+                                                                                                 synch_fields[synch_field]["dof"])
+                end
+            end
+            return nothing
+        end
+        @error "Wrong direction key word $direction in function synchronise_field; it should be download_from_cores or upload_to_cores"
         return nothing
     end
-    @error "Wrong direction key word $direction in function synchronise_field; it should be download_from_cores or upload_to_cores"
-    return nothing
 end
 
 """
