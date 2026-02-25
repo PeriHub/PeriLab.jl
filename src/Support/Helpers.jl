@@ -1130,7 +1130,7 @@ function rotate(nodes::AbstractVector{Int64},
 end
 
 """
-	rotate_second_order_tensor(R::AbstractMatrix{Float64}, tensor::AbstractMatrix{Float64},
+	rotate_second_order_tensor2x2(R::AbstractMatrix{Float64}, tensor::AbstractMatrix{Float64},
                                     back::Bool)
 Rotates the second order tensor.
 
@@ -1149,6 +1149,7 @@ function rotate_second_order_tensor2x2(R::AbstractMatrix{Float64},
     else
         rotation2x2!(R, tensor)
     end
+    return nothing
 end
 function rotate_second_order_tensor3x3(R::AbstractMatrix{Float64},
                                        tensor::AbstractMatrix{Float64},
@@ -1158,6 +1159,7 @@ function rotate_second_order_tensor3x3(R::AbstractMatrix{Float64},
     else
         rotation3x3!(R, tensor)
     end
+    return nothing
 end
 function rotation3x3!(R::AbstractMatrix{Float64}, T::AbstractMatrix{Float64})
     t11, t12, t13 = T[1, 1], T[1, 2], T[1, 3]
@@ -1197,6 +1199,7 @@ function rotation3x3!(R::AbstractMatrix{Float64}, T::AbstractMatrix{Float64})
                   r32 * (r31 * t12 + r32 * t22 + r33 * t32) +
                   r33 * (r31 * t13 + r32 * t23 + r33 * t33)
     end
+    return nothing
 end
 
 function rotation2x2!(R::AbstractMatrix{Float64}, T::AbstractMatrix{Float64})
@@ -1212,6 +1215,7 @@ function rotation2x2!(R::AbstractMatrix{Float64}, T::AbstractMatrix{Float64})
         T[2, 1] = r11 * (r21 * t11 + r22 * t21) + r12 * (r21 * t12 + r22 * t22)
         T[2, 2] = r21 * (r21 * t11 + r22 * t21) + r22 * (r21 * t12 + r22 * t22)
     end
+    return nothing
 end
 
 """

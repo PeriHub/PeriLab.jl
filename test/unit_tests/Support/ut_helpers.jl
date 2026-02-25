@@ -140,24 +140,24 @@ end
     tensor[1, 1] = 1
     dof = 2
     back = true
-    tensorTest = PeriLab.Solver_Manager.Helpers.rotate_second_order_tensor2x2(Matrix{Float64}(rot),
-                                                                              tensor,
-                                                                              back)
+    PeriLab.Solver_Manager.Helpers.rotate_second_order_tensor2x2(Matrix{Float64}(rot),
+                                                                 tensor,
+                                                                 back)
     @test tensorTest == tensor
     angles = [90.0]
     rot = PeriLab.Geometry.rotation_tensor(angles, 2)
-    tensorTest = PeriLab.Solver_Manager.Helpers.rotate_second_order_tensor2x2(Matrix{Float64}(rot),
-                                                                              tensor,
-                                                                              back)
+    PeriLab.Solver_Manager.Helpers.rotate_second_order_tensor2x2(Matrix{Float64}(rot),
+                                                                 tensor,
+                                                                 back)
 
     @test isapprox(tensorTest[1, 1] + 1, 1) # plus one, because of how approx works
     @test isapprox(tensorTest[1, 2] + 1, 1)
     @test isapprox(tensorTest[2, 1] + 1, 1)
     @test isapprox(tensorTest[2, 2] + 1, 1)
     back = false
-    tensorTest = PeriLab.Solver_Manager.Helpers.rotate_second_order_tensor(Matrix{Float64}(rot),
-                                                                           tensor,
-                                                                           back)
+    PeriLab.Solver_Manager.Helpers.rotate_second_order_tensor2x2(Matrix{Float64}(rot),
+                                                                 tensor,
+                                                                 back)
     @test tensorTest == tensor
 
     angles = [0, 0, 0]
@@ -167,15 +167,15 @@ end
     dof = 3
 
     back = true
-    tensorTest = PeriLab.Solver_Manager.Helpers.rotate_second_order_tensor3x3(Matrix{Float64}(rot),
-                                                                              tensor,
-                                                                              back)
+    PeriLab.Solver_Manager.Helpers.rotate_second_order_tensor3x3(Matrix{Float64}(rot),
+                                                                 tensor,
+                                                                 back)
     @test tensorTest == tensor
     angles = [0, 0, 90.0]
     rot = PeriLab.Geometry.rotation_tensor(angles, 3)
-    tensorTest = PeriLab.Solver_Manager.Helpers.rotate_second_order_tensor3x3(Matrix{Float64}(rot),
-                                                                              tensor,
-                                                                              back)
+    PeriLab.Solver_Manager.Helpers.rotate_second_order_tensor3x3(Matrix{Float64}(rot),
+                                                                 tensor,
+                                                                 back)
     @test isapprox(tensorTest[1, 1] + 1, 1) # plus one, because of how approx works
     @test isapprox(tensorTest[1, 2] + 1, 1)
     @test isapprox(tensorTest[1, 3] + 1, 1)
@@ -187,19 +187,19 @@ end
     @test isapprox(tensorTest[3, 3] + 1, 1)
 
     back = false
-    tensorTest = PeriLab.Solver_Manager.Helpers.rotate_second_order_tensor3x3(Matrix{Float64}(rot),
-                                                                              tensor,
-                                                                              back)
+    PeriLab.Solver_Manager.Helpers.rotate_second_order_tensor3x3(Matrix{Float64}(rot),
+                                                                 tensor,
+                                                                 back)
     @test tensorTest == tensor
 
     angles = [10, 20, 90.0]
     rot = PeriLab.Geometry.rotation_tensor(angles, 3)
-    tensorTest = PeriLab.Solver_Manager.Helpers.rotate_second_order_tensor3x3(Matrix{Float64}(rot),
-                                                                              tensor,
-                                                                              true)
-    tensorTest = PeriLab.Solver_Manager.Helpers.rotate_second_order_tensor3x3(Matrix{Float64}(rot),
-                                                                              tensor,
-                                                                              false)
+    PeriLab.Solver_Manager.Helpers.rotate_second_order_tensor3x3(Matrix{Float64}(rot),
+                                                                 tensor,
+                                                                 true)
+    PeriLab.Solver_Manager.Helpers.rotate_second_order_tensor3x3(Matrix{Float64}(rot),
+                                                                 tensor,
+                                                                 false)
     @test tensorTest == tensor
 end
 

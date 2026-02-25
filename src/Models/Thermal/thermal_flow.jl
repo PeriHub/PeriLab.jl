@@ -7,7 +7,7 @@ using LinearAlgebra
 using StaticArrays
 using TimerOutputs: @timeit
 using .....Data_Manager
-using .....Helpers: rotate_second_order_tensor
+using .....Helpers: rotate_second_order_tensor2x2, rotate_second_order_tensor3x3
 export compute_model
 export thermal_model_name
 export init_model
