@@ -88,7 +88,7 @@ PeriLab:
   Outputs:
     Output1:
       Output Frequency: 1
-      Output Filename: 3D_aniso
+      Output Filename: 3D_anisomat
       Output File Type: Exodus
       Output Variables:
         Displacements: true
