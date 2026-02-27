@@ -261,7 +261,8 @@ function run_solver(solver_options::Dict{Any,Any},
             # one step more, because of init step (time = 0)
             if "Material" in solver_options["Models"]
                 c = 0.5 * dt
-                @. @views vNP1[active_nodes, :] = vN[active_nodes, :] +
+                @. @views vNP1[active_nodes, :] = (1 - numerical_damping) .*
+                                                  vN[active_nodes, :] +
                                                   c * a[active_nodes, :]
 
                 # @views vNP1[active_nodes, :] .= (1 - numerical_damping) .*
