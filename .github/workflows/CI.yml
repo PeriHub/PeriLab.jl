@@ -52,7 +52,7 @@ jobs:
         uses: julia-actions/julia-runtest@v1
       - name: Archive Test Results
         if: failure()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: artifact-${{matrix.julia-version}}
           path: test/fullscale_tests/
