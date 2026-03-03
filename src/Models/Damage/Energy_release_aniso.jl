@@ -135,11 +135,11 @@ function compute_model(nodes::AbstractVector{Int64},
                 end
 
                 neighborID = nlist[iID][jID]
-                @timeit "1" begin
-                    if !haskey(inverse_nlist[neighborID], iID)
-                        continue
-                    end
+
+                if !haskey(inverse_nlist[neighborID], iID)
+                    continue
                 end
+
                 inID::Int64 = inverse_nlist[neighborID][iID]
                 neighbor_bond_force = bond_forces[neighborID][inID]
 
