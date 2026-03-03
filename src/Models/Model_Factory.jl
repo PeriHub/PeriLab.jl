@@ -523,12 +523,13 @@ end
 function local_synch(model, direction, synchronise_field)
     synch_fields = Data_Manager.get_local_synch_fields(model)
     for synch_field in keys(synch_fields)
-        synchronise_field(Data_Manager.get_comm(),
+        synchronise_field(get_comm(),
                           synch_fields,
                           Data_Manager.get_overlap_map(),
-                          Data_Manager.get_field,
+                          get_field,
                           synch_field,
-                          direction)
+                          direction,
+                          Data_Manager.synch_buffer_cache)
     end
 end
 

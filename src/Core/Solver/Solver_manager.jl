@@ -26,10 +26,10 @@ include("Verlet_solver.jl")
 include("Matrix_linear_static.jl")
 include("Matrix_Verlet.jl")
 include("Static_solver.jl")
-using ..MPI_Communication: synch_responder_to_controller,
-                           synch_controller_to_responder,
-                           synch_controller_bonds_to_responder,
-                           synch_controller_bonds_to_responder_flattened
+using ..MPI_Communication: synch_responder_to_controller!,
+                           synch_controller_to_responder!,
+                           synch_controller_bonds_to_responder!,
+                           synch_controller_bonds_to_responder_flattened!
 
 include("../Influence_function.jl")
 
@@ -334,61 +334,65 @@ function solver(solver_options::Dict{Any,Any},
                                         silent)
     end
 end
-
 """
-	synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, synch_field::String, direction::String)
+    synchronise_field(comm, synch_fields, overlap_map, get_field, synch_field, direction, buffer_cache)
 
-Synchronises field.
+Synchronises a single field across MPI cores using pre-allocated buffers.
 
 # Arguments
-- `comm`: The MPI communicator
-- `synch_fields::Dict`: A dictionary of fields
-- `overlap_map`: The overlap map
-- `get_field`: The function to get the field
-- `synch_field::String`: The field
-- `direction::String`: The direction
-# Returns
-- `nothing`
+- `comm`: MPI communicator
+- `synch_fields::Dict`: Dictionary of fields to synchronise with their properties
+- `overlap_map::Dict`: Overlap map defining controller/responder node indices per core pair
+- `get_field::Function`: Function to retrieve the field array from the data manager
+- `synch_field::String`: Name of the field to synchronise
+- `direction::String`: Synchronisation direction; either `"download_from_cores"` or `"upload_to_cores"`
+- `buffer_cache::Dict`: Cache for pre-allocated [`MPI_Communication.SynchBuffer`](@ref) instances, typically `Data_Manager.synch_buffer_cache`
 """
 function synchronise_field(comm,
                            synch_fields::Dict,
-                           overlap_map,
-                           get_field,
+                           overlap_map::Dict,
+                           get_field::Function,
                            synch_field::String,
-                           direction::String)
-    # might not needed
+                           direction::String,
+                           buffer_cache::Dict)        # ← hinzugefügt
     @timeit "synchronise_field" begin
         if !haskey(synch_fields, synch_field)
             @error "Field $synch_field does not exist in synch_field dictionary"
             return nothing
         end
+
         if direction == "download_from_cores"
             if synch_fields[synch_field][direction]
                 vector = get_field(synch_field, synch_fields[synch_field]["time"])
-                @timeit "synch_responder_to_controller" return synch_responder_to_controller(comm,
-                                                                                             overlap_map,
-                                                                                             vector,
-                                                                                             synch_fields[synch_field]["dof"])
+                buf = Data_Manager.get_or_create_synch_buffer!(buffer_cache, synch_field,
+                                                               vector, overlap_map)
+                @timeit "synch_responder_to_controller!" return synch_responder_to_controller!(comm,
+                                                                                               vector,
+                                                                                               buf)
             end
             return nothing
         end
+
         if direction == "upload_to_cores"
             if synch_fields[synch_field][direction]
                 vector = get_field(synch_field, synch_fields[synch_field]["time"])
                 if occursin("Bond", synch_field)
-                    @timeit "synch_controller_bonds_to_responder_flattened" return synch_controller_bonds_to_responder_flattened(comm,
-                                                                                                                                 overlap_map,
-                                                                                                                                 vector,
-                                                                                                                                 synch_fields[synch_field]["dof"])
+                    @timeit "synch_controller_bonds_to_responder_flattened!" return synch_controller_bonds_to_responder_flattened!(comm,
+                                                                                                                                   overlap_map,
+                                                                                                                                   vector,
+                                                                                                                                   synch_fields[synch_field]["dof"])
                 else
-                    @timeit "synch_controller_to_responder" return synch_controller_to_responder(comm,
-                                                                                                 overlap_map,
-                                                                                                 vector,
-                                                                                                 synch_fields[synch_field]["dof"])
+                    buf = Data_Manager.get_or_create_synch_buffer!(buffer_cache,
+                                                                   synch_field,
+                                                                   vector, overlap_map)
+                    @timeit "synch_controller_to_responder!" return synch_controller_to_responder!(comm,
+                                                                                                   vector,
+                                                                                                   buf)
                 end
             end
             return nothing
         end
+
         @error "Wrong direction key word $direction in function synchronise_field; it should be download_from_cores or upload_to_cores"
         return nothing
     end

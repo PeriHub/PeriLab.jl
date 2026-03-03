@@ -92,24 +92,23 @@ if ncores == 3
     test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_comm(comm)
-    test_data_manager.create_constant_node_scalar_field("Block_Id", Int64)
 
     if rank == 0
         test_data_manager.set_num_controller(1)
         test_data_manager.set_num_responder(2)
-        block_Id = test_data_manager.get_field("Block_Id")
+        block_Id = test_data_manager.create_constant_node_scalar_field("Block_Id", Int64)
         block_Id .= 1
     end
     if rank == 1
         test_data_manager.set_num_controller(2)
         test_data_manager.set_num_responder(1)
-        block_Id = test_data_manager.get_field("Block_Id")
+        block_Id = test_data_manager.create_constant_node_scalar_field("Block_Id", Int64)
         block_Id .= 2
     end
     if rank == 2
         test_data_manager.set_num_controller(1)
         test_data_manager.set_num_responder(2)
-        block_Id = test_data_manager.get_field("Block_Id")
+        block_Id = test_data_manager.create_constant_node_scalar_field("Block_Id", Int64)
         block_Id .= 1
     end
     test_data_manager.set_block_name_list(["block_1", "block_2"])
@@ -161,11 +160,22 @@ if ncores == 3
     distribution = [[1, 2, 3], [2, 3, 4], [4, 1, 3]]
 
     # sammel ein und summiere -> zweite routine mit sende vom Controller an alle responder
-    A = PeriLab.MPI_Communication.synch_responder_to_controller(comm, overlap_map, A, 1)
-    B = PeriLab.MPI_Communication.synch_responder_to_controller(comm, overlap_map, B, 4)
-    C = PeriLab.MPI_Communication.synch_responder_to_controller(comm, overlap_map, C, 1)
-    D = PeriLab.MPI_Communication.synch_responder_to_controller(comm, overlap_map, D, 5)
-    E = PeriLab.MPI_Communication.synch_responder_to_controller(comm, overlap_map, E, 1)
+    buffer_cache = test_data_manager.synch_buffer_cache
+    bufA = test_data_manager.get_or_create_synch_buffer!(buffer_cache, "A",
+                                                         A, overlap_map)
+    bufB = test_data_manager.get_or_create_synch_buffer!(buffer_cache, "B",
+                                                         B, overlap_map)
+    bufC = test_data_manager.get_or_create_synch_buffer!(buffer_cache, "C",
+                                                         C, overlap_map)
+    bufD = test_data_manager.get_or_create_synch_buffer!(buffer_cache, "D",
+                                                         D, overlap_map)
+    bufE = test_data_manager.get_or_create_synch_buffer!(buffer_cache, "E",
+                                                         E, overlap_map)
+    A = PeriLab.MPI_Communication.synch_responder_to_controller!(comm, A, bufA)
+    B = PeriLab.MPI_Communication.synch_responder_to_controller!(comm, B, bufB)
+    C = PeriLab.MPI_Communication.synch_responder_to_controller!(comm, C, bufC)
+    D = PeriLab.MPI_Communication.synch_responder_to_controller!(comm, D, bufD)
+    E = PeriLab.MPI_Communication.synch_responder_to_controller!(comm, E, bufE)
 
     if rank == 0
         test = test_dict["synch_responder_to_controller_rank_0"] = Dict("tests" => [],
@@ -225,12 +235,23 @@ if ncores == 3
         push_test!(test, (E[3] == false), @__FILE__, @__LINE__)
     end
     PeriLab.MPI_Communication.barrier(comm)
+    buffer_cache = test_data_manager.synch_buffer_cache
 
-    A = PeriLab.MPI_Communication.synch_controller_to_responder(comm, overlap_map, A, 1)
-    B = PeriLab.MPI_Communication.synch_controller_to_responder(comm, overlap_map, B, 4)
-    C = PeriLab.MPI_Communication.synch_controller_to_responder(comm, overlap_map, C, 1)
-    D = PeriLab.MPI_Communication.synch_controller_to_responder(comm, overlap_map, D, 5)
-    E = PeriLab.MPI_Communication.synch_controller_to_responder(comm, overlap_map, E, 1)
+    bufA = test_data_manager.get_or_create_synch_buffer!(buffer_cache, "A",
+                                                         A, overlap_map)
+    bufB = test_data_manager.get_or_create_synch_buffer!(buffer_cache, "B",
+                                                         B, overlap_map)
+    bufC = test_data_manager.get_or_create_synch_buffer!(buffer_cache, "C",
+                                                         C, overlap_map)
+    bufD = test_data_manager.get_or_create_synch_buffer!(buffer_cache, "D",
+                                                         D, overlap_map)
+    bufE = test_data_manager.get_or_create_synch_buffer!(buffer_cache, "E",
+                                                         E, overlap_map)
+    PeriLab.MPI_Communication.synch_controller_to_responder(comm, A, bufA)
+    PeriLab.MPI_Communication.synch_controller_to_responder(comm, B, bufB)
+    PeriLab.MPI_Communication.synch_controller_to_responder(comm, C, bufC)
+    PeriLab.MPI_Communication.synch_controller_to_responder(comm, D, bufD)
+    PeriLab.MPI_Communication.synch_controller_to_responder(comm, E, bufE)
     if rank == 0
         test = test_dict["synch_controller_to_responder_rank_0"] = Dict("tests" => [],
                                                                         "line" => [])

@@ -203,12 +203,6 @@ function init_aniso_crit_values(damage_parameter::Dict,
     end
     Data_Manager.set_aniso_crit_values(aniso_crit)
 
-    # if !haskey(damage_parameter, "Anisotropic Damage")
-    #     return
-    # end
-    # aniso_crit[block_id] =  damage_parameter["Anisotropic Damage"]
-    # Data_Manager.set_aniso_crit_values(aniso_crit)
-
     return
 end
 
