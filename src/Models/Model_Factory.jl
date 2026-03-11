@@ -382,6 +382,38 @@ function compute_stiff_matrix_compatible_models(block_nodes::Dict{Int64,Vector{I
     end
 end
 
+function compute_matrix_based_bond_forces(block_nodes::Dict{Int64,Vector{Int64}},
+                                          time::Float64,
+                                          dt::Float64)
+    active_list = Data_Manager.get_field("Active")
+
+    # deformation
+    for (block, nodes) in pairs(block_nodes)
+        # "delete" the view of active nodes
+        active_nodes = Data_Manager.get_field("Active Nodes")
+
+        active_nodes = find_active_nodes(active_list,
+                                         active_nodes,
+                                         nodes,
+                                         true)
+        material_parameter = Data_Manager.get_properties(block, "Material Model")
+
+        if occursin("Correspondence", material_parameter["Material Model"])
+            Pre_Calculation.compute_model(active_nodes,
+                                          Data_Manager.get_properties(block,
+                                                                      "Pre Calculation Model"),
+                                          block,
+                                          time,
+                                          dt)
+            @timeit "compute bond forces" Material.compute_correspondence_bond_forces(active_nodes,
+                                                                                      material_parameter,
+                                                                                      block,
+                                                                                      time,
+                                                                                      dt)
+        end
+    end
+end
+
 function get_update_nodes(active_list,
                           update_list,
                           nodes,

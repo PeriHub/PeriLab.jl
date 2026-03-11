@@ -248,4 +248,17 @@ function distribute_force_densities(nodes::AbstractVector{Int64})
                                                 bond_force, volume, bond_damage)
     end
 end
+
+function compute_correspondence_bond_forces(nodes::AbstractVector{Int64},
+                                            material_parameter::Dict{String,Any},
+                                            block::Int64,
+                                            time::Float64,
+                                            dt::Float64)
+    Correspondence.compute_correspondence_model(nodes,
+                                                material_parameter,
+                                                block,
+                                                time,
+                                                dt)
+end
+
 end

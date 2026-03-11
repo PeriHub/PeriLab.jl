@@ -23,7 +23,8 @@ using ...Parameter_Handling:
                              get_max_damage,
                              get_nsteps
 
-using ..Model_Factory: compute_stiff_matrix_compatible_models
+using ..Model_Factory: compute_stiff_matrix_compatible_models,
+                       compute_matrix_based_bond_forces
 
 include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
 using .Correspondence_matrix_based
@@ -357,6 +358,7 @@ function run_solver(solver_options::Dict{Any,Any},
                         end
                     end
                 end
+
             else
                 # All nodes are active
                 if matrix_update
@@ -385,6 +387,9 @@ function run_solver(solver_options::Dict{Any,Any},
                     end
                 end
             end
+            deformed_coor = Data_Manager.get_field("Deformed Coordinates", "NP1")
+            @. deformed_coor = coor + uNP1
+            compute_matrix_based_bond_forces(block_nodes, time, dt)
 
             all_nodes_active = current_all_active
 
@@ -396,7 +401,6 @@ function run_solver(solver_options::Dict{Any,Any},
                                                               dt)
 
             @. velocities = (uNP1 - uN) / dt
-            @. @views deformed_coorNP1 = coor + uNP1
 
             @timeit "write_results" result_files=write_results(result_files, time,
                                                                max_damage, outputs)
