@@ -1105,6 +1105,23 @@ function get_mass_matrix()
     return data["Mass Matrix"]
 end
 
+function get_cb_tensors()
+    return data["CB Tensor"]
+end
+
+function get_nzval_map()
+    return data["col_ptr"], data["row_ptr"]
+end
+
+function set_nzval_map(K_colptr, K_rowval)
+    data["col_ptr"] = K_colptr
+    data["row_ptr"] = K_rowval
+end
+
+function set_cb_tensors(cb)
+    data["CB Tensor"] = cb
+end
+
 function get_stiffness_matrix()
     if data["matrix_exists"]
         return data["Stiffness Matrix"]
