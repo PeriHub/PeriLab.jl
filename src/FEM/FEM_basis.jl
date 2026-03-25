@@ -16,7 +16,7 @@ function get_FE_material_model(params::Dict{String,Any}, name::String)
         @error "Material model " *
                params["FEM"][name]["Material Model"] *
                " defined in FEM are not defined as material"
-        return nothing
+        return
     end
     parameter = params["Material Models"][params["FEM"][name]["Material Model"]]
 
@@ -252,7 +252,7 @@ function get_multi_dimensional_integration_point_data(dof::Int64,
         end
     else
         @error "degree of freedom = $dof is not supported, only 2 and 3."
-        return nothing
+        return
     end
     return integration_point
 end
@@ -284,7 +284,7 @@ function get_Jacobian(elements::Vector{Int64},
                 @error "The determinant of the Jacobian is " *
                        string(determinant_jacobian[id_el, id_int]) *
                        " in local element $id_el, and must be greater zero."
-                return nothing, nothing
+                return
             end
             jacobian[id_el, id_int, :,
             :] = invert(jacobian[id_el, id_int, :, :],
@@ -297,7 +297,7 @@ end
 function get_polynomial_degree(params::Dict{String,Any}, dof::Int64)
     if !haskey(params, "Degree")
         @error "No element degree defined"
-        return nothing
+        return
     end
     value = params["Degree"]
     if typeof(value) == String
@@ -314,7 +314,6 @@ function get_polynomial_degree(params::Dict{String,Any}, dof::Int64)
         return value[1:dof]
     else
         @error "Degree must be defined with length one or number of dof."
-        return nothing
     end
 end
 

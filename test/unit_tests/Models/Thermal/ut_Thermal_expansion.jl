@@ -12,28 +12,29 @@ using Test
 @testset "ut_thermal_deformation" begin
     nnodes = 2
     dof = 2
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
-    test_data_manager.set_dof(dof)
-    test_data_manager.set_num_controller(2)
-    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_dof(dof)
+    PeriLab.Data_Manager.set_num_controller(2)
+    nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                Int64)
     nn[1] = 2
     nn[2] = 3
     temperature_N,
-    temperature_NP1 = test_data_manager.create_node_scalar_field("Temperature",
-                                                                 Float64)
-    undeformed_bond = test_data_manager.create_constant_bond_vector_state("Bond Geometry",
-                                                                          Float64, dof)
+    temperature_NP1 = PeriLab.Data_Manager.create_node_scalar_field("Temperature",
+                                                                    Float64)
+    undeformed_bond = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                             Float64, dof)
     deformed_bond_N,
-    deformed_bond_NP1 = test_data_manager.create_bond_vector_state("Deformed Bond Geometry",
-                                                                   Float64,
-                                                                   dof)
-    undeformed_bond_length = test_data_manager.create_constant_bond_scalar_state("Bond Length",
-                                                                                 Float64)
+    deformed_bond_NP1 = PeriLab.Data_Manager.create_bond_vector_state("Deformed Bond Geometry",
+                                                                      Float64,
+                                                                      dof)
+    undeformed_bond_length = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length",
+                                                                                    Float64)
 
     deformed_bond_length_N,
-    deformed_bond_length_NP1 = test_data_manager.create_bond_scalar_state("Deformed Bond Length",
-                                                                          Float64)
+    deformed_bond_length_NP1 = PeriLab.Data_Manager.create_bond_scalar_state("Deformed Bond Length",
+                                                                             Float64)
 
     undeformed_bond[1][1][1] = 0
     undeformed_bond[1][1][2] = 1

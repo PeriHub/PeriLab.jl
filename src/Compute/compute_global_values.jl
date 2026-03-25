@@ -28,11 +28,11 @@ function calculate_nodelist(field_key::String,
         field = Data_Manager.get_field(field_key, "NP1")
         field_key = field_key * "NP1"
     else
+        if !Data_Manager.has_key(field_key)
+            @error "Field $field_key does not exists for computation"
+            return
+        end
         field = Data_Manager.get_field(field_key)
-    end
-    if !Data_Manager.has_key(field_key)
-        @error "Field $field_key does not exists for compute sum."
-        return nothing
     end
     field_type = Data_Manager.get_field_type(field_key)
 
@@ -72,8 +72,8 @@ function calculate_nodelist(field_key::String,
             value = field[local_nodes, dof][1]
         end
     else
-        @warn "Unknown calculation type $calculation_type"
-        return nothing
+        @error "Unknown calculation type $calculation_type"
+        return
     end
     return value::field_type, Int64(length(local_nodes))
 end

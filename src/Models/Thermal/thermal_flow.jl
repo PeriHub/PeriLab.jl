@@ -60,7 +60,6 @@ function init_model(nodes::AbstractVector{Int64},
     end
     if !haskey(thermal_parameter, "Thermal Conductivity")
         @error "Thermal Conductivity not defined."
-        return nothing
     end
 end
 

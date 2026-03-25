@@ -24,7 +24,6 @@ function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     if !haskey(material_parameter, "Symmetry")
         @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
-        return nothing
     end
     if haskey(material_parameter, "Accuracy Order")
         Data_Manager.set_accuracy_order(material_parameter["Accuracy Order"])

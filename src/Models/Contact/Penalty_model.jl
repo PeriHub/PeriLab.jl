@@ -26,7 +26,7 @@ function init_contact_model(params)
     else
         if params["Friction Coefficient"] < 0
             @error "The Friction Coefficient must be greater or equal zero."
-            return nothing
+            return
         end
     end
 

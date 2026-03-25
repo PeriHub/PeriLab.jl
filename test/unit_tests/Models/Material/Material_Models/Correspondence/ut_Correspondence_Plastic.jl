@@ -14,28 +14,30 @@ end
 
 @testset "ut_init_model" begin
     nodes = 2
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
+
+    PeriLab.Data_Manager.initialize_data()
     material_parameter = Dict()
-    test_data_manager.set_num_controller(nodes)
+    PeriLab.Data_Manager.set_num_controller(nodes)
     dof = 3
-    test_data_manager.set_dof(dof)
-    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+    PeriLab.Data_Manager.set_dof(dof)
+    nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                Int64)
     nn .= 2
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_Plastic.init_model(Vector{Int64}(1:nodes),
-                                                                                                                   material_parameter))
+    @test_logs (:error,
+                "Shear Modulus must be defined to be able to run this plastic material") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_Plastic.init_model(Vector{Int64}(1:nodes),
+                                                                                                                                                                                        material_parameter)
 
     material_parameter = Dict("Shear Modulus" => 10.5)
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_Plastic.init_model(Vector{Int64}(1:nodes),
-                                                                                                                   material_parameter))
+    @test_logs (:error, "No ''Yield Stress'' is defined.") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_Plastic.init_model(Vector{Int64}(1:nodes),
+                                                                                                                                                          material_parameter)
 
     material_parameter = Dict("Shear Modulus" => 10.5,
                               "Yield Stress" => 3.4)
     PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_Plastic.init_model(Vector{Int64}(1:nodes),
                                                                                                    material_parameter)
 
-    @test test_data_manager.has_key("von Mises Yield StressN")
-    @test test_data_manager.has_key("Plastic StrainN")
+    @test PeriLab.Data_Manager.has_key("von Mises Yield StressN")
+    @test PeriLab.Data_Manager.has_key("Plastic StrainN")
 
     material_parameter = Dict("Shear Modulus" => 10.5,
                               "Yield Stress" => 3.4,
@@ -43,6 +45,6 @@ end
     PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_Plastic.init_model(Vector{Int64}(1:nodes),
                                                                                                    material_parameter)
 
-    @test test_data_manager.has_key("von Mises Bond Yield StressN")
-    @test test_data_manager.has_key("Plastic Bond StrainN")
+    @test PeriLab.Data_Manager.has_key("von Mises Bond Yield StressN")
+    @test PeriLab.Data_Manager.has_key("Plastic Bond StrainN")
 end

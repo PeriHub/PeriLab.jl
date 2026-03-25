@@ -88,7 +88,7 @@ function check_valid_bcs(bcs::Dict{String,Any})
         end
         if !valid
             @error "Boundary condition $bc is not valid: Variable $(bcs[bc]["Variable"]) not found. Please check if the physical model is activated."
-            return nothing
+            return
         end
     end
     return working_bcs
@@ -140,7 +140,7 @@ function boundary_condition(params::Dict)
                 end
             else
                 @error "Node Set '$node_set_name' is missing"
-                return nothing
+                return
             end
         end
     end
@@ -192,7 +192,6 @@ function apply_bc_dirichlet(allowed_variables::Vector{String},
                                        name)
             else
                 @error "Coordinate in boundary condition must be x,y or z."
-                return nothing
             end
         else
             @views field_to_apply_bc = field[bc["Node Set"]]

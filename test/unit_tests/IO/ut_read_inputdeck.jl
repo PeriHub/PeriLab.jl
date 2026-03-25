@@ -14,29 +14,23 @@ using Test
     @test haskey(dict["PeriLab"], "data")
     @test dict["PeriLab"]["data"] == 1
     rm(filename)
-    fid = open(filename, "w")
-    close(fid)
-    @test isnothing(PeriLab.IO.read_input(filename))
-    rm(filename)
 
     fid = open(filename, "w")
     println(fid, "PeriLab:")
     println(fid, "data")
     close(fid)
-    @test isnothing(PeriLab.IO.read_input(filename))
+    @test_logs (:error, "Failed to read $filename.") PeriLab.IO.read_input(filename)
     rm(filename)
 end
 
 @testset "ut_read_input_file" begin
-    dict = PeriLab.IO.read_input_file("filename")
-    @test isnothing(dict)
+    @test_logs (:error, "filename does not exist.") PeriLab.IO.read_input_file("filename")
     filename = "test.xml"
     fid = open(filename, "w")
     println(fid, "PeriLab:")
     println(fid, " data: 1")
     close(fid)
-    dict = PeriLab.IO.read_input_file(filename)
-    @test isnothing(dict)
+    @test_logs (:error, "Not a supported filetype $filename") PeriLab.IO.read_input_file(filename)
     rm(filename)
     filename = "test.yaml"
     fid = open(filename, "w")

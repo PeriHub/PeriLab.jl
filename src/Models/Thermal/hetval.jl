@@ -134,7 +134,7 @@ function init_model(nodes::AbstractVector{Int64},
     num_state_vars::Int64 = 1
     if !haskey(thermal_parameter, "File")
         @error "HETVAL file is not defined."
-        return nothing
+        return
     end
     directory = Data_Manager.get_directory()
     thermal_parameter["File"] = joinpath(joinpath(pwd(), directory),
@@ -142,7 +142,7 @@ function init_model(nodes::AbstractVector{Int64},
     global hetval_file_path = thermal_parameter["File"]
     if !isfile(thermal_parameter["File"])
         @error "File $(thermal_parameter["File"]) does not exist, please check name and directory."
-        return nothing
+        return
     end
     if haskey(thermal_parameter, "Number of State Variables")
         num_state_vars = thermal_parameter["Number of State Variables"]
@@ -161,7 +161,7 @@ function init_model(nodes::AbstractVector{Int64},
     end
     if length(thermal_parameter["HETVAL Material Name"]) > 80
         @error "Due to old Fortran standards only a name length of 80 is supported"
-        return nothing
+        return
     end
 
     if !haskey(thermal_parameter, "HETVAL name")
@@ -187,7 +187,7 @@ function init_model(nodes::AbstractVector{Int64},
     for (id, field_name) in enumerate(field_names)
         if !Data_Manager.has_key(String(field_name))
             @error "Predefined field ''$field_name'' is not defined in the mesh file."
-            return nothing
+            return
         end
         # view or copy and than deleting the old one
         # TODO check if an existing field is a bool.

@@ -51,7 +51,7 @@ function define_lagrangian_grid_space(dof::Int64, p::Vector{Int64})
     len::Float64 = 0.0
     if minimum(p) == 0
         @error "p order for lagarangian grid space must be at least p = 1 and not zero"
-        return nothing
+        return
     end
     for idof in 1:dof
         len = 2.0 / p[idof]
@@ -255,7 +255,7 @@ function create_element_matrices(dof::Int64,
                                  ip_coordinates::Matrix{Float64})
     if dof > 3 || dof < 2
         @error "Not support degree of freedom for the finite element matrix creation"
-        return nothing
+        return
     end
 
     N::Array{Float64} = zeros(Float64, prod(num_int), prod(p .+ 1) * dof, dof)

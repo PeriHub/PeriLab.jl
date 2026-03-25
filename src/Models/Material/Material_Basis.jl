@@ -66,11 +66,11 @@ function init_local_damping_due_to_damage(nodes::AbstractVector{Int64},
                                           damage_parameter)
     if !haskey(damage_parameter["Local Damping"], "Representative Young's modulus")
         @error "Representative Young's modulus is missing."
-        return nothing
+        return
     end
     if !haskey(damage_parameter["Local Damping"], "Damping coefficient")
         @error "Damping coefficient is missing."
-        return nothing
+        return
     end
     @info "Local damping is active with damping coefficient $(damage_parameter["Local Damping"]["Damping coefficient"])"
     constant = Data_Manager.create_constant_node_scalar_field("Bond Based Constant",
@@ -130,7 +130,7 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
     if haskey(parameter, "Computed") &&
        !(state_factor_defined && Data_Manager.has_key("State Variables"))
         if parameter["Computed"]
-            return nothing
+            return
         end
     end
 
@@ -179,7 +179,7 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
                 for jID in iID:6
                     if !haskey(parameter, "C" * string(iID) * string(jID))
                         @error "C" * string(iID) * string(jID) * " not defined"
-                        return nothing
+                        return
                     end
                 end
             end
@@ -194,17 +194,14 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
             if occursin("plane strain", symmetry)
                 if !E_x || !E_y || !nu_xy || !nu_yz || !g_xy
                     @error "Transverse isotropic material requires Young's Modulus X, Y, Poisson's Ratio XY, YZ, Shear Modulus XY"
-                    return nothing
                 end
             elseif occursin("plane stress", symmetry)
                 if !E_x || !E_y || !nu_xy || !g_xy
                     @error "Transverse isotropic material requires Young's Modulus X, Y, Poisson's Ratio XY, Shear Modulus XY"
-                    return nothing
                 end
             else
                 if !E_x || !E_y || !nu_xy || !nu_yz || !g_xy || !g_yz
                     @error "Transverse isotropic material requires Young's Modulus X, Y, Poisson's Ratio XY, YZ, Shear Modulus XY, YZ"
-                    return nothing
                 end
             end
             return
@@ -220,7 +217,6 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
             g_zx = haskey(parameter, "Shear Modulus XZ")
             if !E_x || !E_y || !E_z || !nu_xy || !nu_yz || !nu_xz || !g_xy || !g_yz || !g_zx
                 @error "Orthotropic material requires Young's Modulus X, Y, Z, Poisson's Ratio XY, YZ, XZ, Shear Modulus XY, YZ, XZ"
-                return nothing
             end
             return
         end
@@ -232,7 +228,6 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
     # tbd non isotropic material check
     if bulk + youngs + shear + poissons < 2
         @error "Minimum of two parameters are needed for isotropic material"
-        return nothing
     elseif bulk + youngs + shear + poissons > 2
         @warn "Only two parameters are needed for isotropic material, ignoring additional parameters"
     end
@@ -431,8 +426,7 @@ function get_Hooke_matrix(parameter::Dict,
 
             return aniso_matrix
         else
-            @error "2D model defintion is missing; plane stress or plane strain "
-            return nothing
+            @error "2D model defintion is missing; plane stress or plane strain"
         end
     end
 
@@ -478,7 +472,7 @@ function get_Hooke_matrix(parameter::Dict,
             matrix[3, 3] = G
             return matrix
         else
-            @error "2D model defintion is missing; plane stress or plane strain "
+            @error "2D model defintion is missing; plane stress or plane strain"
             return nothing
         end
     else
@@ -517,7 +511,7 @@ function get_2D_Hooke_matrix(aniso_matrix::MMatrix{T}, symmetry::String,
         matrix[3, 3] = inv_aniso[6, 6]
         return invert(matrix, "Hooke matrix not invertable")
     else
-        @error "2D model defintion is missing; plane stress or plane strain "
+        @error "2D model defintion is missing; plane stress or plane strain"
         return nothing
     end
 end
@@ -625,28 +619,38 @@ function distribute_forces!(force_densities::Matrix{Float64},
 end
 
 """
-	check_symmetry(prop::Dict, dof::Int64)
+	check_symmetry(block::Int64)
 
 Check if the symmetry information is present in the material dictionary.
 
 # Arguments
-- `prop::Dict`: A dictionary containing material information.
-- `dof::Int64`: The number of degrees of freedom.
+- `block::Int64`: The block id.
 # Returns
 - `true`: If the symmetry information is present.
 """
-function check_symmetry(prop::Dict, dof::Int64)
+function check_symmetry(block::Int64)
+    prop = Data_Manager.get_properties(block, "Material Model")
+    dof = Data_Manager.get_dof()
     if haskey(prop, "Symmetry")
         symmetry = prop["Symmetry"]
         if dof == 2
-            if occursin("plane strain", symmetry) || occursin("plane stress", symmetry)
-                return true
-            else
+            if !occursin("plane strain", symmetry) && !occursin("plane stress", symmetry)
                 @error "Model definition is missing; plane stress or plane strain has to be defined for 2D"
                 return
             end
         end
-        return true
+        if dof == 3
+            if occursin("plane strain", symmetry)
+                @warn "Plane strain symmetry is not supported for 3D, going to ignore it"
+                Data_Manager.set_property(block, "Material Model", "Symmetry",
+                                          replace(symmetry, r"plane strain$" => ""))
+            end
+            if occursin("plane stress", symmetry)
+                @warn "Plane stress symmetry is not supported for 3D, going to ignore it"
+                Data_Manager.set_property(block, "Material Model", "Symmetry",
+                                          replace(symmetry, r"plane stress$" => ""))
+            end
+        end
     end
 end
 

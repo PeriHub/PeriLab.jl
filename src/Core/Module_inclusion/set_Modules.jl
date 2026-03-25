@@ -33,7 +33,7 @@ function find_jl_files(directory::AbstractString)
     jl_files = Vector{String}()
     if !isdir(directory)
         @error "$directory does not exists. Modules won't be loaded accurately."
-        return nothing
+        return
     end
 
     function find_jl_recursive(current_dir::AbstractString)
@@ -135,7 +135,6 @@ function create_module_specifics(name::Union{String,SubString},
             return function_call(values...)
         end
     end
-    @error "Functionality $name not found."
     return nothing
 end
 """
@@ -154,7 +153,6 @@ function create_module_specifics(name::Union{String,SubString},
             return function_call
         end
     end
-    @error "Functionality $name not found."
     return nothing
 end
 # only module
@@ -170,6 +168,5 @@ function create_module_specifics(name::Union{String,SubString},
             return module_call
         end
     end
-    @error "Functionality $name not found."
     return nothing
 end

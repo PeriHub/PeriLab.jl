@@ -1255,7 +1255,7 @@ function validate_structure_recursive(expected::Dict,
 
         if key == "Any"
             if length(keys(actual)) == 0 && value[2] == true
-                @error "Validation Error: Missing key - $current_path"
+                @warn "Validation Error: Missing key - $current_path"
                 validate = false
                 continue
             end
@@ -1282,7 +1282,7 @@ function validate_structure_recursive(expected::Dict,
         end
 
         if !haskey(actual, key) && value[2] == true
-            @error "Validation Error: Missing key - $current_path"
+            @warn "Validation Error: Missing key - $current_path"
             validate = false
             continue
         end
@@ -1303,7 +1303,7 @@ function validate_structure_recursive(expected::Dict,
                                                             current_path)
             end
         else
-            @error "Validation Error: Wrong type, expected - $(value[1]), got - $(typeof(actual[key])) in $current_path"
+            @warn "Validation Error: Wrong type, expected - $(value[1]), got - $(typeof(actual[key])) in $current_path"
             validate = false
         end
     end
@@ -1348,12 +1348,17 @@ function validate_yaml(params::Dict)
     checked_keys = []
     if !haskey(params, "PeriLab") || length(params["PeriLab"]) < 2
         @error "Yaml file is not valid."
-        return nothing
+        return
     end
 
-    validate,
-    checked_keys = validate_structure_recursive(expected_structure, params,
-                                                validate, checked_keys)
+    try
+        validate,
+        checked_keys = validate_structure_recursive(expected_structure, params,
+                                                    validate, checked_keys)
+    catch
+        @error "Yaml file is not valid."
+        return
+    end
     #Check if all keys have been checked
     for key in all_keys
         if typeof(key) == Int64
@@ -1365,7 +1370,7 @@ function validate_yaml(params::Dict)
     end
     if !validate
         @error "Yaml file is not valid."
-        return nothing
+        return
     end
 
     return params["PeriLab"]

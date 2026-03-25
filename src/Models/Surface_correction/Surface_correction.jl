@@ -49,7 +49,7 @@ function init_surface_correction(params::Dict,
     # check if type exists; if not its an error
     if !haskey(params["Surface Correction"], "Type")
         @error "Surface Correction needs a Type definition"
-        return nothing
+        return
     end
     # needed for multi-step, because if type is false its not a valid model
     Data_Manager.set_properties("Surface Correction", params["Surface Correction"])
@@ -63,7 +63,6 @@ function init_surface_correction(params::Dict,
         return init_volumen_correction(local_synch, synchronise_field)
     else
         @error "Type $(params["Surface Correction"]["Type"]) not defined for surface correction."
-        return nothing
     end
 end
 

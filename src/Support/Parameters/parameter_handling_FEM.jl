@@ -8,7 +8,7 @@ export get_element_type
 function get_element_type(params::Dict)
     if !haskey(params, "Element Type")
         @error "Element Type is not defined."
-        return nothing
+        return
     end
     if typeof(params["Element Type"]) != String
         @warn "Element Type must be of type string."
@@ -19,11 +19,11 @@ end
 function get_element_degree(params::Dict)
     if !haskey(params, "Degree")
         @error "Element degree is not defined."
-        return nothing
+        return
     end
     if typeof(params["Degree"]) == String
         @error "Degree must be an integer or a list of integers."
-        return nothing
+        return
     end
     return params["Degree"]
 end

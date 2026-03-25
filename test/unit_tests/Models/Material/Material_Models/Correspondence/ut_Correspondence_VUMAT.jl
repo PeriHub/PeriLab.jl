@@ -13,11 +13,11 @@ using LinearAlgebra
 end
 @testset "init exceptions" begin
     nodes = 2
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
-    test_data_manager.set_num_controller(nodes)
+
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(nodes)
     dof = 3
-    test_data_manager.set_dof(dof)
+    PeriLab.Data_Manager.set_dof(dof)
     file = "./src/Models/Material/UMATs/libperuser.so"
     if !isfile(file)
         file = "../src/Models/Material/UMATs/libperuser.so"
@@ -31,26 +31,28 @@ end
                                                                                                                             "Property_2" => 2,
                                                                                                                             "Property_3" => 2.4,
                                                                                                                             "Property_4" => 2)))
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_VUMAT.init_model(Vector{Int64}(1:nodes),
-                                                                                                                 Dict{String,
-                                                                                                                      Any}("File" => file *
-                                                                                                                                     "_not_there")))
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_VUMAT.init_model(Vector{Int64}(1:nodes),
-                                                                                                                 Dict{String,
-                                                                                                                      Any}("File" => file)))
+    @test_logs (:error,
+                "File /localdata/hess_ja/PeriLab.jl/test/../src/Models/Material/UMATs/libperuser.so_not_there does not exist, please check name and directory.") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_VUMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                                                                                                                                                                              Dict{String,
+                                                                                                                                                                                                                                                                   Any}("File" => file *
+                                                                                                                                                                                                                                                                                  "_not_there"))
+    @test_logs (:error, "Number of Properties must be at least equal 1") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_VUMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                                                                                      Dict{String,
+                                                                                                                                                                           Any}("File" => file))
 
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_VUMAT.init_model(Vector{Int64}(1:nodes),
-                                                                                                                 Dict{String,
-                                                                                                                      Any}()))
+    @test_logs (:error, "VUMAT file is not defined.") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_VUMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                                                                   Dict{String,
+                                                                                                                                                        Any}())
 
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_VUMAT.init_model(Vector{Int64}(1:nodes),
-                                                                                                                 Dict{String,
-                                                                                                                      Any}("File" => file,
-                                                                                                                           "Number of Properties" => 3,
-                                                                                                                           "Property_1" => 2,
-                                                                                                                           "Property_2" => 2.4,
-                                                                                                                           "Property_3" => 2.4,
-                                                                                                                           "VUMAT Material Name" => "a"^81)))
+    @test_logs (:error,
+                "Due to old Fortran standards only a name length of 80 is supported") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_VUMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                                                                                                   Dict{String,
+                                                                                                                                                                                        Any}("File" => file,
+                                                                                                                                                                                             "Number of Properties" => 3,
+                                                                                                                                                                                             "Property_1" => 2,
+                                                                                                                                                                                             "Property_2" => 2.4,
+                                                                                                                                                                                             "Property_3" => 2.4,
+                                                                                                                                                                                             "VUMAT Material Name" => "a"^81))
     @test !isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_VUMAT.init_model(Vector{Int64}(1:nodes),
                                                                                                                   Dict{String,
                                                                                                                        Any}("File" => file,
@@ -60,7 +62,7 @@ end
                                                                                                                             "Property_3" => 2.4,
                                                                                                                             "VUMAT Material Name" => "a"^80)))
 
-    properties = test_data_manager.get_field("Properties")
+    properties = PeriLab.Data_Manager.get_field("Properties")
     @test length(properties) == 3
     @test properties[1] == 2
     @test properties[2] == 2

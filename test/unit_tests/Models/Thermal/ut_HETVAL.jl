@@ -12,32 +12,34 @@ using LinearAlgebra
 end
 @testset "init exceptions" begin
     nodes = 2
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
-    test_data_manager.set_num_controller(nodes)
+
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(nodes)
     dof = 3
-    test_data_manager.set_dof(dof)
+    PeriLab.Data_Manager.set_dof(dof)
     file = "./src/Models/Thermal/HETVALs/hetval.so"
     if !isfile(file)
         file = "../src/Models/Thermal/HETVALs/hetval.so"
     end
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.init_model(Vector{Int64}(1:nodes),
-                                                                                   Dict{String,
-                                                                                        Any}("File" => file *
-                                                                                                       "_not_there")))
+    @test_logs (:error,
+                "File /localdata/hess_ja/PeriLab.jl/test/../src/Models/Thermal/HETVALs/hetval.so_not_there does not exist, please check name and directory.") PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.init_model(Vector{Int64}(1:nodes),
+                                                                                                                                                                                                                             Dict{String,
+                                                                                                                                                                                                                                  Any}("File" => file *
+                                                                                                                                                                                                                                                 "_not_there"))
 
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.init_model(Vector{Int64}(1:nodes),
-                                                                                   Dict{String,
-                                                                                        Any}()))
+    @test_logs (:error, "HETVAL file is not defined.") PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.init_model(Vector{Int64}(1:nodes),
+                                                                                                                      Dict{String,
+                                                                                                                           Any}())
 
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.init_model(Vector{Int64}(1:nodes),
-                                                                                   Dict{String,
-                                                                                        Any}("File" => file,
-                                                                                             "Predefined Field Names" => "test_field_2 test_field_3")))
+    @test_logs (:error,
+                "Predefined field ''test_field_2'' is not defined in the mesh file.") PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.init_model(Vector{Int64}(1:nodes),
+                                                                                                                                                     Dict{String,
+                                                                                                                                                          Any}("File" => file,
+                                                                                                                                                               "Predefined Field Names" => "test_field_2 test_field_3"))
 
-    test_1 = test_data_manager.create_constant_node_scalar_field("test_field_2", Float64)
+    test_1 = PeriLab.Data_Manager.create_constant_node_scalar_field("test_field_2", Float64)
     test_1[1] = 7.3
-    test_2 = test_data_manager.create_constant_node_scalar_field("test_field_3", Float64)
+    test_2 = PeriLab.Data_Manager.create_constant_node_scalar_field("test_field_3", Float64)
     test_2 .= 3
     mat_dict = Dict{String,Any}("File" => file,
                                 "HETVAL name" => "test_sub",
@@ -48,8 +50,8 @@ end
                                 "Predefined Field Names" => "test_field_2 test_field_3")
     PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.init_model(Vector{Int64}(1:nodes),
                                                                    mat_dict)
-    fields = test_data_manager.get_field("Predefined Fields")
-    inc = test_data_manager.get_field("Predefined Fields Increment")
+    fields = PeriLab.Data_Manager.get_field("Predefined Fields")
+    inc = PeriLab.Data_Manager.get_field("Predefined Fields Increment")
     @test size(fields) == (2, 2)
     @test size(inc) == (2, 2)
     @test fields[1, 1] == test_1[1]
@@ -77,7 +79,7 @@ end
 # Test wrapper function for HETVAL_interface
 @testset "HETVAL_interface Tests" begin
     # Example test case (you should define your own)
-    test_data_manager = PeriLab.Data_Manager
+
     file = "./src/Models/Thermal/HETVALs/hetval.so"
     if !isfile(file)
         file = "../src/Models/Thermal/HETVALs/hetval.so"

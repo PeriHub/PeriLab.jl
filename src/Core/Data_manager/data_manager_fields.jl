@@ -52,7 +52,6 @@ function get_field(name::String, time::String = "Constant")
             @error "Field ''" *
                    name *
                    "'' does not exist. Check if it is initialized as constant."
-            return nothing
         end
     elseif time == "NP1"
         try
@@ -61,11 +60,9 @@ function get_field(name::String, time::String = "Constant")
             @error "Field ''" *
                    name *
                    "'' does not exist. Check if it is initialized as constant."
-            return nothing
         end
     else
         @error "Time $time is not supported. Use 'constant', 'N', or 'NP1'"
-        return nothing
     end
 end
 
@@ -101,7 +98,6 @@ function _get_field(name::String)::Union{Array,Nothing}
         @error "Field ''" *
                name *
                "'' does not exist. \n - Check if it is initialized as non-constant. \n - Check if the model is not activated in the solver options, e.g. Pre Calculation Models: False"
-        return nothing
     end
 end
 

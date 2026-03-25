@@ -174,9 +174,8 @@ end
 end
 
 @testset "ut_boundary_condition" begin
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
-    test_data_manager.set_dof() = 2
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_dof() = 2
     params = Dict()
     bcs = PeriLab.Solver_Manager.Boundary_Conditions.boundary_condition(params)
     @test length(bcs) == 0
@@ -193,21 +192,21 @@ end
                                                                "Coordinate" => "z",
                                                                "Value" => "0")))
 
-    test_data_manager.set_nset("Nset_1", [1, 2, 3])
-    test_data_manager.set_nset("Nset_2", [3, 4, 7, 10])
-    test_data_manager.set_glob_to_loc(Dict(1 => 1,
-                                           2 => 3,
-                                           3 => 4,
-                                           4 => 2,
-                                           5 => 5,
-                                           6 => 6,
-                                           7 => 7,
-                                           8 => 8,
-                                           9 => 9,
-                                           10 => 10))
+    PeriLab.Data_Manager.set_nset("Nset_1", [1, 2, 3])
+    PeriLab.Data_Manager.set_nset("Nset_2", [3, 4, 7, 10])
+    PeriLab.Data_Manager.set_glob_to_loc(Dict(1 => 1,
+                                              2 => 3,
+                                              3 => 4,
+                                              4 => 2,
+                                              5 => 5,
+                                              6 => 6,
+                                              7 => 7,
+                                              8 => 8,
+                                              9 => 9,
+                                              10 => 10))
 
-    bcs = PeriLab.Solver_Manager.Boundary_Conditions.boundary_condition(params)
-    @test isnothing(bcs)
+    @test_logs (:error, "Node Set 'Nset_3' is missing") PeriLab.Solver_Manager.Boundary_Conditions.boundary_condition(params)
+
     params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Variable" => "Forces",
                                                                "Node Set" => "Nset_1",
                                                                "Coordinate" => "x",
@@ -235,7 +234,6 @@ end
     @test !("BC_3" in keys(bcs))
 end
 @testset "ut_check_valid_bcs" begin
-    test_data_manager = PeriLab.Data_Manager
     params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Variable" => "Forces",
                                                                "Node Set" => "Nset_1",
                                                                "Coordinate" => "x",
@@ -245,26 +243,26 @@ end
                                                                "Coordinate" => "z",
                                                                "Value" => "0")))
 
-    test_data_manager.set_nset("Nset_1", [1, 2, 3])
-    test_data_manager.set_nset("Nset_2", [3, 4, 7, 10])
-    test_data_manager.set_glob_to_loc(Dict(1 => 1,
-                                           2 => 3,
-                                           3 => 4,
-                                           4 => 2,
-                                           5 => 5,
-                                           6 => 6,
-                                           7 => 7,
-                                           8 => 8,
-                                           9 => 9,
-                                           10 => 10))
+    PeriLab.Data_Manager.set_nset("Nset_1", [1, 2, 3])
+    PeriLab.Data_Manager.set_nset("Nset_2", [3, 4, 7, 10])
+    PeriLab.Data_Manager.set_glob_to_loc(Dict(1 => 1,
+                                              2 => 3,
+                                              3 => 4,
+                                              4 => 2,
+                                              5 => 5,
+                                              6 => 6,
+                                              7 => 7,
+                                              8 => 8,
+                                              9 => 9,
+                                              10 => 10))
 
     bcs = PeriLab.Solver_Manager.Boundary_Conditions.boundary_condition(params)
 
     # @test bcs = PeriLab.Solver_Manager.Boundary_Conditions.check_valid_bcs(bcs)
 
-    test_data_manager.set_dof(2)
-    @test isnothing(PeriLab.Solver_Manager.Boundary_Conditions.check_valid_bcs(bcs))
-    test_data_manager.set_dof(3)
+    PeriLab.Data_Manager.set_dof(2)
+    # @test_logs (:warn, "Boundary condition BC_2 is not possible with 2 DOF") PeriLab.Solver_Manager.Boundary_Conditions.check_valid_bcs(bcs)
+    PeriLab.Data_Manager.set_dof(3)
 
     params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Variable" => "Forces",
                                                                "Node Set" => "Nset_1",
@@ -276,28 +274,28 @@ end
                                                                "Value" => "0")))
 
     bcs = PeriLab.Solver_Manager.Boundary_Conditions.boundary_condition(params)
-    @test isnothing(PeriLab.Solver_Manager.Boundary_Conditions.check_valid_bcs(bcs))
+    @test_logs (:error,
+                "Boundary condition BC_1 is not valid: Variable Forces not found. Please check if the physical model is activated.") PeriLab.Solver_Manager.Boundary_Conditions.check_valid_bcs(bcs)
 end
 @testset "ut_init_BCs" begin
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
-    test_data_manager.set_num_controller(10)
-    test_data_manager.set_nset("Nset_1", [1, 2, 3])
-    test_data_manager.set_nset("Nset_2", [3, 4, 7, 10])
-    test_data_manager.set_glob_to_loc(Dict(1 => 1,
-                                           2 => 3,
-                                           3 => 4,
-                                           4 => 2,
-                                           5 => 5,
-                                           6 => 6,
-                                           7 => 7,
-                                           8 => 8,
-                                           9 => 9,
-                                           10 => 10))
-    test_data_manager.create_constant_node_vector_field("Coordinates", Float64, 3)
-    test_data_manager.create_constant_node_vector_field("Forces", Float64, 3)
-    test_data_manager.create_node_vector_field("Displacements", Float64, 3)
-    test_data_manager.set_dof(3)
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(10)
+    PeriLab.Data_Manager.set_nset("Nset_1", [1, 2, 3])
+    PeriLab.Data_Manager.set_nset("Nset_2", [3, 4, 7, 10])
+    PeriLab.Data_Manager.set_glob_to_loc(Dict(1 => 1,
+                                              2 => 3,
+                                              3 => 4,
+                                              4 => 2,
+                                              5 => 5,
+                                              6 => 6,
+                                              7 => 7,
+                                              8 => 8,
+                                              9 => 9,
+                                              10 => 10))
+    PeriLab.Data_Manager.create_constant_node_vector_field("Coordinates", Float64, 3)
+    PeriLab.Data_Manager.create_constant_node_vector_field("Forces", Float64, 3)
+    PeriLab.Data_Manager.create_node_vector_field("Displacements", Float64, 3)
+    PeriLab.Data_Manager.set_dof(3)
 
     params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Variable" => "Forces",
                                                                "Node Set" => "Nset_1",
@@ -338,32 +336,32 @@ end
 end
 
 @testset "ut_apply_bc" begin
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
-    test_data_manager.set_num_controller(10)
-    test_data_manager.set_dof(3)
-    test_data_manager.set_step(nothing)
-    test_data_manager.create_constant_node_vector_field("Coordinates", Float64, 3)
-    test_data_manager.create_constant_node_vector_field("Temperature", Float64, 3)
-    test_data_manager.create_node_vector_field("Displacements", Float64, 3)
-    test_data_manager.create_constant_node_vector_field("Forces", Float64, 3)
-    test_data_manager.create_constant_node_vector_field("External Forces", Float64, 3)
-    test_data_manager.create_constant_node_vector_field("Force Densities", Float64, 3)
-    test_data_manager.create_constant_node_vector_field("External Force Densities", Float64,
-                                                        3)
-    test_data_manager.create_constant_node_scalar_field("Density", Float64)
-    test_data_manager.set_nset("Nset_1", [1, 2, 3])
-    test_data_manager.set_nset("Nset_2", [3, 4, 7, 10])
-    test_data_manager.set_glob_to_loc(Dict(1 => 1,
-                                           2 => 3,
-                                           3 => 4,
-                                           4 => 2,
-                                           5 => 5,
-                                           6 => 6,
-                                           7 => 7,
-                                           8 => 8,
-                                           9 => 9,
-                                           10 => 10))
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(10)
+    PeriLab.Data_Manager.set_dof(3)
+    PeriLab.Data_Manager.set_step(nothing)
+    PeriLab.Data_Manager.create_constant_node_vector_field("Coordinates", Float64, 3)
+    PeriLab.Data_Manager.create_constant_node_vector_field("Temperature", Float64, 3)
+    PeriLab.Data_Manager.create_node_vector_field("Displacements", Float64, 3)
+    PeriLab.Data_Manager.create_constant_node_vector_field("Forces", Float64, 3)
+    PeriLab.Data_Manager.create_constant_node_vector_field("External Forces", Float64, 3)
+    PeriLab.Data_Manager.create_constant_node_vector_field("Force Densities", Float64, 3)
+    PeriLab.Data_Manager.create_constant_node_vector_field("External Force Densities",
+                                                           Float64,
+                                                           3)
+    PeriLab.Data_Manager.create_constant_node_scalar_field("Density", Float64)
+    PeriLab.Data_Manager.set_nset("Nset_1", [1, 2, 3])
+    PeriLab.Data_Manager.set_nset("Nset_2", [3, 4, 7, 10])
+    PeriLab.Data_Manager.set_glob_to_loc(Dict(1 => 1,
+                                              2 => 3,
+                                              3 => 4,
+                                              4 => 2,
+                                              5 => 5,
+                                              6 => 6,
+                                              7 => 7,
+                                              8 => 8,
+                                              9 => 9,
+                                              10 => 10))
     params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Variable" => "Temperature",
                                                                "Node Set" => "Nset_1",
                                                                "Coordinate" => "x",
@@ -373,8 +371,8 @@ end
                                                                "Coordinate" => "z",
                                                                "Value" => "5")))
 
-    temperature = test_data_manager.get_field("Temperature")
-    disp = test_data_manager.get_field("Displacements", "NP1")
+    temperature = PeriLab.Data_Manager.get_field("Temperature")
+    disp = PeriLab.Data_Manager.get_field("Displacements", "NP1")
     @test sum(temperature) == 0
     @test sum(disp) == 0
     bcs = PeriLab.Solver_Manager.Boundary_Conditions.init_BCs(params)
@@ -384,8 +382,8 @@ end
                                                                   ],
                                                                   bcs, 0.0,
                                                                   0.0)
-    temperature = test_data_manager.get_field("Temperature")
-    disp = test_data_manager.get_field("Displacements", "NP1")
+    temperature = PeriLab.Data_Manager.get_field("Temperature")
+    disp = PeriLab.Data_Manager.get_field("Displacements", "NP1")
     @test sum(temperature) == 0
     @test sum(disp) == 20
     @test isapprox(disp,
@@ -396,8 +394,8 @@ end
                                                                   ],
                                                                   bcs, 0.2,
                                                                   0.2)
-    temperature = test_data_manager.get_field("Temperature")
-    disp = test_data_manager.get_field("Displacements", "NP1")
+    temperature = PeriLab.Data_Manager.get_field("Temperature")
+    disp = PeriLab.Data_Manager.get_field("Displacements", "NP1")
 
     @test sum(temperature) == 12
     @test isapprox(temperature,
@@ -424,12 +422,13 @@ end
                                                                "Coordinate" => "u",
                                                                "Value" => "5")))
     bcs = PeriLab.Solver_Manager.Boundary_Conditions.init_BCs(params)
-    @test isnothing(PeriLab.Solver_Manager.Boundary_Conditions.apply_bc_dirichlet([
-                                                                                      "Displacements",
-                                                                                      "Temperature"
-                                                                                  ],
-                                                                                  bcs, 0.2,
-                                                                                  0.2))
+    @test_logs (:error, "Coordinate in boundary condition must be x,y or z.") PeriLab.Solver_Manager.Boundary_Conditions.apply_bc_dirichlet([
+                                                                                                                                                "Displacements",
+                                                                                                                                                "Temperature"
+                                                                                                                                            ],
+                                                                                                                                            bcs,
+                                                                                                                                            0.2,
+                                                                                                                                            0.2)
 
     ### apply_bc_dirichlet_force
 
@@ -445,7 +444,7 @@ end
                                                                   ],
                                                                   bcs, 0.0,
                                                                   0.0)
-    force_densities = test_data_manager.get_field("External Forces")
+    force_densities = PeriLab.Data_Manager.get_field("External Forces")
     @test force_densities == [20.0 0.0 0.0
            0.0 0.0 0.0
            20.0 0.0 0.0
@@ -469,7 +468,7 @@ end
                                                                   ],
                                                                   bcs, 0.0,
                                                                   0.0)
-    ext_force_densities = test_data_manager.get_field("External Force Densities")
+    ext_force_densities = PeriLab.Data_Manager.get_field("External Force Densities")
     @test ext_force_densities == [20.0 0.0 0.0
            0.0 0.0 0.0
            20.0 0.0 0.0
@@ -491,11 +490,11 @@ end
 
     PeriLab.Solver_Manager.Boundary_Conditions.apply_bc_neumann(bcs, 0.0,
                                                                 0.0)
-    density = test_data_manager.get_field("Density")
+    density = PeriLab.Data_Manager.get_field("Density")
     @test density == [10.0, 0.0, 10.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
     PeriLab.Solver_Manager.Boundary_Conditions.apply_bc_neumann(bcs, 0.0,
                                                                 0.0)
-    density = test_data_manager.get_field("Density")
+    density = PeriLab.Data_Manager.get_field("Density")
     @test density == [20.0, 0.0, 20.0, 20.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 end

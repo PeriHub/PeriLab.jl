@@ -8,20 +8,19 @@ using Test
 #import .PeriLab
 
 @testset "ut_init_surface_correction" begin
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
-    test_data_manager.set_block_id_list([1])
-    test_data_manager.init_properties()
-    test_data_manager.set_dof(3)
-    test_data_manager.set_num_controller(4)
-    block_iD = test_data_manager.create_constant_node_scalar_field("Block_Id", Int64)
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_block_id_list([1])
+    PeriLab.Data_Manager.init_properties()
+    PeriLab.Data_Manager.set_dof(3)
+    PeriLab.Data_Manager.set_num_controller(4)
+    block_iD = PeriLab.Data_Manager.create_constant_node_scalar_field("Block_Id", Int64)
     block_iD .= 1
     mod_struct = PeriLab.Solver_Manager.Model_Factory
 
     mod_struct.init_surface_correction(Dict(),
                                        "local_synch",
                                        "synchronise_field")
-    @test isnothing(mod_struct.init_surface_correction(Dict("Surface Correction" => Dict("a" => 0)),
-                                                       "local_synch",
-                                                       "synchronise_field"))
+    @test_logs (:error, "Surface Correction needs a Type definition") mod_struct.init_surface_correction(Dict("Surface Correction" => Dict("a" => 0)),
+                                                                                                         "local_synch",
+                                                                                                         "synchronise_field")
 end

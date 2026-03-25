@@ -85,20 +85,22 @@ end
 @testset "ut_undeformed_bond" begin
     nnodes = 4
     dof = 2
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
-    test_data_manager.set_num_controller(nnodes)
-    test_data_manager.set_num_responder(0)
-    test_data_manager.set_dof(dof)
-    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(nnodes)
+    PeriLab.Data_Manager.set_num_responder(0)
+    PeriLab.Data_Manager.set_dof(dof)
+    nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                Int64)
     nn .= [2, 2, 2, 1]
-    coor = test_data_manager.create_constant_node_vector_field("Coordinates", Float64, 2)
-    undeformed_bond = test_data_manager.create_constant_bond_vector_state("Bond Geometry",
-                                                                          Float64,
-                                                                          2)
-    undeformed_bond_length = test_data_manager.create_constant_bond_scalar_state("Bond Length",
-                                                                                 Float64)
-    nlist = test_data_manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
+    coor = PeriLab.Data_Manager.create_constant_node_vector_field("Coordinates", Float64, 2)
+    undeformed_bond = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                             Float64,
+                                                                             2)
+    undeformed_bond_length = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length",
+                                                                                    Float64)
+    nlist = PeriLab.Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist",
+                                                                   Int64)
     nlist[1] = [2, 3]
     nlist[2] = [1, 3]
     nlist[3] = [1, 2]
@@ -194,23 +196,26 @@ end
         end
     end
 
-    PeriLab.Geometry.bond_geometry!(undeformed_bond,
-                                    undeformed_bond_length,
-                                    Vector(1:nnodes),
-                                    nlist,
-                                    coor)
+    # @test_logs (:error,
+    #             "All bonds will get zero length, because all coordinates or deformed coordinates are zero. This might be an implementation error.") PeriLab.Geometry.bond_geometry!(undeformed_bond,
+    #                                                                                                                                                                                 undeformed_bond_length,
+    #                                                                                                                                                                                 Vector(1:nnodes),
+    #                                                                                                                                                                                 nlist,
+    #                                                                                                                                                                                 coor)
     coor[1:2, 1:2] .= 1
-    PeriLab.Geometry.calculate_bond_length!(undeformed_bond[1],
-                                            undeformed_bond_length[1],
-                                            1,
-                                            coor,
-                                            nlist[1]) == 1
+    @test_logs (:error,
+                "Bond length is zero, check your mesh! Node ID: 1") PeriLab.Geometry.calculate_bond_length!(undeformed_bond[1],
+                                                                                                            undeformed_bond_length[1],
+                                                                                                            1,
+                                                                                                            coor,
+                                                                                                            nlist[1])
     coor .= 0
-    @test PeriLab.Geometry.calculate_bond_length!(undeformed_bond[1],
-                                                  undeformed_bond_length[1],
-                                                  1,
-                                                  coor,
-                                                  nlist[1]) == 2
+    @test_logs (:error,
+                "All bonds will get zero length, because all coordinates or deformed coordinates are zero. This might be an implementation error.") PeriLab.Geometry.calculate_bond_length!(undeformed_bond[1],
+                                                                                                                                                                                            undeformed_bond_length[1],
+                                                                                                                                                                                            1,
+                                                                                                                                                                                            coor,
+                                                                                                                                                                                            nlist[1])
 end
 
 @testset "ut_compute_left_stretch_tensor" begin
@@ -240,42 +245,46 @@ end
     nnodes = 4
     dof = 2
     nodes = Vector{Int64}(1:nnodes)
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
-    test_data_manager.set_num_controller(nnodes)
-    test_data_manager.set_dof(dof)
-    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(nnodes)
+    PeriLab.Data_Manager.set_dof(dof)
+    nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                Int64)
     nn .= [3, 3, 3, 3]
 
-    coor = test_data_manager.create_constant_node_vector_field("Coordinates", Float64, 2)
-    undeformed_bond = test_data_manager.create_constant_bond_vector_state("Bond Geometry",
+    coor = PeriLab.Data_Manager.create_constant_node_vector_field("Coordinates", Float64, 2)
+    undeformed_bond = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                             Float64,
+                                                                             dof)
+    undeformed_bond_length = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length",
+                                                                                    Float64)
+    # does not have to be NP1 for testing
+    deformed_bond = PeriLab.Data_Manager.create_constant_bond_vector_state("Deformed Bond Geometry",
+                                                                           Float64, dof)
+    deformed_bond_length = PeriLab.Data_Manager.create_constant_bond_scalar_state("Deformed Bond Length",
+                                                                                  Float64)
+
+    nlist = PeriLab.Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist",
+                                                                   Int64)
+    volume = PeriLab.Data_Manager.create_constant_node_scalar_field("Volume", Float64;
+                                                                    default_value = 1)
+    omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
+                                                                   Float64;
+                                                                   default_value = 1)
+
+    bond_damage = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Damage",
+                                                                         Float64;
+                                                                         default_value = 1)
+    shape_tensor = PeriLab.Data_Manager.create_constant_node_tensor_field("Shape Tensor",
                                                                           Float64,
                                                                           dof)
-    undeformed_bond_length = test_data_manager.create_constant_bond_scalar_state("Bond Length",
-                                                                                 Float64)
-    # does not have to be NP1 for testing
-    deformed_bond = test_data_manager.create_constant_bond_vector_state("Deformed Bond Geometry",
-                                                                        Float64, dof)
-    deformed_bond_length = test_data_manager.create_constant_bond_scalar_state("Deformed Bond Length",
-                                                                               Float64)
-
-    nlist = test_data_manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
-    volume = test_data_manager.create_constant_node_scalar_field("Volume", Float64;
-                                                                 default_value = 1)
-    omega = test_data_manager.create_constant_bond_scalar_state("Influence Function",
-                                                                Float64; default_value = 1)
-
-    bond_damage = test_data_manager.create_constant_bond_scalar_state("Bond Damage",
-                                                                      Float64;
-                                                                      default_value = 1)
-    shape_tensor = test_data_manager.create_constant_node_tensor_field("Shape Tensor",
-                                                                       Float64,
-                                                                       dof)
-    inverse_shape_tensor = test_data_manager.create_constant_node_tensor_field("Inverse Shape Tensor",
-                                                                               Float64,
-                                                                               dof)
-    deformation_gradient = test_data_manager.create_constant_node_tensor_field("Deformation Gradient",
-                                                                               Float64, dof)
+    inverse_shape_tensor = PeriLab.Data_Manager.create_constant_node_tensor_field("Inverse Shape Tensor",
+                                                                                  Float64,
+                                                                                  dof)
+    deformation_gradient = PeriLab.Data_Manager.create_constant_node_tensor_field("Deformation Gradient",
+                                                                                  Float64,
+                                                                                  dof)
     nlist[1] = [2, 3, 4]
     nlist[2] = [1, 3, 4]
     nlist[3] = [1, 2, 4]
@@ -417,29 +426,31 @@ end
 end
 
 @testset "ut_strain" begin
-    test_data_manager = PeriLab.Data_Manager
-    dof = test_data_manager.get_dof()
+    dof = PeriLab.Data_Manager.get_dof()
     nnodes = 4
     nodes = Vector{Int64}(1:nnodes)
-    deformation_gradient = test_data_manager.create_constant_node_tensor_field("Deformation Gradient",
-                                                                               Float64, dof)
-    strain = test_data_manager.create_constant_node_tensor_field("Strain", Float64, dof)
-    nlist = test_data_manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
-    volume = test_data_manager.create_constant_node_scalar_field("Volume", Float64)
-    omega = test_data_manager.create_constant_bond_scalar_state("Influence Function",
-                                                                Float64)
-    bond_damage = test_data_manager.create_constant_bond_scalar_state("Bond Damage",
-                                                                      Float64)
-    undeformed_bond = test_data_manager.create_constant_bond_vector_state("Bond Geometry",
+    deformation_gradient = PeriLab.Data_Manager.create_constant_node_tensor_field("Deformation Gradient",
+                                                                                  Float64,
+                                                                                  dof)
+    strain = PeriLab.Data_Manager.create_constant_node_tensor_field("Strain", Float64, dof)
+    nlist = PeriLab.Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist",
+                                                                   Int64)
+    volume = PeriLab.Data_Manager.create_constant_node_scalar_field("Volume", Float64)
+    omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
+                                                                   Float64)
+    bond_damage = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Damage",
+                                                                         Float64)
+    undeformed_bond = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                             Float64,
+                                                                             dof)
+    undeformed_bond_length = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length",
+                                                                                    Float64)
+    shape_tensor = PeriLab.Data_Manager.create_constant_node_tensor_field("Shape Tensor",
                                                                           Float64,
                                                                           dof)
-    undeformed_bond_length = test_data_manager.create_constant_bond_scalar_state("Bond Length",
-                                                                                 Float64)
-    shape_tensor = test_data_manager.create_constant_node_tensor_field("Shape Tensor",
-                                                                       Float64,
-                                                                       dof)
-    inverse_shape_tensor = test_data_manager.create_constant_node_tensor_field("Inverse Shape Tensor",
-                                                                               Float64, dof)
+    inverse_shape_tensor = PeriLab.Data_Manager.create_constant_node_tensor_field("Inverse Shape Tensor",
+                                                                                  Float64,
+                                                                                  dof)
 
     PeriLab.Geometry.compute_deformation_gradients!(deformation_gradient,
                                                     nodes,
@@ -459,9 +470,9 @@ end
         @test strain[i, 1, 2] == 0
         @test strain[i, 2, 2] == 0
     end
-    deformation_gradient_3D = test_data_manager.create_constant_node_tensor_field("Deformation Gradient 3D",
-                                                                                  Float64,
-                                                                                  3)
+    deformation_gradient_3D = PeriLab.Data_Manager.create_constant_node_tensor_field("Deformation Gradient 3D",
+                                                                                     Float64,
+                                                                                     3)
     deformation_gradient_3D[1, 1, 1] = 2.0
     deformation_gradient_3D[1, 1, 2] = 1.0
     deformation_gradient_3D[1, 1, 3] = 2.0
@@ -471,8 +482,8 @@ end
     deformation_gradient_3D[1, 3, 1] = 2.0
     deformation_gradient_3D[1, 3, 2] = -1.0
     deformation_gradient_3D[1, 3, 3] = 3.0
-    strain_3D = test_data_manager.create_constant_node_tensor_field("Strain_3D", Float64,
-                                                                    3)
+    strain_3D = PeriLab.Data_Manager.create_constant_node_tensor_field("Strain_3D", Float64,
+                                                                       3)
     PeriLab.Geometry.compute_strain!(view(nodes, eachindex(nodes)),
                                      deformation_gradient_3D,
                                      strain_3D)
@@ -510,8 +521,14 @@ end
     @test rot[1, 2] == -1
     @test rot[2, 1] == 1
     @test rot[2, 2] < 1e-10
-    @test isnothing(PeriLab.Geometry.rotation_tensor(fill(Float64(90), (1)), 3))
-    @test isnothing(PeriLab.Geometry.rotation_tensor(fill(Float64(0), (3)), 2))
+    @test_logs (:error,
+                "Rotation tensor not defined for 3D, make sure that you define Angles_x, Angles_y and Angles_z in yaml or in mesh file.") PeriLab.Geometry.rotation_tensor(fill(Float64(90),
+                                                                                                                                                                                (1)),
+                                                                                                                                                                           3)
+    @test_logs (:error,
+                "Rotation tensor not defined for 2D") PeriLab.Geometry.rotation_tensor(fill(Float64(0),
+                                                                                            (3)),
+                                                                                       2)
 end
 
 @testset "ut_compute_weighted_deformation_gradient" begin

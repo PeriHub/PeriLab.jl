@@ -161,5 +161,4 @@ function _get_values(params::Dict,
         end
     end
     @error "Block with ID $block_id is not defined"
-    return nothing
 end

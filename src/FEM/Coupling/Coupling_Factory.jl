@@ -30,6 +30,7 @@ function init_coupling(nodes, complete_params::Dict)
                                   @__MODULE__, "coupling_name")
     if isnothing(mod)
         @error "No material of name " * material_model * " exists."
+        return
     end
     Data_Manager.set_model_module(coupling_model, mod)
 

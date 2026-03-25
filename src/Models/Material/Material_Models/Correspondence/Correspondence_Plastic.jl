@@ -65,11 +65,11 @@ function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     if !haskey(material_parameter, "Shear Modulus")
         @error "Shear Modulus must be defined to be able to run this plastic material"
-        return nothing
+        return
     end
     if !haskey(material_parameter, "Yield Stress")
         @error "No ''Yield Stress'' is defined."
-        return nothing
+        return
     end
 
     Data_Manager.create_node_scalar_field("von Mises Yield Stress", Float64)

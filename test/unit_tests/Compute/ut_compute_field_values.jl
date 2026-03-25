@@ -5,22 +5,21 @@
 using Test
 
 @testset "ut_get_forces_from_force_density" begin
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
-    test_data_manager.set_num_controller(5)
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(5)
 
-    test_data_manager.create_node_vector_field("Forces", Float64, 3)
+    PeriLab.Data_Manager.create_node_vector_field("Forces", Float64, 3)
 
     force_densityN,
-    force_densityNP1 = test_data_manager.create_node_vector_field("Force Densities",
-                                                                  Float64, 3)
-    volume = test_data_manager.create_constant_node_scalar_field("Volume", Float64)
+    force_densityNP1 = PeriLab.Data_Manager.create_node_vector_field("Force Densities",
+                                                                     Float64, 3)
+    volume = PeriLab.Data_Manager.create_constant_node_scalar_field("Volume", Float64)
 
     volume[1:5] = 1:5
     force_densityNP1 = rand(5, 3)
 
     PeriLab.Solver_Manager.Verlet_Solver.get_forces_from_force_density()
-    forces = test_data_manager.get_field("Forces", "NP1")
+    forces = PeriLab.Data_Manager.get_field("Forces", "NP1")
     for i in 1:5
         for j in 1:3
             @test forces[i, j] / (force_densityNP1[i, j] * volume[i]) - 1 < 1e-8
@@ -29,42 +28,43 @@ using Test
 end
 
 @testset "ut_get_partial_stresses" begin
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.set_dof(3)
-    test_data_manager.set_num_controller(5)
-    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+    PeriLab.Data_Manager.set_dof(3)
+    PeriLab.Data_Manager.set_num_controller(5)
+    nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                Int64)
     nn[1] = 1
     nn[2] = 2
     nn[3] = 1
     nn[4] = 2
     nn[5] = 3
 
-    nlist = test_data_manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
+    nlist = PeriLab.Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist",
+                                                                   Int64)
     nlist[1] = [2]
     nlist[2] = [1, 3]
     nlist[3] = [1]
     nlist[4] = [1, 5]
     nlist[5] = [1, 2, 4]
 
-    test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
-    bond_forces = test_data_manager.create_constant_bond_vector_state("Bond Forces",
-                                                                      Float64, 3)
-    bond_geometry = test_data_manager.create_constant_bond_vector_state("Bond Geometry",
-                                                                        Float64,
-                                                                        3;
-                                                                        default_value = 1)
-    bond_length = test_data_manager.create_constant_bond_scalar_state("Bond Length",
-                                                                      Float64;
-                                                                      default_value = sqrt(3))
-    test_data_manager.create_node_tensor_field("Cauchy Stress", Float64, 3)
-    volume = test_data_manager.create_constant_node_scalar_field("Volume", Float64)
+    PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+    bond_forces = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Forces",
+                                                                         Float64, 3)
+    bond_geometry = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                           Float64,
+                                                                           3;
+                                                                           default_value = 1)
+    bond_length = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length",
+                                                                         Float64;
+                                                                         default_value = sqrt(3))
+    PeriLab.Data_Manager.create_node_tensor_field("Cauchy Stress", Float64, 3)
+    volume = PeriLab.Data_Manager.create_constant_node_scalar_field("Volume", Float64)
 
     volume[1:5] = 1:5
 
     nodes = [1, 2, 3, 4, 5]
 
     PeriLab.Solver_Manager.Verlet_Solver.get_partial_stresses(nodes)
-    stresses = test_data_manager.get_field("Cauchy Stress", "NP1")
+    stresses = PeriLab.Data_Manager.get_field("Cauchy Stress", "NP1")
 
     testval = zeros(5, 3, 3)
     for iID in 1:5

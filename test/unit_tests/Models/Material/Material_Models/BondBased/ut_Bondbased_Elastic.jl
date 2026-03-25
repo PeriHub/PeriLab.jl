@@ -16,30 +16,31 @@ using TimerOutputs
 end
 @testset "compute_model" begin
     nodes = 2
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
-    test_data_manager.set_num_controller(nodes)
+
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(nodes)
     dof = 3
-    test_data_manager.set_dof(dof)
-    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+    PeriLab.Data_Manager.set_dof(dof)
+    nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                Int64)
     nn[1] = 2
     nn[2] = 3
-    h = test_data_manager.create_constant_node_scalar_field("Horizon", Float64)
+    h = PeriLab.Data_Manager.create_constant_node_scalar_field("Horizon", Float64)
 
     h[1:nodes] = 1:nodes
-    bf = test_data_manager.create_constant_bond_vector_state("Bond Forces", Float64, dof)
+    bf = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Forces", Float64, dof)
 
     bdN,
-    bdNP1 = test_data_manager.create_bond_scalar_state("Bond Damage", Float64;
-                                                       default_value = 1)
+    bdNP1 = PeriLab.Data_Manager.create_bond_scalar_state("Bond Damage", Float64;
+                                                          default_value = 1)
     dbN,
-    dbNP1 = test_data_manager.create_bond_vector_state("Deformed Bond Geometry", Float64,
-                                                       dof; default_value = 1)
+    dbNP1 = PeriLab.Data_Manager.create_bond_vector_state("Deformed Bond Geometry", Float64,
+                                                          dof; default_value = 1)
     dbdN,
-    dbdNP1 = test_data_manager.create_bond_scalar_state("Deformed Bond Length", Float64)
-    bg = test_data_manager.create_bond_vector_state("Bond Geometry", Float64, dof)
-    bd = test_data_manager.create_constant_bond_scalar_state("Bond Length", Float64;
-                                                             default_value = 1)
+    dbdNP1 = PeriLab.Data_Manager.create_bond_scalar_state("Deformed Bond Length", Float64)
+    bg = PeriLab.Data_Manager.create_bond_vector_state("Bond Geometry", Float64, dof)
+    bd = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length", Float64;
+                                                                default_value = 1)
     for iID in 1:nodes
         dbdNP1[iID] .= 1 + (-1)^iID * 0.1
     end
@@ -53,7 +54,7 @@ end
                                                                                   0.0,
                                                                                   0.0)
 
-    bf = test_data_manager.get_field("Bond Forces")
+    bf = PeriLab.Data_Manager.get_field("Bond Forces")
     @test isapprox(bf[1],
                    [
                        [-0.21220659078919374, -0.21220659078919374, -0.21220659078919374],
@@ -83,7 +84,7 @@ end
                                                                                   0.0,
                                                                                   0.0)
 
-    bf = test_data_manager.get_field("Bond Forces")
+    bf = PeriLab.Data_Manager.get_field("Bond Forces")
 
     @test isapprox(bf[1],
                    [
@@ -115,7 +116,7 @@ end
                                                                                   0.0,
                                                                                   0.0)
 
-    bf = test_data_manager.get_field("Bond Forces")
+    bf = PeriLab.Data_Manager.get_field("Bond Forces")
 
     @test isapprox(bf[1],
                    [
@@ -146,7 +147,7 @@ end
                                                                                   0.0,
                                                                                   0.0)
 
-    bf = test_data_manager.get_field("Bond Forces")
+    bf = PeriLab.Data_Manager.get_field("Bond Forces")
     @test isapprox(bf[1][1][1], -0.15915494309189532)
     @test isapprox(bf[1][1][2], -0.15915494309189532)
     @test isapprox(bf[1][2][1], -0.15915494309189532)

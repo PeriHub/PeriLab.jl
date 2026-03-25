@@ -27,12 +27,12 @@ function get_external_topology_name(params::Dict, path)
     check = haskey(params["Discretization"]["Input External Topology"], "File")
     if !check
         @error "Input External Topology is defined without a file where to find it."
-        return nothing
+        return
     end
     filename = joinpath(path, params["Discretization"]["Input External Topology"]["File"])
     if !isfile(filename)
         @error "External topology file: ''$filename'' does not exist"
-        return nothing
+        return
     end
     return params["Discretization"]["Input External Topology"]["File"]
 end
@@ -51,7 +51,7 @@ function get_mesh_name(params::Dict)
     check = haskey(params["Discretization"], "Input Mesh File")
     if !check
         @error "No mesh file is defined."
-        return nothing
+        return
     end
     return params["Discretization"]["Input Mesh File"]
 end
@@ -97,8 +97,7 @@ function get_header(filename::Union{String,AbstractString})
             return header_line, convert(Vector{String}, split(line)[2:end])
         end
     end
-    @error "No header exists in $filename. Please insert 'header: global_id' above the first node"
-    return
+    @warn "No header exists in $filename. Please insert 'header: global_id' above the first node"
 end
 """
     get_node_sets(params::Dict, path::String)
@@ -161,9 +160,9 @@ function get_node_sets(params::Dict, path::String, mesh_df::DataFrame)
                              skipto = header_line + 1,)
             if size(nodes) == (0, 0)
                 @error "Node set file is empty " *
-                       joinpath(path, nodesets[entry]) *
+                       nodesets[entry] *
                        ". The node set is excluded."
-                continue
+                return
             end
             nsets[entry] = nodes.Column1
         elseif occursin(":", nodesets[entry])
@@ -184,6 +183,7 @@ function get_node_sets(params::Dict, path::String, mesh_df::DataFrame)
                     end
                 catch UndefVarError
                     @error "Failed to eval nodeset value: '$(nodesets[entry])', $UndefVarError"
+                    return
                 end
             end
             nsets[entry] = nodes

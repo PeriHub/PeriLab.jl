@@ -239,7 +239,7 @@ function init_model(nodes::AbstractVector{Int64},
 
     if isnothing(mod)
         @error "No damage model of name " * model_param["Damage Model"] * " exists."
-        return nothing
+        return
     end
     Data_Manager.set_model_module(model_param["Damage Model"], mod)
     mod.init_model(nodes, model_param, block)

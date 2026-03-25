@@ -263,7 +263,7 @@ function get_local_element_topology(topology::Vector{Vector{Int64}},
     for top in topology
         if length(top) != master_len
             @error "Only one element type is supported. Please define the same numbers of nodes per element."
-            return nothing
+            return
             # - new field like the bond field has to be defined for elements in the Data_Manager
             # - can be avoided right now by setting zeros in the topology vector as empty nodes
         end
@@ -623,7 +623,7 @@ Read mesh data from a file and return it as a DataFrame.
 function read_mesh(filename::String, params::Dict)
     if !isfile(filename)
         @error "File $filename does not exist"
-        return nothing
+        return
     end
 
     @info "Read mesh file $filename"
@@ -836,7 +836,6 @@ function read_mesh(filename::String, params::Dict)
         return csv_reader(filename)
     else
         @error "Discretization type not supported"
-        return nothing
     end
 end
 
@@ -870,9 +869,7 @@ function check_for_duplicate_in_dataframe(mesh::DataFrame)
     duplicates = findall(nonunique(mesh))
     if length(duplicates) > 0
         @error "Mesh contains duplicate nodes! Nodes: $duplicates"
-        return true
     end
-    return false
 end
 
 """
@@ -887,9 +884,7 @@ function check_types_in_dataframe(mesh::DataFrame)
     # check if block_id in mesh contains only int
     if !(eltype(mesh.block_id) <: Integer)
         @error "block_id in mesh is $(eltype(mesh.block_id)), but it should be an Integer!"
-        return false
     end
-    return true
 end
 
 """
@@ -1078,7 +1073,6 @@ function get_number_of_neighbornodes(nlist::BondScalarState{Int64}, filtered::Bo
     for id in 1:len
         if !filtered && length(nlist[id]) == 0
             @error "Node $id has no neighbors please check the horizon."
-            return nothing
         end
         length_nlist[id] = length(nlist[id])
     end
@@ -1410,7 +1404,6 @@ Calculate the initial size of each chunk for a nearly equal number of nodes vs. 
 function create_distribution(nnodes::Int64, size::Int64)
     if size > nnodes
         @error "Number of cores $size exceeds number of nodes $nnodes."
-        return nothing, nothing
     end
     chunk_size = div(nnodes, size)
     # Split the data into chunks

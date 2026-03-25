@@ -63,7 +63,6 @@ const MAPPING_3D = @SMatrix [1 1; 2 2; 3 3; 2 3; 1 3; 1 2]
         return MAPPING_3D
     else
         @error "$dof is no valid mapping option."
-        return Matrix{Int64}(undef, 0, 0)
     end
 end
 function get_shared_horizon(id)
@@ -429,7 +428,7 @@ function add_in_place!(C::AbstractMatrix{T},
 
     return C
 end
-function get_MMatrix(len::Int64)::MMatrix
+function get_MMatrix(len::Int64)
     if len == 4
         return MMatrix{2,2}(zeros(Float64, 2, 2))
     elseif len == 9
@@ -438,7 +437,6 @@ function get_MMatrix(len::Int64)::MMatrix
         return MMatrix{6,6}(zeros(Float64, 6, 6))
     else
         @error "MMatrix length $len not pre-allocated. Please add your size to helper.jl in get_MMatrix."
-        return MMatrix{1,1}(zeros(Float64, 1, 1))
     end
 end
 function mul_in_place!(C::Vector{T}, A::Vector{T},
@@ -592,7 +590,7 @@ qdim(order) = Σ(i=1 to order) [(i+2)! / (2! * i!)]
 function qdim(order::Int64, dof::Int64)
     if order < 1
         @error "Accuracy order must be greater than zero."
-        return nothing
+        return
     end
     return sum(binomial(i + dof - 1, dof - 1) for i in 1:order)
 end
@@ -682,13 +680,9 @@ function check_inf_or_nan(array::AbstractArray{T},
                           msg::String) where {T<:Union{Int64,Float64}}
     if isnan(sum(array))
         @error "Field ''$msg'' has NaN elements."
-        return true
-    end
-    if !isfinite(sum(array))
+    elseif !isfinite(sum(array))
         @error "Field ''$msg'' is infinite."
-        return true
     end
-    return false
 end
 """
 	check_inf_or_nan(scalar, msg)
@@ -705,13 +699,9 @@ function check_inf_or_nan(scalar::T,
                           msg::String) where {T<:Union{Int64,Float64}}
     if isnan(scalar)
         @error "Scalar Value ''$msg'' is NaN."
-        return true
-    end
-    if !isfinite(scalar)
+    elseif !isfinite(scalar)
         @error "Scalar value ''$msg'' is infinite."
-        return true
     end
-    return false
 end
 """
 	matrix_style(A)
@@ -796,7 +786,6 @@ function get_fourth_order(CVoigt::AbstractMatrix{Float64}, dof::Int64)
         return voigt_to_tensor4_3d!(GLOBAL_TENSOR_3D, CVoigt)
     else
         @error "$dof is not a valid option. Only dof 2 and 3 are supported."
-        return zeros(Float64, 0, 0, 0, 0)
     end
 end
 
@@ -915,7 +904,7 @@ function is_dependent(field_name::String, damage_parameter::Dict)
     if haskey(damage_parameter, field_name) && damage_parameter[field_name] isa Dict
         if !Data_Manager.has_key(damage_parameter[field_name]["Field"] * "NP1")
             @error "$(damage_parameter[field_name]["Field"]) does not exist for value interpolation."
-            return nothing
+            return
         end
         field = Data_Manager.get_field(damage_parameter[field_name]["Field"], "NP1")
         return true, field
@@ -1244,7 +1233,6 @@ function matrix_to_voigt(matrix::AbstractMatrix{Float64})
             0.5 * (matrix[1, 2] + matrix[2, 1])]
     else
         @error "Unsupported matrix size for matrix_to_voigt"
-        return nothing
     end
 end
 
@@ -1267,7 +1255,6 @@ function voigt_to_matrix(voigt::Union{MVector,SVector,Vector})
                          voigt[5] voigt[4] voigt[3]]
     else
         @error "Unsupported matrix size for voigt_to_matrix"
-        return nothing
     end
 end
 

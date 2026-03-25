@@ -103,8 +103,7 @@ function get_paraview_coordinates(dof::Int64, refDof::Int64)
                paraview_specifics(dof - Int(ceil(dof / 3 - 1) * 3))
     end
 
-    @error "not exportable yet as one variable"
-    return nothing
+    @error "not yet exportable as one variable"
 end
 
 """

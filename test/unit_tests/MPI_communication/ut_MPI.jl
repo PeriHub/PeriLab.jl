@@ -76,8 +76,11 @@ if rank != 0
 end
 
 push_test!(test,
-           (isnothing(PeriLab.MPI_Communication.send_single_value_from_vector(comm, 0, [1],
-                                                                              String))),
+           (isnothing(@test_logs (:error,
+                                  "Wrong type - String in function send_single_value_from_vector") PeriLab.MPI_Communication.send_single_value_from_vector(comm,
+                                                                                                                                                           0,
+                                                                                                                                                           [1],
+                                                                                                                                                           String))),
            @__FILE__,
            @__LINE__)
 if ncores == 3
@@ -89,37 +92,36 @@ if ncores == 3
 
     overlap_map = PeriLab.IO.get_local_overlap_map(overlap_map, distribution, ncores)
 
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
-    test_data_manager.set_comm(comm)
-    test_data_manager.create_constant_node_scalar_field("Block_Id", Int64)
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_comm(comm)
+    PeriLab.Data_Manager.create_constant_node_scalar_field("Block_Id", Int64)
 
     if rank == 0
-        test_data_manager.set_num_controller(1)
-        test_data_manager.set_num_responder(2)
-        block_Id = test_data_manager.get_field("Block_Id")
+        PeriLab.Data_Manager.set_num_controller(1)
+        PeriLab.Data_Manager.set_num_responder(2)
+        block_Id = PeriLab.Data_Manager.get_field("Block_Id")
         block_Id .= 1
     end
     if rank == 1
-        test_data_manager.set_num_controller(2)
-        test_data_manager.set_num_responder(1)
-        block_Id = test_data_manager.get_field("Block_Id")
+        PeriLab.Data_Manager.set_num_controller(2)
+        PeriLab.Data_Manager.set_num_responder(1)
+        block_Id = PeriLab.Data_Manager.get_field("Block_Id")
         block_Id .= 2
     end
     if rank == 2
-        test_data_manager.set_num_controller(1)
-        test_data_manager.set_num_responder(2)
-        block_Id = test_data_manager.get_field("Block_Id")
+        PeriLab.Data_Manager.set_num_controller(1)
+        PeriLab.Data_Manager.set_num_responder(2)
+        block_Id = PeriLab.Data_Manager.get_field("Block_Id")
         block_Id .= 1
     end
-    test_data_manager.set_block_name_list(["block_1", "block_2"])
-    test_data_manager.set_block_id_list([1, 2])
-    test_data_manager.set_dof(dof)
-    A = test_data_manager.create_constant_node_scalar_field("A", Float64)
-    B = test_data_manager.create_constant_node_vector_field("B", Float64, 4)
-    C = test_data_manager.create_constant_node_scalar_field("C", Int64)
-    D = test_data_manager.create_constant_node_vector_field("D", Int64, 5)
-    E = test_data_manager.create_constant_node_scalar_field("E", Bool)
+    PeriLab.Data_Manager.set_block_name_list(["block_1", "block_2"])
+    PeriLab.Data_Manager.set_block_id_list([1, 2])
+    PeriLab.Data_Manager.set_dof(dof)
+    A = PeriLab.Data_Manager.create_constant_node_scalar_field("A", Float64)
+    B = PeriLab.Data_Manager.create_constant_node_vector_field("B", Float64, 4)
+    C = PeriLab.Data_Manager.create_constant_node_scalar_field("C", Int64)
+    D = PeriLab.Data_Manager.create_constant_node_vector_field("D", Int64, 5)
+    E = PeriLab.Data_Manager.create_constant_node_scalar_field("E", Bool)
     if rank == 0
         A[1] = 1.4
         A[2] = 3
@@ -345,25 +347,30 @@ if ncores == 3
                    @__FILE__,
                    @__LINE__)
     end
-    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+
+    nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                Int64)
     nn .= 2
-    h = test_data_manager.create_constant_node_scalar_field("Horizon", Float64)
-    nodes = test_data_manager.get_nnodes()
+    nlist = PeriLab.Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist",
+                                                                   Int64)
+    h = PeriLab.Data_Manager.create_constant_node_scalar_field("Horizon", Float64)
+    nodes = PeriLab.Data_Manager.get_nnodes()
     h .= 5.0
-    bf = test_data_manager.create_constant_bond_vector_state("Bond Forces", Float64, dof)
+    bf = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Forces", Float64, dof)
 
     bdN,
-    bdNP1 = test_data_manager.create_bond_scalar_state("Bond Damage", Float64;
-                                                       default_value = 1)
+    bdNP1 = PeriLab.Data_Manager.create_bond_scalar_state("Bond Damage", Float64;
+                                                          default_value = 1)
     dbN,
-    dbNP1 = test_data_manager.create_bond_vector_state("Deformed Bond Geometry", Float64,
-                                                       dof
-                                                       ; default_value = 1)
+    dbNP1 = PeriLab.Data_Manager.create_bond_vector_state("Deformed Bond Geometry", Float64,
+                                                          dof
+                                                          ; default_value = 1)
     dbdN,
-    dbdNP1 = test_data_manager.create_bond_scalar_state("Deformed Bond Length", Float64)
-    bg = test_data_manager.create_constant_bond_vector_state("Bond Geometry", Float64, dof)
-    bd = test_data_manager.create_constant_bond_scalar_state("Bond Length", Float64;
-                                                             default_value = 1)
+    dbdNP1 = PeriLab.Data_Manager.create_bond_scalar_state("Deformed Bond Length", Float64)
+    bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry", Float64,
+                                                                dof)
+    bd = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length", Float64;
+                                                                default_value = 1)
     for iID in 1:nodes
         for jID in 1:nn[iID]
             dbdNP1[iID][jID] = 1 + (-1)^iID * 0.1
@@ -380,7 +387,7 @@ if ncores == 3
                                                                                   0.0,
                                                                                   0.0)
 
-    bf = test_data_manager.get_field("Bond Forces")
+    bf = PeriLab.Data_Manager.get_field("Bond Forces")
 
     PeriLab.MPI_Communication.synch_controller_bonds_to_responder(comm, overlap_map, bf,
                                                                   dof)

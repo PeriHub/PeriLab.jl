@@ -83,10 +83,10 @@ end
         if bond_norm[m] == 0.0
             if count(!iszero, coor) == 0
                 @error "All bonds will get zero length, because all coordinates or deformed coordinates are zero. This might be an implementation error."
-                return 2
+                return
             end
             @error "Bond length is zero, check your mesh! Node ID: $iID"
-            return 1
+            return
         end
     end
     return 0
@@ -400,14 +400,14 @@ function rotation_tensor(angles::T,
     if length(angles) == 3
         if dof != 3
             @error "Rotation tensor not defined for 2D"
-            return nothing
+            return
         end
         return RotXYZ(angles[1] / 180 * pi, angles[2] / 180 * pi, angles[3] / 180 * pi)
     end
     # return RotXYZ(0, 0, angles[1] / 180 * pi)
     if dof != 2
         @error "Rotation tensor not defined for 3D, make sure that you define Angles_x, Angles_y and Angles_z in yaml or in mesh file."
-        return nothing
+        return
     end
     return Angle2d(angles[1] / 180 * pi)
 end

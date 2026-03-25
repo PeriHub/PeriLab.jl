@@ -25,7 +25,6 @@ function read_input(filename::String)
             @error "Yaml Parser Error. Make sure the yaml file is valid."
         end
         @error "Failed to read $filename."
-        return nothing
     end
 end
 
@@ -43,11 +42,11 @@ function read_input_file(filename::String)
     params = Dict{String,Any}()
     if !isfile(filename)
         @error "$filename does not exist."
-        return nothing
+        return
     end
     if !occursin("yaml", filename)
         @error "Not a supported filetype $filename"
-        return nothing
+        return
     end
     @info "Read input file $filename"
     return validate_yaml(read_input(filename))

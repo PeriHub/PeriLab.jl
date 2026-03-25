@@ -8,12 +8,14 @@ using DataFrames
 #using PeriLab
 
 @testset "ut_read_mesh" begin
+    path = "./unit_tests/IO/"
     params = Dict("Discretization" => Dict("Type" => "not supported"))
-    @test isnothing(PeriLab.IO.read_mesh("./", params))
+    @test_logs (:error, "Discretization type not supported") PeriLab.IO.read_mesh(joinpath(path,
+                                                                                           "example_mesh.txt"),
+                                                                                  params)
 
     params = Dict("Discretization" => Dict("Type" => "Text File"))
-    @test isnothing(PeriLab.IO.read_mesh("./", params))
-    path = "./unit_tests/IO/"
+    @test_logs (:error, "File ./ does not exist") PeriLab.IO.read_mesh("./", params)
 
     data = PeriLab.IO.read_mesh(joinpath(path, "example_mesh.txt"), params)
     if isnothing(data)
@@ -51,15 +53,15 @@ end
         data = PeriLab.IO.read_mesh(joinpath(path, "example_mesh.txt"), params)
         data_wrong = PeriLab.IO.read_mesh(joinpath(path, "example_wrong_mesh.txt"), params)
     end
-    @test PeriLab.IO.check_types_in_dataframe(data)
-    @test !PeriLab.IO.check_types_in_dataframe(data_wrong)
-    @test !(PeriLab.IO.check_for_duplicate_in_dataframe(data))
+    PeriLab.IO.check_types_in_dataframe(data)
+    @test_logs (:error, "block_id in mesh is Float64, but it should be an Integer!") PeriLab.IO.check_types_in_dataframe(data_wrong)
+    PeriLab.IO.check_for_duplicate_in_dataframe(data)
     data[1, :] = data[2, :]
-    @test PeriLab.IO.check_for_duplicate_in_dataframe(data)
+    @test_logs (:error, "Mesh contains duplicate nodes! Nodes: [2]") PeriLab.IO.check_for_duplicate_in_dataframe(data)
     data[1, :] = data[3, :]
-    @test PeriLab.IO.check_for_duplicate_in_dataframe(data)
+    @test_logs (:error, "Mesh contains duplicate nodes! Nodes: [3]") PeriLab.IO.check_for_duplicate_in_dataframe(data)
     data[2, :] = data[3, :]
-    @test PeriLab.IO.check_for_duplicate_in_dataframe(data)
+    @test_logs (:error, "Mesh contains duplicate nodes! Nodes: [2, 3]") PeriLab.IO.check_for_duplicate_in_dataframe(data)
 end
 
 @testset "ut_create_consistent_neighborhoodlist" begin
@@ -220,7 +222,6 @@ end
     @test element_distribution[2] == [3, 1]
 end
 @testset "ut_get_local_element_topology" begin
-    test_data_manager = PeriLab.Data_Manager
     topology::Vector{Vector{Int64}} = [[1, 2, 3, 4], [3, 4, 2, 1]]
     distribution::Vector{Vector{Int64}} = [
         [2, 3, 4, 1],
@@ -229,7 +230,7 @@ end
     ]
     PeriLab.IO.get_local_element_topology(topology,
                                           distribution[1])
-    topo = test_data_manager.get_field("FE Topology")
+    topo = PeriLab.Data_Manager.get_field("FE Topology")
 
     @test topo[1, 1] == 4
     @test topo[1, 2] == 1
@@ -241,7 +242,7 @@ end
     @test topo[2, 4] == 4
     PeriLab.IO.get_local_element_topology(topology,
                                           distribution[2])
-    topo = test_data_manager.get_field("FE Topology")
+    topo = PeriLab.Data_Manager.get_field("FE Topology")
     @test topo[1, 1] == 1
     @test topo[1, 2] == 2
     @test topo[1, 3] == 3
@@ -252,7 +253,7 @@ end
     @test topo[2, 4] == 1
     PeriLab.IO.get_local_element_topology(topology,
                                           distribution[3])
-    topo = test_data_manager.get_field("FE Topology")
+    topo = PeriLab.Data_Manager.get_field("FE Topology")
     @test topo[1, 1] == 6
     @test topo[1, 2] == 4
     @test topo[1, 3] == 3
@@ -265,7 +266,7 @@ end
     PeriLab.IO.get_local_element_topology(Vector([Vector{Int64}([])]),
                                           distribution[3])
     # nothing happens, because no field is initialized
-    topo = test_data_manager.get_field("FE Topology")
+    topo = PeriLab.Data_Manager.get_field("FE Topology")
     @test topo[1, 1] == 6
     @test topo[1, 2] == 4
     @test topo[1, 3] == 3
@@ -277,8 +278,9 @@ end
 
     topology = [[1, 2, 3, 4], [3, 4, 2, 1, 3]]
 
-    @test isnothing(PeriLab.IO.get_local_element_topology(topology,
-                                                          distribution[3]))
+    @test_logs (:error,
+                "Only one element type is supported. Please define the same numbers of nodes per element.") PeriLab.IO.get_local_element_topology(topology,
+                                                                                                                                                  distribution[3])
 end
 @testset "ut_create_distribution" begin
     distribution, point_to_core = PeriLab.IO.create_distribution(4, 1)
@@ -303,9 +305,8 @@ end
     @test distribution[3] == Int64[3]
     @test distribution[4] == Int64[4]
     @test point_to_core == Int64[1, 2, 3, 4]
-    distribution, point_to_core = PeriLab.IO.create_distribution(4, 5)
-    @test isnothing(distribution)
-    @test isnothing(point_to_core)
+    @test_logs (:error, "Number of cores 5 exceeds number of nodes 4.") PeriLab.IO.create_distribution(4,
+                                                                                                       5)
 
     nlist = fill(Vector{Int64}([]), 4)
     nlist[1] = [2, 3]
@@ -347,13 +348,13 @@ end
 @testset "ut_check_mesh_elements" begin
     data = Dict("volume" => [1, 1, 1], "block_id" => [1, 1, 1])
     df = DataFrame(data)
-    @test isnothing(PeriLab.IO.check_mesh_elements(df, 2))
+    @test_logs (:error, "No coordinates defined") PeriLab.IO.check_mesh_elements(df, 2)
     data = Dict("x" => [1.0, 1.1, 3], "y" => [25, 30, 22], "block_id" => [1, 1, 1])
     df = DataFrame(data)
-    @test isnothing(PeriLab.IO.check_mesh_elements(df, 2))
-    data = Dict("x" => [1.0, 1.1, 3], "y" => [25, 30, 22], "volume" => [1, 1, 1])
+    @test_logs (:error, "No volumes defined") PeriLab.IO.check_mesh_elements(df, 2)
+    data = Dict("x" => [1.0, 1.1, 3], "y" => [25, 30, 22], "Volume" => [1, 1, 1])
     df = DataFrame(data)
-    @test isnothing(PeriLab.IO.check_mesh_elements(df, 2))
+    @test_logs (:error, "No blocks defined") PeriLab.IO.check_mesh_elements(df, 2)
 
     data = Dict("x" => [1.0, 1.1, 3],
                 "y" => [25, 30, 22],
@@ -505,7 +506,8 @@ end
     end
     nlist[1] = []
 
-    @test isnothing(PeriLab.IO.get_number_of_neighbornodes(nlist, false))
+    @test_logs (:error, "Node 1 has no neighbors please check the horizon.") PeriLab.IO.get_number_of_neighbornodes(nlist,
+                                                                                                                    false)
 end
 
 @testset "ut_glob_to_loc" begin
@@ -530,44 +532,43 @@ end
     nsets_predef = Dict{String,Vector{Int64}}("Nset_2" => [11, 12, 13, 44, 125],
                                               "Nset_1" => [1, 2, 3, 4, 5, 6, 7])
 
-    test_data_manager = PeriLab.Data_Manager
-    @test test_data_manager.get_nnsets() == 0
+    @test PeriLab.Data_Manager.get_nnsets() == 0
     PeriLab.IO.define_nsets(nsets_predef)
-    @test test_data_manager.get_nnsets() == 2
-    nsets = test_data_manager.get_nsets()
+    @test PeriLab.Data_Manager.get_nnsets() == 2
+    nsets = PeriLab.Data_Manager.get_nsets()
     @test nsets["Nset_1"] == [1, 2, 3, 4, 5, 6, 7]
     @test nsets["Nset_2"] == [11, 12, 13, 44, 125]
 end
 
 @testset "ut_get_bond_geometry" begin
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.set_num_controller(3)
-    test_data_manager.set_num_responder(0)
-    test_data_manager.set_dof(2)
-    length_nlist = test_data_manager.create_constant_node_scalar_field("Number of Neighbors",
-                                                                       Int64)
+    PeriLab.Data_Manager.set_num_controller(3)
+    PeriLab.Data_Manager.set_num_responder(0)
+    PeriLab.Data_Manager.set_dof(2)
+    length_nlist = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                          Int64)
     length_nlist .= [2, 2, 2]
-    nlist = test_data_manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
+    nlist = PeriLab.Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist",
+                                                                   Int64)
 
     nlist[1] = [2, 3]
     nlist[2] = [1, 3]
     nlist[3] = [1, 2]
-    coor = test_data_manager.create_constant_node_vector_field("Coordinates", Float64, 2)
+    coor = PeriLab.Data_Manager.create_constant_node_vector_field("Coordinates", Float64, 2)
     coor[1, 1] = 0
     coor[1, 2] = 0
     coor[2, 1] = 1
     coor[2, 2] = 0
     coor[3, 1] = 0
     coor[3, 2] = 1
-    dof = test_data_manager.get_dof()
-    nnodes = test_data_manager.get_nnodes()
-    nlist = test_data_manager.get_nlist()
-    coor = test_data_manager.get_field("Coordinates")
-    undeformed_bond = test_data_manager.create_constant_bond_vector_state("Bond Geometry",
-                                                                          Float64,
-                                                                          dof)
-    undeformed_bond_length = test_data_manager.create_constant_bond_scalar_state("Bond Length",
-                                                                                 Float64)
+    dof = PeriLab.Data_Manager.get_dof()
+    nnodes = PeriLab.Data_Manager.get_nnodes()
+    nlist = PeriLab.Data_Manager.get_nlist()
+    coor = PeriLab.Data_Manager.get_field("Coordinates")
+    undeformed_bond = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                             Float64,
+                                                                             dof)
+    undeformed_bond_length = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length",
+                                                                                    Float64)
     PeriLab.Geometry.bond_geometry!(undeformed_bond,
                                     undeformed_bond_length,
                                     Vector(1:nnodes),
@@ -598,7 +599,8 @@ end
 
 @testset "ut_calculate_volume" begin
     vertices::Vector{Vector{Float64}} = [[0, 0], [1, 0], [1, 1], [0, 1]]
-    @test isnothing(PeriLab.IO.calculate_volume("NotSupported", vertices))
+    @test_logs (:error, "Element type NotSupported currently not supported") PeriLab.IO.calculate_volume("NotSupported",
+                                                                                                         vertices)
     @test PeriLab.IO.calculate_volume("Quad4", vertices) == 1
     vertices = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [1, 1, 1]]
     @test PeriLab.IO.calculate_volume("Tet4", vertices) == 1 / 6

@@ -45,7 +45,7 @@ function init_model(nodes::AbstractVector{Int64},
     # global angles
     if !haskey(material_parameter, "Symmetry")
         @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
-        return nothing
+        return
     end
     dof = Data_Manager.get_dof()
     Data_Manager.create_node_tensor_field("Strain", Float64, dof)
@@ -64,7 +64,7 @@ function init_model(nodes::AbstractVector{Int64},
                                       "correspondence_name")
         if isnothing(mod)
             @error "No correspondence material of name " * material_model * " exists."
-            return nothing
+            return
         end
         Data_Manager.set_model_module(material_model, mod)
         mod.init_model(nodes, material_parameter)

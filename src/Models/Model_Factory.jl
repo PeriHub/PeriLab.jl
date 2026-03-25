@@ -503,9 +503,7 @@ function read_properties(params::Dict, material_model::Bool)
     if material_model
         dof = Data_Manager.get_dof()
         for block in block_id_list
-            Material.check_material_symmetry(dof,
-                                             Data_Manager.get_properties(block,
-                                                                         "Material Model"))
+            Material.check_material_symmetry(block)
             Material.determine_isotropic_parameter(Data_Manager.get_properties(block,
                                                                                "Material Model"))
         end
@@ -548,7 +546,6 @@ function add_model(model_name::String, all::Bool = false)
                                       all)
     catch
         @error "Model $model_name is not specified and cannot be included."
-        return nothing
     end
 end
 

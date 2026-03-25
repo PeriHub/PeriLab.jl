@@ -53,7 +53,7 @@ function init_model(nodes::AbstractVector{Int64},
     num_state_vars::Int64 = 1
     if !haskey(material_parameter, "File")
         @error "VUMAT file is not defined."
-        return nothing
+        return
     end
     directory = Data_Manager.get_directory()
     material_parameter["File"] = joinpath(joinpath(pwd(), directory),
@@ -61,7 +61,7 @@ function init_model(nodes::AbstractVector{Int64},
     global vumat_file_path = material_parameter["File"]
     if !isfile(material_parameter["File"])
         @error "File $(material_parameter["File"]) does not exist, please check name and directory."
-        return nothing
+        return
     end
     if haskey(material_parameter, "Number of State Variables")
         num_state_vars = material_parameter["Number of State Variables"]
@@ -76,7 +76,7 @@ function init_model(nodes::AbstractVector{Int64},
 
     if !haskey(material_parameter, "Number of Properties")
         @error "Number of Properties must be at least equal 1"
-        return nothing
+        return
     end
     # properties include the material properties, etc.
     num_props = material_parameter["Number of Properties"]
@@ -98,7 +98,6 @@ function init_model(nodes::AbstractVector{Int64},
     end
     if length(material_parameter["VUMAT Material Name"]) > 80
         @error "Due to old Fortran standards only a name length of 80 is supported"
-        return nothing
     end
 
     if !haskey(material_parameter, "VUMAT name")

@@ -5,11 +5,10 @@
 using Test
 
 @testset "contact_initialize_data" begin
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
+    PeriLab.Data_Manager.initialize_data()
     params = Dict()
     PeriLab.Solver_Manager.Model_Factory.Contact.Penalty_Model.init_contact_model(params)
     @test params["Contact Stiffness"] == 1e8
     params["Friction Coefficient"] = -3
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Contact.Penalty_Model.init_contact_model(params))
+    @test_logs (:error, "The Friction Coefficient must be greater or equal zero.") PeriLab.Solver_Manager.Model_Factory.Contact.Penalty_Model.init_contact_model(params)
 end

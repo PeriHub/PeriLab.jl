@@ -6,8 +6,8 @@ using Test
 using TimerOutputs
 
 using Exodus
-test_data_manager = PeriLab.Data_Manager
-test_data_manager.initialize_data()
+
+PeriLab.Data_Manager.initialize_data()
 @testset "ut_get_block_nodes" begin
     block_Id = [1, 1, 2, 2, 2, 3, 3, 3, 1, 3, 3, 4]
     test = PeriLab.IO.get_block_nodes(block_Id, 1)
@@ -32,7 +32,8 @@ end
         @test PeriLab.IO.get_paraview_coordinates(2, i) == "y"
         @test PeriLab.IO.get_paraview_coordinates(3, i) == "z"
     end
-    @test isnothing(PeriLab.IO.get_paraview_coordinates(3, 10))
+    @test_logs (:error, "not yet exportable as one variable") PeriLab.IO.get_paraview_coordinates(3,
+                                                                                                  10)
 
     for ref in 4:9
         for i in 1:3
@@ -48,7 +49,8 @@ if !isdir("tmp")
     mkdir("tmp")
 end
 
-topology = test_data_manager.create_constant_free_size_field("FE Topology", Int64, (2, 4))
+topology = PeriLab.Data_Manager.create_constant_free_size_field("FE Topology", Int64,
+                                                                (2, 4))
 topology[1, 1] = 1
 topology[1, 2] = 2
 topology[1, 3] = 3
@@ -93,9 +95,10 @@ filename = "./tmp/" * "test_2.e"
 filename2 = "./tmp/" * "test_22.e"
 nnodes = 5
 dof = 2
-test_data_manager.set_num_controller(nnodes)
-test_data_manager.set_dof(dof)
-coordinates = test_data_manager.create_constant_node_vector_field("Coordinates", Float64, 2)
+PeriLab.Data_Manager.set_num_controller(nnodes)
+PeriLab.Data_Manager.set_dof(dof)
+coordinates = PeriLab.Data_Manager.create_constant_node_vector_field("Coordinates", Float64,
+                                                                     2)
 coordinates[1, 1] = 0
 coordinates[1, 2] = 0
 coordinates[2, 1] = 1
@@ -106,17 +109,17 @@ coordinates[4, 1] = 1
 coordinates[4, 2] = 1
 coordinates[5, 1] = 2
 coordinates[5, 2] = 2
-test_data_manager.create_constant_node_scalar_field("Block_Id", Int64)
-block_Id = test_data_manager.get_field("Block_Id")
+PeriLab.Data_Manager.create_constant_node_scalar_field("Block_Id", Int64)
+block_Id = PeriLab.Data_Manager.get_field("Block_Id")
 block_Id .+= 1
 block_Id[end] = 2
-test_data_manager.create_constant_node_scalar_field("FEM", Bool; default_value = true)
-fem_block = test_data_manager.get_field("FEM")
+PeriLab.Data_Manager.create_constant_node_scalar_field("FEM", Bool; default_value = true)
+fem_block = PeriLab.Data_Manager.get_field("FEM")
 #outputs = ["Displacements", "Forces"]
-test_data_manager.set_nset("Nset_1", [1, 2])
-test_data_manager.set_nset("Nset_2", [5])
+PeriLab.Data_Manager.set_nset("Nset_1", [1, 2])
+PeriLab.Data_Manager.set_nset("Nset_2", [5])
 
-nsets = test_data_manager.get_nsets()
+nsets = PeriLab.Data_Manager.get_nsets()
 coords = vcat(transpose(coordinates))
 outputs = Dict("Fields" => Dict("Forcesxx" => Dict("fieldname" => "Forces",
                                                    "time" => "NP1",
@@ -250,10 +253,10 @@ result_files[1]["file"] = PeriLab.IO.write_step_and_time(result_files[1]["file"]
     @test read_name(exo["file"], Block, 2) == "Block_2"
 end
 
-test_data_manager.create_node_vector_field("Forces", Float64, 6)
-test_data_manager.create_node_scalar_field("Displacements", Float64)
-force = test_data_manager.get_field("Forces", "NP1")
-disp = test_data_manager.get_field("Displacements", "NP1")
+PeriLab.Data_Manager.create_node_vector_field("Forces", Float64, 6)
+PeriLab.Data_Manager.create_node_scalar_field("Displacements", Float64)
+force = PeriLab.Data_Manager.get_field("Forces", "NP1")
+disp = PeriLab.Data_Manager.get_field("Displacements", "NP1")
 force[5, 1:6] .= 3.3
 force[1:3, 6] .= 2.3
 disp[1] = 3

@@ -126,7 +126,7 @@ function init_contact_model(params)
         if isnothing(mod)
             @error "No contact model of type " * contact_params["Type"] *
                    " exists."
-            return nothing
+            return
         end
         Data_Manager.set_model_module(contact_params["Type"], mod)
         mod.init_contact_model(contact_params)
@@ -403,42 +403,41 @@ function check_valid_contact_model(params, block_ids::Vector{Int64})
         for contact_groups in values(params[contact_model]["Contact Groups"])
             if !haskey(contact_groups, "Master Block ID")
                 @error "Contact model needs a ''Master''"
-                return false
+                return
             end
             if !haskey(contact_groups, "Slave Block ID")
                 @error "Contact model needs a ''Slave''"
-                return false
+                return
             end
             if contact_groups["Master Block ID"] == contact_groups["Slave Block ID"]
                 @error "Contact master and slave are equal. Self contact is not implemented yet."
-                return false
+                return
             end
 
             if !(contact_groups["Master Block ID"] in block_ids)
                 @error "Block defintion in master does not exist."
-                return false
+                return
             end
             if !(contact_groups["Slave Block ID"] in block_ids)
                 @error "Block defintion in slave does not exist."
-                return false
+                return
             end
             check_dict[contact_groups["Master Block ID"]] = contact_groups["Slave Block ID"]
             if haskey(check_dict, contact_groups["Slave Block ID"]) &&
                check_dict[contact_groups["Slave Block ID"]] ==
                contact_groups["Master Block ID"]
                 @error "Master and Slave should be defined in an inverse way, e.g. Master = 1, Slave = 2 in model 1 and Master = 2, Slave = 1 in model 2."
-                return false
+                return
             end
             if !haskey(contact_groups, "Search Radius")
                 @error "Contact model needs a ''Search Radius''."
-                return false
+                return
             end
             if contact_groups["Search Radius"] <= 0
                 @error "''Search Radius'' must be greater than zero."
-                return false
+                return
             end
         end
     end
-    return true
 end
 end

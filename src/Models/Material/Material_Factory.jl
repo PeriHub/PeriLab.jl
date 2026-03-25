@@ -87,7 +87,7 @@ function init_model(nodes::AbstractVector{Int64}, block::Int64)
     model_param = Data_Manager.get_properties(block, "Material Model")::Dict{String,Any}
     if !haskey(model_param, "Material Model")
         @error "Block " * string(block) * " has no material model defined."
-        return nothing
+        return
     end
 
     if occursin("Correspondence", model_param["Material Model"])
@@ -106,6 +106,7 @@ function init_model(nodes::AbstractVector{Int64}, block::Int64)
         Data_Manager.set_analysis_model("Material Model", block, material_model)
         if isnothing(mod)
             @error "No material of name " * material_model * " exists."
+            return
         end
         Data_Manager.set_model_module(material_model, mod)
         mod.init_model(nodes, model_param)
@@ -200,18 +201,15 @@ function determine_isotropic_parameter(prop::Dict)
 end
 
 """
-    check_material_symmetry(dof::Int64, prop::Dict)
+    check_material_symmetry(block::Int64)
 
 Check the symmetry of the material.
 
 # Arguments
-- `dof::Int64`: The degree of freedom.
-- `prop::Dict`: The material property.
-# Returns
-- `prop::Dict`: The material property.
+- `block::Int64`: The block id.
 """
-function check_material_symmetry(dof::Int64, prop::Dict)
-    return check_symmetry(prop, dof)
+function check_material_symmetry(block::Int64)
+    return check_symmetry(block)
 end
 
 """

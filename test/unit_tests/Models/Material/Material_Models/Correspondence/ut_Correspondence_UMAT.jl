@@ -12,11 +12,11 @@ using LinearAlgebra
 end
 @testset "init exceptions" begin
     nodes = 2
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
-    test_data_manager.set_num_controller(nodes)
+
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(nodes)
     dof = 3
-    test_data_manager.set_dof(dof)
+    PeriLab.Data_Manager.set_dof(dof)
     file = "./src/Models/Material/UMATs/libperuser.so"
     if !isfile(file)
         file = "../src/Models/Material/UMATs/libperuser.so"
@@ -30,26 +30,29 @@ end
                                                                                                                            "Property_2" => 2,
                                                                                                                            "Property_3" => 2.4,
                                                                                                                            "Property_4" => 2)))
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
-                                                                                                                Dict{String,
-                                                                                                                     Any}("File" => file *
-                                                                                                                                    "_not_there")))
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
-                                                                                                                Dict{String,
-                                                                                                                     Any}("File" => file)))
+    @test_logs (:error,
+                "File /localdata/hess_ja/PeriLab.jl/test/../src/Models/Material/UMATs/libperuser.so_not_there does not exist, please check name and directory.") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                                                                                                                                                                             Dict{String,
+                                                                                                                                                                                                                                                                  Any}("File" => file *
+                                                                                                                                                                                                                                                                                 "_not_there",
+                                                                                                                                                                                                                                                                       "Number of Properties" => 3))
+    @test_logs (:error, "Number of Properties must be at least equal 1") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                                                                                     Dict{String,
+                                                                                                                                                                          Any}("File" => file))
 
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
-                                                                                                                Dict{String,
-                                                                                                                     Any}()))
+    @test_logs (:error, "UMAT file is not defined.") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                                                                 Dict{String,
+                                                                                                                                                      Any}())
 
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
-                                                                                                                Dict{String,
-                                                                                                                     Any}("File" => file,
-                                                                                                                          "Number of Properties" => 3,
-                                                                                                                          "Property_1" => 2,
-                                                                                                                          "Property_2" => 2.4,
-                                                                                                                          "Property_3" => 2.4,
-                                                                                                                          "UMAT Material Name" => "a"^81)))
+    @test_logs (:error,
+                "Due to old Fortran standards only a name length of 80 is supported") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                                                                                                  Dict{String,
+                                                                                                                                                                                       Any}("File" => file,
+                                                                                                                                                                                            "Number of Properties" => 3,
+                                                                                                                                                                                            "Property_1" => 2,
+                                                                                                                                                                                            "Property_2" => 2.4,
+                                                                                                                                                                                            "Property_3" => 2.4,
+                                                                                                                                                                                            "UMAT Material Name" => "a"^81))
     @test !isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
                                                                                                                  Dict{String,
                                                                                                                       Any}("File" => file,
@@ -59,24 +62,25 @@ end
                                                                                                                            "Property_3" => 2.4,
                                                                                                                            "UMAT Material Name" => "a"^80)))
 
-    properties = test_data_manager.get_field("Properties")
+    properties = PeriLab.Data_Manager.get_field("Properties")
     @test length(properties) == 3
     @test properties[1] == 2
     @test properties[2] == 2
     @test properties[3] == 2.4
 
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
-                                                                                                                Dict{String,
-                                                                                                                     Any}("File" => file,
-                                                                                                                          "Number of Properties" => 3,
-                                                                                                                          "Property_1" => 2,
-                                                                                                                          "Property_2" => 2,
-                                                                                                                          "Property_3" => 2.4,
-                                                                                                                          "Predefined Field Names" => "test_field_2 test_field_3")))
+    @test_logs (:error,
+                "Predefined field ''test_field_2'' is not defined in the mesh file.") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                                                                                                  Dict{String,
+                                                                                                                                                                                       Any}("File" => file,
+                                                                                                                                                                                            "Number of Properties" => 3,
+                                                                                                                                                                                            "Property_1" => 2,
+                                                                                                                                                                                            "Property_2" => 2,
+                                                                                                                                                                                            "Property_3" => 2.4,
+                                                                                                                                                                                            "Predefined Field Names" => "test_field_2 test_field_3"))
 
-    test_1 = test_data_manager.create_constant_node_scalar_field("test_field_2", Float64)
+    test_1 = PeriLab.Data_Manager.create_constant_node_scalar_field("test_field_2", Float64)
     test_1[1] = 7.3
-    test_2 = test_data_manager.create_constant_node_scalar_field("test_field_3", Float64)
+    test_2 = PeriLab.Data_Manager.create_constant_node_scalar_field("test_field_3", Float64)
     test_2 .= 3
     mat_dict = Dict{String,Any}("File" => file,
                                 "UMAT name" => "test_sub",
@@ -87,8 +91,8 @@ end
                                 "Predefined Field Names" => "test_field_2 test_field_3")
     PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
                                                                                                 mat_dict)
-    fields = test_data_manager.get_field("Predefined Fields")
-    inc = test_data_manager.get_field("Predefined Fields Increment")
+    fields = PeriLab.Data_Manager.get_field("Predefined Fields")
+    inc = PeriLab.Data_Manager.get_field("Predefined Fields Increment")
     @test size(fields) == (2, 2)
     @test size(inc) == (2, 2)
     @test fields[1, 1] == test_1[1]
@@ -117,7 +121,7 @@ end
 @testset "UMAT_interface Tests" begin
 
     # Example test case (you should define your own)
-    test_data_manager = PeriLab.Data_Manager
+
     file = "./src/Models/Material/UMATs/libusertest.so"
     if !isfile(file)
         file = "../src/Models/Material/UMATs/libusertest.so"
@@ -146,9 +150,10 @@ end
     NTENS::Int64 = 6
     NSTATEV::Int64 = length(STATEV)
     NPROPS::Int64 = 1
-    PROPS::Matrix{Float64} = test_data_manager.create_constant_free_size_field("Properties",
-                                                                               Float64,
-                                                                               (NPROPS, 1))
+    PROPS::Matrix{Float64} = PeriLab.Data_Manager.create_constant_free_size_field("Properties",
+                                                                                  Float64,
+                                                                                  (NPROPS,
+                                                                                   1))
     COORDS::Vector{Float64} = zeros(Float64, 3)  # Adjust as needed
     DROT::Matrix{Float64} = Matrix{Float64}(I, 3, 3)  # Adjust as needed
     PNEWDT::Float64 = 0.1

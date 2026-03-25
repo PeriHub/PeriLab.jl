@@ -51,7 +51,7 @@ function init_model(nodes::AbstractVector{Int64},
 
     if !haskey(material_parameter, "Yield Stress")
         @error "Yield Stress is not defined in input deck"
-        return nothing
+        return
     end
     yield_stress = material_parameter["Yield Stress"]
     yield = Data_Manager.create_constant_node_scalar_field("Yield Value", Float64)

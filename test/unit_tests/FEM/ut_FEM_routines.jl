@@ -6,17 +6,16 @@
 using Test
 
 @testset "ut_jacobi" begin
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
+    PeriLab.Data_Manager.initialize_data()
     dof = 2
     nelements = 1
-    test_data_manager.set_dof(dof)
-    test_data_manager.set_num_elements(nelements)
-    test_data_manager.set_num_controller(4)
-    test_data_manager.create_node_vector_field("Force Densities", Float64, dof)
+    PeriLab.Data_Manager.set_dof(dof)
+    PeriLab.Data_Manager.set_num_elements(nelements)
+    PeriLab.Data_Manager.set_num_controller(4)
+    PeriLab.Data_Manager.create_node_vector_field("Force Densities", Float64, dof)
 
-    coordinates = test_data_manager.create_constant_node_vector_field("Coordinates",
-                                                                      Float64, dof)
+    coordinates = PeriLab.Data_Manager.create_constant_node_vector_field("Coordinates",
+                                                                         Float64, dof)
     params = Dict{String,Any}("FEM" => Dict("FE_1" => Dict("Degree" => 1,
                                                            "Element Type" => "Lagrange",
                                                            "Material Model" => "Elastic Model")),
@@ -26,8 +25,8 @@ using Test
                                                                                 "Poisson's Ratio" => 0.33,
                                                                                 "Shear Modulus" => 2.0e3)))
 
-    topology = test_data_manager.create_constant_free_size_field("FE Topology", Int64,
-                                                                 (2, 4))
+    topology = PeriLab.Data_Manager.create_constant_free_size_field("FE Topology", Int64,
+                                                                    (2, 4))
     topology[1, 1] = 1
     topology[1, 2] = 2
     topology[1, 3] = 3
@@ -37,37 +36,37 @@ using Test
                                                                    dof)
     num_int = PeriLab.Solver_Manager.FEM.FEM_Basis.get_number_of_integration_points(p, dof)
 
-    N = test_data_manager.create_constant_free_size_field("N Matrix",
-                                                          Float64,
-                                                          (prod(num_int),
-                                                           prod(p .+ 1) * dof, dof))
-    B = test_data_manager.create_constant_free_size_field("B Matrix",
-                                                          Float64,
-                                                          (prod(num_int),
-                                                           prod(p .+ 1) * dof, 3 * dof - 3))
+    N = PeriLab.Data_Manager.create_constant_free_size_field("N Matrix",
+                                                             Float64,
+                                                             (prod(num_int),
+                                                              prod(p .+ 1) * dof, dof))
+    B = PeriLab.Data_Manager.create_constant_free_size_field("B Matrix",
+                                                             Float64,
+                                                             (prod(num_int),
+                                                              prod(p .+ 1) * dof,
+                                                              3 * dof - 3))
 
     N,
     B = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof, p,
                                                                      PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices)
 
-    jacobian = test_data_manager.create_constant_free_size_field("Element Jacobi Matrix",
-                                                                 Float64,
-                                                                 (nelements, prod(num_int),
-                                                                  dof, dof))
-    determinant_jacobian = test_data_manager.create_constant_free_size_field("Element Jacobi Determinant",
-                                                                             Float64,
-                                                                             (nelements,
-                                                                              prod(num_int)))
-    test_jacobian,
-    test_determinant_jacobian = PeriLab.Solver_Manager.FEM.FEM_Basis.get_Jacobian(elements,
-                                                                                  dof,
-                                                                                  topology,
-                                                                                  coordinates,
-                                                                                  B,
-                                                                                  jacobian,
-                                                                                  determinant_jacobian)
-    @test isnothing(test_jacobian)
-    @test isnothing(test_determinant_jacobian)
+    jacobian = PeriLab.Data_Manager.create_constant_free_size_field("Element Jacobi Matrix",
+                                                                    Float64,
+                                                                    (nelements,
+                                                                     prod(num_int),
+                                                                     dof, dof))
+    determinant_jacobian = PeriLab.Data_Manager.create_constant_free_size_field("Element Jacobi Determinant",
+                                                                                Float64,
+                                                                                (nelements,
+                                                                                 prod(num_int)))
+    @test_logs (:error,
+                "The determinant of the Jacobian is 0.0 in local element 1, and must be greater zero.") PeriLab.Solver_Manager.FEM.FEM_Basis.get_Jacobian(elements,
+                                                                                                                                                          dof,
+                                                                                                                                                          topology,
+                                                                                                                                                          coordinates,
+                                                                                                                                                          B,
+                                                                                                                                                          jacobian,
+                                                                                                                                                          determinant_jacobian)
     coordinates[1, 1] = 0
     coordinates[1, 2] = 0
     coordinates[2, 1] = 1
@@ -167,15 +166,14 @@ using Test
 end
 
 @testset "ut_lumped_mass" begin
-    test_data_manager = PeriLab.Data_Manager
     dof = 2
     nelements = 1
-    test_data_manager.set_dof(dof)
-    test_data_manager.set_num_elements(nelements)
-    test_data_manager.set_num_controller(4)
+    PeriLab.Data_Manager.set_dof(dof)
+    PeriLab.Data_Manager.set_num_elements(nelements)
+    PeriLab.Data_Manager.set_num_controller(4)
 
-    coordinates = test_data_manager.create_constant_node_vector_field("Coordinates",
-                                                                      Float64, dof)
+    coordinates = PeriLab.Data_Manager.create_constant_node_vector_field("Coordinates",
+                                                                         Float64, dof)
     params = Dict{String,Any}("FEM" => Dict("FE_1" => Dict("Degree" => 1,
                                                            "Element Type" => "Lagrange",
                                                            "Material Model" => "Elastic Model")),
@@ -185,8 +183,8 @@ end
                                                                                 "Poisson's Ratio" => 0.33,
                                                                                 "Shear Modulus" => 2.0e3)))
 
-    topology = test_data_manager.create_constant_free_size_field("FE Topology", Int64,
-                                                                 (2, 4))
+    topology = PeriLab.Data_Manager.create_constant_free_size_field("FE Topology", Int64,
+                                                                    (2, 4))
     topology[1, 1] = 1
     topology[1, 2] = 2
     topology[1, 3] = 3
@@ -196,20 +194,21 @@ end
                                                                    dof)
     num_int = PeriLab.Solver_Manager.FEM.FEM_Basis.get_number_of_integration_points(p, dof)
 
-    N = test_data_manager.create_constant_free_size_field("N Matrix",
-                                                          Float64,
-                                                          (prod(num_int),
-                                                           prod(p .+ 1) * dof, dof))
-    B = test_data_manager.create_constant_free_size_field("B Matrix",
-                                                          Float64,
-                                                          (prod(num_int),
-                                                           prod(p .+ 1) * dof, 3 * dof - 3))
+    N = PeriLab.Data_Manager.create_constant_free_size_field("N Matrix",
+                                                             Float64,
+                                                             (prod(num_int),
+                                                              prod(p .+ 1) * dof, dof))
+    B = PeriLab.Data_Manager.create_constant_free_size_field("B Matrix",
+                                                             Float64,
+                                                             (prod(num_int),
+                                                              prod(p .+ 1) * dof,
+                                                              3 * dof - 3))
 
     N[:],
     B[:] = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof, p,
                                                                         PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices)
-    lumped_mass = test_data_manager.create_constant_node_scalar_field("Lumped Mass Matrix",
-                                                                      Float64)
+    lumped_mass = PeriLab.Data_Manager.create_constant_node_scalar_field("Lumped Mass Matrix",
+                                                                         Float64)
 
     matrix = zeros(3, 3)
     nu = 0.3
@@ -333,14 +332,15 @@ end
     coordinates[3, 2] = 1
     coordinates[4, 1] = 1
     coordinates[4, 2] = 1
-    jacobian = test_data_manager.create_constant_free_size_field("Element Jacobi Matrix",
-                                                                 Float64,
-                                                                 (nelements, prod(num_int),
-                                                                  dof, dof))
-    determinant_jacobian = test_data_manager.create_constant_free_size_field("Element Jacobi Determinant",
-                                                                             Float64,
-                                                                             (nelements,
-                                                                              prod(num_int)))
+    jacobian = PeriLab.Data_Manager.create_constant_free_size_field("Element Jacobi Matrix",
+                                                                    Float64,
+                                                                    (nelements,
+                                                                     prod(num_int),
+                                                                     dof, dof))
+    determinant_jacobian = PeriLab.Data_Manager.create_constant_free_size_field("Element Jacobi Determinant",
+                                                                                Float64,
+                                                                                (nelements,
+                                                                                 prod(num_int)))
     jacobian,
     determinant_jacobian = PeriLab.Solver_Manager.FEM.FEM_Basis.get_Jacobian(elements,
                                                                              dof,
@@ -349,8 +349,8 @@ end
                                                                              B,
                                                                              jacobian,
                                                                              determinant_jacobian)
-    N = test_data_manager.get_field("N Matrix")
-    rho = test_data_manager.create_constant_node_scalar_field("Density", Float64)
+    N = PeriLab.Data_Manager.get_field("N Matrix")
+    rho = PeriLab.Data_Manager.create_constant_node_scalar_field("Density", Float64)
 
     rho[:] .= 1.0
     lumped_mass = PeriLab.Solver_Manager.FEM.FEM_Basis.get_lumped_mass(elements, dof,
@@ -393,8 +393,9 @@ end
                                                                                   "Bulk Modulus" => 2.5e+3,
                                                                                   "Shear Modulus" => 1.15e3)))
 
-    @test isnothing(PeriLab.Solver_Manager.FEM.FEM_Basis.get_FE_material_model(params,
-                                                                               "FE_1"))
+    @test_logs (:error,
+                "Material model Elastic Model defined in FEM are not defined as material") PeriLab.Solver_Manager.FEM.FEM_Basis.get_FE_material_model(params,
+                                                                                                                                                      "FE_1")
 
     params = Dict{String,Any}("FEM" => Dict("FE_1" => Dict("Degree" => 1,
                                                            "Element Type" => "Lagrange",
@@ -412,15 +413,15 @@ end
 end
 
 @testset "ut_get_polynomial_degree" begin
-    @test isnothing(PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(Dict{String,
-                                                                                    Any}(),
-                                                                               1))
-    @test isnothing(PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(Dict{String,
-                                                                                    Any}(),
-                                                                               2))
-    @test isnothing(PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(Dict{String,
-                                                                                    Any}(),
-                                                                               3))
+    @test_logs (:error, "No element degree defined") PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(Dict{String,
+                                                                                                                     Any}(),
+                                                                                                                1)
+    @test_logs (:error, "No element degree defined") PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(Dict{String,
+                                                                                                                     Any}(),
+                                                                                                                2)
+    @test_logs (:error, "No element degree defined") PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(Dict{String,
+                                                                                                                     Any}(),
+                                                                                                                3)
 
     params = Dict{String,Any}("Degree" => 1)
 
@@ -437,12 +438,14 @@ end
     @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 3) == [2, 2, 2]
 
     params = Dict{String,Any}("Degree" => [2 3 1])
-    @test isnothing(PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 2))
+    @test_logs (:error, "Degree must be defined with length one or number of dof.") PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params,
+                                                                                                                                               2)
     @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 3) == [2, 3, 1]
 
     params = Dict{String,Any}("Degree" => [2.1 2])
     @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 2) == [2, 2]
-    @test isnothing(PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 3))
+    @test_logs (:error, "Degree must be defined with length one or number of dof.") PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params,
+                                                                                                                                               3)
     params = Dict{String,Any}("Degree" => "2")
     @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 3) == [2, 2, 2]
     params = Dict{String,Any}("Degree" => "2 2")
@@ -509,19 +512,19 @@ end
 end
 
 @testset "ut_get_multi_dimensional_integration_points" begin
-    @test isnothing(PeriLab.Solver_Manager.FEM.FEM_Basis.get_multi_dimensional_integration_point_data(1,
-                                                                                                      [1],
-                                                                                                      zeros(2,
-                                                                                                            2)))
-    @test isnothing(PeriLab.Solver_Manager.FEM.FEM_Basis.get_multi_dimensional_integration_point_data(4,
-                                                                                                      [
-                                                                                                          1,
-                                                                                                          1,
-                                                                                                          1,
-                                                                                                          1
-                                                                                                      ],
-                                                                                                      zeros(2,
-                                                                                                            2)))
+    @test_logs (:error, "degree of freedom = 1 is not supported, only 2 and 3.") PeriLab.Solver_Manager.FEM.FEM_Basis.get_multi_dimensional_integration_point_data(1,
+                                                                                                                                                                   [1],
+                                                                                                                                                                   zeros(2,
+                                                                                                                                                                         2))
+    @test_logs (:error, "degree of freedom = 4 is not supported, only 2 and 3.") PeriLab.Solver_Manager.FEM.FEM_Basis.get_multi_dimensional_integration_point_data(4,
+                                                                                                                                                                   [
+                                                                                                                                                                       1,
+                                                                                                                                                                       1,
+                                                                                                                                                                       1,
+                                                                                                                                                                       1
+                                                                                                                                                                   ],
+                                                                                                                                                                   zeros(2,
+                                                                                                                                                                         2))
     dof = 2
     num_int = 2
     weights,
@@ -676,24 +679,20 @@ end
     dof::Int64 = 1
     p::Vector{Int64} = [1, 1]
 
-    N,
-    B = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof, p,
-                                                                     PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices)
+    @test_logs (:error, "degree of freedom = 1 is not supported, only 2 and 3.") PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof,
+                                                                                                                                              p,
+                                                                                                                                              PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices)
 
-    @test isnothing(N)
-    @test isnothing(B)
     dof = 4
-    N,
-    B = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof,
-                                                                     Vector{Int64}([
-                                                                                       1,
-                                                                                       1,
-                                                                                       1,
-                                                                                       1
-                                                                                   ]),
-                                                                     PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices)
-    @test isnothing(N)
-    @test isnothing(B)
+    @test_logs (:error, "degree of freedom = 4 is not supported, only 2 and 3.") PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof,
+                                                                                                                                              Vector{Int64}([
+                                                                                                                                                                1,
+                                                                                                                                                                1,
+                                                                                                                                                                1,
+                                                                                                                                                                1
+                                                                                                                                                            ]),
+                                                                                                                                              PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices)
+
     dof = 2
     N,
     B = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof, p,

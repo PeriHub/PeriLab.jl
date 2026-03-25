@@ -26,6 +26,7 @@ Initialize additive model fields
 function init_fields()
     if !Data_Manager.has_key("Activation_Time")
         @error "'Activation_Time' is missing. Please define an 'Activation_Time' for each point in the mesh file."
+        return
     end
     # must be specified, because it might be that no temperature model has been defined
     Data_Manager.create_node_scalar_field("Temperature", Float64)
@@ -90,7 +91,7 @@ function init_model(nodes::AbstractVector{Int64},
                                   "additive_name")
     if isnothing(mod)
         @error "No additive model of name " * model_param["Additive Model"] * " exists."
-        return nothing
+        return
     end
     Data_Manager.set_model_module(model_param["Additive Model"], mod)
     mod.init_model(nodes, model_param, block)

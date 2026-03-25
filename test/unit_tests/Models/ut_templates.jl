@@ -17,9 +17,8 @@ include("../../../src/Models/Pre_calculation/Pre_calculation_template/pre_calcul
 using Test
 #using PeriLab
 
-test_data_manager = PeriLab.Data_Manager
-test_data_manager.initialize_data()
-test_data_manager.set_num_controller(3)
+PeriLab.Data_Manager.initialize_data()
+PeriLab.Data_Manager.set_num_controller(3)
 
 @testset "ut_additive_template" begin
     @test Additive_template.additive_name() == "Additive Template"
@@ -29,9 +28,9 @@ test_data_manager.set_num_controller(3)
                                     0.0,
                                     0.0)
     @test Additive_template.init_model(Vector{Int64}(1:3), Dict(), 1) ==
-          test_data_manager
+          PeriLab.Data_Manager
     @test Additive_template.fields_for_local_synchronization("") ==
-          test_data_manager
+          PeriLab.Data_Manager
 end
 
 @testset "ut_contact_template" begin
@@ -43,7 +42,7 @@ end
                                    0.0)
     @test Contact_template.init_contact_model(Vector{Int64}(1:3), Dict(),
                                               1) ==
-          test_data_manager
+          PeriLab.Data_Manager
 end
 
 @testset "ut_degradation_template" begin
@@ -55,9 +54,9 @@ end
                                        0.0)
     @test Degradation_template.init_model(Vector{Int64}(1:3), Dict(),
                                           1) ==
-          test_data_manager
+          PeriLab.Data_Manager
     @test Degradation_template.fields_for_local_synchronization("") ==
-          test_data_manager
+          PeriLab.Data_Manager
 end
 
 @testset "ut_damage_template" begin
@@ -69,9 +68,9 @@ end
                                   0.0)
 
     @test Damage_template.init_model(Vector{Int64}(1:3), Dict(), 1) ==
-          test_data_manager
+          PeriLab.Data_Manager
     @test Damage_template.fields_for_local_synchronization("") ==
-          test_data_manager
+          PeriLab.Data_Manager
 end
 
 @testset "ut_FEM_template" begin
@@ -81,22 +80,21 @@ end
                                  0.0,
                                  0.0)
     @test FEM_template.init_element(Vector{Int64}(1:3), Dict(), [1]) ==
-          test_data_manager
+          PeriLab.Data_Manager
 end
 
 @testset "ut_material_template" begin
-    test_data_manager = PeriLab.Data_Manager
     @test !(Material_template.fe_support())
     @test Material_template.material_name() == "Material Template"
     @test Material_template.init_model(Vector{Int64}(1:3), Dict()) ==
-          test_data_manager
+          PeriLab.Data_Manager
     Material_template.compute_model(Vector{Int64}(1:3),
                                     Dict(),
                                     1,
                                     0.0,
                                     0.0)
     @test Material_template.fields_for_local_synchronization("") ==
-          test_data_manager
+          PeriLab.Data_Manager
 end
 
 @testset "ut_thermal_template" begin
@@ -107,11 +105,10 @@ end
                                    0.0,
                                    0.0)
     @test Thermal_template.init_model(Vector{Int64}(1:3), Dict()) ==
-          test_data_manager
+          PeriLab.Data_Manager
 end
 
 @testset "ut_correspondence_template" begin
-    test_data_manager = PeriLab.Data_Manager
     @test !(Correspondence_template.fe_support())
     @test Correspondence_template.correspondence_name() == "Correspondence Template"
 

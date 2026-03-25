@@ -6,13 +6,12 @@
 using Test
 
 @testset "ut_get_block_model_definition" begin
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
+    PeriLab.Data_Manager.initialize_data()
     block_list = ["block_1", "block_2", "block_3"]
-    test_data_manager.set_block_name_list(block_list)
+    PeriLab.Data_Manager.set_block_name_list(block_list)
     block_id_list = [1, 2, 3]
-    test_data_manager.set_block_id_list(block_id_list)
-    prop_keys = test_data_manager.init_properties()
+    PeriLab.Data_Manager.set_block_id_list(block_id_list)
+    prop_keys = PeriLab.Data_Manager.init_properties()
     params = Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
                                                      "Material Model" => "a"),
                                    "block_2" => Dict("Block ID" => 2,
@@ -37,25 +36,25 @@ using Test
                                                                     block_list,
                                                                     block_id_list,
                                                                     prop_keys,
-                                                                    test_data_manager.set_properties)
+                                                                    PeriLab.Data_Manager.set_properties)
 
-    @test test_data_manager.get_property(1, "Material Model", "value") ==
+    @test PeriLab.Data_Manager.get_property(1, "Material Model", "value") ==
           params["Models"]["Material Models"]["a"]["value"]
-    @test test_data_manager.get_property(2, "Material Model", "value") ==
+    @test PeriLab.Data_Manager.get_property(2, "Material Model", "value") ==
           params["Models"]["Material Models"]["c"]["value"]
-    @test test_data_manager.get_property(2, "Material Model", "value2") ==
+    @test PeriLab.Data_Manager.get_property(2, "Material Model", "value2") ==
           params["Models"]["Material Models"]["c"]["value2"]
-    @test test_data_manager.get_property(3, "Material Model", "value") ==
+    @test PeriLab.Data_Manager.get_property(3, "Material Model", "value") ==
           params["Models"]["Material Models"]["a"]["value"]
-    @test test_data_manager.get_property(3, "Damage Model", "value") ==
+    @test PeriLab.Data_Manager.get_property(3, "Damage Model", "value") ==
           params["Models"]["Damage Models"]["a"]["value"]
-    @test test_data_manager.get_property(3, "Thermal Model", "value") ==
+    @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "value") ==
           params["Models"]["Thermal Models"]["therm"]["value"]
-    @test test_data_manager.get_property(3, "Thermal Model", "bool") ==
+    @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "bool") ==
           params["Models"]["Thermal Models"]["therm"]["bool"]
-    @test test_data_manager.get_property(3, "Additive Model", "value") ==
+    @test PeriLab.Data_Manager.get_property(3, "Additive Model", "value") ==
           params["Models"]["Additive Models"]["add"]["value"]
-    @test test_data_manager.get_property(3, "Additive Model", "bool") ==
+    @test PeriLab.Data_Manager.get_property(3, "Additive Model", "bool") ==
           params["Models"]["Additive Models"]["add"]["bool"]
 end
 
@@ -63,28 +62,28 @@ end
 
 nnodes = 5
 dof = 2
-test_data_manager = PeriLab.Data_Manager
-test_data_manager.initialize_data()
-test_data_manager.set_num_controller(5)
-test_data_manager.set_dof(2)
-blocks = test_data_manager.create_constant_node_scalar_field("Block_Id", Int64)
-horizon = test_data_manager.create_constant_node_scalar_field("Horizon", Float64)
-coor = test_data_manager.create_constant_node_vector_field("Coordinates", Float64, 2)
-density = test_data_manager.create_constant_node_scalar_field("Density", Float64)
-volume = test_data_manager.create_constant_node_scalar_field("Volume", Float64)
-length_nlist = test_data_manager.create_constant_node_scalar_field("Number of Neighbors",
-                                                                   Int64)
+
+PeriLab.Data_Manager.initialize_data()
+PeriLab.Data_Manager.set_num_controller(5)
+PeriLab.Data_Manager.set_dof(2)
+blocks = PeriLab.Data_Manager.create_constant_node_scalar_field("Block_Id", Int64)
+horizon = PeriLab.Data_Manager.create_constant_node_scalar_field("Horizon", Float64)
+coor = PeriLab.Data_Manager.create_constant_node_vector_field("Coordinates", Float64, 2)
+density = PeriLab.Data_Manager.create_constant_node_scalar_field("Density", Float64)
+volume = PeriLab.Data_Manager.create_constant_node_scalar_field("Volume", Float64)
+length_nlist = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                      Int64)
 length_nlist .= 4
 
-nlist = test_data_manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
-undeformed_bond = test_data_manager.create_constant_bond_vector_state("Bond Geometry",
-                                                                      Float64,
-                                                                      dof)
-undeformed_bond_length = test_data_manager.create_constant_bond_scalar_state("Bond Length",
-                                                                             Float64)
-heat_capacity = test_data_manager.create_constant_node_scalar_field("Specific Heat Capacity",
-                                                                    Float64;
-                                                                    default_value = 18000)
+nlist = PeriLab.Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
+undeformed_bond = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                         Float64,
+                                                                         dof)
+undeformed_bond_length = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length",
+                                                                                Float64)
+heat_capacity = PeriLab.Data_Manager.create_constant_node_scalar_field("Specific Heat Capacity",
+                                                                       Float64;
+                                                                       default_value = 18000)
 nlist[1] = [2, 3, 4, 5]
 nlist[2] = [1, 3, 4, 5]
 nlist[3] = [1, 2, 4, 5]
@@ -113,7 +112,7 @@ PeriLab.Geometry.bond_geometry!(undeformed_bond,
                                 coor)
 
 blocks = ["1", "2"]
-blocks = test_data_manager.set_block_name_list(blocks)
+blocks = PeriLab.Data_Manager.set_block_name_list(blocks)
 @testset "ut_mechanical_critical_time_step" begin
     t = PeriLab.Solver_Manager.Model_Factory.compute_mechanical_critical_time_step(Vector{Int64}(1:nnodes),
                                                                                    Float64(140.0))
@@ -127,10 +126,9 @@ end
 end
 
 @testset "ut_read_properties" begin
-    test_data_manager_read_properties = PeriLab.Data_Manager
     block_list = ["block_1", "block_2", "block_3"]
-    test_data_manager_read_properties.set_block_name_list(block_list)
-    test_data_manager_read_properties.set_block_id_list([1, 2, 3])
+    PeriLab.Data_Manager.set_block_name_list(block_list)
+    PeriLab.Data_Manager.set_block_id_list([1, 2, 3])
 
     params = Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
                                                      "Material Model" => "a"),
@@ -142,11 +140,17 @@ end
                                                      "Thermal Model" => "therm")),
                   "Models" => Dict("Material Models" => Dict("a" => Dict("value" => 1,
                                                                          "name" => "t4",
-                                                                         "Material Model" => "Test"),
+                                                                         "Material Model" => "Test",
+                                                                         "Symmetry" => "plane stress",
+                                                                         "Young's Modulus" => 1.5,
+                                                                         "Poisson's Ratio" => 0.3),
                                                              "c" => Dict("value" => [1 2],
                                                                          "value2" => 1,
                                                                          "name" => "t4",
-                                                                         "Material Model" => "Test")),
+                                                                         "Material Model" => "Test",
+                                                                         "Symmetry" => "plane stress",
+                                                                         "Young's Modulus" => 1.5,
+                                                                         "Poisson's Ratio" => 0.3)),
                                    "Damage Models" => Dict("a" => Dict("value" => 3,
                                                                        "name" => "t"),
                                                            "c" => Dict("value" => [1 2],
@@ -157,36 +161,35 @@ end
                                                                             "name" => "t3"))))
     PeriLab.Solver_Manager.Model_Factory.read_properties(params, false)
 
-    @test isnothing(test_data_manager_read_properties.get_property(1, "Material Model",
-                                                                   "value"))
-    @test test_data_manager_read_properties.get_property(3, "Damage Model", "value") ==
+    @test isnothing(PeriLab.Data_Manager.get_property(1, "Material Model",
+                                                      "value"))
+    @test PeriLab.Data_Manager.get_property(3, "Damage Model", "value") ==
           params["Models"]["Damage Models"]["a"]["value"]
-    @test test_data_manager_read_properties.get_property(3, "Thermal Model", "value") ==
+    @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "value") ==
           params["Models"]["Thermal Models"]["therm"]["value"]
-    @test test_data_manager_read_properties.get_property(3, "Thermal Model", "bool") ==
+    @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "bool") ==
           params["Models"]["Thermal Models"]["therm"]["bool"]
 
     PeriLab.Solver_Manager.Model_Factory.read_properties(params, true)
-    @test test_data_manager_read_properties.get_property(1, "Material Model", "value") ==
+    @test PeriLab.Data_Manager.get_property(1, "Material Model", "value") ==
           params["Models"]["Material Models"]["a"]["value"]
-    @test test_data_manager_read_properties.get_property(2, "Material Model", "value") ==
+    @test PeriLab.Data_Manager.get_property(2, "Material Model", "value") ==
           params["Models"]["Material Models"]["c"]["value"]
-    @test test_data_manager_read_properties.get_property(2, "Material Model", "value2") ==
+    @test PeriLab.Data_Manager.get_property(2, "Material Model", "value2") ==
           params["Models"]["Material Models"]["c"]["value2"]
-    @test test_data_manager_read_properties.get_property(3, "Material Model", "value") ==
+    @test PeriLab.Data_Manager.get_property(3, "Material Model", "value") ==
           params["Models"]["Material Models"]["a"]["value"]
-    @test test_data_manager_read_properties.get_property(3, "Damage Model", "value") ==
+    @test PeriLab.Data_Manager.get_property(3, "Damage Model", "value") ==
           params["Models"]["Damage Models"]["a"]["value"]
-    @test test_data_manager_read_properties.get_property(3, "Thermal Model", "value") ==
+    @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "value") ==
           params["Models"]["Thermal Models"]["therm"]["value"]
-    @test test_data_manager_read_properties.get_property(3, "Thermal Model", "bool") ==
+    @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "bool") ==
           params["Models"]["Thermal Models"]["therm"]["bool"]
 end
 
 @testset "ut_add_model" begin
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.add_model("Test"))
+    PeriLab.Data_Manager.initialize_data()
+    @test_logs (:error, "Model Test is not specified and cannot be included.") PeriLab.Solver_Manager.Model_Factory.add_model("Test")
 end
 
 @testset "ut_test_timestep" begin

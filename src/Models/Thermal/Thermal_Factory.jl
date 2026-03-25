@@ -78,7 +78,7 @@ function init_model(nodes::AbstractVector{Int64},
                                                              "thermal_model_name")
         if isnothing(mod)
             @error "No thermal model of name " * thermal_model * " exists."
-            return nothing
+            return
         end
         Data_Manager.set_model_module(thermal_model, mod)
         mod.init_model(nodes, model_param)

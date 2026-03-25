@@ -62,7 +62,7 @@ function get_model_parameter(params::Dict,
                " is defined in blocks, but no " *
                model *
                "s definition block exists"
-        return nothing
+        return
     end
     if haskey(params["Models"][model * "s"], id)
         file_keys = find_data_files(params["Models"][model * "s"][id])
@@ -98,7 +98,6 @@ function get_model_parameter(params::Dict,
                " is defined in blocks, but missing in the " *
                model *
                "s definition."
-        return nothing
     end
 end
 function csv_reader_temporary(filename::String)

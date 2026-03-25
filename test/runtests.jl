@@ -8,7 +8,7 @@ using Aqua
 using Logging
 using MPI
 using PeriLab
-Logging.disable_logging(Logging.Error)
+Logging.disable_logging(Logging.Warn)
 
 Aqua.test_all(PeriLab, ambiguities = false, stale_deps = (ignore = [:ZipArchives, :JSON3],))
 
@@ -108,9 +108,6 @@ MPI.Init()
             @testset "ut_bond_filter" begin
                 include("unit_tests/IO/ut_bond_filter.jl")
             end
-            # @testset "ut_logging" begin
-            #     include("unit_tests/IO/ut_logging.jl")
-            # end
         end
         @testset "MPI" begin
             @testset "ut_MPI" begin
@@ -198,6 +195,9 @@ MPI.Init()
                     include("unit_tests/Models/Material/Material_Models/Ordinary/ut_PD_Solid_Plastic.jl")
                 end
             end
+        end
+        @testset "Logging" begin
+            include("unit_tests/IO/ut_logging.jl")
         end
     end
 
@@ -323,6 +323,7 @@ MPI.Init()
     end
 end
 
+Logging.disable_logging(Logging.Debug)
 MPI.Finalize()
 
 #cleanup

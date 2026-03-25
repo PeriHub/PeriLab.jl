@@ -380,7 +380,6 @@ function get_field_type(name::String, vartype::Bool = true)
         end
     end
     @error "Field ''" * name * "'' does not exist."
-    return nothing
 end
 
 """
@@ -771,7 +770,6 @@ Sets the accuracy order for the "bond associated correspondence" implementation.
 function set_accuracy_order(value::Int64)
     if value < 1
         @error "Accuracy order must be greater than zero."
-        return nothing
     end
     data["accuracy_order"] = value
 end
@@ -907,7 +905,6 @@ set_num_elements(10)  # sets the number of finite elements to 10
 function set_num_elements(n::Int64)
     if n < 0
         @error "Number of elements must be positive or zero."
-        return nothing
     end
     data["num_elements"] = n
 end

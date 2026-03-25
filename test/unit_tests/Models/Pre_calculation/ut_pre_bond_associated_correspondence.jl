@@ -89,33 +89,34 @@ using Test
 end
 
 @testset "ut_compute_weighted_volume!" begin
-    test_data_manager = PeriLab.Data_Manager
-    test_data_manager.initialize_data()
-    test_data_manager.set_num_controller(4)
-    test_data_manager.set_dof(3)
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(4)
+    PeriLab.Data_Manager.set_dof(3)
 
-    volume = test_data_manager.create_constant_node_scalar_field("Volume", Float64)
+    volume = PeriLab.Data_Manager.create_constant_node_scalar_field("Volume", Float64)
     volume[:] = [1.0, 2.0, 3.0, 4.0]
 
-    nn = test_data_manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+    nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                Int64)
     nn[1] = 3
     nn[2:4] .= 1
     nodes = [1]
 
-    nlist = test_data_manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
+    nlist = PeriLab.Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist",
+                                                                   Int64)
     nlist[1] = [2, 3, 4]
     nlist[2] = [1]
     nlist[3] = [1]
     nlist[4] = [1]
 
-    bond_damage = test_data_manager.create_constant_bond_scalar_state("Bond Damage",
-                                                                      Float64)
+    bond_damage = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Damage",
+                                                                         Float64)
     bond_damage[1][:] .= 1
-    omega = test_data_manager.create_constant_bond_scalar_state("Influence Function",
-                                                                Float64)
+    omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
+                                                                   Float64)
     omega[1][:] = [1.0, 0.8, 0.6]
-    weighted_volume = test_data_manager.create_constant_node_scalar_field("Weighted Volume",
-                                                                          Float64)
+    weighted_volume = PeriLab.Data_Manager.create_constant_node_scalar_field("Weighted Volume",
+                                                                             Float64)
 
     PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.compute_weighted_volume!(weighted_volume,
                                                                                                                      nodes,

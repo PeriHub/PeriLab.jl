@@ -14,7 +14,8 @@ include("../../../../src/Core/Module_inclusion/set_Modules.jl")
     Random.seed!(rand(1:100000))
     base = "test_tmp_Set_modules"
 
-    @test isnothing(find_jl_files(base))
+    @test_logs (:error,
+                "test_tmp_Set_modules does not exists. Modules won't be loaded accurately.") find_jl_files(base)
 
     if isdir(base)
         rm(base, recursive = true)
@@ -65,7 +66,7 @@ end
     filename::AbstractString = "MockModule.jl"
 
     module_list::Vector{Any} = [Dict(("File" => filename,
-                                      "Module Name" => "MockModule")),
+                                      "Module Name" => "MockModule"))
     ]
 
     specifics = Dict("Name" => "get_name",

@@ -5,4 +5,5 @@
 folder_name = basename(@__FILE__)[1:(end - 3)]
 cd("fullscale_tests/" * folder_name) do
     run_perilab("3D_anisomat", 1, true, folder_name)
+    run_perilab("3D_transverse_iso", 1, true, folder_name)
 end
