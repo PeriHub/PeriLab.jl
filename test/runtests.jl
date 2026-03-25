@@ -10,13 +10,15 @@ using MPI
 using PeriLab
 Logging.disable_logging(Logging.Warn)
 
-Aqua.test_all(PeriLab, ambiguities = false, stale_deps = (ignore = [:ZipArchives, :JSON3],))
-
 include("helper.jl")
 
 MPI.Init()
 
 @testset ExtendedTestSet "PeriLab" begin
+    @testset "Aqua" begin
+        Aqua.test_all(PeriLab, ambiguities = false,
+                      stale_deps = (ignore = [:ZipArchives, :JSON3],))
+    end
     @testset "unit_tests" begin
         @testset "ut_perilab" begin
             include("unit_tests/ut_perilab.jl")
@@ -323,7 +325,6 @@ MPI.Init()
     end
 end
 
-Logging.disable_logging(Logging.Debug)
 MPI.Finalize()
 
 #cleanup

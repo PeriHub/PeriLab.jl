@@ -497,6 +497,66 @@ end
                                  "Compute_Hook" => true)
     @test C ==
           PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(parameter, symmetry, 3)
+
+    symmetry = "transverse isotropic"
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Young's Modulus X" => E,
+                                 "Young's Modulus Y" => E,
+                                 "Poisson's Ratio XY" => nu,
+                                 "Poisson's Ratio YZ" => nu,
+                                 "Shear Modulus XY" => G,
+                                 "Shear Modulus YZ" => G,
+                                 "Compute_Hook" => true)
+    C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(parameter, symmetry, 3)
+    @test C[1, 1] == 9423.076923076922
+    @test C[1, 2] == 4038.461538461538
+    @test C[1, 3] == 4038.461538461538
+    @test C[2, 1] == 4038.461538461538
+    @test C[2, 2] == 9423.076923076922
+    @test C[2, 3] == 4038.461538461538
+    @test C[3, 1] == 4038.461538461538
+    @test C[3, 2] == 4038.461538461538
+    @test C[3, 3] == 9423.076923076922
+    @test C[4, 4] == 5384.615384615385
+    @test C[5, 5] == 5384.615384615385
+    @test C[6, 6] == 5384.615384615385
+
+    symmetry = "transverse isotropic plane strain"
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Young's Modulus X" => E,
+                                 "Young's Modulus Y" => E,
+                                 "Poisson's Ratio XY" => nu,
+                                 "Poisson's Ratio YZ" => nu,
+                                 "Shear Modulus XY" => G,
+                                 "Compute_Hook" => true)
+    C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(parameter, symmetry, 2)
+    @test C[1, 1] == 9423.076923076922
+    @test C[1, 2] == 4038.461538461538
+    @test C[1, 3] == 0.0
+    @test C[2, 1] == 4038.461538461538
+    @test C[2, 2] == 9423.076923076922
+    @test C[2, 3] == 0.0
+    @test C[3, 1] == 0.0
+    @test C[3, 2] == 0.0
+    @test C[3, 3] == 5384.615384615385
+
+    symmetry = "transverse isotropic plane stress"
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Young's Modulus X" => E,
+                                 "Young's Modulus Y" => E,
+                                 "Poisson's Ratio XY" => nu,
+                                 "Shear Modulus XY" => G,
+                                 "Compute_Hook" => true)
+    C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(parameter, symmetry, 2)
+    @test C[1, 1] == 7692.307692307692
+    @test C[1, 2] == 2307.6923076923076
+    @test C[1, 3] == 0.0
+    @test C[2, 1] == 2307.6923076923076
+    @test C[2, 2] == 7692.307692307692
+    @test C[2, 3] == 0.0
+    @test C[3, 1] == 0.0
+    @test C[3, 2] == 0.0
+    @test C[3, 3] == 5384.615384615385
 end
 
 @testset "ut_compute_Piola_Kirchhoff_stress" begin
