@@ -222,6 +222,7 @@ function run_solver(solver_options::Dict{Any,Any},
     max_damage::Float64 = 0
     damage_init::Bool = false
     rank = Data_Manager.get_rank()
+    mpi_active = Data_Manager.get_mpi_active()
     iter = progress_bar(rank, nsteps, silent)
     #nodes::Vector{Int64} = Vector{Int64}(1:Data_Manager.get_nnodes())
 
@@ -380,7 +381,7 @@ function run_solver(solver_options::Dict{Any,Any},
                 end
                 if !damage_init && max_damage > 0
                     damage_init = true
-                    if rank == 0 && !silent
+                    if !mpi_active && !silent
                         set_multiline_postfix(iter,
                                               "Damage initated in step $idt [$time s]!")
                     end
