@@ -234,31 +234,24 @@ function compute_reference_volume!(reference_volume::Float64, volume, nlist, bon
     return reference_volume
 end
 
-function compute_deviator(bb_deviator, bb_strain, iso_strain)
-    @inbounds @fastmath for j in axes(bb_strain, 1)
-        @inbounds @fastmath for i in axes(bb_strain, 2)
-            bb_deviator[j, i, i] = bb_strain[j, i, i] - iso_strain[j]
-        end
-    end
-end
+# function compute_deviator(bb_deviator, bb_strain, iso_strain)
+#     @inbounds @fastmath for j in axes(bb_strain, 1)
+#         @inbounds @fastmath for i in axes(bb_strain, 2)
+#             bb_deviator[j, i, i] = bb_strain[j, i, i] - iso_strain[j]
+#         end
+#     end
+# end
 
-function get_beta(beta::Vector{Float64}, nu::Vector{Float64})
-    @inbounds @fastmath for i in axes(beta, 1)
-        beta[i] = 5 * (1 - 2 * nu[i]) / (2 * (1 + nu[i]))
-    end
-    return beta
-end
+# function get_beta(beta::Vector{Float64}, nu::Vector{Float64})
+#     @inbounds @fastmath for i in axes(beta, 1)
+#         beta[i] = 5 * (1 - 2 * nu[i]) / (2 * (1 + nu[i]))
+#     end
+#     return beta
+# end
 
-function get_beta(beta::Float64, nu::Float64)
-    return 5 * (1 - 2 * nu) / (2 * (1 + nu))
-end
-
-function compute_bb_force_2D!(bond_force,
-                              constant,
-                              bond_damage,
-                              deformed_bond_length,
-                              undeformed_bond_length,
-                              deformed_bond) end
+# function get_beta(beta::Float64, nu::Float64)
+#     return 5 * (1 - 2 * nu) / (2 * (1 + nu))
+# end
 
 function compute_bb_force_3D!(bond_force,
                               constant,

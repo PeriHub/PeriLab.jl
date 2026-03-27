@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using Test
+#using Test
 
 @testset "ut_define_lagrangian_grid_space" begin
     @test_logs (:error,

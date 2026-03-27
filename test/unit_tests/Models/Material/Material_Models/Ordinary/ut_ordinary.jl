@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using Test
+#using Test
 @testset "compute_weighted_volume!" begin
     weighted_volume = zeros(9)
     weightedTest = zeros(9)
@@ -71,22 +71,22 @@ using Test
     ]
 
     volume = Float64[0.8615883,
-                     0.8615883,
-                     0.8615883,
-                     0.8615883,
-                     0.8615883,
-                     0.8615883,
-                     0.8615883,
-                     0.8615883,
-                     0.8615883]
+    0.8615883,
+    0.8615883,
+    0.8615883,
+    0.8615883,
+    0.8615883,
+    0.8615883,
+    0.8615883,
+    0.8615883]
     vec = Vector{Int64}(1:nnodes)
     PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.compute_weighted_volume!(weighted_volume,
-                                      vec,
-                                      nlist,
-                                      undeformed_bond_length,
-                                      bond_damage,
-                                      omega,
-                                      volume)
+                                                                                    vec,
+                                                                                    nlist,
+                                                                                    undeformed_bond_length,
+                                                                                    bond_damage,
+                                                                                    omega,
+                                                                                    volume)
 
     for iID in 1:nnodes
         @test weighted_volume[iID] / weightedTest[iID] - 1 < 1e-6
@@ -119,37 +119,45 @@ nlist[2][1] = 2
     vec = Vector{Int64}(1:nnodes)
     theta = zeros(Float64, 2)
     PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.compute_dilatation!(vec,
-                                 nlist,
-                                 undeformed_bond_length,
-                                 deformed_bond_length,
-                                 bond_damage,
-                                 volume,
-                                 weighted_volume,
-                                 omega,
-                                 theta)
+                                                                               nlist,
+                                                                               undeformed_bond_length,
+                                                                               deformed_bond_length,
+                                                                               bond_damage,
+                                                                               volume,
+                                                                               weighted_volume,
+                                                                               omega,
+                                                                               theta)
     @test theta[1] == 3.0
     @test theta[2] == 3.0
     weighted_volume[1] = 0
     PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.compute_dilatation!(vec,
-                                 nlist,
-                                 undeformed_bond_length,
-                                 deformed_bond_length,
-                                 bond_damage,
-                                 volume,
-                                 weighted_volume,
-                                 omega,
-                                 theta)
+                                                                               nlist,
+                                                                               undeformed_bond_length,
+                                                                               deformed_bond_length,
+                                                                               bond_damage,
+                                                                               volume,
+                                                                               weighted_volume,
+                                                                               omega,
+                                                                               theta)
     @test theta[1] == 0.0
     @test theta[2] == 3.0
 end
 
 @testset "calculate_symmetry_params" begin
-    @test PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.calculate_symmetry_params("3D", 1.0, 1.0) == (15, 1, 3)
-    test_val = PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.calculate_symmetry_params("plane stress", 1.0, 1.0)
+    @test PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.calculate_symmetry_params("3D",
+                                                                                           1.0,
+                                                                                           1.0) ==
+          (15, 1, 3)
+    test_val = PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.calculate_symmetry_params("plane stress",
+                                                                                                1.0,
+                                                                                                1.0)
     @test test_val[1] == 8
     @test isapprox(test_val[2], 0.5714285714285714)
     @test isapprox(test_val[3], 0.5714285714285714)
-    @test PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.calculate_symmetry_params("plane strain", 1.0, 1.0) == (8, 2 / 3, 8 / 9)
+    @test PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.calculate_symmetry_params("plane strain",
+                                                                                           1.0,
+                                                                                           1.0) ==
+          (8, 2 / 3, 8 / 9)
 end
 
 @testset "ut_get_bond_forces" begin
@@ -163,11 +171,11 @@ end
     bond_force = [[fill(0.0, dof) for j in 1:n] for n in nBonds]
     temp = [fill(0.0, n) for n in nBonds]
     bond_force = PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.get_bond_forces(vec,
-                                          bond_force_length,
-                                          deformed_bond,
-                                          deformed_bond_length,
-                                          bond_force,
-                                          temp)
+                                                                                        bond_force_length,
+                                                                                        deformed_bond,
+                                                                                        deformed_bond_length,
+                                                                                        bond_force,
+                                                                                        temp)
     @test bond_force == [[[0.5, 0.0], [0.5, 0.0]], [[0.0, 0.0], [0.0, 0.0]]]
     # deformed_bond_length[2][1] = 0
     # @test isnothing(

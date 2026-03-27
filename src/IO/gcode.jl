@@ -92,7 +92,7 @@ function parseFile(path::String, callbacks::Dict{String,Function}, dataObject, s
     #     line = 1
     #     while !eof(f)
     #         x = readline(f);
-    iter = progress_bar(0, length(lines)-1, silent)
+    iter = progress_bar(0, length(lines) - 1, silent)
     for i in iter
         x = lines[i]
         if occursin(";", x)
@@ -205,14 +205,14 @@ function move(cmds, dataobject)
     # dataobject["pd_mesh"]["remaining_distance"] = dataobject["pd_mesh"]["sampling"] / 2
 end
 
-function check_min_max(dataobject, str)
-    if dataobject[str] > dataobject[str * "_max"]
-        dataobject[str * "_max"] = dataobject[str]
-    end
-    if dataobject[str] < dataobject[str * "_min"]
-        dataobject[str * "_min"] = dataobject[str]
-    end
-end
+# function check_min_max(dataobject, str)
+#     if dataobject[str] > dataobject[str * "_max"]
+#         dataobject[str * "_max"] = dataobject[str]
+#     end
+#     if dataobject[str] < dataobject[str * "_min"]
+#         dataobject[str * "_min"] = dataobject[str]
+#     end
+# end
 
 """
     movement(cmds, dataobject)
@@ -339,7 +339,7 @@ function dwell(cmds, dataobject)
         wait_time = parse(Float64, cmds[s].second)
     end
     if p !== nothing
-        wait_time = parse(Float64, cmds[p].second)/1000
+        wait_time = parse(Float64, cmds[p].second) / 1000
     end
     dataobject["previous_time"] = dataobject["time"]
     dataobject["time"] += wait_time
@@ -378,10 +378,10 @@ function tait_bryant_angles(orientation_vector, up_vector = [0, 0, 1])
     right = cross(up_vector, forward)
     right /= norm(right)
 
-    up = cross(forward, right);
+    up = cross(forward, right)
     up /= norm(up)
 
-    R=hcat(forward, right, up)
+    R = hcat(forward, right, up)
     angles = Rotations.params(RotXYZ(R))
 
     return angles[1], angles[2], angles[3]
@@ -422,13 +422,16 @@ function write_pd_mesh(dataobject)
 
     if num_of_points_on_line > 1
         line_x = collect(range(pd_mesh["start_point"][1],
-                               pd_mesh["point"][1]-pd_mesh["remaining_distance"]*pd_mesh["dir"][1],
+                               pd_mesh["point"][1] -
+                               pd_mesh["remaining_distance"] * pd_mesh["dir"][1],
                                num_of_points_on_line))
         line_y = collect(range(pd_mesh["start_point"][2],
-                               pd_mesh["point"][2]-pd_mesh["remaining_distance"]*pd_mesh["dir"][2],
+                               pd_mesh["point"][2] -
+                               pd_mesh["remaining_distance"] * pd_mesh["dir"][2],
                                num_of_points_on_line))
         line_z = collect(range(pd_mesh["start_point"][3],
-                               pd_mesh["point"][3]-pd_mesh["remaining_distance"]*pd_mesh["dir"][3],
+                               pd_mesh["point"][3] -
+                               pd_mesh["remaining_distance"] * pd_mesh["dir"][3],
                                num_of_points_on_line))
     else
         line_x = [pd_mesh["start_point"][1]]

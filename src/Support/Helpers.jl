@@ -45,7 +45,7 @@ export mat_mul!
 export get_mapping
 export get_ring
 export get_hexagon
-export nearest_point_id
+# export nearest_point_id
 export get_shared_horizon
 export matrix_style
 export matrix_to_voigt
@@ -161,26 +161,26 @@ function get_surface_information(poly)
     return normals, b
 end
 
-function check_neighbor_position(poly, points, nlist::Vector{Int64}, msg::Bool)
-    for nID in nlist
-        if !point_is_inside(points[nID, :], poly)
-            if msg
-                msg = false
-                @warn "Make sure that your contact block is large enough. If it is surrounded by non contact blocks some of the points near the edgdes are ignored."
-            end
-            return false
-        end
-    end
-    return true
-end
+# function check_neighbor_position(poly, points, nlist::Vector{Int64}, msg::Bool)
+#     for nID in nlist
+#         if !point_is_inside(points[nID, :], poly)
+#             if msg
+#                 msg = false
+#                 @warn "Make sure that your contact block is large enough. If it is surrounded by non contact blocks some of the points near the edgdes are ignored."
+#             end
+#             return false
+#         end
+#     end
+#     return true
+# end
 
-function point_is_inside(point, poly)
-    return point in poly
-end
+# function point_is_inside(point, poly)
+#     return point in poly
+# end
 
-function nearest_point_id(p, points)
-    return argmin(norm.(eachrow(points) .- Ref(p)))
-end
+# function nearest_point_id(p, points)
+#     return argmin(norm.(eachrow(points) .- Ref(p)))
+# end
 
 """
 	remove_ids(dict::Dict{Int64,Int64}, numbers::Vector{Int64})
@@ -939,7 +939,7 @@ end
 function invert(A::AbstractMatrix{Float64},
                 error_message::String = "Matrix is singular")
     if abs(det(smat(A))) < 1e-15
-        @error "$error_message "
+        @error "$error_message"
         return
     end
     return inv(smat(A))

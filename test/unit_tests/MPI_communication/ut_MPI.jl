@@ -268,6 +268,10 @@ if ncores == 3
                    (PeriLab.IO.find_global_core_value!(0, "Average", 1) == 1),
                    @__FILE__,
                    @__LINE__)
+        push_test!(test,
+                   (PeriLab.IO.find_global_core_value!(0, "Unknown", 1) == 0.0),
+                   @__FILE__,
+                   @__LINE__)
     end
     if rank == 1
         test = test_dict["synch_controller_to_responder_rank_1"] = Dict("tests" => [],
@@ -414,8 +418,9 @@ if ncores == 3
                                                      "Material Model" => "Test 2")))
     PeriLab.IO.show_block_summary(solver_options, params, "", false, comm)
     PeriLab.IO.show_block_summary(solver_options, params, "", true, comm)
-    PeriLab.IO.show_mpi_summary("", false, comm)
-    PeriLab.IO.show_mpi_summary("", true, comm)
+    PeriLab.Logging_Module.init_logging("test", false, false, 0, 2)
+    PeriLab.IO.show_mpi_summary("test", false, comm)
+    PeriLab.IO.show_mpi_summary("test", true, comm)
 end
 
 open("test_results_$rank.json", "w") do f

@@ -6,7 +6,7 @@ get_name() = "existing_function"
 call_function(args...) = sum(args)
 end
 
-using Test
+#using Test
 using Random
 include("../../../../src/Core/Module_inclusion/set_Modules.jl")
 

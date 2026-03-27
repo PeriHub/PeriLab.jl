@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using Test
+#using Test
 
 @testset "contact_initialize_data" begin
     PeriLab.Data_Manager.initialize_data()

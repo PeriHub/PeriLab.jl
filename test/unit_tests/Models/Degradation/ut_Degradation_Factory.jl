@@ -2,5 +2,5 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using Test
+#using Test
 @testset "test_empty" begin end

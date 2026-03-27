@@ -2,11 +2,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using Test
+#using Test
 #using PeriLab
-# using ArgParse
+# using ArgParse: ArgParseError
 
 # @testset "ut_parse_commandline" begin
+#     ARGS = String[]  # Ensure no arguments
 #     @test_throws ArgParseError PeriLab.parse_commandline()
 # end
 

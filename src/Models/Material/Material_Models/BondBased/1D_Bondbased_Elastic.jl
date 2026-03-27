@@ -42,7 +42,7 @@ Initializes the material model.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 """
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict{String,Any})
+                    material_parameter::Dict)
     constant = Data_Manager.create_constant_bond_scalar_state("Visual", Float64)
 end
 
@@ -67,7 +67,7 @@ Calculate the elastic bond force for each node.
 - `dt::Float64`: The current time step.
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict{String,Any},
+                       material_parameter::Dict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)

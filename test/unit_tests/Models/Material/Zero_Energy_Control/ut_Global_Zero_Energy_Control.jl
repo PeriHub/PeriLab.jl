@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using Test
+#using Test
 
 @testset "control_name" begin
     @test PeriLab.Solver_Manager.Zero_Energy_Control.Global_Zero_Energy_Control.control_name() ==

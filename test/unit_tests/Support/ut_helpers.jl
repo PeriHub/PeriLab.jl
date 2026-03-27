@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using Test
+#using Test
 using ProgressBars
 using LinearAlgebra
 using StaticArrays
@@ -55,10 +55,10 @@ end
 
 @testset "ut_invert" begin
     test_inv = zeros(2, 2)
-    @test_logs (:error, "test Float is singular. ") PeriLab.Solver_Manager.Helpers.invert(zeros(Float64,
-                                                                                                4,
-                                                                                                4),
-                                                                                          "test Float is singular.")
+    @test_logs (:error, "test Float is singular.") PeriLab.Solver_Manager.Helpers.invert(zeros(Float64,
+                                                                                               4,
+                                                                                               4),
+                                                                                         "test Float is singular.")
 
     PeriLab.Solver_Manager.Helpers.invert(test_inv, [1.0 0; 0 1])
     @test test_inv == inv([1 0; 0 1])

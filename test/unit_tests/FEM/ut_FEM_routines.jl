@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #include("../../../src/PeriLab.jl")
 # using .PeriLab
-using Test
+#using Test
 
 @testset "ut_jacobi" begin
     PeriLab.Data_Manager.initialize_data()

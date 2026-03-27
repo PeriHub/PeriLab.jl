@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using MPI
-using Test
+#using Test
 
 #using PeriLab
 
@@ -162,6 +162,13 @@ end
     @test PeriLab.Data_Manager.fem_active() == true
     PeriLab.Data_Manager.set_fem(false)
     @test PeriLab.Data_Manager.fem_active() == false
+end
+
+@testset "ut_set_verbose" begin
+    PeriLab.Data_Manager.set_verbose(false)
+    @test PeriLab.Data_Manager.get_verbose() == false
+    PeriLab.Data_Manager.set_verbose(true)
+    @test PeriLab.Data_Manager.get_verbose() == true
 end
 
 @testset "ut_number_of_elements" begin

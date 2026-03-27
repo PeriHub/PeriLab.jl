@@ -26,11 +26,11 @@ mutable struct PD_matrix
     sparse_matrix::SparseMatrixCSC{Float64,Int64}
 
     # Konstruktor 1: Erstellt sparse_matrix aus Daten
-    function PD_matrix(I::Vector{Int64}, J::Vector{Int64}, V::Vector{Float64},
-                       N::Int64)
-        sparse_matrix = sparse(I, J, V, N, N)
-        new(I, J, sparse_matrix)
-    end
+    # function PD_matrix(I::Vector{Int64}, J::Vector{Int64}, V::Vector{Float64},
+    #                    N::Int64)
+    #     sparse_matrix = sparse(I, J, V, N, N)
+    #     new(I, J, sparse_matrix)
+    # end
 end
 
 struct FieldManager
@@ -104,7 +104,7 @@ export set_num_controller
 export set_nset
 export set_num_elements
 export set_num_responder
-export set_pre_calculation_order
+# export set_pre_calculation_order
 export set_property
 export set_rank
 export set_max_rank
@@ -719,9 +719,6 @@ Example:
 loc_to_glob(1:10)  # converts the local index to the global index
 ```
 """
-function loc_to_glob(range::Vector{Int64})
-    return data["distribution"][range]
-end
 function loc_to_glob(range::UnitRange{Int64})
     return data["distribution"][range]
 end
@@ -939,17 +936,17 @@ function set_overlap_map(topo)
     data["overlap_map"] = topo
 end
 
-"""
-	set_pre_calculation_order(values::Vector{String})
+# """
+# 	set_pre_calculation_order(values::Vector{String})
 
-Sets the order of the pre calculation options globally.
+# Sets the order of the pre calculation options globally.
 
-# Arguments
-- `values::Vector{String}`: The order of models.
-"""
-function set_pre_calculation_order(values::Vector{String})
-    data["pre_calculation_order"] = values
-end
+# # Arguments
+# - `values::Vector{String}`: The order of models.
+# """
+# function set_pre_calculation_order(values::Vector{String})
+#     data["pre_calculation_order"] = values
+# end
 
 """
 	set_property(block_id, property, value_name, value)
@@ -1079,11 +1076,11 @@ function set_verbose(value::Bool)
     data["verbose"] = value
 end
 
-function init_stiffness_matrix(nnodes::Int64, dof::Int64)
-    n_total = nnodes * dof
-    data["matrix_exists"] = true
-    data["Stiffness Matrix"] = ExtendableSparseMatrix{Float64,Int}(n_total, n_total)
-end
+# function init_stiffness_matrix(nnodes::Int64, dof::Int64)
+#     n_total = nnodes * dof
+#     data["matrix_exists"] = true
+#     data["Stiffness Matrix"] = ExtendableSparseMatrix{Float64,Int}(n_total, n_total)
+# end
 #
 function set_stiffness_matrix(sparse_mat)
     data["matrix_exists"] = true
@@ -1126,9 +1123,9 @@ function get_stiffness_matrix()
     return nothing
 end
 
-function get_stiffness_matrix_indices()
-    return data["Stiffness Matrix"].xID, data["Stiffness Matrix"].yID
-end
+# function get_stiffness_matrix_indices()
+#     return data["Stiffness Matrix"].xID, data["Stiffness Matrix"].yID
+# end
 
 """
 	set_rotation(value::Int64)

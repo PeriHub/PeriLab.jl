@@ -96,26 +96,26 @@ end
 function get_coupling_zone(pd_nodes, blocks, ref_block)
     return [pd_nodes[i] for i in eachindex(blocks) if blocks[i] == ref_block]
 end
-function topo_closed_loop(pn)
-    mapping = Int64[]
+# function topo_closed_loop(pn)
+#     mapping = Int64[]
 
-    for ip in 1:(pn[1] + 1)
-        push!(mapping, ip)
-    end
-    for ip in 2:(pn[2] + 1)
-        push!(mapping, ip * (pn[1] + 1))
-    end
+#     for ip in 1:(pn[1] + 1)
+#         push!(mapping, ip)
+#     end
+#     for ip in 2:(pn[2] + 1)
+#         push!(mapping, ip * (pn[1] + 1))
+#     end
 
-    for ip in 2:(pn[1] + 1)
-        push!(mapping, (pn[1] + 1) * (pn[2] + 1) - ip + 1)
-    end
+#     for ip in 2:(pn[1] + 1)
+#         push!(mapping, (pn[1] + 1) * (pn[2] + 1) - ip + 1)
+#     end
 
-    for ip in 1:(pn[2] - 1)
-        push!(mapping, (pn[1] + 1) * pn[2] + 1 - (pn[1] + 1) * ip)
-    end
+#     for ip in 1:(pn[2] - 1)
+#         push!(mapping, (pn[1] + 1) * pn[2] + 1 - (pn[1] + 1) * ip)
+#     end
 
-    return mapping
-end
+#     return mapping
+# end
 ##
 # TODO
 # only one point PD -> one Element; Check

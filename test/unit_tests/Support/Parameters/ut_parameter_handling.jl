@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using Test
+#using Test
 using Random
 using Dierckx
 using DataFrames
@@ -342,6 +342,10 @@ end
                                                                                       "Calculation Type" => "Maximum",
                                                                                       "Block" => "block_1",
                                                                                       "Variable" => "B"),
+                                                     "No_exist" => Dict("Compute Class" => "Block_Data",
+                                                                        "Calculation Type" => "Maximum",
+                                                                        "Block" => "block_1",
+                                                                        "Variable" => "No_exist"),
                                                      "warn_test" => Dict("Compute Class" => "Block_Data",
                                                                          "Calculation Type" => "Maximum",
                                                                          "Block" => "block_1")))

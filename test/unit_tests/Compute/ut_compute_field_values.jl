@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using Test
+#using Test
 
 @testset "ut_get_forces_from_force_density" begin
     PeriLab.Data_Manager.initialize_data()

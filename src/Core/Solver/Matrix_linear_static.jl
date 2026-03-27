@@ -54,47 +54,47 @@ mutable struct DisplacementSolverCache
     end
 end
 
-"""
-	compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64}, lambda::Float64, Cv::Float64)
+# """
+# 	compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64}, lambda::Float64, Cv::Float64)
 
-Calculate the critical time step for a thermodynamic simulation based on  [OterkusS2014](@cite).
+# Calculate the critical time step for a thermodynamic simulation based on  [OterkusS2014](@cite).
 
-This function iterates over a collection of nodes and computes the critical time step for each node using provided input data and parameters.
+# This function iterates over a collection of nodes and computes the critical time step for each node using provided input data and parameters.
 
-# Arguments
-- `nodes::AbstractVector{Int64}`: The collection of nodes to calculate the critical time step for.
-- `lambda::Float64`: The material parameter used in the calculations.
-- `Cv::Float64`: The heat capacity at constant volume used in the calculations.
+# # Arguments
+# - `nodes::AbstractVector{Int64}`: The collection of nodes to calculate the critical time step for.
+# - `lambda::Float64`: The material parameter used in the calculations.
+# - `Cv::Float64`: The heat capacity at constant volume used in the calculations.
 
-# Returns
-- `Float64`: The calculated critical time step for the thermodynamic simulation.
+# # Returns
+# - `Float64`: The calculated critical time step for the thermodynamic simulation.
 
-# Dependencies
-This function depends on the following data fields from the `datamanager` module:
-- `get_nlist()`: Returns the neighbor list.
-- `get_field("Density")`: Returns the density field.
-- `get_field("Bond Length")`: Returns the bond distance field.
-- `get_field("Volume")`: Returns the volume field.
-- `get_field("Number of Neighbors")`: Returns the number of neighbors field.
-"""
-function compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64},
-                                                  lambda::Union{Float64,Int64})
-    critical_time_step::Float64 = 1.0e50
-    nlist = Data_Manager.get_nlist()
-    density = Data_Manager.get_field("Density")
-    undeformed_bond_length = Data_Manager.get_field("Bond Length")
-    volume = Data_Manager.get_field("Volume")
-    Cv = Data_Manager.get_field("Specific Heat Capacity")
-    lambda = matrix_style(lambda)
-    eigLam = maximum(eigvals(lambda))
+# # Dependencies
+# This function depends on the following data fields from the `datamanager` module:
+# - `get_nlist()`: Returns the neighbor list.
+# - `get_field("Density")`: Returns the density field.
+# - `get_field("Bond Length")`: Returns the bond distance field.
+# - `get_field("Volume")`: Returns the volume field.
+# - `get_field("Number of Neighbors")`: Returns the number of neighbors field.
+# """
+# function compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64},
+#                                                   lambda::Union{Float64,Int64})
+#     critical_time_step::Float64 = 1.0e50
+#     nlist = Data_Manager.get_nlist()
+#     density = Data_Manager.get_field("Density")
+#     undeformed_bond_length = Data_Manager.get_field("Bond Length")
+#     volume = Data_Manager.get_field("Volume")
+#     Cv = Data_Manager.get_field("Specific Heat Capacity")
+#     lambda = matrix_style(lambda)
+#     eigLam = maximum(eigvals(lambda))
 
-    for iID in nodes
-        denominator = get_cs_denominator(volume[nlist[iID]], undeformed_bond_length[iID])
-        t = density[iID] * Cv[iID] / (eigLam * denominator)
-        critical_time_step = test_timestep(t, critical_time_step)
-    end
-    return sqrt(critical_time_step)
-end
+#     for iID in nodes
+#         denominator = get_cs_denominator(volume[nlist[iID]], undeformed_bond_length[iID])
+#         t = density[iID] * Cv[iID] / (eigLam * denominator)
+#         critical_time_step = test_timestep(t, critical_time_step)
+#     end
+#     return sqrt(critical_time_step)
+# end
 
 """
 	init_solver(params::Dict, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
@@ -180,21 +180,21 @@ function init_solver(solver_options::Dict{Any,Any},
     #end
 end
 
-function filter_dofs_to_active_nodes(non_BCs::AbstractVector{Int64},
-                                     active_nodes::AbstractVector{Int64},
-                                     dof::Int64)
-    active_set = Set(active_nodes)
+# function filter_dofs_to_active_nodes(non_BCs::AbstractVector{Int64},
+#                                      active_nodes::AbstractVector{Int64},
+#                                      dof::Int64)
+#     active_set = Set(active_nodes)
 
-    filtered = Int64[]
-    for dof_idx in non_BCs
-        node = div(dof_idx - 1, dof) + 1
-        if node in active_set
-            push!(filtered, dof_idx)
-        end
-    end
+#     filtered = Int64[]
+#     for dof_idx in non_BCs
+#         node = div(dof_idx - 1, dof) + 1
+#         if node in active_set
+#             push!(filtered, dof_idx)
+#         end
+#     end
 
-    return filtered
-end
+#     return filtered
+# end
 function run_solver(solver_options::Dict{Any,Any},
                     block_nodes::Dict{Int64,Vector{Int64}},
                     bcs::Dict{Any,Any},
@@ -508,96 +508,96 @@ function compute_displacements_active_subset!(K_active::AbstractMatrix{Float64},
 end
 
 # Neue Hilfsfunktion für reduziertes System
-function compute_displacements_reduced!(K_active::AbstractMatrix{Float64},
-                                        active_non_BCS::AbstractVector{Int},
-                                        u_active::AbstractVector{Float64},
-                                        F_int_active::AbstractVector{Float64},
-                                        F_ext_active::AbstractVector{Float64},
-                                        solver::DisplacementSolverCache)
-    isempty(active_non_BCS) && return nothing
+# function compute_displacements_reduced!(K_active::AbstractMatrix{Float64},
+#                                         active_non_BCS::AbstractVector{Int},
+#                                         u_active::AbstractVector{Float64},
+#                                         F_int_active::AbstractVector{Float64},
+#                                         F_ext_active::AbstractVector{Float64},
+#                                         solver::DisplacementSolverCache)
+#     isempty(active_non_BCS) && return nothing
 
-    n_total = length(u_active)
-    n_free = length(active_non_BCS)
+#     n_total = length(u_active)
+#     n_free = length(active_non_BCS)
 
-    length(solver.F_modified) != n_free && resize!(solver.F_modified, n_free)
-    length(solver.bc_mask) != n_total && resize!(solver.bc_mask, n_total)
+#     length(solver.F_modified) != n_free && resize!(solver.F_modified, n_free)
+#     length(solver.bc_mask) != n_total && resize!(solver.bc_mask, n_total)
 
-    has_BCs = n_free < n_total
+#     has_BCs = n_free < n_total
 
-    if has_BCs
-        fill!(solver.bc_mask, true)
-        @inbounds for i in active_non_BCS
-            solver.bc_mask[i] = false
-        end
+#     if has_BCs
+#         fill!(solver.bc_mask, true)
+#         @inbounds for i in active_non_BCS
+#             solver.bc_mask[i] = false
+#         end
 
-        K_sub = K_active[active_non_BCS, solver.bc_mask]
-        u_bc = @view u_active[solver.bc_mask]
+#         K_sub = K_active[active_non_BCS, solver.bc_mask]
+#         u_bc = @view u_active[solver.bc_mask]
 
-        length(solver.temp) != n_free && resize!(solver.temp, n_free)
-        mul!(solver.temp, K_sub, u_bc)
+#         length(solver.temp) != n_free && resize!(solver.temp, n_free)
+#         mul!(solver.temp, K_sub, u_bc)
 
-        @inbounds for (idx, i) in enumerate(active_non_BCS)
-            F_int_active[i] += solver.temp[idx]
-        end
-    end
+#         @inbounds for (idx, i) in enumerate(active_non_BCS)
+#             F_int_active[i] += solver.temp[idx]
+#         end
+#     end
 
-    @inbounds for (idx, i) in enumerate(active_non_BCS)
-        solver.F_modified[idx] = F_ext_active[i] - F_int_active[i]
-    end
+#     @inbounds for (idx, i) in enumerate(active_non_BCS)
+#         solver.F_modified[idx] = F_ext_active[i] - F_int_active[i]
+#     end
 
-    # LU factorization
-    @timeit "LU factorization" begin
-        K_free = K_active[active_non_BCS, active_non_BCS]
-        try
-            solver.K_free_lu = lu(K_free)
-        catch e
-            @error "LU factorization failed: $e"
-            @error "Matrix size: $(size(K_free))"
-            @error "Condition number: $(cond(K_free))"
-            rethrow(e)
-        end
-    end
+#     # LU factorization
+#     @timeit "LU factorization" begin
+#         K_free = K_active[active_non_BCS, active_non_BCS]
+#         try
+#             solver.K_free_lu = lu(K_free)
+#         catch e
+#             @error "LU factorization failed: $e"
+#             @error "Matrix size: $(size(K_free))"
+#             @error "Condition number: $(cond(K_free))"
+#             rethrow(e)
+#         end
+#     end
 
-    length(solver.u_free) != n_free && resize!(solver.u_free, n_free)
+#     length(solver.u_free) != n_free && resize!(solver.u_free, n_free)
 
-    @timeit "ldiv" ldiv!(solver.u_free, solver.K_free_lu, solver.F_modified)
+#     @timeit "ldiv" ldiv!(solver.u_free, solver.K_free_lu, solver.F_modified)
 
-    @inbounds for (idx, i) in enumerate(active_non_BCS)
-        u_active[i] = solver.u_free[idx]
-    end
+#     @inbounds for (idx, i) in enumerate(active_non_BCS)
+#         u_active[i] = solver.u_free[idx]
+#     end
 
-    return nothing
-end
+#     return nothing
+# end
 
-function get_active_dof(active_nodes::AbstractVector{Int64}, dof::Int64, nnodes::Int64)
-    n_active = length(active_nodes)
+# function get_active_dof(active_nodes::AbstractVector{Int64}, dof::Int64, nnodes::Int64)
+#     n_active = length(active_nodes)
 
-    active_dofs_local = collect(1:(n_active * dof))
-    local_to_global = Dict{Int,Int}()
+#     active_dofs_local = collect(1:(n_active * dof))
+#     local_to_global = Dict{Int,Int}()
 
-    for (iD, global_iD) in enumerate(active_nodes)
-        for j in 1:dof
-            local_idx = iD + (j - 1) * n_active
-            global_idx = global_iD + (j - 1) * nnodes
-            local_to_global[local_idx] = global_idx
-        end
-    end
+#     for (iD, global_iD) in enumerate(active_nodes)
+#         for j in 1:dof
+#             local_idx = iD + (j - 1) * n_active
+#             global_idx = global_iD + (j - 1) * nnodes
+#             local_to_global[local_idx] = global_idx
+#         end
+#     end
 
-    return active_dofs_local, local_to_global
-end
+#     return active_dofs_local, local_to_global
+# end
 
-function filter_and_map_bc(non_BCs_global::AbstractVector{Int64},
-                           local_to_global::Dict{Int,Int})
-    active_non_BCs_local = Int[]
+# function filter_and_map_bc(non_BCs_global::AbstractVector{Int64},
+#                            local_to_global::Dict{Int,Int})
+#     active_non_BCs_local = Int[]
 
-    for (local_idx, global_idx) in pairs(local_to_global)
-        if global_idx in non_BCs_global
-            push!(active_non_BCs_local, local_idx)
-        end
-    end
+#     for (local_idx, global_idx) in pairs(local_to_global)
+#         if global_idx in non_BCs_global
+#             push!(active_non_BCs_local, local_idx)
+#         end
+#     end
 
-    return sort(active_non_BCs_local)
-end
+#     return sort(active_non_BCs_local)
+# end
 function compute_matrix(nodes::AbstractVector{Int64})
     if length(nodes) == 0
         return Data_Manager.get_stiffness_matrix()

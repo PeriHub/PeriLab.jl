@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using Test
+#using Test
 
 @testset "ut_check_valid_contact_model" begin
     PeriLab.Data_Manager.initialize_data()

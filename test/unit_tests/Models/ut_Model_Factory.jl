@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 #using PeriLab
-using Test
+#using Test
 
 @testset "ut_get_block_model_definition" begin
     PeriLab.Data_Manager.initialize_data()

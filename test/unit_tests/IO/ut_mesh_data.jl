@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using Test
+#using Test
 using TimerOutputs
 using DataFrames
 #using PeriLab
@@ -699,6 +699,19 @@ end
     @test mesh_expected == mesh_return
     @test node_sets ==
           Dict("Extruded_2" => [6, 7, 8, 9, 10, 11], "Extruded_1" => [0, 1, 2, 3, 4, 5])
+
+    params = Dict("Discretization" => Dict("Surface Extrusion" => Dict("Direction" => "Y",
+                                                                       "Step_X" => 1.0,
+                                                                       "Step_Y" => 1.0,
+                                                                       "Step_Z" => 1.0,
+                                                                       "Number" => 2)))
+    mesh_return, node_sets = PeriLab.IO.extrude_surface_mesh(mesh, params)
+
+    params = Dict("Discretization" => Dict("Surface Extrusion" => Dict("Direction" => "X",
+                                                                       "Step_X" => 1.0,
+                                                                       "Step_Y" => 1.0,
+                                                                       "Step_Z" => 1.0,
+                                                                       "Number" => 2)))
 
     mesh = DataFrame(x = [0.0, 1.0, 0.0, 1.0],
                      y = [0.0, 0.0, 1.0, 1.0],

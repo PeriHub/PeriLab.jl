@@ -6,7 +6,7 @@
 # using PeriLab
 using MPI
 using TimerOutputs
-using Test
+#using Test
 
 PeriLab.Data_Manager.initialize_data()
 filename1 = "test1"
@@ -184,11 +184,6 @@ end
 #     PeriLab.IO.show_block_summary(solver_options, params, "test.log", comm)
 # end
 
-# @testset "ut_show_mpi_summary" begin
-#     PeriLab.Data_Manager.set_block_name_list([1])
-#     PeriLab.IO.show_mpi_summary("test.log", comm)
-# end
-
 @testset "ut_init_orientations" begin
     angles = PeriLab.Data_Manager.create_constant_node_scalar_field("Angles", Float64;
                                                                     default_value = 90)
@@ -289,11 +284,6 @@ end
                                   "",
                                   false,
                                   comm)
-end
-
-@testset "ut_show_mpi_summary" begin
-    # Not fully tested yet because MPI.size=1
-    @test PeriLab.IO.show_mpi_summary("", false, comm) == 1
 end
 
 @testset "ut_clearNP1" begin

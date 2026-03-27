@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using Test
+#using Test
 
 #using PeriLab
 @testset "ut_global_value_sum" begin

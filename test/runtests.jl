@@ -182,7 +182,9 @@ MPI.Init()
                     include("unit_tests/Models/Material/ut_material_basis.jl")
                 end
                 @testset "ut_bond_based" begin
+                    include("unit_tests/Models/Material/Material_Models/BondBased/ut_1D_Bondbased_Elastic.jl")
                     include("unit_tests/Models/Material/Material_Models/BondBased/ut_Bondbased_Elastic.jl")
+                    include("unit_tests/Models/Material/Material_Models/BondBased/ut_Unified_Bondbased_Elastic.jl")
                 end
                 @testset "ut_correspondence" begin
                     include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence.jl")

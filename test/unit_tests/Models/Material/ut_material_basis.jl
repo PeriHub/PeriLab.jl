@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using Test
+#using Test
 #include("../../../../src/PeriLab.jl")
 #using .PeriLab
 
@@ -433,15 +433,10 @@ end
     @test C[3, 1] == parameter["C16"]
     @test C[3, 2] == parameter["C26"]
 
-    # symmetry = "anisotropic plane stress"
-    # C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(parameter, symmetry, 2)
-    # for iID = 1:3
-    #     for jID = 1:3
-    #         if C2D_test[iID, jID] != 0
-    #             @test C[iID, jID] / C2D_test[iID, jID] - 1 < 1e-7
-    #         end
-    #     end
-    # end
+    symmetry = "anisotropic plane stress"
+    @test_logs (:error, "Hooke matrix not invertable") PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(parameter,
+                                                                                                              symmetry,
+                                                                                                              2)
 
     #TODO: Check above
 

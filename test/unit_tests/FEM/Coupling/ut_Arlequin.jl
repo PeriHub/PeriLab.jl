@@ -2,10 +2,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using Test
+#using Test
 #include("../../../src/PeriLab.jl")
 @testset "ut_coupling_name" begin
-    @test PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.coupling_name() == "Arlequin"
+    @test PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.coupling_name() ==
+          "Arlequin"
 end
 @testset "ut_find_point_in_elements" begin
     dof = 2
@@ -31,9 +32,9 @@ end
     coordinates[10, :] = [1.5, 1.5]    #PD
 
     test_dict = PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.find_point_in_elements(coordinates,
-                                                         topology,
-                                                         nodesPD,
-                                                         2)
+                                                                                             topology,
+                                                                                             nodesPD,
+                                                                                             2)
     @test collect(keys(test_dict)) == [4, 2, 1]
     @test test_dict[4] == 1
     @test test_dict[2] == 1
@@ -68,12 +69,12 @@ end
     dof = 2
 
     test_mat = PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.compute_coupling_matrix(coordinates,
-                                                         topology,
-                                                         7,
-                                                         2,
-                                                         kappa,
-                                                         p,
-                                                         dof)
+                                                                                             topology,
+                                                                                             7,
+                                                                                             2,
+                                                                                             kappa,
+                                                                                             p,
+                                                                                             dof)
 
     @test test_mat == [1.0 -0.25 -0.25 -0.25 -0.25
            -0.25 0.0625 0.0625 0.0625 0.0625
@@ -81,12 +82,12 @@ end
            -0.25 0.0625 0.0625 0.0625 0.0625
            -0.25 0.0625 0.0625 0.0625 0.0625]
     test_mat = PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.compute_coupling_matrix(coordinates,
-                                                         topology,
-                                                         8,
-                                                         1,
-                                                         kappa,
-                                                         p,
-                                                         dof)
+                                                                                             topology,
+                                                                                             8,
+                                                                                             1,
+                                                                                             kappa,
+                                                                                             p,
+                                                                                             dof)
     @test test_mat == [1.0 -0.25 -0.25 -0.25 -0.25
            -0.25 0.0625 0.0625 0.0625 0.0625
            -0.25 0.0625 0.0625 0.0625 0.0625

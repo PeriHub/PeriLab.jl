@@ -3,33 +3,24 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# include("../../../src/Core/Data_Manager.jl")
-include("../../../src/Models/Degradation/Degradation_template/degradation_template.jl")
-include("../../../src/Models/Additive/Additive_template/additive_template.jl")
-include("../../../src/Models/Contact/Contact_template/contact_template.jl")
-include("../../../src/Models/Damage/Damage_template/damage_template.jl")
-include("../../../src/FEM/FEM_template/FEM_template.jl")
-include("../../../src/Models/Material/Material_Models/Material_template/material_template.jl")
-include("../../../src/Models/Material/Material_Models/Material_template/correspondence_template.jl")
-include("../../../src/Models/Thermal/Thermal_template/thermal_template.jl")
-include("../../../src/Models/Pre_calculation/Pre_calculation_template/pre_calculation_template.jl")
-
-using Test
+#using Test
 #using PeriLab
 
 PeriLab.Data_Manager.initialize_data()
 PeriLab.Data_Manager.set_num_controller(3)
 
 @testset "ut_additive_template" begin
-    @test Additive_template.additive_name() == "Additive Template"
-    Additive_template.compute_model(Vector{Int64}(1:3),
-                                    Dict(),
-                                    1,
-                                    0.0,
-                                    0.0)
-    @test Additive_template.init_model(Vector{Int64}(1:3), Dict(), 1) ==
+    @test PeriLab.Solver_Manager.Model_Factory.Additive_template.additive_name() ==
+          "Additive Template"
+    PeriLab.Solver_Manager.Model_Factory.Additive_template.compute_model(Vector{Int64}(1:3),
+                                                                         Dict(),
+                                                                         1,
+                                                                         0.0,
+                                                                         0.0)
+    @test PeriLab.Solver_Manager.Model_Factory.Additive_template.init_model(Vector{Int64}(1:3),
+                                                                            Dict(), 1) ==
           PeriLab.Data_Manager
-    @test Additive_template.fields_for_local_synchronization("") ==
+    @test PeriLab.Solver_Manager.Model_Factory.Additive_template.fields_for_local_synchronization("") ==
           PeriLab.Data_Manager
 end
 
