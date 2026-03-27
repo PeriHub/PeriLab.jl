@@ -8,6 +8,27 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2025-03-27
+
+### Added
+
+- Correspondence Stiffness matrix #322
+- Gyan reduction #323
+- Rigid body material #253
+- Bond Force calculation in matrix linear static #339
+- Aniso damage for 3D #337
+
+### Fixed
+
+- Numerical Damping in Verlet
+
+### Changed
+
+- Optimized matrix assembly #336
+- MPI Optimization
+- Tests optimized
+- Stability and Perfomance improvements
+
 ## [1.5.2] - 2025-12-08
 
 ### Added
@@ -19,7 +40,6 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Zero bond length input handling
-
 
 ## [1.5.1] - 2025-11-27
 
@@ -44,7 +64,6 @@ All notable changes to this project will be documented in this file.
 - Removed module includes, reducing compilation time
 - Module names streamlined
 - TimerOutputs is now using the default timer
-
 
 ## [1.4.10] - 2025-10-06
 
