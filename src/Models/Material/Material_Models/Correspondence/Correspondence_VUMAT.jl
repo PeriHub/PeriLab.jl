@@ -56,8 +56,7 @@ function init_model(nodes::AbstractVector{Int64},
         return
     end
     directory = Data_Manager.get_directory()
-    material_parameter["File"] = joinpath(joinpath(pwd(), directory),
-                                          material_parameter["File"])
+    material_parameter["File"] = joinpath(pwd(), directory, material_parameter["File"])
     global vumat_file_path = material_parameter["File"]
     if !isfile(material_parameter["File"])
         @error "File $(material_parameter["File"]) does not exist, please check name and directory."

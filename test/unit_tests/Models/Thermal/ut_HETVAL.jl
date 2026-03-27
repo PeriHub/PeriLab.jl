@@ -21,11 +21,12 @@ end
     if !isfile(file)
         file = "../src/Models/Thermal/HETVALs/hetval.so"
     end
+    directory = PeriLab.Data_Manager.get_directory()
     @test_logs (:error,
-                "File /localdata/hess_ja/PeriLab.jl/test/../src/Models/Thermal/HETVALs/hetval.so_not_there does not exist, please check name and directory.") PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.init_model(Vector{Int64}(1:nodes),
-                                                                                                                                                                                                                             Dict{String,
-                                                                                                                                                                                                                                  Any}("File" => file *
-                                                                                                                                                                                                                                                 "_not_there"))
+                "File $(joinpath(pwd(), directory, file * "_not_there")) does not exist, please check name and directory.") PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.init_model(Vector{Int64}(1:nodes),
+                                                                                                                                                                                           Dict{String,
+                                                                                                                                                                                                Any}("File" => file *
+                                                                                                                                                                                                               "_not_there"))
 
     @test_logs (:error, "HETVAL file is not defined.") PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.init_model(Vector{Int64}(1:nodes),
                                                                                                                       Dict{String,

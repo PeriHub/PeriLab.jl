@@ -22,7 +22,7 @@ end
     if !isfile(file)
         file = "../src/Models/Material/UMATs/libperuser.so"
     end
-
+    directory = PeriLab.Data_Manager.get_directory()
     @test !isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_VUMAT.init_model(Vector{Int64}(1:nodes),
                                                                                                                   Dict{String,
                                                                                                                        Any}("File" => file,
@@ -32,10 +32,10 @@ end
                                                                                                                             "Property_3" => 2.4,
                                                                                                                             "Property_4" => 2)))
     @test_logs (:error,
-                "File /localdata/hess_ja/PeriLab.jl/test/../src/Models/Material/UMATs/libperuser.so_not_there does not exist, please check name and directory.") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_VUMAT.init_model(Vector{Int64}(1:nodes),
-                                                                                                                                                                                                                                                              Dict{String,
-                                                                                                                                                                                                                                                                   Any}("File" => file *
-                                                                                                                                                                                                                                                                                  "_not_there"))
+                "File $(joinpath(pwd(), directory, file * "_not_there")) does not exist, please check name and directory.") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_VUMAT.init_model(Vector{Int64}(1:nodes),
+                                                                                                                                                                                                                         Dict{String,
+                                                                                                                                                                                                                              Any}("File" => file *
+                                                                                                                                                                                                                                             "_not_there"))
     @test_logs (:error, "Number of Properties must be at least equal 1") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_VUMAT.init_model(Vector{Int64}(1:nodes),
                                                                                                                                                                       Dict{String,
                                                                                                                                                                            Any}("File" => file))
