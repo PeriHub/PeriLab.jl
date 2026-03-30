@@ -838,7 +838,7 @@ function show_block_summary(solver_options::Dict,
 
     headers = ["Block"]
 
-    for model_name in solver_options["All Models"]
+    for model_name in solver_options["Models"]
         if model_name != "Pre_Calculation"
             push!(headers, model_name)
         end

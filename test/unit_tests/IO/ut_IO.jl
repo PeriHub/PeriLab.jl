@@ -264,11 +264,11 @@ end
     block_Id .+= 1
     block_Id[end] = 2
     PeriLab.Data_Manager.set_block_name_list(["block_1", "block_2"])
-    solver_options = Dict("Models" => ("Material Models" => true,
-                                       "Damage Models" => true,
-                                       "Additive Models" => true,
-                                       "Thermal Models" => true,
-                                       "Degradation Models" => true))
+    solver_options = Dict("Models" => ["Material",
+                              "Damage",
+                              "Additive",
+                              "Thermal",
+                              "Degradation"])
     params = Dict("Blocks" => Dict("block_1" => Dict("Material Models" => true,
                                                      "Damage Models" => true,
                                                      "Additive Models" => true,
