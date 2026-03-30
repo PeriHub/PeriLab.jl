@@ -836,29 +836,19 @@ function show_block_summary(solver_options::Dict,
     rank = MPI.Comm_rank(comm)
     size = MPI.Comm_size(comm)
 
+    headers = ["Block"]
+
+    for model_name in solver_options["All Models"]
+        if model_name != "Pre_Calculation"
+            push!(headers, model_name)
+        end
+    end
+
+    push!(headers, "Density")
+    push!(headers, "Horizon")
+
     if size == 1
-        headers = [
-            "Block",
-            "Material",
-            "Damage",
-            "Thermal",
-            "Degradation",
-            "Additive",
-            "Density",
-            "Horizon",
-            "Number of Nodes"
-        ]
-    else
-        headers = [
-            "Block",
-            "Material",
-            "Damage",
-            "Thermal",
-            "Degradation",
-            "Additive",
-            "Density",
-            "Horizon"
-        ]
+        push!(headers, "Number of Nodes")
     end
     # tbd
     #types = [Int64, String, String, String, String, Float64, Float64, Int64]
@@ -875,35 +865,26 @@ function show_block_summary(solver_options::Dict,
 
     for id in eachindex(block_name_list)
         row = [block_name_list[id]]
-        for name in headers[2:6]
-            if !(name in solver_options["Models"])
-                push!(row, "")
+        for name in headers[2:end]
+            if name == "Number of Nodes"
+                # get number of nodes
+                num_nodes = string(length(findall(x -> x == id, block_Id)))
+                push!(row, num_nodes)
+            elseif name == "PD/FEM"
+                fem_block = get_fem_block(params, id)
+                if fem_block
+                    push!(row, "FEM")
+                else
+                    push!(row, "PD")
+                end
+                # elseif !(name in solver_options["Models"])
+                #     push!(row, "")
             elseif haskey(params["Blocks"][block_name_list[id]], name * " Model")
                 push!(row, params["Blocks"][block_name_list[id]][name * " Model"])
-            else
-                push!(row, "")
-            end
-        end
-
-        for name in headers[7:8]
-            if haskey(params["Blocks"][block_name_list[id]], name)
+            elseif haskey(params["Blocks"][block_name_list[id]], name)
                 push!(row, string(params["Blocks"][block_name_list[id]][name]))
             else
                 push!(row, "")
-            end
-        end
-        if size == 1
-            # get number of nodes
-            num_nodes = string(length(findall(x -> x == id, block_Id)))
-            push!(row, num_nodes)
-        end
-
-        if Data_Manager.fem_active()
-            fem_block = get_fem_block(params, id)
-            if fem_block
-                push!(row, "FEM")
-            else
-                push!(row, "PD")
             end
         end
         push!(df, row)
