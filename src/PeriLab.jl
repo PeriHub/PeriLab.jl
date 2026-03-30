@@ -59,7 +59,7 @@ import .Logging_Module
 import .IO
 using .Solver_Manager
 
-PERILAB_VERSION = "2.0.0"
+PERILAB_VERSION = "2.0.1"
 
 export main
 
@@ -243,6 +243,9 @@ function main(filename::String;
         outputs = nothing
 
         try
+            if !isfile(filename)
+                @error "$(filename) can not be found. Make sure the file exist and is readable."
+            end
             # atexit(() -> cleanup(comm))
             if silent && debug
                 @warn "Silent and debug mode currently cannot be used at the same time."
