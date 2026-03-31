@@ -8,6 +8,17 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.1] - 2025-03-31
+
+### Changed
+
+- Block summary only shows relevant models
+
+### Fixed
+
+- MPI Synchronization for low RAM #348
+- Docker build
+
 ## [2.0.0] - 2025-03-27
 
 ### Added
