@@ -23,7 +23,7 @@ using ..MPI_Communication: send_single_value_from_vector, synch_responder_to_con
                            send_vector_from_root_to_core_i, broadcast_value,
                            find_and_set_core_value_min, find_and_set_core_value_sum,
                            find_and_set_core_value_max,
-                           find_and_set_core_value_avg, gather_values, barrier
+                           find_and_set_core_value_avg, gather_values
 
 using ..Helpers: progress_bar
 using ..Logging_Module: get_log_stream

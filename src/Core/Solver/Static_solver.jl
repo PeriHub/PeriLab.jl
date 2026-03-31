@@ -20,7 +20,7 @@ using ...Parameter_Handling:
                              get_numerical_damping,
                              get_safety_factor,
                              get_max_damage
-using ...MPI_Communication: barrier
+# using ...MPI_Communication: barrier
 using ..Model_Factory
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
 using ...Logging_Module: print_table
@@ -309,7 +309,7 @@ function run_solver(solver_options::Dict{Any,Any},
         # if rank == 0 && !silent
         #     set_postfix(iter, t=@sprintf("%.4e", time))
         # end
-        barrier(comm)
+        # barrier(comm)
     end
     Data_Manager.set_current_time(time - dt)
     return result_files

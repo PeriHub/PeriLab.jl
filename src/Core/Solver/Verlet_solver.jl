@@ -19,8 +19,7 @@ using ...Parameter_Handling:
                              get_numerical_damping,
                              get_safety_factor,
                              get_max_damage
-using ...MPI_Communication: find_and_set_core_value_min, find_and_set_core_value_max,
-                            barrier
+using ...MPI_Communication: find_and_set_core_value_min, find_and_set_core_value_max
 using ..Model_Factory: compute_models, compute_crititical_time_step
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann
 using ...Logging_Module: print_table
@@ -411,7 +410,7 @@ function run_solver(solver_options::Dict{Any,Any},
                 set_postfix(iter, t = @sprintf("%.4e", time))
             end
 
-            barrier(comm)
+            # barrier(comm)
         end
     end
     Data_Manager.set_current_time(time - dt)

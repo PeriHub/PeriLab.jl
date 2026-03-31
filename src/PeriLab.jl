@@ -299,7 +299,7 @@ function main(filename::String;
                                                                   comm)
             Data_Manager.set_max_step(steps[end])
             for step_id in steps
-                MPI.Barrier(comm)
+                # MPI.Barrier(comm)
                 if !isnothing(step_id)
                     @info "Step: " * string(step_id) * " of " * string(length(steps))
                 end

@@ -12,7 +12,7 @@ using TimerOutputs: @timeit
 using ...Data_Manager
 using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style,
                   create_permutation
-using ...MPI_Communication: barrier
+# using ...MPI_Communication: barrier
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
 using ...Parameter_Handling:
                              get_initial_time,
@@ -423,7 +423,7 @@ function run_solver(solver_options::Dict{Any,Any},
                 set_postfix(iter, t = @sprintf("%.4e", time))
             end
 
-            barrier(comm)
+            # barrier(comm)
         end
     end
     Data_Manager.set_current_time(time - dt)

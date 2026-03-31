@@ -24,7 +24,7 @@ dm.create_constant_node_field("Elasticity Matrix", Float64,
                               Int64((dof * (dof + 1)) / 2),
                               VectorOrMatrix = "Matrix")
 
-material = Dict("Shear Modulus"=>20, "Bulk Modulus"=>40)
+material = Dict("Shear Modulus" => 20, "Bulk Modulus" => 40)
 
 hm = elasticity_matrix_2d_plane_stress(material) # is in PeriLab
 #    else
@@ -44,8 +44,8 @@ inverse_shape_tensor = dm.create_constant_node_field("Inverse Shape Tensor", Flo
 omega = dm.create_constant_bond_field("Influence Function", Float64, 1, 1.0)
 
 for iID in 1:nodes
-    inverse_shape_tensor[iID, 1, 1]=1
-    inverse_shape_tensor[iID, 2, 2]=1
+    inverse_shape_tensor[iID, 1, 1] = 1
+    inverse_shape_tensor[iID, 2, 2] = 1
     for (jID, nID) in enumerate(nlist[iID])
         bond_geometry[iID][jID] = coor[nID, :] - coor[iID, :]
     end
@@ -61,12 +61,12 @@ K_sparse = assemble_stiffness_contributions_sparse(nodes,              # nnodes
                                                    bond_geometry,      # bond_geometry
                                                    omega)
 
-F_int = zeros(nodes*dof)
-F_extern = zeros(nodes*dof)
-u = zeros(nodes*dof)
-temp = zeros(nodes*dof)
+F_int = zeros(nodes * dof)
+F_extern = zeros(nodes * dof)
+u = zeros(nodes * dof)
+temp = zeros(nodes * dof)
 u[16:18] .= 0.1
-non_BCs=append!(collect(1:9), collect(13:15))
+non_BCs = append!(collect(1:9), collect(13:15))
 
 compute_displacements!(K_sparse, non_BCs, u, F_extern, F_int, temp)
 
@@ -129,10 +129,10 @@ function run_solver(solver_options, datamanager)
             #@timeit to "upload_to_cores" datamanager.synch_manager(synchronise_field,
             #                                                       "upload_to_cores")
             # synch
-            F_external += K*U_extrnal
+            F_external += K * U_extrnal
             # non zeros u weg von K; F_exteral an den stellen = u_external
 
-            uNP1 = K/F
+            uNP1 = K / F
             if "Material" in solver_options["Models"]
                 @views deformed_coorNP1[active_nodes,
                 :] = coor[active_nodes, :] .+
@@ -170,7 +170,7 @@ function run_solver(solver_options, datamanager)
                 set_postfix(iter, t = @sprintf("%.4e", time))
             end
 
-            barrier(comm)
+            # barrier(comm)
         end
     end
     return result_files

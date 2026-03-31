@@ -15,7 +15,7 @@ export find_and_set_core_value_min
 export find_and_set_core_value_sum
 export find_and_set_core_value_avg
 export gather_values
-export barrier
+# export barrier
 
 """
 TODO
@@ -47,6 +47,7 @@ function send_single_value_from_vector(comm::MPI.Comm,
                                        type::Type)
     ncores = MPI.Comm_size(comm)
     rank = MPI.Comm_rank(comm)
+    requests = Vector{MPI.Request}()
     if type == String
         @error "Wrong type - String in function send_single_value_from_vector"
         return nothing
@@ -58,7 +59,7 @@ function send_single_value_from_vector(comm::MPI.Comm,
             # +1 because the index of cores is zero based and julia matrices are one based
             send_msg[1] = values[i + 1]
             if i != controller
-                MPI.Isend(send_msg, comm; dest = i, tag = 0)
+                push!(requests, MPI.Isend(send_msg, comm; dest = i, tag = 0))
                 # @debug "Sending   $rank -> $i"
             else
                 recv_msg[1] = send_msg[1]
@@ -69,6 +70,10 @@ function send_single_value_from_vector(comm::MPI.Comm,
         MPI.Recv!(recv_msg, comm; source = controller, tag = 0)
         # @debug "Receiving $controller -> $rank"
     end
+    if !isempty(requests)
+        MPI.Waitall(requests)
+    end
+    MPI.Barrier(comm)
     return recv_msg[1]
 end
 
@@ -120,6 +125,7 @@ function synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof
     # Create buffers for send and receive operations
     recv_buffers = Vector{Union{Nothing,Matrix,Vector}}(undef, ncores)
     send_buffers = Vector{Union{Nothing,Matrix,Vector}}(undef, ncores)
+    requests = Vector{MPI.Request}()
 
     # Prepare send and receive operations
     for jcore in 1:ncores
@@ -135,8 +141,7 @@ function synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof
             end
             # @debug "Sending $rank -> $(jcore-1)"
             # @debug size(send_buffers[jcore])
-            # MPI.Isend(send_buffers[jcore], comm; dest = jcore - 1, tag = 0)
-            MPI.Send(send_buffers[jcore], comm; dest = jcore - 1, tag = 0)
+            push!(requests, MPI.Isend(send_buffers[jcore], comm; dest = jcore - 1, tag = 0))
         end
 
         if !isempty(overlapnodes[rank + 1][jcore]["Controller"])
@@ -159,6 +164,10 @@ function synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof
             end
         end
     end
+    if !isempty(requests)
+        MPI.Waitall(requests)
+    end
+    MPI.Barrier(comm)
 
     return vector
 end
@@ -183,21 +192,25 @@ function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof
     if ncores == 1
         return vector
     end
+    requests = Vector{MPI.Request}()
     for jcore in 1:ncores
         if (rank + 1 == jcore)
             continue
         end
         if !isempty(overlapnodes[rank + 1][jcore]["Controller"])
             send_index = overlapnodes[rank + 1][jcore]["Controller"]
-            if dof == 1
-                MPI.Send(vector[send_index], comm; dest = jcore - 1, tag = 0)
-            else
-                MPI.Send(vector[send_index, :], comm; dest = jcore - 1, tag = 0)
-            end
             # @debug "Sending $rank -> $(jcore-1)"
+            if dof == 1
+                push!(requests,
+                      MPI.Isend(vector[send_index], comm; dest = jcore - 1, tag = 0))
+            else
+                push!(requests,
+                      MPI.Isend(vector[send_index, :], comm; dest = jcore - 1, tag = 0))
+            end
         end
         if !isempty(overlapnodes[rank + 1][jcore]["Responder"])
             recv_index = overlapnodes[rank + 1][jcore]["Responder"]
+            # @debug "Receiving $(jcore-1) -> $rank"
             if dof == 1
                 vector[recv_index] = MPI.Recv!(vector[recv_index], comm; source = jcore - 1,
                                                tag = 0)
@@ -206,7 +219,6 @@ function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof
                 :] = MPI.Recv!(vector[recv_index, :], comm;
                                                   source = jcore - 1, tag = 0)
             end
-            # @debug "Receiving $(jcore-1) -> $rank"
 
             # if dof == 1
             #     recv_msg = similar(vector[recv_index])
@@ -222,6 +234,10 @@ function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof
             # @debug "Received $(jcore-1) -> $rank = $recv_msg"
         end
     end
+    if !isempty(requests)
+        MPI.Waitall(requests)
+    end
+    MPI.Barrier(comm)
     return vector
 end
 
@@ -245,6 +261,7 @@ function synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array
     if ncores == 1
         return array
     end
+    requests = Vector{MPI.Request}()
     for jcore in 1:ncores
         if (rank + 1 == jcore)
             continue
@@ -257,7 +274,7 @@ function synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array
                     #TODO: Check if we can remove the [:,:]
                     @views send_msg = mapreduce(permutedims, vcat, array[iID])
                 end
-                MPI.Isend(send_msg, comm; dest = jcore - 1, tag = 0)
+                push!(requests, MPI.Isend(send_msg, comm; dest = jcore - 1, tag = 0))
                 # @debug "Sending   $rank -> $(jcore-1)"
             end
         end
@@ -279,6 +296,10 @@ function synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array
             end
         end
     end
+    if !isempty(requests)
+        MPI.Waitall(requests)
+    end
+    MPI.Barrier(comm)
     return array
 end
 
@@ -364,10 +385,12 @@ Sends a vector from the root to the core i
 """
 function send_vector_from_root_to_core_i(comm::MPI.Comm, send_msg, recv_msg, distribution)
     currentRank = MPI.Comm_rank(comm)
-    MPI.Barrier(comm)
+    # MPI.Barrier(comm)
+    requests = Vector{MPI.Request}()
     if currentRank == 0
         for rank in 1:(MPI.Comm_size(comm) - 1)
-            MPI.Isend(send_msg[distribution[rank + 1]], comm; dest = rank, tag = 0)
+            push!(requests,
+                  MPI.Isend(send_msg[distribution[rank + 1]], comm; dest = rank, tag = 0))
             # @debug "Sending $currentRank -> $rank"
         end
         recv_msg .= send_msg[distribution[1]]
@@ -375,6 +398,10 @@ function send_vector_from_root_to_core_i(comm::MPI.Comm, send_msg, recv_msg, dis
         MPI.Recv!(recv_msg, comm; source = 0, tag = 0)
         # @debug "Receiving 0 -> $currentRank"
     end
+    if !isempty(requests)
+        MPI.Waitall(requests)
+    end
+    MPI.Barrier(comm)
     return recv_msg
 end
 
@@ -502,8 +529,8 @@ function gather_values(comm::MPI.Comm,
     return MPI.gather(value, comm; root = 0)
 end
 
-function barrier(comm::MPI.Comm)
-    MPI.Barrier(comm)
-end
+# function barrier(comm::MPI.Comm)
+#     MPI.Barrier(comm)
+# end
 
 end

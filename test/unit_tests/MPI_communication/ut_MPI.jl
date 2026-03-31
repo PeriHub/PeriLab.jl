@@ -226,7 +226,7 @@ if ncores == 3
         push_test!(test, (E[2] == false), @__FILE__, @__LINE__)
         push_test!(test, (E[3] == false), @__FILE__, @__LINE__)
     end
-    PeriLab.MPI_Communication.barrier(comm)
+    MPI.Barrier(comm)
 
     A = PeriLab.MPI_Communication.synch_controller_to_responder(comm, overlap_map, A, 1)
     B = PeriLab.MPI_Communication.synch_controller_to_responder(comm, overlap_map, B, 4)
