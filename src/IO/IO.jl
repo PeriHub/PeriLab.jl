@@ -8,6 +8,7 @@ using DataFrames
 using PrettyTables
 using Logging
 using TimerOutputs: @timeit
+using Printf
 
 using ..Data_Manager
 
@@ -848,7 +849,7 @@ function show_block_summary(solver_options::Dict,
     push!(headers, "Horizon")
 
     if size == 1
-        push!(headers, "Number of Nodes")
+        push!(headers, "Num. Nodes")
     end
     # tbd
     #types = [Int64, String, String, String, String, Float64, Float64, Int64]
@@ -866,7 +867,7 @@ function show_block_summary(solver_options::Dict,
     for id in eachindex(block_name_list)
         row = [block_name_list[id]]
         for name in headers[2:end]
-            if name == "Number of Nodes"
+            if name == "Num. Nodes"
                 # get number of nodes
                 num_nodes = string(length(findall(x -> x == id, block_Id)))
                 push!(row, num_nodes)
@@ -882,7 +883,7 @@ function show_block_summary(solver_options::Dict,
             elseif haskey(params["Blocks"][block_name_list[id]], name * " Model")
                 push!(row, params["Blocks"][block_name_list[id]][name * " Model"])
             elseif haskey(params["Blocks"][block_name_list[id]], name)
-                push!(row, string(params["Blocks"][block_name_list[id]][name]))
+                push!(row, @sprintf("%.3e", (params["Blocks"][block_name_list[id]][name])))
             else
                 push!(row, "")
             end

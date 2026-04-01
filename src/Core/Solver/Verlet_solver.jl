@@ -404,10 +404,10 @@ function run_solver(solver_options::Dict{Any,Any},
             Data_Manager.set_current_time(time)
 
             if idt % ceil(nsteps / 100) == 0
-                @info "Step: $idt / $(nsteps+1) [$time s]"
+                @info "Step: $idt / $(nsteps+1) [$(@sprintf("%.3e", time)) s]"
             end
             if rank == 0 && !silent
-                set_postfix(iter, t = @sprintf("%.4e", time))
+                set_postfix(iter, t = @sprintf("%.3e", time))
             end
 
             # barrier(comm)
