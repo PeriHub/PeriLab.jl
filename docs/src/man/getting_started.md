@@ -55,13 +55,17 @@ For post-processing of the Exodus result files  [ParaView](https://www.paraview.
 
 The figure shows an example of a plate and the list of possible options.
 
+```@raw html
 <img src="../assets/paraview_example.png" width="400">
-
+```
 
 Because the points are very small, you have the option to use point gaussian as an option. The points get a volume. The standard is a sphere.
 The size can be scaled.
+
+```@raw html
 <img src="../assets/point_gaussian.png" height="180">
 <img src="../assets/gauss_scale.png" height="180">
+```
 
 ## Training
 
