@@ -49,6 +49,20 @@ Run PeriLab with two processors:
 $ mpiexecjl -n 2 julia -e "using PeriLab; PeriLab.main()" Dogbone.yaml -v
 ```
 
+## Postprocessing
+
+For post-processing of the Exodus result files  [ParaView](paraview.org) is used. You can open the .e file directly. All output data can be find there. At step 0 all zero. They are filled in the first step. The number of steps are defined in the yaml.
+
+The figure shows an example of a plate and the list of possible options.
+
+<img src="../assets/paraview_example.png" width="400">
+
+
+Because the points are very small, you have the option to use point gaussian as an option. The points get a volume. The standard is a sphere.
+The size can be scaled.
+<img src="../assets/point_gaussian.png" height="180">
+<img src="../assets/gauss_scale.png" height="180">
+
 ## Training
 
 The training input is given under the examples folder. The documentation and a video will follow.
