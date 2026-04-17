@@ -110,7 +110,7 @@ $$n(x,y,z (optional))=\text{max}(start_{val})-a(x,y,z (optional))\text{max}(coor
 
 The solver computes the stiffness matrix of the problem. It is solved by
 
-$$ \mathbf{u} = \mathbf{K}_{PD}^{-1}\mathbf{F}_{external}$$
+$$\mathbf{u} = \mathbf{K}_{PD}^{-1}\mathbf{F}_{external}$$
 
 The number of steps defines the virtual time step.
 
