@@ -101,7 +101,7 @@ You can call the user subroutine by defining path with a compiled Fotran library
 | Number of State Variables | Int $\geq$ 0 | Number of state variables; Defines the size of state variable field Data_Manager.create_constant_node_scalar_field("State Variables", Float64, num_state_vars)| yes |
 | Number of Properties | Int $\geq$ 1 | Properties of the material; Needed for the propterty field Data_Manager.create_constant_free_size_field("Properties", Float64, (num_props, 1))
  | No |
-| Property_$iID| Float | iID is 1...Number of Properties. It has to be in order and can be utilized in the UMAT. | No|
+| Property iID| Float | iID is 1...Number of Properties. It has to be in order and can be utilized in the UMAT. | No|
 |UMAT Material Name|String (maximum are 80 characters)| Defines material names defined in the UMAT to destinguash between different areas of the Fortran routine | Yes |
 |UMAT name| in development | Should allow the definition of own subroutine name. The standard will be UMAT| in development |
 |Predefined Field Names| String separated by spaces $\geq0$ | Define all the fields in the mesh file which should be used as pre-defined values. An increment field is than defined as well. E.g. Predefined Field Names: "Temperature" "Color"; Temperature and Color must exist in the mesh file. **They must be defined as Float or Int in that case**.| Yes|
