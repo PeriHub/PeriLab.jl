@@ -270,7 +270,8 @@ url={https://doi.org/10.1016/j.softx.2024.101700}
 }
 ```
 
-
+Updates exist for
+[v1.3.6](https://doi.org/10.1016/j.softx.2025.102168) and [v.2.0](https://doi.org/10.1016/j.softx.2026.102644).
 
 
 
