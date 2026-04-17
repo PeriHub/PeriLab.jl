@@ -13,9 +13,9 @@ Throughout the rest of this tutorial, we will assume that you have installed the
 PeriLab package and have already typed `using PeriLab` to bring all of the
 relevant variables into your current namespace.
 
-## Using `PeriLab` 
+## Using `PeriLab`
 
-The simplest way to run the `PeriLab` simulation core is to use a provided example import the module and go. 
+The simplest way to run the `PeriLab` simulation core is to use a provided example import the module and go.
 
 ```julia PeriLab
 using PeriLab
@@ -55,7 +55,7 @@ The training input is given under the examples folder. The documentation and a v
 
 ## Index
 ```@index
-Pages = ["gettin_started.md"]
+Pages = ["getting_started.md"]
 ```
 
 ## Functions
