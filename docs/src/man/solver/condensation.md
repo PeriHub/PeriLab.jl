@@ -5,7 +5,7 @@ Condensation methods can be used to reduce the number of degress of freedom (dof
 The system is partitioned into slave $s$ and master $m$ dof
 [GuyanRJ1965](@cite):
 
-$$\begin{bmatrix}
+$$\begin{equation}\begin{bmatrix}
 \mathbf{K}_{mm} & \mathbf{K}_{ms} \\
 \mathbf{K}_{sm} & \mathbf{K}_{ss}
 \end{bmatrix}
