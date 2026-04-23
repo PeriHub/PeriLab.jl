@@ -52,6 +52,24 @@ $$\mathbf{C}_1=\mathbf{C}\cdot\cdot\mathbf{K}^{-1},$$
 
 utilizing the elasticity tensor.
 
+The difference between non-compensated and compensated zero-energy models is given for three examples.
+
+### Tension
+
+![](../assets/tension_zero_energy_modes.png)
+![](../assets/tension_no_zero_energy_modes.png)
+
+### Pure Shear
+
+![](../assets//shear_zero_energy_modes.png)
+![](../assets/shear_no_zero_energy_modes.png)
+
+### Bending
+
+![](../assets/bending_zero_energy_modes.png)
+![](../assets/bending_no_zero_energy_modes.png)
+
+
 ## Bond-associated correspondence Peridynamics
 
 ## Matrix based approach

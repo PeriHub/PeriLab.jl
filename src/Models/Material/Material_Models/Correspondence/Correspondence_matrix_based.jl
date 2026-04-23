@@ -244,7 +244,7 @@ function build_sparsity_and_map(nodes::AbstractVector{Int},
 
     @inbounds for iID in nodes
         nj = nlist[iID]
-        mnj = length(nj)
+        mnj = number_of_neighbors[iID]
         # row nodes for iID: nj ∪ iID
         for r in 1:(mnj + 1)
             row_node = r <= mnj ? nj[r] : iID
@@ -293,7 +293,6 @@ end
 # =============================================================================
 # Main assembly
 # =============================================================================
-
 function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int},
                                              K_colptr::Vector{Int},
                                              K_rowval::Vector{Int},
@@ -316,7 +315,7 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int},
     # Reset K — sparsity pattern stays, values zeroed
     fill!(K.nzval, 0.0)
 
-    # CB tensors passed in — allocated once externally, reused across calls
+    # CB tensors allocated once externally, reused across calls
     @timeit "precompute_CB" precompute_CB_all_nodes!(all_CB_tensors, nodes, C_Voigt,
                                                      inverse_shape_tensor, nlist, volume,
                                                      bond_geometry, omega, bond_damage, dof)
@@ -326,7 +325,7 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int},
     D_inv_X = Vector{Float64}(undef, dof)
     ldof = (max_neighbors + 1) * dof
     K_local = zeros(ldof, ldof)
-    local_nzidx = zeros(Int, ldof, ldof)   # index cache for scatter, reused per node
+    local_nzidx = zeros(Int, ldof, ldof)
 
     nzval = K.nzval   # direct reference — avoids repeated field access
 
@@ -338,11 +337,10 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int},
             CB_k_i = all_CB_tensors[iID]
             Z_i = @view zStiff[iID, :, :]
             V_i = volume[iID]
-            blk = (mj + 1) * dof
 
-            fill!(@view(K_local[1:blk, 1:blk]), 0.0)
+            fill!(@view(K_local[1:((mj + 1) * dof), 1:((mj + 1) * dof)]), 0.0)
 
-            # Hoisted row offsets for center node i
+            # Hoisted local row offsets for center node i
             row_i_base = ntuple(m -> m * (mj + 1), dof)
 
             for (j_idx, jID) in enumerate(nj)
@@ -352,21 +350,22 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int},
                 V_j = volume[jID]
                 X_ij = bond_geometry[iID][j_idx]
 
-                # D_inv_X and dot computed once per j — shared by k-loop and ZE
+                # D_inv_X = D_i^{-1} * X_ij — computed once per j,
+                # shared by normal k-loop and ZE k-loop
                 mul!(D_inv_X, D_inv_i, X_ij)
-                dot_XDX = dot(X_ij, D_inv_X)
 
-                # Hoisted row offsets for neighbor j
+                # Hoisted local row offsets for neighbor j
                 row_j_base = ntuple(m -> (m - 1) * (mj + 1) + j_idx, dof)
 
-                # ── Merged forward + backward normal stiffness k-loop ─────────
+                # ── Normal stiffness: merged fwd + bwd, all k ─────────────────
                 @timeit "k_loop" for (k_idx, kID) in enumerate(nj)
                     bond_damage[iID][k_idx] == 0.0 && continue
 
                     ω_ik = omega[iID][k_idx] * bond_damage[iID][k_idx]
                     V_k = volume[kID]
 
-                    # compute_stiffness_contribution called ONCE per (j,k)
+                    # K^□_ijk = ω_ij * ω_ik * (X_ij^T D_i^{-1}) CB_ik
+                    # stored in K_block (dof × dof)
                     @timeit "compute_stiffness_contribution" compute_stiffness_contribution(CB_k_i,
                                                                                             k_idx,
                                                                                             D_inv_i,
@@ -377,6 +376,9 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int},
                                                                                             dof,
                                                                                             K_block)
 
+                    # Scatter K^□_ijk into four positions (ii, ik, ji, jk)
+                    # fwd × V_j  →  row i
+                    # bwd × V_i  →  row j
                     for o in 1:dof
                         col_ii = (o - 1) * (mj + 1) + (mj + 1)
                         col_ik = (o - 1) * (mj + 1) + k_idx
@@ -394,62 +396,50 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int},
                     end
                 end  # k_loop
 
-                # ── Merged forward + backward zero-energy ─────────────────────
-                @timeit "ze_loop" begin
-                    γ_fwd = 1.0 - ω_ij * V_j * dot_XDX
-                    γ_bwd = 1.0 - ω_ij * V_i * dot_XDX
-                    f1_fwd = ω_ij * γ_fwd * V_j
-                    f1_bwd = -ω_ij * γ_bwd * V_i
+                # ── Zero-energy stabilization: unified loop over all k ────────
+                # Diagonal (k==j) and cross terms (k≠j) share the same scatter
+                # pattern; they differ only in the scalar prefactor.
+                # For k==j: dot_k = X_ij^T D_i^{-1} X_ij = dot_XDX
+                #           → f_fwd = ω_ij*γ_fwd*V_j, f_bwd = -ω_ij*γ_bwd*V_i
+                # For k≠j:  dot_k = X_ik^T D_i^{-1} X_ij  (reuses D_inv_X)
+                # Both cases reduce to the same two lines below.
+                @timeit "ze_loop" for (k_idx, kID) in enumerate(nj)
+                    bond_damage[iID][k_idx] == 0.0 && continue
+
+                    ω_ik = omega[iID][k_idx] * bond_damage[iID][k_idx]
+                    V_k = volume[kID]
+                    dot_k = dot(bond_geometry[iID][k_idx], D_inv_X)
+
+                    # Unified prefactors (covers k==j and k≠j):
+                    #   f_fwd =  ω_ij * V_j * (δ_{kj} - ω_ik * V_k * dot_k)
+                    #   f_bwd = -ω_ij * V_i * (δ_{kj} - ω_ik * V_k * dot_k)
+                    base = ω_ij * ω_ik * V_k * dot_k
+                    f_fwd = kID == jID ? ω_ij * V_j * (1.0 - ω_ij * V_j * dot_k) :
+                            -base * V_j
+                    f_bwd = kID == jID ? -ω_ij * V_i * (1.0 - ω_ij * V_i * dot_k) :
+                            base * V_i
 
                     for o in 1:dof
                         col_ii = (o - 1) * (mj + 1) + (mj + 1)
-                        col_ij = (o - 1) * (mj + 1) + j_idx
+                        col_ik = (o - 1) * (mj + 1) + k_idx
                         for m in 1:dof
                             Zmo = Z_i[m, o]
                             row_i = row_i_base[m]
                             row_j = row_j_base[m]
-                            vf = f1_fwd * Zmo
-                            vb = f1_bwd * Zmo
+                            vf = f_fwd * Zmo
+                            vb = f_bwd * Zmo
                             K_local[row_i, col_ii] += vf
-                            K_local[row_i, col_ij] -= vf
+                            K_local[row_i, col_ik] -= vf
                             K_local[row_j, col_ii] += vb
-                            K_local[row_j, col_ij] -= vb
-                        end
-                    end
-
-                    # Cross terms (k ≠ j)
-                    for (k_idx, kID) in enumerate(nj)
-                        (bond_damage[iID][k_idx] == 0.0 || kID == jID) && continue
-                        ω_ik = omega[iID][k_idx] * bond_damage[iID][k_idx]
-                        V_k = volume[kID]
-                        dot_k = dot(bond_geometry[iID][k_idx], D_inv_X)
-                        base = ω_ij * ω_ik * V_k * dot_k
-                        f2_fwd = -V_j * base
-                        f2_bwd = V_i * base
-
-                        for o in 1:dof
-                            col_ii = (o - 1) * (mj + 1) + (mj + 1)
-                            col_ik = (o - 1) * (mj + 1) + k_idx
-                            for m in 1:dof
-                                Zmo = Z_i[m, o]
-                                row_i = row_i_base[m]
-                                row_j = row_j_base[m]
-                                vf = f2_fwd * Zmo
-                                vb = f2_bwd * Zmo
-                                K_local[row_i, col_ii] += vf
-                                K_local[row_i, col_ik] -= vf
-                                K_local[row_j, col_ii] += vb
-                                K_local[row_j, col_ik] -= vb
-                            end
+                            K_local[row_j, col_ik] -= vb
                         end
                     end
                 end  # ze_loop
             end  # j_loop
 
-            # ── FLUSH: K_local → K.nzval ─────────────────────────────────────
-            # Phase 1: build local index cache — O(log(nnz_per_col)) per entry,
-            #          but called only (mj+1)²*dof² times (not per nzval write).
-            # Phase 2: scatter K_local into nzval using cached indices.
+            # ── FLUSH: K_local → K.nzval ──────────────────────────────────────
+            # Phase 1: build index cache (O(log nnz) per entry, once per node)
+            # Phase 2: scatter into nzval using cached indices
             @timeit "scatter_to_K" begin
                 blk1 = mj + 1
                 @inbounds for c in 1:blk1
@@ -478,7 +468,7 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int},
                         (o - 1) * blk1 + c]] += val
                     end
                 end
-            end
+            end  # scatter_to_K
         end  # iID loop
     end  # assembly
 
