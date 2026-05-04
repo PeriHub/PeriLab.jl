@@ -121,6 +121,14 @@ function init_model(nodes::AbstractVector{Int64},
     DRPLDT = Data_Manager.create_constant_node_scalar_field("Variation of RPL with respect to the temperature",
                                                             Float64)
     DFGRD0 = Data_Manager.create_constant_node_tensor_field("DFGRD0", Float64, dof)
+
+    DDSDDE::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Elasticity Matrix",
+                                                                                      Float64,
+                                                                                      Int64((dof *
+                                                                                             (dof +
+                                                                                              1)) /
+                                                                                            2))
+
     # is already initialized if thermal problems are adressed
     Data_Manager.create_node_scalar_field("Temperature", Float64)
     deltaT = Data_Manager.create_constant_node_scalar_field("Delta Temperature", Float64)
@@ -157,6 +165,16 @@ function init_model(nodes::AbstractVector{Int64},
     zStiff = Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",
                                                             Float64,
                                                             dof)
+
+    symmetry::String = get(material_parameter, "Symmetry", "default")
+
+    for iID in nodes
+        @views DDSDDE[iID, :,
+        :] = get_Hooke_matrix(material_parameter,
+                                                    symmetry,
+                                                    dof,
+                                                    iID)
+    end
 end
 
 """
@@ -217,7 +235,11 @@ function compute_stresses(nodes::AbstractVector{Int64},
     statev = Data_Manager.get_field("State Variables")
 
     stress_temp::Vector{Float64} = zeros(Float64, 3 * dof - 3)
-    DDSDDE = zeros(Float64, 3 * dof - 3, 3 * dof - 3)
+    # DDSDDE = zeros(Float64, 3 * dof - 3, 3 * dof - 3)
+    ## TODO use C_voigt = Data_Manager.get_field("Material Gradient")
+    DDSDDE_iD = Data_Manager.get_field("Material Gradient")
+    #
+    ##
     SSE = Data_Manager.get_field("Specific Elastic Strain Energy")
     SPD = Data_Manager.get_field("Specific Plastic Dissipation")
     SCD = Data_Manager.get_field("Specific Creep Dissipation Energy")
@@ -268,6 +290,7 @@ function compute_stresses(nodes::AbstractVector{Int64},
         DDSDDT_temp = DDSDDT[iID, :]
         DRPLDE_temp = DRPLDE[iID, :]
         DRPLDT_temp = DRPLDT[iID]
+        DDSDDE = DDSDDE_iD[iID, :, :]
         UMAT_interface(stress_temp,
                        STATEV_temp,
                        DDSDDE,

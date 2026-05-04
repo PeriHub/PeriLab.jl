@@ -49,8 +49,10 @@ function init_model(nodes::AbstractVector{Int64},
     end
     dof = Data_Manager.get_dof()
     Data_Manager.create_node_tensor_field("Strain", Float64, dof)
+
     Data_Manager.create_constant_node_tensor_field("Strain Increment", Float64, dof)
     Data_Manager.create_node_tensor_field("Cauchy Stress", Float64, dof)
+
     Data_Manager.create_node_scalar_field("von Mises Stress", Float64)
     rotation::Bool = Data_Manager.get_rotation()
     material_models = split(material_parameter["Material Model"], "+")
@@ -176,7 +178,7 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
     @timeit "compute strain" compute_strain!(nodes, deformation_gradient, strain_NP1)
     @timeit "compute matrix diff" matrix_diff!(strain_increment, nodes, strain_NP1,
                                                strain_N)
-
+    #@error ""
     if rotation
         @timeit "rotate forward" begin
             rotation_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Rotation Tensor")

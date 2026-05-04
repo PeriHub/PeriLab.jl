@@ -26,19 +26,23 @@ end
                                                                                                                  Dict{String,
                                                                                                                       Any}("File" => file,
                                                                                                                            "Number of Properties" => 3,
-                                                                                                                           "Property_1" => 2,
-                                                                                                                           "Property_2" => 2,
+                                                                                                                           "Poisson's Ratio" => 0.1,
+                                                                                                                           "Youngs' Modulus" => 2,
                                                                                                                            "Property_3" => 2.4,
                                                                                                                            "Property_4" => 2)))
     @test_logs (:error,
                 "File $(joinpath(pwd(), directory, file * "_not_there")) does not exist, please check name and directory.") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
                                                                                                                                                                                                                         Dict{String,
-                                                                                                                                                                                                                             Any}("File" => file *
+                                                                                                                                                                                                                             Any}("Poisson's Ratio" => 0.1,
+                                                                                                                                                                                                                                  "Youngs' Modulus" => 2,
+                                                                                                                                                                                                                                  "File" => file *
                                                                                                                                                                                                                                             "_not_there",
                                                                                                                                                                                                                                   "Number of Properties" => 3))
     @test_logs (:error, "Number of Properties must be at least equal 1") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
                                                                                                                                                                      Dict{String,
-                                                                                                                                                                          Any}("File" => file))
+                                                                                                                                                                          Any}("Poisson's Ratio" => 0.1,
+                                                                                                                                                                               "Youngs' Modulus" => 2,
+                                                                                                                                                                               "File" => file))
 
     @test_logs (:error, "UMAT file is not defined.") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
                                                                                                                                                  Dict{String,
@@ -52,6 +56,8 @@ end
                                                                                                                                                                                             "Property_1" => 2,
                                                                                                                                                                                             "Property_2" => 2.4,
                                                                                                                                                                                             "Property_3" => 2.4,
+                                                                                                                                                                                            "Poisson's Ratio" => 0.1,
+                                                                                                                                                                                            "Youngs' Modulus" => 2,
                                                                                                                                                                                             "UMAT Material Name" => "a"^81))
     @test !isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
                                                                                                                  Dict{String,
@@ -60,6 +66,8 @@ end
                                                                                                                            "Property_1" => 2,
                                                                                                                            "Property_2" => 2,
                                                                                                                            "Property_3" => 2.4,
+                                                                                                                           "Poisson's Ratio" => 0.1,
+                                                                                                                           "Youngs' Modulus" => 2,
                                                                                                                            "UMAT Material Name" => "a"^80)))
 
     properties = PeriLab.Data_Manager.get_field("Properties")

@@ -522,7 +522,7 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
     number_of_neighbors = Data_Manager.get_field("Number of Neighbors")
     volume = Data_Manager.get_field("Volume")
     omega = Data_Manager.get_field("Influence Function")
-    C_voigt = Data_Manager.get_field("Elasticity Matrix")
+    C_voigt = Data_Manager.get_field("Material Gradient")
     bond_damage = Data_Manager.get_field("Bond Damage", "NP1")
 
     C_voigt_trafo = _apply_rotation(C_voigt, dof, nnodes)
@@ -557,7 +557,7 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
                                                            bond_geometry, omega,
                                                            bond_damage, zStiff)
 
-    Data_Manager.set_stiffness_matrix(-K_sparse)
+    Data_Manager.set_stiffness_matrix(-2 .* K_sparse) # somewhere in the assembly we had a factor of 0.5, so we compensate here to get the final K
 end
 
 function compute_model(nodes::AbstractVector{Int64},
@@ -574,7 +574,7 @@ function compute_model(nodes::AbstractVector{Int64},
     number_of_neighbors = Data_Manager.get_field("Number of Neighbors")
     omega = Data_Manager.get_field("Influence Function")
     bond_damage = Data_Manager.get_field("Bond Damage", "NP1")
-    C_voigt = Data_Manager.get_field("Elasticity Matrix")
+    C_voigt = Data_Manager.get_field("Material Gradient")
     zStiff = include_zero_energy ?
              Data_Manager.get_field("Zero Energy Stiffness") : nothing
 
