@@ -245,7 +245,7 @@ function run_solver(solver_options::Dict{Any,Any},
     all_nodes_active = length(active_nodes) == nnodes
 
     non_BCs_global = Data_Manager.get_bc_free_dof()
-
+    @info "Static time increment: $dt"
     for idt in iter
         Data_Manager.set_iteration(idt)
         @timeit "Linear Static" begin
@@ -479,7 +479,7 @@ function compute_displacements_active_subset!(K_active::AbstractMatrix{Float64},
 
     # Build modified force vector (same as reference)
     @inbounds for (idx, i) in enumerate(active_non_BCs)
-        solver.F_modified[idx] = F_ext_vec[i] - F_int_vec[i]
+        solver.F_modified[idx] = -F_ext_vec[i] - F_int_vec[i]
     end
 
     # LU factorization and solve (same as reference)
@@ -507,97 +507,6 @@ function compute_displacements_active_subset!(K_active::AbstractMatrix{Float64},
     return nothing
 end
 
-# Neue Hilfsfunktion für reduziertes System
-# function compute_displacements_reduced!(K_active::AbstractMatrix{Float64},
-#                                         active_non_BCS::AbstractVector{Int},
-#                                         u_active::AbstractVector{Float64},
-#                                         F_int_active::AbstractVector{Float64},
-#                                         F_ext_active::AbstractVector{Float64},
-#                                         solver::DisplacementSolverCache)
-#     isempty(active_non_BCS) && return nothing
-
-#     n_total = length(u_active)
-#     n_free = length(active_non_BCS)
-
-#     length(solver.F_modified) != n_free && resize!(solver.F_modified, n_free)
-#     length(solver.bc_mask) != n_total && resize!(solver.bc_mask, n_total)
-
-#     has_BCs = n_free < n_total
-
-#     if has_BCs
-#         fill!(solver.bc_mask, true)
-#         @inbounds for i in active_non_BCS
-#             solver.bc_mask[i] = false
-#         end
-
-#         K_sub = K_active[active_non_BCS, solver.bc_mask]
-#         u_bc = @view u_active[solver.bc_mask]
-
-#         length(solver.temp) != n_free && resize!(solver.temp, n_free)
-#         mul!(solver.temp, K_sub, u_bc)
-
-#         @inbounds for (idx, i) in enumerate(active_non_BCS)
-#             F_int_active[i] += solver.temp[idx]
-#         end
-#     end
-
-#     @inbounds for (idx, i) in enumerate(active_non_BCS)
-#         solver.F_modified[idx] = F_ext_active[i] - F_int_active[i]
-#     end
-
-#     # LU factorization
-#     @timeit "LU factorization" begin
-#         K_free = K_active[active_non_BCS, active_non_BCS]
-#         try
-#             solver.K_free_lu = lu(K_free)
-#         catch e
-#             @error "LU factorization failed: $e"
-#             @error "Matrix size: $(size(K_free))"
-#             @error "Condition number: $(cond(K_free))"
-#             rethrow(e)
-#         end
-#     end
-
-#     length(solver.u_free) != n_free && resize!(solver.u_free, n_free)
-
-#     @timeit "ldiv" ldiv!(solver.u_free, solver.K_free_lu, solver.F_modified)
-
-#     @inbounds for (idx, i) in enumerate(active_non_BCS)
-#         u_active[i] = solver.u_free[idx]
-#     end
-
-#     return nothing
-# end
-
-# function get_active_dof(active_nodes::AbstractVector{Int64}, dof::Int64, nnodes::Int64)
-#     n_active = length(active_nodes)
-
-#     active_dofs_local = collect(1:(n_active * dof))
-#     local_to_global = Dict{Int,Int}()
-
-#     for (iD, global_iD) in enumerate(active_nodes)
-#         for j in 1:dof
-#             local_idx = iD + (j - 1) * n_active
-#             global_idx = global_iD + (j - 1) * nnodes
-#             local_to_global[local_idx] = global_idx
-#         end
-#     end
-
-#     return active_dofs_local, local_to_global
-# end
-
-# function filter_and_map_bc(non_BCs_global::AbstractVector{Int64},
-#                            local_to_global::Dict{Int,Int})
-#     active_non_BCs_local = Int[]
-
-#     for (local_idx, global_idx) in pairs(local_to_global)
-#         if global_idx in non_BCs_global
-#             push!(active_non_BCs_local, local_idx)
-#         end
-#     end
-
-#     return sort(active_non_BCs_local)
-# end
 function compute_matrix(nodes::AbstractVector{Int64})
     if length(nodes) == 0
         return Data_Manager.get_stiffness_matrix()
