@@ -22,7 +22,7 @@ Sets the NP1_to_N dataset
 - `type`::Type The field type
 """
 function set_NP1_to_N(name::String, ::Type{T}) where {T<:Union{Float64,Bool,Int64}}
-    if !has_key(name)
+    if !has_key(name * "N")
         data["NP1_to_N"][name] = NP1_to_N(name * "N", name * "NP1", zero(T))
     end
 end
