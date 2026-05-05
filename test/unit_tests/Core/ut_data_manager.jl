@@ -157,6 +157,23 @@ testfield_keys = PeriLab.Data_Manager.get_all_field_keys()
     @test "INP1" in testfield_keys
 end
 @testset "ut_set_fem" begin
+    @test PeriLab.Data_Manager.data["NP1_to_N"]["B"].N == "BN"
+    @test PeriLab.Data_Manager.data["NP1_to_N"]["B"].NP1 == "BNP1"
+    PeriLab.Data_Manager.set_NP1_to_N("B", Bool)
+    @test PeriLab.Data_Manager.data["NP1_to_N"]["B"].N == "BN"
+    @test PeriLab.Data_Manager.data["NP1_to_N"]["B"].NP1 == "BNP1"
+
+    @test !haskey(PeriLab.Data_Manager.data["NP1_to_N"], "test_set_NP1_to_N")
+
+    PeriLab.Data_Manager.set_NP1_to_N("test_set_NP1_to_N", Int64)
+
+    @test haskey(PeriLab.Data_Manager.data["NP1_to_N"], "test_set_NP1_to_N")
+    @test PeriLab.Data_Manager.data["NP1_to_N"]["test_set_NP1_to_N"].N ==
+          "test_set_NP1_to_NN"
+    @test PeriLab.Data_Manager.data["NP1_to_N"]["test_set_NP1_to_N"].N ==
+          "test_set_NP1_to_NNP1"
+end
+@testset "ut_set_fem" begin
     @test PeriLab.Data_Manager.fem_active() == false
     PeriLab.Data_Manager.set_fem(true)
     @test PeriLab.Data_Manager.fem_active() == true
