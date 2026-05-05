@@ -21,7 +21,7 @@ include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
 using ....Material_Basis: compute_Piola_Kirchhoff_stress!
 using .......Helpers: invert, rotate, determinant, smat, matrix_diff!, fast_mul!, mat_mul!
-using .......Geometry: compute_strain!
+using .......Geometry: compute_strain!, compute_linear_strain!
 
 export init_model
 export material_name
@@ -175,7 +175,12 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
     stress_NP1::NodeTensorField{Float64} = Data_Manager.get_field("Cauchy Stress", "NP1")
     strain_increment::NodeTensorField{Float64} = Data_Manager.get_field("Strain Increment")
 
-    @timeit "compute strain" compute_strain!(nodes, deformation_gradient, strain_NP1)
+    if haskey(material_parameter, "Linear Strain") && material_parameter["Linear Strain"]
+        @timeit "compute linear strain" compute_linear_strain!(nodes, deformation_gradient,
+                                                               strain_NP1)
+    else
+        @timeit "compute strain" compute_strain!(nodes, deformation_gradient, strain_NP1)
+    end
     @timeit "compute matrix diff" matrix_diff!(strain_increment, nodes, strain_NP1,
                                                strain_N)
     #@error ""
