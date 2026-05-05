@@ -382,7 +382,7 @@ function run_solver(solver_options::Dict{Any,Any},
                     # Update forces for all nodes
                     @inbounds for iID in nodes
                         for d in 1:dof
-                            forces[iID, d] = force_densities_NP1[iID, d] * volume[iID]
+                            forces[iID, d] += force_densities_NP1[iID, d] .* volume[iID]
                         end
                     end
                 end
@@ -602,7 +602,15 @@ function compute_displacements!(K::AbstractMatrix{Float64},
     @inbounds for (idx, i) in enumerate(active_non_BCS)
         u_vec[i] = solver.u_free[idx]
     end
-
+    if has_BCs
+        bc_dofs = findall(solver.bc_mask)
+        # K_active[bc_dofs, :] * u_vec = K_bc,free * u_free + K_bc,bc * u_bc
+        K_bc_rows = K_active[bc_dofs, :]        # braucht vollständige K_active
+        r_bc = K_bc_rows * u_vec               # u_vec ist jetzt vollständig
+        @inbounds for (idx, i) in enumerate(bc_dofs)
+            F_int_vec[i] = r_bc[idx] - F_ext_vec[i]
+        end
+    end
     return nothing
 end
 

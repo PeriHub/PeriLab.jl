@@ -557,7 +557,7 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
                                                            bond_geometry, omega,
                                                            bond_damage, zStiff)
 
-    Data_Manager.set_stiffness_matrix(-2 .* K_sparse) # somewhere in the assembly we had a factor of 0.5, so we compensate here to get the final K
+    Data_Manager.set_stiffness_matrix(-K_sparse) # somewhere in the assembly we had a factor of 0.5, so we compensate here to get the final K
 end
 
 function compute_model(nodes::AbstractVector{Int64},
