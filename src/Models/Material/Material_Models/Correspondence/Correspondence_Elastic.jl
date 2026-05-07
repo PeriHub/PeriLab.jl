@@ -132,8 +132,11 @@ function compute_stresses(nodes::AbstractVector{Int64},
 
             # Constitutive Relation: σ_ij^(n+1) = σ_ij^n + C_ijkl * Δε_kl
             for k in axes(mapping, 1)
+                i_k = mapping[k, 1]
+                j_k = mapping[k, 2]
+                factor = (i_k == j_k) ? 1.0 : 2.0   # Voigt: γ = 2ε für Schub
                 sNP1 += hooke_matrix[iID, m, k] *
-                        strain_increment[iID, mapping[k, 1], mapping[k, 2]]
+                        factor * strain_increment[iID, i_k, j_k]
             end
 
             stress_NP1[iID, i, j] = sNP1
