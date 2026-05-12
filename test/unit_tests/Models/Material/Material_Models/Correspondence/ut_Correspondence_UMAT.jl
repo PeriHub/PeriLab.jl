@@ -46,7 +46,8 @@ end
 
     @test_logs (:error, "UMAT file is not defined.") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
                                                                                                                                                  Dict{String,
-                                                                                                                                                      Any}())
+                                                                                                                                                      Any}("Poisson's Ratio" => 0.1,
+                                                                                                                                                           "Young's Modulus" => 2))
 
     @test_logs (:error,
                 "Due to old Fortran standards only a name length of 80 is supported") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
@@ -84,6 +85,8 @@ end
                                                                                                                                                                                             "Property_1" => 2,
                                                                                                                                                                                             "Property_2" => 2,
                                                                                                                                                                                             "Property_3" => 2.4,
+                                                                                                                                                                                            "Poisson's Ratio" => 0.1,
+                                                                                                                                                                                            "Young's Modulus" => 2,
                                                                                                                                                                                             "Predefined Field Names" => "test_field_2 test_field_3"))
 
     test_1 = PeriLab.Data_Manager.create_constant_node_scalar_field("test_field_2", Float64)
@@ -96,6 +99,8 @@ end
                                 "Property_1" => 2,
                                 "Property_2" => 2,
                                 "Property_3" => 2.4,
+                                "Poisson's Ratio" => 0.1,
+                                "Young's Modulus" => 2,
                                 "Predefined Field Names" => "test_field_2 test_field_3")
     PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
                                                                                                 mat_dict)
@@ -113,6 +118,8 @@ end
                                 "Property_1" => 2,
                                 "Property_2" => 2,
                                 "Property_3" => 2.4,
+                                "Poisson's Ratio" => 0.1,
+                                "Young's Modulus" => 2,
                                 "Predefined Field Names" => "test_field_2 test_field_3")
     @test !haskey(mat_dict, "UMAT name")
     PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),

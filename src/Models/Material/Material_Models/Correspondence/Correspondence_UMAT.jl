@@ -122,7 +122,7 @@ function init_model(nodes::AbstractVector{Int64},
                                                             Float64)
     DFGRD0 = Data_Manager.create_constant_node_tensor_field("DFGRD0", Float64, dof)
 
-    DDSDDE::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Elasticity Matrix",
+    DDSDDE::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Material Gradient",
                                                                                       Float64,
                                                                                       Int64((dof *
                                                                                              (dof +
