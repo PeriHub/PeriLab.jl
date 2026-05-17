@@ -193,41 +193,39 @@ end
         -0.23018790325073893,
         0.04924455046623181
     ]
-    @test PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions(xi[1,
-                                                                                                                           :],
-                                                                                                                        integration_points[2,
-                                                                                                                                           1],
-                                                                                                                        p) ==
-          [
-        0.0033737364327725374,
-        1.0048858548256456,
-        -0.009921353572324671,
-        0.0016617623139063968
-    ]
-    @test PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions(xi[1,
-                                                                                                                           :],
-                                                                                                                        integration_points[3,
-                                                                                                                                           1],
-                                                                                                                        p) ==
-          [
-        0.0016617623139064258,
-        -0.009921353572324838,
-        1.0048858548256463,
-        0.003373736432772594
-    ]
-    @test PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions(xi[1,
-                                                                                                                           :],
-                                                                                                                        integration_points[4,
-                                                                                                                                           1],
-                                                                                                                        p) ==
-          [
-        0.04924455046623184,
-        -0.23018790325073904,
-        0.5209376877117036,
-        0.6600056650728034
-    ]
+    @test isapprox(PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions(xi[1,
+                                                                                                                                    :],
+                                                                                                                                 integration_points[2,
+                                                                                                                                                    1],
+                                                                                                                                 p),
+                   [0.0033737364327725374,
+                       1.0048858548256456,
+                       -0.009921353572324671,
+                       0.0016617623139063968
+                   ])
+    @test isapprox(PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions(xi[1,
+                                                                                                                                    :],
+                                                                                                                                 integration_points[3,
+                                                                                                                                                    1],
+                                                                                                                                 p),
+                   [
+                       0.0016617623139064258,
+                       -0.009921353572324838,
+                       1.0048858548256463,
+                       0.003373736432772594
+                   ])
+    @test isapprox(PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions(xi[1,
+                                                                                                                                    :],
+                                                                                                                                 integration_points[4,
+                                                                                                                                                    1],
+                                                                                                                                 p),
+                   [
+                       0.04924455046623184,
+                       -0.23018790325073904,
+                       0.5209376877117036,
+                       0.6600056650728034
+                   ])
 end
-
 @testset "ut_get_recursive_lagrange_shape_functions_derivative" begin
     p = 1
     xi = PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.define_lagrangian_grid_space(2,
@@ -235,29 +233,29 @@ end
                                                                                                                  p,
                                                                                                                  p
                                                                                                              ])
-    @test PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
-                                                                                                                                      :],
-                                                                                                                                   0.0,
-                                                                                                                                   p) ==
-          [-0.5, 0.5]
+    @test isapprox(PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
+                                                                                                                                               :],
+                                                                                                                                            0.0,
+                                                                                                                                            p),
+                   [-0.5, 0.5])
     weights,
     integration_points = PeriLab.Solver_Manager.FEM.FEM_Basis.get_weights_and_integration_points(2,
                                                                                                  [
                                                                                                      2,
                                                                                                      2
                                                                                                  ])
-    @test PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
-                                                                                                                                      :],
-                                                                                                                                   integration_points[1,
-                                                                                                                                                      1],
-                                                                                                                                   p) ==
-          [-0.5, 0.5]
-    @test PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
-                                                                                                                                      :],
-                                                                                                                                   integration_points[2,
-                                                                                                                                                      1],
-                                                                                                                                   p) ==
-          [-0.5, 0.5]
+    @test isapprox(PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
+                                                                                                                                               :],
+                                                                                                                                            integration_points[1,
+                                                                                                                                                               1],
+                                                                                                                                            p),
+                   [-0.5, 0.5])
+    @test isapprox(PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
+                                                                                                                                               :],
+                                                                                                                                            integration_points[2,
+                                                                                                                                                               1],
+                                                                                                                                            p),
+                   [-0.5, 0.5])
     p = 2
     weights,
     integration_points = PeriLab.Solver_Manager.FEM.FEM_Basis.get_weights_and_integration_points(2,
@@ -270,24 +268,24 @@ end
                                                                                                                  p,
                                                                                                                  p
                                                                                                              ])
-    @test PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
-                                                                                                                                      :],
-                                                                                                                                   integration_points[1,
-                                                                                                                                                      1],
-                                                                                                                                   p) ==
-          [-1.2745966692414834, 1.5491933384829668, -0.2745966692414834]
-    @test PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
-                                                                                                                                      :],
-                                                                                                                                   integration_points[2,
-                                                                                                                                                      1],
-                                                                                                                                   p) ==
-          [-0.5, 0.0, 0.5]
-    @test PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
-                                                                                                                                      :],
-                                                                                                                                   integration_points[3,
-                                                                                                                                                      1],
-                                                                                                                                   p) ==
-          [0.2745966692414834, -1.5491933384829668, 1.2745966692414834]
+    @test isapprox(PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
+                                                                                                                                               :],
+                                                                                                                                            integration_points[1,
+                                                                                                                                                               1],
+                                                                                                                                            p),
+                   [-1.2745966692414834, 1.5491933384829668, -0.2745966692414834])
+    @test isapprox(PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
+                                                                                                                                               :],
+                                                                                                                                            integration_points[2,
+                                                                                                                                                               1],
+                                                                                                                                            p),
+                   [-0.5, 0.0, 0.5])
+    @test isapprox(PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
+                                                                                                                                               :],
+                                                                                                                                            integration_points[3,
+                                                                                                                                                               1],
+                                                                                                                                            p),
+                   [0.2745966692414834, -1.5491933384829668, 1.2745966692414834])
     p = 3
     weights,
     integration_points = PeriLab.Solver_Manager.FEM.FEM_Basis.get_weights_and_integration_points(2,
@@ -300,28 +298,48 @@ end
                                                                                                                  p,
                                                                                                                  p
                                                                                                              ])
-    @test PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
-                                                                                                                                      :],
-                                                                                                                                   integration_points[1,
-                                                                                                                                                      1],
-                                                                                                                                   p) ==
-          [-2.157653673851862, 3.035404320468968, -1.0978476193823496, 0.22009697276524381]
-    @test PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
-                                                                                                                                      :],
-                                                                                                                                   integration_points[2,
-                                                                                                                                                      1],
-                                                                                                                                   p) ==
-          [-0.5150319221529817, -0.7198615816069815, 1.484818929672908, -0.2499254259129448]
-    @test PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
-                                                                                                                                      :],
-                                                                                                                                   integration_points[3,
-                                                                                                                                                      1],
-                                                                                                                                   p) ==
-          [0.249925425912945, -1.4848189296729082, 0.7198615816069811, 0.5150319221529819]
-    @test PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
-                                                                                                                                      :],
-                                                                                                                                   integration_points[4,
-                                                                                                                                                      1],
-                                                                                                                                   p) ==
-          [-0.22009697276524398, 1.09784761938235, -3.035404320468968, 2.1576536738518617]
+    @test isapprox(PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
+                                                                                                                                               :],
+                                                                                                                                            integration_points[1,
+                                                                                                                                                               1],
+                                                                                                                                            p),
+                   [
+                       -2.157653673851862,
+                       3.035404320468968,
+                       -1.0978476193823496,
+                       0.22009697276524381
+                   ])
+    @test isapprox(PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
+                                                                                                                                               :],
+                                                                                                                                            integration_points[2,
+                                                                                                                                                               1],
+                                                                                                                                            p),
+                   [
+                       -0.5150319221529817,
+                       -0.7198615816069815,
+                       1.484818929672908,
+                       -0.2499254259129448
+                   ])
+    @test isapprox(PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
+                                                                                                                                               :],
+                                                                                                                                            integration_points[3,
+                                                                                                                                                               1],
+                                                                                                                                            p),
+                   [
+                       0.249925425912945,
+                       -1.4848189296729082,
+                       0.7198615816069811,
+                       0.5150319221529819
+                   ])
+    @test isapprox(PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.get_recursive_lagrange_shape_functions_derivative(xi[1,
+                                                                                                                                               :],
+                                                                                                                                            integration_points[4,
+                                                                                                                                                               1],
+                                                                                                                                            p),
+                   [
+                       -0.22009697276524398,
+                       1.09784761938235,
+                       -3.035404320468968,
+                       2.1576536738518617
+                   ])
 end

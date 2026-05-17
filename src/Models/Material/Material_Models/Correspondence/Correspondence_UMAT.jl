@@ -7,8 +7,7 @@ using StaticArrays
 
 using ......Data_Manager
 using ......Helpers: voigt_to_matrix, matrix_to_voigt
-using .....Material_Basis: get_Hooke_matrix
-#using .....Global_Zero_Energy_Control: global_zero_energy_mode_stiffness
+using .....Material_Basis: get_Hooke_matrix, get_all_elastic_moduli
 export fe_support
 export init_model
 export correspondence_name
@@ -53,14 +52,14 @@ function init_model(nodes::AbstractVector{Int64},
     num_state_vars::Int64 = 1
     if !haskey(material_parameter, "File")
         @error "UMAT file is not defined."
-        return
+        return 1
     end
     directory = Data_Manager.get_directory()
     material_parameter["File"] = joinpath(pwd(), directory, material_parameter["File"])
     global umat_file_path = material_parameter["File"]
     if !isfile(material_parameter["File"])
         @error "File $(material_parameter["File"]) does not exist, please check name and directory."
-        return
+        return 1
     end
     if haskey(material_parameter, "Number of State Variables")
         num_state_vars = material_parameter["Number of State Variables"]
@@ -75,7 +74,7 @@ function init_model(nodes::AbstractVector{Int64},
 
     if !haskey(material_parameter, "Number of Properties")
         @error "Number of Properties must be at least equal 1"
-        return
+        return 1
     end
     # properties include the material properties, etc.
     num_props = material_parameter["Number of Properties"]
@@ -165,7 +164,7 @@ function init_model(nodes::AbstractVector{Int64},
     zStiff = Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",
                                                             Float64,
                                                             dof)
-
+    get_all_elastic_moduli(material_parameter)
     symmetry::String = get(material_parameter, "Symmetry", "default")
 
     for iID in nodes
