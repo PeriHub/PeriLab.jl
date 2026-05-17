@@ -119,6 +119,7 @@ function init_solver(solver_options::Dict{Any,Any},
         pd_nodes = Int64[]
 
         nlist = Data_Manager.get_nlist()
+        # only for visualization and debugging.
         cn = Data_Manager.create_constant_node_scalar_field("Coupling Nodes", Int64)
         full_blocks = setdiff(collect(keys(block_nodes)), reduction_blocks)
         for block in full_blocks
@@ -133,45 +134,79 @@ function init_solver(solver_options::Dict{Any,Any},
 
         master_nodes = sort(unique(master_nodes))
 
-        slave_nodes = setdiff(1:Data_Manager.get_nnodes(), master_nodes)
+        slave_nodes = sort(setdiff(1:Data_Manager.get_nnodes(), master_nodes))
 
         if !(get(solver_options["Model Reduction"], "Material Point Region", true))
             pd_nodes::Vector{Int64} = []
         end
-        cn[slave_nodes] .= 6
-        cn[master_nodes] .= 2
-        cn[pd_nodes] .= 1
+        sort!(pd_nodes)
 
         if !(master_nodes == [])
-            nnodes = Data_Manager.get_nnodes()
-            master_nodes = Vector{Int64}(1:nnodes)
-            # complete region of analysis with coupling
-            perm_master = create_permutation(master_nodes, Data_Manager.get_dof(), nnodes)
-            # complete region of reduction
-            perm_slave = create_permutation(slave_nodes, Data_Manager.get_dof(), nnodes)
 
-            # indices of pd nodes in global system of PD nodes for crack propagation and BCs application
+            # Overlap region reaches in PD region (maybe reducing slave region)
+            @info "Overlap region between matrix and material point region is defined in the material point region."
+            @info "This might effect the analyis of fracture, etc. If this is a problem chose a larger material point region or write an Issue."
+            overlap_nodes = Int64[]
+            coupling_nodes = setdiff(master_nodes, pd_nodes)
+            for node in coupling_nodes
+                for neighbor in nlist[node]
+                    if neighbor in pd_nodes
+                        push!(overlap_nodes, neighbor)
+                    end
+                end
+            end
+            overlap_nodes = sort(unique(overlap_nodes))
+            # reducing PD region by overlap region, because in overlap no material point analysis is performed.
+            pd_nodes = sort(setdiff(pd_nodes, overlap_nodes))
+
+            cn[master_nodes] .= 3
+            cn[slave_nodes] .= 6
+            cn[pd_nodes] .+= 1  # added to be sure that all points are handled
+            cn[overlap_nodes] .+= 2  # added to be sure that all points are handled
+
+            # create permutations for master, slave, pd and overlap nodes for the non-reduced variant (original degrees of freedom (nnodes*dof))
+            nnodes = Data_Manager.get_nnodes()
+            perm_master = create_permutation(master_nodes, Data_Manager.get_dof(), nnodes)
+            perm_slave = create_permutation(slave_nodes, Data_Manager.get_dof(), nnodes)
             perm_pd_nodes = create_permutation(pd_nodes, Data_Manager.get_dof(), nnodes)
-            # indices of deletes in global system
-            # create reduced M^-1*K for linear run
+            perm_overlap_nodes = create_permutation(overlap_nodes, Data_Manager.get_dof(),
+                                                    nnodes)
+
+            # create permutations in the reduced system; only master nodes exist. PD and overlap nodes are part of the master nodes and get the indices of the master nodes in the reduced system.
+            # Sorting is important to ensure that the order of the nodes in the reduced system is the same as in the original system
+            perm_pd_reduced = findall(in(perm_pd_nodes), perm_master)
+            perm_overlap_reduced = findall(in(perm_overlap_nodes), perm_master)
+
+            # create the mass part.
             density_mass = zeros(length(density) * dof)
             for iID in eachindex(density_mass)
                 density_mass[iID] = density[Int(ceil(iID / dof))]
             end
+            # perform the condensation of the system
+            @timeit "Guyan Condensation" K_reduced,
+                                         mass_reduced=guyan_reduction(K,
+                                                                      density_mass,
+                                                                      perm_master,
+                                                                      perm_slave)
 
-            # find indices of pd nodes and coupling nodes in reduced system; using master ids vector
-            perm_pd_reduced = findall(in(perm_pd_nodes), perm_master)
-
-            #  @timeit "Guyan Condensation" K_reduced,
-            #  mass_reduced=guyan_reduction(K, density_mass,
-            #                               perm_master, perm_slave)
-            #
-            #  # K_reduced[:, perm_pd_reduced] .= 0
-            K_reduced = K
-            mass_reduced = Diagonal(density_mass)
+            # In the pure material point region no stiffness matrix exists. The internal forces are computed via material point method.
             K_reduced[perm_pd_reduced, :] .= 0
-            #K_reduced[:, perm_pd_reduced] .= 0
-            #   dropzeros!(mass_reduced)
+
+            # Halbiere PD-Overlap Block (bidirektional - genau wie im Symbolics-Code)
+            # for i in perm_pd_reduced
+            #     for j in perm_overlap_reduced
+            #         K_reduced[i, j] *= 0.5
+            #         K_reduced[j, i] *= 0.5
+            #     end
+            # end
+
+            # Restore diagonal for Overlap and PD (rigid body condition)
+            # for i in vcat(perm_overlap_reduced, perm_pd_reduced)
+            #     row_sum = sum(@view K_reduced[:, i]) - K_reduced[i, i]
+            #     K_reduced[i, i] = -row_sum
+            # end
+
+            dropzeros!(mass_reduced)
             dropzeros!(K_reduced)
 
             Data_Manager.set_stiffness_matrix(sparse(K_reduced))
@@ -181,7 +216,7 @@ function init_solver(solver_options::Dict{Any,Any},
             Data_Manager.set_reduced_model_master(master_nodes)
 
             @info "Model reduction is applied"
-            @info "Condensed: $(length(slave_nodes)), Master: $(length(master_nodes)), PD: $(length(pd_nodes))."
+            @info "Condensed: $(length(slave_nodes)), Master: $(length(master_nodes)), PD: $(length(pd_nodes)), Overlap: $(length(overlap_nodes))."
             return
         end
         @warn "No master nodes defined for model reduction. Using full stiffness matrix."
@@ -195,9 +230,6 @@ function init_solver(solver_options::Dict{Any,Any},
     perm = collect(1:(Data_Manager.get_nnodes() * Data_Manager.get_dof()))
     Data_Manager.set_mass_matrix(lu(sparse(mass[perm, perm])))
     return
-
-    # reduced matrix
-
 end
 
 function run_solver(solver_options::Dict{Any,Any},
@@ -237,7 +269,7 @@ function run_solver(solver_options::Dict{Any,Any},
     if solver_options["Model Reduction"] != false
         master_nodes = Data_Manager.get_reduced_model_master()
         temp = zeros(length(master_nodes) * Data_Manager.get_dof())
-        diff_nodes = setdiff(master_nodes, Data_Manager.get_reduced_model_pd())
+
     else
         temp = zeros(Data_Manager.get_dof() * Data_Manager.get_nnodes())
     end
@@ -261,6 +293,7 @@ function run_solver(solver_options::Dict{Any,Any},
                 if solver_options["Model Reduction"] != false
                     active_nodes = master_nodes
                     active_list .= false
+                    # coupling region and material point region must be active. shown in symbolic code.
                     active_list[Data_Manager.get_reduced_model_pd()] .= true
 
                 else
@@ -291,20 +324,19 @@ function run_solver(solver_options::Dict{Any,Any},
                                                     synchronise_field)
             @timeit "Force computations" begin
                 @timeit "sa" sa=size(a[active_nodes, :])
+
                 @views fNP1 = force_densities_NP1[active_nodes, :]
-                # masternode
-                @info sum(force_densities_NP1[diff_nodes, :])
+
                 @timeit "Force matrix computations" f_int_inplace!(fNP1, temp, K,
                                                                    vec(uNP1[active_nodes,
                                                                             :]), sa)
-                @info sum(force_densities_NP1[diff_nodes, :])
-                readline()
+
                 @. @views fNP1 .+= external_force_densities[active_nodes, :] +
                                    external_forces[active_nodes, :] / volume[active_nodes]
 
-                # forces = force_densities * volume (external bereits in force_densities drin)
                 @. @views forces[active_nodes, :] .= fNP1 *
                                                      volume[active_nodes]
+                check_inf_or_nan(force_densities_NP1, "Force Densities")
             end
             @timeit "Accelaration computation" begin
                 @views a[active_nodes, :] = reshape(M_fact \
@@ -330,10 +362,7 @@ function run_solver(solver_options::Dict{Any,Any},
                 if rank == 0 && !silent
                     set_postfix(iter, t = @sprintf("%.3e", time))
                 end
-
-                # barrier(comm)
             end
-            #a+= + fexternal / density
         end
     end
     Data_Manager.set_current_time(time - dt)
