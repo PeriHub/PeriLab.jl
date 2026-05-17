@@ -108,7 +108,7 @@ function init_solver(solver_options::Dict{Any,Any},
     else
         # might lead to issues, because neighbors outside the block are included in
         for block in eachindex(block_nodes)
-            block_nodes[block] = []
+            Data_Manager.set_reduced_model_pd(Vector{Int64}([]))
         end
         @warn "No other models work with full matrix Verlet right now."
     end
@@ -142,41 +142,25 @@ function init_solver(solver_options::Dict{Any,Any},
         sort!(pd_nodes)
 
         if !(master_nodes == [])
-
-            # Overlap region reaches in PD region (maybe reducing slave region)
-            @info "Overlap region between matrix and material point region is defined in the material point region."
-            @info "This might effect the analyis of fracture, etc. If this is a problem chose a larger material point region or write an Issue."
-            overlap_nodes = Int64[]
             coupling_nodes = setdiff(master_nodes, pd_nodes)
-            for node in coupling_nodes
-                for neighbor in nlist[node]
-                    if neighbor in pd_nodes
-                        push!(overlap_nodes, neighbor)
-                    end
-                end
-            end
-            overlap_nodes = sort(unique(overlap_nodes))
-            # reducing PD region by overlap region, because in overlap no material point analysis is performed.
-            pd_nodes = sort(setdiff(pd_nodes, overlap_nodes))
 
             cn[master_nodes] .= 3
             cn[slave_nodes] .= 6
             cn[pd_nodes] .+= 1  # added to be sure that all points are handled
-            cn[overlap_nodes] .+= 2  # added to be sure that all points are handled
+            cn[coupling_nodes] .+= 3  # added to be sure that all points are handled
 
-            # create permutations for master, slave, pd and overlap nodes for the non-reduced variant (original degrees of freedom (nnodes*dof))
             nnodes = Data_Manager.get_nnodes()
+
             perm_master = create_permutation(master_nodes, Data_Manager.get_dof(), nnodes)
             perm_slave = create_permutation(slave_nodes, Data_Manager.get_dof(), nnodes)
             perm_pd_nodes = create_permutation(pd_nodes, Data_Manager.get_dof(), nnodes)
-            perm_overlap_nodes = create_permutation(overlap_nodes, Data_Manager.get_dof(),
-                                                    nnodes)
+            perm_coupling_nodes = create_permutation(coupling_nodes, Data_Manager.get_dof(),
+                                                     nnodes)
 
             # create permutations in the reduced system; only master nodes exist. PD and overlap nodes are part of the master nodes and get the indices of the master nodes in the reduced system.
             # Sorting is important to ensure that the order of the nodes in the reduced system is the same as in the original system
             perm_pd_reduced = findall(in(perm_pd_nodes), perm_master)
-            perm_overlap_reduced = findall(in(perm_overlap_nodes), perm_master)
-
+            perm_coupling_reduced = findall(in(perm_coupling_nodes), perm_master)
             # create the mass part.
             density_mass = zeros(length(density) * dof)
             for iID in eachindex(density_mass)
@@ -190,21 +174,17 @@ function init_solver(solver_options::Dict{Any,Any},
                                                                       perm_slave)
 
             # In the pure material point region no stiffness matrix exists. The internal forces are computed via material point method.
-            K_reduced[perm_pd_reduced, :] .= 0
-
-            # Halbiere PD-Overlap Block (bidirektional - genau wie im Symbolics-Code)
-            # for i in perm_pd_reduced
-            #     for j in perm_overlap_reduced
-            #         K_reduced[i, j] *= 0.5
-            #         K_reduced[j, i] *= 0.5
-            #     end
-            # end
 
             # Restore diagonal for Overlap and PD (rigid body condition)
-            # for i in vcat(perm_overlap_reduced, perm_pd_reduced)
-            #     row_sum = sum(@view K_reduced[:, i]) - K_reduced[i, i]
-            #     K_reduced[i, i] = -row_sum
-            # end
+            K_reduced[perm_pd_reduced, perm_pd_reduced] .= 0
+            dropzeros!(K_reduced)
+
+            K_reduced[perm_pd_reduced, perm_coupling_reduced] .= 0.0
+
+            for i in perm_coupling_reduced
+                K_reduced[i, i] = 0
+                K_reduced[i, i] = -sum(@view K_reduced[i, :])
+            end
 
             dropzeros!(mass_reduced)
             dropzeros!(K_reduced)
@@ -216,7 +196,7 @@ function init_solver(solver_options::Dict{Any,Any},
             Data_Manager.set_reduced_model_master(master_nodes)
 
             @info "Model reduction is applied"
-            @info "Condensed: $(length(slave_nodes)), Master: $(length(master_nodes)), PD: $(length(pd_nodes)), Overlap: $(length(overlap_nodes))."
+            @info "Condensed: $(length(slave_nodes)), Master: $(length(master_nodes)), PD: $(length(pd_nodes))."
             return
         end
         @warn "No master nodes defined for model reduction. Using full stiffness matrix."
