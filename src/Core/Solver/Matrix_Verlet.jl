@@ -56,10 +56,16 @@ function init_solver(solver_options::Dict{Any,Any},
     fixed_dt = get_fixed_dt(params)
     min_dt = compute_crititical_time_step(block_nodes, mechanical, thermal)
     if fixed_dt == -1.0
-        nsteps, dt = get_integration_steps(initial_time, final_time, safety_factor * min_dt)
+        nsteps_temp,
+        dt = get_integration_steps(initial_time, final_time,
+                                   safety_factor * min_dt)
     else
-        nsteps, dt = get_integration_steps(initial_time, final_time, fixed_dt)
+        nsteps_temp, dt = get_integration_steps(initial_time, final_time, fixed_dt)
     end
+    if nsteps == 1
+        nsteps = nsteps_temp
+    end
+
     K = Data_Manager.get_stiffness_matrix()
     if isnothing(K)
         for (block, nodes) in pairs(block_nodes)
