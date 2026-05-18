@@ -4,5 +4,7 @@
 
 folder_name = basename(@__FILE__)[1:(end - 3)]
 cd("fullscale_tests/" * folder_name) do
+    run_perilab("umat", 1, false, folder_name)
     run_perilab("vumat", 1, false, folder_name)
+    run_perilab("umat_matrix", 1, false, folder_name)
 end
