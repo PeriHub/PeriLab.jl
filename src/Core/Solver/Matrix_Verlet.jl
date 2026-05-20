@@ -67,14 +67,7 @@ function init_solver(solver_options::Dict{Any,Any},
     end
 
     K = Data_Manager.get_stiffness_matrix()
-    if isnothing(K)
-        for (block, nodes) in pairs(block_nodes)
-            model_param = Data_Manager.get_properties(block, "Material Model")
-            Correspondence_matrix_based.init_model(nodes, model_param, block)
-        end
-        @timeit "init_matrix" Correspondence_matrix_based.init_matrix()
-        K = Data_Manager.get_stiffness_matrix()
-    end
+
     dof = Data_Manager.get_dof()
     density = Data_Manager.get_field("Density")
     model_reduction = get(params["Verlet Matrix Based"], "Model Reduction", false)
@@ -146,7 +139,18 @@ function init_solver(solver_options::Dict{Any,Any},
             pd_nodes::Vector{Int64} = []
         end
         sort!(pd_nodes)
-
+        if isnothing(K)
+            for (block, nodes) in pairs(block_nodes)
+                model_param = Data_Manager.get_properties(block, "Material Model")
+                Correspondence_matrix_based.init_model(nodes, model_param, block)
+            end
+            @timeit "init_matrix" Correspondence_matrix_based.init_matrix()
+        end
+        if pd_nodes != []
+            nodes = setdiff(collect(1:Data_Manager.get_nnodes()), pd_nodes)
+            @timeit "update_material_point_part" Correspondence_matrix_based.compute_model(nodes)
+        end
+        K = Data_Manager.get_stiffness_matrix()
         if !(master_nodes == [])
             coupling_nodes = setdiff(master_nodes, pd_nodes)
 
@@ -179,19 +183,6 @@ function init_solver(solver_options::Dict{Any,Any},
                                                                       perm_master,
                                                                       perm_slave)
 
-            # In the pure material point region no stiffness matrix exists. The internal forces are computed via material point method.
-
-            # Restore diagonal for Overlap and PD (rigid body condition)
-            K_reduced[perm_pd_reduced, perm_pd_reduced] .= 0
-            dropzeros!(K_reduced)
-
-            K_reduced[perm_pd_reduced, perm_coupling_reduced] .= 0.0
-
-            for i in perm_coupling_reduced
-                K_reduced[i, i] = 0
-                K_reduced[i, i] = -sum(@view K_reduced[i, :])
-            end
-
             dropzeros!(mass_reduced)
             dropzeros!(K_reduced)
 
@@ -207,7 +198,14 @@ function init_solver(solver_options::Dict{Any,Any},
         end
         @warn "No master nodes defined for model reduction. Using full stiffness matrix."
     end
-
+    if isnothing(K)
+        for (block, nodes) in pairs(block_nodes)
+            model_param = Data_Manager.get_properties(block, "Material Model")
+            Correspondence_matrix_based.init_model(nodes, model_param, block)
+        end
+        @timeit "init_matrix" Correspondence_matrix_based.init_matrix()
+        K = Data_Manager.get_stiffness_matrix()
+    end
     density_mass = zeros(length(density) * Data_Manager.get_dof())
     for iID in eachindex(density_mass)
         density_mass[iID] = density[Int(ceil(iID / dof))]
