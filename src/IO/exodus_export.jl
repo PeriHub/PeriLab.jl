@@ -222,13 +222,17 @@ function init_results_in_exodus(exo::ExodusDatabase,
     nodal_output_names = collect(keys(sort!(OrderedDict(nodal_outputs))))
     global_output_names = collect(keys(sort!(OrderedDict(global_outputs))))
     # write_number_of_variables(exo, NodalVariable, length(nodal_output_names))
-    write_names(exo, NodalVariable, nodal_output_names)
-    # nnodes = num_nodes(exo.init)
-    nnodes = length(coords[1, :])
-    for varname in nodal_output_names
-        write_values(exo, NodalVariable, 1, varname, zeros(Float64, nnodes))
-    end
+    if length(nodal_output_names) == 0
+        @warn "No nodal output variables defined, but exodus file created. Please check your output definition."
+    else
+        write_names(exo, NodalVariable, nodal_output_names)
 
+        # nnodes = num_nodes(exo.init)
+        nnodes = length(coords[1, :])
+        for varname in nodal_output_names
+            write_values(exo, NodalVariable, 1, varname, zeros(Float64, nnodes))
+        end
+    end
     global_used = length(global_output_names) > 0
 
     if global_used
