@@ -33,6 +33,130 @@
           [1 0; 0 1]
 end
 
+using Test
+
+# Type alias as in PeriLab
+const NodeTensorField{T} = Array{T,3}   # shape: (nnodes, dim, dim)
+
+@testset "ut_compute_linear_strain!" begin
+    @testset "2D - identity deformation gradient → zero strain" begin
+        nodes = [1, 2]
+        F = zeros(2, 2, 2)
+        ε = zeros(2, 2, 2)
+        for iID in nodes
+            F[iID, 1, 1] = 1.0
+            F[iID, 2, 2] = 1.0
+        end
+        PeriLab.Geometry.compute_linear_strain!(nodes, F, ε)
+        @test all(ε .≈ 0.0)
+    end
+
+    @testset "2D - pure normal strain in x" begin
+        nodes = [1]
+        F = zeros(1, 2, 2)
+        ε = zeros(1, 2, 2)
+        # F = [[1.1, 0],[0, 1]] → εxx=0.1, all others 0
+        F[1, 1, 1] = 1.1
+        F[1, 2, 2] = 1.0
+        PeriLab.Geometry.compute_linear_strain!(nodes, F, ε)
+        @test ε[1, 1, 1] ≈ 0.1
+        @test ε[1, 2, 2] ≈ 0.0
+        @test ε[1, 1, 2] ≈ 0.0
+        @test ε[1, 2, 1] ≈ 0.0
+    end
+
+    @testset "2D - shear strain is symmetric" begin
+        nodes = [1]
+        F = zeros(1, 2, 2)
+        ε = zeros(1, 2, 2)
+        # F = [[1, 0.4],[0.2, 1]] → εxy = εyx = 0.5*(0.4+0.2) = 0.3
+        F[1, 1, 1] = 1.0
+        F[1, 2, 2] = 1.0
+        F[1, 1, 2] = 0.4
+        F[1, 2, 1] = 0.2
+        PeriLab.Geometry.compute_linear_strain!(nodes, F, ε)
+        @test ε[1, 1, 1] ≈ 0.0
+        @test ε[1, 2, 2] ≈ 0.0
+        @test ε[1, 1, 2] ≈ 0.3
+        @test ε[1, 2, 1] ≈ 0.3   # symmetry: ε = εᵀ
+    end
+
+    @testset "2D - pure rotation → zero strain" begin
+        nodes = [1]
+        F = zeros(1, 2, 2)
+        ε = zeros(1, 2, 2)
+        # 90° rotation: F = [[0,-1],[1,0]]
+        # ε = 0.5*(F+Fᵀ) - I = 0.5*([[0,-1],[1,0]]+[[0,1],[-1,0]]) - I
+        #   = 0.5*[[0,0],[0,0]] - I = -I  (rigid body → linearised strain = -I+I... )
+        # Note: linear strain of pure rotation ≠ 0 for large angles;
+        # for infinitesimal rotation dθ: F ≈ I + skew → ε ≈ 0
+        θ = 1e-6
+        F[1, 1, 1] = cos(θ)
+        F[1, 1, 2] = -sin(θ)
+        F[1, 2, 1] = sin(θ)
+        F[1, 2, 2] = cos(θ)
+        PeriLab.Geometry.compute_linear_strain!(nodes, F, ε)
+        @test ε[1, 1, 1]≈0.0 atol=1e-10
+        @test ε[1, 2, 2]≈0.0 atol=1e-10
+        @test ε[1, 1, 2]≈0.0 atol=1e-10
+    end
+
+    @testset "3D - identity deformation gradient → zero strain" begin
+        nodes = 1:3
+        F = zeros(3, 3, 3)
+        ε = zeros(3, 3, 3)
+        for iID in nodes, k in 1:3
+            F[iID, k, k] = 1.0
+        end
+        PeriLab.Geometry.compute_linear_strain!(nodes, F, ε)
+        @test all(ε .≈ 0.0)
+    end
+
+    @testset "3D - asymmetric shear → symmetric strain" begin
+        nodes = [1]
+        F = zeros(1, 3, 3)
+        ε = zeros(1, 3, 3)
+        for k in 1:3
+            F[1, k, k] = 1.0
+        end
+        F[1, 1, 3] = 0.6
+        F[1, 3, 1] = 0.2
+        PeriLab.Geometry.compute_linear_strain!(nodes, F, ε)
+        @test ε[1, 1, 3] ≈ 0.4
+        @test ε[1, 3, 1] ≈ 0.4
+        @test ε[1, 1, 1] ≈ 0.0
+        @test ε[1, 3, 3] ≈ 0.0
+    end
+
+    @testset "multiple nodes - each computed independently" begin
+        nodes = [1, 2, 3]
+        F = zeros(3, 2, 2)
+        ε = zeros(3, 2, 2)
+        # node 1: identity → zero strain
+        F[1, 1, 1] = 1.0
+        F[1, 2, 2] = 1.0
+        # node 2: stretch in y
+        F[2, 1, 1] = 1.0
+        F[2, 2, 2] = 1.2
+        # node 3: shear
+        F[3, 1, 1] = 1.0
+        F[3, 2, 2] = 1.0
+        F[3, 1, 2] = 0.5
+        F[3, 2, 1] = 0.5
+        PeriLab.Geometry.compute_linear_strain!(nodes, F, ε)
+        @test all(ε[1, :, :] .≈ 0.0)
+        @test ε[2, 2, 2] ≈ 0.2
+        @test ε[3, 1, 2] ≈ 0.5
+    end
+
+    @testset "empty node list - ε unchanged" begin
+        F = zeros(3, 2, 2)
+        ε = fill(99.0, 3, 2, 2)
+        PeriLab.Geometry.compute_linear_strain!(Int64[], F, ε)
+        @test all(ε .== 99.0)
+    end
+end
+
 @testset "ut_compute_bond_level_rotation_tensor" begin
     nodes = [1]
     nlist = [[2]]
