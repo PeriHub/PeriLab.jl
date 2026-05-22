@@ -102,13 +102,6 @@ function compute_model(nodes::AbstractVector{Int64},
                           deformed_bond_length[iID],
                           undeformed_bond_length[iID],
                           deformed_bond[iID])
-        #bond_force[iID] =
-        #    (
-        #        0.5 .* constant[iID] .* bond_damage[iID] .*
-        #        (deformed_bond_length[iID] .- undeformed_bond_length[iID]) ./
-        #        undeformed_bond_length[iID]
-        #    ) .* deformed_bond[iID] ./ deformed_bond_length[iID]
-        #
     end
     # might be put in constant
     if dependend_value
@@ -139,8 +132,6 @@ end
 	fields_for_local_synchronization(model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
-
-
 
 # Arguments
 

@@ -216,13 +216,6 @@ function compute_deviatoric_force_state_norm!(td_norm::Vector{Float64},
                                               volume::NodeScalarField{Float64},
                                               deviatoric_plastic_extension_state::BondScalarState{Float64},
                                               temp_field::BondScalarState{Float64})
-    # not optimal allocation of memory, but not check of indices is needed
-    # for iID in nodes
-    # td_trial = bond_force_deviatoric[iID] -
-    #            alpha .* bond_damage[iID] .* omega[iID] .*
-    #            deviatoric_plastic_extension_state[iID]
-    # td_norm[iID] = sqrt(sum(td_trial .* td_trial .* volume[nlist[iID]]))
-    # end
     mul_in_place!(temp_field, bond_damage, omega, alpha)
     mul_in_place!(temp_field, temp_field, deviatoric_plastic_extension_state)
     sub_in_place!(temp_field, bond_force_deviatoric, temp_field)
@@ -242,14 +235,6 @@ function compute_deviatoric_force_state_norm!(td_norm::Vector{Float64},
                                               volume::NodeScalarField{Float64},
                                               deviatoric_plastic_extension_state::BondScalarState{Float64},
                                               temp_field::BondScalarState{Float64})
-    # not optimal allocation of memory, but not check of indices is needed
-
-    # for iID in nodes
-    #     td_trial = bond_force_deviatoric[iID] -
-    #                alpha[iID] .* bond_damage[iID] .* omega[iID] .*
-    #                deviatoric_plastic_extension_state[iID]
-    #     td_norm[iID] = sqrt(sum(td_trial .* td_trial .* volume[nlist[iID]]))
-    # end
     mul_in_place!(temp_field, bond_damage, omega)
     mul_in_place!(temp_field, temp_field, alpha)
     mul_in_place!(temp_field, temp_field, deviatoric_plastic_extension_state)
