@@ -22,80 +22,85 @@ end
         file = "../src/Models/Material/UMATs/libperuser.so"
     end
     directory = PeriLab.Data_Manager.get_directory()
-    @test !isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
-                                                                                                                 Dict{String,
-                                                                                                                      Any}("File" => file,
-                                                                                                                           "Number of Properties" => 3,
-                                                                                                                           "Poisson's Ratio" => 0.1,
-                                                                                                                           "Young's Modulus" => 2,
-                                                                                                                           "Property_3" => 2.4,
-                                                                                                                           "Property_4" => 2)))
+
+    # Material properties
+    E = 2.0
+    nu = 0.1
+    G = E / (2 * (1 + nu))  # Shear modulus
+
     @test_logs (:error,
                 "File $(joinpath(pwd(), directory, file * "_not_there")) does not exist, please check name and directory.") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
                                                                                                                                                                                                                         Dict{String,
-                                                                                                                                                                                                                             Any}("Poisson's Ratio" => 0.1,
-                                                                                                                                                                                                                                  "Young's Modulus" => 2,
+                                                                                                                                                                                                                             Any}("Material Model" => "Correspondence UMAT",
+                                                                                                                                                                                                                                  "Poisson's Ratio" => nu,
+                                                                                                                                                                                                                                  "Young's Modulus" => E,
+                                                                                                                                                                                                                                  "Shear Modulus" => G,
                                                                                                                                                                                                                                   "File" => file *
                                                                                                                                                                                                                                             "_not_there",
                                                                                                                                                                                                                                   "Number of Properties" => 3))
     @test_logs (:error, "Number of Properties must be at least equal 1") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
                                                                                                                                                                      Dict{String,
-                                                                                                                                                                          Any}("Poisson's Ratio" => 0.1,
-                                                                                                                                                                               "Young's Modulus" => 2,
+                                                                                                                                                                          Any}("Material Model" => "Correspondence UMAT",
+                                                                                                                                                                               "Poisson's Ratio" => nu,
+                                                                                                                                                                               "Young's Modulus" => E,
+                                                                                                                                                                               "Shear Modulus" => G,
                                                                                                                                                                                "File" => file))
 
     @test_logs (:error, "UMAT file is not defined.") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
                                                                                                                                                  Dict{String,
-                                                                                                                                                      Any}())
+                                                                                                                                                      Any}("Material Model" => "Correspondence UMAT",
+                                                                                                                                                           "Poisson's Ratio" => nu,
+                                                                                                                                                           "Young's Modulus" => E,
+                                                                                                                                                           "Shear Modulus" => G))
 
     @test_logs (:error,
                 "Due to old Fortran standards only a name length of 80 is supported") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
                                                                                                                                                                                   Dict{String,
-                                                                                                                                                                                       Any}("File" => file,
+                                                                                                                                                                                       Any}("Material Model" => "Correspondence UMAT",
+                                                                                                                                                                                            "File" => file,
                                                                                                                                                                                             "Number of Properties" => 3,
                                                                                                                                                                                             "Property_1" => 2,
                                                                                                                                                                                             "Property_2" => 2.4,
                                                                                                                                                                                             "Property_3" => 2.4,
-                                                                                                                                                                                            "Poisson's Ratio" => 0.1,
-                                                                                                                                                                                            "Young's Modulus" => 2,
+                                                                                                                                                                                            "Poisson's Ratio" => nu,
+                                                                                                                                                                                            "Young's Modulus" => E,
+                                                                                                                                                                                            "Shear Modulus" => G,
                                                                                                                                                                                             "UMAT Material Name" => "a"^81))
-    @test !isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
-                                                                                                                 Dict{String,
-                                                                                                                      Any}("File" => file,
-                                                                                                                           "Number of Properties" => 3,
-                                                                                                                           "Property_1" => 2,
-                                                                                                                           "Property_2" => 2,
-                                                                                                                           "Property_3" => 2.4,
-                                                                                                                           "Poisson's Ratio" => 0.1,
-                                                                                                                           "Young's Modulus" => 2,
-                                                                                                                           "UMAT Material Name" => "a"^80)))
 
     properties = PeriLab.Data_Manager.get_field("Properties")
     @test length(properties) == 3
     @test properties[1] == 2
-    @test properties[2] == 2
+    @test properties[2] == 2.4
     @test properties[3] == 2.4
 
     @test_logs (:error,
                 "Predefined field ''test_field_2'' is not defined in the mesh file.") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
                                                                                                                                                                                   Dict{String,
-                                                                                                                                                                                       Any}("File" => file,
+                                                                                                                                                                                       Any}("Material Model" => "Correspondence UMAT",
+                                                                                                                                                                                            "File" => file,
                                                                                                                                                                                             "Number of Properties" => 3,
                                                                                                                                                                                             "Property_1" => 2,
                                                                                                                                                                                             "Property_2" => 2,
                                                                                                                                                                                             "Property_3" => 2.4,
+                                                                                                                                                                                            "Poisson's Ratio" => nu,
+                                                                                                                                                                                            "Young's Modulus" => E,
+                                                                                                                                                                                            "Shear Modulus" => G,
                                                                                                                                                                                             "Predefined Field Names" => "test_field_2 test_field_3"))
 
     test_1 = PeriLab.Data_Manager.create_constant_node_scalar_field("test_field_2", Float64)
     test_1[1] = 7.3
     test_2 = PeriLab.Data_Manager.create_constant_node_scalar_field("test_field_3", Float64)
     test_2 .= 3
-    mat_dict = Dict{String,Any}("File" => file,
+    mat_dict = Dict{String,Any}("Material Model" => "Correspondence UMAT",
+                                "File" => file,
                                 "UMAT name" => "test_sub",
                                 "Number of Properties" => 3,
                                 "Property_1" => 2,
                                 "Property_2" => 2,
                                 "Property_3" => 2.4,
+                                "Poisson's Ratio" => nu,
+                                "Young's Modulus" => E,
+                                "Shear Modulus" => G,
                                 "Predefined Field Names" => "test_field_2 test_field_3")
     PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),
                                                                                                 mat_dict)
@@ -108,11 +113,15 @@ end
     @test fields[1, 2] == test_2[1]
     @test fields[2, 2] == test_2[2]
     @test mat_dict["UMAT name"] == "test_sub"
-    mat_dict = Dict{String,Any}("File" => file,
+    mat_dict = Dict{String,Any}("Material Model" => "Correspondence UMAT",
+                                "File" => file,
                                 "Number of Properties" => 3,
                                 "Property_1" => 2,
                                 "Property_2" => 2,
                                 "Property_3" => 2.4,
+                                "Poisson's Ratio" => nu,
+                                "Young's Modulus" => E,
+                                "Shear Modulus" => G,
                                 "Predefined Field Names" => "test_field_2 test_field_3")
     @test !haskey(mat_dict, "UMAT name")
     PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(Vector{Int64}(1:nodes),

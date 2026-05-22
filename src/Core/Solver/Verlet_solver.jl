@@ -325,7 +325,7 @@ function run_solver(solver_options::Dict{Any,Any},
             active_nodes = find_active_nodes(active_list, active_nodes,
                                              1:Data_Manager.get_nnodes())
             if "Material" in solver_options["Models"]
-                check_inf_or_nan(force_densities, "Forces")
+                check_inf_or_nan(force_densities, "Force Densities")
 
                 if fem_option
                     # edit external force densities won't work so easy, because the corresponded volume is in detJ

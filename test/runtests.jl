@@ -312,8 +312,8 @@ MPI.Init()
         @testset "test_FEM_coupling" begin
             include("fullscale_tests/test_FEM_coupling/test_FEM_coupling.jl")
         end
-        @testset "test_vumat" begin
-            include("fullscale_tests/test_vumat/test_vumat.jl")
+        @testset "test_umat" begin
+            include("fullscale_tests/test_umat/test_umat.jl")
         end
         @testset "test_bond_based_elastic" begin
             include("fullscale_tests/test_bond_based_elastic/test_bond_based_elastic.jl")

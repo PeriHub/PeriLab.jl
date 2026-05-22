@@ -484,7 +484,7 @@ function compute_displacements_active_subset!(K_active::AbstractMatrix{Float64},
 
     # LU factorization and solve (same as reference)
     @timeit "LU factorization" begin
-        K_free = K_active[active_non_BCs, active_non_BCs]
+        K_free = sparse(K_active[active_non_BCs, active_non_BCs])
         try
             solver.K_free_lu = lu(K_free)
         catch e

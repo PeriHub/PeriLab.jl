@@ -393,8 +393,11 @@ end
 bdn,
 bdnp1 = PeriLab.Data_Manager.create_bond_scalar_state("Bond Damage", Float64;
                                                       default_value = 1)
-PeriLab.Data_Manager.create_constant_node_scalar_field("Active", Bool; default_value = true)
+
 @testset "switch_NP1_to_N" begin
+    PeriLab.Data_Manager.create_constant_node_scalar_field("Active", Bool;
+                                                           default_value = true)
+
     bmatrixN,
     bmatrixNP1 = PeriLab.Data_Manager.create_bond_tensor_state("Bmat", Float64, 2)
     nmatrixN,
