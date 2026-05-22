@@ -106,6 +106,9 @@ You can call the user subroutine by defining path with a compiled Fotran library
 |UMAT name| in development | Should allow the definition of own subroutine name. The standard will be UMAT| in development |
 |Predefined Field Names| String separated by spaces $\geq0$ | Define all the fields in the mesh file which should be used as pre-defined values. An increment field is than defined as well. E.g. Predefined Field Names: "Temperature" "Color"; Temperature and Color must exist in the mesh file. **They must be defined as Float or Int in that case**.| Yes|
 
+!!! tip "Matrix based"
+    If you use the matrix based approach you can use UMATS as well. But you must provide the tangential stiffness matrix. As solver right now you can use Matrix Verlet and Linear Static Matrix Based. The material definition remains equal.
+
 ### Compilation of the UMAT subroutine
 In order to compile the UMAT subroutine you need to install gfortran. Have a look at [this](https://fortran-lang.org/en/learn/os_setup/install_gfortran/) page.
 After installation you can compile the Fortran subroutine with the following command:
