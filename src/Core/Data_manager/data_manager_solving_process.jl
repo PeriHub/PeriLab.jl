@@ -22,7 +22,7 @@ Sets the NP1_to_N dataset
 - `type`::Type The field type
 """
 function set_NP1_to_N(name::String, ::Type{T}) where {T<:Union{Float64,Bool,Int64}}
-    if !has_key(name)
+    if !has_key(name * "N")
         data["NP1_to_N"][name] = NP1_to_N(name * "N", name * "NP1", zero(T))
     end
 end
@@ -36,6 +36,10 @@ end
 
 @inline function _fill_field_barrier(field_NP1, active::Vector{Bool},
                                      np1_to_n::NP1_to_N{T}) where {T}
+    if isnothing(field_NP1)
+        @error "Field $(np1_to_n.NP1) not found. Cannot fill NP1 field from N."
+        return
+    end
     fill_field!(field_NP1, active, np1_to_n.value)
 end
 

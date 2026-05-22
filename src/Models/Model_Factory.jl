@@ -205,7 +205,7 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
         end
     end
 
-    # Why not update_list.=false? -> avoid neighbors
+    # Why not update_list.=false? -> avoid neighbors in MPI
     update_list = Data_Manager.get_field("Update")
     for (block, nodes) in pairs(block_nodes)
         update_list[nodes] .= false

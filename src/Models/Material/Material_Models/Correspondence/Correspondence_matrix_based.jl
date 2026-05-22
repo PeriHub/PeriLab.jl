@@ -228,7 +228,7 @@ for O(1) direct writes in the assembly loop.
 
 The sparsity pattern includes all (iID, jID) pairs where jID ∈ nlist[iID],
 covering both the node itself and all its neighbors.
-"""
+
 function build_sparsity_and_map(nodes::AbstractVector{Int},
                                 nlist::Vector{Vector{Int}},
                                 number_of_neighbors::Vector{Int},
@@ -287,6 +287,66 @@ function build_sparsity_and_map(nodes::AbstractVector{Int},
     K = SparseMatrixCSC(n, n, colptr, rowval, nzval_arr)
 
     # Return colptr + rowval for O(log n) binary search in scatter
+    return K, colptr, rowval
+end
+
+"""
+
+function build_sparsity_and_map(nodes::AbstractVector{Int},
+                                nlist::Vector{Vector{Int}},
+                                number_of_neighbors::Vector{Int},
+                                nnodes::Int,
+                                dof::Int)
+    n = dof * nnodes
+
+    # pro Spalte: Menge eindeutiger Zeilen
+    col_rows = [Set{Int}() for _ in 1:n]
+
+    @inbounds for iID in nodes
+        nj = nlist[iID]
+        mnj = number_of_neighbors[iID]
+
+        local_nodes = (nj..., iID)   # Nachbarn + eigener Knoten
+
+        for row_node in local_nodes
+            for m in 1:dof
+                grow = (m - 1) * nnodes + row_node
+
+                for col_node in local_nodes
+                    for o in 1:dof
+                        gcol = (o - 1) * nnodes + col_node
+                        push!(col_rows[gcol], grow)
+                    end
+                end
+            end
+        end
+    end
+
+    # CSC aufbauen
+    colptr = Vector{Int}(undef, n + 1)
+    colptr[1] = 1
+
+    sorted_cols = Vector{Vector{Int}}(undef, n)
+
+    @inbounds for col in 1:n
+        v = collect(col_rows[col])
+        sort!(v)
+        sorted_cols[col] = v
+        colptr[col + 1] = colptr[col] + length(v)
+    end
+
+    nnz_total = colptr[end] - 1
+    rowval = Vector{Int}(undef, nnz_total)
+    nzval_arr = fill(eps(), nnz_total)
+
+    @inbounds for col in 1:n
+        v = sorted_cols[col]
+        start = colptr[col]
+        rowval[start:(start + length(v) - 1)] .= v
+    end
+
+    K = SparseMatrixCSC(n, n, colptr, rowval, nzval_arr)
+
     return K, colptr, rowval
 end
 
@@ -522,7 +582,7 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
     number_of_neighbors = Data_Manager.get_field("Number of Neighbors")
     volume = Data_Manager.get_field("Volume")
     omega = Data_Manager.get_field("Influence Function")
-    C_voigt = Data_Manager.get_field("Elasticity Matrix")
+    C_voigt = Data_Manager.get_field("Material Gradient")
     bond_damage = Data_Manager.get_field("Bond Damage", "NP1")
 
     C_voigt_trafo = _apply_rotation(C_voigt, dof, nnodes)
@@ -557,7 +617,7 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
                                                            bond_geometry, omega,
                                                            bond_damage, zStiff)
 
-    Data_Manager.set_stiffness_matrix(-K_sparse)
+    Data_Manager.set_stiffness_matrix(-K_sparse) # somewhere in the assembly we had a factor of 0.5, so we compensate here to get the final K
 end
 
 function compute_model(nodes::AbstractVector{Int64},
@@ -574,7 +634,7 @@ function compute_model(nodes::AbstractVector{Int64},
     number_of_neighbors = Data_Manager.get_field("Number of Neighbors")
     omega = Data_Manager.get_field("Influence Function")
     bond_damage = Data_Manager.get_field("Bond Damage", "NP1")
-    C_voigt = Data_Manager.get_field("Elasticity Matrix")
+    C_voigt = Data_Manager.get_field("Material Gradient")
     zStiff = include_zero_energy ?
              Data_Manager.get_field("Zero Energy Stiffness") : nothing
 

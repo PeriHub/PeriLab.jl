@@ -7,8 +7,7 @@ using StaticArrays
 
 using ......Data_Manager
 using ......Helpers: voigt_to_matrix, matrix_to_voigt
-using .....Material_Basis: get_Hooke_matrix
-#using .....Global_Zero_Energy_Control: global_zero_energy_mode_stiffness
+using .....Material_Basis: get_Hooke_matrix, get_all_elastic_moduli
 export fe_support
 export init_model
 export correspondence_name
@@ -53,14 +52,14 @@ function init_model(nodes::AbstractVector{Int64},
     num_state_vars::Int64 = 1
     if !haskey(material_parameter, "File")
         @error "UMAT file is not defined."
-        return
+        return 1
     end
     directory = Data_Manager.get_directory()
     material_parameter["File"] = joinpath(pwd(), directory, material_parameter["File"])
     global umat_file_path = material_parameter["File"]
     if !isfile(material_parameter["File"])
         @error "File $(material_parameter["File"]) does not exist, please check name and directory."
-        return
+        return 1
     end
     if haskey(material_parameter, "Number of State Variables")
         num_state_vars = material_parameter["Number of State Variables"]
@@ -75,7 +74,7 @@ function init_model(nodes::AbstractVector{Int64},
 
     if !haskey(material_parameter, "Number of Properties")
         @error "Number of Properties must be at least equal 1"
-        return
+        return 1
     end
     # properties include the material properties, etc.
     num_props = material_parameter["Number of Properties"]
@@ -121,6 +120,14 @@ function init_model(nodes::AbstractVector{Int64},
     DRPLDT = Data_Manager.create_constant_node_scalar_field("Variation of RPL with respect to the temperature",
                                                             Float64)
     DFGRD0 = Data_Manager.create_constant_node_tensor_field("DFGRD0", Float64, dof)
+
+    DDSDDE::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Material Gradient",
+                                                                                      Float64,
+                                                                                      Int64((dof *
+                                                                                             (dof +
+                                                                                              1)) /
+                                                                                            2))
+
     # is already initialized if thermal problems are adressed
     Data_Manager.create_node_scalar_field("Temperature", Float64)
     deltaT = Data_Manager.create_constant_node_scalar_field("Delta Temperature", Float64)
@@ -157,6 +164,16 @@ function init_model(nodes::AbstractVector{Int64},
     zStiff = Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",
                                                             Float64,
                                                             dof)
+    get_all_elastic_moduli(material_parameter)
+    symmetry::String = get(material_parameter, "Symmetry", "default")
+
+    for iID in nodes
+        @views DDSDDE[iID, :,
+        :] = get_Hooke_matrix(material_parameter,
+                                                    symmetry,
+                                                    dof,
+                                                    iID)
+    end
 end
 
 """
@@ -217,7 +234,11 @@ function compute_stresses(nodes::AbstractVector{Int64},
     statev = Data_Manager.get_field("State Variables")
 
     stress_temp::Vector{Float64} = zeros(Float64, 3 * dof - 3)
-    DDSDDE = zeros(Float64, 3 * dof - 3, 3 * dof - 3)
+    # DDSDDE = zeros(Float64, 3 * dof - 3, 3 * dof - 3)
+    ## TODO use C_voigt = Data_Manager.get_field("Material Gradient")
+    DDSDDE_iD = Data_Manager.get_field("Material Gradient")
+    #
+    ##
     SSE = Data_Manager.get_field("Specific Elastic Strain Energy")
     SPD = Data_Manager.get_field("Specific Plastic Dissipation")
     SCD = Data_Manager.get_field("Specific Creep Dissipation Energy")
@@ -268,6 +289,7 @@ function compute_stresses(nodes::AbstractVector{Int64},
         DDSDDT_temp = DDSDDT[iID, :]
         DRPLDE_temp = DRPLDE[iID, :]
         DRPLDT_temp = DRPLDT[iID]
+        DDSDDE = DDSDDE_iD[iID, :, :]
         UMAT_interface(stress_temp,
                        STATEV_temp,
                        DDSDDE,

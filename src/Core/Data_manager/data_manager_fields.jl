@@ -42,7 +42,6 @@ Returns the field with the given name and time.
 - `field::Field`: The field with the given name and time.
 """
 function get_field(name::String, time::String = "Constant")
-    @assert !occursin("NP1", name)
     if time == "Constant"
         return _get_field(name)
     elseif time == "N"
@@ -130,8 +129,8 @@ function create_node_scalar_field(name::String, vartype::Type{T};
                                                                              Bool}}
     set_NP1_to_N(name, vartype)
 
-    return _create_node_scalar_field(name * "N", T(default_value)),
-           _create_node_scalar_field(name * "NP1", T(default_value))
+    return _create_node_scalar_field(data["NP1_to_N"][name].N, T(default_value)),
+           _create_node_scalar_field(data["NP1_to_N"][name].NP1, T(default_value))
 end
 
 function create_constant_node_vector_field(name::String, vartype::Type{T}, dof::Int64;
@@ -146,8 +145,8 @@ function create_node_vector_field(name::String, vartype::Type{T}, dof::Int64;
                                                                              Bool}}
     set_NP1_to_N(name, vartype)
 
-    return _create_node_vector_field(name * "N", T(default_value), dof),
-           _create_node_vector_field(name * "NP1", T(default_value), dof)
+    return _create_node_vector_field(data["NP1_to_N"][name].N, T(default_value), dof),
+           _create_node_vector_field(data["NP1_to_N"][name].NP1, T(default_value), dof)
 end
 
 function create_constant_node_tensor_field(name::String, vartype::Type{T}, dof::Int64;
@@ -162,8 +161,8 @@ function create_node_tensor_field(name::String, vartype::Type{T}, dof::Int64;
                                                                              Bool}}
     set_NP1_to_N(name, vartype)
 
-    return _create_node_tensor_field(name * "N", T(default_value), dof),
-           _create_node_tensor_field(name * "NP1", T(default_value), dof)
+    return _create_node_tensor_field(data["NP1_to_N"][name].N, T(default_value), dof),
+           _create_node_tensor_field(data["NP1_to_N"][name].NP1, T(default_value), dof)
 end
 
 function create_constant_bond_scalar_state(name::String, vartype::Type{T};
@@ -178,8 +177,8 @@ function create_bond_scalar_state(name::String, vartype::Type{T};
                                                                              Bool}}
     set_NP1_to_N(name, vartype)
 
-    return _create_bond_scalar_state(name * "N", T(default_value)),
-           _create_bond_scalar_state(name * "NP1", T(default_value))
+    return _create_bond_scalar_state(data["NP1_to_N"][name].N, T(default_value)),
+           _create_bond_scalar_state(data["NP1_to_N"][name].NP1, T(default_value))
 end
 
 function create_constant_bond_vector_state(name::String, vartype::Type{T}, dof::Int64;
@@ -194,8 +193,8 @@ function create_bond_vector_state(name::String, vartype::Type{T}, dof::Int64;
                                                                              Bool}}
     set_NP1_to_N(name, vartype)
 
-    return _create_bond_vector_state(name * "N", T(default_value), dof),
-           _create_bond_vector_state(name * "NP1", T(default_value), dof)
+    return _create_bond_vector_state(data["NP1_to_N"][name].N, T(default_value), dof),
+           _create_bond_vector_state(data["NP1_to_N"][name].NP1, T(default_value), dof)
 end
 
 function create_constant_bond_tensor_state(name::String, vartype::Type{T}, dof::Int64;
@@ -210,8 +209,8 @@ function create_bond_tensor_state(name::String, vartype::Type{T}, dof::Int64;
                                                                              Bool}}
     set_NP1_to_N(name, vartype)
 
-    return _create_bond_tensor_state(name * "N", T(default_value), dof),
-           _create_bond_tensor_state(name * "NP1", T(default_value), dof)
+    return _create_bond_tensor_state(data["NP1_to_N"][name].N, T(default_value), dof),
+           _create_bond_tensor_state(data["NP1_to_N"][name].NP1, T(default_value), dof)
 end
 
 function create_constant_element_vector_field(name::String, vartype::Type{T}, dof::Int64;
@@ -232,8 +231,8 @@ function create_free_size_field(name::String, vartype::Type{T}, dof::Tuple;
                                                                            Bool}}
     set_NP1_to_N(name, vartype)
 
-    return _create_free_size_field(name * "N", T(default_value), dof),
-           _create_free_size_field(name * "NP1", T(default_value), dof)
+    return _create_free_size_field(data["NP1_to_N"][name].N, T(default_value), dof),
+           _create_free_size_field(data["NP1_to_N"][name].NP1, T(default_value), dof)
 end
 
 function create_field!(name::String, _data, field_type::String)

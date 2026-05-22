@@ -45,7 +45,8 @@ Initializes the material model.
 function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     dof::Int64 = Data_Manager.get_dof()
-    hooke_matrix::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Elasticity Matrix",
+
+    hooke_matrix::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Material Gradient",
                                                                                             Float64,
                                                                                             Int64((dof *
                                                                                                    (dof +
@@ -119,7 +120,7 @@ function compute_stresses(nodes::AbstractVector{Int64},
         get_mapping(dof)
     end
 
-    hooke_matrix::NodeTensorField{Float64} = Data_Manager.get_field("Elasticity Matrix")
+    hooke_matrix::NodeTensorField{Float64} = Data_Manager.get_field("Material Gradient")
 
     @inbounds for iID in nodes
         # Voigt-Notation
@@ -131,8 +132,11 @@ function compute_stresses(nodes::AbstractVector{Int64},
 
             # Constitutive Relation: σ_ij^(n+1) = σ_ij^n + C_ijkl * Δε_kl
             for k in axes(mapping, 1)
+                i_k = mapping[k, 1]
+                j_k = mapping[k, 2]
+                factor = (i_k == j_k) ? 1.0 : 2.0   # Voigt: γ = 2ε für Schub
                 sNP1 += hooke_matrix[iID, m, k] *
-                        strain_increment[iID, mapping[k, 1], mapping[k, 2]]
+                        factor * strain_increment[iID, i_k, j_k]
             end
 
             stress_NP1[iID, i, j] = sNP1

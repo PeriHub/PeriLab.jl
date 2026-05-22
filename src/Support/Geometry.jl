@@ -382,6 +382,18 @@ function compute_strain!(nodes::AbstractVector{Int64},
     end
 end
 
+function compute_linear_strain!(nodes::AbstractVector{Int64},
+                                deformation_gradient::NodeTensorField{Float64},
+                                strain::NodeTensorField{Float64})
+    for iID in nodes
+        @inbounds for i in axes(strain, 2), j in axes(strain, 3)
+            strain[iID, i, j] = 0.5 * (deformation_gradient[iID, i, j] +
+                                 deformation_gradient[iID, j, i]) -
+                                (i == j ? 1.0 : 0.0)
+        end
+    end
+end
+
 """
 	function rotation_tensor(angles::Vector{Float64})
 

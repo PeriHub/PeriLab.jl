@@ -43,37 +43,40 @@ function init_solver(solver_options::Dict{Any,Any},
         @warn "Implementation might not work for MPI. Especially for coupling. It has to be tested."
     end
     find_bc_free_dof(bcs)
-    solver_options["Initial Time"] = get_initial_time(params)
-    solver_options["Final Time"] = get_final_time(params)
-
-    solver_options["Number of Steps"] = get_nsteps(params)
-
-    #solver_options["dt"] = (solver_options["Final Time"] - solver_options["Initial Time"]) /
-    #					   solver_options["Number of Steps"]
+    initial_time = get_initial_time(params)
+    final_time = get_final_time(params)
+    nsteps = get_nsteps(params)
 
     mechanical = "Material" in solver_options["Models"]
     thermal = "Thermal" in solver_options["Models"]
 
     solver_options["dt"] = compute_crititical_time_step(block_nodes, mechanical, thermal)
     #solver_options["dt"] = 1e-8
-    solver_options["Number of Steps"] = Int(ceil((solver_options["Final Time"] -
-                                                  solver_options["Initial Time"]) /
-                                                 solver_options["dt"]))
-    K = Data_Manager.get_stiffness_matrix()
-    if isnothing(K)
-        for (block, nodes) in pairs(block_nodes)
-            model_param = Data_Manager.get_properties(block, "Material Model")
-            Correspondence_matrix_based.init_model(nodes, model_param, block)
-        end
-        @timeit "init_matrix" Correspondence_matrix_based.init_matrix()
-        K = Data_Manager.get_stiffness_matrix()
+    safety_factor = get_safety_factor(params)
+    fixed_dt = get_fixed_dt(params)
+    min_dt = compute_crititical_time_step(block_nodes, mechanical, thermal)
+    if fixed_dt == -1.0
+        nsteps_temp,
+        dt = get_integration_steps(initial_time, final_time,
+                                   safety_factor * min_dt)
+    else
+        nsteps_temp, dt = get_integration_steps(initial_time, final_time, fixed_dt)
     end
+    if nsteps == 1
+        nsteps = nsteps_temp
+    end
+
+    K = Data_Manager.get_stiffness_matrix()
+
     dof = Data_Manager.get_dof()
     density = Data_Manager.get_field("Density")
     model_reduction = get(params["Verlet Matrix Based"], "Model Reduction", false)
     solver_options["Model Reduction"] = model_reduction
     solver_options["Numerical Damping"] = get_numerical_damping(params)
-
+    solver_options["dt"] = dt
+    solver_options["Initial Time"] = initial_time
+    solver_options["Final Time"] = final_time
+    solver_options["Number of Steps"] = nsteps
     @info "Solver parameter"
     @info "Initial Time: $(solver_options["Initial Time"])"
     @info "Final Time: $(solver_options["Final Time"])"
@@ -104,7 +107,7 @@ function init_solver(solver_options::Dict{Any,Any},
     else
         # might lead to issues, because neighbors outside the block are included in
         for block in eachindex(block_nodes)
-            block_nodes[block] = []
+            Data_Manager.set_reduced_model_pd(Vector{Int64}([]))
         end
         @warn "No other models work with full matrix Verlet right now."
     end
@@ -113,8 +116,9 @@ function init_solver(solver_options::Dict{Any,Any},
         master_nodes = Int64[]
         slave_nodes = Int64[]
         pd_nodes = Int64[]
-        temp = []
+
         nlist = Data_Manager.get_nlist()
+        # only for visualization and debugging.
         cn = Data_Manager.create_constant_node_scalar_field("Coupling Nodes", Int64)
         full_blocks = setdiff(collect(keys(block_nodes)), reduction_blocks)
         for block in full_blocks
@@ -128,60 +132,58 @@ function init_solver(solver_options::Dict{Any,Any},
         append!(master_nodes, pd_nodes)
 
         master_nodes = sort(unique(master_nodes))
-        coupling_nodes = setdiff(unique(master_nodes), pd_nodes)
 
-        for node in coupling_nodes
-            append!(temp, nlist[node])
+        slave_nodes = sort(setdiff(1:Data_Manager.get_nnodes(), master_nodes))
+
+        if !(get(solver_options["Model Reduction"], "Material Point Region", true))
+            pd_nodes::Vector{Int64} = []
         end
-        append!(coupling_nodes, temp)
-        slave_nodes = setdiff(1:Data_Manager.get_nnodes(), unique(master_nodes))
-        cn[slave_nodes] .= 6
-        cn[master_nodes] .= 2
-        cn[pd_nodes] .= 1
-
-        for block in eachindex(block_nodes)
-            intersect!(block_nodes[block], pd_nodes)
+        sort!(pd_nodes)
+        if isnothing(K)
+            for (block, nodes) in pairs(block_nodes)
+                model_param = Data_Manager.get_properties(block, "Material Model")
+                Correspondence_matrix_based.init_model(nodes, model_param, block)
+            end
+            @timeit "init_matrix" Correspondence_matrix_based.init_matrix()
         end
-
+        if pd_nodes != []
+            nodes = setdiff(collect(1:Data_Manager.get_nnodes()), pd_nodes)
+            @timeit "update_material_point_part" Correspondence_matrix_based.compute_model(nodes)
+        end
+        K = Data_Manager.get_stiffness_matrix()
         if !(master_nodes == [])
+            coupling_nodes = setdiff(master_nodes, pd_nodes)
+
+            cn[master_nodes] .= 3
+            cn[slave_nodes] .= 6
+            cn[pd_nodes] .+= 1  # added to be sure that all points are handled
+            cn[coupling_nodes] .+= 3  # added to be sure that all points are handled
+
             nnodes = Data_Manager.get_nnodes()
-            # complete region of analysis with coupling
+
             perm_master = create_permutation(master_nodes, Data_Manager.get_dof(), nnodes)
-            # complete region of reduction
             perm_slave = create_permutation(slave_nodes, Data_Manager.get_dof(), nnodes)
-
-            # indices of pd nodes in global system of PD nodes for crack propagation and BCs application
             perm_pd_nodes = create_permutation(pd_nodes, Data_Manager.get_dof(), nnodes)
-            # indices of deletes in global system
-            # create reduced M^-1*K for linear run
-            #TODO adapt for mass matrix
-            density_mass = zeros(length(density) * Data_Manager.get_dof())
-            @warn "Constant mass density for model reduction is assumed."
-            density_mass .= density[1]
-            # find indices of pd nodes and coupling nodes in reduced system; using master ids vector
+            perm_coupling_nodes = create_permutation(coupling_nodes, Data_Manager.get_dof(),
+                                                     nnodes)
+
+            # create permutations in the reduced system; only master nodes exist. PD and overlap nodes are part of the master nodes and get the indices of the master nodes in the reduced system.
+            # Sorting is important to ensure that the order of the nodes in the reduced system is the same as in the original system
             perm_pd_reduced = findall(in(perm_pd_nodes), perm_master)
+            perm_coupling_reduced = findall(in(perm_coupling_nodes), perm_master)
+            # create the mass part.
+            density_mass = zeros(length(density) * dof)
+            for iID in eachindex(density_mass)
+                density_mass[iID] = density[Int(ceil(iID / dof))]
+            end
+            # perform the condensation of the system
+            @timeit "Guyan Condensation" K_reduced,
+                                         mass_reduced=guyan_reduction(K,
+                                                                      density_mass,
+                                                                      perm_master,
+                                                                      perm_slave)
 
-            @timeit "gyan" K_reduced,
-                           mass_reduced=guyan_reduction(K, density_mass,
-                                                        perm_master, perm_slave)
-            #
-            # K_reduced[:, perm_pd_reduced] .= 0
-            K_reduced[perm_pd_reduced, :] .= 0
-
-            #for pd in perm_pd_reduced
-            #    mass_reduced[pd,:].=0.0
-            #    mass_reduced[:,pd].=0.0
-            #    mass_reduced[pd,pd]=density[1]
-            #end
             dropzeros!(mass_reduced)
-
-            # K_reduced[perm_delete_reduced, perm_delete_reduced] .= 0
-
-            #-> der Rest der keine cn als nachbarn hat; cn reduced einfach nur multipl.
-
-            # K_reduced[:, perm_cn_reduced] .= 0
-            #  @info length(perm_delete_reduced), length(perm_pd_reduced)
-            # readline()
             dropzeros!(K_reduced)
 
             Data_Manager.set_stiffness_matrix(sparse(K_reduced))
@@ -196,26 +198,22 @@ function init_solver(solver_options::Dict{Any,Any},
         end
         @warn "No master nodes defined for model reduction. Using full stiffness matrix."
     end
-
-    # create M^-1*K for linear run
-    #for (block, nodes) in pairs(block_nodes)
-    #	for node in nodes
-    #		for idof in 1:dof
-    #			K[(node-1)*dof+idof, (node-1)*dof+idof]/=density[node]
-    #		end
-    #	end
-    #end
-
+    if isnothing(K)
+        for (block, nodes) in pairs(block_nodes)
+            model_param = Data_Manager.get_properties(block, "Material Model")
+            Correspondence_matrix_based.init_model(nodes, model_param, block)
+        end
+        @timeit "init_matrix" Correspondence_matrix_based.init_matrix()
+        K = Data_Manager.get_stiffness_matrix()
+    end
     density_mass = zeros(length(density) * Data_Manager.get_dof())
-    @warn "TBD Constant mass density for matrix modelis assumed."
-    density_mass .= density[1]
+    for iID in eachindex(density_mass)
+        density_mass[iID] = density[Int(ceil(iID / dof))]
+    end
     mass = Diagonal(density_mass)
     perm = collect(1:(Data_Manager.get_nnodes() * Data_Manager.get_dof()))
     Data_Manager.set_mass_matrix(lu(sparse(mass[perm, perm])))
     return
-
-    # reduced matrix
-
 end
 
 function run_solver(solver_options::Dict{Any,Any},
@@ -237,8 +235,6 @@ function run_solver(solver_options::Dict{Any,Any},
     max_damage::Float64 = 0
     damage_init::Bool = false
 
-    density::NodeScalarField{Float64} = Data_Manager.get_field("Density")
-
     coor::NodeVectorField{Float64} = Data_Manager.get_field("Coordinates")
 
     active_list::NodeScalarField{Bool} = Data_Manager.get_field("Active")
@@ -257,12 +253,12 @@ function run_solver(solver_options::Dict{Any,Any},
     if solver_options["Model Reduction"] != false
         master_nodes = Data_Manager.get_reduced_model_master()
         temp = zeros(length(master_nodes) * Data_Manager.get_dof())
+
     else
         temp = zeros(Data_Manager.get_dof() * Data_Manager.get_nnodes())
     end
-    K::AbstractMatrix{Float64} = Data_Manager.get_stiffness_matrix()
 
-    #nodes::Vector{Int64} = Vector{Int64}(1:Data_Manager.get_nnodes())
+    K::AbstractMatrix{Float64} = Data_Manager.get_stiffness_matrix()
 
     @timeit "Matrix Verlet" begin
         @inbounds @fastmath for idt in iter
@@ -281,6 +277,7 @@ function run_solver(solver_options::Dict{Any,Any},
                 if solver_options["Model Reduction"] != false
                     active_nodes = master_nodes
                     active_list .= false
+                    # coupling region and material point region must be active. shown in symbolic code.
                     active_list[Data_Manager.get_reduced_model_pd()] .= true
 
                 else
@@ -303,53 +300,36 @@ function run_solver(solver_options::Dict{Any,Any},
                                                   time,
                                                   step_time) #-> Dirichlet
             @timeit "deformed coor" @views deformed_coorNP1 .= coor .+ uNP1
-            # thermal model, usw.
-
-            #mul!(a[active_nodes], K[active_nodes, active_nodes], uNP1[active_nodes])
-
-            @timeit "sa" sa=size(a[active_nodes, :])
 
             @timeit "compute models" compute_models(block_nodes,
                                                     dt,
                                                     time,
                                                     solver_options["Models"],
                                                     synchronise_field)
-            #force_densities_NP1[active_nodes, :] .*= volume[active_nodes]
             @timeit "Force computations" begin
-                # check if valid if volume is different
+                @timeit "sa" sa=size(a[active_nodes, :])
 
-                #-= f_int(K,
-                #	vec(uNP1[active_nodes,
-                #		:]), sa)
-                # hier muss pd nodes rein
-
-                #1D testen
                 @views fNP1 = force_densities_NP1[active_nodes, :]
 
                 @timeit "Force matrix computations" f_int_inplace!(fNP1, temp, K,
                                                                    vec(uNP1[active_nodes,
                                                                             :]), sa)
 
-                @. @views fNP1 .+= external_force_densities[active_nodes,
-                                                            :] +
-                                   external_forces[active_nodes,
-                                                   :] / volume[active_nodes]
+                @. @views fNP1 .+= external_force_densities[active_nodes, :] +
+                                   external_forces[active_nodes, :] / volume[active_nodes]
 
-                @. @views forces[active_nodes, :] .= force_densities_NP1[active_nodes, :] *
-                                                     volume[active_nodes] +
-                                                     external_forces[active_nodes, :]
+                @. @views forces[active_nodes, :] .= fNP1 *
+                                                     volume[active_nodes]
+                check_inf_or_nan(force_densities_NP1, "Force Densities")
             end
             @timeit "Accelaration computation" begin
                 @views a[active_nodes, :] = reshape(M_fact \
-                                                    vec(force_densities_NP1[active_nodes,
-                                                                            :]),
+                                                    vec(fNP1),
                                                     sa...)
             end
             @timeit "write_results" result_files=write_results(result_files, time,
                                                                max_damage, outputs)
-            # for file in result_files
-            #     flush(file)
-            # end
+
             if rank == 0 && !silent && Data_Manager.get_cancel()
                 set_multiline_postfix(iter, "Simulation canceled!")
                 break
@@ -366,10 +346,7 @@ function run_solver(solver_options::Dict{Any,Any},
                 if rank == 0 && !silent
                     set_postfix(iter, t = @sprintf("%.3e", time))
                 end
-
-                # barrier(comm)
             end
-            #a+= + fexternal / density
         end
     end
     Data_Manager.set_current_time(time - dt)
@@ -382,6 +359,34 @@ function f_int_inplace!(F::AbstractMatrix{Float64},
                         u::AbstractVector{Float64}, sa::Tuple{Int64,Int64})
     mul!(temp, K, u)
     F .+= reshape(temp, sa)
+end
+
+"""
+	get_integration_steps(initial_time::Float64, end_time::Float64, dt::Float64)
+
+Calculate the number of integration steps and the adjusted time step for a numerical integration process.
+
+# Arguments
+- `initial_time::Float64`: The initial time for the integration.
+- `end_time::Float64`: The final time for the integration.
+- `dt::Float64`: The time step size.
+
+# Returns
+A tuple `(nsteps, dt)` where:
+- `nsteps::Int64`: The number of integration steps required to cover the specified time range.
+- `dt::Float64`: The adjusted time step size to evenly divide the time range.
+
+# Errors
+- Throws an error if the `dt` is less than or equal to zero.
+"""
+function get_integration_steps(initial_time::Float64, end_time::Float64, dt::Float64)
+    if !(0 < dt < 1e50)
+        @error "Time step $dt [s] is not valid"
+        return nothing
+    end
+    nsteps::Int64 = ceil((end_time - initial_time) / dt)
+    dt = (end_time - initial_time) / nsteps
+    return nsteps, dt
 end
 
 end

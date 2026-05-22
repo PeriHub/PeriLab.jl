@@ -31,10 +31,10 @@ function init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
     Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",
                                                    Float64,
                                                    dof)
-    if "Elasticity Matrix" in Data_Manager.get_all_field_keys()
+    if "Material Gradient" in Data_Manager.get_all_field_keys()
         return
     end
-    hooke_matrix::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Elasticity Matrix",
+    hooke_matrix::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Material Gradient",
                                                                                             Float64,
                                                                                             Int64((dof *
                                                                                                    (dof +
@@ -79,7 +79,7 @@ function compute_control(nodes::AbstractVector{Int64},
                                                                      "NP1")
     Kinv::NodeTensorField{Float64} = Data_Manager.get_field("Inverse Shape Tensor")
 
-    hooke_matrix::NodeTensorField{Float64} = Data_Manager.get_field("Elasticity Matrix")
+    hooke_matrix::NodeTensorField{Float64} = Data_Manager.get_field("Material Gradient")
     zStiff::NodeTensorField{Float64} = Data_Manager.get_field("Zero Energy Stiffness")
     rotation::Bool = Data_Manager.get_rotation()
 

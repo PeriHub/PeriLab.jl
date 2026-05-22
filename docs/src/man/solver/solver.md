@@ -142,3 +142,21 @@ If model reduction
 | ---------------- | ------------- | -------- | ------------------------------------------------------------------------- |
 | Type             | String        | No       | Defines the type of model redction (Static Condensationn)                 |
 | Redcution Blocks | String or Int | No       | Defines the blocks to be condensed; defintion are (4 or 1 2 4 or 1, 2, 4) |
+
+
+## Computational effort
+
+A single-core performance comparison between the matrix-based solver
+and the Verlet integrator for varying discretizations and horizon ratios $m =
+\delta/\Delta x$ is shown in the table. All times in seconds. The sparsity pattern is a one-time preprocessing
+cost and is excluded from the per-step effort in the last column. For the updated matrix algorithm this leads to a more efficient process. It was computed with v2.01
+
+| Points  |  m | Assembly (s) | Solve (s) | Pattern (s) | Verlet (s) | Effort ratio incl. Pattern (−) | Effort ratio excl. Pattern (−) |
+|--------:|---:|-------------:|----------:|------------:|-----------:|-------------------------------:|-------------------------------:|
+| 160,801 |  2 |         3.10 |     19.60 |        3.83 |      0.234 |                          113.4 |                           97.0 |
+|  40,401 |  2 |         0.80 |      4.23 |        1.00 |      0.040 |                          150.8 |                          125.8 |
+|         |  3 |         4.00 |      9.16 |        3.64 |      0.108 |                          155.6 |                          121.9 |
+|         |  4 |        12.30 |     19.80 |        8.56 |      0.129 |                          315.2 |                          248.8 |
+|  10,201 |  2 |         0.19 |      0.52 |        0.15 |      0.012 |                           71.7 |                           59.2 |
+|         |  3 |         0.90 |      1.81 |        1.95 |      0.020 |                          233.0 |                          135.5 |
+|         |  4 |         2.98 |      2.31 |        2.50 |      0.071 |                          109.7 |                           74.5 |
