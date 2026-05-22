@@ -68,7 +68,10 @@ end
     module_list::Vector{Any} = [Dict(("File" => filename,
                                       "Module Name" => "MockModule"))
     ]
-
+    @test isnothing(create_module_specifics("nonexistent_function",
+                                            Vector{Any}([]),
+                                            @__MODULE__,
+                                            "get_name"))
     specifics = Dict("Name" => "get_name",
                      "Call Function" => "call_function")
 
