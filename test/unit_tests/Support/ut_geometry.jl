@@ -33,9 +33,6 @@
           [1 0; 0 1]
 end
 
-using Test
-
-# Type alias as in PeriLab
 const NodeTensorField{T} = Array{T,3}   # shape: (nnodes, dim, dim)
 
 @testset "ut_compute_linear_strain!" begin
