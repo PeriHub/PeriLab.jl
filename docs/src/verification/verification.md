@@ -21,12 +21,8 @@ Combines Strategy 2 (static load introduction) with Strategy 3 (condensed dynami
 ### Solutions
 
 The crack path is given here and practically identical.
-
-```@raw html
-<img src="../assets/fracture_variants.png" alt="" title="Fracture variants" height="150"/>
+![w:600](../assets/fracture_variants.png)
 
 The force displacement curve is given here. It shows that all variants are in good agreement.
 
-
-```@raw html
-<img src="../assets/force–displacement_curves_for_the_DCB_simulation.png" alt="" title="Force Displacement curve" height="100"/>
+![w:600](../assets/force–displacement_curves_for_the_DCB_simulation.png)
