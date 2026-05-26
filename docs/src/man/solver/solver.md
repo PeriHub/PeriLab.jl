@@ -108,9 +108,9 @@ $$n(x,y,z (optional))=\text{max}(start_{val})-a(x,y,z (optional))\text{max}(coor
 | ------------- | ---- | -------- | -------------------------------------------- |
 | Update Matrix | Bool | Yes      | Activates the update of the stiffness matrix |
 
-The solver computes the stiffness matrix of the problem. It is solved by
+The solver computes the stiffness matrix of the problem [WillbergC2026](@cite). It is solved by
 
-$$\mathbf{u} = \mathbf{K}_{PD}^{-1}\mathbf{F}_{external}$$
+$$\mathbf{u}=\mathbf{K}_{PD}^{-1}\mathbf{F}_{external}$$
 
 The number of steps defines the virtual time step.
 
@@ -119,17 +119,15 @@ The number of steps defines the virtual time step.
 Uses the previous time step as original configuration. This allows the analysis of geometrically non-linear deformations. It must be updated if damages or additive models are used.
 
 !!! warning "Models"
-Not all models are fully tested yet in this framework.
+    Not all models are fully tested yet in this framework.
 
-!!! warning "Models"
-Stress computations are not inclueded yet. Please check the issues.
 
 ## Verlet Matrix Based
 
-It is the same solver as the Verlet based solver above. The main difference is, that the matrix style is used.
+It is the same solver as the Verlet based solver above. The main difference is, that the matrix style is used [WillbergC2026](@cite).
 
 !!! warning "Models"
-If update is active it is not very efficient, because the creation of new matrix is more costly than the material point approach.
+    If update is active it is not very efficient, because the creation of new matrix is more costly than the material point approach.
 
 | Parameter       | Type | Optional | Description                                  |
 | --------------- | ---- | -------- | -------------------------------------------- |
@@ -142,6 +140,31 @@ If model reduction
 | ---------------- | ------------- | -------- | ------------------------------------------------------------------------- |
 | Type             | String        | No       | Defines the type of model redction (Static Condensationn)                 |
 | Redcution Blocks | String or Int | No       | Defines the blocks to be condensed; defintion are (4 or 1 2 4 or 1, 2, 4) |
+
+If you use model reduction the active part is the point wise method [WillbergC2026](@cite). Fracture can easily be implemented. The equation shows how it works. You have regions $cc$ which includes all matrix parts. In the case of reduced models the active and condensed nodes (.)^c. This region couples in the material point region $pc$ and $cp$. If you want to ''cut'' parts of the matrix you have to delete the $pc$ and $cp$ parts of the material point method $(.)^p$.
+
+```math
+\begin{bmatrix} \mathbf{f}_c \\ \mathbf{f}_p \end{bmatrix} =
+\underbrace{
+\begin{bmatrix}
+\hat{\mathbf{K}}_{cc} & \hat{\mathbf{K}}^{c}_{cp}+\hat{\mathbf{K}}^{p}_{cp} \\
+\hat{\mathbf{K}}^{c}_{pc}+\hat{\mathbf{K}}^{p}_{pc} & \hat{\mathbf{K}}_{pp}
+\end{bmatrix}
+\begin{bmatrix} \mathbf{u}_c \\ \mathbf{u}_p \end{bmatrix}
+}_{\text{Matrix part}}
++
+\underbrace{
+\begin{bmatrix}
+\mathbf{f}_c^{\mathrm{pd}} \\
+\mathbf{f}_p^{\mathrm{pd}}
+\end{bmatrix}
+}_{\text{Material point part}}
+```
+where $\hat{\mathbf{K}}^{p}_{cp}=\hat{\mathbf{K}}^{p}_{pc}=\hat{\mathbf{K}}_{pp}=\mathbf{0}$ by construction.
+The distance to the reduced nodes is large enough. The figure shows that $2\delta$ should be at least the distance from the fracture.
+
+![w:600](../../assets/effect_of_coupling_size.png)
+
 
 
 ## Computational effort
