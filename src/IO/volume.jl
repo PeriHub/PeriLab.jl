@@ -13,7 +13,8 @@ Calculate the volume of a element.
 # Returns
 - `volume`: The volume of the element.
 """
-function calculate_volume(element_type::String, vertices::Vector{Vector{Float64}})
+function calculate_volume(element_type::String,
+                          vertices::Vector{Vector{T}}) where {T<:Union{Int64,Float64}}
     if element_type in ["Quad4", "CPS3"]
         return area_of_polygon(vertices)
     elseif element_type == "Tet4"
@@ -38,7 +39,13 @@ Calculate the volume of a tetrahedron.
 # Returns
 - `volume`: The volume of the tetrahedron.
 """
-function tetrahedron_volume(tet_vertices::Vector{Any})
+function tetrahedron_volume(tet_vertices::Vector{T}) where {T<:Union{Int64,Float64}}
+    mat = hcat(hcat(tet_vertices...)', ones(4))  # Augmenting matrix with ones in the fourth column
+    volume = abs(det(mat) / 6)   # Using det function to calculate determinant
+    return volume
+end
+
+function tetrahedron_volume(tet_vertices::Vector{Vector{T}}) where {T<:Union{Int64,Float64}}
     mat = hcat(hcat(tet_vertices...)', ones(4))  # Augmenting matrix with ones in the fourth column
     volume = abs(det(mat) / 6)   # Using det function to calculate determinant
     return volume
@@ -54,7 +61,7 @@ Calculate the volume of a tetrahedron.
 # Returns
 - `volume`: The volume of the tetrahedron.
 """
-function tetrahedron_volume(tet_vertices::Matrix{Float64})
+function tetrahedron_volume(tet_vertices::Matrix{T}) where {T<:Union{Int64,Float64}}
     mat = hcat(tet_vertices', ones(4))  # Augmenting matrix with ones in the fourth column
     volume = abs(det(mat) / 6)   # Using det function to calculate determinant
     return volume
@@ -70,7 +77,7 @@ Calculate the volume of a hex.
 # Returns
 - `volume`: The volume of the wedge.
 """
-function hex8_volume(hex_vertices::Vector{Vector{Float64}})
+function hex8_volume(hex_vertices::Vector{Vector{T}}) where {T<:Union{Int64,Float64}}
     tets = [
         [hex_vertices[1], hex_vertices[2], hex_vertices[4], hex_vertices[5]],
         [hex_vertices[2], hex_vertices[3], hex_vertices[4], hex_vertices[7]],
@@ -97,7 +104,7 @@ Calculate the volume of a hex.
 # Returns
 - `volume`: The volume of the wedge.
 """
-function hex8_volume(hex_vertices::Matrix{Float64})
+function hex8_volume(hex_vertices::Matrix{T}) where {T<:Union{Int64,Float64}}
     tets = [
         [hex_vertices[:, 1], hex_vertices[:, 2], hex_vertices[:, 4], hex_vertices[:, 5]],
         [hex_vertices[:, 2], hex_vertices[:, 3], hex_vertices[:, 4], hex_vertices[:, 7]],
@@ -124,7 +131,7 @@ Calculate the volume of a wedge.
 # Returns
 - `volume`: The volume of the wedge.
 """
-function wedge6_volume(wedge_vertices::Vector{Vector{Float64}})
+function wedge6_volume(wedge_vertices::Vector{Vector{T}}) where {T<:Union{Int64,Float64}}
     tets = [
         [wedge_vertices[1], wedge_vertices[2], wedge_vertices[3], wedge_vertices[4]],
         [wedge_vertices[2], wedge_vertices[3], wedge_vertices[4], wedge_vertices[5]],
