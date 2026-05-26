@@ -22,7 +22,7 @@
 | Numerical Damping | Float | Yes      | Defines a damping factor                        |
 
 !!! warning "Fixed dt"
-If a fixed time step is defined, the time integration can become unstable.
+    If a fixed time step is defined, the time integration can become unstable.
 
 The Verlet time integration is used as standard solver for dynamic hyperbolic differential equation of motion. It is also used in Peridigm [LittlewoodDJ2023](@cite). The displacements for step $i+1$ are solved as follows
 
@@ -68,7 +68,7 @@ $s_{Residual\,scaling}$ should be in the range of the Young's modulus and is tha
 $$s_{Residual\,scaling} /= minimum(volume)^2$$
 
 !!! warning "Multiphysics"
-Currently only the mechanical solver is included!
+    Currently only the mechanical solver is included!
 
 ---
 
