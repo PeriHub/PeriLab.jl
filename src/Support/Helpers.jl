@@ -514,9 +514,6 @@ function add_in_place!(C::Vector{Vector{T}},
 end
 function div_in_place!(C::Vector{T}, A::Vector{T}, B::T,
                        absolute = false) where {T<:Union{Int64,Float64,Bool}}
-    # Check if dimensions match
-    @assert length(C) == length(A)
-
     @inbounds for i in eachindex(A)
         if absolute
             C[i] = abs(A[i]) / B
