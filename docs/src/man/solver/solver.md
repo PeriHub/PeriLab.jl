@@ -141,31 +141,6 @@ If model reduction
 | Type             | String        | No       | Defines the type of model redction (Static Condensationn)                 |
 | Redcution Blocks | String or Int | No       | Defines the blocks to be condensed; defintion are (4 or 1 2 4 or 1, 2, 4) |
 
-If you use model reduction the active part is the point wise method [WillbergC2026](@cite). Fracture can easily be implemented. The equation shows how it works. You have regions $cc$ which includes all matrix parts. In the case of reduced models the active and condensed nodes (.)^c. This region couples in the material point region $pc$ and $cp$. If you want to ''cut'' parts of the matrix you have to delete the $pc$ and $cp$ parts of the material point method $(.)^p$.
-
-```math
-\begin{bmatrix} \mathbf{f}_c \\ \mathbf{f}_p \end{bmatrix} =
-\underbrace{
-\begin{bmatrix}
-\hat{\mathbf{K}}_{cc} & \hat{\mathbf{K}}^{c}_{cp}+\hat{\mathbf{K}}^{p}_{cp} \\
-\hat{\mathbf{K}}^{c}_{pc}+\hat{\mathbf{K}}^{p}_{pc} & \hat{\mathbf{K}}_{pp}
-\end{bmatrix}
-\begin{bmatrix} \mathbf{u}_c \\ \mathbf{u}_p \end{bmatrix}
-}_{\text{Matrix part}}
-+
-\underbrace{
-\begin{bmatrix}
-\mathbf{f}_c^{\mathrm{pd}} \\
-\mathbf{f}_p^{\mathrm{pd}}
-\end{bmatrix}
-}_{\text{Material point part}}
-```
-where $\hat{\mathbf{K}}^{p}_{cp}=\hat{\mathbf{K}}^{p}_{pc}=\hat{\mathbf{K}}_{pp}=\mathbf{0}$ by construction.
-The distance to the reduced nodes is large enough. The figure shows that $2\delta$ should be at least the distance from the fracture.
-
-![w:600](../../assets/effect_of_coupling_size.png)
-
-
 
 ## Computational effort
 

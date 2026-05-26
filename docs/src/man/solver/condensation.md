@@ -68,40 +68,35 @@ the approach to quasi-static or low-frequency dynamic fracture
 problems.
 
 ### PD--Matrix Coupling within $\Omega_m$
-No PDbond may reach into $\Omega_s$, which is enforced by
+No PD bond may reach into $\Omega_s$, which is enforced by
 requiring $\Omega_c$ to be at least one horizon $\delta$ wide around
 $\Omega_p$:
 
-$$\begin{equation}
-\mathcal{H}_i \subseteq \Omega_m = \Omega_c \cup \Omega_p
-\quad \forall\, i \in \Omega_p
-\end{equation}$$
+$$\mathcal{H}_i \subseteq \Omega_m = \Omega_c \cup \Omega_p
+\quad \forall\, i \in \Omega_p$$
 
-Matrix stiffness entries for bonds entirely within $\Omega_p$ are
-zeroed, so that $\tilde{\mathbf{K}}_{mm}$ takes the block structure:
+If you use model reduction the active part is the point wise method [WillbergC2026](@cite). Fracture can easily be implemented. The equation shows how it works. You have regions $cc$ which includes all matrix parts. In the case of reduced models the active and condensed nodes (.)^c. This region couples in the material point region $pc$ and $cp$. If you want to ''cut'' parts of the matrix you have to delete the $pc$ and $cp$ parts of the material point method $(.)^p$.
 
-$$\begin{equation}
-\tilde{\mathbf{K}}_{mm}=
+```math
+\begin{bmatrix} \mathbf{f}_c \\ \mathbf{f}_p \end{bmatrix} =
+\underbrace{
 \begin{bmatrix}
-\tilde{\mathbf{K}}_{cc} & \tilde{\mathbf{K}}_{cp} \\
-\tilde{\mathbf{K}}_{pc} & \mathbf{0}
+\hat{\mathbf{K}}_{cc} & \hat{\mathbf{K}}^{c}_{cp}+\hat{\mathbf{K}}^{p}_{cp} \\
+\hat{\mathbf{K}}^{c}_{pc}+\hat{\mathbf{K}}^{p}_{pc} & \hat{\mathbf{K}}_{pp}
 \end{bmatrix}
-\end{equation}$$
+\begin{bmatrix} \mathbf{u}_c \\ \mathbf{u}_p \end{bmatrix}
+}_{\text{Matrix part}}
++
+\underbrace{
+\begin{bmatrix}
+\mathbf{f}_c^{\mathrm{pd}} \\
+\mathbf{f}_p^{\mathrm{pd}}
+\end{bmatrix}
+}_{\text{Material point part}}
+```
+where $\hat{\mathbf{K}}^{p}_{cp}=\hat{\mathbf{K}}^{p}_{pc}=\hat{\mathbf{K}}_{pp}=\mathbf{0}$ by construction.
+The distance to the reduced nodes is large enough. The figure shows that $2\delta$ should be at least the distance from the fracture.
 
-The zero block reflects that \gls{PD}--\gls{PD} interactions are not
-handled by the stiffness matrix; their force contribution is evaluated
-at each time step via:
-
-$$\begin{equation}
-\mathbf{F}_{p,i}^{\text{pd}} =
-\sum_{j \in \mathcal{H}_i}
-\left(\underline{\mathbf{T}}_{ij}V_j -
-\underline{\mathbf{T}}_{ji}V_i\right)
-\end{equation}$$
-
-Damage and crack propagation enter naturally through bond breakage in
-$\mathbf{F}_p^{\text{pd}}$, without any modification of
-$\tilde{\mathbf{K}}_{mm}$.
 
 ![](../../assets/coupling_nodes.png)
 
@@ -115,3 +110,6 @@ $\tilde{\mathbf{K}}_{mm}$.
 - **PD nodes** (blue, $\Omega_p \subset \Omega_m$):
     Damage region. Bond forces are evaluated via the material point
     formulation at each time step.
+
+
+![w:600](../../assets/effect_of_coupling_size.png)
