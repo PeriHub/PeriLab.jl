@@ -213,6 +213,9 @@ MPI.Init()
         @testset "test_linear_static_matrix_based" begin
             include("fullscale_tests/test_linear_static_matrix_based_solver/test_linear_static_matrix_based_solver.jl")
         end
+        @testset "test_Newmark" begin
+            include("fullscale_tests/test_Newmark/test_Newmark.jl")
+        end
         @testset "test_surface_correction" begin
             include("fullscale_tests/test_Surface_correction/test_Surface_correction.jl")
         end
