@@ -26,6 +26,7 @@ include("Verlet_solver.jl")
 include("Matrix_linear_static.jl")
 include("Matrix_Verlet.jl")
 include("Static_solver.jl")
+include("Newmark.jl")
 using ..MPI_Communication: synch_responder_to_controller,
                            synch_controller_to_responder,
                            synch_controller_bonds_to_responder,
@@ -37,6 +38,7 @@ using .Model_Factory: init_models, read_properties
 using .Boundary_Conditions: init_BCs
 using .Verlet_Solver
 using .Linear_static_matrix_based
+using .Newmark
 using .Matrix_Verlet
 using .FEM
 using .Influence_Function
@@ -143,6 +145,11 @@ function init(params::Dict,
                                                         solver_params,
                                                         bcs,
                                                         block_nodes)
+    elseif solver_options["Solver"] == "Newmark"
+        @timeit "init_solver" Newmark.init_solver(solver_options,
+                                                  solver_params,
+                                                  bcs,
+                                                  block_nodes)
     end
 
     if Data_Manager.fem_active()
@@ -332,6 +339,17 @@ function solver(solver_options::Dict{Any,Any},
                                         compute_parabolic_problems_before_model_evaluation,
                                         compute_parabolic_problems_after_model_evaluation,
                                         silent)
+    elseif solver_options["Solver"] == "Newmark"
+        return Newmark.run_solver(solver_options,
+                                  block_nodes,
+                                  bcs,
+                                  outputs,
+                                  result_files,
+                                  synchronise_field,
+                                  write_results,
+                                  compute_parabolic_problems_before_model_evaluation,
+                                  compute_parabolic_problems_after_model_evaluation,
+                                  silent)
     end
 end
 
