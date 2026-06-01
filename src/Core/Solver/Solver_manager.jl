@@ -22,11 +22,12 @@ include("../../FEM/FEM_Factory.jl")
 include("../../Models/Material/Material_Models/Zero_Energy_Control/Zero_Energy_Control.jl")
 include("../../Models/Model_Factory.jl")
 include("../BC_manager.jl")
-include("Verlet_solver.jl")
-include("Matrix_linear_static.jl")
-include("Matrix_Verlet.jl")
-include("Static_solver.jl")
-include("Newmark.jl")
+
+global module_list = find_module_files(@__DIR__, "solver_name")
+for mod in module_list
+    include(mod["File"])
+end
+
 using ..MPI_Communication: synch_responder_to_controller,
                            synch_controller_to_responder,
                            synch_controller_bonds_to_responder,
@@ -124,33 +125,43 @@ function init(params::Dict,
     solver_options["Solver"] = get_solver_name(solver_params)
 
     @info "Init " * get_solver_name(solver_params)
-    if get_solver_name(solver_params) == "Verlet"
-        @debug "Init " * get_solver_name(solver_params)
-        @timeit "init_solver" Verlet_Solver.init_solver(solver_options,
-                                                        solver_params,
-                                                        bcs,
-                                                        block_nodes)
-    elseif solver_options["Solver"] == "Static"
-        @timeit "init_solver" Static_Solver.init_solver(solver_options,
-                                                        solver_params,
-                                                        bcs,
-                                                        block_nodes)
-    elseif solver_options["Solver"] == "Linear Static Matrix Based"
-        @timeit "init_solver" Linear_static_matrix_based.init_solver(solver_options,
-                                                                     solver_params,
-                                                                     bcs,
-                                                                     block_nodes)
-    elseif solver_options["Solver"] == "Verlet Matrix Based"
-        @timeit "init_solver" Matrix_Verlet.init_solver(solver_options,
-                                                        solver_params,
-                                                        bcs,
-                                                        block_nodes)
-    elseif solver_options["Solver"] == "Newmark"
-        @timeit "init_solver" Newmark.init_solver(solver_options,
-                                                  solver_params,
-                                                  bcs,
-                                                  block_nodes)
-    end
+    mod = create_module_specifics(get_solver_name(solver_params),
+                                  module_list,
+                                  @__MODULE__,
+                                  "solver_name")
+
+    mod.init_solver(solver_options,
+                    solver_params,
+                    bcs,
+                    block_nodes)
+    Data_Manager.set_model_module(get_solver_name(solver_params), mod)
+    #if get_solver_name(solver_params) == "Verlet"
+    #    @debug "Init " * get_solver_name(solver_params)
+    #    @timeit "init_solver" Verlet_Solver.init_solver(solver_options,
+    #                                                    solver_params,
+    #                                                    bcs,
+    #                                                    block_nodes)
+    #elseif solver_options["Solver"] == "Static"
+    #    @timeit "init_solver" Static_Solver.init_solver(solver_options,
+    #                                                    solver_params,
+    #                                                    bcs,
+    #                                                    block_nodes)
+    #elseif solver_options["Solver"] == "Linear Static Matrix Based"
+    #    @timeit "init_solver" Linear_static_matrix_based.init_solver(solver_options,
+    #                                                                 solver_params,
+    #                                                                 bcs,
+    #                                                                 block_nodes)
+    #elseif solver_options["Solver"] == "Verlet Matrix Based"
+    #    @timeit "init_solver" Matrix_Verlet.init_solver(solver_options,
+    #                                                    solver_params,
+    #                                                    bcs,
+    #                                                    block_nodes)
+    #elseif solver_options["Solver"] == "Newmark"
+    #    @timeit "init_solver" Newmark.init_solver(solver_options,
+    #                                              solver_params,
+    #                                              bcs,
+    #                                              block_nodes)
+    #end
 
     if Data_Manager.fem_active()
         FEM.init_FEM(params)
@@ -295,62 +306,17 @@ function solver(solver_options::Dict{Any,Any},
                 result_files::Vector{Dict},
                 write_results,
                 silent::Bool)
-    if solver_options["Solver"] == "Verlet"
-        return Verlet_Solver.run_solver(solver_options,
-                                        block_nodes,
-                                        bcs,
-                                        outputs,
-                                        result_files,
-                                        synchronise_field,
-                                        write_results,
-                                        compute_parabolic_problems_before_model_evaluation,
-                                        compute_parabolic_problems_after_model_evaluation,
-                                        silent)
-    elseif solver_options["Solver"] == "Static"
-        return Static_Solver.run_solver(solver_options,
-                                        block_nodes,
-                                        bcs,
-                                        outputs,
-                                        result_files,
-                                        synchronise_field,
-                                        write_results,
-                                        compute_parabolic_problems_before_model_evaluation,
-                                        compute_parabolic_problems_after_model_evaluation,
-                                        silent)
-    elseif solver_options["Solver"] == "Linear Static Matrix Based"
-        return Linear_static_matrix_based.run_solver(solver_options,
-                                                     block_nodes,
-                                                     bcs,
-                                                     outputs,
-                                                     result_files,
-                                                     synchronise_field,
-                                                     write_results,
-                                                     compute_parabolic_problems_before_model_evaluation,
-                                                     compute_parabolic_problems_after_model_evaluation,
-                                                     silent)
-    elseif solver_options["Solver"] == "Verlet Matrix Based"
-        return Matrix_Verlet.run_solver(solver_options,
-                                        block_nodes,
-                                        bcs,
-                                        outputs,
-                                        result_files,
-                                        synchronise_field,
-                                        write_results,
-                                        compute_parabolic_problems_before_model_evaluation,
-                                        compute_parabolic_problems_after_model_evaluation,
-                                        silent)
-    elseif solver_options["Solver"] == "Newmark"
-        return Newmark.run_solver(solver_options,
-                                  block_nodes,
-                                  bcs,
-                                  outputs,
-                                  result_files,
-                                  synchronise_field,
-                                  write_results,
-                                  compute_parabolic_problems_before_model_evaluation,
-                                  compute_parabolic_problems_after_model_evaluation,
-                                  silent)
-    end
+    mod = Data_Manager.get_model_module(solver_options["Solver"])::Module
+    mod.run_solver(solver_options,
+                   block_nodes,
+                   bcs,
+                   outputs,
+                   result_files,
+                   synchronise_field,
+                   write_results,
+                   compute_parabolic_problems_before_model_evaluation,
+                   compute_parabolic_problems_after_model_evaluation,
+                   silent)
 end
 
 """
