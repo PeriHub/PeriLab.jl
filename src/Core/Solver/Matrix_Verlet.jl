@@ -34,6 +34,10 @@ include("../../Models/Material/Material_Models/Correspondence/Correspondence_mat
 using .Correspondence_matrix_based
 export init_solver, run_solver
 
+function solver_name()
+    return "Matrix Verlet"
+end
+
 function init_solver(solver_options::Dict{Any,Any},
                      params::Dict,
                      bcs::Dict{Any,Any},

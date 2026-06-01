@@ -27,6 +27,10 @@ include("../../Compute/compute_field_values.jl")
 export init_solver
 export run_solver
 
+function solver_name()
+    return "Verlet"
+end
+
 """
 	init_solver(params::Dict, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 

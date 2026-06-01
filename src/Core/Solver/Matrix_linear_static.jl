@@ -33,6 +33,10 @@ using ..Model_Factory.Pre_Calculation.Bond_Deformation
 export init_solver
 export run_solver
 
+function solver_name()
+    return "Linear Static Matrix Based"
+end
+
 mutable struct DisplacementSolverCache
     # Workspace
     F_modified::Vector{Float64}
