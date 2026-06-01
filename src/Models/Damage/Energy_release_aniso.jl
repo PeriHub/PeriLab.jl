@@ -75,8 +75,10 @@ function compute_model(nodes::AbstractVector{Int64},
                                                                                 "NP1")
         bond_displacements::BondVectorState{Float64} = Data_Manager.get_field("Bond Displacements")
         critical_field::Bool = Data_Manager.has_key("Critical_Value")
-        critical_energy = critical_field ? Data_Manager.get_field("Critical_Value") :
-                          damage_parameter["Critical Value"]
+        critical_energy::Union{Float64,
+                               Vector{Float64}} = critical_field ?
+                                                  Data_Manager.get_field("Critical_Value")::Vector{Float64} :
+                                                  Float64(damage_parameter["Critical Value"])
         quad_horizons::NodeScalarField{Float64} = Data_Manager.get_field("Quad Horizon")
         inverse_nlist::Vector{Dict{Int64,Int64}} = Data_Manager.get_inverse_nlist()
         rotation_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Rotation Tensor")
@@ -85,9 +87,9 @@ function compute_model(nodes::AbstractVector{Int64},
 
     @timeit "init params" begin
         dependend_value, dependent_field = is_dependent("Critical Value", damage_parameter)
-        rotation = Data_Manager.get_rotation()
-        tension = get(damage_parameter, "Only Tension", false)
-        inter_block_damage = haskey(damage_parameter, "Interblock Damage")
+        rotation::Bool = Data_Manager.get_rotation()
+        tension::Bool = get(damage_parameter, "Only Tension", false)
+        inter_block_damage::Bool = haskey(damage_parameter, "Interblock Damage")
         if inter_block_damage
             inter_critical_energy = Data_Manager.get_crit_values_matrix()
         end
@@ -115,11 +117,11 @@ function compute_model(nodes::AbstractVector{Int64},
     @timeit "sub_in_place" sub_in_place!(bond_displacements, deformed_bond, undeformed_bond)
 
     for iID in nodes
-        bond_displacement = bond_displacements[iID]   # Vector — kein view
-        bond_force_vec = bond_forces[iID]           # Vector — kein view
-        quad_horizon = quad_horizons[iID]         # Vector — kein view
-        rotation_temp = view(rotation_tensor,iID,:,:)  # 2D-Slice — view korrekt
-        crit_vals = aniso_crit_values[block_ids[iID]]  # Vector — kein view
+        bond_displacement = bond_displacements[iID]
+        bond_force_vec = bond_forces[iID]
+        quad_horizon = quad_horizons[iID]
+        rotation_temp = view(rotation_tensor,iID,:,:)
+        crit_vals = aniso_crit_values[block_ids[iID]]
 
         @timeit "jID loop" begin
             @fastmath @inbounds for (jID, neighborID) in enumerate(nlist[iID])
