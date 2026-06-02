@@ -130,12 +130,20 @@ function init(params::Dict,
                                   @__MODULE__,
                                   "solver_name")
 
+    if isnothing(mod)
+        @info "Module list: " * string(module_list)
+        @error "Solver module for solver " * get_solver_name(solver_params) *
+               " not found. Check if the solver name is correct and if the module file is in the Solver folder."
+        return nothing
+    end
+
     mod.init_solver(solver_options,
                     solver_params,
                     bcs,
                     block_nodes)
     Data_Manager.set_model_module(get_solver_name(solver_params), mod)
     #if get_solver_name(solver_params) == "Verlet"
+
     #    @debug "Init " * get_solver_name(solver_params)
     #    @timeit "init_solver" Verlet_Solver.init_solver(solver_options,
     #                                                    solver_params,
