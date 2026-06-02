@@ -247,7 +247,7 @@ function run_solver(solver_options::Dict{Any,Any},
     if "Material" in solver_options["Models"]
         external_forces::NodeVectorField{Float64} = Data_Manager.get_field("External Forces")
         external_force_densities::NodeVectorField{Float64} = Data_Manager.get_field("External Force Densities")
-        a::NodeVectorField{Float64} = Data_Manager.get_field("Acceleration")
+        a::NodeVectorField{Float64} = Data_Manager.get_field("Acceleration", "NP1")
     end
 
     comm = Data_Manager.get_comm()
@@ -262,7 +262,7 @@ function run_solver(solver_options::Dict{Any,Any},
         temp = zeros(Data_Manager.get_dof() * Data_Manager.get_nnodes())
     end
 
-    K::AbstractMatrix{Float64} = Data_Manager.get_stiffness_matrix()
+    K = Data_Manager.get_stiffness_matrix()::AbstractMatrix{Float64}
 
     @timeit "Matrix Verlet" begin
         @inbounds @fastmath for idt in iter

@@ -16,7 +16,8 @@
     field_keys = PeriLab.Data_Manager.get_all_field_keys()
     @test "ForcesN" in field_keys
     @test "ForcesNP1" in field_keys
-    @test "Acceleration" in field_keys
+    @test "AccelerationN" in field_keys
+    @test "AccelerationNP1" in field_keys
     @test "VelocityN" in field_keys
     @test "VelocityNP1" in field_keys
     @test "Bond Forces" in field_keys

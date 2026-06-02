@@ -207,7 +207,7 @@ function run_solver(solver_options::Dict{Any,Any},
     if "Material" in solver_options["Models"]
         external_forces = Data_Manager.get_field("External Forces")
         external_force_densities = Data_Manager.get_field("External Force Densities")
-        a = Data_Manager.get_field("Acceleration")
+        a = Data_Manager.get_field("Acceleration", "NP1")
     end
 
     fem_option = Data_Manager.fem_active()
