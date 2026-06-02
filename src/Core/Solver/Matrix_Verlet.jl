@@ -313,7 +313,7 @@ function run_solver(solver_options::Dict{Any,Any},
                                                     solver_options["Models"],
                                                     synchronise_field)
             @timeit "Force computations" begin
-                @timeit "sa" sa=size(a[active_nodes, :])
+                @timeit "sa" sa=size(aNP1[active_nodes, :])
 
                 @views fNP1 = force_densities_NP1[active_nodes, :]
 

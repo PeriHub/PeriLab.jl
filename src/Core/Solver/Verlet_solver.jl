@@ -364,8 +364,8 @@ function run_solver(solver_options::Dict{Any,Any},
                                                               external_forces[active_nodes,
                                                                               :] /
                                                               volume[active_nodes]
-                @. @views a[active_nodes, :] = force_densities[active_nodes, :] /
-                                               density[active_nodes] # element wise
+                @. @views aNP1[active_nodes, :] = force_densities[active_nodes, :] /
+                                                  density[active_nodes] # element wise
                 @. @views forces[active_nodes, :] += force_densities[active_nodes, :] *
                                                      volume[active_nodes]
             end
