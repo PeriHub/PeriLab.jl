@@ -35,7 +35,7 @@ using .Correspondence_matrix_based
 export init_solver, run_solver
 
 function solver_name()
-    return "Matrix Verlet"
+    return "Verlet Matrix Based"
 end
 
 function init_solver(solver_options::Dict{Any,Any},
@@ -266,6 +266,7 @@ function run_solver(solver_options::Dict{Any,Any},
 
     @timeit "Matrix Verlet" begin
         @inbounds @fastmath for idt in iter
+            Data_Manager.set_iteration(idt)
             @timeit "solver start" begin
                 uN::Matrix{Float64} = Data_Manager.get_field("Displacements", "N")
                 uNP1::Matrix{Float64} = Data_Manager.get_field("Displacements", "NP1")
