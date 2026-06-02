@@ -109,7 +109,7 @@ PeriLab:
     Damage Models: true
     Newmark:
       Safety Factor: 1.0
-      Matrix update: true
+      Matrix Update: true
 
     #Verlet:
     #  Safety Factor: 0.9

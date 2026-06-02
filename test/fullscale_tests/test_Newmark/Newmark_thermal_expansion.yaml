@@ -85,6 +85,6 @@ PeriLab:
     Material Models: true
     Thermal Models: true
     Newmark:
-      Matrix update: false
+      Matrix Update: false
     #Verlet:
     #  Safty Factor: 1.0

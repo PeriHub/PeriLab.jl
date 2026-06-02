@@ -79,7 +79,7 @@ function init_solver(solver_options::Dict{Any,Any},
     solver_options["Newmark Beta"] = get(params, "Newmark Delta", 0.5) # name is delta because of beta. Internally it is beta.
     solver_options["Newmark Alpha"] = get(params, "Newmark Alpha",
                                           0.25 * (0.5 + solver_options["Newmark Beta"])^2)
-    solver_options["Matrix update"] = get(params, "Matrix update", false)
+    solver_options["Matrix Update"] = get(params, "Matrix Update", false)
 
     for (block, nodes) in pairs(block_nodes)
         model_param = Data_Manager.get_properties(block, "Material Model")
@@ -154,7 +154,7 @@ followed by the acceleration and velocity updates
 |:-----------------|:-----------------------|:-------------------------------------|
 | `Newmark Beta`   | `0.25 (1+alpha)²`         | Newmark beta                            |
 | `Newmark Gamma`  | `0.5 + alpha`             | Newmarkgamma                            |
-| `Matrix update`  | `false`                | Reassemble K every step              |
+| `Matrix Update`  | `false`                | Reassemble K every step              |
 
 The numerical damping parameter `alpha` (HHT-alpha) is read from the input deck
 via `get_numerical_damping`. For `alpha = 0` the method reduces to the
@@ -208,7 +208,7 @@ function run_solver(solver_options::Dict{Any,Any},
     nsteps::Int64 = solver_options["Number of Steps"]
     beta::Float64 = solver_options["Newmark Beta"]
     alpha::Float64 = solver_options["Newmark Alpha"]
-    matrix_update = solver_options["Matrix update"]
+    matrix_update = solver_options["Matrix Update"]
     time::Float64 = solver_options["Initial Time"]
     step_time = 0.0
 
@@ -272,9 +272,12 @@ function run_solver(solver_options::Dict{Any,Any},
                                                                             solver_options["Models"],
                                                                             synchronise_field)
             # Stiffness
-            if matrix_update || idt == 1
-                K = Data_Manager.get_stiffness_matrix()
-                cache.K_eff_lu = nothing
+            if matrix_update
+                @timeit "update stiffness" begin
+                    compute_matrix(collect(1:nnodes))
+                    K = Data_Manager.get_stiffness_matrix()
+                    cache.K_eff_lu = nothing
+                end
             end
 
             # Solve

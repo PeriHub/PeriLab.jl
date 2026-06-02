@@ -8,7 +8,7 @@ Full-domain Velocity-Verlet integration with pointwise bond-force summation thro
 
 **Strategy 2: Static + Pointwise Verlet**
 
-Linear static solver assembles **K once** and solves `Ku = F_ext` incrementally during load introduction. At each increment, bond damage indicators are checked; the load factor λ* at first failure is determined by linearity and scaled by S < 1. The static solution initialises the Verlet phase (`u₀ = λ* u_static`). Dynamic phase uses pointwise summation — no matrix update needed on bond breakage.
+Linear static solver assembles **K once** and solves `Ku = F_ext` incrementally during load introduction. At each increment, bond damage indicators are checked; the load factor λ* at first failure is determined by linearity and scaled by S < 1. The static solution initialises the Verlet phase (`u₀ = λ* u_static`). Dynamic phase uses pointwise summation — no Matrix Update needed on bond breakage.
 
 **Strategy 3: Guyan-Condensed Verlet**
 

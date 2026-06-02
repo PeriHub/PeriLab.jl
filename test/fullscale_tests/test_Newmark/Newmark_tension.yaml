@@ -64,4 +64,4 @@ PeriLab:
     Number of Steps: 20
     Material Models: true
     Newmark:
-      Matrix update: false
+      Matrix Update: false

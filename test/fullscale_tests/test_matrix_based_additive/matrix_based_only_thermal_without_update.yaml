@@ -76,4 +76,4 @@ PeriLab:
     Material Models: true
     Thermal Models: true
     Linear Static Matrix Based:
-      Matrix update: false
+      Matrix Update: false

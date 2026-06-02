@@ -153,8 +153,8 @@ function init_solver(solver_options::Dict{Any,Any},
 
     @timeit "init matrix" Correspondence_matrix_based.init_matrix()
     Data_Manager.create_node_scalar_field("Damage", Float64)
-    solver_options["Matrix update"] = get(params["Linear Static Matrix Based"],
-                                          "Matrix update", false)
+    solver_options["Matrix Update"] = get(params["Linear Static Matrix Based"],
+                                          "Matrix Update", false)
     deformed_coorN = Data_Manager.get_field("Deformed Coordinates", "N")
     deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
     coor = Data_Manager.get_field("Coordinates")
@@ -235,7 +235,7 @@ function run_solver(solver_options::Dict{Any,Any},
 
     delta_u = Data_Manager.get_field("Delta Displacements")
 
-    matrix_update::Bool = solver_options["Matrix update"]
+    matrix_update::Bool = solver_options["Matrix Update"]
 
     active_nodes = Data_Manager.get_field("Active Nodes")
     active_list = Data_Manager.get_field("Active")
