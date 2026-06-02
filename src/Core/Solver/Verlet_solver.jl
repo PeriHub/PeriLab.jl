@@ -207,7 +207,6 @@ function run_solver(solver_options::Dict{Any,Any},
     if "Material" in solver_options["Models"]
         external_forces = Data_Manager.get_field("External Forces")
         external_force_densities = Data_Manager.get_field("External Force Densities")
-        a = Data_Manager.get_field("Acceleration", "NP1")
     end
 
     fem_option = Data_Manager.fem_active()
@@ -246,6 +245,8 @@ function run_solver(solver_options::Dict{Any,Any},
                 vN::NodeVectorField{Float64} = Data_Manager.get_field("Velocity", "N")
                 vNP1::NodeVectorField{Float64} = Data_Manager.get_field("Velocity",
                                                                         "NP1")
+                aN = Data_Manager.get_field("Acceleration", "N")
+                aNP1 = Data_Manager.get_field("Acceleration", "NP1")
             end
 
             # if "Degradation" in solver_options["Models"]
@@ -267,7 +268,7 @@ function run_solver(solver_options::Dict{Any,Any},
                 c = 0.5 * dt
                 @. @views vNP1[active_nodes, :] = (1 - numerical_damping) .*
                                                   vN[active_nodes, :] +
-                                                  c * a[active_nodes, :]
+                                                  c * aN[active_nodes, :]
 
                 # @views vNP1[active_nodes, :] .= (1 - numerical_damping) .*
                 #                                 vN[active_nodes, :] .+
@@ -346,9 +347,9 @@ function run_solver(solver_options::Dict{Any,Any},
                                                            external_forces[active_nodes,
                                                                            :] /
                                                            volume[active_nodes]
-                    @. a[active_nodes,
+                    @. aNP1[active_nodes,
                     :] = force_densities[active_nodes, :] /
-                                            lumped_mass[active_nodes] # element wise
+                                               lumped_mass[active_nodes] # element wise
 
                     active_nodes = Data_Manager.get_field("Active Nodes")
                     active_nodes = find_active_nodes(fe_nodes,
