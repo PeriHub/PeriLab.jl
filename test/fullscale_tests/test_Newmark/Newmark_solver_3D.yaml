@@ -59,7 +59,7 @@ PeriLab:
       Safety Factor: 1.0
   Outputs:
     Output1:
-      Output Filename: "Newmark_3D"
+      Output Filename: "Newmark_solver_3D"
       Output Frequency: 1
       Output Variables:
         Displacements: True
