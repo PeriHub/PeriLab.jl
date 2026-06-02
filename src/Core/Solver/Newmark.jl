@@ -76,10 +76,10 @@ function init_solver(solver_options::Dict{Any,Any},
     solver_options["dt"] = (solver_options["Final Time"] - solver_options["Initial Time"]) /
                            solver_options["Number of Steps"]
 
-    solver_options["Newmark Beta"] = get(params, "Newmark Delta", 0.5) # name is delta because of beta. Internally it is beta.
-    solver_options["Newmark Alpha"] = get(params, "Newmark Alpha",
+    solver_options["Newmark Beta"] = get(params["Newmark"], "Newmark Delta", 0.5) # name is delta because of beta. Internally it is beta.
+    solver_options["Newmark Alpha"] = get(params["Newmark"], "Newmark Alpha",
                                           0.25 * (0.5 + solver_options["Newmark Beta"])^2)
-    solver_options["Matrix Update"] = get(params, "Matrix Update", false)
+    solver_options["Matrix Update"] = get(params["Newmark"], "Matrix Update", false)
 
     for (block, nodes) in pairs(block_nodes)
         model_param = Data_Manager.get_properties(block, "Material Model")
@@ -283,7 +283,8 @@ function run_solver(solver_options::Dict{Any,Any},
             # Solve
             @timeit "newmark_solve" newmark_step!(K, M, non_BCs,
                                                   uN, uNP1, velN, velNP1, aN, aNP1,
-                                                  external_force_densities, cache,
+                                                  external_force_densities,
+                                                  force_densities_NP1, cache,
                                                   a0, a2, a3, a6, a7, nnodes, dof)
 
             # Post
@@ -334,6 +335,7 @@ function newmark_step!(K::AbstractMatrix{Float64},
                        vNP1::AbstractMatrix{Float64},
                        aN::AbstractMatrix{Float64},
                        aNP1::AbstractMatrix{Float64},
+                       F_int::AbstractMatrix{Float64},
                        F_ext::AbstractMatrix{Float64},
                        cache::NewmarkCache,
                        a0, a2, a3, a6, a7,
@@ -344,14 +346,14 @@ function newmark_step!(K::AbstractMatrix{Float64},
 
     u_n_vec = vec(uN)
     u_vec = vec(uNP1)
-
+    F_int_vec = vec(F_int)
     F_ext_vec = vec(F_ext)
 
     # ── Effective force for free DOFs ──
     resize!(cache.F_eff, n_free)
     @inbounds for (idx, i) in enumerate(non_BCs)
         m_rhs = M[i] * (a0 * uN[i] + a2 * vN[i] + a3 * aN[i])
-        cache.F_eff[idx] = F_ext_vec[i] + m_rhs
+        cache.F_eff[idx] = F_ext_vec[i] - F_int_vec[i] + m_rhs
     end
 
     # ── Prescribed DOF contributions ──
