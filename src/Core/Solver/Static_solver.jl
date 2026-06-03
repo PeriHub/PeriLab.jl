@@ -27,7 +27,9 @@ using ...Logging_Module: print_table
 
 export init_solver
 export run_solver
-
+function solver_name()
+    return "Static"
+end
 """
     init_solver(params::Dict, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 

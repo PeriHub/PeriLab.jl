@@ -34,6 +34,10 @@ include("../../Models/Material/Material_Models/Correspondence/Correspondence_mat
 using .Correspondence_matrix_based
 export init_solver, run_solver
 
+function solver_name()
+    return "Verlet Matrix Based"
+end
+
 function init_solver(solver_options::Dict{Any,Any},
                      params::Dict,
                      bcs::Dict{Any,Any},
@@ -243,7 +247,6 @@ function run_solver(solver_options::Dict{Any,Any},
     if "Material" in solver_options["Models"]
         external_forces::NodeVectorField{Float64} = Data_Manager.get_field("External Forces")
         external_force_densities::NodeVectorField{Float64} = Data_Manager.get_field("External Force Densities")
-        a::NodeVectorField{Float64} = Data_Manager.get_field("Acceleration")
     end
 
     comm = Data_Manager.get_comm()
@@ -258,10 +261,11 @@ function run_solver(solver_options::Dict{Any,Any},
         temp = zeros(Data_Manager.get_dof() * Data_Manager.get_nnodes())
     end
 
-    K::AbstractMatrix{Float64} = Data_Manager.get_stiffness_matrix()
+    K = Data_Manager.get_stiffness_matrix()::AbstractMatrix{Float64}
 
     @timeit "Matrix Verlet" begin
         @inbounds @fastmath for idt in iter
+            Data_Manager.set_iteration(idt)
             @timeit "solver start" begin
                 uN::Matrix{Float64} = Data_Manager.get_field("Displacements", "N")
                 uNP1::Matrix{Float64} = Data_Manager.get_field("Displacements", "NP1")
@@ -270,6 +274,8 @@ function run_solver(solver_options::Dict{Any,Any},
                                                                            "NP1")
                 vN::Matrix{Float64} = Data_Manager.get_field("Velocity", "N")
                 vNP1::Matrix{Float64} = Data_Manager.get_field("Velocity", "NP1")
+                aN::Matrix{Float64} = Data_Manager.get_field("Acceleration", "N")
+                aNP1::Matrix{Float64} = Data_Manager.get_field("Acceleration", "NP1")
                 force_densities_NP1::Matrix{Float64} = Data_Manager.get_field("Force Densities",
                                                                               "NP1")
                 active_nodes::Vector{Int64} = Data_Manager.get_field("Active Nodes")
@@ -289,7 +295,7 @@ function run_solver(solver_options::Dict{Any,Any},
             @timeit "compute Velocity" begin
                 @. @views vNP1[active_nodes, :] = (1 - numerical_damping) *
                                                   vN[active_nodes, :] +
-                                                  0.5 * dt * a[active_nodes, :]
+                                                  0.5 * dt * aN[active_nodes, :]
 
                 @. @views uNP1[active_nodes, :] = uN[active_nodes, :] +
                                                   dt * vNP1[active_nodes, :]
@@ -307,7 +313,7 @@ function run_solver(solver_options::Dict{Any,Any},
                                                     solver_options["Models"],
                                                     synchronise_field)
             @timeit "Force computations" begin
-                @timeit "sa" sa=size(a[active_nodes, :])
+                @timeit "sa" sa=size(aNP1[active_nodes, :])
 
                 @views fNP1 = force_densities_NP1[active_nodes, :]
 
@@ -323,9 +329,9 @@ function run_solver(solver_options::Dict{Any,Any},
                 check_inf_or_nan(force_densities_NP1, "Force Densities")
             end
             @timeit "Accelaration computation" begin
-                @views a[active_nodes, :] = reshape(M_fact \
-                                                    vec(fNP1),
-                                                    sa...)
+                @views aNP1[active_nodes, :] = reshape(M_fact \
+                                                       vec(fNP1),
+                                                       sa...)
             end
             @timeit "write_results" result_files=write_results(result_files, time,
                                                                max_damage, outputs)

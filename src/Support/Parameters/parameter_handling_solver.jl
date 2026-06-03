@@ -84,6 +84,8 @@ function get_solver_name(params::Dict)
         return "Linear Static Matrix Based"
     elseif haskey(params, "Verlet Matrix Based")
         return "Verlet Matrix Based"
+    elseif haskey(params, "Newmark")
+        return "Newmark"
     end
     @error "Wrong or missing solvername. Verlet, Linear Static Matrix Based, Verlet Matrix Based and Static are the options."
     return nothing

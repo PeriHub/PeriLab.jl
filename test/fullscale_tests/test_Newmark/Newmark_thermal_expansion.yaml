@@ -67,7 +67,7 @@ PeriLab:
     Output1:
       Number of Output Steps: 400
       Output File Type: Exodus
-      Output Filename: linear_static_matrix_based_thermal_expansion
+      Output Filename: Newmark_thermal_expansion
       Output Variables:
         Activation_Time: true
         Active: true
@@ -84,7 +84,7 @@ PeriLab:
     Number of Steps: 20
     Material Models: true
     Thermal Models: true
-    Linear Static Matrix Based:
+    Newmark:
       Matrix Update: false
     #Verlet:
     #  Safty Factor: 1.0
