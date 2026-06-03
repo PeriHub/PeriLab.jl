@@ -1041,6 +1041,19 @@ global expected_structure = Dict("PeriLab" => [
                                                                                    ]),
                                                                          false
                                                                      ],
+                                                                     "Newmark" => [
+                                                                         Dict{Any,
+                                                                              Any}("Safety Factor" => [
+                                                                                       Union{Float64,
+                                                                                             Int64},
+                                                                                       false
+                                                                                   ],
+                                                                                   "Matrix Update" => [
+                                                                                       Bool,
+                                                                                       false
+                                                                                   ]),
+                                                                         false
+                                                                     ],
                                                                      "Static" => [
                                                                          Dict{Any,Any}("Maximum number of iterations" => [
                                                                                            Int64,
