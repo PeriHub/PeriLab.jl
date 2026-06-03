@@ -172,6 +172,8 @@ end
           "test_set_NP1_to_NN"
     @test PeriLab.Data_Manager.data["NP1_to_N"]["test_set_NP1_to_N"].NP1 ==
           "test_set_NP1_to_NNP1"
+    #remove entry
+    delete!(PeriLab.Data_Manager.data["NP1_to_N"], "test_set_NP1_to_N")
 end
 @testset "ut_set_fem" begin
     @test PeriLab.Data_Manager.fem_active() == false
