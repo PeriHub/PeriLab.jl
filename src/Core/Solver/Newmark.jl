@@ -281,11 +281,11 @@ function run_solver(solver_options::Dict{Any,Any},
             end
 
             # Solve
-            @timeit "newmark_solve" newmark_step!(K, M, non_BCs,
-                                                  uN, uNP1, velN, velNP1, aN, aNP1,
-                                                  external_force_densities,
-                                                  force_densities_NP1, cache,
-                                                  a0, a2, a3, a6, a7, nnodes, dof)
+            @timeit "newmark_solve" @views newmark_step!(K, M, non_BCs,
+                                                         uN, uNP1, velN, velNP1, aN, aNP1,
+                                                         force_densities_NP1,
+                                                         external_force_densities, cache,
+                                                         a0, a2, a3, a6, a7, nnodes, dof)
 
             # Post
             deformed_coorNP1 .= coor .+ uNP1
@@ -328,15 +328,15 @@ end
 # ────────────────────────────────────────────────────────────
 function newmark_step!(K::AbstractMatrix{Float64},
                        M::Vector{Float64},
-                       non_BCs::AbstractVector{Int},
-                       uN::AbstractMatrix{Float64},
-                       uNP1::AbstractMatrix{Float64},
-                       vN::AbstractMatrix{Float64},
-                       vNP1::AbstractMatrix{Float64},
-                       aN::AbstractMatrix{Float64},
-                       aNP1::AbstractMatrix{Float64},
-                       F_int::AbstractMatrix{Float64},
-                       F_ext::AbstractMatrix{Float64},
+                       non_BCs::Vector{Int},
+                       uN::Matrix{Float64},
+                       uNP1::Matrix{Float64},
+                       vN::Matrix{Float64},
+                       vNP1::Matrix{Float64},
+                       aN::Matrix{Float64},
+                       aNP1::Matrix{Float64},
+                       F_int::Matrix{Float64},
+                       F_ext::Matrix{Float64},
                        cache::NewmarkCache,
                        a0, a2, a3, a6, a7,
                        nnodes::Int, dof::Int)
@@ -387,6 +387,16 @@ function newmark_step!(K::AbstractMatrix{Float64},
             end
             cache.K_eff_lu = lu(K_free)
             cache.last_non_BCs = copy(non_BCs)
+        end
+    end
+    if !isempty(bc_dofs)
+        @inbounds for j in bc_dofs
+            f_int = 0.0
+            for i in 1:n_total
+                f_int += K[j, i] * uNP1[i]
+            end
+
+            F_int_vec[j] = f_int - F_ext_vec[j]
         end
     end
 

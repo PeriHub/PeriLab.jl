@@ -434,7 +434,6 @@ function run_solver(solver_options::Dict{Any,Any},
     return result_files
 end
 
-# New function for active subset that mimics reference implementation
 function compute_displacements_active_subset!(K_active::AbstractMatrix{Float64},
                                               active_dofs_global::AbstractVector{Int},
                                               active_non_BCs::AbstractVector{Int},
@@ -455,7 +454,6 @@ function compute_displacements_active_subset!(K_active::AbstractMatrix{Float64},
     u_vec = vec(u_active)
     F_int_vec = vec(F_int_active)
     F_ext_vec = vec(F_ext_active)
-
     n_free = length(active_non_BCs)
     has_BCs = n_free < n_active_dofs
 
@@ -469,13 +467,10 @@ function compute_displacements_active_subset!(K_active::AbstractMatrix{Float64},
         @inbounds for i in active_non_BCs
             solver.bc_mask[i] = false
         end
-
         K_sub = K_active[active_non_BCs, solver.bc_mask]
         u_bc = @view u_vec[solver.bc_mask]
-
         length(solver.temp) != n_free && resize!(solver.temp, n_free)
         mul!(solver.temp, K_sub, u_bc)
-
         @inbounds for (idx, i) in enumerate(active_non_BCs)
             F_int_vec[i] += solver.temp[idx]
         end
@@ -500,12 +495,21 @@ function compute_displacements_active_subset!(K_active::AbstractMatrix{Float64},
     end
 
     length(solver.u_free) != n_free && resize!(solver.u_free, n_free)
-
     @timeit "ldiv" ldiv!(solver.u_free, solver.K_free_lu, solver.F_modified)
 
     # Write solution back (same as reference)
     @inbounds for (idx, i) in enumerate(active_non_BCs)
         u_vec[i] = solver.u_free[idx]
+    end
+
+    # Update internal forces at prescribed DOFs
+    if has_BCs
+        bc_dofs = findall(solver.bc_mask)
+        K_bc_rows = K_active[bc_dofs, :]
+        r_bc = K_bc_rows * u_vec
+        @inbounds for (idx, i) in enumerate(bc_dofs)
+            F_int_vec[i] = r_bc[idx] - F_ext_vec[i]
+        end
     end
 
     return nothing
@@ -609,8 +613,8 @@ function compute_displacements!(K::AbstractMatrix{Float64},
     if has_BCs
         bc_dofs = findall(solver.bc_mask)
         # K_active[bc_dofs, :] * u_vec = K_bc,free * u_free + K_bc,bc * u_bc
-        K_bc_rows = K_active[bc_dofs, :]        # braucht vollständige K_active
-        r_bc = K_bc_rows * u_vec               # u_vec ist jetzt vollständig
+        K_bc_rows = K_active[bc_dofs, :]
+        r_bc = K_bc_rows * u_vec
         @inbounds for (idx, i) in enumerate(bc_dofs)
             F_int_vec[i] = r_bc[idx] - F_ext_vec[i]
         end
