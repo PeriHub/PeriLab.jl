@@ -158,3 +158,23 @@ cost and is excluded from the per-step effort in the last column. For the update
 |  10,201 |  2 |         0.19 |      0.52 |        0.15 |      0.012 |                           71.7 |                           59.2 |
 |         |  3 |         0.90 |      1.81 |        1.95 |      0.020 |                          233.0 |                          135.5 |
 |         |  4 |         2.98 |      2.31 |        2.50 |      0.071 |                          109.7 |                           74.5 |
+
+
+
+## Newmark
+
+| Parameter     | Type  | Optional | Description                                  |
+| ------------- | ----- | -------- | -------------------------------------------- |
+| Update Matrix | Bool  | Yes      | Activates the update of the stiffness matrix |
+| Newmark Alpha | Float | Yes      | $\alpha = 0.25 * (0.5 + \delta)^2$ as default value. In that case the solver is stable, but it can chosen otherwise |
+| Newmark Delta | Float | Yes      | $\delta\leq 0.5$ as default value. In that case the solver is stable, but it can chosen otherwise|
+
+The solver uses the Newmark solver [NewmarkNM1959](@cite).
+
+
+### Update Matrix
+
+Uses the previous time step as original configuration. This allows the analysis of geometrically non-linear deformations. It must be updated if damages or additive models are used.
+
+!!! warning "Models"
+    Not all models are fully tested yet in this framework.
