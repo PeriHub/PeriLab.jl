@@ -92,7 +92,7 @@ PeriLab:
         Safety Factor: 0.95
     Step 2:
       Step ID: 2
-      Initial Time: 0.1
+      # Initial Time: 0.1
       Final Time: 0.2
 
       Material Models: True
@@ -103,7 +103,7 @@ PeriLab:
         Safety Factor: 0.95
   Outputs:
     Output1:
-      Number of Output Steps: 100
+      Number of Output Steps: 10 100
       Output File Type: Exodus
       Output Filename: multistep
       Output Variables:

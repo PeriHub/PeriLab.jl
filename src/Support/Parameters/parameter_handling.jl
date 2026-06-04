@@ -387,11 +387,13 @@ global expected_structure = Dict("PeriLab" => [
                                                                                            false
                                                                                        ],
                                                                                        "Output Frequency" => [
-                                                                                           Int64,
+                                                                                           Union{String,
+                                                                                                 Int64},
                                                                                            false
                                                                                        ],
                                                                                        "Number of Output Steps" => [
-                                                                                           Int64,
+                                                                                           Union{String,
+                                                                                                 Int64},
                                                                                            false
                                                                                        ],
                                                                                        "Output File Type" => [

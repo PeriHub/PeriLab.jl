@@ -210,6 +210,7 @@ function run_solver(solver_options::Dict{Any,Any},
     alpha::Float64 = solver_options["Newmark Alpha"]
     matrix_update = solver_options["Matrix Update"]
     time::Float64 = solver_options["Initial Time"]
+    final_time::Float64 = solver_options["Final Time"]
     step_time = 0.0
 
     rank = Data_Manager.get_rank()
@@ -319,7 +320,7 @@ function run_solver(solver_options::Dict{Any,Any},
             rank == 0 && !silent && set_postfix(iter, t = @sprintf("%.3e", time))
         end
     end
-    Data_Manager.set_current_time(time - dt)
+    Data_Manager.set_current_time(final_time)
     return result_files
 end
 

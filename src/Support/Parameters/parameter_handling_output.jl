@@ -237,38 +237,40 @@ Gets the output frequencies.
 # Returns
 - `freq::Vector{Int64}`: The output frequencies
 """
-function get_output_frequencies(params::Dict, nsteps::Int64)
+function get_output_frequencies(params::Dict, nsteps::Int64,
+                                step_id::Union{Nothing,Int64} = nothing)
     freq = zeros(1)
     if haskey(params::Dict, "Outputs")
         outputs = params["Outputs"]
         freq = zeros(Int64, length(keys(outputs)))
         for (id, output) in enumerate(keys(outputs))
-            output_options = Dict("Output Frequency" => false,
-                                  "Number of Output Steps" => false)
-            freq[id] = 1
+            use_frequency = true
 
-            if (haskey(outputs[output], "Output Frequency") &&
-                haskey(outputs[output], "Number of Output Steps"))
-                output_options["Number of Output Steps"] = true
-                @warn "Double output step / frequency definition. First option is used. ''Output Frequency'' is ignored."
-            else
-                for output_option in keys(output_options)
-                    if haskey(outputs[output], output_option)
-                        output_options[output_option] = true
-                    end
+            if haskey(outputs[output], "Number of Output Steps")
+                use_frequency = false
+                if haskey(outputs[output], "Output Frequency")
+                    @warn "Double output step / frequency definition. First option is used. ''Output Frequency'' is ignored."
                 end
             end
-            for output_option in keys(output_options)
-                if !output_options[output_option]
-                    continue
+            value = 1
+            if use_frequency
+                value = outputs[output]["Output Frequency"]
+            else
+                value = outputs[output]["Number of Output Steps"]
+            end
+            if typeof(value) == String
+                if isnothing(step_id)
+                    @error "Output frequency or number of output steps must be an integer."
                 end
-                freq[id] = outputs[output][output_option]
-                if output_options["Number of Output Steps"]
-                    freq[id] = Int64(ceil(nsteps / freq[id]))
-                end
-                if freq[id] > nsteps
-                    freq[id] = nsteps
-                end
+                value = parse(Int, split(value)[step_id])
+            end
+            if use_frequency
+                freq[id] = value
+            else
+                freq[id] = Int64(ceil(nsteps / value))
+            end
+            if freq[id] > nsteps
+                freq[id] = nsteps
             end
         end
     end

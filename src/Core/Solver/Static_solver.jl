@@ -199,6 +199,7 @@ function run_solver(solver_options::Dict{Any,Any},
     dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["Number of Steps"]
     time::Float64 = solver_options["Initial Time"]
+    final_time::Float64 = solver_options["Final Time"]
     step_time::Float64 = 0
     max_cancel_damage::Float64 = solver_options["Maximum Damage"]
     numerical_damping::Float64 = solver_options["Numerical Damping"]
@@ -313,7 +314,7 @@ function run_solver(solver_options::Dict{Any,Any},
         # end
         # barrier(comm)
     end
-    Data_Manager.set_current_time(time - dt)
+    Data_Manager.set_current_time(final_time)
     return result_files
 end
 

@@ -226,6 +226,7 @@ function run_solver(solver_options::Dict{Any,Any},
     dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["Number of Steps"]
     time::Float64 = solver_options["Initial Time"]
+    final_time::Float64 = solver_options["Final Time"]
     step_time::Float64 = 0
     rank = Data_Manager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
@@ -430,7 +431,7 @@ function run_solver(solver_options::Dict{Any,Any},
             # barrier(comm)
         end
     end
-    Data_Manager.set_current_time(time - dt)
+    Data_Manager.set_current_time(final_time)
     return result_files
 end
 
