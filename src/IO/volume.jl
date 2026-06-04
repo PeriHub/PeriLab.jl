@@ -39,7 +39,7 @@ Calculate the volume of a tetrahedron.
 # Returns
 - `volume`: The volume of the tetrahedron.
 """
-function tetrahedron_volume(tet_vertices::Vector{T}) where {T<:Union{Int64,Float64}}
+function tetrahedron_volume(tet_vertices::Vector{Any})
     mat = hcat(hcat(tet_vertices...)', ones(4))  # Augmenting matrix with ones in the fourth column
     volume = abs(det(mat) / 6)   # Using det function to calculate determinant
     return volume

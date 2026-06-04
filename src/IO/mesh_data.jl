@@ -46,19 +46,19 @@ function init_data(params::Dict,
         fem_active::Bool = false
         if rank == 1
             @timeit "load_and_evaluate_mesh" distribution,
-            mesh,
-            ntype,
-            overlap_map,
-            nlist,
-            nlist_filtered_ids,
-            bond_norm,
-            dof,
-            nsets,
-            topology,
-            element_distribution=load_and_evaluate_mesh(params,
-                                                        path,
-                                                        size,
-                                                        Data_Manager.get_silent())
+                                             mesh,
+                                             ntype,
+                                             overlap_map,
+                                             nlist,
+                                             nlist_filtered_ids,
+                                             bond_norm,
+                                             dof,
+                                             nsets,
+                                             topology,
+                                             element_distribution=load_and_evaluate_mesh(params,
+                                                                                         path,
+                                                                                         size,
+                                                                                         Data_Manager.get_silent())
             if !isnothing(element_distribution)
                 fem_active = true
             end
@@ -475,10 +475,10 @@ function distribution_to_cores(comm::MPI.Comm,
             else
                 datafield[:,
                 localDof] = send_vector_from_root_to_core_i(comm,
-                                                            send_msg,
-                                                            datafield[:,
-                                                                      localDof],
-                                                            distribution)
+                                                                         send_msg,
+                                                                         datafield[:,
+                                                                         localDof],
+                                                                         distribution)
             end
         end
     end
@@ -840,7 +840,11 @@ function read_mesh(filename::String, params::Dict)
 
         dof = 3 # only 3d supported currntly
 
-        num_elements = length(gmsh.model.mesh.getElements(3)[2][1])
+        if gmsh.model.mesh.getElements(3)[2] == []
+            dof = 2
+        end
+
+        num_elements = length(gmsh.model.mesh.getElements(dof)[2][1])
 
         mesh_df = ifelse(dof == 2,
                          DataFrame(x = Array{Float64,1}(undef, num_elements),
@@ -854,16 +858,29 @@ function read_mesh(filename::String, params::Dict)
                                    block_id = Array{Int64,1}(undef, num_elements)))
 
         ids = gmsh.model.getPhysicalGroups(3)
+        no_groups = false
+        if ids == []
+            ids = [1]
+            no_groups = true
+        end
         node_id = 1
         block_id = 0
         block_names = []
-        nsets = Dict{String,Vector{Int64}}()
+        # nsets = Dict{String,Vector{Int64}}()
         for id in ids
-            ns_nodes = []
-            block_id = Int64(id[2])
-            name = gmsh.model.getPhysicalName(3, block_id)
+            # ns_nodes = []
+            if no_groups
+                block_id = 1
+            else
+                block_id = Int64(id[2])
+            end
+            name = gmsh.model.getPhysicalName(dof, block_id)
             push!(block_names, name)
-            element_tags = gmsh.model.mesh.gmsh.model.mesh.getElements(3, block_id)[2][1]
+            if no_groups
+                element_tags = gmsh.model.mesh.gmsh.model.mesh.getElements(dof)[2][1]
+            else
+                element_tags = gmsh.model.mesh.gmsh.model.mesh.getElements(dof, block_id)[2][1]
+            end
             for element_tag in element_tags
                 element = gmsh.model.mesh.getElement(element_tag)
                 node_tags = element[2]
@@ -874,10 +891,11 @@ function read_mesh(filename::String, params::Dict)
                 end
                 # @info nodes
                 center = sum(nodes) / length(nodes)
-                volume = tetrahedron_volume(nodes)
                 if dof == 2
+                    volume = area_of_polygon(nodes)
                     mesh_df[node_id, :] = [center[1], center[2], volume, block_id]
                 else
+                    volume = tetrahedron_volume(nodes)
                     mesh_df[node_id, :] = [
                         center[1],
                         center[2],
@@ -886,17 +904,17 @@ function read_mesh(filename::String, params::Dict)
                         block_id
                     ]
                 end
-                push!(ns_nodes, node_id)
+                # push!(ns_nodes, node_id)
                 node_id += 1
             end
-            nsets[name] = ns_nodes
+            # nsets[name] = ns_nodes
         end
         @info "Found $(block_id) block(s)"
         @info "Blocks: $block_names"
-        @info "Found $(length(nsets)) node set(s)"
-        @info "NodeSets: $(keys(nsets))"
+        # @info "Found $(length(nsets)) node set(s)"
+        # @info "NodeSets: $(keys(nsets))"
 
-        return mesh_df, nsets
+        return mesh_df# nsets
     elseif params["Discretization"]["Type"] in ["Text File", "Gcode"]
         return csv_reader(filename)
     else
@@ -977,8 +995,11 @@ function load_and_evaluate_mesh(params::Dict,
                                 ranksize::Int64,
                                 silent::Bool)
     filename = joinpath(path, get_mesh_name(params))
-    if params["Discretization"]["Type"] in ["Abaqus", "Gmsh"]
+    if params["Discretization"]["Type"] == "Abaqus"
         @timeit "read_mesh" mesh, nsets=read_mesh(filename, params)
+    elseif params["Discretization"]["Type"] == "Gmsh"
+        @timeit "read_mesh" mesh=read_mesh(filename, params)
+        nsets = get_node_sets(params, path, mesh)
     elseif params["Discretization"]["Type"] == "Gcode"
         txt_file = replace(filename, ".gcode" => ".txt")
         @info txt_file
@@ -1016,10 +1037,10 @@ function load_and_evaluate_mesh(params::Dict,
     @timeit "neighborhoodlist" nlist, _=create_neighborhoodlist(mesh, params, dof)
     @debug "Finished init Neighborhoodlist"
     @timeit "apply_bond_filters" nlist, nlist_filtered_ids,
-    bond_norm=apply_bond_filters(nlist,
-                                 mesh,
-                                 params,
-                                 dof)
+                                 bond_norm=apply_bond_filters(nlist,
+                                                              mesh,
+                                                              params,
+                                                              dof)
     topology = nothing
     if !isnothing(external_topology)
         @info "Create a consistent neighborhood list with external topology definition."
@@ -1032,13 +1053,13 @@ function load_and_evaluate_mesh(params::Dict,
     @debug "Start distribution"
     if haskey(params["Discretization"], "Distribution Type")
         @timeit "node_distribution" distribution, ptc,
-        ntype=node_distribution(nlist,
-                                ranksize,
-                                params["Discretization"]["Distribution Type"])
+                                    ntype=node_distribution(nlist,
+                                                            ranksize,
+                                                            params["Discretization"]["Distribution Type"])
     else
         @timeit "node_distribution" distribution, ptc,
-        ntype=node_distribution(nlist,
-                                ranksize)
+                                    ntype=node_distribution(nlist,
+                                                            ranksize)
     end
 
     el_distribution = nothing
@@ -1589,7 +1610,6 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
     for i in (coord_max + step_x):step_x:(coord_max + step_x * number),
         j in row_min:step_y:(row_max + step_y),
         k in min_z:step_z:max_z
-
         if direction == "X"
             if dof == 2
                 push!(mesh, (x = i, y = j, volume = step_x * step_y, block_id = block_id))
@@ -1622,7 +1642,6 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
     for i in (coord_min - step_x):(-step_x):(coord_min - step_x * number),
         j in row_min:step_y:(row_max + step_y),
         k in min_z:step_z:max_z
-
         if direction == "X"
             if dof == 2
                 push!(mesh, (x = i, y = j, volume = step_x * step_y, block_id = block_id))
