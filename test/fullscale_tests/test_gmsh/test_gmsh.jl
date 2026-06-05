@@ -4,5 +4,6 @@
 
 folder_name = basename(@__FILE__)[1:(end - 3)]
 cd("fullscale_tests/" * folder_name) do
-    run_perilab("gmsh", 1, true, folder_name)
+    run_perilab("gmsh_2D", 1, true, folder_name)
+    run_perilab("gmsh_3D", 1, true, folder_name)
 end
