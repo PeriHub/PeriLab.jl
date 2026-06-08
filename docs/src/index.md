@@ -14,7 +14,7 @@ PeriLab.jl provides a Peridynamics [BobaruF2016](@cite) simulation core based on
 It's design and functionality are similar to those of Peridigm  [LittlewoodDJ2023](@cite) and several extenions [WillbergC2019](@cite), [WillbergC2023](@cite), [HesseJA2023](@cite).
 
 !!! tip "PeriLab Project"
-    The PeriLab project is built on collaboration and aims to make the world a better place. There is no space here for bullies, racists, or fascists. Groups like MAGA, AfD, and others that actively oppose progress and a better future are not welcome. If spreading hate is your goal, do it elsewhere.
+    The PeriLab project is built on collaboration and aims to make the world a better place. There is no space here for bullies, racists, or fascists. Groups that actively oppose progress and a better future are not welcome.
 
 ## PeriLab.jl and the Peridynamics Ecosystem
 Mesh-free particle-based methods are mostly used for the numerical approximation of peridynamics equations. [WillbergC2024](@cite) provides an overview of current Peridynamics software developments. In addition to this, many local research groups are also developing their software. Most of the listed tools are problem-specific or developed by a single person. The most sophisticated software tools are EMU and Peridigm. EMU is not open source, but researchers can request the code. However, due to the code developments at the Sandia National labs and the rules of development, the code is officially not usable because the rules violate the "Treaty on the Non-Proliferation of Nuclear Weapons".

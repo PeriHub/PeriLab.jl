@@ -73,6 +73,17 @@ The element sets are defined in the Abaqus input file and can be used to define 
 !!! tip "Block order"
     If you are not sure what order the blocks in the .inp file will be read in, you can use PeriLab to create an exodus file and check the order of the blocks in ParaView.
 
+# Gmsh Input
+
+In order to utilize Gmsh for mesh generation and simulation, you need to provide a Gmsh input file. The Gmsh input file should be saved with a `.msh` extension and placed in the same directory as your yaml input file.
+
+```yaml
+PeriLab:
+  Discretization:
+    Input Mesh File: GMSH_FILE.msh
+    Type: Gmsh
+```
+
 # Nodeset Input File Structure
 
 The nodeset input file is a text file used to define sets of nodes in the simulation domain. The file has a header and subsequent lines representing individual node global IDs that belong to the nodeset. Below is an example of the structure:

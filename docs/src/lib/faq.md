@@ -30,6 +30,8 @@ There are multiple options to generate your own input mesh:
 
 - Use an existing Abaqus Inputfile (.inp).
 
+- Use an existing Gmsh Meshfile (.msh).
+
 - Transfer your mesh using [meshio](https://github.com/nschloe/meshio)
 
 - Create a feature issue and let us know what you need.
