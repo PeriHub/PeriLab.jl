@@ -95,7 +95,7 @@ Welcome to `PeriLab`, a comprehensive platform for working with peridynamics, de
 
 - 🔥 **Additive Manufacturing**: PeriLab supports [additive manufacturing](https://www.youtube.com/watch?v=J55n2xWJosA), allowing users to create custom additive models for their simulations.
 
-- 🔑 **Solver**: Different solvers like `Verlet` or `Static` can be utilized, swiching between those is also supported.
+- 🔑 **Solver**: Different solvers like `Verlet`, `Static`, `Newmark` or `Matrix-based`, can be utilized, swiching between those is also supported.
 
 - 🧲 **Multi physics**: PeriLab supports [multimodels](https://www.youtube.com/watch?v=byhz-_RW0Lw) simulations, combining different types of peridynamic physical  and damage models to create a comprehensive simulation environment.
 
@@ -112,6 +112,8 @@ Welcome to `PeriLab`, a comprehensive platform for working with peridynamics, de
 - 📤📥 **Exodus Input/Output**: PeriLab uses the Exodus II data format for input and output, enabling easy transfer of data between simulation tools.
 
 - 🧮 **Abaqus Input**: PeriLab supports Abaqus input files, allowing users to create custom Abaqus models for their simulations.
+
+- 🗒️ **Gmsh Import**: PeriLab supports importing geometry from Gmsh files, allowing users to define complex geometries for their simulations.
 
 - ➗ **Bond filter**: The bond filter feature allows users to apply specific conditions to the bonds between particles in a simulation, influencing their behavior and interaction with other particles.
 

@@ -8,6 +8,19 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] - 2025-06-08
+
+### Added
+
+- Newmark solver #362
+- Gmsh mesh import
+- Variable output frequency for multisolver #361
+- UMAT interface to correspondence matrix #355
+
+### Fixed
+
+- Matrix Verlet solver fixes
+
 ## [2.0.1] - 2025-03-31
 
 ### Changed
