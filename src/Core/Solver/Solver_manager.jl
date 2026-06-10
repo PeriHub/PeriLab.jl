@@ -315,6 +315,7 @@ function solver(solver_options::Dict{Any,Any},
                 write_results,
                 silent::Bool)
     mod = Data_Manager.get_model_module(solver_options["Solver"])::Module
+
     mod.run_solver(solver_options,
                    block_nodes,
                    bcs,

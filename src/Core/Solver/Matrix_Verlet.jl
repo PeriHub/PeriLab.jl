@@ -31,7 +31,8 @@ include("../Model_reduction/Model_reduction.jl")
 using .Model_reduction: guyan_reduction
 include("../../Compute/compute_field_values.jl")
 include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
-using .Correspondence_matrix_based
+using .Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
+                                    compute_model
 export init_solver, run_solver
 
 function solver_name()
@@ -146,13 +147,13 @@ function init_solver(solver_options::Dict{Any,Any},
         if isnothing(K)
             for (block, nodes) in pairs(block_nodes)
                 model_param = Data_Manager.get_properties(block, "Material Model")
-                Correspondence_matrix_based.init_model(nodes, model_param, block)
+                init_model(nodes, model_param, block)
             end
-            @timeit "init_matrix" Correspondence_matrix_based.init_matrix()
+            @timeit "init_matrix" init_matrix()
         end
         if pd_nodes != []
             nodes = setdiff(collect(1:Data_Manager.get_nnodes()), pd_nodes)
-            @timeit "update_material_point_part" Correspondence_matrix_based.compute_model(nodes)
+            @timeit "update_material_point_part" compute_model(nodes)
         end
         K = Data_Manager.get_stiffness_matrix()
         if !(master_nodes == [])
@@ -205,9 +206,9 @@ function init_solver(solver_options::Dict{Any,Any},
     if isnothing(K)
         for (block, nodes) in pairs(block_nodes)
             model_param = Data_Manager.get_properties(block, "Material Model")
-            Correspondence_matrix_based.init_model(nodes, model_param, block)
+            init_model(nodes, model_param, block)
         end
-        @timeit "init_matrix" Correspondence_matrix_based.init_matrix()
+        @timeit "init_matrix" init_matrix()
         K = Data_Manager.get_stiffness_matrix()
     end
     density_mass = zeros(length(density) * Data_Manager.get_dof())
