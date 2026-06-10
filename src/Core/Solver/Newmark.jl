@@ -23,7 +23,8 @@ using ..Model_Factory: compute_stiff_matrix_compatible_models,
                        compute_matrix_based_bond_forces
 
 include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
-using .Correspondence_matrix_based
+using .Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
+                                    compute_model
 using ..Model_Factory.Pre_Calculation.Bond_Deformation
 
 export init_solver
@@ -83,30 +84,17 @@ function init_solver(solver_options::Dict{Any,Any},
 
     for (block, nodes) in pairs(block_nodes)
         model_param = Data_Manager.get_properties(block, "Material Model")
-        Correspondence_matrix_based.init_model(nodes, model_param, block)
+        init_model(nodes, model_param, block)
     end
-    @timeit "init matrix" Correspondence_matrix_based.init_matrix()
+    @timeit "init matrix" init_matrix()
+    density = Data_Manager.get_field("Density")
 
+    Data_Manager.set_mass_matrix(build_mass_matrix(density, Data_Manager.get_nnodes(),
+                                                   Data_Manager.get_dof()))
     Data_Manager.create_node_scalar_field("Damage", Float64)
     coor = Data_Manager.get_field("Coordinates")
     Data_Manager.get_field("Deformed Coordinates", "N") .= coor
     Data_Manager.get_field("Deformed Coordinates", "NP1") .= coor
-end
-
-# ────────────────────────────────────────────────────────────
-# Lumped mass vector  M_i = ρ_i V_i
-# ────────────────────────────────────────────────────────────
-function build_lumped_mass(nnodes::Int, dof::Int)
-    density = Data_Manager.get_field("Density")
-    volume = Data_Manager.get_field("Volume")
-    M = zeros(Float64, nnodes * dof)
-    @inbounds for d in 1:dof
-        off = (d - 1) * nnodes
-        for i in 1:nnodes
-            M[off + i] = density[i] * volume[i]
-        end
-    end
-    return M
 end
 
 # ────────────────────────────────────────────────────────────
@@ -230,7 +218,7 @@ function run_solver(solver_options::Dict{Any,Any},
 
     @info "Newmark: alpha=$alpha, gamma=$beta, dt=$dt"
 
-    M = build_lumped_mass(nnodes, dof)
+    M = Data_manager.get_mass_matrix()
 
     active_nodes = Data_Manager.get_field("Active Nodes")
     active_list = Data_Manager.get_field("Active")
@@ -420,7 +408,7 @@ end
 
 function compute_matrix(nodes::AbstractVector{Int64})
     isempty(nodes) && return Data_Manager.get_stiffness_matrix()
-    Correspondence_matrix_based.compute_model(nodes)
+    compute_model(nodes)
 end
 
 end # module Newmark

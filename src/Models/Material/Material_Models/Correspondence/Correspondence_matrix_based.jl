@@ -14,6 +14,18 @@ using ...Zero_Energy_Control
 export init_model
 export compute_model
 export init_matrix
+export build_mass_matrix
+
+function build_mass_matrix(density::Vector{Float64}, nnodes::Int64, dof::Int64)
+    M = zeros(Float64, nnodes * dof)
+    @inbounds for d in 1:dof
+        off = (d - 1) * nnodes
+        for i in 1:nnodes
+            M[off + i] = density[i]
+        end
+    end
+    return M
+end
 
 # =============================================================================
 # Type-stable helper functions

@@ -27,7 +27,8 @@ using ..Model_Factory: compute_stiff_matrix_compatible_models,
                        compute_matrix_based_bond_forces
 
 include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
-using .Correspondence_matrix_based
+using .Correspondence_matrix_based: init_model, init_matrix,
+                                    compute_model
 using ..Model_Factory.Pre_Calculation.Bond_Deformation
 
 export init_solver
@@ -148,10 +149,10 @@ function init_solver(solver_options::Dict{Any,Any},
 
     for (block, nodes) in pairs(block_nodes)
         model_param = Data_Manager.get_properties(block, "Material Model")
-        Correspondence_matrix_based.init_model(nodes, model_param, block)
+        init_model(nodes, model_param, block)
     end
 
-    @timeit "init matrix" Correspondence_matrix_based.init_matrix()
+    @timeit "init matrix" init_matrix()
     Data_Manager.create_node_scalar_field("Damage", Float64)
     solver_options["Matrix Update"] = get(params["Linear Static Matrix Based"],
                                           "Matrix Update", false)
@@ -520,7 +521,7 @@ function compute_matrix(nodes::AbstractVector{Int64})
     if length(nodes) == 0
         return Data_Manager.get_stiffness_matrix()
     end
-    Correspondence_matrix_based.compute_model(nodes)
+    compute_model(nodes)
 end
 
 """
