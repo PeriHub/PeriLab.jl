@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM julia:1.11 AS build
+FROM julia:1.12 AS build
 
 WORKDIR /env
 
@@ -13,9 +13,11 @@ COPY Project.toml ./Project.toml
 # Install build dependencies
 RUN apt-get update \
     && apt-get install -yq build-essential libxml2 \
-    && julia --project=@. -e 'import Pkg; Pkg.add("PackageCompiler")'
+    && julia --project=@. -e 'import Pkg; Pkg.add("JuliaC")'
 
-RUN julia --project=@. -e 'using PackageCompiler; create_app(".", "build", executables=["PeriLab" => "main", "get_examples" => "get_examples"], force=true, incremental=true)'
+RUN julia --project=@. -e "using JuliaC; JuliaC.main(ARGS)" -- --output-exe PeriLab --bundle build .
+# --trim=safe --experimental
+# RUN julia --project=@. -e 'using PackageCompiler; create_app(".", "build", executables=["PeriLab" => "main", "get_examples" => "get_examples"], force=true, incremental=true)'
 
 #TODO: use alpine
 FROM debian:trixie-slim AS main

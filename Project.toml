@@ -95,6 +95,8 @@ YAML = "0.4"
 ZipArchives = "1, 2"
 julia = "1.10"
 
+[apps.PeriLab]
+
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
