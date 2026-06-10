@@ -20,6 +20,7 @@ include("../../Models/Material/Material_Basis.jl")
 include("../Module_inclusion/set_Modules.jl")
 include("../../FEM/FEM_Factory.jl")
 include("../../Models/Material/Material_Models/Zero_Energy_Control/Zero_Energy_Control.jl")
+include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
 include("../../Models/Model_Factory.jl")
 include("../BC_manager.jl")
 

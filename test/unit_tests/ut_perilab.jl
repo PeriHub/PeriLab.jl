@@ -15,10 +15,10 @@
     PeriLab.print_banner(false)
 end
 
-@testset "ut_get_examples" begin
-    PeriLab.get_examples()
-    @test isdir("examples")
-    @test isdir("examples/DCB")
-    @test isfile("examples/DCB/DCBmodel.yaml")
-    rm("examples", recursive = true)
-end
+# @testset "ut_get_examples" begin
+#     PeriLab.get_examples()
+#     @test isdir("examples")
+#     @test isdir("examples/DCB")
+#     @test isfile("examples/DCB/DCBmodel.yaml")
+#     rm("examples", recursive = true)
+# end

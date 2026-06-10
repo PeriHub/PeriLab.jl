@@ -9,7 +9,7 @@ using SparseArrays
 using TimerOutputs: @timeit
 using ...Data_Manager
 using ....Helpers: get_fourth_order
-using ...Zero_Energy_Control
+using ..Zero_Energy_Control
 
 export init_model
 export compute_model
