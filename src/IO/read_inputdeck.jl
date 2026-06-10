@@ -41,7 +41,7 @@ Reads the input deck from a yaml file
 function read_input_file(filename::String)
     params = Dict{String,Any}()
     if !isfile(filename)
-        @error "$filename does not exist."
+        @error "$(filename) can not be found. Make sure the file exist and is readable."
         return
     end
     if !occursin("yaml", filename)

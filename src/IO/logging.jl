@@ -228,9 +228,9 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
                 end
             end
             error_logger = FormatLogger(log_file; append = false) do io, args
-                if args.level == Logging.Error
-                    throw(PeriLabError(args, args.message))
-                end
+                # if args.level == Logging.Error
+                #     throw(PeriLabError(args, args.message))
+                # end
             end
             demux_logger = TeeLogger(MinLevelLogger(file_logger, Logging.Debug),
                                      MinLevelLogger(error_logger, Logging.Info))
@@ -241,9 +241,9 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
                 end
             end
             error_logger = FormatLogger(log_file; append = false) do io, args
-                if args.level == Logging.Error
-                    throw(PeriLabError(args, args.message))
-                end
+                # if args.level == Logging.Error
+                # throw(PeriLabError(args, args.message))
+                # end
             end
             filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
             demux_logger = TeeLogger(MinLevelLogger(filtered_logger, Logging.Info),
@@ -261,7 +261,7 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
     global_logger(demux_logger)
 end
 
-function get_current_git_info(repo_path::AbstractString = ".")
+function get_current_git_info(repo_path::AbstractString, rank::Int64)
     dirty = false
     info = ""
     qa_vector = ["", ""]
@@ -295,11 +295,19 @@ function get_current_git_info(repo_path::AbstractString = ".")
             info *= ", Local changes detected"
             qa_vector[2] = "Local changes detected"
         end
+
+        if rank == 0
+            if dirty
+                @warn info
+            else
+                @info info
+            end
+        end
     catch e
         if isa(e, LibGit2.GitError)
-            @warn "No current git info."
+            qa_vector[1] = "Used as package"
         end
     end
-    return dirty, info, qa_vector
+    return qa_vector
 end
 end

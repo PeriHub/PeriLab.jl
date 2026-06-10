@@ -241,32 +241,26 @@ function main(filename::String;
 
         result_files = nothing
         outputs = nothing
-
         try
-            if !isfile(filename)
-                @error "$(filename) can not be found. Make sure the file exist and is readable."
-            end
             # atexit(() -> cleanup(comm))
             if silent && debug
                 @warn "Silent and debug mode currently cannot be used at the same time."
                 silent = false
             end
             Logging_Module.init_logging(filename, debug, silent, rank, size)
-            dirty,
-            git_info,
-            qa_vector = Logging_Module.get_current_git_info(joinpath(@__DIR__,
-                                                                     ".."))
+
             if rank == 0
                 if !silent
                     print_banner(size > 1)
                 end
                 @info "\n PeriLab version: $PERILAB_VERSION\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n GitHub: https://github.com/PeriHub/PeriLab.jl\n DOI: 10.1016/j.softx.2024.101700\n License: BSD-3-Clause\n ---------------------------------------------------------------\n"
                 @info Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
-                if dirty
-                    @warn git_info
-                else
-                    @info git_info
-                end
+            end
+
+            qa_vector = Logging_Module.get_current_git_info(joinpath(@__DIR__,
+                                                                     ".."), rank)
+
+            if rank == 0
                 if size > 1
                     @info "MPI: Running on " * string(size) * " processes"
                 end
@@ -382,9 +376,6 @@ function main(filename::String;
                 @info "PeriLab was interrupted"
             elseif !isa(e, Logging_Module.PeriLabError)
                 Logging_Module.print_exception(e)
-                if !silent
-                    rethrow(e)
-                end
             end
             if size > 1
                 MPI.Abort(comm, 0)
