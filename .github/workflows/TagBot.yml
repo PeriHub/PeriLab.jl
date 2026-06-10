@@ -55,3 +55,57 @@ jobs:
         run: docker tag perihub/perilab:${{ steps.get_version.outputs.PERILAB_VERSION }} perihub/perilab:latest
       - name: Publish to Registry
         run: docker push perihub/perilab:latest
+  Build:
+    runs-on: ${{ matrix.os }} # Use the current OS from the matrix
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+      - name: Set up Julia
+        uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.12"
+      - name: Cache
+        uses: julia-actions/cache@v3
+      - name: Build Executable
+        run: |
+          # Install PackageCompiler
+          julia --project=. -e 'using Pkg; Pkg.add("PackageCompiler")'
+
+          # Get the version from the git tag (removing 'v' prefix if present)
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "Building release for version: $VERSION"
+
+          # Run PackageCompiler
+          # You might need a build script like 'build_executable.jl' here instead of inline
+          julia --project -e '
+            using Pkg
+            Pkg.add("PackageCompiler")
+            using PackageCompiler
+            @info "Building executable..."
+            create_app(".", "build", executables=["PeriLab" => "main"], force=true, incremental=true)
+
+      - name: Create Archive (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: tar -czvf PeriLab.tar.gz build
+
+      - name: Create Archive (macOS)
+        if: matrix.os == 'macos-latest'
+        run: tar -czvf PeriLab.tar.gz build
+
+      - name: Create Archive (Windows)
+        if: matrix.os == 'windows-latest'
+        # Windows uses a zip instead of tar for better compatibility
+        run: Compress-Archive -Path build -DestinationPath PeriLab.zip
+
+      - name: Upload Release Asset
+        # This action automatically finds the release matching the tag and uploads the asset
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: "${{ matrix.os == 'windows-latest' && 'PeriLab.zip' || 'PeriLab.tar.gz' }}"
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "Binary for ${{ runner.os }}"
