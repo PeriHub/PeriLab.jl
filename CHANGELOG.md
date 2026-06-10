@@ -8,6 +8,17 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.1] - 2025-06-10
+
+### Added
+
+- Build compiler for windows and macos
+
+### Fixed
+
+- Logging and error handling #356
+- Newmark fixes #369
+
 ## [2.1.0] - 2025-06-08
 
 ### Added
