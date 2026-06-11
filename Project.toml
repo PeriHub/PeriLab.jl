@@ -93,7 +93,7 @@ TimerOutputs = "0.5"
 Unitful = "1.22"
 YAML = "0.4"
 ZipArchives = "1, 2"
-julia = "1.10"
+julia = "1.12"
 
 [apps.PeriLab]
 
