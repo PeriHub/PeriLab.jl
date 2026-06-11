@@ -4,6 +4,7 @@
 
 name: TagBot
 on:
+  workflow_dispatch:
   issue_comment:
     types:
       - created
@@ -64,7 +65,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v6
         with:
-          path: PeriLab
+          path: "PeriLab"
       - name: Set up Julia
         uses: julia-actions/setup-julia@v3
         with:
