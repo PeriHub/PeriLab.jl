@@ -196,6 +196,7 @@ function initialize_data()
     data["Global Master Search Nodes"] = Dict()
     data["Global Slave Search Nodes"] = Dict()
     data["matrix_exists"] = false
+    data["Reduced PD Nodes"] = Vector{Int64}([])
     fields[Int64] = Dict()
     fields[Float64] = Dict()
     fields[Bool] = Dict()

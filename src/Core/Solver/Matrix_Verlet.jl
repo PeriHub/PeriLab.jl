@@ -28,7 +28,7 @@ using ..Model_Factory: compute_models, compute_crititical_time_step
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
 using ...Logging_Module: print_table
 include("../Model_reduction/Model_reduction.jl")
-using .Model_reduction: guyan_reduction
+using .Model_reduction: init_reduction
 include("../../Compute/compute_field_values.jl")
 using ..Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
                                      compute_model
@@ -70,8 +70,6 @@ function init_solver(solver_options::Dict{Any,Any},
         nsteps = nsteps_temp
     end
 
-    K = Data_Manager.get_stiffness_matrix()
-
     dof = Data_Manager.get_dof()
     density = Data_Manager.get_field("Density")
     model_reduction = get(params["Verlet Matrix Based"], "Model Reduction", false)
@@ -88,119 +86,9 @@ function init_solver(solver_options::Dict{Any,Any},
     @info "dt: $(solver_options["dt"])"
     @info "Numerical Damping: $(solver_options["Numerical Damping"])"
 
-    reduction_blocks = []
-    if model_reduction != false
-        reduction_blocks = get(solver_options["Model Reduction"], "Reduction Blocks", [])
-
-        if reduction_blocks == []
-            model_reduction == false
-            @error "No reduction blocks defined for model reduction. If you want to use a reduced model please define 'Reduction Blocks' in the yaml input deck."
-        else
-            if reduction_blocks isa Float64
-                @error "Type Float is not supported for Reduction Blocks"
-            end
-            if reduction_blocks isa Int64
-                reduction_blocks = [reduction_blocks]
-            else
-                reduction_blocks = parse.(Int64,
-                                          filter(!isempty,
-                                                 split(solver_options["Model Reduction"]["Reduction Blocks"],
-                                                       r"[,\s]")))
-            end
-        end
-    else
-        # might lead to issues, because neighbors outside the block are included in
-        for block in eachindex(block_nodes)
-            Data_Manager.set_reduced_model_pd(Vector{Int64}([]))
-        end
-        @warn "No other models work with full matrix Verlet right now."
-    end
-
-    if reduction_blocks != []
-        master_nodes = Int64[]
-        slave_nodes = Int64[]
-        pd_nodes = Int64[]
-
-        nlist = Data_Manager.get_nlist()
-        # only for visualization and debugging.
-        cn = Data_Manager.create_constant_node_scalar_field("Coupling Nodes", Int64)
-        full_blocks = setdiff(collect(keys(block_nodes)), reduction_blocks)
-        for block in full_blocks
-            append!(pd_nodes, block_nodes[block])
-        end
-
-        for node in pd_nodes
-            append!(master_nodes, nlist[node])
-        end
-
-        append!(master_nodes, pd_nodes)
-
-        master_nodes = sort(unique(master_nodes))
-
-        slave_nodes = sort(setdiff(1:Data_Manager.get_nnodes(), master_nodes))
-
-        if !(get(solver_options["Model Reduction"], "Material Point Region", true))
-            pd_nodes::Vector{Int64} = []
-        end
-        sort!(pd_nodes)
-        if isnothing(K)
-            for (block, nodes) in pairs(block_nodes)
-                model_param = Data_Manager.get_properties(block, "Material Model")
-                init_model(nodes, model_param, block)
-            end
-            @timeit "init_matrix" init_matrix()
-        end
-        if pd_nodes != []
-            nodes = setdiff(collect(1:Data_Manager.get_nnodes()), pd_nodes)
-            @timeit "update_material_point_part" compute_model(nodes)
-        end
-        K = Data_Manager.get_stiffness_matrix()
-        if !(master_nodes == [])
-            coupling_nodes = setdiff(master_nodes, pd_nodes)
-
-            cn[master_nodes] .= 3
-            cn[slave_nodes] .= 6
-            cn[pd_nodes] .+= 1  # added to be sure that all points are handled
-            cn[coupling_nodes] .+= 3  # added to be sure that all points are handled
-
-            nnodes = Data_Manager.get_nnodes()
-
-            perm_master = create_permutation(master_nodes, Data_Manager.get_dof(), nnodes)
-            perm_slave = create_permutation(slave_nodes, Data_Manager.get_dof(), nnodes)
-            perm_pd_nodes = create_permutation(pd_nodes, Data_Manager.get_dof(), nnodes)
-            perm_coupling_nodes = create_permutation(coupling_nodes, Data_Manager.get_dof(),
-                                                     nnodes)
-
-            # create permutations in the reduced system; only master nodes exist. PD and overlap nodes are part of the master nodes and get the indices of the master nodes in the reduced system.
-            # Sorting is important to ensure that the order of the nodes in the reduced system is the same as in the original system
-            perm_pd_reduced = findall(in(perm_pd_nodes), perm_master)
-            perm_coupling_reduced = findall(in(perm_coupling_nodes), perm_master)
-            # create the mass part.
-            density_mass = zeros(length(density) * dof)
-            for iID in eachindex(density_mass)
-                density_mass[iID] = density[Int(ceil(iID / dof))]
-            end
-            # perform the condensation of the system
-            @timeit "Guyan Condensation" K_reduced,
-                                         mass_reduced=guyan_reduction(K,
-                                                                      density_mass,
-                                                                      perm_master,
-                                                                      perm_slave)
-
-            dropzeros!(mass_reduced)
-            dropzeros!(K_reduced)
-
-            Data_Manager.set_stiffness_matrix(sparse(K_reduced))
-            Data_Manager.set_mass_matrix(lu(sparse(mass_reduced)))
-
-            Data_Manager.set_reduced_model_pd(pd_nodes)
-            Data_Manager.set_reduced_model_master(master_nodes)
-
-            @info "Model reduction is applied"
-            @info "Condensed: $(length(slave_nodes)), Master: $(length(master_nodes)), PD: $(length(pd_nodes))."
-            return
-        end
-        @warn "No master nodes defined for model reduction. Using full stiffness matrix."
+    K = Data_Manager.get_stiffness_matrix()
+    if model_reduction
+        init_reduce_model(solver_options, block_nodes, K, density)
     end
     if isnothing(K)
         for (block, nodes) in pairs(block_nodes)
