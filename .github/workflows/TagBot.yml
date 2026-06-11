@@ -85,7 +85,7 @@ jobs:
             Pkg.add("PackageCompiler")
             using PackageCompiler
             @info "Building executable..."
-            create_app(".", "build", executables=["PeriLab" => "main"], force=true, incremental=true)
+            create_app(".", "build", executables=["PeriLab" => "main"], force=true, incremental=true)'
 
       - name: Create Archive (Linux)
         if: matrix.os == 'ubuntu-latest'
