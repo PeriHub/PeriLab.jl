@@ -71,21 +71,13 @@ jobs:
         uses: julia-actions/cache@v3
       - name: Build Executable
         run: |
-          # Install PackageCompiler
-          julia --project=. -e 'using Pkg; Pkg.add("PackageCompiler")'
-
-          # Get the version from the git tag (removing 'v' prefix if present)
-          VERSION=${GITHUB_REF_NAME#v}
-          echo "Building release for version: $VERSION"
-
-          # Run PackageCompiler
-          # You might need a build script like 'build_executable.jl' here instead of inline
+          # Run JuliaC;
           julia --project -e '
             using Pkg
-            Pkg.add("PackageCompiler")
-            using PackageCompiler
+            Pkg.add("JuliaC")
+            using JuliaC;
             @info "Building executable..."
-            create_app(".", "build", executables=["PeriLab" => "main"], force=true, incremental=true)'
+            JuliaC.main(ARGS)' -- --output-exe PeriLab --bundle build .
 
       - name: Create Archive (Linux)
         if: matrix.os == 'ubuntu-latest'
