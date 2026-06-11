@@ -16,7 +16,7 @@ for folder in folders
         if split(file, ".")[end] == "yaml"
             yaml_file = joinpath(path, file)
             @info "Running example $yaml_file"
-            PeriLab.main(yaml_file)
+            PeriLab.run(yaml_file)
         end
     end
 end

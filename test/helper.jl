@@ -9,7 +9,7 @@ using JSON3
 using Logging
 using CSV
 using DataFrames
-using PeriLab
+import PeriLab
 
 export run_perilab
 export run_and_compare
@@ -19,9 +19,9 @@ export push_test!
 function run_perilab(filename, cores, compare, folder_name = ""; silent = true,
                      reload = false, compare_csv = false)
     if cores == 1
-        PeriLab.main(filename * ".yaml"; silent = silent, reload = reload)
+        PeriLab.run(filename * ".yaml"; silent = silent, reload = reload)
     else
-        fn = """using PeriLab; PeriLab.main(""" *
+        fn = """import PeriLab; PeriLab.run(""" *
              '"' *
              filename *
              """.yaml"; silent = true)"""
@@ -59,15 +59,15 @@ function run_perilab(filename, cores, compare, folder_name = ""; silent = true,
         results_csv = CSV.read(open(filename * ".csv"), DataFrame)
         reference_csv = CSV.read(open("./Reference/" * filename * ".csv"), DataFrame)
         for i in 1:size(reference_csv)[2]
-            @test results_csv[:, i] ≈ reference_csv[:, i] atol=1e-15
+            @test results_csv[:, i]≈reference_csv[:, i] atol=1e-15
         end
         rm(filename * ".csv")
     end
 end
 
 function run_and_compare(filename1, filename2)
-    PeriLab.main(filename1 * ".yaml"; silent = true)
-    PeriLab.main(filename2 * ".yaml"; silent = true)
+    PeriLab.run(filename1 * ".yaml"; silent = true)
+    PeriLab.run(filename2 * ".yaml"; silent = true)
     exo1 = ExodusDatabase(filename1 * ".e", "r")
     exo2 = ExodusDatabase(filename2 * ".e", "r")
 

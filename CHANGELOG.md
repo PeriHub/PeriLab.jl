@@ -14,6 +14,14 @@ All notable changes to this project will be documented in this file.
 
 - Build compiler for windows and macos
 
+### Changed
+
+- New installation method!:
+    ```julia
+    using Pkg
+    Pkg.Apps.add("PeriLab")
+    ```
+
 ### Fixed
 
 - Logging and error handling #356

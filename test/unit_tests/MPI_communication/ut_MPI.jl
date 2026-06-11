@@ -6,14 +6,14 @@ import MPI
 using Test
 using JSON3
 using TimerOutputs
-using PeriLab
+import PeriLab
 
 function push_test!(dict::Dict, test::Bool, file::String, line::Int)
     push!(dict["tests"], test)
     push!(dict["line"], "$file:$line")
 end
 
-MPI.Init()
+# MPI.Init()
 
 comm = MPI.COMM_WORLD
 rank = MPI.Comm_rank(comm)
@@ -427,4 +427,4 @@ open("test_results_$rank.json", "w") do f
     JSON3.pretty(f, JSON3.write(test_dict))
 end
 
-MPI.Finalize()
+# MPI.Finalize()

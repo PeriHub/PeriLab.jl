@@ -134,7 +134,7 @@ parsed_args = parse_commandline()
 ```
 """
 
-function parse_commandline()
+function parse_commandline(ARGS)
     s = ArgParseSettings()
 
     @add_arg_table! s begin
@@ -166,7 +166,7 @@ function parse_commandline()
         #required = true
     end
 
-    return parse_args(s)
+    return parse_args(ARGS, s)
 end
 
 """
@@ -177,28 +177,29 @@ Entry point for the PeriLab application.
 This function serves as the entry point for the PeriLab application. It calls the core `main` function with the provided arguments.
 """
 function (@main)(ARGS)
-    parsed_args = parse_commandline()
-    @debug "Parsed args:"
-    for (arg, val) in parsed_args
-        @debug "  $arg  =>  $val"
-    end
-    if parsed_args["examples"]
-        get_examples()
-        return 0
-    end
-    if length(parsed_args["filenames"]) == 0
-        @error "Please provide at least one filename, f.e. 'PeriLab example.yaml'"
-        exit(1)
-    end
+    parsed_args = parse_commandline(ARGS)
     MPI.Init()
+    comm = MPI.COMM_WORLD
+    rank = MPI.Comm_rank(comm)
+    if rank == 0
+        if parsed_args["examples"]
+            get_examples()
+            return 0
+        end
+        if length(parsed_args["filenames"]) == 0
+            @error "Please provide at least one filename, f.e. 'PeriLab example.yaml'"
+            return 1
+        end
+    end
+    MPI.Barrier(comm)
     for filename in parsed_args["filenames"]
-        main(filename;
-             output_dir = parsed_args["output_dir"],
-             dry_run = parsed_args["dry_run"],
-             verbose = parsed_args["verbose"],
-             debug = parsed_args["debug"],
-             silent = parsed_args["silent"],
-             reload = parsed_args["reload"])
+        run(filename;
+            output_dir = parsed_args["output_dir"],
+            dry_run = parsed_args["dry_run"],
+            verbose = parsed_args["verbose"],
+            debug = parsed_args["debug"],
+            silent = parsed_args["silent"],
+            reload = parsed_args["reload"])
     end
     MPI.Finalize()
     return 0
@@ -280,13 +281,13 @@ This function serves as the entry point for the PeriLab application. It calls th
 - `silent::Bool=false`: Whether to run in silent mode.
 - `reload::Bool=false`: Whether to reload the input file.
 """
-function main(filename::String;
-              output_dir::String = "",
-              dry_run::Bool = false,
-              verbose::Bool = false,
-              debug::Bool = false,
-              silent::Bool = false,
-              reload::Bool = false,)
+function run(filename::String;
+             output_dir::String = "",
+             dry_run::Bool = false,
+             verbose::Bool = false,
+             debug::Bool = false,
+             silent::Bool = false,
+             reload::Bool = false,)
     reset_timer!()
     @timeit "PeriLab" begin
         if !MPI.Initialized()
