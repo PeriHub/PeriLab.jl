@@ -13,7 +13,7 @@ function push_test!(dict::Dict, test::Bool, file::String, line::Int)
     push!(dict["line"], "$file:$line")
 end
 
-# MPI.Init()
+MPI.Init()
 
 comm = MPI.COMM_WORLD
 rank = MPI.Comm_rank(comm)
