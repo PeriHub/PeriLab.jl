@@ -44,10 +44,14 @@ mutable struct NewmarkCache
     u_free::Vector{Float64}
     K_eff_lu::Union{Nothing,Any}
     last_non_BCs::Vector{Int}
+    bc_dofs::Vector{Int}
+    K_bc::Union{Nothing,SparseMatrixCSC{Float64,Int}}
+    F_bc::Vector{Float64}
 
     function NewmarkCache(n::Int)
         new(Float64[], BitVector(undef, n), Float64[], Float64[],
-            nothing, Int[])
+            nothing, Int[],
+            Int[], nothing, Float64[])
     end
 end
 
@@ -329,76 +333,100 @@ function newmark_step!(K::AbstractMatrix{Float64},
                        cache::NewmarkCache,
                        a0, a2, a3, a6, a7,
                        nnodes::Int, dof::Int)
-    n_total = nnodes * dof
-    n_free = length(non_BCs)
-    isempty(non_BCs) && return nothing
+    @timeit "initialize Newmark step" begin
+        n_total = nnodes * dof
+        n_free = length(non_BCs)
+        isempty(non_BCs) && return nothing
+        u_vec = vec(uNP1)
+        F_int_vec = vec(F_int)
+        F_ext_vec = vec(F_ext)
+    end
 
-    u_vec = vec(uNP1)
-    F_int_vec = vec(F_int)
-    F_ext_vec = vec(F_ext)
+    # Detect BC change ONCE at the start
+    bcs_changed = cache.last_non_BCs != non_BCs
 
     # ── Effective force for free DOFs ──
-    # FIX 1: Vorzeichen von F_ext konsistent mit statischem Solver
-    #         statisch: K*u = -F_ext - F_int  (funktioniert)
-    #         dynamisch muss im Limit identisch sein
-    resize!(cache.F_eff, n_free)
-    @inbounds for (idx, i) in enumerate(non_BCs)
-        m_rhs = M[i] * (a0 * uN[i] + a2 * vN[i] + a3 * aN[i])
-        cache.F_eff[idx] = -F_ext_vec[i] - F_int_vec[i] + m_rhs
-    end
-
-    # ── Prescribed DOF contributions ──
-    has_BCs = n_free < n_total
-    bc_dofs = Int[]
-    if has_BCs
-        resize!(cache.bc_mask, n_total)
-        fill!(cache.bc_mask, true)
-        @inbounds for i in non_BCs
-            cache.bc_mask[i] = false
-        end
-        bc_dofs = findall(cache.bc_mask)
-        resize!(cache.temp, n_free)
-        mul!(cache.temp, K[non_BCs, cache.bc_mask], @view(u_vec[cache.bc_mask]))
+    @timeit "compute F_eff" begin
+        resize!(cache.F_eff, n_free)
         @inbounds for (idx, i) in enumerate(non_BCs)
-            cache.F_eff[idx] += cache.temp[idx]
+            m_rhs = M[i] * (a0 * uN[i] + a2 * vN[i] + a3 * aN[i])
+            cache.F_eff[idx] = -F_ext_vec[i] - F_int_vec[i] + m_rhs
         end
     end
 
-    # ── Factorise K_eff = K_free + a0·diag(M_free) ──
-    if cache.K_eff_lu === nothing || cache.last_non_BCs != non_BCs
-        @timeit "K_eff factorisation" begin
-            K_free = -sparse(K[non_BCs, non_BCs])
+    @timeit "bc" begin
+        # ── Prescribed DOF contributions ──
+        has_BCs = n_free < n_total
+        if has_BCs
+            # bc_mask & bc_dofs nur bei BC-Wechsel neu berechnen
+            if bcs_changed
+                resize!(cache.bc_mask, n_total)
+                fill!(cache.bc_mask, true)
+                @inbounds for i in non_BCs
+                    cache.bc_mask[i] = false
+                end
+                cache.bc_dofs = findall(cache.bc_mask)   # ← FIX 1: in cache!
+            end
+            resize!(cache.temp, n_free)
+            mul!(cache.temp, K[non_BCs, cache.bc_mask], @view(u_vec[cache.bc_mask]))
             @inbounds for (idx, i) in enumerate(non_BCs)
-                K_free[idx, idx] += a0 * M[i]
+                cache.F_eff[idx] += cache.temp[idx]
             end
-            cache.K_eff_lu = lu(K_free)
-            cache.last_non_BCs = copy(non_BCs)
+        else
+            empty!(cache.bc_dofs)
         end
     end
 
-    # ── Solve ──
-    resize!(cache.u_free, n_free)
-    @timeit "ldiv" ldiv!(cache.u_free, cache.K_eff_lu, cache.F_eff)
-    @inbounds for (idx, i) in enumerate(non_BCs)
-        uNP1[i] = cache.u_free[idx]
-    end
-
-    # ── FIX 2: F_int für BC-DOFs NACH dem Solve ──
-    #           (war vorher vor dem Solve → uNP1 für freie DOFs noch nicht aktualisiert)
-    if !isempty(bc_dofs)
-        @inbounds for j in bc_dofs
-            f_int = 0.0
-            for i in 1:n_total
-                f_int += K[j, i] * uNP1[i]
+    @timeit "factorisation" begin
+        # ── Factorise K_eff = K_free + a0·diag(M_free) ──
+        if cache.K_eff_lu === nothing || bcs_changed
+            @timeit "K_eff factorisation" begin
+                K_free = -sparse(K[non_BCs, non_BCs])
+                @inbounds for (idx, i) in enumerate(non_BCs)
+                    K_free[idx, idx] += a0 * M[i]
+                end
             end
-            F_int_vec[j] = f_int - F_ext_vec[j]
+            @timeit "lu" cache.K_eff_lu=lu(K_free)
         end
     end
 
-    # ── Update acceleration and velocity ──
-    @inbounds for i in 1:n_total
-        aNP1[i] = a0 * (uNP1[i] - uN[i]) - a2 * vN[i] - a3 * aN[i]
-        vNP1[i] = vN[i] + a6 * aN[i] + a7 * aNP1[i]
+    @timeit "rest of newmark step" begin
+        # ── Solve ──
+        resize!(cache.u_free, n_free)
+        @timeit "ldiv" ldiv!(cache.u_free, cache.K_eff_lu, cache.F_eff)
+
+        @timeit "update uNP1" begin
+            @inbounds for (idx, i) in enumerate(non_BCs)
+                uNP1[i] = cache.u_free[idx]
+            end
+        end
+
+        if !isempty(cache.bc_dofs)
+            @timeit "update forces" begin
+                if cache.K_bc === nothing || bcs_changed
+                    cache.K_bc = K[cache.bc_dofs, :]
+                    resize!(cache.F_bc, length(cache.bc_dofs))
+                end
+                # Eine sparse Mat-Vec statt n_bc Zeilen-Loops
+                mul!(cache.F_bc, cache.K_bc, u_vec)
+                @inbounds for (idx, j) in enumerate(cache.bc_dofs)
+                    F_int_vec[j] = cache.F_bc[idx] - F_ext_vec[j]
+                end
+            end
+        end
+
+        # ── Update acceleration and velocity ──
+        @timeit "update accel and vel" begin
+            @inbounds for i in 1:n_total
+                aNP1[i] = a0 * (uNP1[i] - uN[i]) - a2 * vN[i] - a3 * aN[i]
+                vNP1[i] = vN[i] + a6 * aN[i] + a7 * aNP1[i]
+            end
+        end
+    end
+
+    # ── FIX 2: last_non_BCs erst am ENDE updaten ──
+    if bcs_changed
+        cache.last_non_BCs = copy(non_BCs)
     end
 
     return nothing
