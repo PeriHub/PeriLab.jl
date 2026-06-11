@@ -63,6 +63,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
+        with:
+          path: PeriLab
       - name: Set up Julia
         uses: julia-actions/setup-julia@v3
         with:
@@ -72,12 +74,8 @@ jobs:
       - name: Build Executable
         run: |
           # Run JuliaC;
-          julia --project -e '
-            using Pkg
-            Pkg.add("JuliaC")
-            using JuliaC;
-            @info "Building executable..."
-            JuliaC.main(ARGS)' -- --output-exe PeriLab --bundle build .
+          julia --project -e 'using Pkg; Pkg.add("JuliaC")'
+          julia --project -e 'import JuliaC; JuliaC.main(["--output-exe", "PeriLab", "--bundle", "build", "PeriLab"])'
 
       - name: Create Archive (Linux)
         if: matrix.os == 'ubuntu-latest'
