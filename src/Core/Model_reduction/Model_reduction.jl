@@ -22,7 +22,7 @@ function reduce_model(K::AbstractMatrix{Float64}, M::AbstractMatrix{Float64},
     end
 end
 
-function init_reduce_model(solver_options::Dict, block_nodes::Dict{Int64,Vector{Int64}}, K,
+function init_reduce_model(solver_options::Dict, block_nodes::Dict{Int64,Vector{Int64}},
                            density)
     reduction_blocks = []
     reduction_blocks = get(solver_options["Model Reduction"], "Reduction Blocks", nothing)
@@ -48,6 +48,7 @@ function init_reduce_model(solver_options::Dict, block_nodes::Dict{Int64,Vector{
                                   module_list,
                                   @__MODULE__,
                                   "model_reduction_name")
+
     nmodes = get(solver_options["Model Reduction"], "Number of Modes", 1)
     master_nodes = Int64[]
     slave_nodes = Int64[]
@@ -75,13 +76,7 @@ function init_reduce_model(solver_options::Dict, block_nodes::Dict{Int64,Vector{
         pd_nodes::Vector{Int64} = []
     end
     sort!(pd_nodes)
-    if isnothing(K)
-        for (block, nodes) in pairs(block_nodes)
-            model_param = Data_Manager.get_properties(block, "Material Model")
-            init_model(nodes, model_param, block)
-        end
-        @timeit "init_matrix" init_matrix()
-    end
+
     if pd_nodes != []
         nodes = setdiff(collect(1:Data_Manager.get_nnodes()), pd_nodes)
         @timeit "update_material_point_part" compute_model(nodes)
@@ -124,7 +119,7 @@ function init_reduce_model(solver_options::Dict, block_nodes::Dict{Int64,Vector{
         dropzeros!(K_reduced)
 
         Data_Manager.set_stiffness_matrix(sparse(K_reduced))
-        Data_Manager.set_mass_matrix(lu(sparse(mass_reduced)))
+        Data_Manager.set_mass_matrix(sparse(mass_reduced))
 
         Data_Manager.set_reduced_model_pd(pd_nodes)
         Data_Manager.set_reduced_model_master(master_nodes)

@@ -28,7 +28,7 @@ using ..Model_Factory: compute_models, compute_crititical_time_step
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
 using ...Logging_Module: print_table
 include("../Model_reduction/Model_reduction.jl")
-using .Model_reduction: init_reduction
+using .Model_reduction: init_reduce_model
 include("../../Compute/compute_field_values.jl")
 using ..Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
                                      compute_model
@@ -87,24 +87,28 @@ function init_solver(solver_options::Dict{Any,Any},
     @info "Numerical Damping: $(solver_options["Numerical Damping"])"
 
     K = Data_Manager.get_stiffness_matrix()
-    if model_reduction
-        init_reduce_model(solver_options, block_nodes, K, density)
+
+    for (block, nodes) in pairs(block_nodes)
+        model_param = Data_Manager.get_properties(block, "Material Model")
+        init_model(nodes, model_param, block)
     end
-    if isnothing(K)
-        for (block, nodes) in pairs(block_nodes)
-            model_param = Data_Manager.get_properties(block, "Material Model")
-            init_model(nodes, model_param, block)
-        end
-        @timeit "init_matrix" init_matrix()
-        K = Data_Manager.get_stiffness_matrix()
-    end
+    @timeit "init_matrix" init_matrix()
+    K = Data_Manager.get_stiffness_matrix()
+
     density_mass = zeros(length(density) * Data_Manager.get_dof())
     for iID in eachindex(density_mass)
         density_mass[iID] = density[Int(ceil(iID / dof))]
     end
+    if model_reduction
+        init_reduce_model(solver_options, block_nodes, density_mass)
+        mass = Data_Manager.get_mass_matrix()
+        Data_Manager.set_mass_matrix(lu(sparse(mass)))
+        return
+    end
+    # if not reduced the mass has to be created here.
     mass = Diagonal(density_mass)
-    perm = collect(1:(Data_Manager.get_nnodes() * Data_Manager.get_dof()))
-    Data_Manager.set_mass_matrix(lu(sparse(mass[perm, perm])))
+    Data_Manager.set_mass_matrix(lu(sparse(mass)))
+
     return
 end
 
