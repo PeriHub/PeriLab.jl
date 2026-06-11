@@ -59,7 +59,7 @@ import .Logging_Module
 import .IO
 using .Solver_Manager
 
-PERILAB_VERSION = "2.1.0"
+PERILAB_VERSION = "2.1.1"
 
 export main
 
@@ -145,6 +145,9 @@ function parse_commandline()
         help = "output_dir"
         arg_type = String
         default = ""
+        "--examples", "-e"
+        help = "examples"
+        action = :store_true
         "--verbose", "-v"
         help = "verbose"
         action = :store_true
@@ -160,7 +163,7 @@ function parse_commandline()
         "filenames"
         nargs = '*'
         help = "filenames"
-        required = true
+        #required = true
     end
 
     return parse_args(s)
@@ -173,11 +176,19 @@ Entry point for the PeriLab application.
 
 This function serves as the entry point for the PeriLab application. It calls the core `main` function with the provided arguments.
 """
-function main()::Cint
+function (@main)(ARGS)
     parsed_args = parse_commandline()
     @debug "Parsed args:"
     for (arg, val) in parsed_args
         @debug "  $arg  =>  $val"
+    end
+    if parsed_args["examples"]
+        get_examples()
+        return 0
+    end
+    if length(parsed_args["filenames"]) == 0
+        @error "Please provide at least one filename, f.e. 'PeriLab example.yaml'"
+        exit(1)
     end
     MPI.Init()
     for filename in parsed_args["filenames"]
@@ -199,11 +210,57 @@ end
 Copy the examples folder to the current directory.
 """
 function get_examples()
+    options = ["Abaqus", "DCB", "Quit"]
+    description = ["Abaqus .inp file", "Double cantilver beam", ""]
+
     package_dir = dirname(dirname(pathof(PeriLab)))
-    examples_dir = joinpath(package_dir, "examples")
-    dest_folder = joinpath(pwd(), "examples")
-    if isdir(examples_dir)
-        cp(examples_dir, dest_folder)
+    test_dir = joinpath(package_dir, "test", "fullscale_tests")
+
+    while true
+        println("\nWhich example to you like to try?")
+        for (i, opt) in enumerate(options)
+            if description[i] != ""
+                println("$(i). $opt ($(description[i]))")
+            else
+                println("$(i). $opt")
+            end
+        end
+
+        print("Your choice [1-$(length(options))]: ")
+        input = readline()
+
+        # Validate input is a number within range
+        if tryparse(Int, input) !== nothing
+            choice = parse(Int, input)
+            if 1 <= choice <= length(options)
+                choice_name = options[choice]
+                println("Selected: ", choice_name)
+                if choice == length(options)  # "Quit" case
+                    break
+                end
+                examples_dir = joinpath(test_dir, "test_" * choice_name)
+                dest_folder = joinpath(pwd(), "examples")
+                if isdir(examples_dir)
+                    if !isdir(dest_folder)
+                        mkdir(dest_folder)
+                        mkdir(joinpath(dest_folder, choice_name))
+                    end
+                    # copy folder without .cmd and .license files
+                    for file in readdir(examples_dir)
+                        if !endswith(file, r".cmd|.log|.license|.jl|Reference")
+                            cp(joinpath(examples_dir, file),
+                               joinpath(dest_folder, choice_name, file))
+                        end
+                    end
+                    println("Example copied, use 'PeriLab examples/$choice_name/$choice_name.yaml' to run it.")
+                end
+                break  # Exit loop after selection (or remove to repeat)
+            else
+                println("Invalid number. Please try again.")
+            end
+        else
+            println("Please enter a valid number.")
+        end
     end
 end
 

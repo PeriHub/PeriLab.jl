@@ -24,7 +24,8 @@
 end
 
 @testset "ut_read_input_file" begin
-    @test_logs (:error, "filename does not exist.") PeriLab.IO.read_input_file("filename")
+    @test_logs (:error,
+                "filename can not be found. Make sure the file exist and is readable.") PeriLab.IO.read_input_file("filename")
     filename = "test.xml"
     fid = open(filename, "w")
     println(fid, "PeriLab:")

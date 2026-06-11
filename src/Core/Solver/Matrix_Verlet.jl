@@ -30,9 +30,8 @@ using ...Logging_Module: print_table
 include("../Model_reduction/Model_reduction.jl")
 using .Model_reduction: guyan_reduction
 include("../../Compute/compute_field_values.jl")
-include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
-using .Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
-                                    compute_model
+using ..Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
+                                     compute_model
 export init_solver, run_solver
 
 function solver_name()

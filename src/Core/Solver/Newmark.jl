@@ -22,9 +22,8 @@ using ...Parameter_Handling: get_initial_time,
 using ..Model_Factory: compute_stiff_matrix_compatible_models,
                        compute_matrix_based_bond_forces
 
-include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
-using .Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
-                                    compute_model
+using ..Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
+                                     compute_model
 using ..Model_Factory.Pre_Calculation.Bond_Deformation
 
 export init_solver

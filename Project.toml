@@ -1,6 +1,6 @@
 name = "PeriLab"
 uuid = "2ecefcea-59f0-46dd-9cfd-1d2b8cc5f112"
-version = "2.1.0"
+version = "2.1.1"
 authors = ["Christian Willberg <christian.willberg@dlr.de>", "Jan-Timo Hesse <jan-timo.hesse@dlr.de>"]
 
 [deps]
@@ -94,6 +94,8 @@ Unitful = "1.22"
 YAML = "0.4"
 ZipArchives = "1, 2"
 julia = "1.10"
+
+[apps.PeriLab]
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
