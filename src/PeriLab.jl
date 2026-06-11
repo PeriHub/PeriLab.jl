@@ -174,7 +174,7 @@ end
 
 Entry point for the PeriLab application.
 
-This function serves as the entry point for the PeriLab application. It calls the core `main` function with the provided arguments.
+This function serves as the entry point for the PeriLab application. It calls the core `run` function with the provided arguments.
 """
 function (@main)(ARGS)
     parsed_args = parse_commandline(ARGS)
