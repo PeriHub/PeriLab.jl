@@ -13,8 +13,8 @@ using PrettyTables
 using Logging
 using LinearAlgebra: lu
 using ...Data_Manager
-using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style,
-                  create_permutation
+using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
+
 using ...Parameter_Handling:
                              get_initial_time,
                              get_fixed_dt,
@@ -72,7 +72,12 @@ function init_solver(solver_options::Dict{Any,Any},
 
     dof = Data_Manager.get_dof()
     density = Data_Manager.get_field("Density")
+
     model_reduction = get(params["Verlet Matrix Based"], "Model Reduction", false)
+    reduce = true
+    if model_reduction == false
+        reduce = false
+    end
     solver_options["Model Reduction"] = model_reduction
     solver_options["Numerical Damping"] = get_numerical_damping(params)
     solver_options["dt"] = dt
@@ -99,8 +104,11 @@ function init_solver(solver_options::Dict{Any,Any},
     for iID in eachindex(density_mass)
         density_mass[iID] = density[Int(ceil(iID / dof))]
     end
-    if model_reduction
-        init_reduce_model(solver_options, block_nodes, density_mass)
+
+    if reduce
+        @info "Model reduction enabled."
+        @timeit "Model reduction" init_reduce_model(model_reduction, block_nodes,
+                                                    density_mass)
         mass = Data_Manager.get_mass_matrix()
         Data_Manager.set_mass_matrix(lu(sparse(mass)))
         return

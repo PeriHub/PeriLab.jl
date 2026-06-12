@@ -6,14 +6,14 @@ module CraigBampton
 using LinearAlgebra
 using SparseArrays
 export model_reduction_name
-export reduced_matrices
+export reduce_matrices
 
 function model_reduction_name()
     return "Craig Bampton"
 end
 
-function reduced_matrices(K::AbstractMatrix{Float64}, M::AbstractMatrix{Float64},
-                          m::Vector{Int64}, s::Vector{Int64}; n_modes::Int64 = 1)
+function reduce_matrices(K::AbstractMatrix{Float64}, M::AbstractMatrix{Float64},
+                         m::Vector{Int64}, s::Vector{Int64}, n_modes::Int64 = 1)
     # Partitionierung
     K_mm = K[m, m]
     K_ms = K[m, s]

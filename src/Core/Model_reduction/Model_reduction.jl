@@ -6,6 +6,9 @@ module Model_reduction
 using TimerOutputs: @timeit
 using ....Data_Manager
 using ...Solver_Manager: find_module_files, create_module_specifics
+using ...Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
+                                      compute_model
+using ...Helpers: find_active_nodes, create_permutation
 global module_list = find_module_files(@__DIR__, "model_reduction_name")
 for mod in module_list
     include(mod["File"])
@@ -22,10 +25,11 @@ function reduce_model(K::AbstractMatrix{Float64}, M::AbstractMatrix{Float64},
     end
 end
 
-function init_reduce_model(solver_options::Dict, block_nodes::Dict{Int64,Vector{Int64}},
+function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int64}},
                            density)
     reduction_blocks = []
-    reduction_blocks = get(solver_options["Model Reduction"], "Reduction Blocks", nothing)
+
+    reduction_blocks = get(model_param, "Reduction Blocks", nothing)
 
     if isnothing(reduction_blocks)
         @warn "No reduction blocks defined for model reduction. If you want to use a reduced model please define 'Reduction Blocks' in the yaml input deck."
@@ -35,21 +39,23 @@ function init_reduce_model(solver_options::Dict, block_nodes::Dict{Int64,Vector{
         @error "Type Float is not supported for Reduction Blocks"
         return
     end
+
     if reduction_blocks isa Int64
         reduction_blocks = [reduction_blocks]
     else
         reduction_blocks = parse.(Int64,
                                   filter(!isempty,
-                                         split(solver_options["Model Reduction"]["Reduction Blocks"],
+                                         split(model_param["Reduction Blocks"],
                                                r"[,\s]")))
     end
 
-    mod = create_module_specifics(model_param["Model Reduction"]["Type"],
+    @info "Model Reduction Type: $(model_param["Type"])"
+    mod = create_module_specifics(model_param["Type"],
                                   module_list,
                                   @__MODULE__,
                                   "model_reduction_name")
 
-    nmodes = get(solver_options["Model Reduction"], "Number of Modes", 1)
+    nmodes = get(model_param, "Number of Modes", 1)
     master_nodes = Int64[]
     slave_nodes = Int64[]
     pd_nodes = Int64[]
@@ -58,6 +64,7 @@ function init_reduce_model(solver_options::Dict, block_nodes::Dict{Int64,Vector{
     # only for visualization and debugging.
     cn = Data_Manager.create_constant_node_scalar_field("Coupling Nodes", Int64)
     full_blocks = setdiff(collect(keys(block_nodes)), reduction_blocks)
+
     for block in full_blocks
         append!(pd_nodes, block_nodes[block])
     end
@@ -70,15 +77,14 @@ function init_reduce_model(solver_options::Dict, block_nodes::Dict{Int64,Vector{
 
     master_nodes = sort(unique(master_nodes))
 
-    slave_nodes = sort(setdiff(1:Data_Manager.get_nnodes(), master_nodes))
-
-    if !(get(solver_options["Model Reduction"], "Material Point Region", true))
+    if !(get(model_param, "Material Point Region", true))
         pd_nodes::Vector{Int64} = []
     end
     sort!(pd_nodes)
 
     if pd_nodes != []
         nodes = setdiff(collect(1:Data_Manager.get_nnodes()), pd_nodes)
+        # update matrix excluding PD nodes
         @timeit "update_material_point_part" compute_model(nodes)
     end
     K = Data_Manager.get_stiffness_matrix()
@@ -91,29 +97,26 @@ function init_reduce_model(solver_options::Dict, block_nodes::Dict{Int64,Vector{
         cn[coupling_nodes] .+= 3  # added to be sure that all points are handled
 
         nnodes = Data_Manager.get_nnodes()
-
+        dof = Data_Manager.get_dof()
         perm_master = create_permutation(master_nodes, Data_Manager.get_dof(), nnodes)
         perm_slave = create_permutation(slave_nodes, Data_Manager.get_dof(), nnodes)
-        perm_pd_nodes = create_permutation(pd_nodes, Data_Manager.get_dof(), nnodes)
-        perm_coupling_nodes = create_permutation(coupling_nodes, Data_Manager.get_dof(),
-                                                 nnodes)
 
-        # create permutations in the reduced system; only master nodes exist. PD and overlap nodes are part of the master nodes and get the indices of the master nodes in the reduced system.
-        # Sorting is important to ensure that the order of the nodes in the reduced system is the same as in the original system
-        perm_pd_reduced = findall(in(perm_pd_nodes), perm_master)
-        perm_coupling_reduced = findall(in(perm_coupling_nodes), perm_master)
         # create the mass part.
+
         density_mass = zeros(length(density) * dof)
+
         for iID in eachindex(density_mass)
             density_mass[iID] = density[Int(ceil(iID / dof))]
         end
         # perform the condensation of the system
-        @timeit "Guyan Condensation" K_reduced,
-                                     mass_reduced=mod.reduced_matrices(K,
-                                                                       density_mass,
-                                                                       perm_master,
-                                                                       perm_slave,
-                                                                       nmodes)
+
+        @timeit "Condensation" K_reduced,
+                               mass_reduced=mod.reduce_matrices(K,
+                                                                density_mass,
+                                                                perm_master,
+                                                                perm_slave,
+                                                                nmodes)
+        @info "b"
 
         dropzeros!(mass_reduced)
         dropzeros!(K_reduced)

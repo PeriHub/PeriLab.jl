@@ -6,13 +6,13 @@ module Guyan
 using LinearAlgebra
 using SparseArrays
 export model_reduction_name
-export reduced_matrices
+export reduce_matrices
 
 function model_reduction_name()
     return "Static Condensation"
 end
-function reduced_matrices(K::AbstractMatrix{Float64}, M_diag::Vector{Float64},
-                          m::Vector{Int64}, s::Vector{Int64})
+function reduce_matrices(K::AbstractMatrix{Float64}, M_diag::Vector{Float64},
+                         m::Vector{Int64}, s::Vector{Int64}, n_modes::Int64 = 1)
     nm = length(m)
     ns = length(s)
 
@@ -24,6 +24,7 @@ function reduced_matrices(K::AbstractMatrix{Float64}, M_diag::Vector{Float64},
 
     # Compute transformation matrix: T = -K_ss^(-1) * K_sm
     K_ss_fact = lu(K_ss)
+
     K_sm_dense = Matrix(K_sm)
     T = similar(K_sm_dense)
     ldiv!(T, K_ss_fact, K_sm_dense)
