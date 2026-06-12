@@ -10,6 +10,7 @@ export find_bc_free_dof
 
 using ...Data_Manager
 using ...Parameter_Handling: get_bc_definitions
+using ...PeriLabExceptions: @abort
 
 """
     find_bc_free_dof(bcs::Dict{String,Any})
@@ -87,7 +88,7 @@ function check_valid_bcs(bcs::Dict{String,Any})
             end
         end
         if !valid
-            @error "Boundary condition $bc is not valid: Variable $(bcs[bc]["Variable"]) not found. Please check if the physical model is activated."
+            @abort "Boundary condition $bc is not valid: Variable $(bcs[bc]["Variable"]) not found. Please check if the physical model is activated."
             return
         end
     end
@@ -139,7 +140,7 @@ function boundary_condition(params::Dict)
                     end
                 end
             else
-                @error "Node Set '$node_set_name' is missing"
+                @abort "Node Set '$node_set_name' is missing"
                 return
             end
         end
@@ -191,7 +192,7 @@ function apply_bc_dirichlet(allowed_variables::Vector{String},
                                        bc["Initial"],
                                        name)
             else
-                @error "Coordinate in boundary condition must be x,y or z."
+                @abort "Coordinate in boundary condition must be x,y or z."
             end
         else
             @views field_to_apply_bc = field[bc["Node Set"]]
@@ -242,7 +243,7 @@ function apply_bc_neumann(bcs::Dict, time::Float64, step_time::Float64)
                                        name,
                                        true)
             else
-                @error "Coordinate in boundary condition must be x,y or z."
+                @abort "Coordinate in boundary condition must be x,y or z."
                 return nothing
             end
         else
@@ -328,7 +329,7 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
     bc = string(bc)
     bc = clean_up(bc)
     if dof < 2 && "z" in bc
-        @error "z is not valid in a 2D problem."
+        @abort "z is not valid in a 2D problem."
         return nothing
     end
     bc_value = Meta.parse(bc)

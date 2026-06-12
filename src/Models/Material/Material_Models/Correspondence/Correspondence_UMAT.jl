@@ -6,6 +6,7 @@ module Correspondence_UMAT
 using StaticArrays
 
 using ......Data_Manager
+using ......PeriLabExceptions: @abort
 using ......Helpers: voigt_to_matrix, matrix_to_voigt
 using .....Material_Basis: get_Hooke_matrix, get_all_elastic_moduli
 export fe_support
@@ -51,14 +52,14 @@ function init_model(nodes::AbstractVector{Int64},
     # set to 1 to avoid a later check if the state variable field exists or not
     num_state_vars::Int64 = 1
     if !haskey(material_parameter, "File")
-        @error "UMAT file is not defined."
+        @abort "UMAT file is not defined."
         return 1
     end
     directory = Data_Manager.get_directory()
     material_parameter["File"] = joinpath(pwd(), directory, material_parameter["File"])
     global umat_file_path = material_parameter["File"]
     if !isfile(material_parameter["File"])
-        @error "File $(material_parameter["File"]) does not exist, please check name and directory."
+        @abort "File $(material_parameter["File"]) does not exist, please check name and directory."
         return 1
     end
     if haskey(material_parameter, "Number of State Variables")
@@ -73,7 +74,7 @@ function init_model(nodes::AbstractVector{Int64},
     end
 
     if !haskey(material_parameter, "Number of Properties")
-        @error "Number of Properties must be at least equal 1"
+        @abort "Number of Properties must be at least equal 1"
         return 1
     end
     # properties include the material properties, etc.
@@ -95,7 +96,7 @@ function init_model(nodes::AbstractVector{Int64},
         material_parameter["UMAT Material Name"] = ""
     end
     if length(material_parameter["UMAT Material Name"]) > 80
-        @error "Due to old Fortran standards only a name length of 80 is supported"
+        @abort "Due to old Fortran standards only a name length of 80 is supported"
     end
 
     if !haskey(material_parameter, "UMAT name")
@@ -144,7 +145,7 @@ function init_model(nodes::AbstractVector{Int64},
         end
         for (id, field_name) in enumerate(field_names)
             if !Data_Manager.has_key(String(field_name))
-                @error "Predefined field ''$field_name'' is not defined in the mesh file."
+                @abort "Predefined field ''$field_name'' is not defined in the mesh file."
                 return
             end
             # view or copy and than deleting the old one
@@ -522,7 +523,7 @@ function compute_stresses_ba(nodes,
                              stress_N::Union{SubArray,Array{Float64,3},Vector{Float64}},
                              stress_NP1::Union{AbstractArray{Float64,3},
                                                Vector{Float64}})
-    @error "$(correspondence_name()) not yet implemented for bond associated."
+    @abort "$(correspondence_name()) not yet implemented for bond associated."
 end
 
 """

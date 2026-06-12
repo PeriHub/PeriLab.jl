@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 module Parameter_Handling
+using ...PeriLabExceptions: @abort
 
 include("./parameter_handling_bc.jl")
 include("./parameter_handling_blocks.jl")
@@ -1362,7 +1363,7 @@ function validate_yaml(params::Dict)
     validate = true
     checked_keys = []
     if !haskey(params, "PeriLab") || length(params["PeriLab"]) < 2
-        @error "Yaml file is not valid."
+        @abort "Yaml file is not valid."
         return
     end
 
@@ -1371,7 +1372,7 @@ function validate_yaml(params::Dict)
         checked_keys = validate_structure_recursive(expected_structure, params,
                                                     validate, checked_keys)
     catch
-        @error "Yaml file is not valid."
+        @abort "Yaml file is not valid."
         return
     end
     #Check if all keys have been checked
@@ -1384,7 +1385,7 @@ function validate_yaml(params::Dict)
         end
     end
     if !validate
-        @error "Yaml file is not valid."
+        @abort "Yaml file is not valid."
         return
     end
 

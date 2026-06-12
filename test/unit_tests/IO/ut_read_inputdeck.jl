@@ -19,19 +19,26 @@
     println(fid, "PeriLab:")
     println(fid, "data")
     close(fid)
-    @test_logs (:error, "Failed to read $filename.") PeriLab.IO.read_input(filename)
+    @test_logs (:error, "Failed to read $filename.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.IO.read_input(filename)
+    end
     rm(filename)
 end
 
 @testset "ut_read_input_file" begin
     @test_logs (:error,
-                "filename can not be found. Make sure the file exist and is readable.") PeriLab.IO.read_input_file("filename")
+                "filename can not be found. Make sure the file exist and is readable.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.IO.read_input_file("filename")
+    end
     filename = "test.xml"
     fid = open(filename, "w")
     println(fid, "PeriLab:")
     println(fid, " data: 1")
     close(fid)
-    @test_logs (:error, "Not a supported filetype $filename") PeriLab.IO.read_input_file(filename)
+    @test_logs (:error,
+                "Not a supported filetype $filename") @test_throws PeriLab.PeriLabError begin
+        PeriLab.IO.read_input_file(filename)
+    end
     rm(filename)
     filename = "test.yaml"
     fid = open(filename, "w")

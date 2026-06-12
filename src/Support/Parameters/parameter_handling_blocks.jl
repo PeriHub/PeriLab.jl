@@ -155,10 +155,10 @@ function _get_values(params::Dict,
                 return params["Blocks"][block_name][valueName]
             end
             if isnothing(defaultValue)
-                @error "$valueName of $block_name is not defined"
+                @abort "$valueName of $block_name is not defined"
             end
             return defaultValue
         end
     end
-    @error "Block with ID $block_id is not defined"
+    @abort "Block with ID $block_id is not defined"
 end

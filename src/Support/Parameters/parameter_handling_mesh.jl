@@ -26,12 +26,12 @@ function get_external_topology_name(params::Dict, path)
     end
     check = haskey(params["Discretization"]["Input External Topology"], "File")
     if !check
-        @error "Input External Topology is defined without a file where to find it."
+        @abort "Input External Topology is defined without a file where to find it."
         return
     end
     filename = joinpath(path, params["Discretization"]["Input External Topology"]["File"])
     if !isfile(filename)
-        @error "External topology file: ''$filename'' does not exist"
+        @abort "External topology file: ''$filename'' does not exist"
         return
     end
     return params["Discretization"]["Input External Topology"]["File"]
@@ -50,7 +50,7 @@ Returns the name of the mesh file from the parameters
 function get_mesh_name(params::Dict)
     check = haskey(params["Discretization"], "Input Mesh File")
     if !check
-        @error "No mesh file is defined."
+        @abort "No mesh file is defined."
         return
     end
     return params["Discretization"]["Input Mesh File"]
@@ -159,7 +159,7 @@ function get_node_sets(params::Dict, path::String, mesh_df::DataFrame)
                              header = false,
                              skipto = header_line + 1,)
             if size(nodes) == (0, 0)
-                @error "Node set file is empty " *
+                @abort "Node set file is empty " *
                        nodesets[entry] *
                        ". The node set is excluded."
                 return
@@ -182,7 +182,7 @@ function get_node_sets(params::Dict, path::String, mesh_df::DataFrame)
                         push!(nodes, id)
                     end
                 catch UndefVarError
-                    @error "Failed to eval nodeset value: '$(nodesets[entry])', $UndefVarError"
+                    @abort "Failed to eval nodeset value: '$(nodesets[entry])', $UndefVarError"
                     return
                 end
             end

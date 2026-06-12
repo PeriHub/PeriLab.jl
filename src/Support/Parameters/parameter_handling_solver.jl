@@ -39,7 +39,7 @@ function get_solver_steps(params::Dict)
         end
     end
     if length(step_id) == 0
-        @error "No solver steps defined"
+        @abort "No solver steps defined"
         return nothing
     end
     return sort!(step_id)
@@ -61,7 +61,7 @@ function get_solver_params(params::Dict, step_id)
             return params["Multistep Solver"][step_name]
         end
     end
-    @error "Step ID $step_id not found"
+    @abort "Step ID $step_id not found"
     return nothing
 end
 
@@ -87,7 +87,7 @@ function get_solver_name(params::Dict)
     elseif haskey(params, "Newmark")
         return "Newmark"
     end
-    @error "Wrong or missing solvername. Verlet, Linear Static Matrix Based, Verlet Matrix Based and Static are the options."
+    @abort "Wrong or missing solvername. Verlet, Linear Static Matrix Based, Verlet Matrix Based and Static are the options."
     return nothing
 end
 
@@ -112,7 +112,7 @@ function get_initial_time(params::Dict)
     if current_time != 0.0
         return current_time
     end
-    @error "No initial time defined"
+    @abort "No initial time defined"
 end
 
 """
@@ -132,7 +132,7 @@ function get_final_time(params::Dict)
     if haskey(params, "Additional Time")
         return Data_Manager.get_current_time() + Float64(params["Additional Time"])
     end
-    @error "No final time defined"
+    @abort "No final time defined"
 end
 
 """

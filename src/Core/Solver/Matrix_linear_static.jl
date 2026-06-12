@@ -10,6 +10,7 @@ using LinearAlgebra
 using TimerOutputs: @timeit
 
 using ...Data_Manager
+using ...PeriLabExceptions: @abort
 using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style,
                   create_permutation
 # using ...MPI_Communication: barrier
@@ -171,7 +172,7 @@ function init_solver(solver_options::Dict{Any,Any},
     #		# if Cv and lambda are not defined it is valid, because an analysis can take place, if material is still analysed
     #		if isnothing(lambda)
     #			if !mechanical
-    #				@error "No time step can be calculated, because the heat conduction is not defined."
+    #				@abort "No time step can be calculated, because the heat conduction is not defined."
     #				return nothing
     #			end
     #		else
@@ -488,9 +489,9 @@ function compute_displacements_active_subset!(K_active::AbstractMatrix{Float64},
         try
             solver.K_free_lu = lu(K_free)
         catch e
-            @error "LU factorization failed for reduced system"
-            @error "Matrix size: $(size(K_free))"
-            @error "Rank: $(rank(K_free))"
+            @abort "LU factorization failed for reduced system"
+            @abort "Matrix size: $(size(K_free))"
+            @abort "Rank: $(rank(K_free))"
             rethrow(e)
         end
     end
@@ -598,7 +599,7 @@ function compute_displacements!(K::AbstractMatrix{Float64},
             try
                 solver.K_free_lu = lu(K_free)
             catch e
-                @error "LU factorization failed. The stiffness matrix may be singular, please check the boundary conditions."
+                @abort "LU factorization failed. The stiffness matrix may be singular, please check the boundary conditions."
             end
             solver.last_non_BCs = copy(active_non_BCS)
         end

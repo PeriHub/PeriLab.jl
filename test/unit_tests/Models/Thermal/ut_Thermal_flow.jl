@@ -12,18 +12,24 @@
 
 @testset "ut_init_model" begin
 
-    #@test_logs (:warn, "No model type has beed defined; ''Type'': ''Bond based'' or Type: ''Correspondence'; \n ''Bond based'' is set as default.'") PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3), Dict{String, Any}("a" => 1, "Thermal Conductivity" => 100))
-    #@test_logs (:warn, "No model type has beed defined; ''Type'': ''Bond based'' or Type: ''Correspondence'; \n ''Bond based'' is set as default.'") PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3), Dict("Type" => "a", "Thermal Conductivity" => 100))
+    #@test_logs (:warn, "No model type has beed defined; ''Type'': ''Bond based'' or Type: ''Correspondence'; \n ''Bond based'' is set as default.'") @test_throws PeriLab.PeriLabError begin PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3), Dict{String, Any}("a" => 1, "Thermal Conductivity" => 100)) end
+    #@test_logs (:warn, "No model type has beed defined; ''Type'': ''Bond based'' or Type: ''Correspondence'; \n ''Bond based'' is set as default.'") @test_throws PeriLab.PeriLabError begin PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3), Dict("Type" => "a", "Thermal Conductivity" => 100)) end
     PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3),
                                                                          Dict("Type" => "Bond based",
                                                                               "Thermal Conductivity" => 100))
     PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3),
                                                                          Dict("Type" => "Correspondence",
                                                                               "Thermal Conductivity" => 100))
-    @test_logs (:error, "Thermal Conductivity not defined.") PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3),
-                                                                                                                                  Dict("Type" => "Bond based"))
-    @test_logs (:error, "Thermal Conductivity not defined.") PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3),
-                                                                                                                                  Dict("Type" => "Correspondence"))
+    @test_logs (:error,
+                "Thermal Conductivity not defined.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3),
+                                                                             Dict("Type" => "Bond based"))
+    end
+    @test_logs (:error,
+                "Thermal Conductivity not defined.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.init_model(Vector{Int64}(1:3),
+                                                                             Dict("Type" => "Correspondence"))
+    end
     parameter = Dict("Type" => "Correspondence",
                      "Thermal Conductivity" => 100,
                      "Print Bed Temperature" => 2, "Print Bed Z Coordinate" => -1)

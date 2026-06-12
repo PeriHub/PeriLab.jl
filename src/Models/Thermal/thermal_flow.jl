@@ -7,6 +7,7 @@ using LinearAlgebra
 using StaticArrays
 using TimerOutputs: @timeit
 using .....Data_Manager
+using .....PeriLabExceptions: @abort
 using .....Helpers: rotate_second_order_tensor2x2, rotate_second_order_tensor3x3
 export compute_model
 export thermal_model_name
@@ -54,12 +55,12 @@ function init_model(nodes::AbstractVector{Int64},
             coordinates = Data_Manager.get_field("Coordinates")
             print_bed_z_coord = get(thermal_parameter, "Print Bed Z Coordinate", 0.0)
             if print_bed_z_coord >= minimum(coordinates[:, 3])
-                @error "The Print Bed Z Coordinate needs to be smaller than the minimum Z coordinate."
+                @abort "The Print Bed Z Coordinate needs to be smaller than the minimum Z coordinate."
             end
         end
     end
     if !haskey(thermal_parameter, "Thermal Conductivity")
-        @error "Thermal Conductivity not defined."
+        @abort "Thermal Conductivity not defined."
     end
 end
 

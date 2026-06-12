@@ -6,9 +6,11 @@
 using MPI
 
 @testset "ut_get_integration_steps" begin
-    @test_logs (:error, "Time step -1.0 [s] is not valid") PeriLab.Solver_Manager.Verlet_Solver.get_integration_steps(0.0,
-                                                                                                                      0.0,
-                                                                                                                      -1.0)
+    @test_logs (:error, "Time step -1.0 [s] is not valid") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Verlet_Solver.get_integration_steps(0.0,
+                                                                   0.0,
+                                                                   -1.0)
+    end
     @test PeriLab.Solver_Manager.Verlet_Solver.get_integration_steps(0.0, 1.0, 1.0) ==
           (1, 1.0)
     @test PeriLab.Solver_Manager.Verlet_Solver.get_integration_steps(0.0, 2.0, 1.0) ==

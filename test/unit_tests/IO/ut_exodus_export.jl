@@ -32,8 +32,11 @@ end
         @test PeriLab.IO.get_paraview_coordinates(2, i) == "y"
         @test PeriLab.IO.get_paraview_coordinates(3, i) == "z"
     end
-    @test_logs (:error, "not yet exportable as one variable") PeriLab.IO.get_paraview_coordinates(3,
-                                                                                                  10)
+    @test_logs (:error,
+                "not yet exportable as one variable") @test_throws PeriLab.PeriLabError begin
+        PeriLab.IO.get_paraview_coordinates(3,
+                                            10)
+    end
 
     for ref in 4:9
         for i in 1:3

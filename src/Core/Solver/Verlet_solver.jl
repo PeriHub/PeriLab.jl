@@ -11,6 +11,7 @@ using Logging
 using TimerOutputs: @timeit
 
 using ...Data_Manager
+using ...PeriLabExceptions: @abort
 using ...Helpers#: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
 using ...Parameter_Handling:
                              get_initial_time,
@@ -139,7 +140,7 @@ A tuple `(nsteps, dt)` where:
 """
 function get_integration_steps(initial_time::Float64, end_time::Float64, dt::Float64)
     if !(0 < dt < 1e50)
-        @error "Time step $dt [s] is not valid"
+        @abort "Time step $dt [s] is not valid"
         return nothing
     end
     nsteps::Int64 = ceil((end_time - initial_time) / dt)

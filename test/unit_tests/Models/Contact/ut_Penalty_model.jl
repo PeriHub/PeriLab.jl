@@ -10,5 +10,8 @@
     PeriLab.Solver_Manager.Model_Factory.Contact.Penalty_Model.init_contact_model(params)
     @test params["Contact Stiffness"] == 1e8
     params["Friction Coefficient"] = -3
-    @test_logs (:error, "The Friction Coefficient must be greater or equal zero.") PeriLab.Solver_Manager.Model_Factory.Contact.Penalty_Model.init_contact_model(params)
+    @test_logs (:error,
+                "The Friction Coefficient must be greater or equal zero.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Model_Factory.Contact.Penalty_Model.init_contact_model(params)
+    end
 end

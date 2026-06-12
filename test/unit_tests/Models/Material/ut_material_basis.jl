@@ -12,12 +12,17 @@
     nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
                                                                 Int64)
     nn .= 2
-    @test_logs (:error, "Representative Young's modulus is missing.") PeriLab.Solver_Manager.Material_Basis.init_local_damping_due_to_damage(collect(1:2),
-                                                                                                                                             Dict(),
-                                                                                                                                             Dict("Local Damping" => Dict()))
-    @test_logs (:error, "Damping coefficient is missing.") PeriLab.Solver_Manager.Material_Basis.init_local_damping_due_to_damage(collect(1:2),
-                                                                                                                                  Dict(),
-                                                                                                                                  Dict("Local Damping" => Dict("Representative Young's modulus" => 0)))
+    @test_logs (:error,
+                "Representative Young's modulus is missing.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Material_Basis.init_local_damping_due_to_damage(collect(1:2),
+                                                                               Dict(),
+                                                                               Dict("Local Damping" => Dict()))
+    end
+    @test_logs (:error, "Damping coefficient is missing.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Material_Basis.init_local_damping_due_to_damage(collect(1:2),
+                                                                               Dict(),
+                                                                               Dict("Local Damping" => Dict("Representative Young's modulus" => 0)))
+    end
 end
 
 @testset "ut_apply_pointwise_E" begin
@@ -95,44 +100,56 @@ end
                                                               Vector{Float64}([1, 2]),
                                                               stress) == stress
 
-    @test_logs (:error, "Flaw Function needs an entry ''Active''.") PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict()),
-                                                                                                                        Vector{Float64}([
-                                                                                                                                            1,
-                                                                                                                                            2
-                                                                                                                                        ]),
-                                                                                                                        stress)
-    @test_logs (:error, "Flaw Function needs an entry ''Function''.") PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => false)),
-                                                                                                                          Vector{Float64}([
-                                                                                                                                              1,
-                                                                                                                                              2
-                                                                                                                                          ]),
-                                                                                                                          stress)
+    @test_logs (:error,
+                "Flaw Function needs an entry ''Active''.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict()),
+                                                            Vector{Float64}([
+                                                                                1,
+                                                                                2
+                                                                            ]),
+                                                            stress)
+    end
+    @test_logs (:error,
+                "Flaw Function needs an entry ''Function''.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => false)),
+                                                            Vector{Float64}([
+                                                                                1,
+                                                                                2
+                                                                            ]),
+                                                            stress)
+    end
     @test PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => false,
                                                                                            "Function" => "Pre-defined")),
                                                               Vector{Float64}([1, 2]),
                                                               stress) == stress
-    @test_logs (:error, "Flaw Magnitude should be between 0 and 1") PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => true,
-                                                                                                                                                     "Function" => "Pre-defined",
-                                                                                                                                                     "Flaw Location X" => 1.1,
-                                                                                                                                                     "Flaw Location Y" => 1.1,
-                                                                                                                                                     "Flaw Magnitude" => 1.3,
-                                                                                                                                                     "Flaw Size" => 0.2)),
-                                                                                                                        Vector{Float64}([
-                                                                                                                                            1,
-                                                                                                                                            2
-                                                                                                                                        ]),
-                                                                                                                        stress)
-    @test_logs (:error, "Flaw Magnitude should be between 0 and 1") PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => true,
-                                                                                                                                                     "Function" => "Pre-defined",
-                                                                                                                                                     "Flaw Location X" => 1.1,
-                                                                                                                                                     "Flaw Location Y" => 1.1,
-                                                                                                                                                     "Flaw Magnitude" => -1.3,
-                                                                                                                                                     "Flaw Size" => 0.2)),
-                                                                                                                        Vector{Float64}([
-                                                                                                                                            1,
-                                                                                                                                            2
-                                                                                                                                        ]),
-                                                                                                                        stress)
+    @test_logs (:error,
+                "Flaw Magnitude should be between 0 and 1") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => true,
+                                                                                         "Function" => "Pre-defined",
+                                                                                         "Flaw Location X" => 1.1,
+                                                                                         "Flaw Location Y" => 1.1,
+                                                                                         "Flaw Magnitude" => 1.3,
+                                                                                         "Flaw Size" => 0.2)),
+                                                            Vector{Float64}([
+                                                                                1,
+                                                                                2
+                                                                            ]),
+                                                            stress)
+    end
+    @test_logs (:error,
+                "Flaw Magnitude should be between 0 and 1") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => true,
+                                                                                         "Function" => "Pre-defined",
+                                                                                         "Flaw Location X" => 1.1,
+                                                                                         "Flaw Location Y" => 1.1,
+                                                                                         "Flaw Magnitude" => -1.3,
+                                                                                         "Flaw Size" => 0.2)),
+                                                            Vector{Float64}([
+                                                                                1,
+                                                                                2
+                                                                            ]),
+                                                            stress)
+    end
 
     @test isapprox(PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => true,
                                                                                                     "Function" => "Pre-defined",
@@ -170,14 +187,16 @@ end
     PeriLab.Data_Manager.init_properties()
     PeriLab.Data_Manager.set_properties(1, "Material Model", Dict("Symmetry" => "Missing"))
     @test_logs (:error,
-                "Model definition is missing; plane stress or plane strain has to be defined for 2D") PeriLab.Solver_Manager.Material_Basis.check_symmetry(1)
+                "Model definition is missing; plane stress or plane strain has to be defined for 2D") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Material_Basis.check_symmetry(1)
+    end
     PeriLab.Data_Manager.set_dof(3)
     PeriLab.Data_Manager.set_properties(1, "Material Model",
                                         Dict("Symmetry" => "plane strain"))
-    # @test_logs (:warn, "Plane strain symmetry is not supported for 3D, going to ignore it") PeriLab.Solver_Manager.Material_Basis.check_symmetry(1)
+    # @test_logs (:warn, "Plane strain symmetry is not supported for 3D, going to ignore it") @test_throws PeriLab.PeriLabError begin PeriLab.Solver_Manager.Material_Basis.check_symmetry(1) end
     PeriLab.Data_Manager.set_properties(1, "Material Model",
                                         Dict("Symmetry" => "plane stress"))
-    # @test_logs (:warn, "Plane stress symmetry is not supported for 3D, going to ignore it") PeriLab.Solver_Manager.Material_Basis.check_symmetry(1)
+    # @test_logs (:warn, "Plane stress symmetry is not supported for 3D, going to ignore it") @test_throws PeriLab.PeriLabError begin PeriLab.Solver_Manager.Material_Basis.check_symmetry(1) end
 end
 
 @testset "get_symmetry" begin
@@ -210,8 +229,11 @@ end
                          "Shear Modulus" => 0,
                          "Poisson's Ratio" => 0,
                          "Symmetry" => "isotropic")
-    @test_logs (:error, "Minimum of two parameters are needed for isotropic material") PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(Dict{String,
-                                                                                                                                                         Any}("Material Model" => "PD Solid Elastic"))
+    @test_logs (:error,
+                "Minimum of two parameters are needed for isotropic material") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(Dict{String,
+                                                                          Any}("Material Model" => "PD Solid Elastic"))
+    end
 
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Bulk Modulus" => 1000,
@@ -234,7 +256,10 @@ end
 
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Bulk Modulus" => 10)
-    @test_logs (:error, "Minimum of two parameters are needed for isotropic material") PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(parameter)
+    @test_logs (:error,
+                "Minimum of two parameters are needed for isotropic material") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(parameter)
+    end
 
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Bulk Modulus" => 10,
@@ -319,13 +344,17 @@ end
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Symmetry" => "Anisotropic",
                                  "C11" => 5)
-    @test_logs (:error, "C12 not defined") PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(parameter)
+    @test_logs (:error, "C12 not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(parameter)
+    end
 
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Symmetry" => "Orthotropic",
                                  "Young's Modulus X" => 5)
     @test_logs (:error,
-                "Orthotropic material requires Young's Modulus X, Y, Z, Poisson's Ratio XY, YZ, XZ, Shear Modulus XY, YZ, XZ") PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(parameter)
+                "Orthotropic material requires Young's Modulus X, Y, Z, Poisson's Ratio XY, YZ, XZ, Shear Modulus XY, YZ, XZ") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(parameter)
+    end
 end
 
 @testset "get_Hooke_matrix" begin
@@ -400,9 +429,12 @@ end
     end
 
     symmetry = "isotropic missing"
-    @test_logs (:error, "2D model defintion is missing; plane stress or plane strain") PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(parameter,
-                                                                                                                                              symmetry,
-                                                                                                                                              2)
+    @test_logs (:error,
+                "2D model defintion is missing; plane stress or plane strain") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(parameter,
+                                                               symmetry,
+                                                               2)
+    end
 
     symmetry = "anisotropic"
     C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(parameter,
@@ -434,9 +466,11 @@ end
     @test C[3, 2] == parameter["C26"]
 
     symmetry = "anisotropic plane stress"
-    @test_logs (:error, "Hooke matrix not invertable") PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(parameter,
-                                                                                                              symmetry,
-                                                                                                              2)
+    @test_logs (:error, "Hooke matrix not invertable") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(parameter,
+                                                               symmetry,
+                                                               2)
+    end
 
     #TODO: Check above
 

@@ -4,6 +4,7 @@
 module FEM
 
 using ...Data_Manager
+using ...PeriLabExceptions: @abort
 using ..Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "element_name")
 for mod in module_list
@@ -32,7 +33,7 @@ export eval_FEM
 
 function init_FEM(complete_params::Dict)
     if !haskey(complete_params, "FEM")
-        @error "Invalid FEM parameters"
+        @abort "Invalid FEM parameters"
         return
     end
     params = convert(Dict{String,Any}, complete_params["FEM"])
@@ -40,7 +41,7 @@ function init_FEM(complete_params::Dict)
 
     Data_Manager.set_properties("FEM", params)
     if !haskey(complete_params["Models"]["Material Models"], params["Material Model"])
-        @error "The FEM material model $(params["Material Model"]) is not defined"
+        @abort "The FEM material model $(params["Material Model"]) is not defined"
         return
     end
     @info "Initialize FEM"
@@ -58,7 +59,7 @@ function init_FEM(complete_params::Dict)
         return p
     end
     if dof != 2 && dof != 3
-        @error "Degree of freedom = $dof is not supported, only 2 and 3."
+        @abort "Degree of freedom = $dof is not supported, only 2 and 3."
     end
     num_int = get_number_of_integration_points(p, dof)
     N = Data_Manager.create_constant_free_size_field("N Matrix",
@@ -112,7 +113,7 @@ function init_FEM(complete_params::Dict)
     elements = Vector{Int64}(1:nelements)
     topology = Data_Manager.get_field("FE Topology")
     if length(topology[1, :]) != prod(p .+ 1)
-        @error "Size of topology and polynomial degree does not match."
+        @abort "Size of topology and polynomial degree does not match."
     end
     jacobian = Data_Manager.create_constant_free_size_field("Element Jacobi Matrix",
                                                             Float64,
@@ -153,11 +154,11 @@ function valid_models(params::Dict)
         @warn "Thermal models are not supported for FEM yet"
     end
     if !haskey(params, "Material Model")
-        @error "No material model has been defined for FEM in the block."
+        @abort "No material model has been defined for FEM in the block."
         # else
         #     # in future -> FE support -> check with set modules
         #     if !Correspondence_Elastic.fe_support()
-        #         @error "No FEM support for " * params["Material Model"]
+        #         @abort "No FEM support for " * params["Material Model"]
         #         return nothing
         #     end
     end

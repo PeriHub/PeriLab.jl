@@ -53,7 +53,7 @@ set_dof(3)  # sets the degree of freedom to 3
 """
 function set_dof(n::Int64)
     if n > 3 || n < 2
-        @error "Degree of freedom $n is not supported."
+        @abort "Degree of freedom $n is not supported."
         return
     end
     data["dof"] = n
@@ -250,7 +250,7 @@ end
 
 function get_analysis_model(what::String, block_id::Int64)::Vector{String}
     if !haskey(data["analysis_models"], what)
-        @error "No model class $what exists. Please check the initialization."
+        @abort "No model class $what exists. Please check the initialization."
         return Vector{String}([])
     end
     return data["analysis_models"][what][block_id]

@@ -5,6 +5,7 @@
 module Bondbased_Elastic
 
 using .......Data_Manager
+using .......PeriLabExceptions: @abort
 using ....Material_Basis: get_symmetry, apply_pointwise_E, compute_bond_based_constants
 using .......Helpers: is_dependent
 using LoopVectorization
@@ -92,7 +93,7 @@ function compute_model(nodes::AbstractVector{Int64},
 
     for iID in nodes
         if any(deformed_bond_length[iID] .== 0)
-            @error "Length of bond is zero due to its deformation."
+            @abort "Length of bond is zero due to its deformation."
             return nothing
         end
         # Calculate the bond force

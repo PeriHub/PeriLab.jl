@@ -9,11 +9,12 @@ using FastGaussQuadrature
 using Statistics
 
 using ....Data_Manager
+using ....PeriLabExceptions: @abort
 using ....Helpers: invert, determinant, voigt_to_matrix
 
 function get_FE_material_model(params::Dict{String,Any}, name::String)
     if !haskey(params["Material Models"], params["FEM"][name]["Material Model"])
-        @error "Material model " *
+        @abort "Material model " *
                params["FEM"][name]["Material Model"] *
                " defined in FEM are not defined as material"
         return
@@ -251,7 +252,7 @@ function get_multi_dimensional_integration_point_data(dof::Int64,
             end
         end
     else
-        @error "degree of freedom = $dof is not supported, only 2 and 3."
+        @abort "degree of freedom = $dof is not supported, only 2 and 3."
         return
     end
     return integration_point
@@ -281,7 +282,7 @@ function get_Jacobian(elements::Vector{Int64},
 
             determinant_jacobian[id_el, id_int] = determinant(jacobian[id_el, id_int, :, :])
             if determinant_jacobian[id_el, id_int] <= 0
-                @error "The determinant of the Jacobian is " *
+                @abort "The determinant of the Jacobian is " *
                        string(determinant_jacobian[id_el, id_int]) *
                        " in local element $id_el, and must be greater zero."
                 return
@@ -296,7 +297,7 @@ end
 
 function get_polynomial_degree(params::Dict{String,Any}, dof::Int64)
     if !haskey(params, "Degree")
-        @error "No element degree defined"
+        @abort "No element degree defined"
         return
     end
     value = params["Degree"]
@@ -313,7 +314,7 @@ function get_polynomial_degree(params::Dict{String,Any}, dof::Int64)
     elseif length(value) == dof
         return value[1:dof]
     else
-        @error "Degree must be defined with length one or number of dof."
+        @abort "Degree must be defined with length one or number of dof."
     end
 end
 

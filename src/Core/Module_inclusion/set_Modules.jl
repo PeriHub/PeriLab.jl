@@ -32,7 +32,7 @@ end
 function find_jl_files(directory::AbstractString)
     jl_files = Vector{String}()
     if !isdir(directory)
-        @error "$directory does not exists. Modules won't be loaded accurately."
+        @abort "$directory does not exists. Modules won't be loaded accurately."
         return
     end
 

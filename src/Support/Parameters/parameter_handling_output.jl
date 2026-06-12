@@ -27,7 +27,7 @@ function check_for_duplicates(filenames::Vector{String})
         if (filename in checked_filenames) == false
             num_same_filenames = length(findall(x -> x == filename, filenames))
             if num_same_filenames > 1
-                @error "Filename $filename is used $num_same_filenames times"
+                @abort "Filename $filename is used $num_same_filenames times"
                 return
             end
         end
@@ -169,7 +169,7 @@ function get_output_fieldnames(outputs::Dict,
     return_outputs = []
     for output in keys(outputs)
         if !isa(outputs[output], Bool)
-            @error "Output variable $output must be set to True or False"
+            @abort "Output variable $output must be set to True or False"
             return
         end
         if outputs[output]
@@ -260,7 +260,7 @@ function get_output_frequencies(params::Dict, nsteps::Int64,
             end
             if typeof(value) == String
                 if isnothing(step_id)
-                    @error "Output frequency or number of output steps must be an integer."
+                    @abort "Output frequency or number of output steps must be an integer."
                 end
                 value = parse(Int, split(value)[step_id])
             end

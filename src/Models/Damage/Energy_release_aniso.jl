@@ -8,6 +8,7 @@ using LinearAlgebra: mul!, dot
 using StaticArrays
 
 using ......Data_Manager
+using ......PeriLabExceptions: @abort
 using ......Helpers:
                      rotate,
                      fastdot,
@@ -273,7 +274,7 @@ function init_model(nodes::AbstractVector{Int64},
     if haskey(damage_parameter, "Anisotropic Damage")
         rotation::Bool = Data_Manager.get_rotation()
         if !rotation
-            @error "Anisotropic damage requires Angles field"
+            @abort "Anisotropic damage requires Angles field"
             return nothing
         end
     end

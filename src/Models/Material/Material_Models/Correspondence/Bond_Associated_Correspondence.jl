@@ -7,6 +7,7 @@ using LinearAlgebra: mul!
 using StaticArrays: I, @MMatrix
 
 using ........Data_Manager
+using ........PeriLabExceptions: @abort
 using .....Material_Basis: compute_Piola_Kirchhoff_stress!
 using ........Helpers:
                        find_local_neighbors, invert, rotate, determinant, smat,
@@ -23,7 +24,7 @@ export compute_model
 function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     if !haskey(material_parameter, "Symmetry")
-        @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
+        @abort "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
     end
     if haskey(material_parameter, "Accuracy Order")
         Data_Manager.set_accuracy_order(material_parameter["Accuracy Order"])

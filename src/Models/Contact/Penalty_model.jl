@@ -5,6 +5,7 @@
 module Penalty_Model
 
 using .....Data_Manager
+using .....PeriLabExceptions: @abort
 using .....Helpers: get_shared_horizon, dot, norm
 
 export contact_model_name
@@ -25,7 +26,7 @@ function init_contact_model(params)
         params["Friction Coefficient"] = 0
     else
         if params["Friction Coefficient"] < 0
-            @error "The Friction Coefficient must be greater or equal zero."
+            @abort "The Friction Coefficient must be greater or equal zero."
             return
         end
     end

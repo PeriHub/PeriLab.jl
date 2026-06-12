@@ -9,6 +9,7 @@ using StaticArrays
 using Rotations
 using LoopVectorization: @avx, @fastmath, @simd
 using ...Data_Manager
+using ...PeriLabExceptions: @abort
 using ...Helpers: invert, smat
 export bond_geometry!
 export compute_shape_tensors!
@@ -82,10 +83,10 @@ end
     @inbounds for m in eachindex(bond_norm)
         if bond_norm[m] == 0.0
             if count(!iszero, coor) == 0
-                @error "All bonds will get zero length, because all coordinates or deformed coordinates are zero. This might be an implementation error."
+                @abort "All bonds will get zero length, because all coordinates or deformed coordinates are zero. This might be an implementation error."
                 return
             end
-            @error "Bond length is zero, check your mesh! Node ID: $iID"
+            @abort "Bond length is zero, check your mesh! Node ID: $iID"
             return
         end
     end
@@ -411,14 +412,14 @@ function rotation_tensor(angles::T,
                                                      AbstractVector{Int64}}}
     if length(angles) == 3
         if dof != 3
-            @error "Rotation tensor not defined for 2D"
+            @abort "Rotation tensor not defined for 2D"
             return
         end
         return RotXYZ(angles[1] / 180 * pi, angles[2] / 180 * pi, angles[3] / 180 * pi)
     end
     # return RotXYZ(0, 0, angles[1] / 180 * pi)
     if dof != 2
-        @error "Rotation tensor not defined for 3D, make sure that you define Angles_x, Angles_y and Angles_z in yaml or in mesh file."
+        @abort "Rotation tensor not defined for 3D, make sure that you define Angles_x, Angles_y and Angles_z in yaml or in mesh file."
         return
     end
     return Angle2d(angles[1] / 180 * pi)

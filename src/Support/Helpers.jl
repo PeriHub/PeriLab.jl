@@ -17,6 +17,7 @@ using CDDLib
 using Polyhedra: MixedMatHRep, polyhedron, vrep, hrep
 using Base.Threads: @threads
 using ..Data_Manager
+using ..PeriLabExceptions: @abort
 using TimerOutputs: @timeit
 export qdim
 export check_inf_or_nan
@@ -62,7 +63,7 @@ const MAPPING_3D = @SMatrix [1 1; 2 2; 3 3; 2 3; 1 3; 1 2]
     elseif dof == 3
         return MAPPING_3D
     else
-        @error "$dof is no valid mapping option."
+        @abort "$dof is no valid mapping option."
     end
 end
 function get_shared_horizon(id)
@@ -123,7 +124,7 @@ function compute_free_surface_nodes(points::Union{Matrix{Float64},Matrix{Int64}}
     for pID in ids
         for id in free_surfaces
             if length(offset) < id #TODO: check this condition
-                @error "Surface ID $id is not defined"
+                @abort "Surface ID $id is not defined"
             end
             if isapprox(dot(normals[id, :], points[pID, :]) - offset[id], 0; atol = 1e-6)
                 # connections only to the free surfaces.
@@ -436,7 +437,7 @@ function get_MMatrix(len::Int64)
     elseif len == 36
         return MMatrix{6,6}(zeros(Float64, 6, 6))
     else
-        @error "MMatrix length $len not pre-allocated. Please add your size to helper.jl in get_MMatrix."
+        @abort "MMatrix length $len not pre-allocated. Please add your size to helper.jl in get_MMatrix."
     end
 end
 function mul_in_place!(C::Vector{T}, A::Vector{T},
@@ -586,7 +587,7 @@ qdim(order) = Σ(i=1 to order) [(i+2)! / (2! * i!)]
 """
 function qdim(order::Int64, dof::Int64)
     if order < 1
-        @error "Accuracy order must be greater than zero."
+        @abort "Accuracy order must be greater than zero."
         return
     end
     return sum(binomial(i + dof - 1, dof - 1) for i in 1:order)
@@ -676,9 +677,9 @@ Checks if the sum of an array is finite and has only numbers. If not, an error i
 function check_inf_or_nan(array::AbstractArray{T},
                           msg::String) where {T<:Union{Int64,Float64}}
     if isnan(sum(array))
-        @error "Field ''$msg'' has NaN elements."
+        @abort "Field ''$msg'' has NaN elements."
     elseif !isfinite(sum(array))
-        @error "Field ''$msg'' is infinite."
+        @abort "Field ''$msg'' is infinite."
     end
 end
 """
@@ -695,9 +696,9 @@ Checks if a scalar is finite and a number. If not, an error is raised.
 function check_inf_or_nan(scalar::T,
                           msg::String) where {T<:Union{Int64,Float64}}
     if isnan(scalar)
-        @error "Scalar Value ''$msg'' is NaN."
+        @abort "Scalar Value ''$msg'' is NaN."
     elseif !isfinite(scalar)
-        @error "Scalar value ''$msg'' is infinite."
+        @abort "Scalar value ''$msg'' is infinite."
     end
 end
 """
@@ -782,7 +783,7 @@ function get_fourth_order(CVoigt::AbstractMatrix{Float64}, dof::Int64)
     elseif dof == 3
         return voigt_to_tensor4_3d!(GLOBAL_TENSOR_3D, CVoigt)
     else
-        @error "$dof is not a valid option. Only dof 2 and 3 are supported."
+        @abort "$dof is not a valid option. Only dof 2 and 3 are supported."
     end
 end
 
@@ -900,7 +901,7 @@ end
 function is_dependent(field_name::String, damage_parameter::Dict)
     if haskey(damage_parameter, field_name) && damage_parameter[field_name] isa Dict
         if !Data_Manager.has_key(damage_parameter[field_name]["Field"] * "NP1")
-            @error "$(damage_parameter[field_name]["Field"]) does not exist for value interpolation."
+            @abort "$(damage_parameter[field_name]["Field"]) does not exist for value interpolation."
             return
         end
         field = Data_Manager.get_field(damage_parameter[field_name]["Field"], "NP1")
@@ -936,7 +937,7 @@ end
 function invert(A::AbstractMatrix{Float64},
                 error_message::String = "Matrix is singular")
     if abs(det(smat(A))) < 1e-15
-        @error "$error_message"
+        @abort "$error_message"
         return
     end
     return inv(smat(A))
@@ -1229,7 +1230,7 @@ function matrix_to_voigt(matrix::AbstractMatrix{Float64})
             0.5 * (matrix[1, 3] + matrix[3, 1]),
             0.5 * (matrix[1, 2] + matrix[2, 1])]
     else
-        @error "Unsupported matrix size for matrix_to_voigt"
+        @abort "Unsupported matrix size for matrix_to_voigt"
     end
 end
 
@@ -1251,7 +1252,7 @@ function voigt_to_matrix(voigt::Union{MVector,SVector,Vector})
                          voigt[6] voigt[2] voigt[4]
                          voigt[5] voigt[4] voigt[3]]
     else
-        @error "Unsupported matrix size for voigt_to_matrix"
+        @abort "Unsupported matrix size for voigt_to_matrix"
     end
 end
 
@@ -1300,7 +1301,7 @@ function vector_to_matrix(vector)
                          vector[7] vector[2] vector[5]
                          vector[6] vector[8] vector[3]]
     else
-        @error "Unsupported vector size for vector_to_matrix"
+        @abort "Unsupported vector size for vector_to_matrix"
         return nothing
     end
 end

@@ -8,14 +8,16 @@ end
 
 #using Test
 using Random
-include("../../../../src/Core/Module_inclusion/set_Modules.jl")
+#include("../../../../src/Core/Module_inclusion/set_Modules.jl")
 
 @testset "ut_find_jl_files" begin
     Random.seed!(rand(1:100000))
     base = "test_tmp_Set_modules"
 
     @test_logs (:error,
-                "test_tmp_Set_modules does not exists. Modules won't be loaded accurately.") find_jl_files(base)
+                "test_tmp_Set_modules does not exists. Modules won't be loaded accurately.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.find_jl_files(base)
+    end
 
     if isdir(base)
         rm(base, recursive = true)
@@ -49,7 +51,7 @@ include("../../../../src/Core/Module_inclusion/set_Modules.jl")
     io = open(folder * "/" * filename4 * ".dat", "w")
     close(io)
 
-    list = find_jl_files(base)
+    list = PeriLab.Solver_Manager.find_jl_files(base)
     folder * "/" * filename1 * ".jl" in list
     @test subfolder1 * "/" * filename2 * ".jl" in list
     @test subfolder1 * "/" * filename3 * ".jl" in list
@@ -68,27 +70,27 @@ end
     module_list::Vector{Any} = [Dict(("File" => filename,
                                       "Module Name" => "MockModule"))
     ]
-    @test isnothing(create_module_specifics("nonexistent_function",
-                                            Vector{Any}([]),
-                                            @__MODULE__,
-                                            "get_name"))
+    @test isnothing(PeriLab.Solver_Manager.create_module_specifics("nonexistent_function",
+                                                                   Vector{Any}([]),
+                                                                   @__MODULE__,
+                                                                   "get_name"))
     specifics = Dict("Name" => "get_name",
                      "Call Function" => "call_function")
 
     # This should trigger the error because "nonexistent_function"
     # doesn't match "existing_function"
-    result = create_module_specifics("nonexistent_function",
-                                     module_list,
-                                     @__MODULE__,
-                                     specifics,
-                                     (1, 2, 3))
+    result = PeriLab.Solver_Manager.create_module_specifics("nonexistent_function",
+                                                            module_list,
+                                                            @__MODULE__,
+                                                            specifics,
+                                                            (1, 2, 3))
 
     @test result === nothing
 
-    result = create_module_specifics("nonexistent_function",
-                                     module_list,
-                                     @__MODULE__,
-                                     "get_name")
+    result = PeriLab.Solver_Manager.create_module_specifics("nonexistent_function",
+                                                            module_list,
+                                                            @__MODULE__,
+                                                            "get_name")
 
     @test result === nothing
 end
@@ -115,7 +117,7 @@ end
         create_test_file(test_file, content)
 
         # Test finding the function
-        result = find_module_files(dir, "my_function")
+        result = PeriLab.Solver_Manager.find_module_files(dir, "my_function")
 
         @test length(result) == 1
         @test result[1]["File"] == test_file
@@ -138,7 +140,7 @@ end
         create_test_file(test_file, content)
 
         # Test - should return empty list
-        result = find_module_files(dir, "my_function")
+        result = PeriLab.Solver_Manager.find_module_files(dir, "my_function")
 
         @test length(result) == 0
     end

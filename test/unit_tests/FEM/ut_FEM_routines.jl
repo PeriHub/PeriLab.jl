@@ -60,13 +60,15 @@
                                                                                 (nelements,
                                                                                  prod(num_int)))
     @test_logs (:error,
-                "The determinant of the Jacobian is 0.0 in local element 1, and must be greater zero.") PeriLab.Solver_Manager.FEM.FEM_Basis.get_Jacobian(elements,
-                                                                                                                                                          dof,
-                                                                                                                                                          topology,
-                                                                                                                                                          coordinates,
-                                                                                                                                                          B,
-                                                                                                                                                          jacobian,
-                                                                                                                                                          determinant_jacobian)
+                "The determinant of the Jacobian is 0.0 in local element 1, and must be greater zero.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.FEM_Basis.get_Jacobian(elements,
+                                                          dof,
+                                                          topology,
+                                                          coordinates,
+                                                          B,
+                                                          jacobian,
+                                                          determinant_jacobian)
+    end
     coordinates[1, 1] = 0
     coordinates[1, 2] = 0
     coordinates[2, 1] = 1
@@ -394,8 +396,10 @@ end
                                                                                   "Shear Modulus" => 1.15e3)))
 
     @test_logs (:error,
-                "Material model Elastic Model defined in FEM are not defined as material") PeriLab.Solver_Manager.FEM.FEM_Basis.get_FE_material_model(params,
-                                                                                                                                                      "FE_1")
+                "Material model Elastic Model defined in FEM are not defined as material") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.FEM_Basis.get_FE_material_model(params,
+                                                                   "FE_1")
+    end
 
     params = Dict{String,Any}("FEM" => Dict("FE_1" => Dict("Degree" => 1,
                                                            "Element Type" => "Lagrange",
@@ -413,15 +417,21 @@ end
 end
 
 @testset "ut_get_polynomial_degree" begin
-    @test_logs (:error, "No element degree defined") PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(Dict{String,
-                                                                                                                     Any}(),
-                                                                                                                1)
-    @test_logs (:error, "No element degree defined") PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(Dict{String,
-                                                                                                                     Any}(),
-                                                                                                                2)
-    @test_logs (:error, "No element degree defined") PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(Dict{String,
-                                                                                                                     Any}(),
-                                                                                                                3)
+    @test_logs (:error, "No element degree defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(Dict{String,
+                                                                        Any}(),
+                                                                   1)
+    end
+    @test_logs (:error, "No element degree defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(Dict{String,
+                                                                        Any}(),
+                                                                   2)
+    end
+    @test_logs (:error, "No element degree defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(Dict{String,
+                                                                        Any}(),
+                                                                   3)
+    end
 
     params = Dict{String,Any}("Degree" => 1)
 
@@ -438,14 +448,20 @@ end
     @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 3) == [2, 2, 2]
 
     params = Dict{String,Any}("Degree" => [2 3 1])
-    @test_logs (:error, "Degree must be defined with length one or number of dof.") PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params,
-                                                                                                                                               2)
+    @test_logs (:error,
+                "Degree must be defined with length one or number of dof.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params,
+                                                                   2)
+    end
     @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 3) == [2, 3, 1]
 
     params = Dict{String,Any}("Degree" => [2.1 2])
     @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 2) == [2, 2]
-    @test_logs (:error, "Degree must be defined with length one or number of dof.") PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params,
-                                                                                                                                               3)
+    @test_logs (:error,
+                "Degree must be defined with length one or number of dof.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params,
+                                                                   3)
+    end
     params = Dict{String,Any}("Degree" => "2")
     @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 3) == [2, 2, 2]
     params = Dict{String,Any}("Degree" => "2 2")
@@ -520,19 +536,25 @@ end
 end
 
 @testset "ut_get_multi_dimensional_integration_points" begin
-    @test_logs (:error, "degree of freedom = 1 is not supported, only 2 and 3.") PeriLab.Solver_Manager.FEM.FEM_Basis.get_multi_dimensional_integration_point_data(1,
-                                                                                                                                                                   [1],
-                                                                                                                                                                   zeros(2,
-                                                                                                                                                                         2))
-    @test_logs (:error, "degree of freedom = 4 is not supported, only 2 and 3.") PeriLab.Solver_Manager.FEM.FEM_Basis.get_multi_dimensional_integration_point_data(4,
-                                                                                                                                                                   [
-                                                                                                                                                                       1,
-                                                                                                                                                                       1,
-                                                                                                                                                                       1,
-                                                                                                                                                                       1
-                                                                                                                                                                   ],
-                                                                                                                                                                   zeros(2,
-                                                                                                                                                                         2))
+    @test_logs (:error,
+                "degree of freedom = 1 is not supported, only 2 and 3.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.FEM_Basis.get_multi_dimensional_integration_point_data(1,
+                                                                                          [1],
+                                                                                          zeros(2,
+                                                                                                2))
+    end
+    @test_logs (:error,
+                "degree of freedom = 4 is not supported, only 2 and 3.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.FEM_Basis.get_multi_dimensional_integration_point_data(4,
+                                                                                          [
+                                                                                              1,
+                                                                                              1,
+                                                                                              1,
+                                                                                              1
+                                                                                          ],
+                                                                                          zeros(2,
+                                                                                                2))
+    end
     dof = 2
     num_int = 2
     weights,
@@ -687,19 +709,25 @@ end
     dof::Int64 = 1
     p::Vector{Int64} = [1, 1]
 
-    @test_logs (:error, "degree of freedom = 1 is not supported, only 2 and 3.") PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof,
-                                                                                                                                              p,
-                                                                                                                                              PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices)
+    @test_logs (:error,
+                "degree of freedom = 1 is not supported, only 2 and 3.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof,
+                                                                     p,
+                                                                     PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices)
+    end
 
     dof = 4
-    @test_logs (:error, "degree of freedom = 4 is not supported, only 2 and 3.") PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof,
-                                                                                                                                              Vector{Int64}([
-                                                                                                                                                                1,
-                                                                                                                                                                1,
-                                                                                                                                                                1,
-                                                                                                                                                                1
-                                                                                                                                                            ]),
-                                                                                                                                              PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices)
+    @test_logs (:error,
+                "degree of freedom = 4 is not supported, only 2 and 3.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof,
+                                                                     Vector{Int64}([
+                                                                                       1,
+                                                                                       1,
+                                                                                       1,
+                                                                                       1
+                                                                                   ]),
+                                                                     PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices)
+    end
 
     dof = 2
     N,

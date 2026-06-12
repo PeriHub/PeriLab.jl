@@ -6,6 +6,7 @@ module Damage
 
 using TimerOutputs: @timeit
 using ....Data_Manager
+using ....PeriLabExceptions: @abort
 using ...Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "damage_name")
 for mod in module_list
@@ -233,7 +234,7 @@ function init_model(nodes::AbstractVector{Int64},
                                   "damage_name")
 
     if isnothing(mod)
-        @error "No damage model of name " * model_param["Damage Model"] * " exists."
+        @abort "No damage model of name " * model_param["Damage Model"] * " exists."
         return
     end
     Data_Manager.set_model_module(model_param["Damage Model"], mod)

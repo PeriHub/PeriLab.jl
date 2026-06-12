@@ -10,9 +10,15 @@ using DataFrames
 # include("../../../../src/PeriLab.jl")
 # using .PeriLab
 @testset "ut_get_element_degree" begin
-    @test_logs (:error, "Element degree is not defined.") PeriLab.Parameter_Handling.get_element_degree(Dict())
-    @test_logs (:error, "Degree must be an integer or a list of integers.") PeriLab.Parameter_Handling.get_element_degree(Dict("Degree" => "ABC"))
-    @test_logs (:error, "Degree must be an integer or a list of integers.") PeriLab.Parameter_Handling.get_element_degree(Dict("Degree" => "1"))
+    @test_logs (:error, "Element degree is not defined.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_element_degree(Dict())
+    end
+    @test_logs (:error, "Degree must be an integer or a list of integers.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_element_degree(Dict("Degree" => "ABC"))
+    end
+    @test_logs (:error, "Degree must be an integer or a list of integers.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_element_degree(Dict("Degree" => "1"))
+    end
     @test PeriLab.Parameter_Handling.get_element_degree(Dict("Degree" => 1)) ==
           1
     @test PeriLab.Parameter_Handling.get_element_degree(Dict("Degree" => [
@@ -30,7 +36,9 @@ using DataFrames
 end
 
 @testset "ut_get_element_type" begin
-    @test_logs (:error, "Element Type is not defined.") PeriLab.Parameter_Handling.get_element_type(Dict())
+    @test_logs (:error, "Element Type is not defined.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_element_type(Dict())
+    end
     @test PeriLab.Parameter_Handling.get_element_type(Dict("Element Type" => "ABC")) ==
           "ABC"
     @test PeriLab.Parameter_Handling.get_element_type(Dict("Element Type" => 12)) ==
@@ -80,33 +88,47 @@ end
     params = Dict{Any,Any}()
     @info "Error messages are tested and therefore okay."
 
-    @test_logs (:error, "Yaml file is not valid.") PeriLab.Parameter_Handling.validate_yaml(params)
+    @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.validate_yaml(params)
+    end
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}()))
-    @test_logs (:error, "Yaml file is not valid.") PeriLab.Parameter_Handling.validate_yaml(params)
+    @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.validate_yaml(params)
+    end
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
                                                                                                           Any}()),
                                                       "Discretization" => Dict{Any,Any}()))
-    @test_logs (:error, "Yaml file is not valid.") PeriLab.Parameter_Handling.validate_yaml(params)
+    @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.validate_yaml(params)
+    end
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
                                                                                                           Any}()),
                                                       "Discretization" => Dict{Any,Any}(),
                                                       "Blocks" => Dict{Any,Any}()))
-    @test_logs (:error, "Yaml file is not valid.") PeriLab.Parameter_Handling.validate_yaml(params)
+    @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.validate_yaml(params)
+    end
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
                                                                                                           Any}()),
                                                       "Blocks" => Dict{Any,Any}()))
-    @test_logs (:error, "Yaml file is not valid.") PeriLab.Parameter_Handling.validate_yaml(params)
+    @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.validate_yaml(params)
+    end
 
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}(),
                                                       "Discretization" => Dict{Any,Any}(),
                                                       "Blocks" => Dict{Any,Any}(),
                                                       "Solver" => Dict{Any,Any}()))
 
-    @test_logs (:error, "Yaml file is not valid.") PeriLab.Parameter_Handling.validate_yaml(params)
+    @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.validate_yaml(params)
+    end
 
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Blocks" => Dict{Any,Any}()))
 
-    @test_logs (:error, "Yaml file is not valid.") PeriLab.Parameter_Handling.validate_yaml(params)
+    @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.validate_yaml(params)
+    end
 
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
                                                                                                           Any}("mat_1" => Dict{Any,
@@ -119,7 +141,9 @@ end
                                                                                                        "Horizon" => "1.0")),
                                                       "Solver" => Dict{Any,Any}("Final Time" => 1.0,
                                                                                 "Initial Time" => 0.0)))
-    @test_logs (:error, "Yaml file is not valid.") PeriLab.Parameter_Handling.validate_yaml(params)
+    @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.validate_yaml(params)
+    end
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
                                                                                                           Any}("mat_1" => Dict{Any,
                                                                                                                                Any}("Material Model" => "a"))),
@@ -142,16 +166,22 @@ end
                                                                           ""))
     params = Dict("Discretization" => Dict("Input External Topology" => Dict()))
     @test_logs (:error,
-                "Input External Topology is defined without a file where to find it.") PeriLab.Parameter_Handling.get_external_topology_name(params,
-                                                                                                                                             "")
+                "Input External Topology is defined without a file where to find it.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_external_topology_name(params,
+                                                              "")
+    end
     name = randstring(12)
     params = Dict("Discretization" => Dict("Input External Topology" => Dict("File" => name)))
-    @test_logs (:error, "External topology file: ''$name'' does not exist") PeriLab.Parameter_Handling.get_external_topology_name(params,
-                                                                                                                                  "")
+    @test_logs (:error, "External topology file: ''$name'' does not exist") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_external_topology_name(params,
+                                                              "")
+    end
 end
 @testset "ut_get_mesh_name" begin
     params = Dict("Discretization" => Dict())
-    @test_logs (:error, "No mesh file is defined.") PeriLab.Parameter_Handling.get_mesh_name(params)
+    @test_logs (:error, "No mesh file is defined.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_mesh_name(params)
+    end
     name = randstring(12)
     params = Dict("Discretization" => Dict("Input Mesh File" => name))
     @test PeriLab.Parameter_Handling.get_mesh_name(params) == name
@@ -193,10 +223,12 @@ end
     ]
 
     outputs = Dict("Displacements" => "true")
-    @test_logs (:error, "Output variable Displacements must be set to True or False") PeriLab.Parameter_Handling.get_output_fieldnames(outputs,
-                                                                                                                                       variables,
-                                                                                                                                       computes,
-                                                                                                                                       output_type)
+    @test_logs (:error, "Output variable Displacements must be set to True or False") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_output_fieldnames(outputs,
+                                                         variables,
+                                                         computes,
+                                                         output_type)
+    end
 
     outputs = Dict("External_Displacements" => true)
     output_type = "CSV"
@@ -444,38 +476,64 @@ end
 
 @testset "ut_block_values" begin
     params = Dict("Blocks" => Dict())
-    @test_logs (:error, "Block with ID 1 is not defined") PeriLab.Parameter_Handling.get_horizon(params,
-                                                                                                 1)
-    @test_logs (:error, "Block with ID 1 is not defined") PeriLab.Parameter_Handling.get_density(params,
-                                                                                                 1)
-    @test_logs (:error, "Block with ID 1 is not defined") PeriLab.Parameter_Handling.get_heat_capacity(params,
-                                                                                                       1)
-    @test_logs (:error, "Block with ID 1 is not defined") PeriLab.Parameter_Handling._get_values(params,
-                                                                                                 1,
-                                                                                                 "Density")
-    @test_logs (:error, "Block with ID 1 is not defined") PeriLab.Parameter_Handling._get_values(params,
-                                                                                                 1,
-                                                                                                 "not there")
+    @test_logs (:error, "Block with ID 1 is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_horizon(params,
+                                               1)
+    end
+    @test_logs (:error, "Block with ID 1 is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_density(params,
+                                               1)
+    end
+    @test_logs (:error, "Block with ID 1 is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_heat_capacity(params,
+                                                     1)
+    end
+    @test_logs (:error, "Block with ID 1 is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling._get_values(params,
+                                               1,
+                                               "Density")
+    end
+    @test_logs (:error, "Block with ID 1 is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling._get_values(params,
+                                               1,
+                                               "not there")
+    end
     params = Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1),
                                    "block_2" => Dict("Block ID" => 2)))
-    @test_logs (:error, "Horizon of block_1 is not defined") PeriLab.Parameter_Handling.get_horizon(params,
-                                                                                                    1)
-    @test_logs (:error, "Density of block_1 is not defined") PeriLab.Parameter_Handling.get_density(params,
-                                                                                                    1)
-    @test_logs (:error, "Specific Heat Capacity of block_1 is not defined") PeriLab.Parameter_Handling.get_heat_capacity(params,
-                                                                                                                         1)
-    @test_logs (:error, "Density of block_1 is not defined") PeriLab.Parameter_Handling._get_values(params,
-                                                                                                    1,
-                                                                                                    "Density")
-    @test_logs (:error, "Horizon of block_2 is not defined") PeriLab.Parameter_Handling.get_horizon(params,
-                                                                                                    2)
-    @test_logs (:error, "Density of block_2 is not defined") PeriLab.Parameter_Handling.get_density(params,
-                                                                                                    2)
-    @test_logs (:error, "Specific Heat Capacity of block_2 is not defined") PeriLab.Parameter_Handling.get_heat_capacity(params,
-                                                                                                                         2)
-    @test_logs (:error, "Density of block_2 is not defined") PeriLab.Parameter_Handling._get_values(params,
-                                                                                                    2,
-                                                                                                    "Density")
+    @test_logs (:error, "Horizon of block_1 is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_horizon(params,
+                                               1)
+    end
+    @test_logs (:error, "Density of block_1 is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_density(params,
+                                               1)
+    end
+    @test_logs (:error, "Specific Heat Capacity of block_1 is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_heat_capacity(params,
+                                                     1)
+    end
+    @test_logs (:error, "Density of block_1 is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling._get_values(params,
+                                               1,
+                                               "Density")
+    end
+    @test_logs (:error, "Horizon of block_2 is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_horizon(params,
+                                               2)
+    end
+    @test_logs (:error, "Density of block_2 is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_density(params,
+                                               2)
+    end
+    @test_logs (:error, "Specific Heat Capacity of block_2 is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_heat_capacity(params,
+                                                     2)
+    end
+    @test_logs (:error, "Density of block_2 is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling._get_values(params,
+                                               2,
+                                               "Density")
+    end
     params = Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
                                                      "Density" => 1,
                                                      "Specific Heat Capacity" => 3),
@@ -484,26 +542,36 @@ end
     @test PeriLab.Parameter_Handling._get_values(params, 1, "Density") == 1
     @test PeriLab.Parameter_Handling._get_values(params, 2, "Density") ==
           12.3
-    @test_logs (:error, "Block with ID 3 is not defined") PeriLab.Parameter_Handling._get_values(params,
-                                                                                                 3,
-                                                                                                 "Density")
+    @test_logs (:error, "Block with ID 3 is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling._get_values(params,
+                                               3,
+                                               "Density")
+    end
     @test PeriLab.Parameter_Handling._get_values(params,
                                                  1,
                                                  "Specific Heat Capacity") ==
           3
-    @test_logs (:error, "Specific Heat Capacity of block_2 is not defined") PeriLab.Parameter_Handling._get_values(params,
-                                                                                                                   2,
-                                                                                                                   "Specific Heat Capacity")
-    @test_logs (:error, "Block with ID 3 is not defined") PeriLab.Parameter_Handling._get_values(params,
-                                                                                                 3,
-                                                                                                 "Specific Heat Capacity")
-    @test_logs (:error, "Horizon of block_1 is not defined") PeriLab.Parameter_Handling._get_values(params,
-                                                                                                    1,
-                                                                                                    "Horizon")
+    @test_logs (:error, "Specific Heat Capacity of block_2 is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling._get_values(params,
+                                               2,
+                                               "Specific Heat Capacity")
+    end
+    @test_logs (:error, "Block with ID 3 is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling._get_values(params,
+                                               3,
+                                               "Specific Heat Capacity")
+    end
+    @test_logs (:error, "Horizon of block_1 is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling._get_values(params,
+                                               1,
+                                               "Horizon")
+    end
     @test PeriLab.Parameter_Handling._get_values(params, 2, "Horizon") == 2
-    @test_logs (:error, "Block with ID 3 is not defined") PeriLab.Parameter_Handling._get_values(params,
-                                                                                                 3,
-                                                                                                 "Horizon")
+    @test_logs (:error, "Block with ID 3 is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling._get_values(params,
+                                               3,
+                                               "Horizon")
+    end
     @test PeriLab.Parameter_Handling._get_values(params, 1, "Density") ==
           PeriLab.Parameter_Handling.get_density(params, 1)
     @test PeriLab.Parameter_Handling._get_values(params, 2, "Density") ==
@@ -561,11 +629,19 @@ end
           6
     @test PeriLab.Parameter_Handling.get_numerical_damping(params["Solver"]) ==
           0.0
-    @test_logs (:error, "No initial time defined") PeriLab.Parameter_Handling.get_initial_time(Dict("Solver" => Dict()))
-    @test_logs (:error, "No final time defined") PeriLab.Parameter_Handling.get_final_time(Dict("Solver" => Dict()))
-    @test_logs (:error, "No final time defined") PeriLab.Parameter_Handling.get_final_time(Dict("Solver" => Dict()))
+    @test_logs (:error, "No initial time defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_initial_time(Dict("Solver" => Dict()))
+    end
+    @test_logs (:error, "No final time defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_final_time(Dict("Solver" => Dict()))
+    end
+    @test_logs (:error, "No final time defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_final_time(Dict("Solver" => Dict()))
+    end
     @test_logs (:error,
-                "Wrong or missing solvername. Verlet, Linear Static Matrix Based, Verlet Matrix Based and Static are the options.") PeriLab.Parameter_Handling.get_solver_name(Dict("Solver" => Dict("Solvername" => Dict())))
+                "Wrong or missing solvername. Verlet, Linear Static Matrix Based, Verlet Matrix Based and Static are the options.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_solver_name(Dict("Solver" => Dict("Solvername" => Dict())))
+    end
     params = Dict("Solver" => Dict("Initial Time" => 0.0,
                                    "Final Time" => 1.0,
                                    "Static" => Dict("Residual tolerance" => 1e-3)))
@@ -610,17 +686,23 @@ end
     block_models = Dict{Int32,Dict{String,String}}()
     testData = Dict("Material Model" => Dict(), "Damage Model" => Dict())
     @test_logs (:error,
-                "Does not exist Model is defined in blocks, but no Does not exist Models definition block exists") PeriLab.Parameter_Handling.get_model_parameter(params,
-                                                                                                                                                                  "Does not exist Model",
-                                                                                                                                                                  "A")
+                "Does not exist Model is defined in blocks, but no Does not exist Models definition block exists") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_model_parameter(params,
+                                                       "Does not exist Model",
+                                                       "A")
+    end
     @test_logs (:error,
-                "Does not exist Model is defined in blocks, but no Does not exist Models definition block exists") PeriLab.Parameter_Handling.get_model_parameter(params,
-                                                                                                                                                                  "Does not exist Model",
-                                                                                                                                                                  "s")
+                "Does not exist Model is defined in blocks, but no Does not exist Models definition block exists") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_model_parameter(params,
+                                                       "Does not exist Model",
+                                                       "s")
+    end
     @test_logs (:error,
-                "Material Model model with name s is defined in blocks, but missing in the Material Models definition.") PeriLab.Parameter_Handling.get_model_parameter(params,
-                                                                                                                                                                        "Material Model",
-                                                                                                                                                                        "s")
+                "Material Model model with name s is defined in blocks, but missing in the Material Models definition.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.get_model_parameter(params,
+                                                       "Material Model",
+                                                       "s")
+    end
     testData["Material Model"] = PeriLab.Parameter_Handling.get_model_parameter(params,
                                                                                 "Material Model",
                                                                                 "A")
@@ -646,12 +728,14 @@ end
 
 @testset "ut_check_for_duplicates" begin
     @test !(PeriLab.Parameter_Handling.check_for_duplicates(["a", "b", "c"]))
-    @test_logs (:error, "Filename a is used 2 times") PeriLab.Parameter_Handling.check_for_duplicates([
-                                                                                                          "a",
-                                                                                                          "b",
-                                                                                                          "c",
-                                                                                                          "a"
-                                                                                                      ])
+    @test_logs (:error, "Filename a is used 2 times") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.check_for_duplicates([
+                                                            "a",
+                                                            "b",
+                                                            "c",
+                                                            "a"
+                                                        ])
+    end
 end
 
 @testset "ut_validate_structure_recursive" begin
@@ -755,7 +839,7 @@ end
     file = open(filename, "w")
     println(file, "header: global_id")
     close(file)
-    # @test_logs (:error, "Node set file is empty test.txt. The node set is excluded.") PeriLab.Solver_Manager.FEM.init_FEM(Dict{String, Any}()) PeriLab.Parameter_Handling.get_node_sets(params, "", DataFrame(x = []))
+    # @test_logs (:error, "Node set file is empty test.txt. The node set is excluded.") @test_throws PeriLab.PeriLabError begin PeriLab.Solver_Manager.FEM.init_FEM(Dict{String, Any}()) PeriLab.Parameter_Handling.get_node_sets(params, "", DataFrame(x = [])) end
     rm(filename)
     filename = "test.txt"
     file = open(filename, "w")

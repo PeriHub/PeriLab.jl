@@ -14,6 +14,7 @@ It is simplified. Rigid body motion is not considered )omega_{ij} = 0 as well as
 using LoopVectorization
 
 using .....Data_Manager
+using .....PeriLabExceptions: @abort
 using ....Material_Basis: get_symmetry, apply_pointwise_E
 
 export init_model
@@ -143,7 +144,7 @@ function compute_model(nodes::AbstractVector{Int64},
 
     for iID in nodes
         if any(deformed_bond_length[iID] .== 0)
-            @error "Length of bond is zero due to its deformation."
+            @abort "Length of bond is zero due to its deformation."
             return nothing
         end
         # Calculate the bond force -> EQ21 for 3D

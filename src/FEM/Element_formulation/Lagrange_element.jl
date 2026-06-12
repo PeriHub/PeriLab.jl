@@ -4,6 +4,8 @@
 
 module Lagrange_element
 
+using .......PeriLabExceptions: @abort
+
 export element_name
 export init_element
 #export compute_element
@@ -50,7 +52,7 @@ function define_lagrangian_grid_space(dof::Int64, p::Vector{Int64})
     xi::Matrix{Float64} = zeros(Float64, dof, maximum(p) + 1)
     len::Float64 = 0.0
     if minimum(p) == 0
-        @error "p order for lagarangian grid space must be at least p = 1 and not zero"
+        @abort "p order for lagarangian grid space must be at least p = 1 and not zero"
         return
     end
     for idof in 1:dof
@@ -254,7 +256,7 @@ function create_element_matrices(dof::Int64,
                                  ip_weights::Matrix{Float64},
                                  ip_coordinates::Matrix{Float64})
     if dof > 3 || dof < 2
-        @error "Not support degree of freedom for the finite element matrix creation"
+        @abort "Not support degree of freedom for the finite element matrix creation"
         return
     end
 

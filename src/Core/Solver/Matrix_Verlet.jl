@@ -13,6 +13,7 @@ using PrettyTables
 using Logging
 using LinearAlgebra: lu
 using ...Data_Manager
+using ...PeriLabExceptions: @abort
 using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style,
                   create_permutation
 using ...Parameter_Handling:
@@ -94,10 +95,10 @@ function init_solver(solver_options::Dict{Any,Any},
 
         if reduction_blocks == []
             model_reduction == false
-            @error "No reduction blocks defined for model reduction. If you want to use a reduced model please define 'Reduction Blocks' in the yaml input deck."
+            @abort "No reduction blocks defined for model reduction. If you want to use a reduced model please define 'Reduction Blocks' in the yaml input deck."
         else
             if reduction_blocks isa Float64
-                @error "Type Float is not supported for Reduction Blocks"
+                @abort "Type Float is not supported for Reduction Blocks"
             end
             if reduction_blocks isa Int64
                 reduction_blocks = [reduction_blocks]
@@ -388,7 +389,7 @@ A tuple `(nsteps, dt)` where:
 """
 function get_integration_steps(initial_time::Float64, end_time::Float64, dt::Float64)
     if !(0 < dt < 1e50)
-        @error "Time step $dt [s] is not valid"
+        @abort "Time step $dt [s] is not valid"
         return nothing
     end
     nsteps::Int64 = ceil((end_time - initial_time) / dt)

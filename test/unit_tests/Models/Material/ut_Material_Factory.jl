@@ -27,8 +27,14 @@ end
     PeriLab.Data_Manager.set_block_id_list([2, 3, 1])
     PeriLab.Data_Manager.init_properties()
     PeriLab.Data_Manager.set_property(1, "Material Model", "E", 1)
-    @test_logs (:error, "Block 1 has no material model defined.") PeriLab.Solver_Manager.Model_Factory.Material.init_model(Vector{Int64}(1:4),
-                                                                                                                           1)
-    @test_logs (:error, "Block 2 has no material model defined.") PeriLab.Solver_Manager.Model_Factory.Material.init_model(Vector{Int64}(1:4),
-                                                                                                                           2)
+    @test_logs (:error,
+                "Block 1 has no material model defined.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Model_Factory.Material.init_model(Vector{Int64}(1:4),
+                                                                 1)
+    end
+    @test_logs (:error,
+                "Block 2 has no material model defined.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Model_Factory.Material.init_model(Vector{Int64}(1:4),
+                                                                 2)
+    end
 end

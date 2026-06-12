@@ -24,12 +24,16 @@ end
                                                                 Int64)
     nn .= 2
     @test_logs (:error,
-                "Shear Modulus must be defined to be able to run this plastic material") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_Plastic.init_model(Vector{Int64}(1:nodes),
-                                                                                                                                                                                        material_parameter)
+                "Shear Modulus must be defined to be able to run this plastic material") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_Plastic.init_model(Vector{Int64}(1:nodes),
+                                                                                                       material_parameter)
+    end
 
     material_parameter = Dict("Shear Modulus" => 10.5)
-    @test_logs (:error, "No ''Yield Stress'' is defined.") PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_Plastic.init_model(Vector{Int64}(1:nodes),
-                                                                                                                                                          material_parameter)
+    @test_logs (:error, "No ''Yield Stress'' is defined.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_Plastic.init_model(Vector{Int64}(1:nodes),
+                                                                                                       material_parameter)
+    end
 
     material_parameter = Dict("Shear Modulus" => 10.5,
                               "Yield Stress" => 3.4)

@@ -58,7 +58,7 @@ function get_model_parameter(params::Dict,
                              id::String,
                              directory::String = "")
     if !haskey(params["Models"], model * "s")
-        @error model *
+        @abort model *
                " is defined in blocks, but no " *
                model *
                "s definition block exists"
@@ -92,7 +92,7 @@ function get_model_parameter(params::Dict,
         end
         return params["Models"][model * "s"][id]
     else
-        @error model *
+        @abort model *
                " model with name " *
                id *
                " is defined in blocks, but missing in the " *

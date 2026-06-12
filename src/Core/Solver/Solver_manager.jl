@@ -5,6 +5,7 @@
 module Solver_Manager
 using TimerOutputs: @timeit
 using ..Data_Manager
+using ..PeriLabExceptions: @abort
 using ..Parameter_Handling:
                             get_density,
                             get_horizon,
@@ -133,7 +134,7 @@ function init(params::Dict,
 
     if isnothing(mod)
         @info "Module list: " * string(module_list)
-        @error "Solver module for solver " * get_solver_name(solver_params) *
+        @abort "Solver module for solver " * get_solver_name(solver_params) *
                " not found. Check if the solver name is correct and if the module file is in the Solver folder."
         return nothing
     end
@@ -353,7 +354,7 @@ function synchronise_field(comm,
     # might not needed
     @timeit "synchronise_field" begin
         if !haskey(synch_fields, synch_field)
-            @error "Field $synch_field does not exist in synch_field dictionary"
+            @abort "Field $synch_field does not exist in synch_field dictionary"
             return nothing
         end
         if direction == "download_from_cores"
@@ -383,7 +384,7 @@ function synchronise_field(comm,
             end
             return nothing
         end
-        @error "Wrong direction key word $direction in function synchronise_field; it should be download_from_cores or upload_to_cores"
+        @abort "Wrong direction key word $direction in function synchronise_field; it should be download_from_cores or upload_to_cores"
         return nothing
     end
 end

@@ -22,9 +22,9 @@ function read_input(filename::String)
         return load_file(filename)
     catch e
         if isa(e, ParserError)
-            @error "Yaml Parser Error. Make sure the yaml file is valid."
+            @abort "Yaml Parser Error. Make sure the yaml file is valid."
         end
-        @error "Failed to read $filename."
+        @abort "Failed to read $filename."
     end
 end
 
@@ -41,11 +41,11 @@ Reads the input deck from a yaml file
 function read_input_file(filename::String)
     params = Dict{String,Any}()
     if !isfile(filename)
-        @error "$(filename) can not be found. Make sure the file exist and is readable."
+        @abort "$(filename) can not be found. Make sure the file exist and is readable."
         return
     end
     if !occursin("yaml", filename)
-        @error "Not a supported filetype $filename"
+        @abort "Not a supported filetype $filename"
         return
     end
     @info "Read input file $filename"

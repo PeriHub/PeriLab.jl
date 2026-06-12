@@ -20,7 +20,10 @@
     mod_struct.init_surface_correction(Dict(),
                                        "local_synch",
                                        "synchronise_field")
-    @test_logs (:error, "Surface Correction needs a Type definition") mod_struct.init_surface_correction(Dict("Surface Correction" => Dict("a" => 0)),
-                                                                                                         "local_synch",
-                                                                                                         "synchronise_field")
+    @test_logs (:error,
+                "Surface Correction needs a Type definition") @test_throws PeriLab.PeriLabError begin
+        mod_struct.init_surface_correction(Dict("Surface Correction" => Dict("a" => 0)),
+                                           "local_synch",
+                                           "synchronise_field")
+    end
 end

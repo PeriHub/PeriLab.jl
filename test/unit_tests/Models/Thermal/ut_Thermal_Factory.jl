@@ -49,6 +49,9 @@ end
     PeriLab.Solver_Manager.Model_Factory.Thermal.init_model([1], 1)
     PeriLab.Data_Manager.set_properties(2, "Thermal Model",
                                         Dict("Thermal Model" => "Missing"))
-    @test_logs (:error, "No thermal model of name Missing exists.") PeriLab.Solver_Manager.Model_Factory.Thermal.init_model([1],
-                                                                                                                            2)
+    @test_logs (:error,
+                "No thermal model of name Missing exists.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Model_Factory.Thermal.init_model([1],
+                                                                2)
+    end
 end

@@ -10,6 +10,7 @@ using ......Helpers: get_MMatrix, determinant, invert, smat, interpol_data,
                      get_dependent_value,
                      mat_mul!, matrix_to_voigt, voigt_to_matrix
 using ......Data_Manager
+using ......PeriLabExceptions: @abort
 export get_value
 export get_all_elastic_moduli
 export get_Hooke_matrix
@@ -65,11 +66,11 @@ function init_local_damping_due_to_damage(nodes::AbstractVector{Int64},
                                           material_parameter,
                                           damage_parameter)
     if !haskey(damage_parameter["Local Damping"], "Representative Young's modulus")
-        @error "Representative Young's modulus is missing."
+        @abort "Representative Young's modulus is missing."
         return
     end
     if !haskey(damage_parameter["Local Damping"], "Damping coefficient")
-        @error "Damping coefficient is missing."
+        @abort "Damping coefficient is missing."
         return
     end
     @info "Local damping is active with damping coefficient $(damage_parameter["Local Damping"]["Damping coefficient"])"
@@ -178,7 +179,7 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
             for iID in 1:6
                 for jID in iID:6
                     if !haskey(parameter, "C" * string(iID) * string(jID))
-                        @error "C" * string(iID) * string(jID) * " not defined"
+                        @abort "C" * string(iID) * string(jID) * " not defined"
                         return
                     end
                 end
@@ -193,15 +194,15 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
             g_yz = haskey(parameter, "Shear Modulus YZ")
             if occursin("plane strain", symmetry)
                 if !E_x || !E_y || !nu_xy || !nu_yz || !g_xy
-                    @error "Transverse isotropic material requires Young's Modulus X, Y, Poisson's Ratio XY, YZ, Shear Modulus XY"
+                    @abort "Transverse isotropic material requires Young's Modulus X, Y, Poisson's Ratio XY, YZ, Shear Modulus XY"
                 end
             elseif occursin("plane stress", symmetry)
                 if !E_x || !E_y || !nu_xy || !g_xy
-                    @error "Transverse isotropic material requires Young's Modulus X, Y, Poisson's Ratio XY, Shear Modulus XY"
+                    @abort "Transverse isotropic material requires Young's Modulus X, Y, Poisson's Ratio XY, Shear Modulus XY"
                 end
             else
                 if !E_x || !E_y || !nu_xy || !nu_yz || !g_xy || !g_yz
-                    @error "Transverse isotropic material requires Young's Modulus X, Y, Poisson's Ratio XY, YZ, Shear Modulus XY, YZ"
+                    @abort "Transverse isotropic material requires Young's Modulus X, Y, Poisson's Ratio XY, YZ, Shear Modulus XY, YZ"
                 end
             end
             return
@@ -216,7 +217,7 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
             g_yz = haskey(parameter, "Shear Modulus YZ")
             g_zx = haskey(parameter, "Shear Modulus XZ")
             if !E_x || !E_y || !E_z || !nu_xy || !nu_yz || !nu_xz || !g_xy || !g_yz || !g_zx
-                @error "Orthotropic material requires Young's Modulus X, Y, Z, Poisson's Ratio XY, YZ, XZ, Shear Modulus XY, YZ, XZ"
+                @abort "Orthotropic material requires Young's Modulus X, Y, Z, Poisson's Ratio XY, YZ, XZ, Shear Modulus XY, YZ, XZ"
             end
             return
         end
@@ -227,7 +228,7 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
 
     # tbd non isotropic material check
     if bulk + youngs + shear + poissons < 2
-        @error "Minimum of two parameters are needed for isotropic material"
+        @abort "Minimum of two parameters are needed for isotropic material"
     elseif bulk + youngs + shear + poissons > 2
         @warn "Only two parameters are needed for isotropic material, ignoring additional parameters"
     end
@@ -426,7 +427,7 @@ function get_Hooke_matrix(parameter::Dict,
 
             return aniso_matrix
         else
-            @error "2D model defintion is missing; plane stress or plane strain"
+            @abort "2D model defintion is missing; plane stress or plane strain"
         end
     end
 
@@ -472,7 +473,7 @@ function get_Hooke_matrix(parameter::Dict,
             matrix[3, 3] = G
             return matrix
         else
-            @error "2D model defintion is missing; plane stress or plane strain"
+            @abort "2D model defintion is missing; plane stress or plane strain"
             return nothing
         end
     else
@@ -511,7 +512,7 @@ function get_2D_Hooke_matrix(aniso_matrix::MMatrix{T}, symmetry::String,
         matrix[3, 3] = inv_aniso[6, 6]
         return invert(matrix, "Hooke matrix not invertable")
     else
-        @error "2D model defintion is missing; plane stress or plane strain"
+        @abort "2D model defintion is missing; plane stress or plane strain"
         return nothing
     end
 end
@@ -635,7 +636,7 @@ function check_symmetry(block::Int64)
         symmetry = prop["Symmetry"]
         if dof == 2
             if !occursin("plane strain", symmetry) && !occursin("plane stress", symmetry)
-                @error "Model definition is missing; plane stress or plane strain has to be defined for 2D"
+                @abort "Model definition is missing; plane stress or plane strain has to be defined for 2D"
                 return
             end
         end
@@ -674,11 +675,11 @@ function flaw_function(params::Dict,
         return stress
     end
     if !haskey(params["Flaw Function"], "Active")
-        @error "Flaw Function needs an entry ''Active''."
+        @abort "Flaw Function needs an entry ''Active''."
         return nothing
     end
     if !haskey(params["Flaw Function"], "Function")
-        @error "Flaw Function needs an entry ''Function''."
+        @abort "Flaw Function needs an entry ''Function''."
         return nothing
     end
     if !params["Flaw Function"]["Active"]
@@ -689,7 +690,7 @@ function flaw_function(params::Dict,
         flaw_size = params["Flaw Function"]["Flaw Size"]
         flaw_magnitude = params["Flaw Function"]["Flaw Magnitude"]
         if !(0 < flaw_magnitude <= 1)
-            @error "Flaw Magnitude should be between 0 and 1"
+            @abort "Flaw Magnitude should be between 0 and 1"
             return nothing
         end
         flaw_location[1] = params["Flaw Function"]["Flaw Location X"]

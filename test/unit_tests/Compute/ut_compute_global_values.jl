@@ -38,13 +38,19 @@
     nodes = Vector{Int64}(2:3)
     @test PeriLab.IO.global_value_sum(disp, 1, nodes) == 5
     @test PeriLab.IO.calculate_nodelist("Disp", 1, "Sum", nodes) == (5, 2)
-    @test_logs (:error, "Unknown calculation type ") PeriLab.IO.calculate_nodelist("Disp",
-                                                                                   1, "",
-                                                                                   nodes)
-    @test_logs (:error, "Field not there does not exists for computation") PeriLab.IO.calculate_nodelist("not there",
-                                                                                                         1,
-                                                                                                         "Sum",
-                                                                                                         nodes)
+    @test_logs (:error, "Unknown calculation type ") @test_throws PeriLab.PeriLabError begin
+        PeriLab.IO.calculate_nodelist("Disp",
+                                      1,
+                                      "",
+                                      nodes)
+    end
+    @test_logs (:error,
+                "Field not there does not exists for computation") @test_throws PeriLab.PeriLabError begin
+        PeriLab.IO.calculate_nodelist("not there",
+                                      1,
+                                      "Sum",
+                                      nodes)
+    end
 
     PeriLab.Data_Manager.set_glob_to_loc(Dict(1 => 1, 2 => 2))
     nodes = Vector{Int64}(3:4)
@@ -100,13 +106,19 @@ end
     nodes = Vector{Int64}(2:3)
     @test PeriLab.IO.global_value_max(disp, 1, nodes) == 3
     @test PeriLab.IO.calculate_nodelist("Disp", 1, "Maximum", nodes) == (3, 2)
-    @test_logs (:error, "Unknown calculation type ") PeriLab.IO.calculate_nodelist("Disp",
-                                                                                   1, "",
-                                                                                   nodes)
-    @test_logs (:error, "Field not there does not exists for computation") PeriLab.IO.calculate_nodelist("not there",
-                                                                                                         1,
-                                                                                                         "Maximum",
-                                                                                                         nodes)
+    @test_logs (:error, "Unknown calculation type ") @test_throws PeriLab.PeriLabError begin
+        PeriLab.IO.calculate_nodelist("Disp",
+                                      1,
+                                      "",
+                                      nodes)
+    end
+    @test_logs (:error,
+                "Field not there does not exists for computation") @test_throws PeriLab.PeriLabError begin
+        PeriLab.IO.calculate_nodelist("not there",
+                                      1,
+                                      "Maximum",
+                                      nodes)
+    end
 end
 
 @testset "ut_global_value_min" begin
@@ -140,13 +152,19 @@ end
     nodes = Vector{Int64}(2:3)
     @test PeriLab.IO.global_value_min(disp, 1, nodes) == 2
     @test PeriLab.IO.calculate_nodelist("Disp", 1, "Minimum", nodes) == (2, 2)
-    @test_logs (:error, "Unknown calculation type ") PeriLab.IO.calculate_nodelist("Disp",
-                                                                                   1, "",
-                                                                                   nodes)
-    @test_logs (:error, "Field not there does not exists for computation") PeriLab.IO.calculate_nodelist("not there",
-                                                                                                         1,
-                                                                                                         "Minimum",
-                                                                                                         nodes)
+    @test_logs (:error, "Unknown calculation type ") @test_throws PeriLab.PeriLabError begin
+        PeriLab.IO.calculate_nodelist("Disp",
+                                      1,
+                                      "",
+                                      nodes)
+    end
+    @test_logs (:error,
+                "Field not there does not exists for computation") @test_throws PeriLab.PeriLabError begin
+        PeriLab.IO.calculate_nodelist("not there",
+                                      1,
+                                      "Minimum",
+                                      nodes)
+    end
 end
 @testset "ut_global_value_avg" begin
     PeriLab.Data_Manager.set_num_controller(4)
@@ -182,14 +200,19 @@ end
     nodes = Vector{Int64}(2:3)
     @test PeriLab.IO.global_value_avg(disp, 1, nodes) == 5 / 2
     @test PeriLab.IO.calculate_nodelist("Disp", 1, "Average", nodes) == (5 / 2, 2)
-    @test_logs (:error, "Unknown calculation type ") PeriLab.IO.calculate_nodelist("Disp",
-                                                                                   1, "",
-                                                                                   nodes)
+    @test_logs (:error, "Unknown calculation type ") @test_throws PeriLab.PeriLabError begin
+        PeriLab.IO.calculate_nodelist("Disp",
+                                      1,
+                                      "",
+                                      nodes)
+    end
     @test_logs (:error,
-                "Field not there does not exists for computation") PeriLab.IO.calculate_nodelist("not there",
-                                                                                                 1,
-                                                                                                 "Average",
-                                                                                                 nodes)
+                "Field not there does not exists for computation") @test_throws PeriLab.PeriLabError begin
+        PeriLab.IO.calculate_nodelist("not there",
+                                      1,
+                                      "Average",
+                                      nodes)
+    end
 end
 
 @testset "ut_calculate_block" begin
@@ -204,9 +227,11 @@ end
     forcesNP1[3, 1:3] .= 5.2
     forcesNP1[4, 1] = -20
     @test_logs (:error,
-                "Field no field does not exists for computation") PeriLab.IO.calculate_block("no field",
-                                                                                             1,
-                                                                                             "sum",
-                                                                                             1)
+                "Field no field does not exists for computation") @test_throws PeriLab.PeriLabError begin
+        PeriLab.IO.calculate_block("no field",
+                                   1,
+                                   "sum",
+                                   1)
+    end
     @test PeriLab.IO.calculate_block("Forces", 1, "Sum", 1) == (-13.8, 4)
 end

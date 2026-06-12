@@ -28,8 +28,11 @@ end
                                                                 Int64)
 
     nn .= 1
-    @test_logs (:error, "Yield Stress is not defined in input deck") PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(Vector{Int64}(1:nodes),
-                                                                                                                                               Dict())
+    @test_logs (:error,
+                "Yield Stress is not defined in input deck") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(Vector{Int64}(1:nodes),
+                                                                                  Dict())
+    end
 
     PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(Vector{Int64}(1:nodes),
                                                                               Dict("Yield Stress" => 5.3))

@@ -6,6 +6,7 @@ module OneD_Bond_Based_Elastic
 using LoopVectorization
 
 using .......Data_Manager
+using .......PeriLabExceptions: @abort
 
 export init_model
 export fe_support
@@ -90,7 +91,7 @@ function compute_model(nodes::AbstractVector{Int64},
     c = 1.0
     for iID in nodes
         if any(deformed_bond_length[iID] .== 0)
-            @error "Length of bond is zero due to its deformation."
+            @abort "Length of bond is zero due to its deformation."
             return nothing
         end
 

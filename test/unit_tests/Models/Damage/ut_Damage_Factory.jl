@@ -87,8 +87,11 @@ end
 end
 @testset "ut_Damage_factory_exceptions" begin
     PeriLab.Data_Manager.data["properties"][1] = Dict("Damage Model" => Dict("Damage Model" => "not there"))
-    @test_logs (:error, "No damage model of name not there exists.") PeriLab.Solver_Manager.Model_Factory.Damage.init_model(Vector{Int64}(1:3),
-                                                                                                                            1)
+    @test_logs (:error,
+                "No damage model of name not there exists.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Model_Factory.Damage.init_model(Vector{Int64}(1:3),
+                                                               1)
+    end
 end
 
 @testset "ut_init_interface_crit_values" begin

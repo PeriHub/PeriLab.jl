@@ -205,7 +205,9 @@ end
                                               9 => 9,
                                               10 => 10))
 
-    @test_logs (:error, "Node Set 'Nset_3' is missing") PeriLab.Solver_Manager.Boundary_Conditions.boundary_condition(params)
+    @test_logs (:error, "Node Set 'Nset_3' is missing") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Boundary_Conditions.boundary_condition(params)
+    end
 
     params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Variable" => "Forces",
                                                                "Node Set" => "Nset_1",
@@ -261,7 +263,7 @@ end
     # @test bcs = PeriLab.Solver_Manager.Boundary_Conditions.check_valid_bcs(bcs)
 
     PeriLab.Data_Manager.set_dof(2)
-    # @test_logs (:warn, "Boundary condition BC_2 is not possible with 2 DOF") PeriLab.Solver_Manager.Boundary_Conditions.check_valid_bcs(bcs)
+    # @test_logs (:warn, "Boundary condition BC_2 is not possible with 2 DOF") @test_throws PeriLab.PeriLabError begin PeriLab.Solver_Manager.Boundary_Conditions.check_valid_bcs(bcs) end
     PeriLab.Data_Manager.set_dof(3)
 
     params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Variable" => "Forces",
@@ -275,7 +277,9 @@ end
 
     bcs = PeriLab.Solver_Manager.Boundary_Conditions.boundary_condition(params)
     @test_logs (:error,
-                "Boundary condition BC_1 is not valid: Variable Forces not found. Please check if the physical model is activated.") PeriLab.Solver_Manager.Boundary_Conditions.check_valid_bcs(bcs)
+                "Boundary condition BC_1 is not valid: Variable Forces not found. Please check if the physical model is activated.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Boundary_Conditions.check_valid_bcs(bcs)
+    end
 end
 @testset "ut_init_BCs" begin
     PeriLab.Data_Manager.initialize_data()
@@ -422,13 +426,16 @@ end
                                                                "Coordinate" => "u",
                                                                "Value" => "5")))
     bcs = PeriLab.Solver_Manager.Boundary_Conditions.init_BCs(params)
-    @test_logs (:error, "Coordinate in boundary condition must be x,y or z.") PeriLab.Solver_Manager.Boundary_Conditions.apply_bc_dirichlet([
-                                                                                                                                                "Displacements",
-                                                                                                                                                "Temperature"
-                                                                                                                                            ],
-                                                                                                                                            bcs,
-                                                                                                                                            0.2,
-                                                                                                                                            0.2)
+    @test_logs (:error,
+                "Coordinate in boundary condition must be x,y or z.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Boundary_Conditions.apply_bc_dirichlet([
+                                                                          "Displacements",
+                                                                          "Temperature"
+                                                                      ],
+                                                                      bcs,
+                                                                      0.2,
+                                                                      0.2)
+    end
 
     ### apply_bc_dirichlet_force
 

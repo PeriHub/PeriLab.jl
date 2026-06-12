@@ -9,7 +9,6 @@ using OrderedCollections: OrderedDict
 using TimerOutputs: @timeit
 import Gmsh: gmsh
 
-using ..Data_Manager
 include("bond_filters.jl")
 include("gcode.jl")
 include("volume.jl")
@@ -263,7 +262,7 @@ function get_local_element_topology(topology::Vector{Vector{Int64}},
     master_len = length(topology[1][:])
     for top in topology
         if length(top) != master_len
-            @error "Only one element type is supported. Please define the same numbers of nodes per element."
+            @abort "Only one element type is supported. Please define the same numbers of nodes per element."
             return
             # - new field like the bond field has to be defined for elements in the Data_Manager
             # - can be avoided right now by setting zeros in the topology vector as empty nodes
@@ -557,15 +556,15 @@ function check_mesh_elements(mesh::DataFrame, dof::Int64)
         mesh_info_dict[name] = Dict{String,Any}("Mesh ID" => mesh_id, "Type" => vartype)
     end
     if !(haskey(mesh_info_dict, "Coordinates"))
-        @error "No coordinates defined"
+        @abort "No coordinates defined"
         return nothing
     end
     if !(haskey(mesh_info_dict, "Block_Id"))
-        @error "No blocks defined"
+        @abort "No blocks defined"
         return nothing
     end
     if !(haskey(mesh_info_dict, "Volume"))
-        @error "No volumes defined"
+        @abort "No volumes defined"
         return nothing
     end
     return mesh_info_dict
@@ -623,7 +622,7 @@ Read mesh data from a file and return it as a DataFrame.
 """
 function read_mesh(filename::String, params::Dict)
     if !isfile(filename)
-        @error "File $filename does not exist"
+        @abort "File $filename does not exist"
         return
     end
 
@@ -700,7 +699,7 @@ function read_mesh(filename::String, params::Dict)
                     end
                 end
                 if volume_nodal_name === nothing
-                    @error "Volume is missing. Please define a 'Volume' for each point in the mesh file."
+                    @abort "Volume is missing. Please define a 'Volume' for each point in the mesh file."
                 end
 
                 for i in 1:(block.num_elem)
@@ -719,7 +718,7 @@ function read_mesh(filename::String, params::Dict)
                     end
                 end
             else
-                @error "Element type $(block.elem_type) not supported"
+                @abort "Element type $(block.elem_type) not supported"
             end
         end
         for nodal_var_name in nodal_var_names
@@ -918,7 +917,7 @@ function read_mesh(filename::String, params::Dict)
     elseif params["Discretization"]["Type"] in ["Text File", "Gcode"]
         return csv_reader(filename)
     else
-        @error "Discretization type not supported"
+        @abort "Discretization type not supported"
     end
 end
 
@@ -951,7 +950,7 @@ check duplicated entries and throws an error if one is there. If not everything 
 function check_for_duplicate_in_dataframe(mesh::DataFrame)
     duplicates = findall(nonunique(mesh))
     if length(duplicates) > 0
-        @error "Mesh contains duplicate nodes! Nodes: $duplicates"
+        @abort "Mesh contains duplicate nodes! Nodes: $duplicates"
     end
 end
 
@@ -966,7 +965,7 @@ check if block_id in mesh contains only int.
 function check_types_in_dataframe(mesh::DataFrame)
     # check if block_id in mesh contains only int
     if !(eltype(mesh.block_id) <: Integer)
-        @error "block_id in mesh is $(eltype(mesh.block_id)), but it should be an Integer!"
+        @abort "block_id in mesh is $(eltype(mesh.block_id)), but it should be an Integer!"
     end
 end
 
@@ -1158,7 +1157,7 @@ function get_number_of_neighbornodes(nlist::BondScalarState{Int64}, filtered::Bo
     length_nlist = zeros(Int64, len)
     for id in 1:len
         if !filtered && length(nlist[id]) == 0
-            @error "Node $id has no neighbors please check the horizon."
+            @abort "Node $id has no neighbors please check the horizon."
         end
         length_nlist[id] = length(nlist[id])
     end
@@ -1352,7 +1351,7 @@ function create_distribution_node_based(nnodes::Int64,
                                         nlist::BondScalarState{Int64},
                                         size::Int64)
     if size > nnodes
-        @error "Number of cores $size exceeds number of nodes $nnodes."
+        @abort "Number of cores $size exceeds number of nodes $nnodes."
         return nothing, nothing
     end
     chunk_size = div(nnodes, size)
@@ -1395,7 +1394,7 @@ function create_distribution_node_based(nnodes::Int64,
         end
     end
     if sum(not_included_nodes) > 0
-        @error "code must be improved"
+        @abort "code must be improved"
     end
     for i in 1:size
         point_to_core[distribution[i]] .= i
@@ -1420,7 +1419,7 @@ function create_distribution_neighbor_based(nnodes::Int64,
                                             nlist::BondScalarState{Int64},
                                             size::Int64)
     if size > nnodes
-        @error "Number of cores $size exceeds number of nodes $nnodes."
+        @abort "Number of cores $size exceeds number of nodes $nnodes."
         return nothing, nothing
     end
 
@@ -1467,7 +1466,7 @@ function create_distribution_neighbor_based(nnodes::Int64,
     end
     push!(distribution, distr_sub_vector)
     if sum(not_included_nodes) > 0 || length(distribution) != size
-        @error "code must be improved"
+        @abort "code must be improved"
     end
     for i in 1:size
         point_to_core[distribution[i]] .= i
@@ -1489,7 +1488,7 @@ Calculate the initial size of each chunk for a nearly equal number of nodes vs. 
 """
 function create_distribution(nnodes::Int64, size::Int64)
     if size > nnodes
-        @error "Number of cores $size exceeds number of nodes $nnodes."
+        @abort "Number of cores $size exceeds number of nodes $nnodes."
     end
     chunk_size = div(nnodes, size)
     # Split the data into chunks

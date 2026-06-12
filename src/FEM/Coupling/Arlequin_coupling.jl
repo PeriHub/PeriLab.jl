@@ -5,6 +5,7 @@
 module Arlequin_Coupling
 
 using ......Data_Manager
+using ......PeriLabExceptions: @abort
 include("../Element_formulation/Lagrange_element.jl")
 using .Lagrange_element:
                          define_lagrangian_grid_space,
@@ -57,7 +58,7 @@ function init_coupling_model(nodes, fe_params::Dict{String,Any})
                                                                      (prod(p .+ 1) + 1))
 
     if any(x -> x > 1, p)
-        @error "Coupling is supported only for linear elements yet."
+        @abort "Coupling is supported only for linear elements yet."
         return nothing
     end
     if !haskey(fe_params["Coupling"], "Kappa")

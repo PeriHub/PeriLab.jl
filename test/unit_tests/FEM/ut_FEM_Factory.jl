@@ -7,14 +7,17 @@
 PeriLab.Data_Manager.initialize_data()
 
 @testset "ut_valid_models" begin
-    @test_logs (:error, "No material model has been defined for FEM in the block.") PeriLab.Solver_Manager.FEM.valid_models(Dict{String,
-                                                                                                                                 Any}())
-    # @test_logs (:warn, "Additive models are not supported for FEM yet") PeriLab.Solver_Manager.FEM.valid_models(Dict{String, Any}("Additive Model" => "a"))
-    # @test_logs (:warn, "Damage models are not supported for FEM") PeriLab.Solver_Manager.FEM.valid_models(Dict{String, Any}("Damage Model" => "a"))
+    @test_logs (:error,
+                "No material model has been defined for FEM in the block.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.valid_models(Dict{String,
+                                                     Any}())
+    end
+    # @test_logs (:warn, "Additive models are not supported for FEM yet") @test_throws PeriLab.PeriLabError begin PeriLab.Solver_Manager.FEM.valid_models(Dict{String, Any}("Additive Model" => "a")) end
+    # @test_logs (:warn, "Damage models are not supported for FEM") @test_throws PeriLab.PeriLabError begin PeriLab.Solver_Manager.FEM.valid_models(Dict{String, Any}("Damage Model" => "a")) end
     @test_nowarn PeriLab.Solver_Manager.FEM.valid_models(Dict{String,Any}("Damage Model" => "a",
                                                                           "Additive Model" => "a",
                                                                           "Material Model" => "a Correspondence"))
-    # @test_logs (:warn, "Thermal models are not supported for FEM yet") PeriLab.Solver_Manager.FEM.valid_models(Dict{String, Any}("Thermal Model" => "a"))
+    # @test_logs (:warn, "Thermal models are not supported for FEM yet") @test_throws PeriLab.PeriLabError begin PeriLab.Solver_Manager.FEM.valid_models(Dict{String, Any}("Thermal Model" => "a"))
     @test_nowarn PeriLab.Solver_Manager.FEM.valid_models(Dict{String,Any}("Material Model" => "a"))
 end
 @testset "ut_init_FEM" begin
@@ -24,11 +27,16 @@ end
     PeriLab.Data_Manager.set_num_controller(6)
     rho = PeriLab.Data_Manager.create_constant_node_scalar_field("Density", Float64)
     rho .= 2
-    @test_logs (:error, "Invalid FEM parameters") PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,
-                                                                                           Any}())
-    @test_logs (:error, "The FEM material model b is not defined") PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,
-                                                                                                            Any}("Models" => Dict("Material Models" => Dict("a" => "a")),
-                                                                                                                 "FEM" => Dict("Material Model" => "b")))
+    @test_logs (:error, "Invalid FEM parameters") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,
+                                                 Any}())
+    end
+    @test_logs (:error,
+                "The FEM material model b is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,
+                                                 Any}("Models" => Dict("Material Models" => Dict("a" => "a")),
+                                                      "FEM" => Dict("Material Model" => "b")))
+    end
     dof = 2
     PeriLab.Data_Manager.set_dof(dof)
     PeriLab.Data_Manager.create_node_vector_field("Displacements", Float64, dof)
@@ -68,7 +76,10 @@ end
                                                                                                 "Young's Modulus" => 2.5e+3,
                                                                                                 "Poisson's Ratio" => 0.33,
                                                                                                 "Shear Modulus" => 2.0e3))))
-    @test_logs (:error, "The FEM material model Elastic Model is not defined") PeriLab.Solver_Manager.FEM.init_FEM(params)
+    @test_logs (:error,
+                "The FEM material model Elastic Model is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.init_FEM(params)
+    end
     params = Dict{String,Any}("FEM" => Dict("Degree" => 1,
                                             "Element Type" => "Lagrange",
                                             "Material Model" => "Elastic Model"),
@@ -114,7 +125,9 @@ end
     # only in tests for resize or redefinition reasons
     PeriLab.Data_Manager.fields[Int64]["FE Topology"] = zeros(Int64, 1, 6)
     @test_logs (:error,
-                "The FEM material model Dict{String, Any}(\"Shear Modulus\" => 2000.0, \"Poisson's Ratio\" => 0.33, \"Material Model\" => \"Correspondence Elastic\", \"Young's Modulus\" => 2500.0, \"Symmetry\" => \"isotropic plane strain\") is not defined") PeriLab.Solver_Manager.FEM.init_FEM(params)
+                "The FEM material model Dict{String, Any}(\"Shear Modulus\" => 2000.0, \"Poisson's Ratio\" => 0.33, \"Material Model\" => \"Correspondence Elastic\", \"Young's Modulus\" => 2500.0, \"Symmetry\" => \"isotropic plane strain\") is not defined") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.init_FEM(params)
+    end
 end
 
 @testset "ut_eval" begin

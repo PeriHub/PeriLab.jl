@@ -492,12 +492,12 @@ function get_gcode_mesh(gcode_file::String, params::Dict, silent)
 
     if !isnothing(commands_dict["Start"])
         if isnothing(commands_dict["Stop"])
-            @error "Start command is set but no stop command"
+            @abort "Start command is set but no stop command"
         end
     end
     if !isnothing(commands_dict["Stop"])
         if isnothing(commands_dict["Start"])
-            @error "Stop command is set but no start command"
+            @abort "Stop command is set but no start command"
         end
     end
 
@@ -530,7 +530,7 @@ function get_gcode_mesh(gcode_file::String, params::Dict, silent)
     write_mesh(gcode_file, commands_dict, silent, pd_mesh)
 
     if size(pd_mesh["mesh_df"], 1) == 0
-        @error "No points found in the gcode file, maybe the gcode format is not supported?"
+        @abort "No points found in the gcode file, maybe the gcode format is not supported?"
         return nothing
     end
     @info "Number of points: $(size(pd_mesh["mesh_df"],1))"

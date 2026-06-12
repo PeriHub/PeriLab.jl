@@ -36,6 +36,7 @@ main("examples/Dogbone/Dogbone.yaml"; output_dir="", dry_run=false, verbose=fals
 """
 
 module PeriLab
+include("./IO/exceptions.jl")
 include("./Core/Data_manager.jl")
 include("./Support/Helpers.jl")
 include("./Support/Geometry.jl")
@@ -54,7 +55,7 @@ using LibGit2
 using StyledStrings
 
 using .Data_Manager
-
+using .PeriLabExceptions: @abort, PeriLabError
 import .Logging_Module
 import .IO
 using .Solver_Manager
@@ -331,7 +332,7 @@ function run(filename::String;
                     try
                         mkpath(output_dir)
                     catch
-                        @error "Could not create output directory"
+                        @abort "Could not create output directory"
                     end
                 end
             else
@@ -432,7 +433,7 @@ function run(filename::String;
         catch e
             if e isa InterruptException
                 @info "PeriLab was interrupted"
-            elseif !isa(e, Logging_Module.PeriLabError)
+            elseif !isa(e, PeriLabError)
                 Logging_Module.print_exception(e)
             end
             if size > 1

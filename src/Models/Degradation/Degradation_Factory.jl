@@ -5,6 +5,7 @@
 module Degradation
 
 using ....Data_Manager
+using ....PeriLabExceptions: @abort
 using ...Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "degradation_name")
 for mod in module_list
@@ -71,7 +72,7 @@ function init_model(nodes::AbstractVector{Int64},
                                   @__MODULE__,
                                   "degradation_name")
     if isnothing(mod)
-        @error "No degradation model of name " * model_param["Degradation Model"] *
+        @abort "No degradation model of name " * model_param["Degradation Model"] *
                " exists."
         return nothing
     end

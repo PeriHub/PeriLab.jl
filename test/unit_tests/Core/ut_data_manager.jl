@@ -45,7 +45,10 @@ end
     @test PeriLab.Data_Manager.get_accuracy_order() == 2
     PeriLab.Data_Manager.set_accuracy_order(5)
     @test PeriLab.Data_Manager.get_accuracy_order() == 5
-    @test_logs (:error, "Accuracy order must be greater than zero.") PeriLab.Data_Manager.set_accuracy_order(0)
+    @test_logs (:error,
+                "Accuracy order must be greater than zero.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Data_Manager.set_accuracy_order(0)
+    end
 end
 @testset "ranks" begin
     PeriLab.Data_Manager.set_rank(2)
@@ -76,7 +79,10 @@ end
         if i == 2 || i == 3
             PeriLab.Data_Manager.set_dof(i)
         else
-            @test_logs (:error, "Degree of freedom $i is not supported.") PeriLab.Data_Manager.set_dof(i)
+            @test_logs (:error,
+                        "Degree of freedom $i is not supported.") @test_throws PeriLab.PeriLabError begin
+                PeriLab.Data_Manager.set_dof(i)
+            end
         end
 
         @test PeriLab.Data_Manager.get_dof() == ref_dof[i]
@@ -124,10 +130,15 @@ testfield_keys = PeriLab.Data_Manager.get_all_field_keys()
     @test C == PeriLab.Data_Manager.get_field("C")
     @test C == PeriLab.Data_Manager.get_field("C", "Constant")
     @test_logs (:error,
-                "Field ''C'' does not exist. Check if it is initialized as constant.") PeriLab.Data_Manager.get_field("C",
-                                                                                                                      "N")
-    @test_logs (:error, "Time non_existing is not supported. Use 'constant', 'N', or 'NP1'") PeriLab.Data_Manager.get_field("C",
-                                                                                                                            "non_existing")
+                "Field ''C'' does not exist. Check if it is initialized as constant.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Data_Manager.get_field("C",
+                                       "N")
+    end
+    @test_logs (:error,
+                "Time non_existing is not supported. Use 'constant', 'N', or 'NP1'") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Data_Manager.get_field("C",
+                                       "non_existing")
+    end
     @test "A" in testfield_keys
     @test ("AN" in testfield_keys) == false
     @test ("ANP1" in testfield_keys) == false
@@ -199,7 +210,10 @@ end
     @test PeriLab.Data_Manager.get_num_elements() == 1
     PeriLab.Data_Manager.set_num_elements(0)
     @test PeriLab.Data_Manager.get_num_elements() == 0
-    @test_logs (:error, "Number of elements must be positive or zero.") PeriLab.Data_Manager.set_num_elements(-1)
+    @test_logs (:error,
+                "Number of elements must be positive or zero.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Data_Manager.set_num_elements(-1)
+    end
 end
 @testset "ut_create_existing_field" begin
     field1, field2 = PeriLab.Data_Manager.create_node_vector_field("D", Int64, 3)
@@ -265,8 +279,13 @@ end
     @test PeriLab.Data_Manager.get_field_type("DN") == Int64
     @test PeriLab.Data_Manager.get_field_type("DNP1") == Int64
     @test PeriLab.Data_Manager.get_field_type("GN") == Vector{Bool}
-    @test_logs (:error, "Field ''not there'' does not exist.") PeriLab.Data_Manager.get_field_type("not there")
-    @test_logs (:error, "Field ''D'' does not exist.") PeriLab.Data_Manager.get_field_type("D")
+    @test_logs (:error,
+                "Field ''not there'' does not exist.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Data_Manager.get_field_type("not there")
+    end
+    @test_logs (:error, "Field ''D'' does not exist.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Data_Manager.get_field_type("D")
+    end
 end
 
 @testset "ut_create_free_size_field" begin
@@ -345,10 +364,14 @@ end
     # @test typeof(testnewInt[1]) == Int8
 
     @test_logs (:error,
-                "Field ''does not exist'' does not exist. Check if it is initialized as constant.") PeriLab.Data_Manager.get_field("does not exist",
-                                                                                                                                   "NP1")
+                "Field ''does not exist'' does not exist. Check if it is initialized as constant.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Data_Manager.get_field("does not exist",
+                                       "NP1")
+    end
     @test_logs (:error,
-                "Field ''does not exist'' does not exist. \n - Check if it is initialized as non-constant. \n - Check if the model is not activated in the solver options, e.g. Pre Calculation Models: False") PeriLab.Data_Manager.get_field("does not exist")
+                "Field ''does not exist'' does not exist. \n - Check if it is initialized as non-constant. \n - Check if the model is not activated in the solver options, e.g. Pre Calculation Models: False") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Data_Manager.get_field("does not exist")
+    end
 end
 
 @testset "Matrix" begin
@@ -568,7 +591,9 @@ end
     rotation = PeriLab.Data_Manager.get_rotation()
     @test !rotation
     @test_logs (:error,
-                "Field ''Angles'' does not exist. \n - Check if it is initialized as non-constant. \n - Check if the model is not activated in the solver options, e.g. Pre Calculation Models: False") PeriLab.Data_Manager.get_field("Angles")
+                "Field ''Angles'' does not exist. \n - Check if it is initialized as non-constant. \n - Check if the model is not activated in the solver options, e.g. Pre Calculation Models: False") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Data_Manager.get_field("Angles")
+    end
     test_angles = PeriLab.Data_Manager.create_constant_node_vector_field("Angles", Float64,
                                                                          3)
     PeriLab.Data_Manager.set_rotation(true)
@@ -579,7 +604,9 @@ end
     rotation = PeriLab.Data_Manager.get_element_rotation()
     @test !rotation
     @test_logs (:error,
-                "Field ''Element Angles'' does not exist. \n - Check if it is initialized as non-constant. \n - Check if the model is not activated in the solver options, e.g. Pre Calculation Models: False") PeriLab.Data_Manager.get_field("Element Angles")
+                "Field ''Element Angles'' does not exist. \n - Check if it is initialized as non-constant. \n - Check if the model is not activated in the solver options, e.g. Pre Calculation Models: False") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Data_Manager.get_field("Element Angles")
+    end
     test_angles = PeriLab.Data_Manager.create_constant_node_vector_field("Element Angles",
                                                                          Float64, 3)# in code it has length number of elements * element integration points
     PeriLab.Data_Manager.set_element_rotation(true)

@@ -189,7 +189,10 @@ end
 
 @testset "ut_add_model" begin
     PeriLab.Data_Manager.initialize_data()
-    @test_logs (:error, "Model Test is not specified and cannot be included.") PeriLab.Solver_Manager.Model_Factory.add_model("Test")
+    @test_logs (:error,
+                "Model Test is not specified and cannot be included.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Model_Factory.add_model("Test")
+    end
 end
 
 @testset "ut_test_timestep" begin

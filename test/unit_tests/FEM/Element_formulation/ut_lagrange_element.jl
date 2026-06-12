@@ -6,32 +6,40 @@
 
 @testset "ut_define_lagrangian_grid_space" begin
     @test_logs (:error,
-                "p order for lagarangian grid space must be at least p = 1 and not zero") PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.define_lagrangian_grid_space(2,
-                                                                                                                                                                                              [
-                                                                                                                                                                                                  0,
-                                                                                                                                                                                                  0
-                                                                                                                                                                                              ])
+                "p order for lagarangian grid space must be at least p = 1 and not zero") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.define_lagrangian_grid_space(2,
+                                                                                                            [
+                                                                                                                0,
+                                                                                                                0
+                                                                                                            ])
+    end
     @test_logs (:error,
-                "p order for lagarangian grid space must be at least p = 1 and not zero") PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.define_lagrangian_grid_space(3,
-                                                                                                                                                                                              [
-                                                                                                                                                                                                  0,
-                                                                                                                                                                                                  0,
-                                                                                                                                                                                                  0
-                                                                                                                                                                                              ])
+                "p order for lagarangian grid space must be at least p = 1 and not zero") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.define_lagrangian_grid_space(3,
+                                                                                                            [
+                                                                                                                0,
+                                                                                                                0,
+                                                                                                                0
+                                                                                                            ])
+    end
     @test_logs (:error,
-                "p order for lagarangian grid space must be at least p = 1 and not zero") PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.define_lagrangian_grid_space(3,
-                                                                                                                                                                                              [
-                                                                                                                                                                                                  0,
-                                                                                                                                                                                                  1,
-                                                                                                                                                                                                  0
-                                                                                                                                                                                              ])
+                "p order for lagarangian grid space must be at least p = 1 and not zero") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.define_lagrangian_grid_space(3,
+                                                                                                            [
+                                                                                                                0,
+                                                                                                                1,
+                                                                                                                0
+                                                                                                            ])
+    end
     @test_logs (:error,
-                "p order for lagarangian grid space must be at least p = 1 and not zero") PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.define_lagrangian_grid_space(3,
-                                                                                                                                                                                              [
-                                                                                                                                                                                                  1,
-                                                                                                                                                                                                  1,
-                                                                                                                                                                                                  0
-                                                                                                                                                                                              ])
+                "p order for lagarangian grid space must be at least p = 1 and not zero") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.define_lagrangian_grid_space(3,
+                                                                                                            [
+                                                                                                                1,
+                                                                                                                1,
+                                                                                                                0
+                                                                                                            ])
+    end
     @test PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.define_lagrangian_grid_space(2,
                                                                                                               [
                                                                                                                   1,
@@ -92,29 +100,33 @@ end
                                                                                                      2
                                                                                                  ])
     @test_logs (:error,
-                "Not support degree of freedom for the finite element matrix creation") PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices(1,
-                                                                                                                                                                                       [
-                                                                                                                                                                                           9,
-                                                                                                                                                                                           2
-                                                                                                                                                                                       ],
-                                                                                                                                                                                       [
-                                                                                                                                                                                           5,
-                                                                                                                                                                                           1
-                                                                                                                                                                                       ],
-                                                                                                                                                                                       weights,
-                                                                                                                                                                                       integration_points)
+                "Not support degree of freedom for the finite element matrix creation") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices(1,
+                                                                                                       [
+                                                                                                           9,
+                                                                                                           2
+                                                                                                       ],
+                                                                                                       [
+                                                                                                           5,
+                                                                                                           1
+                                                                                                       ],
+                                                                                                       weights,
+                                                                                                       integration_points)
+    end
     @test_logs (:error,
-                "Not support degree of freedom for the finite element matrix creation") PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices(4,
-                                                                                                                                                                                       [
-                                                                                                                                                                                           3,
-                                                                                                                                                                                           3
-                                                                                                                                                                                       ],
-                                                                                                                                                                                       [
-                                                                                                                                                                                           2,
-                                                                                                                                                                                           2
-                                                                                                                                                                                       ],
-                                                                                                                                                                                       weights,
-                                                                                                                                                                                       integration_points)
+                "Not support degree of freedom for the finite element matrix creation") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.create_element_matrices(4,
+                                                                                                       [
+                                                                                                           3,
+                                                                                                           3
+                                                                                                       ],
+                                                                                                       [
+                                                                                                           2,
+                                                                                                           2
+                                                                                                       ],
+                                                                                                       weights,
+                                                                                                       integration_points)
+    end
     p = 1
     xi = PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.Lagrange_element.define_lagrangian_grid_space(2,
                                                                                                              [

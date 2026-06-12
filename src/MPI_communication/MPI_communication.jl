@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 module MPI_Communication
 import MPI
+using ...PeriLabExceptions: @abort
 export send_single_value_from_vector
 export synch_responder_to_controller
 export synch_controller_to_responder
@@ -49,7 +50,7 @@ function send_single_value_from_vector(comm::MPI.Comm,
     rank = MPI.Comm_rank(comm)
     requests = Vector{MPI.Request}()
     if type == String
-        @error "Wrong type - String in function send_single_value_from_vector"
+        @abort "Wrong type - String in function send_single_value_from_vector"
         return nothing
     end
     recv_msg = zeros(type, 1, 1)

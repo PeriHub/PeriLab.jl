@@ -5,6 +5,7 @@
 module Additive
 
 using .....Data_Manager
+using .....PeriLabExceptions: @abort
 using ...Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "additive_name")
 for mod in module_list
@@ -25,7 +26,7 @@ Initialize additive model fields
 """
 function init_fields()
     if !Data_Manager.has_key("Activation_Time")
-        @error "'Activation_Time' is missing. Please define an 'Activation_Time' for each point in the mesh file."
+        @abort "'Activation_Time' is missing. Please define an 'Activation_Time' for each point in the mesh file."
         return
     end
     # must be specified, because it might be that no temperature model has been defined
@@ -90,7 +91,7 @@ function init_model(nodes::AbstractVector{Int64},
                                   @__MODULE__,
                                   "additive_name")
     if isnothing(mod)
-        @error "No additive model of name " * model_param["Additive Model"] * " exists."
+        @abort "No additive model of name " * model_param["Additive Model"] * " exists."
         return
     end
     Data_Manager.set_model_module(model_param["Additive Model"], mod)

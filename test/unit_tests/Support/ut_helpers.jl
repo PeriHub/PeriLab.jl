@@ -55,10 +55,12 @@ end
 
 @testset "ut_invert" begin
     test_inv = zeros(2, 2)
-    @test_logs (:error, "test Float is singular.") PeriLab.Solver_Manager.Helpers.invert(zeros(Float64,
-                                                                                               4,
-                                                                                               4),
-                                                                                         "test Float is singular.")
+    @test_logs (:error, "test Float is singular.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Helpers.invert(zeros(Float64,
+                                                    4,
+                                                    4),
+                                              "test Float is singular.")
+    end
 
     PeriLab.Solver_Manager.Helpers.invert(test_inv, [1.0 0; 0 1])
     @test test_inv == inv([1 0; 0 1])
@@ -105,15 +107,23 @@ end
     PeriLab.Solver_Manager.Helpers.fastdot(a, b) == dot(a, b)
 end
 @testset "ut_get_mapping" begin
-    @test_logs (:error, "4 is no valid mapping option.") PeriLab.Solver_Manager.Helpers.get_mapping(4)
-    @test_logs (:error, "1 is no valid mapping option.") PeriLab.Solver_Manager.Helpers.get_mapping(1)
+    @test_logs (:error, "4 is no valid mapping option.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Helpers.get_mapping(4)
+    end
+    @test_logs (:error, "1 is no valid mapping option.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Helpers.get_mapping(1)
+    end
 end
 
 @testset "ut_qdim" begin
-    @test_logs (:error, "Accuracy order must be greater than zero.") PeriLab.Solver_Manager.Helpers.qdim(0,
-                                                                                                         2)
-    @test_logs (:error, "Accuracy order must be greater than zero.") PeriLab.Solver_Manager.Helpers.qdim(0,
-                                                                                                         3)
+    @test_logs (:error, "Accuracy order must be greater than zero.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Helpers.qdim(0,
+                                            2)
+    end
+    @test_logs (:error, "Accuracy order must be greater than zero.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Helpers.qdim(0,
+                                            3)
+    end
     @test PeriLab.Solver_Manager.Helpers.qdim(1, 2) == 2
     @test PeriLab.Solver_Manager.Helpers.qdim(2, 2) == 5
     @test PeriLab.Solver_Manager.Helpers.qdim(3, 2) == 9
@@ -294,19 +304,27 @@ end
     a = ones(2, 2)
     @test_nowarn PeriLab.Solver_Manager.Helpers.check_inf_or_nan(a, "a")
     a[1, 1] = 1 / 0
-    @test_logs (:error, "Field ''Testing infinite test vector'' is infinite.") PeriLab.Solver_Manager.Helpers.check_inf_or_nan(a,
-                                                                                                                               "Testing infinite test vector")
+    @test_logs (:error, "Field ''Testing infinite test vector'' is infinite.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Helpers.check_inf_or_nan(a,
+                                                        "Testing infinite test vector")
+    end
     a[1, 1] = NaN
-    @test_logs (:error, "Field ''Testing infinite test vector'' has NaN elements.") PeriLab.Solver_Manager.Helpers.check_inf_or_nan(a,
-                                                                                                                                    "Testing infinite test vector")
+    @test_logs (:error, "Field ''Testing infinite test vector'' has NaN elements.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Helpers.check_inf_or_nan(a,
+                                                        "Testing infinite test vector")
+    end
     a = 0
     @test_nowarn PeriLab.Solver_Manager.Helpers.check_inf_or_nan(a, "a")
     a = NaN
-    @test_logs (:error, "Scalar Value ''a'' is NaN.") PeriLab.Solver_Manager.Helpers.check_inf_or_nan(a,
-                                                                                                      "a")
+    @test_logs (:error, "Scalar Value ''a'' is NaN.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Helpers.check_inf_or_nan(a,
+                                                        "a")
+    end
     a = 1 / 0
-    @test_logs (:error, "Scalar value ''a'' is infinite.") PeriLab.Solver_Manager.Helpers.check_inf_or_nan(a,
-                                                                                                           "a")==true
+    @test_logs (:error, "Scalar value ''a'' is infinite.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Helpers.check_inf_or_nan(a,
+                                                        "a") == true
+    end
 end
 @testset "get_matrix_style" begin
     A = 1
@@ -351,10 +369,12 @@ end
                                                                3)) == (3, 3, 3, 3)
     @test size(PeriLab.Solver_Manager.Helpers.get_fourth_order(zeros(Float64, 3, 3),
                                                                2)) == (2, 2, 2, 2)
-    @test_logs (:error, "1 is not a valid option. Only dof 2 and 3 are supported.") PeriLab.Solver_Manager.Helpers.get_fourth_order(zeros(Float64,
-                                                                                                                                          3,
-                                                                                                                                          3),
-                                                                                                                                    1)
+    @test_logs (:error, "1 is not a valid option. Only dof 2 and 3 are supported.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Helpers.get_fourth_order(zeros(Float64,
+                                                              3,
+                                                              3),
+                                                        1)
+    end
 end
 
 @testset "ut_progress_bar" begin
@@ -444,7 +464,9 @@ end
     @test PeriLab.Solver_Manager.Helpers.get_MMatrix(36) ==
           MMatrix{6,6}(zeros(Float64, 6, 6))
     @test_logs (:error,
-                "MMatrix length 8 not pre-allocated. Please add your size to helper.jl in get_MMatrix.") PeriLab.Solver_Manager.Helpers.get_MMatrix(8)
+                "MMatrix length 8 not pre-allocated. Please add your size to helper.jl in get_MMatrix.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Helpers.get_MMatrix(8)
+    end
 end
 
 @testset "ut_sub_in_place" begin
@@ -488,8 +510,10 @@ end
     @test PeriLab.Solver_Manager.Helpers.is_dependent("Value", params) ==
           (false, nothing)
     params = Dict("Value" => Dict("Field" => "Non_Existent"))
-    @test_logs (:error, "Non_Existent does not exist for value interpolation.") PeriLab.Solver_Manager.Helpers.is_dependent("Value",
-                                                                                                                            params)
+    @test_logs (:error, "Non_Existent does not exist for value interpolation.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Helpers.is_dependent("Value",
+                                                    params)
+    end
 end
 
 @testset "ut_matrix_to_voigt" begin
@@ -507,11 +531,15 @@ end
     @test voigt[5] == 5
     @test voigt[6] == 3
     matrix = Matrix{Float64}([1 2 3 3; 4 5 6 3; 7 8 9 3])
-    @test_logs (:error, "Unsupported matrix size for matrix_to_voigt") PeriLab.Solver_Manager.Helpers.matrix_to_voigt(matrix)
+    @test_logs (:error, "Unsupported matrix size for matrix_to_voigt") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Helpers.matrix_to_voigt(matrix)
+    end
 end
 @testset "ut_voigt_to_matrix" begin
-    @test_logs (:error, "Unsupported matrix size for voigt_to_matrix") PeriLab.Solver_Manager.Helpers.voigt_to_matrix([
-                                                                                                                          1,
-                                                                                                                          2.2
-                                                                                                                      ])
+    @test_logs (:error, "Unsupported matrix size for voigt_to_matrix") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Helpers.voigt_to_matrix([
+                                                           1,
+                                                           2.2
+                                                       ])
+    end
 end

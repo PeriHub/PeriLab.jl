@@ -6,6 +6,7 @@ module Model_Factory
 
 using TimerOutputs: @timeit
 using ...Data_Manager
+using ...PeriLabExceptions: @abort
 using ...Helpers:
                   check_inf_or_nan, find_active_nodes, get_active_update_nodes, invert,
                   determinant, matrix_style, eigvals
@@ -545,7 +546,7 @@ function add_model(model_name::String, all::Bool = false)
                                       eval(Meta.parse(model_name)),
                                       all)
     catch
-        @error "Model $model_name is not specified and cannot be included."
+        @abort "Model $model_name is not specified and cannot be included."
     end
 end
 
@@ -760,7 +761,7 @@ function compute_crititical_time_step(block_nodes::Dict{Int64,Vector{Int64}},
                 bulk_modulus = g_xy / 2
                 #TODO: temporary solution!!!
             else
-                @error "No time step for material is determined because of missing properties."
+                @abort "No time step for material is determined because of missing properties."
                 return nothing
             end
             t = compute_mechanical_critical_time_step(block_nodes[iblock],

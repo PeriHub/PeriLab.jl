@@ -11,6 +11,7 @@ using LinearAlgebra
 using StaticArrays
 using TimerOutputs: @timeit
 using .....Data_Manager
+using .....PeriLabExceptions: @abort
 using ...Pre_Calculation.Deformation_Gradient: compute
 export fields_for_local_synchronization
 export compute_model
@@ -42,7 +43,7 @@ function thermal_expansion_matrix(alpha::T,
     elseif length(alpha) == 2
         return alpha_mat = SMatrix{2,2,Float64}(alpha[1], 0.0, 0.0, alpha[2])
     elseif length(alpha) == 4
-        @error "Full heat expansion matrix is not implemented yet."
+        @abort "Full heat expansion matrix is not implemented yet."
         return alpha_mat = SMatrix{2,2,Float64}(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
     end
 end
@@ -56,7 +57,7 @@ function thermal_expansion_matrix(alpha::T,
                                                 0.0,
                                                 alpha[3])
     elseif length(alpha) == 9
-        @error "Full heat expansion matrix is not implemented yet."
+        @abort "Full heat expansion matrix is not implemented yet."
         return alpha_mat = SMatrix{3,3,Float64}(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
     end
 end

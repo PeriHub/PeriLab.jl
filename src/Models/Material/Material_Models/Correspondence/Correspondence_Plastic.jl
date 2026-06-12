@@ -4,6 +4,7 @@
 
 module Correspondence_Plastic
 using ......Data_Manager
+using ......PeriLabExceptions: @abort
 using .....Material_Basis:
                            flaw_function, get_von_mises_yield_stress,
                            compute_deviatoric_and_spherical_stresses
@@ -64,11 +65,11 @@ Initializes the material model.
 function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     if !haskey(material_parameter, "Shear Modulus")
-        @error "Shear Modulus must be defined to be able to run this plastic material"
+        @abort "Shear Modulus must be defined to be able to run this plastic material"
         return
     end
     if !haskey(material_parameter, "Yield Stress")
-        @error "No ''Yield Stress'' is defined."
+        @abort "No ''Yield Stress'' is defined."
         return
     end
 

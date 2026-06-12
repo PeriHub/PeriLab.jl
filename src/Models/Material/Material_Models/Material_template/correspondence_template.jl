@@ -5,6 +5,7 @@
 module Correspondence_template
 
 using .......Data_Manager
+using .......PeriLabExceptions: @abort
 export compute_stresses
 export correspondence_name
 export fe_support
@@ -147,7 +148,7 @@ function compute_stresses_ba(nodes,
                                              Vector{Float64}},
                              stress_NP1::Union{SubArray,NodeTensorField{Float64},
                                                Vector{Float64}})
-    @error "$(correspondence_name()) not yet implemented for bond associated."
+    @abort "$(correspondence_name()) not yet implemented for bond associated."
 end
 
 """

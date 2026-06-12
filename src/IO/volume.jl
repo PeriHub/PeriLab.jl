@@ -24,7 +24,7 @@ function calculate_volume(element_type::String,
     elseif element_type == "Hex8"
         return hex8_volume(vertices)
     else
-        @error "Element type $element_type currently not supported"
+        @abort "Element type $element_type currently not supported"
         return nothing
     end
 end

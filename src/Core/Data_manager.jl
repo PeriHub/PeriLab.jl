@@ -7,6 +7,7 @@ using MPI
 using SparseArrays
 using DataStructures: OrderedDict
 using ExtendableSparse
+using ...PeriLabExceptions: @abort
 ##########################
 # Variables
 ##########################
@@ -379,7 +380,7 @@ function get_field_type(name::String, vartype::Bool = true)
             return data["field_types"][name]["type"]
         end
     end
-    @error "Field ''" * name * "'' does not exist."
+    @abort "Field ''" * name * "'' does not exist."
 end
 
 """
@@ -766,7 +767,7 @@ Sets the accuracy order for the "bond associated correspondence" implementation.
 """
 function set_accuracy_order(value::Int64)
     if value < 1
-        @error "Accuracy order must be greater than zero."
+        @abort "Accuracy order must be greater than zero."
     end
     data["accuracy_order"] = value
 end
@@ -901,7 +902,7 @@ set_num_elements(10)  # sets the number of finite elements to 10
 
 function set_num_elements(n::Int64)
     if n < 0
-        @error "Number of elements must be positive or zero."
+        @abort "Number of elements must be positive or zero."
     end
     data["num_elements"] = n
 end
@@ -1207,7 +1208,7 @@ Sets the synchronization dictionary locally during the model update process. Sho
 """
 function set_local_synch(model, name, download_from_cores, upload_to_cores, dof = 0)
     if !haskey(data["local_fields_to_synch"], model)
-        @error "Model $model is not defined. If it is a new model type, please add it to data[\"local_fields_to_synch\"] in the Data_Manager."
+        @abort "Model $model is not defined. If it is a new model type, please add it to data[\"local_fields_to_synch\"] in the Data_Manager."
         return nothing
     end
     if name in get_all_field_keys()

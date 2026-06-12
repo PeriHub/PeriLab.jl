@@ -7,6 +7,7 @@ module Correspondence
 using TimerOutputs: @timeit
 
 using .....Data_Manager
+using .....PeriLabExceptions: @abort
 using ....Zero_Energy_Control
 using ....Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "correspondence_name")
@@ -44,7 +45,7 @@ function init_model(nodes::AbstractVector{Int64},
     # global rotation
     # global angles
     if !haskey(material_parameter, "Symmetry")
-        @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
+        @abort "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
         return
     end
     dof = Data_Manager.get_dof()
@@ -65,7 +66,7 @@ function init_model(nodes::AbstractVector{Int64},
                                       @__MODULE__,
                                       "correspondence_name")
         if isnothing(mod)
-            @error "No correspondence material of name " * material_model * " exists."
+            @abort "No correspondence material of name " * material_model * " exists."
             return
         end
         Data_Manager.set_model_module(material_model, mod)
@@ -183,7 +184,7 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
     end
     @timeit "compute matrix diff" matrix_diff!(strain_increment, nodes, strain_NP1,
                                                strain_N)
-    #@error ""
+    #@abort ""
     if rotation
         @timeit "rotate forward" begin
             rotation_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Rotation Tensor")

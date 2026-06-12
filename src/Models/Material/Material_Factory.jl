@@ -8,6 +8,7 @@ include("Material_Models/Ordinary/Ordinary.jl")
 
 using TimerOutputs: @timeit
 using ....Data_Manager
+using ....PeriLabExceptions: @abort
 using ...Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "material_name")
 for mod in module_list
@@ -86,7 +87,7 @@ Initializes the material model.
 function init_model(nodes::AbstractVector{Int64}, block::Int64)
     model_param = Data_Manager.get_properties(block, "Material Model")::Dict{String,Any}
     if !haskey(model_param, "Material Model")
-        @error "Block " * string(block) * " has no material model defined."
+        @abort "Block " * string(block) * " has no material model defined."
         return
     end
 
@@ -105,7 +106,7 @@ function init_model(nodes::AbstractVector{Int64}, block::Int64)
                                       "material_name")
         Data_Manager.set_analysis_model("Material Model", block, material_model)
         if isnothing(mod)
-            @error "No material of name " * material_model * " exists."
+            @abort "No material of name " * material_model * " exists."
             return
         end
         Data_Manager.set_model_module(material_model, mod)

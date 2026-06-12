@@ -318,25 +318,29 @@ end
     end
 
     # @test_logs (:error,
-    #             "All bonds will get zero length, because all coordinates or deformed coordinates are zero. This might be an implementation error.") PeriLab.Geometry.bond_geometry!(undeformed_bond,
+    #             "All bonds will get zero length, because all coordinates or deformed coordinates are zero. This might be an implementation error.") @test_throws PeriLab.PeriLabError begin PeriLab.Geometry.bond_geometry!(undeformed_bond,
     #                                                                                                                                                                                 undeformed_bond_length,
     #                                                                                                                                                                                 Vector(1:nnodes),
     #                                                                                                                                                                                 nlist,
-    #                                                                                                                                                                                 coor)
+    #                                                                                                                                                                                 coor) end
     coor[1:2, 1:2] .= 1
     @test_logs (:error,
-                "Bond length is zero, check your mesh! Node ID: 1") PeriLab.Geometry.calculate_bond_length!(undeformed_bond[1],
-                                                                                                            undeformed_bond_length[1],
-                                                                                                            1,
-                                                                                                            coor,
-                                                                                                            nlist[1])
+                "Bond length is zero, check your mesh! Node ID: 1") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Geometry.calculate_bond_length!(undeformed_bond[1],
+                                                undeformed_bond_length[1],
+                                                1,
+                                                coor,
+                                                nlist[1])
+    end
     coor .= 0
     @test_logs (:error,
-                "All bonds will get zero length, because all coordinates or deformed coordinates are zero. This might be an implementation error.") PeriLab.Geometry.calculate_bond_length!(undeformed_bond[1],
-                                                                                                                                                                                            undeformed_bond_length[1],
-                                                                                                                                                                                            1,
-                                                                                                                                                                                            coor,
-                                                                                                                                                                                            nlist[1])
+                "All bonds will get zero length, because all coordinates or deformed coordinates are zero. This might be an implementation error.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Geometry.calculate_bond_length!(undeformed_bond[1],
+                                                undeformed_bond_length[1],
+                                                1,
+                                                coor,
+                                                nlist[1])
+    end
 end
 
 @testset "ut_compute_left_stretch_tensor" begin
@@ -643,13 +647,17 @@ end
     @test rot[2, 1] == 1
     @test rot[2, 2] < 1e-10
     @test_logs (:error,
-                "Rotation tensor not defined for 3D, make sure that you define Angles_x, Angles_y and Angles_z in yaml or in mesh file.") PeriLab.Geometry.rotation_tensor(fill(Float64(90),
-                                                                                                                                                                                (1)),
-                                                                                                                                                                           3)
+                "Rotation tensor not defined for 3D, make sure that you define Angles_x, Angles_y and Angles_z in yaml or in mesh file.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Geometry.rotation_tensor(fill(Float64(90),
+                                              (1)),
+                                         3)
+    end
     @test_logs (:error,
-                "Rotation tensor not defined for 2D") PeriLab.Geometry.rotation_tensor(fill(Float64(0),
-                                                                                            (3)),
-                                                                                       2)
+                "Rotation tensor not defined for 2D") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Geometry.rotation_tensor(fill(Float64(0),
+                                              (3)),
+                                         2)
+    end
 end
 
 @testset "ut_compute_weighted_deformation_gradient" begin

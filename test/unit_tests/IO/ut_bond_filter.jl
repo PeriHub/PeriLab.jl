@@ -285,11 +285,13 @@ end
     @test normal == expected_normal
 
     @test_logs (:error,
-                "Disk filter only implemented for 3D, use rectangular plane filter instead") PeriLab.IO.disk_filter(nnodes,
-                                                                                                                    data,
-                                                                                                                    filter,
-                                                                                                                    nlist,
-                                                                                                                    2)
+                "Disk filter only implemented for 3D, use rectangular plane filter instead") @test_throws PeriLab.PeriLabError begin
+        PeriLab.IO.disk_filter(nnodes,
+                               data,
+                               filter,
+                               nlist,
+                               2)
+    end
 end
 
 @testset "ut_rectangular_plane_filter" begin

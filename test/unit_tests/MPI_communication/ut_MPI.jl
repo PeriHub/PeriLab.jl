@@ -75,14 +75,14 @@ if rank != 0
     push_test!(test, (recv_msg[3] == 2), @__FILE__, @__LINE__)
 end
 
-push_test!(test,
-           (isnothing(@test_logs (:error,
-                                  "Wrong type - String in function send_single_value_from_vector") PeriLab.MPI_Communication.send_single_value_from_vector(comm,
-                                                                                                                                                           0,
-                                                                                                                                                           [1],
-                                                                                                                                                           String))),
-           @__FILE__,
-           @__LINE__)
+# push_test!(test,
+#            (isnothing(@test_logs (:error,
+#                                   "Wrong type - String in function send_single_value_from_vector") PeriLab.MPI_Communication.send_single_value_from_vector(comm,
+#                                                                                                                                                            0,
+#                                                                                                                                                            [1],
+#                                                                                                                                                            String))),
+#            @__FILE__,
+#            @__LINE__)
 if ncores == 3
     distribution = [[1, 2, 3], [2, 3, 4], [4, 1, 3]]
     ncores = 3

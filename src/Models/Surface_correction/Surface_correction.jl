@@ -5,6 +5,7 @@
 module Surface_Correction
 
 using .....Data_Manager
+using .....PeriLabExceptions: @abort
 export init_surface_correction
 export compute_surface_correction
 
@@ -48,7 +49,7 @@ function init_surface_correction(params::Dict,
     end
     # check if type exists; if not its an error
     if !haskey(params["Surface Correction"], "Type")
-        @error "Surface Correction needs a Type definition"
+        @abort "Surface Correction needs a Type definition"
         return
     end
     # needed for multi-step, because if type is false its not a valid model
@@ -62,7 +63,7 @@ function init_surface_correction(params::Dict,
     if params["Surface Correction"]["Type"] == "Volume Correction"
         return init_volumen_correction(local_synch, synchronise_field)
     else
-        @error "Type $(params["Surface Correction"]["Type"]) not defined for surface correction."
+        @abort "Type $(params["Surface Correction"]["Type"]) not defined for surface correction."
     end
 end
 

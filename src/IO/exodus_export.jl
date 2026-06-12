@@ -6,8 +6,6 @@ using Exodus
 using Dates
 using OrderedCollections
 
-using ..Data_Manager
-
 export get_paraview_coordinates
 export create_result_file
 export init_results_in_exodus
@@ -103,7 +101,7 @@ function get_paraview_coordinates(dof::Int64, refDof::Int64)
                paraview_specifics(dof - Int(ceil(dof / 3 - 1) * 3))
     end
 
-    @error "not yet exportable as one variable"
+    @abort "not yet exportable as one variable"
 end
 
 """

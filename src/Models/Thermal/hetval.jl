@@ -9,6 +9,7 @@ export thermal_model_name
 export fields_for_local_synchronization
 
 using .....Data_Manager
+using .....PeriLabExceptions: @abort
 
 global hetval_file_path = ""
 
@@ -133,14 +134,14 @@ function init_model(nodes::AbstractVector{Int64},
     # set to 1 to avoid a later check if the state variable field exists or not
     num_state_vars::Int64 = 1
     if !haskey(thermal_parameter, "File")
-        @error "HETVAL file is not defined."
+        @abort "HETVAL file is not defined."
         return
     end
     directory = Data_Manager.get_directory()
     thermal_parameter["File"] = joinpath(pwd(), directory, thermal_parameter["File"])
     global hetval_file_path = thermal_parameter["File"]
     if !isfile(thermal_parameter["File"])
-        @error "File $(thermal_parameter["File"]) does not exist, please check name and directory."
+        @abort "File $(thermal_parameter["File"]) does not exist, please check name and directory."
         return
     end
     if haskey(thermal_parameter, "Number of State Variables")
@@ -159,7 +160,7 @@ function init_model(nodes::AbstractVector{Int64},
         thermal_parameter["HETVAL Material Name"] = ""
     end
     if length(thermal_parameter["HETVAL Material Name"]) > 80
-        @error "Due to old Fortran standards only a name length of 80 is supported"
+        @abort "Due to old Fortran standards only a name length of 80 is supported"
         return
     end
 
@@ -185,7 +186,7 @@ function init_model(nodes::AbstractVector{Int64},
     end
     for (id, field_name) in enumerate(field_names)
         if !Data_Manager.has_key(String(field_name))
-            @error "Predefined field ''$field_name'' is not defined in the mesh file."
+            @abort "Predefined field ''$field_name'' is not defined in the mesh file."
             return
         end
         # view or copy and than deleting the old one

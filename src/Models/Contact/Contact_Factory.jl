@@ -7,6 +7,7 @@ module Contact
 using TimerOutputs: @timeit
 
 using .....Data_Manager
+using .....PeriLabExceptions: @abort
 using ...Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "contact_model_name")
 for mod in module_list
@@ -124,7 +125,7 @@ function init_contact_model(params)
                                       @__MODULE__,
                                       "contact_model_name")
         if isnothing(mod)
-            @error "No contact model of type " * contact_params["Type"] *
+            @abort "No contact model of type " * contact_params["Type"] *
                    " exists."
             return
         end
@@ -402,39 +403,39 @@ function check_valid_contact_model(params, block_ids::Vector{Int64})
     for contact_model in filter(k -> k != "Globals", keys(params))
         for contact_groups in values(params[contact_model]["Contact Groups"])
             if !haskey(contact_groups, "Master Block ID")
-                @error "Contact model needs a ''Master''"
+                @abort "Contact model needs a ''Master''"
                 return
             end
             if !haskey(contact_groups, "Slave Block ID")
-                @error "Contact model needs a ''Slave''"
+                @abort "Contact model needs a ''Slave''"
                 return
             end
             if contact_groups["Master Block ID"] == contact_groups["Slave Block ID"]
-                @error "Contact master and slave are equal. Self contact is not implemented yet."
+                @abort "Contact master and slave are equal. Self contact is not implemented yet."
                 return
             end
 
             if !(contact_groups["Master Block ID"] in block_ids)
-                @error "Block defintion in master does not exist."
+                @abort "Block defintion in master does not exist."
                 return
             end
             if !(contact_groups["Slave Block ID"] in block_ids)
-                @error "Block defintion in slave does not exist."
+                @abort "Block defintion in slave does not exist."
                 return
             end
             check_dict[contact_groups["Master Block ID"]] = contact_groups["Slave Block ID"]
             if haskey(check_dict, contact_groups["Slave Block ID"]) &&
                check_dict[contact_groups["Slave Block ID"]] ==
                contact_groups["Master Block ID"]
-                @error "Master and Slave should be defined in an inverse way, e.g. Master = 1, Slave = 2 in model 1 and Master = 2, Slave = 1 in model 2."
+                @abort "Master and Slave should be defined in an inverse way, e.g. Master = 1, Slave = 2 in model 1 and Master = 2, Slave = 1 in model 2."
                 return
             end
             if !haskey(contact_groups, "Search Radius")
-                @error "Contact model needs a ''Search Radius''."
+                @abort "Contact model needs a ''Search Radius''."
                 return
             end
             if contact_groups["Search Radius"] <= 0
-                @error "''Search Radius'' must be greater than zero."
+                @abort "''Search Radius'' must be greater than zero."
                 return
             end
         end

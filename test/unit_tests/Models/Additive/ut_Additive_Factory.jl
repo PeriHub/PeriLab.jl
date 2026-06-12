@@ -22,7 +22,9 @@
     nlist[4] = [1, 3]
     PeriLab.Data_Manager.create_bond_scalar_state("Bond Damage", Float64)
     @test_logs (:error,
-                "'Activation_Time' is missing. Please define an 'Activation_Time' for each point in the mesh file.") PeriLab.Solver_Manager.Model_Factory.Additive.init_fields()
+                "'Activation_Time' is missing. Please define an 'Activation_Time' for each point in the mesh file.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Model_Factory.Additive.init_fields()
+    end
     PeriLab.Data_Manager.create_constant_node_scalar_field("Activation_Time", Float64)
     PeriLab.Solver_Manager.Model_Factory.Additive.init_fields()
     field_keys = PeriLab.Data_Manager.get_all_field_keys()
@@ -35,10 +37,13 @@ end
 
 @testset "init_additive" begin
     PeriLab.Data_Manager.data["properties"][23] = Dict("Additive Model" => Dict("Additive Model" => "does not exist"))
-    @test_logs (:error, "No additive model of name does not exist exists.") PeriLab.Solver_Manager.Model_Factory.Additive.init_model(Vector{Int64}([
-                                                                                                                                                       1,
-                                                                                                                                                       2,
-                                                                                                                                                       3
-                                                                                                                                                   ]),
-                                                                                                                                     23)
+    @test_logs (:error,
+                "No additive model of name does not exist exists.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.Model_Factory.Additive.init_model(Vector{Int64}([
+                                                                                   1,
+                                                                                   2,
+                                                                                   3
+                                                                               ]),
+                                                                 23)
+    end
 end

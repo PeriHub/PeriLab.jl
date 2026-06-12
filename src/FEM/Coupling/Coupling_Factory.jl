@@ -5,6 +5,7 @@
 module Coupling
 
 using ....Data_Manager
+using ....PeriLabExceptions: @abort
 using ...Solver_Manager: find_module_files, create_module_specifics
 
 global module_list = find_module_files(@__DIR__, "coupling_name")
@@ -21,7 +22,7 @@ function init_coupling(nodes, complete_params::Dict)
         return
     end
     if !haskey(complete_params["FEM"]["Coupling"], "Coupling Type")
-        @error "''Coupling Type'' is missing and must be defined, options are Alrequin. "
+        @abort "''Coupling Type'' is missing and must be defined, options are Alrequin. "
         return nothing
     end
     coupling_model = complete_params["FEM"]["Coupling"]["Coupling Type"]
@@ -29,7 +30,7 @@ function init_coupling(nodes, complete_params::Dict)
     mod = create_module_specifics(coupling_model, module_list,
                                   @__MODULE__, "coupling_name")
     if isnothing(mod)
-        @error "No material of name " * material_model * " exists."
+        @abort "No material of name " * material_model * " exists."
         return
     end
     Data_Manager.set_model_module(coupling_model, mod)

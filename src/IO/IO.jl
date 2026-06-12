@@ -11,6 +11,7 @@ using TimerOutputs: @timeit
 using Printf
 
 using ..Data_Manager
+using ..PeriLabExceptions: @abort
 
 include("read_inputdeck.jl")
 include("mesh_data.jl")
@@ -279,13 +280,13 @@ function get_results_mapping(params::Dict, path::String)
                      "NodeTensorField",
                      "Element_Field"
                  ])
-                @error "Fieldtype $field_type of field $(fieldname[1]) is not supported."
+                @abort "Fieldtype $field_type of field $(fieldname[1]) is not supported."
             end
 
             datafield = Data_Manager.get_field(fieldname[1], fieldname[2])
             sizedatafield = size(datafield)
             if isempty(sizedatafield)
-                @error "No field " * fieldname * " exists."
+                @abort "No field " * fieldname * " exists."
                 return nothing
             end
 
@@ -730,7 +731,7 @@ function get_global_values(output::Dict)
         end
         if compute_class == "Block_Data"
             if !haskey(output[varname]["compute_params"], "Block")
-                @error "Missing Block for compute class $varname"
+                @abort "Missing Block for compute class $varname"
             end
             block = output[varname]["compute_params"]["Block"]
             if block in block_name_list

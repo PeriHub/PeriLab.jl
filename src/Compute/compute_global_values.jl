@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using ...Data_Manager
+using ...PeriLabExceptions: @abort
 
 """
     calculate_nodelist(field_key::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, local_nodes::Vector{Int64})
@@ -29,7 +30,7 @@ function calculate_nodelist(field_key::String,
         field_key = field_key * "NP1"
     else
         if !Data_Manager.has_key(field_key)
-            @error "Field $field_key does not exists for computation"
+            @abort "Field $field_key does not exists for computation"
             return
         end
         field = Data_Manager.get_field(field_key)
@@ -72,7 +73,7 @@ function calculate_nodelist(field_key::String,
             value = field[local_nodes, dof][1]
         end
     else
-        @error "Unknown calculation type $calculation_type"
+        @abort "Unknown calculation type $calculation_type"
         return
     end
     return value::field_type, Int64(length(local_nodes))

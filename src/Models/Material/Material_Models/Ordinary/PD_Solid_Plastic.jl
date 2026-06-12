@@ -7,6 +7,7 @@ module PD_Solid_Plastic
 using TimerOutputs: @timeit
 
 using ......Data_Manager
+using ......PeriLabExceptions: @abort
 using ....Material_Basis: get_symmetry
 using ......Helpers: add_in_place!, mul_in_place!, sub_in_place!
 using ..Ordinary: calculate_symmetry_params, get_bond_forces
@@ -50,7 +51,7 @@ function init_model(nodes::AbstractVector{Int64},
     horizon = Data_Manager.get_field("Horizon")
 
     if !haskey(material_parameter, "Yield Stress")
-        @error "Yield Stress is not defined in input deck"
+        @abort "Yield Stress is not defined in input deck"
         return
     end
     yield_stress = material_parameter["Yield Stress"]

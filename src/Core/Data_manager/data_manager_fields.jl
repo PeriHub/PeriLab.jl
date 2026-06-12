@@ -48,7 +48,7 @@ function get_field(name::String, time::String = "Constant")
         try
             return _get_field(data["NP1_to_N"][name].N)
         catch
-            @error "Field ''" *
+            @abort "Field ''" *
                    name *
                    "'' does not exist. Check if it is initialized as constant."
         end
@@ -56,12 +56,12 @@ function get_field(name::String, time::String = "Constant")
         try
             return _get_field(data["NP1_to_N"][name].NP1)
         catch
-            @error "Field ''" *
+            @abort "Field ''" *
                    name *
                    "'' does not exist. Check if it is initialized as constant."
         end
     else
-        @error "Time $time is not supported. Use 'constant', 'N', or 'NP1'"
+        @abort "Time $time is not supported. Use 'constant', 'N', or 'NP1'"
     end
 end
 
@@ -94,7 +94,7 @@ function _get_field(name::String)::Union{Array,Nothing}
     try
         return fieldmanager.fields[name].data
     catch
-        @error "Field ''" *
+        @abort "Field ''" *
                name *
                "'' does not exist. \n - Check if it is initialized as non-constant. \n - Check if the model is not activated in the solver options, e.g. Pre Calculation Models: False"
     end

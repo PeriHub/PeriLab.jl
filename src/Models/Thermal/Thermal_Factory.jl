@@ -5,6 +5,7 @@
 module Thermal
 
 using ....Data_Manager
+using ....PeriLabExceptions: @abort
 using TimerOutputs: @timeit
 using ...Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "thermal_model_name")
@@ -77,7 +78,7 @@ function init_model(nodes::AbstractVector{Int64},
                                                              @__MODULE__,
                                                              "thermal_model_name")
         if isnothing(mod)
-            @error "No thermal model of name " * thermal_model * " exists."
+            @abort "No thermal model of name " * thermal_model * " exists."
             return
         end
         Data_Manager.set_model_module(thermal_model, mod)
