@@ -17,7 +17,7 @@ PeriLab:
         Heat Transfer Coefficient: 15.0e-3
         Environmental Temperature: 200
     Degradation Models:
-     Degradation test:
+      Degradation test:
         Degradation Model: "Thermal Decomposition"
         Decomposition Temperature: 50
   Blocks:
@@ -41,13 +41,13 @@ PeriLab:
     Initial Time: 0.0
     Final Time: 50.0
     Verlet:
-        Safety Factor: 1.0
-        Fixed dt: 0.01
+      Safety Factor: 1.0
+      Fixed dt: 0.01
   Outputs:
     Output1:
       Output Filename: "thermal_decomp"
       Output File Type: Exodus
-      Number of Output Steps: 100
+      Number of Output Steps: 10
       Output Variables:
         Temperature: True
         Damage: True

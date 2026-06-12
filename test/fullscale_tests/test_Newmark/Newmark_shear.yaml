@@ -53,7 +53,7 @@ PeriLab:
       Type: "Dirichlet"
   Outputs:
     Output1:
-      Number of Output Steps: 400
+      Number of Output Steps: 40
       Output File Type: Exodus
       Output Filename: Newmark_shear
       Output Variables:

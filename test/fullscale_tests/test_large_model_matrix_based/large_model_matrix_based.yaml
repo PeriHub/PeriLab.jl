@@ -101,7 +101,7 @@ PeriLab:
       Variable: "Displacements"
   Outputs:
     Output:
-      Number of Output Steps: 100
+      Number of Output Steps: 10
       Output File Type: Exodus
       Output Filename: large_model_matrix_based
       Output Variables:

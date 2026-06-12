@@ -99,7 +99,7 @@ PeriLab:
       Numerical Damping: 0.05
   Outputs:
     Output1:
-      Number of Output Steps: 100
+      Number of Output Steps: 10
       Output File Type: Exodus
       Output Filename: vumat
       Output Variables:

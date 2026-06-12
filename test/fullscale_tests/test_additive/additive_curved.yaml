@@ -42,7 +42,7 @@ PeriLab:
         Type: Bond based
   Outputs:
     Output1:
-      Number of Output Steps: 100
+      Number of Output Steps: 10
       Output File Type: Exodus
       Output Filename: additive_curved
       Output Variables:

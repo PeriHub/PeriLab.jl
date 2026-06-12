@@ -87,17 +87,17 @@ PeriLab:
         Allow Contact: True
   Outputs:
     Output1:
-      Number of Output Steps: 100
+      Number of Output Steps: 10
       Output Filename: DCBmodel_PD_solid_temp_depended
       Output File Type: Exodus
       Output Variables:
         Damage: true
         Displacements: true
         Forces: true
-        Number of Neighbors: true
-        External_Forces: True
-        External_Displacements: True
-        Temperature: True
+        # Number of Neighbors: true
+        # External_Forces: True
+        # External_Displacements: True
+        # Temperature: True
         Cauchy Stress: True
   Models:
     Damage Models:

@@ -68,7 +68,7 @@ PeriLab:
     Output1:
       Output Filename: "thermal_expansion_lin_mat_const_T"
       Output File Type: Exodus
-      Number of Output Steps: 10200
+      Number of Output Steps: 10
       Output Variables:
         Temperature: True
         Displacements: True

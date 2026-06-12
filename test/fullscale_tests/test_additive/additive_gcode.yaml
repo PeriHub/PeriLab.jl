@@ -11,7 +11,7 @@ PeriLab:
     Input Mesh File: Zugstab_small.gcode
     Gcode:
       Overwrite Mesh: True
-      Sampling: 1.5
+      Sampling: 6.0 # 1.5
       Width: 0.4
       Height: 0.4
       Scale: 1.0
@@ -73,9 +73,9 @@ PeriLab:
     Output1:
       Output Filename: "additive_gcode"
       Output File Type: Exodus
-      Number of Output Steps: 100
+      Number of Output Steps: 10
       Output Variables:
         Temperature: True
         Heat Flow: True
         Active: True
-        Specific Volume: True
+        # Specific Volume: True

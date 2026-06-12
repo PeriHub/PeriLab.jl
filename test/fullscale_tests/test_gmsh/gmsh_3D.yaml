@@ -30,7 +30,7 @@ PeriLab:
       Type: Dirichlet
   Outputs:
     Output1:
-      Number of Output Steps: 100
+      Number of Output Steps: 10
       Output Filename: gmsh_3D
       Output File Type: Exodus
       Output Variables:

@@ -44,7 +44,7 @@ PeriLab:
     Output1:
       Output File Type: Exodus
       Output Filename: Abaqus
-      Number of Output Steps: 200
+      Number of Output Steps: 20
       Output Variables:
         Displacements: True
         Number of Neighbors: True
