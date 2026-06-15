@@ -2,26 +2,23 @@
 
 ## Installation
 
-The PeriLab package is available through the Julia package system and can be installed using the following commands:
+The `PeriLab` package is available through the Julia package system and can be installed as an App using the following commands:
 
 ```julia
 using Pkg
-Pkg.add("PeriLab")
+Pkg.Apps.add("PeriLab")
 ```
 
-Throughout the rest of this tutorial, we will assume that you have installed the
-PeriLab package and have already typed `using PeriLab` to bring all of the
-relevant variables into your current namespace.
+!!! info "Bundled Installation"
+    Alternatively, you can also download the binaries for Windows or Linux directly from the [release page](https://github.com/PeriHub/PeriLab.jl/releases), Julia is already included there.
 
 ## Using `PeriLab`
 
-The simplest way to run the `PeriLab` simulation core is to use a provided example import the module and go.
+The simplest way to run the `PeriLab` simulation core is to use the provided PeriLab Application and go.
 
-```julia PeriLab
-using PeriLab
-
-PeriLab.get_examples()
-PeriLab.main("examples/DCB/DCBmodel.yaml")
+```sh
+PeriLab -e
+PeriLab examples/DCB/DCBmodel.yaml
 ```
 The output should look like this:
 
@@ -46,7 +43,7 @@ julia> MPI.install_mpiexecjl()
 
 Run PeriLab with two processors:
 ```sh
-$ mpiexecjl -n 2 julia -e "using PeriLab; PeriLab.main()" Dogbone.yaml -v
+$ mpiexecjl -n 2 julia -e 'using PeriLab' examples/DCB/DCBmodel.yaml
 ```
 
 ## Postprocessing

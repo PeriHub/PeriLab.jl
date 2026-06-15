@@ -134,16 +134,14 @@ A few basic examples of `PeriLab` can be found in the [examples](https://github.
 
 ## Installation
 
-The `PeriLab`  package is available through the Julia package system and can be installed using the following commands:
+The `PeriLab` package is available through the Julia package system and can be installed as an App using the following commands:
 
 ```julia
 using Pkg
 Pkg.Apps.add("PeriLab")
 ```
 
-Throughout the rest of this tutorial, we will assume that you have installed the
-PeriLab package and have already typed `using PeriLab` to bring all of the
-relevant variables into your current namespace.
+>Note: Alternatively, you can also download the binaries for Windows or Linux directly from the [release page](https://github.com/PeriHub/PeriLab.jl/releases), Julia is already included there.
 
 ### Getting Started with `PeriLab`
 
