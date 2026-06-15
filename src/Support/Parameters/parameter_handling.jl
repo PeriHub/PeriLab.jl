@@ -1041,6 +1041,10 @@ global expected_structure = Dict("PeriLab" => [
                                                                                        Union{Float64,
                                                                                              Int64},
                                                                                        false
+                                                                                   ],
+                                                                                   "Matrix Update" => [
+                                                                                       Bool,
+                                                                                       false
                                                                                    ]),
                                                                          false
                                                                      ],
