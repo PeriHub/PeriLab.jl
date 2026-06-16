@@ -15,14 +15,14 @@ include("helper.jl")
 MPI.Init()
 
 @testset ExtendedTestSet "PeriLab" begin
+    @testset "ut_perilab" begin
+        include("unit_tests/ut_perilab.jl")
+    end
     @testset "Aqua" begin
         Aqua.test_all(PeriLab, ambiguities = false,
                       stale_deps = (ignore = [:ZipArchives, :JSON3],))
     end
     @testset "unit_tests" begin
-        @testset "ut_perilab" begin
-            include("unit_tests/ut_perilab.jl")
-        end
         @testset "FEM" begin
             @testset "ut_FEM_routines" begin
                 include("unit_tests/FEM/ut_FEM_routines.jl")

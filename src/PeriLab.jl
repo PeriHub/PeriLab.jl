@@ -185,11 +185,11 @@ function (@main)(ARGS)
     if rank == 0
         if parsed_args["examples"]
             get_examples()
-            return 0
+            return
         end
         if length(parsed_args["filenames"]) == 0
             @error "Please provide at least one filename, f.e. 'PeriLab example.yaml'"
-            return 1
+            return
         end
     end
     MPI.Barrier(comm)
@@ -202,8 +202,8 @@ function (@main)(ARGS)
             silent = parsed_args["silent"],
             reload = parsed_args["reload"])
     end
-    MPI.Finalize()
-    return 0
+    # MPI.Finalize()
+    return
 end
 
 """
@@ -435,6 +435,7 @@ function run(filename::String;
                 @info "PeriLab was interrupted"
             elseif !isa(e, PeriLabError)
                 Logging_Module.print_exception(e)
+                rethrow(e)
             end
             if size > 1
                 MPI.Abort(comm, 0)

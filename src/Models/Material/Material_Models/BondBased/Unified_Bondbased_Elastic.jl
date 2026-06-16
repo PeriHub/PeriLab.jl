@@ -76,7 +76,7 @@ function init_model(nodes::AbstractVector{Int64},
             I1 = n * sqrt(1 - n * n)
             I2 = n * a * sinh(sqrt(1 / (n * n) - 1))
 
-            if symmetry == "plane stress"
+            if occursin("plane stress", symmetry)
                 #constant[iID] = 9 / (pi * horizon[iID]^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
                 constant[iID][jID][1],
                 constant[iID][jID][2] = compute_constant_2D_pstress(iID,
@@ -85,7 +85,7 @@ function init_model(nodes::AbstractVector{Int64},
                                                                     beta,
                                                                     I1,
                                                                     I2)
-            elseif symmetry == "plane strain"
+            elseif occursin("plane strain", symmetry)
                 #constant[iID] = 48 / (5 * pi * horizon[iID]^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
                 constant[iID][jID][1],
                 constant[iID][jID][2] = compute_constant_2D_pstrain(iID,
@@ -159,7 +159,7 @@ function compute_model(nodes::AbstractVector{Int64},
                                          volume)
 
         iso_strain = compression_strain(bb_strain[iID, :, :])
-        if symmetry != "plane stress" && symmetry != "plane stress"
+        if !occursin("plane stress", symmetry) && !occursin("plane strain", symmetry)
             compute_bb_force_3D!(bond_force[iID],
                                  0.5 * constant[iID],
                                  bond_damage[iID],
@@ -175,7 +175,7 @@ function compute_model(nodes::AbstractVector{Int64},
                                  undeformed_bond_length[iID],
                                  deformed_bond[iID],
                                  undeformed_bond[iID],
-                                 bond_strain[iID],
+                                 bb_strain[iID],
                                  iso_strain)
         end
     end
@@ -315,35 +315,40 @@ end
 # for 2D its 42, 43, 44 and 46
 # -> constants are set up in init (21, 43,44,46)
 
-function compute_beta_3D_1(iID, nu::Union{SubArray,Vector{Float64},Vector{Int64}})
-    return 3 * (4 * nu[iID] - 1) / (2 * (1 + nu[iID]))
-end
+# function compute_beta_3D_1(iID, nu::Union{SubArray,Vector{Float64},Vector{Int64}})
+#     return 3 * (4 * nu[iID] - 1) / (2 * (1 + nu[iID]))
+# end
 function compute_beta_3D_1(iID, nu::Union{Float64,Int64})
     return 3 * (4 * nu - 1) / (2 * (1 + nu))
 end
 
-function compute_beta_3D_2(iID, nu::Union{SubArray,Vector{Float64},Vector{Int64}})
-    return 5 * (1 - 2 * nu[iID]) / (2 * (1 + nu[iID]))
-end
+# function compute_beta_3D_2(iID, nu::Union{SubArray,Vector{Float64},Vector{Int64}})
+#     return 5 * (1 - 2 * nu[iID]) / (2 * (1 + nu[iID]))
+# end
 function compute_beta_3D_2(iID, nu::Union{Float64,Int64})
     return 5 * (1 - 2 * nu) / (2 * (1 + nu))
 end
 
-function compute_constant_2D_pstress(iID,
-                                     nu::Union{SubArray,Vector{Float64},Vector{Int64}},
-                                     horizon,
-                                     beta,
-                                     I1,
-                                     I2)
-    c2 = 6 / (pi * horizon[iID] * (1 - nu[iID]))
-    Ra = 2 * (1 - nu[iID]) / (1 - 2 * nu[iID]) * beta * I1
-    Rb = 6 * nu[iID] * (1 - nu[iID]) / (1 - 2 * nu[iID])^2 * beta * I1 +
-         2 * (1 - nu[iID]) / (1 - 2 * nu[iID]) *
-         (1 - (1 + nu[iID]) / (1 - 2 * nu[iID]) * beta) *
-         I2
-    return Ra * c2, Rb * c2
-end
-function compute_constant_2D_pstress(iID, nu::Union{Float64,Int64}, beta, I1, I2)
+# function compute_constant_2D_pstress(iID::Int64,
+#                                      nu::Union{SubArray,Vector{Float64},Vector{Int64}},
+#                                      horizon::Vector{Float64},
+#                                      beta::Float64,
+#                                      I1::Float64,
+#                                      I2::Float64)
+#     c2 = 6 / (pi * horizon[iID] * (1 - nu[iID]))
+#     Ra = 2 * (1 - nu[iID]) / (1 - 2 * nu[iID]) * beta * I1
+#     Rb = 6 * nu[iID] * (1 - nu[iID]) / (1 - 2 * nu[iID])^2 * beta * I1 +
+#          2 * (1 - nu[iID]) / (1 - 2 * nu[iID]) *
+#          (1 - (1 + nu[iID]) / (1 - 2 * nu[iID]) * beta) *
+#          I2
+#     return Ra * c2, Rb * c2
+# end
+function compute_constant_2D_pstress(iID::Int64,
+                                     nu::Float64,
+                                     horizon::Vector{Float64},
+                                     beta::Float64,
+                                     I1::Float64,
+                                     I2::Float64)
     c2 = 6 / (pi * horizon[iID] * (1 - nu))
     Ra = 2 * (1 - nu) / (1 - 2 * nu) * beta * I1
     Rb = 6 * nu * (1 - nu) / (1 - 2 * nu)^2 * beta * I1 +
@@ -351,27 +356,32 @@ function compute_constant_2D_pstress(iID, nu::Union{Float64,Int64}, beta, I1, I2
     return Ra * c2, Rb * c2
 end
 
-function compute_constant_2D_pstrain(iID,
-                                     nu::Union{SubArray,Vector{Float64},Vector{Int64}},
-                                     horizon,
-                                     beta,
-                                     I1,
-                                     I2)
-    c2 = 6 / (pi * horizon[iID] * (1 - 2 * nu[iID]) * (1 + nu[iID]))
-    Ra = 2 * (1 + nu[iID]) * beta * I1
-    Rb = 2 * (1 + nu[iID]) * (1 - beta) * I2
-    return Ra * c2, Rb * c2
-end
-function compute_constant_2D_pstrain(iID, nu::Union{Float64,Int64}, horizon, beta, I1, I2)
+# function compute_constant_2D_pstrain(iID::Int64,
+#                                      nu::Union{SubArray,Vector{Float64},Vector{Int64}},
+#                                      horizon::Vector{Float64},
+#                                      beta::Float64,
+#                                      I1::Float64,
+#                                      I2::Float64)
+#     c2 = 6 / (pi * horizon[iID] * (1 - 2 * nu[iID]) * (1 + nu[iID]))
+#     Ra = 2 * (1 + nu[iID]) * beta * I1
+#     Rb = 2 * (1 + nu[iID]) * (1 - beta) * I2
+#     return Ra * c2, Rb * c2
+# end
+function compute_constant_2D_pstrain(iID::Int64,
+                                     nu::Float64,
+                                     horizon::Vector{Float64},
+                                     beta::Float64,
+                                     I1::Float64,
+                                     I2::Float64)
     c2 = 6 / (pi * horizon[iID] * (1 - 2 * nu) * (1 + nu))
     Ra = 2 * (1 + nu) * beta * I1
     Rb = 2 * (1 + nu) * (1 - beta) * I2
     return Ra * c2, Rb * c2
 end
 
-function compute_beta(iID, nu::Union{SubArray,Vector{Float64},Vector{Int64}})
-    return 5 * (1 - nu[iID]) / (2 * (1 + nu[iID]))
-end
+# function compute_beta(iID, nu::Union{SubArray,Vector{Float64},Vector{Int64}})
+#     return 5 * (1 - nu[iID]) / (2 * (1 + nu[iID]))
+# end
 
 function compute_beta(iID, nu::Union{Float64,Int64})
     return 5 * (1 - nu) / (2 * (1 + nu))
