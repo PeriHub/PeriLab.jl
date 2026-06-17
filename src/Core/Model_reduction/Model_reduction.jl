@@ -88,7 +88,7 @@ function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int
         @timeit "update_material_point_part" compute_model(nodes)
     end
     K = Data_Manager.get_stiffness_matrix()
-    if !(master_nodes == [])
+    if !(master_nodes == []) || !(slave_nodes == [])
         coupling_nodes = setdiff(master_nodes, pd_nodes)
 
         cn[master_nodes] .= 3
@@ -103,19 +103,21 @@ function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int
 
         # create the mass part.
 
-        density_mass = zeros(length(density) * dof)
+        density_mass = zeros(Float64, length(density) * dof)
 
         for iID in eachindex(density_mass)
             density_mass[iID] = density[Int(ceil(iID / dof))]
         end
         # perform the condensation of the system
 
-        @timeit "Condensation" K_reduced,
-                               mass_reduced=mod.reduce_matrices(K,
-                                                                density_mass,
-                                                                perm_master,
-                                                                perm_slave,
-                                                                nmodes)
+        @timeit "Condensation"
+        K_reduced,
+        mass_reduced = mod.reduce_matrices(K,
+                                           density_mass,
+                                           perm_master,
+                                           perm_slave,
+                                           nmodes)
+
         @info "b"
 
         dropzeros!(mass_reduced)
