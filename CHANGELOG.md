@@ -8,6 +8,13 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.2] - 2025-06-17
+
+### Fixed
+
+- Logging and error handling
+- MPI multi call
+
 ## [2.1.1] - 2025-06-11
 
 ### Added
