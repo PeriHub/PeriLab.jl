@@ -52,6 +52,7 @@ export matrix_style
 export matrix_to_voigt
 export voigt_to_matrix
 export matrix_to_vector
+export matrix_to_vector_of_vector
 export vector_to_matrix
 
 const MAPPING_2D = @SMatrix [1 1; 2 2; 2 1]
@@ -72,20 +73,6 @@ function get_shared_horizon(id)
 end
 
 """
-	 matrix_to_vector(mat::Matrix{T}) where {T<:Union{Float64,Int64}}
-
-Transforming a matrix representation in a Vector{Vector} representation.
-
-# Arguments
-- `mat::Union{Matrix{Float64},Matrix{Int64}}`: Points which form the polyhedron.
-# Returns
-- ``: transformed data
-"""
-function matrix_to_vector(mat::Matrix{T}) where {T<:Union{Float64,Int64}}
-    return [vec(mat[i, :]) for i in eachindex(axes(mat, 1))]
-end
-
-"""
 	compute_geometry(points::Union{Matrix{Float64},Matrix{Int64}})
 
 Returns a polyhedron object in 2D or 3D. To do so the matrix form of storing the geometry is transfered in a Vector{Vector}. This form is than transformed in a V-representation of the Polyhedra.jl package.
@@ -97,7 +84,7 @@ Returns a polyhedron object in 2D or 3D. To do so the matrix form of storing the
 """
 
 function compute_geometry(points::Union{Matrix{Float64},Matrix{Int64}})
-    return polyhedron(vrep(matrix_to_vector(points)))
+    return polyhedron(vrep(matrix_to_vector_of_vector(points)))
 end
 
 """
@@ -1254,6 +1241,20 @@ function voigt_to_matrix(voigt::Union{MVector,SVector,Vector})
     else
         @abort "Unsupported matrix size for voigt_to_matrix"
     end
+end
+
+"""
+	 matrix_to_vector_of_vector(mat::Matrix{T}) where {T<:Union{Float64,Int64}}
+
+Transforming a matrix representation in a Vector{Vector} representation.
+
+# Arguments
+- `mat::Union{Matrix{Float64},Matrix{Int64}}`: Points which form the polyhedron.
+# Returns
+- ``: transformed data
+"""
+function matrix_to_vector_of_vector(mat::Matrix{T}) where {T<:Union{Float64,Int64}}
+    return [vec(mat[i, :]) for i in eachindex(axes(mat, 1))]
 end
 
 """
