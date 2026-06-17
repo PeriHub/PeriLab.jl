@@ -8,7 +8,11 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
-## [2.1.2] - 2025-06-17
+## [2.2.0] - 2025-06-17
+
+### Changed
+
+- Minimal version of Julia is now 1.12
 
 ### Fixed
 
