@@ -27,6 +27,7 @@ Apply the bond filters to the neighborhood list.
 - `nlist::BondScalarState{Int64}`: The filtered neighborhood list.
 - `nlist_filtered_ids::BondScalarState{Int64}`: The filtered neighborhood list.
 """
+
 function apply_bond_filters(nlist::BondScalarState{Int64},
                             mesh::DataFrame,
                             params::Dict,
@@ -34,6 +35,7 @@ function apply_bond_filters(nlist::BondScalarState{Int64},
     bond_filters = get_bond_filters(params)
     nlist_filtered_ids = nothing
     bond_norm = nothing
+    contact_enabled = false
     if bond_filters[1]
         @debug "Apply bond filters"
         coor = names(mesh)[1:dof]
@@ -62,6 +64,10 @@ function apply_bond_filters(nlist::BondScalarState{Int64},
                                           module_list,
                                           @__MODULE__,
                                           "bond_filter_name")
+            if isnothing(mod)
+                @warn "$(filter["Type"]) is not defined"
+                return nlist, nlist_filtered_ids, bond_norm
+            end
             filter_flag, normal = mod.run_bond_filter(nnodes, data, filter, nlist, dof)
             # Theoretically all bond filter can be in contact mode from memory side
             # but only the chosen ones are stored here.

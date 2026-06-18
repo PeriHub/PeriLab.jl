@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Disk_Filter
+using LinearAlgebra
 using .....Data_Manager
 export run_bond_filter, bond_filter_name
-
+const TOLERANCE = 1.0e-14
 """
     bond_filter_name()
 

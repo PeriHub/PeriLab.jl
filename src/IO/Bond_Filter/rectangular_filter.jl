@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Rectangular_Plane_Filter
+using LinearAlgebra
 using .....Data_Manager
 export run_bond_filter, bond_filter_name
-
+const TOLERANCE = 1.0e-14
 """
     get_bond_filter_name()
 
@@ -15,7 +16,7 @@ Return the name of this bond filter.
 - `String`: The name of the bond filter.
 """
 function bond_filter_name()
-    return "Rectangular Plane"
+    return "Rectangular_Plane"
 end
 
 """
@@ -105,25 +106,16 @@ function run_bond_filter(nnodes::Int64,
                          filter::Dict,
                          nlist::BondScalarState{Int64},
                          dof::Int64)
-    if dof == 2
-        normal = [filter["Normal X"], filter["Normal Y"]]
-        lower_left_corner = [filter["Lower Left Corner X"], filter["Lower Left Corner Y"]]
-        bottom_unit_vector = [
-            filter["Bottom Unit Vector X"],
-            filter["Bottom Unit Vector Y"]
-        ]
-    else
-        normal = [filter["Normal X"], filter["Normal Y"], filter["Normal Z"]]
-        lower_left_corner = [
-            filter["Lower Left Corner X"],
-            filter["Lower Left Corner Y"],
-            filter["Lower Left Corner Z"]
-        ]
-        bottom_unit_vector = [
-            filter["Bottom Unit Vector X"],
-            filter["Bottom Unit Vector Y"],
-            filter["Bottom Unit Vector Z"]
-        ]
+    normal = [filter["Normal X"], filter["Normal Y"]]
+    lower_left_corner = [filter["Lower Left Corner X"], filter["Lower Left Corner Y"]]
+    bottom_unit_vector = [
+        filter["Bottom Unit Vector X"],
+        filter["Bottom Unit Vector Y"]
+    ]
+    if dof == 3
+        push!(normal, filter["Normal Z"])
+        push!(lower_left_corner, filter["Lower Left Corner Z"])
+        push!(bottom_unit_vector, filter["Bottom Unit Vector Z"])
     end
     normal = normal ./ norm(normal)
     bottom_unit_vector = bottom_unit_vector ./ norm(bottom_unit_vector)
