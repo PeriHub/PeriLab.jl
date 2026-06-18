@@ -5,6 +5,7 @@
 module Model_reduction
 using TimerOutputs: @timeit
 using ....Data_Manager
+using SparseArrays
 using ...Solver_Manager: find_module_files, create_module_specifics
 using ...Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
                                       compute_model
@@ -64,7 +65,7 @@ function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int
     # only for visualization and debugging.
     cn = Data_Manager.create_constant_node_scalar_field("Coupling Nodes", Int64)
     full_blocks = setdiff(collect(keys(block_nodes)), reduction_blocks)
-
+    @info "Reduction blocks: $reduction_blocks"
     for block in full_blocks
         append!(pd_nodes, block_nodes[block])
     end
@@ -81,59 +82,61 @@ function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int
         pd_nodes::Vector{Int64} = []
     end
     sort!(pd_nodes)
-
+    slave_nodes = sort!(setdiff(collect(1:Data_Manager.get_nnodes()), master_nodes))
     if pd_nodes != []
         nodes = setdiff(collect(1:Data_Manager.get_nnodes()), pd_nodes)
         # update matrix excluding PD nodes
         @timeit "update_material_point_part" compute_model(nodes)
     end
     K = Data_Manager.get_stiffness_matrix()
-    if !(master_nodes == []) || !(slave_nodes == [])
-        coupling_nodes = setdiff(master_nodes, pd_nodes)
-
-        cn[master_nodes] .= 3
-        cn[slave_nodes] .= 6
-        cn[pd_nodes] .+= 1  # added to be sure that all points are handled
-        cn[coupling_nodes] .+= 3  # added to be sure that all points are handled
-
-        nnodes = Data_Manager.get_nnodes()
-        dof = Data_Manager.get_dof()
-        perm_master = create_permutation(master_nodes, Data_Manager.get_dof(), nnodes)
-        perm_slave = create_permutation(slave_nodes, Data_Manager.get_dof(), nnodes)
-
-        # create the mass part.
-
-        density_mass = zeros(Float64, length(density) * dof)
-
-        for iID in eachindex(density_mass)
-            density_mass[iID] = density[Int(ceil(iID / dof))]
-        end
-        # perform the condensation of the system
-
-        @timeit "Condensation"
-        K_reduced,
-        mass_reduced = mod.reduce_matrices(K,
-                                           density_mass,
-                                           perm_master,
-                                           perm_slave,
-                                           nmodes)
-
-        @info "b"
-
-        dropzeros!(mass_reduced)
-        dropzeros!(K_reduced)
-
-        Data_Manager.set_stiffness_matrix(sparse(K_reduced))
-        Data_Manager.set_mass_matrix(sparse(mass_reduced))
-
-        Data_Manager.set_reduced_model_pd(pd_nodes)
-        Data_Manager.set_reduced_model_master(master_nodes)
-
-        @info "Model reduction is applied"
-        @info "Condensed: $(length(slave_nodes)), Master: $(length(master_nodes)), PD: $(length(pd_nodes))."
+    if master_nodes == []
+        @warn "No master nodes defined for model reduction. Using full stiffness matrix."
+        retunr
+    end
+    if slave_nodes == []
+        @warn "No slave nodes defined for model reduction. Using full stiffness matrix."
         return
     end
-    @warn "No master nodes defined for model reduction. Using full stiffness matrix."
+    coupling_nodes = setdiff(master_nodes, pd_nodes)
+
+    cn[master_nodes] .= 3
+    cn[slave_nodes] .= 6
+    cn[pd_nodes] .+= 1  # added to be sure that all points are handled
+    cn[coupling_nodes] .+= 3  # added to be sure that all points are handled
+
+    nnodes = Data_Manager.get_nnodes()
+    dof = Data_Manager.get_dof()
+    perm_master = create_permutation(master_nodes, Data_Manager.get_dof(), nnodes)
+    perm_slave = create_permutation(slave_nodes, Data_Manager.get_dof(), nnodes)
+
+    # create the mass part.
+
+    density_mass = zeros(Float64, length(density) * dof)
+
+    for iID in eachindex(density_mass)
+        density_mass[iID] = density[Int(ceil(iID / dof))]
+    end
+    # perform the condensation of the system
+
+    @timeit "Condensation" K_reduced,
+                           mass_reduced=mod.reduce_matrices(K,
+                                                            density_mass,
+                                                            perm_master,
+                                                            perm_slave,
+                                                            nmodes)
+
+    dropzeros!(mass_reduced)
+    dropzeros!(K_reduced)
+
+    Data_Manager.set_stiffness_matrix(K_reduced)
+    Data_Manager.set_mass_matrix(mass_reduced)
+
+    Data_Manager.set_reduced_model_pd(pd_nodes)
+    Data_Manager.set_reduced_model_master(master_nodes)
+
+    @info "Model reduction is applied"
+    @info "Condensed: $(length(slave_nodes)), Master: $(length(master_nodes)), PD: $(length(pd_nodes))."
+    return
 end
 
 end
