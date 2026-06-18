@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Filter_template
+using .....Data_Manager
 export run_bond_filter, bond_filter_name
 
 """

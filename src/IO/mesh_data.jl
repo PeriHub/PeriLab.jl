@@ -10,7 +10,8 @@ using TimerOutputs: @timeit
 import Gmsh: gmsh
 
 using ..Data_Manager
-include("bond_filters.jl")
+include("bond_filter.jl")
+import .Bond_Filter: apply_bond_filters
 include("gcode.jl")
 include("volume.jl")
 using ..Helpers: fastdot, get_nearest_neighbors, find_inverse_bond_id
