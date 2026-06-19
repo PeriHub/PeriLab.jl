@@ -8,7 +8,4 @@ if isfile("Project.toml") && isfile("Manifest.toml")
     Pkg.activate(".")
     Pkg.instantiate()
 end
-using MPI
-MPI.Init()
-using PeriLab: PeriLab
-PeriLab.main()
+using PeriLab

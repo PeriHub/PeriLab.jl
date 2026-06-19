@@ -7,7 +7,7 @@ using TestSetExtensions
 using Aqua
 using Logging
 using MPI
-using PeriLab
+import PeriLab
 Logging.disable_logging(Logging.Warn)
 
 include("helper.jl")
@@ -332,6 +332,8 @@ MPI.Init()
         end
     end
 end
+
+Logging.disable_logging(Logging.Warn)
 
 MPI.Finalize()
 

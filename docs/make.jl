@@ -2,7 +2,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using Documenter, PeriLab, DocumenterCitations, DocumenterMermaid
+using Documenter, DocumenterCitations, DocumenterMermaid
+import PeriLab
 
 bib = CitationBibliography(joinpath(@__DIR__, "src", "refs.bib"))
 

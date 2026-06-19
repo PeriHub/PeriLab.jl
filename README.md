@@ -138,7 +138,7 @@ The `PeriLab`  package is available through the Julia package system and can be 
 
 ```julia
 using Pkg
-Pkg.add("PeriLab")
+Pkg.Apps.add("PeriLab")
 ```
 
 Throughout the rest of this tutorial, we will assume that you have installed the
@@ -147,13 +147,11 @@ relevant variables into your current namespace.
 
 ### Getting Started with `PeriLab`
 
-Jumpstart your exploration of the PeriLab simulation core with provided examples. Run the following commands in Julia:
+Jumpstart your exploration of the PeriLab simulation core with provided examples. Run the following commands in your terminal:
 
-```julia PeriLab
-using PeriLab
-
-PeriLab.get_examples()
-PeriLab.main("examples/DCB/DCBmodel.yaml")
+```sh
+PeriLab -e
+PeriLab examples/DCB/DCBmodel.yaml
 ```
 >Note: More details about the main functionalities in the yaml input deck [here](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Support/Parameters/parameter_handling.jl).
 
@@ -170,7 +168,7 @@ julia> MPI.install_mpiexecjl()
 
 Run PeriLab with two processors:
 ```sh
-$ mpiexecjl -n 2 julia -e 'using PeriLab; PeriLab.main("examples/DCB/DCBmodel.yaml")'
+$ mpiexecjl -n 2 julia -e 'using PeriLab' examples/DCB/DCBmodel.yaml
 ```
 
 >Note: For HPC configurations please refer to [here](https://juliaparallel.org/MPI.jl/stable/configuration/#configure_jll_binarys).
@@ -241,12 +239,11 @@ cd PeriLab.jl
 ```sh
 $ julia
 julia> ]
-pkg> activate .
-pkg> up
+pkg> app dev .
 ```
-3. **Run the script:**
+3. **Run PeriLab:**
 ```sh
-$ julia --project=. src/main.jl examples/DCB/DCBmodel.yaml
+PeriLab examples/DCB/DCBmodel.yaml
 ```
 
 ## Questions
