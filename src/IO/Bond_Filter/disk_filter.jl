@@ -84,7 +84,7 @@ function run_bond_filter(nnodes::Int64,
         center = [filter["Center X"], filter["Center Y"], filter["Center Z"]]
         normal = [filter["Normal X"], filter["Normal Y"], filter["Normal Z"]]
     else
-        @error "Disk filter only implemented for 3D, use rectangular plane filter instead"
+        @abort "Disk filter only implemented for 3D, use rectangular plane filter instead"
         return nothing
     end
     normal = normal ./ norm(normal)
