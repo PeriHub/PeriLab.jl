@@ -356,11 +356,11 @@ end
 
     expected_normal = [0, 0, 1]
     (filter_flag,
-     normal) = PeriLab.IO.Bond_Filter.Rectangular_Plane_Filter.rectangular_plane_filter(nnodes,
-                                                                                        data,
-                                                                                        filter,
-                                                                                        nlist,
-                                                                                        dof)
+     normal) = PeriLab.IO.Bond_Filter.Rectangular_Plane_Filter.run_bond_filter(nnodes,
+                                                                               data,
+                                                                               filter,
+                                                                               nlist,
+                                                                               dof)
     @test filter_flag == expected_filter_flag
     @test normal == expected_normal
 end
