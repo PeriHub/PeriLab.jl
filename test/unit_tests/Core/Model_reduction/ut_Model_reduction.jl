@@ -6,6 +6,5 @@
 using MPI
 using TimerOutputs
 using SparseArrays
-include("../../../../src/Core/Model_reduction/Model_reduction.jl")
 
 @testset "ut_guyan_reduction" begin end
