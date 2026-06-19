@@ -64,6 +64,7 @@ The information is stored in the [params dictionary](@ref "Parameters")
   - *__Own_Name__*: Numeric value or string representing the node set. (Int or String)
 - **Type**: String representing the type of discretization.
 - **Distribution Type**: String representing the distribution type. (optional)
+- **Influence Function**: String representing the influence function. You can write an equation xi (length of a bond, xiX, xiY, xiZ (as coordinates in each direction)). (optional)
 - **Bond Filters**: List of bond filter configurations. (optional)
   - *__Own_Name__*: Bond filter parameters.
     - **Type**: String representing the bond filter type.
