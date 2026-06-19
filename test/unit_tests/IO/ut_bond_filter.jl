@@ -153,61 +153,61 @@ end
     side_length = 1.0
     bottom_length = 1.0
     x = [0.0, 1.0, 0.0]
-    bond_intersect = PeriLab.IO.bond_intersect_rectangle_plane(x,
-                                                               lower_left_corner,
-                                                               bottom_unit_vector,
-                                                               normal,
-                                                               side_length,
-                                                               bottom_length)
+    bond_intersect = PeriLab.IO.Bond_Filter.Rectangular_Plane_Filter.bond_intersect_rectangle_plane(x,
+                                                                                                    lower_left_corner,
+                                                                                                    bottom_unit_vector,
+                                                                                                    normal,
+                                                                                                    side_length,
+                                                                                                    bottom_length)
     @test bond_intersect == true
     x = [0.0, 0.0, 0.0]
-    bond_intersect = PeriLab.IO.bond_intersect_rectangle_plane(x,
-                                                               lower_left_corner,
-                                                               bottom_unit_vector,
-                                                               normal,
-                                                               side_length,
-                                                               bottom_length)
+    bond_intersect = PeriLab.IO.Bond_Filter.Rectangular_Plane_Filter.bond_intersect_rectangle_plane(x,
+                                                                                                    lower_left_corner,
+                                                                                                    bottom_unit_vector,
+                                                                                                    normal,
+                                                                                                    side_length,
+                                                                                                    bottom_length)
     @test bond_intersect == true
     x = [10.0, 0.0, 0.0]
-    bond_intersect = PeriLab.IO.bond_intersect_rectangle_plane(x,
-                                                               lower_left_corner,
-                                                               bottom_unit_vector,
-                                                               normal,
-                                                               side_length,
-                                                               bottom_length)
+    bond_intersect = PeriLab.IO.Bond_Filter.Rectangular_Plane_Filter.bond_intersect_rectangle_plane(x,
+                                                                                                    lower_left_corner,
+                                                                                                    bottom_unit_vector,
+                                                                                                    normal,
+                                                                                                    side_length,
+                                                                                                    bottom_length)
     @test bond_intersect == false
     x = [0.0, 0.0, 5.0]
-    bond_intersect = PeriLab.IO.bond_intersect_rectangle_plane(x,
-                                                               lower_left_corner,
-                                                               bottom_unit_vector,
-                                                               normal,
-                                                               side_length,
-                                                               bottom_length)
+    bond_intersect = PeriLab.IO.Bond_Filter.Rectangular_Plane_Filter.bond_intersect_rectangle_plane(x,
+                                                                                                    lower_left_corner,
+                                                                                                    bottom_unit_vector,
+                                                                                                    normal,
+                                                                                                    side_length,
+                                                                                                    bottom_length)
     @test bond_intersect == false
     x = [-0.2, 0.0, 0.0]
-    bond_intersect = PeriLab.IO.bond_intersect_rectangle_plane(x,
-                                                               lower_left_corner,
-                                                               bottom_unit_vector,
-                                                               normal,
-                                                               side_length,
-                                                               bottom_length)
+    bond_intersect = PeriLab.IO.Bond_Filter.Rectangular_Plane_Filter.bond_intersect_rectangle_plane(x,
+                                                                                                    lower_left_corner,
+                                                                                                    bottom_unit_vector,
+                                                                                                    normal,
+                                                                                                    side_length,
+                                                                                                    bottom_length)
     @test bond_intersect == false
     normal = [0.0, -1.0, 0.0]
-    bond_intersect = PeriLab.IO.bond_intersect_rectangle_plane(x,
-                                                               lower_left_corner,
-                                                               bottom_unit_vector,
-                                                               normal,
-                                                               side_length,
-                                                               bottom_length)
+    bond_intersect = PeriLab.IO.Bond_Filter.Rectangular_Plane_Filter.bond_intersect_rectangle_plane(x,
+                                                                                                    lower_left_corner,
+                                                                                                    bottom_unit_vector,
+                                                                                                    normal,
+                                                                                                    side_length,
+                                                                                                    bottom_length)
     @test bond_intersect == false
     normal = [0.0, -1.0, 0.0]
     bottom_unit_vector = [-1.0, 0.0, 0.0]
-    bond_intersect = PeriLab.IO.bond_intersect_rectangle_plane(x,
-                                                               lower_left_corner,
-                                                               bottom_unit_vector,
-                                                               normal,
-                                                               side_length,
-                                                               bottom_length)
+    bond_intersect = PeriLab.IO.Bond_Filter.Rectangular_Plane_Filter.bond_intersect_rectangle_plane(x,
+                                                                                                    lower_left_corner,
+                                                                                                    bottom_unit_vector,
+                                                                                                    normal,
+                                                                                                    side_length,
+                                                                                                    bottom_length)
     @test bond_intersect == true
 end
 
@@ -280,16 +280,18 @@ end
     ]
 
     expected_normal = [0, 0, 1]
-    (filter_flag, normal) = PeriLab.IO.disk_filter(nnodes, data, filter, nlist, dof)
+    (filter_flag,
+     normal) = PeriLab.IO.Bond_Filter.Disk_Filter.run_bond_filter(nnodes, data, filter,
+                                                                  nlist, dof)
     @test filter_flag == expected_filter_flag
     @test normal == expected_normal
 
     @test_logs (:error,
-                "Disk filter only implemented for 3D, use rectangular plane filter instead") PeriLab.IO.disk_filter(nnodes,
-                                                                                                                    data,
-                                                                                                                    filter,
-                                                                                                                    nlist,
-                                                                                                                    2)
+                "Disk filter only implemented for 3D, use rectangular plane filter instead") PeriLab.IO.Bond_Filter.Disk_Filter.run_bond_filter(nnodes,
+                                                                                                                                                data,
+                                                                                                                                                filter,
+                                                                                                                                                nlist,
+                                                                                                                                                2)
 end
 
 @testset "ut_rectangular_plane_filter" begin
@@ -354,8 +356,11 @@ end
 
     expected_normal = [0, 0, 1]
     (filter_flag,
-     normal) = PeriLab.IO.rectangular_plane_filter(nnodes, data, filter, nlist,
-                                                   dof)
+     normal) = PeriLab.IO.Bond_Filter.Rectangular_Plane_Filter.rectangular_plane_filter(nnodes,
+                                                                                        data,
+                                                                                        filter,
+                                                                                        nlist,
+                                                                                        dof)
     @test filter_flag == expected_filter_flag
     @test normal == expected_normal
 end
