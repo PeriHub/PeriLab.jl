@@ -3,115 +3,140 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Model_reduction
-using LinearAlgebra
+using TimerOutputs: @timeit
+using ...Data_Manager
 using SparseArrays
-function guyan_reduction(K::AbstractMatrix{Float64}, M_diag::Vector{Float64},
-                         m::Vector{Int64}, s::Vector{Int64})
-    nm = length(m)
-    ns = length(s)
-
-    # Extract submatrices
-    K_mm = K[m, m]
-    K_ms = K[m, s]
-    K_ss = K[s, s]
-    K_sm = K[s, m]
-
-    # Compute transformation matrix: T = -K_ss^(-1) * K_sm
-    K_ss_fact = lu(K_ss)
-    K_sm_dense = Matrix(K_sm)
-    T = similar(K_sm_dense)
-    ldiv!(T, K_ss_fact, K_sm_dense)
-    T .*= -1.0
-
-    # Stiffness reduction: K_reduced = K_mm + K_ms * T
-    temp_K = zeros(nm, nm)
-    mul!(temp_K, K_ms, T)
-    K_reduced = K_mm + temp_K
-
-    # Mass reduction: M_reduced = M_mm + T^T * M_ss * T
-    # Step 1: temp_M = Diagonal(M_ss) * T
-    M_ss_diag = Diagonal(M_diag[s])
-    temp_M = zeros(ns, nm)
-    mul!(temp_M, M_ss_diag, T)  # Diagonal * Matrix multiplication
-
-    # Step 2: M_reduced = T^T * temp_M
-    M_reduced = zeros(nm, nm)
-    mul!(M_reduced, T', temp_M)
-
-    # Step 3: Add M_mm diagonal
-    @inbounds for i in 1:nm
-        M_reduced[i, i] += M_diag[m[i]]
-    end
-
-    return sparse(K_reduced), sparse(M_reduced)
+using ...Solver_Manager: find_module_files, create_module_specifics
+using ...Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
+                                      compute_model
+using ...Helpers: find_active_nodes, create_permutation
+global module_list = find_module_files(@__DIR__, "model_reduction_name")
+for mod in module_list
+    include(mod["File"])
 end
 
-#function stiffness_reduction(K::AbstractMatrix{Float64}, m::Vector{Int64}, s::Vector{Int64})
-#    return K[m, m] - K[m, s] / Matrix(K[s, s]) * K[s, m]
-#end
-#
-#function reduce_mass_consistent(M_diag, K, master_nodes, slave_nodes)
-#    # Transformationsmatrix: u_slave = T * u_master
-#    # T = -K_ss^{-1} * K_sm
-#    Ksm = K[slave_nodes, master_nodes]
-#    Kss = K[slave_nodes, slave_nodes]
-#    T = -Kss \ Matrix(Ksm)
-#
-#    # Massenreduktion: M_red = M_mm + T^T * M_ss * T
-#    M_mm = Diagonal(M_diag[master_nodes])
-#    M_ss = Diagonal(M_diag[slave_nodes])
-#
-#    M_reduced = M_mm + T' * M_ss * T
-#
-#    return sparse(M_mm)
-#end
+function reduce_model(K::AbstractMatrix{Float64}, M::AbstractMatrix{Float64},
+                      m::Vector{Int64}, s::Vector{Int64}; n_modes::Int64 = 1)
+    mod = Data_Manager.get_model_module(model_param["Reduction Model"])
 
-function craig_bampton(K::AbstractMatrix{Float64}, M::AbstractMatrix{Float64},
-                       m::Vector{Int64}, s::Vector{Int64}, n_modes::Int64)
-    # Partitionierung
-    K_mm = K[m, m]
-    K_ms = K[m, s]
-    K_ss = K[s, s]
-    K_sm = K[s, m]
+    mod.reduced_matrices(K, M, m, s; n_modes)
 
-    M_mm = M[m, m]
-    M_ms = M[m, s]
-    M_ss = M[s, s]
-    M_sm = M[s, m]
+    if isnothing(Data_Manager.get_filtered_nlist())
+        @timeit "compute index" return damage_index(nodes)
+    end
+end
 
-    # 1. CONSTRAINT MODES (statisch, wie bei Guyan)
-    Φ_c = -(K_ss \ K_sm)  # Constraint modes
+function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int64}},
+                           density)
+    reduction_blocks = []
 
-    # 2. FIXED-INTERFACE NORMAL MODES (neu!)
-    # Eigenwertproblem mit fixierten Master-DOFs
-    eigenvals, eigenvecs = eigen(K_ss, M_ss)
+    reduction_blocks = get(model_param, "Reduction Blocks", nothing)
 
-    # Nur die ersten n_modes behalten
-    Φ_n = eigenvecs[:, 1:n_modes]  # Normal modes
-    λ_n = eigenvals[1:n_modes]      # Eigenvalues
+    if isnothing(reduction_blocks)
+        @warn "No reduction blocks defined for model reduction. If you want to use a reduced model please define 'Reduction Blocks' in the yaml input deck."
+        return
+    end
+    if reduction_blocks isa Float64
+        @error "Type Float is not supported for Reduction Blocks"
+        return
+    end
 
-    # 3. TRANSFORMATIONSMATRIX
-    # [x_m]   [I    0  ] [x_m  ]
-    # [x_s] = [Φ_c  Φ_n] [η_n  ]
-    #
-    # x_m: physikalische Master-DOFs
-    # η_n: modale Koordinaten
+    if reduction_blocks isa Int64
+        reduction_blocks = [reduction_blocks]
+    else
+        reduction_blocks = parse.(Int64,
+                                  filter(!isempty,
+                                         split(model_param["Reduction Blocks"],
+                                               r"[,\s]")))
+    end
 
-    T_full = [Matrix(I, length(m), length(m)) zeros(length(m), n_modes);
-              Φ_c Φ_n]
+    @info "Model Reduction Type: $(model_param["Type"])"
+    mod = create_module_specifics(model_param["Type"],
+                                  module_list,
+                                  @__MODULE__,
+                                  "model_reduction_name")
 
-    # 4. REDUZIERTE MATRIZEN
-    K_craig = T_full' * [K_mm K_ms; K_sm K_ss] * T_full
-    M_craig = T_full' * [M_mm M_ms; M_sm M_ss] * T_full
+    nmodes = get(model_param, "Number of Modes", 1)
+    master_nodes = Int64[]
+    slave_nodes = Int64[]
+    pd_nodes = Int64[]
 
-    # Die reduzierten Matrizen haben spezielle Struktur:
-    # K_craig = [K_mm + K_ms*Φ_c    K_ms*Φ_n  ]
-    #           [Φ_n'*K_sm          Λ_n       ]
-    #
-    # M_craig = [M_mm + M_ms*Φ_c + ...    ...  ]
-    #           [...                     I     ]
+    nlist = Data_Manager.get_nlist()
+    # only for visualization and debugging.
+    cn = Data_Manager.create_constant_node_scalar_field("Coupling Nodes", Int64)
+    full_blocks = setdiff(collect(keys(block_nodes)), reduction_blocks)
+    @info "Reduction blocks: $reduction_blocks"
+    for block in full_blocks
+        append!(pd_nodes, block_nodes[block])
+    end
 
-    return K_craig, M_craig, Φ_c, Φ_n, λ_n
+    for node in pd_nodes
+        append!(master_nodes, nlist[node])
+    end
+
+    append!(master_nodes, pd_nodes)
+
+    master_nodes = sort(unique(master_nodes))
+
+    if !(get(model_param, "Material Point Region", true))
+        pd_nodes::Vector{Int64} = []
+    end
+    sort!(pd_nodes)
+    slave_nodes = sort!(setdiff(collect(1:Data_Manager.get_nnodes()), master_nodes))
+    if pd_nodes != []
+        nodes = setdiff(collect(1:Data_Manager.get_nnodes()), pd_nodes)
+        # update matrix excluding PD nodes
+        @timeit "update_material_point_part" compute_model(nodes)
+    end
+    K = Data_Manager.get_stiffness_matrix()
+    if master_nodes == []
+        @warn "No master nodes defined for model reduction. Using full stiffness matrix."
+        retunr
+    end
+    if slave_nodes == []
+        @warn "No slave nodes defined for model reduction. Using full stiffness matrix."
+        return
+    end
+    coupling_nodes = setdiff(master_nodes, pd_nodes)
+
+    cn[master_nodes] .= 3
+    cn[slave_nodes] .= 6
+    cn[pd_nodes] .+= 1  # added to be sure that all points are handled
+    cn[coupling_nodes] .+= 3  # added to be sure that all points are handled
+
+    nnodes = Data_Manager.get_nnodes()
+    dof = Data_Manager.get_dof()
+    perm_master = create_permutation(master_nodes, Data_Manager.get_dof(), nnodes)
+    perm_slave = create_permutation(slave_nodes, Data_Manager.get_dof(), nnodes)
+
+    # create the mass part.
+
+    density_mass = zeros(Float64, length(density) * dof)
+
+    for iID in eachindex(density_mass)
+        density_mass[iID] = density[Int(ceil(iID / dof))]
+    end
+    # perform the condensation of the system
+
+    @timeit "Condensation" K_reduced,
+                           mass_reduced=mod.reduce_matrices(K,
+                                                            density_mass,
+                                                            perm_master,
+                                                            perm_slave,
+                                                            nmodes)
+
+    dropzeros!(mass_reduced)
+    dropzeros!(K_reduced)
+
+    Data_Manager.set_stiffness_matrix(K_reduced)
+    Data_Manager.set_mass_matrix(mass_reduced)
+
+    Data_Manager.set_reduced_model_pd(pd_nodes)
+    Data_Manager.set_reduced_model_master(master_nodes)
+
+    @info "Model reduction is applied"
+    @info "Condensed: $(length(slave_nodes)), Master: $(length(master_nodes)), PD: $(length(pd_nodes))."
+    return
 end
 
 end

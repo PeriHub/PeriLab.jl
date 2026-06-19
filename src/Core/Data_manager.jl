@@ -6,8 +6,8 @@ module Data_Manager
 using MPI
 using SparseArrays
 using DataStructures: OrderedDict
-using ExtendableSparse
 using ...PeriLabExceptions: @abort
+
 ##########################
 # Variables
 ##########################
@@ -197,6 +197,7 @@ function initialize_data()
     data["Global Master Search Nodes"] = Dict()
     data["Global Slave Search Nodes"] = Dict()
     data["matrix_exists"] = false
+    data["Reduced PD Nodes"] = Vector{Int64}([])
     fields[Int64] = Dict()
     fields[Float64] = Dict()
     fields[Bool] = Dict()
@@ -1077,12 +1078,6 @@ function set_verbose(value::Bool)
     data["verbose"] = value
 end
 
-# function init_stiffness_matrix(nnodes::Int64, dof::Int64)
-#     n_total = nnodes * dof
-#     data["matrix_exists"] = true
-#     data["Stiffness Matrix"] = ExtendableSparseMatrix{Float64,Int}(n_total, n_total)
-# end
-#
 function set_stiffness_matrix(sparse_mat)
     data["matrix_exists"] = true
     #data["Stiffness Matrix"] = PD_matrix(xID, yID, sparse_data,

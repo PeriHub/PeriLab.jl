@@ -98,6 +98,12 @@ function init_solver(solver_options::Dict{Any,Any},
     coor = Data_Manager.get_field("Coordinates")
     Data_Manager.get_field("Deformed Coordinates", "N") .= coor
     Data_Manager.get_field("Deformed Coordinates", "NP1") .= coor
+
+    model_reduction = get(params["Newmark"], "Model Reduction", false)
+    if model_reduction
+        init_reduce_model(solver_options, block_nodes, density)
+        return
+    end
 end
 
 # ────────────────────────────────────────────────────────────
