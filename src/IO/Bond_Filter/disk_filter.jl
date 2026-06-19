@@ -5,6 +5,7 @@
 module Disk_Filter
 using LinearAlgebra
 using .....Data_Manager
+using .....PeriLabExceptions: @abort
 export run_bond_filter, bond_filter_name
 const TOLERANCE = 1.0e-14
 """
