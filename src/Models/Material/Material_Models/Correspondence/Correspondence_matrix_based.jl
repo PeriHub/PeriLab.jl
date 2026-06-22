@@ -61,8 +61,7 @@ function contraction!(C::Array{Float64,4}, B::Array{Float64,3}, dof::Int64,
     end
 end
 
-function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
-                          V_k::Float64, omega_ik::Float64, ::Val{2},
+function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64}, ::Val{2},
                           B_tensor::Array{Float64,3})
     factor = 0.5
     X_x = X_ik[1]
@@ -82,8 +81,7 @@ function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
     return nothing
 end
 
-function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
-                          V_k::Float64, omega_ik::Float64, ::Val{3},
+function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64}, ::Val{3},
                           B_tensor::Array{Float64,3})
     factor = 0.5
     X_x = X_ik[1]
@@ -125,15 +123,15 @@ function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
     return nothing
 end
 
-function compute_stiffness_contribution(CB_k::Array{Float64,4},
-                                        k_idx::Int,
-                                        D_inv_i::AbstractMatrix{Float64},
-                                        X_ij::Vector{Float64},
-                                        omega_ij::Float64,
-                                        omega_ik::Float64,
-                                        V_k::Float64,
-                                        dof::Int,
-                                        K_block::Matrix{Float64})
+function compute_stiffness_contribution!(CB_k::Array{Float64,4},
+                                         k_idx::Int,
+                                         D_inv_i::AbstractMatrix{Float64},
+                                         X_ij::Vector{Float64},
+                                         omega_ij::Float64,
+                                         omega_ik::Float64,
+                                         V_k::Float64,
+                                         dof::Int,
+                                         K_block::Matrix{Float64})
     if dof == 2
         DX_1 = D_inv_i[1, 1] * X_ij[1] + D_inv_i[1, 2] * X_ij[2]
         DX_2 = D_inv_i[2, 1] * X_ij[1] + D_inv_i[2, 2] * X_ij[2]
@@ -185,6 +183,62 @@ function compute_stiffness_contribution(CB_k::Array{Float64,4},
     end
 end
 
+"""
+    k_loop!(K_local, K_block, CB_k_i, D_inv_i, X_ij,
+                    ω_ij, V_i, V_j, mj, dof,
+                    nj, iID, volume, omega, bond_damage,
+                    row_i_base, row_j_base)
+
+Inner k-loop: computes and scatters normal stiffness contributions
+K^□_ijk for all neighbors k of node i, given a fixed bond (i,j).
+
+All buffers (K_local, K_block) are mutated in-place.
+"""
+function k_loop!(K_local::Matrix{Float64},
+                 K_block::Matrix{Float64},
+                 CB_k_i::Array{Float64,4},
+                 inverse_shape_tensor::Array{Float64,3},
+                 X_ij::Vector{Float64},
+                 ω_ij::Float64,
+                 V_i::Float64,
+                 V_j::Float64,
+                 mj::Int64,
+                 dof::Int64,
+                 nj::Vector{Int64},
+                 iID::Int64,
+                 volume::Vector{Float64},
+                 omega::Vector{Vector{Float64}},
+                 bond_damage::Vector{Vector{Float64}},
+                 row_i_base::NTuple{N,Int64},
+                 row_j_base::NTuple{N,Int64}) where {N}
+    omega_i = omega[iID]
+    damage_i = bond_damage[iID]
+    D_inv_i = @view inverse_shape_tensor[iID, :, :]
+    @inbounds for k_idx in 1:mj
+        damage_i[k_idx] == 0.0 && continue
+        kID = nj[k_idx]
+        ω_ik = omega_i[k_idx] * damage_i[k_idx]
+        V_k = volume[kID]
+        compute_stiffness_contribution!(CB_k_i, k_idx, D_inv_i, X_ij,
+                                        ω_ij, ω_ik, V_k, dof, K_block)
+        for o in 1:dof
+            col_ii = (o - 1) * (mj + 1) + (mj + 1)
+            col_ik = (o - 1) * (mj + 1) + k_idx
+            for m in 1:dof
+                val = K_block[m, o]
+                fwd = val * V_j
+                bwd = val * V_i
+                row_i = row_i_base[m]
+                row_j = row_j_base[m]
+                K_local[row_i, col_ii] += fwd
+                K_local[row_i, col_ik] -= fwd
+                K_local[row_j, col_ii] -= bwd
+                K_local[row_j, col_ik] += bwd
+            end
+        end
+    end
+end
+
 function precompute_CB_tensors!(CB_k::AbstractArray{Float64,4},
                                 C_tensor::Array{Float64,4},
                                 D_inv::AbstractMatrix{Float64},
@@ -199,7 +253,7 @@ function precompute_CB_tensors!(CB_k::AbstractArray{Float64,4},
         V_k = volume[k]
         omega_ik = omega_i[k_idx] * bond_damage_i[k_idx]
         X_ik = bond_geometry_i[k_idx]
-        create_B_tensor!(D_inv, X_ik, V_k, omega_ik, Val(dof), B_ik)
+        create_B_tensor!(D_inv, X_ik, Val(dof), B_ik)
         @views contraction!(C_tensor, B_ik, dof, CB_k[k_idx, :, :, :])
     end
     return nothing
@@ -242,9 +296,9 @@ for O(1) direct writes in the assembly loop.
 The sparsity pattern includes all (iID, jID) pairs where jID ∈ nlist[iID],
 covering both the node itself and all its neighbors.
 
-function build_sparsity_and_map(nodes::AbstractVector{Int},
-                                nlist::Vector{Vector{Int}},
-                                number_of_neighbors::Vector{Int},
+function build_sparsity_and_map(nodes::AbstractVector{Int64},
+                                nlist::Vector{Vector{Int64}},
+                                number_of_neighbors::Vector{Int64},
                                 nnodes::Int,
                                 dof::Int)
     n = dof * nnodes
@@ -252,8 +306,8 @@ function build_sparsity_and_map(nodes::AbstractVector{Int},
     # ── Step 1: collect unique row indices per column using sorted sets ───────
     # Each column gcol = (o-1)*nnodes + col_node receives rows from all nodes
     # iID where col_node ∈ {nlist[iID] ∪ iID}.
-    # We use a Vector{Vector{Int}} (one per column) and sort+unique at the end.
-    col_rows = [Vector{Int}() for _ in 1:n]
+    # We use a Vector{Vector{Int64}} (one per column) and sort+unique at the end.
+    col_rows = [Vector{Int64}() for _ in 1:n]
 
     @inbounds for iID in nodes
         nj = nlist[iID]
@@ -276,7 +330,7 @@ function build_sparsity_and_map(nodes::AbstractVector{Int},
     end
 
     # ── Step 2: build CSC colptr and rowval directly — no sparse() call ───────
-    colptr = Vector{Int}(undef, n + 1)
+    colptr = Vector{Int64}(undef, n + 1)
     colptr[1] = 1
     @inbounds for col in 1:n
         v = col_rows[col]
@@ -286,7 +340,7 @@ function build_sparsity_and_map(nodes::AbstractVector{Int},
     end
 
     nnz_total = colptr[n + 1] - 1
-    rowval = Vector{Int}(undef, nnz_total)
+    rowval = Vector{Int64}(undef, nnz_total)
     nzval_arr = fill(eps(), nnz_total)
 
     @inbounds for col in 1:n
@@ -305,15 +359,15 @@ end
 
 """
 
-function build_sparsity_and_map(nodes::AbstractVector{Int},
-                                nlist::Vector{Vector{Int}},
-                                number_of_neighbors::Vector{Int},
+function build_sparsity_and_map(nodes::AbstractVector{Int64},
+                                nlist::Vector{Vector{Int64}},
+                                number_of_neighbors::Vector{Int64},
                                 nnodes::Int,
                                 dof::Int)
     n = dof * nnodes
 
     # pro Spalte: Menge eindeutiger Zeilen
-    col_rows = [Set{Int}() for _ in 1:n]
+    col_rows = [Set{Int64}() for _ in 1:n]
 
     @inbounds for iID in nodes
         nj = nlist[iID]
@@ -336,10 +390,10 @@ function build_sparsity_and_map(nodes::AbstractVector{Int},
     end
 
     # CSC aufbauen
-    colptr = Vector{Int}(undef, n + 1)
+    colptr = Vector{Int64}(undef, n + 1)
     colptr[1] = 1
 
-    sorted_cols = Vector{Vector{Int}}(undef, n)
+    sorted_cols = Vector{Vector{Int64}}(undef, n)
 
     @inbounds for col in 1:n
         v = collect(col_rows[col])
@@ -349,7 +403,7 @@ function build_sparsity_and_map(nodes::AbstractVector{Int},
     end
 
     nnz_total = colptr[end] - 1
-    rowval = Vector{Int}(undef, nnz_total)
+    rowval = Vector{Int64}(undef, nnz_total)
     nzval_arr = fill(eps(), nnz_total)
 
     @inbounds for col in 1:n
@@ -366,17 +420,17 @@ end
 # =============================================================================
 # Main assembly
 # =============================================================================
-function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int},
-                                             K_colptr::Vector{Int},
-                                             K_rowval::Vector{Int},
+function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int64},
+                                             K_colptr::Vector{Int64},
+                                             K_rowval::Vector{Int64},
                                              all_CB_tensors::Vector{Array{Float64,4}},
-                                             nodes::AbstractVector{Int},
-                                             active_nodes::AbstractVector{Int},
-                                             dof::Int,
+                                             nodes::AbstractVector{Int64},
+                                             active_nodes::AbstractVector{Int64},
+                                             dof::Int64,
                                              C_Voigt::Array{Float64,3},
                                              inverse_shape_tensor::Array{Float64,3},
-                                             number_of_neighbors::Vector{Int},
-                                             nlist::Vector{Vector{Int}},
+                                             number_of_neighbors::Vector{Int64},
+                                             nlist::Vector{Vector{Int64}},
                                              volume::Vector{Float64},
                                              bond_geometry::Vector{Vector{Vector{Float64}}},
                                              omega::Vector{Vector{Float64}},
@@ -431,43 +485,23 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int},
                 row_j_base = ntuple(m -> (m - 1) * (mj + 1) + j_idx, dof)
 
                 # ── Normal stiffness: merged fwd + bwd, all k ─────────────────
-                @timeit "k_loop" for (k_idx, kID) in enumerate(nj)
-                    bond_damage[iID][k_idx] == 0.0 && continue
-
-                    ω_ik = omega[iID][k_idx] * bond_damage[iID][k_idx]
-                    V_k = volume[kID]
-
-                    # K^□_ijk = ω_ij * ω_ik * (X_ij^T D_i^{-1}) CB_ik
-                    # stored in K_block (dof × dof)
-                    @timeit "compute_stiffness_contribution" compute_stiffness_contribution(CB_k_i,
-                                                                                            k_idx,
-                                                                                            D_inv_i,
-                                                                                            X_ij,
-                                                                                            ω_ij,
-                                                                                            ω_ik,
-                                                                                            V_k,
-                                                                                            dof,
-                                                                                            K_block)
-
-                    # Scatter K^□_ijk into four positions (ii, ik, ji, jk)
-                    # fwd × V_j  →  row i
-                    # bwd × V_i  →  row j
-                    for o in 1:dof
-                        col_ii = (o - 1) * (mj + 1) + (mj + 1)
-                        col_ik = (o - 1) * (mj + 1) + k_idx
-                        for m in 1:dof
-                            val = K_block[m, o]
-                            fwd = val * V_j
-                            bwd = val * V_i
-                            row_i = row_i_base[m]
-                            row_j = row_j_base[m]
-                            K_local[row_i, col_ii] += fwd
-                            K_local[row_i, col_ik] -= fwd
-                            K_local[row_j, col_ii] -= bwd
-                            K_local[row_j, col_ik] += bwd
-                        end
-                    end
-                end  # k_loop
+                @timeit "k_loop" k_loop!(K_local,
+                                         K_block,
+                                         CB_k_i,
+                                         inverse_shape_tensor,
+                                         X_ij,
+                                         ω_ij,
+                                         V_i,
+                                         V_j,
+                                         mj,
+                                         dof,
+                                         nj,
+                                         iID,
+                                         volume,
+                                         omega,
+                                         bond_damage,
+                                         row_i_base,
+                                         row_j_base)
 
                 # ── Zero-energy stabilization: unified loop over all k ────────
                 # Diagonal (k==j) and cross terms (k≠j) share the same scatter
