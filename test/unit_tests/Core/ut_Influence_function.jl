@@ -15,7 +15,9 @@
         nn[2] = 3
         bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
                                                                     Float64,
-                                                                    dof + 1)
+                                                                    dof)
+        bl = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length",
+                                                                    Float64)
         omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
                                                                        Float64)
 
@@ -37,15 +39,20 @@
         nn[2] = 1
         bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
                                                                     Float64,
-                                                                    dof + 1)
+                                                                    dof)
+        bl = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length",
+                                                                    Float64)
         omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
                                                                        Float64)
 
         # node 1 has 2 bonds, node 2 has 1 bond
-        # entries: [xiX, xiY, xi]
-        bg[1][1] .= [1.0, 0.0, 1.0]
-        bg[1][2] .= [0.0, 2.0, 2.0]
-        bg[2][1] .= [3.0, 4.0, 5.0]
+        # entries: [xiX, xiY]
+        bg[1][1] .= [1.0, 0.0]
+        bg[1][2] .= [0.0, 2.0]
+        bg[2][1] .= [3.0, 4.0]
+        bl[1][1] = 1.0
+        bl[1][2] = 2.0
+        bl[2][1] = 5.0
 
         params = Dict("Influence Function" => "1/xi^2")
         PeriLab.Solver_Manager.Influence_Function.init_influence_function(Vector{Int64}(1:nodes),
@@ -67,12 +74,16 @@
         nn[1] = 2
         bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
                                                                     Float64,
-                                                                    dof + 1)
+                                                                    dof)
+        bl = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length",
+                                                                    Float64)
         omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
                                                                        Float64)
 
-        bg[1][1] .= [1.0, 1.0, 1.41421356]
-        bg[1][2] .= [2.0, 0.0, 2.0]
+        bg[1][1] .= [1.0, 1.0]
+        bg[1][2] .= [2.0, 0.0]
+        bl[1][1] = 1.41421356
+        bl[1][2] = 2.0
 
         params = Dict("Influence Function" => "1")
         PeriLab.Solver_Manager.Influence_Function.init_influence_function(Vector{Int64}(1:nodes),
@@ -92,12 +103,16 @@
         nn[1] = 2
         bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
                                                                     Float64,
-                                                                    dof + 1)
+                                                                    dof)
+        bl = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length",
+                                                                    Float64)
         omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
                                                                        Float64)
 
-        bg[1][1] .= [1.0, 0.0, 2.0]
-        bg[1][2] .= [0.0, 1.0, 4.0]
+        bg[1][1] .= [1.0, 0.0]
+        bg[1][2] .= [0.0, 1.0]
+        bl[1][1] = 2.0
+        bl[1][2] = 4.0
 
         params = Dict("Influence Function" => "1/xi")
         PeriLab.Solver_Manager.Influence_Function.init_influence_function(Vector{Int64}(1:nodes),
@@ -118,11 +133,14 @@
         nn[1] = 1
         bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
                                                                     Float64,
-                                                                    dof + 1)
+                                                                    dof)
+        bl = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length",
+                                                                    Float64)
         omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
                                                                        Float64)
 
-        bg[1][1] .= [3.0, 4.0, 5.0]
+        bg[1][1] .= [3.0, 4.0]
+        bl[1][1] = 5.0
 
         params = Dict("Influence Function" => "xiX^2 + xiY^2")
         PeriLab.Solver_Manager.Influence_Function.init_influence_function(Vector{Int64}(1:nodes),
@@ -142,11 +160,14 @@
         nn[1] = 1
         bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
                                                                     Float64,
-                                                                    dof + 1)
+                                                                    dof)
+        bl = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length",
+                                                                    Float64)
         omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
                                                                        Float64)
 
-        bg[1][1] .= [1.0, 0.0, 1.0]
+        bg[1][1] .= [1.0, 0.0]
+        bl[1][1] = 1.0
 
         params = Dict("Influence Function" => "exp(-xi)")
         PeriLab.Solver_Manager.Influence_Function.init_influence_function(Vector{Int64}(1:nodes),
@@ -166,11 +187,14 @@
         nn[1] = 1
         bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
                                                                     Float64,
-                                                                    dof + 1)
+                                                                    dof)
+        bl = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length",
+                                                                    Float64)
         omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
                                                                        Float64)
 
-        bg[1][1] .= [1.0, 0.0, 1.0]
+        bg[1][1] .= [1.0, 0.0]
+        bl[1][1] = 1.0
 
         params = Dict("Influence Function" => "xiZ + 1.0")
         PeriLab.Solver_Manager.Influence_Function.init_influence_function(Vector{Int64}(1:nodes),
@@ -190,12 +214,15 @@
         nn[1] = 1
         bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
                                                                     Float64,
-                                                                    dof + 1)
+                                                                    dof)
+        bl = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length",
+                                                                    Float64)
         omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
                                                                        Float64)
 
         # xiX=1, xiY=2, xiZ=2 -> xi = sqrt(1+4+4)=3
-        bg[1][1] .= [1.0, 2.0, 2.0, 3.0]
+        bg[1][1] .= [1.0, 2.0, 2.0]
+        bl[1][1] = 3.0
 
         params = Dict("Influence Function" => "xiX + xiY + xiZ")
         PeriLab.Solver_Manager.Influence_Function.init_influence_function(Vector{Int64}(1:nodes),
@@ -215,10 +242,13 @@
         nn[1] = 1
         bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
                                                                     Float64,
-                                                                    dof + 1)
+                                                                    dof)
+        bl = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length",
+                                                                    Float64)
         omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
                                                                        Float64)
-        bg[1][1] .= [1.0, 0.0, 1.0]
+        bg[1][1] .= [1.0, 0.0]
+        bl[1][1] = 1.0
 
         params = Dict("Influence Function" => "1/xi^2")
         PeriLab.Solver_Manager.Influence_Function.init_influence_function(Int64[],

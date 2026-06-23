@@ -287,7 +287,7 @@ end
     @test normal == expected_normal
 
     @test_logs (:error,
-                "Disk filter only implemented for 3D, use rectangular plane filter instead") @test_throws begin
+                "Disk filter only implemented for 3D, use rectangular plane filter instead") @test_throws PeriLab.PeriLabError begin
         PeriLab.IO.Bond_Filter.Disk_Filter.run_bond_filter(nnodes,
                                                            data,
                                                            filter,
