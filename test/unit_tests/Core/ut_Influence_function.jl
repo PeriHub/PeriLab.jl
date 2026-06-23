@@ -6,16 +6,18 @@
     @testset "no 'Influence Function' key -> no-op" begin
         nodes = 2
         dof = 2
-        Data_Manager.initialize_data()
-        Data_Manager.set_num_controller(nodes)
-        Data_Manager.set_dof(dof)
-        nn = Data_Manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+        PeriLab.Data_Manager.initialize_data()
+        PeriLab.Data_Manager.set_num_controller(nodes)
+        PeriLab.Data_Manager.set_dof(dof)
+        nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                    Int64)
         nn[1] = 2
         nn[2] = 3
-        bg = Data_Manager.create_constant_bond_vector_state("Bond Geometry", Float64,
-                                                            dof + 1)
-        omega = Data_Manager.create_constant_bond_scalar_state("Influence Function",
-                                                               Float64)
+        bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                    Float64,
+                                                                    dof + 1)
+        omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
+                                                                       Float64)
 
         # should simply return without throwing, omega stays untouched
         PeriLab.Solver_Manager.Influence_Function.init_influence_function(Vector{Int64}(1:nodes),
@@ -26,16 +28,18 @@
     @testset "predefined: 1/xi^2 (dof=2)" begin
         nodes = 2
         dof = 2
-        Data_Manager.initialize_data()
-        Data_Manager.set_num_controller(nodes)
-        Data_Manager.set_dof(dof)
-        nn = Data_Manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+        PeriLab.Data_Manager.initialize_data()
+        PeriLab.Data_Manager.set_num_controller(nodes)
+        PeriLab.Data_Manager.set_dof(dof)
+        nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                    Int64)
         nn[1] = 2
         nn[2] = 1
-        bg = Data_Manager.create_constant_bond_vector_state("Bond Geometry", Float64,
-                                                            dof + 1)
-        omega = Data_Manager.create_constant_bond_scalar_state("Influence Function",
-                                                               Float64)
+        bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                    Float64,
+                                                                    dof + 1)
+        omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
+                                                                       Float64)
 
         # node 1 has 2 bonds, node 2 has 1 bond
         # entries: [xiX, xiY, xi]
@@ -55,15 +59,17 @@
     @testset "predefined: constant '1'" begin
         nodes = 1
         dof = 2
-        Data_Manager.initialize_data()
-        Data_Manager.set_num_controller(nodes)
-        Data_Manager.set_dof(dof)
-        nn = Data_Manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+        PeriLab.Data_Manager.initialize_data()
+        PeriLab.Data_Manager.set_num_controller(nodes)
+        PeriLab.Data_Manager.set_dof(dof)
+        nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                    Int64)
         nn[1] = 2
-        bg = Data_Manager.create_constant_bond_vector_state("Bond Geometry", Float64,
-                                                            dof + 1)
-        omega = Data_Manager.create_constant_bond_scalar_state("Influence Function",
-                                                               Float64)
+        bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                    Float64,
+                                                                    dof + 1)
+        omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
+                                                                       Float64)
 
         bg[1][1] .= [1.0, 1.0, 1.41421356]
         bg[1][2] .= [2.0, 0.0, 2.0]
@@ -78,15 +84,17 @@
     @testset "generic string expression: xi only (2D)" begin
         nodes = 1
         dof = 2
-        Data_Manager.initialize_data()
-        Data_Manager.set_num_controller(nodes)
-        Data_Manager.set_dof(dof)
-        nn = Data_Manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+        PeriLab.Data_Manager.initialize_data()
+        PeriLab.Data_Manager.set_num_controller(nodes)
+        PeriLab.Data_Manager.set_dof(dof)
+        nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                    Int64)
         nn[1] = 2
-        bg = Data_Manager.create_constant_bond_vector_state("Bond Geometry", Float64,
-                                                            dof + 1)
-        omega = Data_Manager.create_constant_bond_scalar_state("Influence Function",
-                                                               Float64)
+        bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                    Float64,
+                                                                    dof + 1)
+        omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
+                                                                       Float64)
 
         bg[1][1] .= [1.0, 0.0, 2.0]
         bg[1][2] .= [0.0, 1.0, 4.0]
@@ -102,15 +110,17 @@
     @testset "generic string expression: uses xiX, xiY (2D)" begin
         nodes = 1
         dof = 2
-        Data_Manager.initialize_data()
-        Data_Manager.set_num_controller(nodes)
-        Data_Manager.set_dof(dof)
-        nn = Data_Manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+        PeriLab.Data_Manager.initialize_data()
+        PeriLab.Data_Manager.set_num_controller(nodes)
+        PeriLab.Data_Manager.set_dof(dof)
+        nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                    Int64)
         nn[1] = 1
-        bg = Data_Manager.create_constant_bond_vector_state("Bond Geometry", Float64,
-                                                            dof + 1)
-        omega = Data_Manager.create_constant_bond_scalar_state("Influence Function",
-                                                               Float64)
+        bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                    Float64,
+                                                                    dof + 1)
+        omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
+                                                                       Float64)
 
         bg[1][1] .= [3.0, 4.0, 5.0]
 
@@ -124,15 +134,17 @@
     @testset "generic string expression: exp() (2D)" begin
         nodes = 1
         dof = 2
-        Data_Manager.initialize_data()
-        Data_Manager.set_num_controller(nodes)
-        Data_Manager.set_dof(dof)
-        nn = Data_Manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+        PeriLab.Data_Manager.initialize_data()
+        PeriLab.Data_Manager.set_num_controller(nodes)
+        PeriLab.Data_Manager.set_dof(dof)
+        nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                    Int64)
         nn[1] = 1
-        bg = Data_Manager.create_constant_bond_vector_state("Bond Geometry", Float64,
-                                                            dof + 1)
-        omega = Data_Manager.create_constant_bond_scalar_state("Influence Function",
-                                                               Float64)
+        bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                    Float64,
+                                                                    dof + 1)
+        omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
+                                                                       Float64)
 
         bg[1][1] .= [1.0, 0.0, 1.0]
 
@@ -146,15 +158,17 @@
     @testset "generic string expression: xiZ ignored/zero in 2D" begin
         nodes = 1
         dof = 2
-        Data_Manager.initialize_data()
-        Data_Manager.set_num_controller(nodes)
-        Data_Manager.set_dof(dof)
-        nn = Data_Manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+        PeriLab.Data_Manager.initialize_data()
+        PeriLab.Data_Manager.set_num_controller(nodes)
+        PeriLab.Data_Manager.set_dof(dof)
+        nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                    Int64)
         nn[1] = 1
-        bg = Data_Manager.create_constant_bond_vector_state("Bond Geometry", Float64,
-                                                            dof + 1)
-        omega = Data_Manager.create_constant_bond_scalar_state("Influence Function",
-                                                               Float64)
+        bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                    Float64,
+                                                                    dof + 1)
+        omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
+                                                                       Float64)
 
         bg[1][1] .= [1.0, 0.0, 1.0]
 
@@ -168,15 +182,17 @@
     @testset "generic string expression: 3D with xiX, xiY, xiZ" begin
         nodes = 1
         dof = 3
-        Data_Manager.initialize_data()
-        Data_Manager.set_num_controller(nodes)
-        Data_Manager.set_dof(dof)
-        nn = Data_Manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+        PeriLab.Data_Manager.initialize_data()
+        PeriLab.Data_Manager.set_num_controller(nodes)
+        PeriLab.Data_Manager.set_dof(dof)
+        nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                    Int64)
         nn[1] = 1
-        bg = Data_Manager.create_constant_bond_vector_state("Bond Geometry", Float64,
-                                                            dof + 1)
-        omega = Data_Manager.create_constant_bond_scalar_state("Influence Function",
-                                                               Float64)
+        bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                    Float64,
+                                                                    dof + 1)
+        omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
+                                                                       Float64)
 
         # xiX=1, xiY=2, xiZ=2 -> xi = sqrt(1+4+4)=3
         bg[1][1] .= [1.0, 2.0, 2.0, 3.0]
@@ -191,15 +207,17 @@
     @testset "empty node list -> no error, omega unchanged" begin
         nodes = 1
         dof = 2
-        Data_Manager.initialize_data()
-        Data_Manager.set_num_controller(nodes)
-        Data_Manager.set_dof(dof)
-        nn = Data_Manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+        PeriLab.Data_Manager.initialize_data()
+        PeriLab.Data_Manager.set_num_controller(nodes)
+        PeriLab.Data_Manager.set_dof(dof)
+        nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
+                                                                    Int64)
         nn[1] = 1
-        bg = Data_Manager.create_constant_bond_vector_state("Bond Geometry", Float64,
-                                                            dof + 1)
-        omega = Data_Manager.create_constant_bond_scalar_state("Influence Function",
-                                                               Float64)
+        bg = PeriLab.Data_Manager.create_constant_bond_vector_state("Bond Geometry",
+                                                                    Float64,
+                                                                    dof + 1)
+        omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
+                                                                       Float64)
         bg[1][1] .= [1.0, 0.0, 1.0]
 
         params = Dict("Influence Function" => "1/xi^2")
