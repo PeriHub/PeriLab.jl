@@ -24,6 +24,7 @@ function init_influence_function(nodes::AbstractVector{Int64},
     end
 
     bond_geometry = Data_Manager.get_field("Bond Geometry")  # BondVectorState
+    bond_length = Data_Manager.get_field("Bond Length")  # BondScalarState
     omega = Data_Manager.get_field("Influence Function")     # BondScalarState
     dof = Data_Manager.get_dof()  # or however dof is determined in your codebase
 
@@ -31,32 +32,31 @@ function init_influence_function(nodes::AbstractVector{Int64},
 
     # --- 1) Predefined, fast-path implementations ---
     if expr_str == "1/xi^2"
-        influence_function_1_div_xi_squared!(omega, nodes, bond_geometry, dof)
+        influence_function_1_div_xi_squared!(omega, nodes, bond_length)
         return
     elseif expr_str == "1"
-        influence_function_constant!(omega, nodes, bond_geometry, dof)
+        influence_function_constant!(omega, nodes)
         return
     end
 
     # --- 2) Fallback: generic string expression ---
-    influence_function_from_string!(omega, nodes, bond_geometry, dof, expr_str)
+    influence_function_from_string!(omega, nodes, bond_geometry, bond_length, dof, expr_str)
     return
 end
 
 """
 Fast hard-coded path for 1/xi^2.
-bond_geometry[iID][jID] = [xiX, xiY, (xiZ), xi] -> last entry (index dof+1) = bond length.
 """
-function influence_function_1_div_xi_squared!(omega, nodes, bond_geometry, dof)
+function influence_function_1_div_xi_squared!(omega, nodes, bond_length)
     for iID in nodes
-        for jID in eachindex(bond_geometry[iID])
-            xi = bond_geometry[iID][jID][dof+1]
+        for jID in eachindex(bond_length[iID])
+            xi = bond_length[iID][jID]
             omega[iID][jID] = 1.0 / (xi * xi)
         end
     end
 end
 
-function influence_function_constant!(omega, nodes, bond_geometry, dof)
+function influence_function_constant!(omega, nodes)
     for iID in nodes
         omega[iID][:] .= 1.0
     end
@@ -67,7 +67,8 @@ Generic path: builds a compiled function from the given expression once,
 then evaluates it per bond.
 Variables available in the expression: xi, xiX, xiY, xiZ (xiZ only if dof==3).
 """
-function influence_function_from_string!(omega, nodes, bond_geometry, dof, expr_str::String)
+function influence_function_from_string!(omega, nodes, bond_geometry, bond_length, dof,
+                                         expr_str::String)
     f = build_influence_function(expr_str, dof)
 
     for iID in nodes
@@ -76,7 +77,7 @@ function influence_function_from_string!(omega, nodes, bond_geometry, dof, expr_
             xiX = bond[1]
             xiY = dof >= 2 ? bond[2] : 0.0
             xiZ = dof == 3 ? bond[3] : 0.0
-            xi = bond[dof+1]
+            xi = bond_length[iID][jID]
             omega[iID][jID] = f(xi, xiX, xiY, xiZ)
         end
     end
