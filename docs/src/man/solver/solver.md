@@ -11,8 +11,11 @@
 | Final Time      | Float | No       | Defines the final time                                                         |
 | Fixed dt        | Float | Yes      | Defines a fixed time step                                                      |
 | Number of Steps | Int   | Yes      | Defines a fixed number of steps                                                |
-| Verlet          | Dict  | Yes      | Defines the Verlet solver                                                      |
-| Static          | Dict  | Yes      | Defines the Static solver                                                      |
+| Verlet          | Dict  | Yes      | Defines a Verlet solver   a Static  without using the stiffness matrix                                                    |
+| Static          | Dict  | Yes      | Defines a Static solver without using the stiffness matrix                                                      |
+| Verlet Matrix Based           | Dict  | Yes      | Defines a Verlet solver using the Peridynamic stiffness matrix                                                      |
+| Newmark                            | Dict  | Yes      | Defines a Newmark using the Peridynamic stiffness matrix solver                                                      |
+| Linear Static Matrix Based           | Dict  | Yes      | Defines a linear static solver using the Peridynamic stiffness matrix                                                  |
 
 ## Verlet
 
