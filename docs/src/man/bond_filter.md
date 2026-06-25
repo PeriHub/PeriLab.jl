@@ -14,6 +14,8 @@ For a recangular plane following parameters needs to be defined:
 
 - **Side Length**: Numeric value representing the side length. (Float64 or Int64)
 
+- **Allow Contact**: Bool value if true allows normal contact (bonds cary load unter pressure not tension)
+
 ![Discretization_BondFilters_RectangularPlane](../assets/Discretization_BondFilters_RectangularPlane.png)
 
 The yaml definition looks like this
