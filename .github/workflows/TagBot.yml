@@ -56,6 +56,7 @@ jobs:
       - name: Publish to Registry
         run: docker push perihub/perilab:latest
   Build:
+    if: github.event_name == 'workflow_dispatch' || github.actor == 'JuliaTagBot'
     runs-on: ${{ matrix.os }} # Use the current OS from the matrix
     strategy:
       matrix:
