@@ -53,6 +53,7 @@ function apply_bond_filters(nlist::BondScalarState{Int64},
             end
         end
         if contact_enabled
+            @info "Normal contact is applied within the bond filter."
             nlist_filtered_ids = fill(Vector{Int64}([]), nnodes)
             bond_norm = []
             for iID in 1:nnodes
