@@ -5,7 +5,7 @@
 module Helpers
 
 using PointNeighbors: GridNeighborhoodSearch, initialize_grid!, foreach_neighbor
-using Meshes: Ring, Point, centroid
+using Meshes: Ring, Point, centroid, Hexahedron
 #using Tensors
 using Dierckx: Spline1D, evaluate
 using ProgressBars: ProgressBar
@@ -1145,31 +1145,40 @@ function rotation3x3!(R::AbstractMatrix{Float64}, T::AbstractMatrix{Float64})
     r31, r32, r33 = R[3, 1], R[3, 2], R[3, 3]
 
     @inbounds @fastmath begin
-        T[1, 1] = r11 * (r11 * t11 + r12 * t21 + r13 * t31) +
+        T[1,
+        1] = r11 * (r11 * t11 + r12 * t21 + r13 * t31) +
                   r12 * (r11 * t12 + r12 * t22 + r13 * t32) +
                   r13 * (r11 * t13 + r12 * t23 + r13 * t33)
-        T[1, 2] = r21 * (r11 * t11 + r12 * t21 + r13 * t31) +
+        T[1,
+        2] = r21 * (r11 * t11 + r12 * t21 + r13 * t31) +
                   r22 * (r11 * t12 + r12 * t22 + r13 * t32) +
                   r23 * (r11 * t13 + r12 * t23 + r13 * t33)
-        T[1, 3] = r31 * (r11 * t11 + r12 * t21 + r13 * t31) +
+        T[1,
+        3] = r31 * (r11 * t11 + r12 * t21 + r13 * t31) +
                   r32 * (r11 * t12 + r12 * t22 + r13 * t32) +
                   r33 * (r11 * t13 + r12 * t23 + r13 * t33)
-        T[2, 1] = r11 * (r21 * t11 + r22 * t21 + r23 * t31) +
+        T[2,
+        1] = r11 * (r21 * t11 + r22 * t21 + r23 * t31) +
                   r12 * (r21 * t12 + r22 * t22 + r23 * t32) +
                   r13 * (r21 * t13 + r22 * t23 + r23 * t33)
-        T[2, 2] = r21 * (r21 * t11 + r22 * t21 + r23 * t31) +
+        T[2,
+        2] = r21 * (r21 * t11 + r22 * t21 + r23 * t31) +
                   r22 * (r21 * t12 + r22 * t22 + r23 * t32) +
                   r23 * (r21 * t13 + r22 * t23 + r23 * t33)
-        T[2, 3] = r31 * (r21 * t11 + r22 * t21 + r23 * t31) +
+        T[2,
+        3] = r31 * (r21 * t11 + r22 * t21 + r23 * t31) +
                   r32 * (r21 * t12 + r22 * t22 + r23 * t32) +
                   r33 * (r21 * t13 + r22 * t23 + r23 * t33)
-        T[3, 1] = r11 * (r31 * t11 + r32 * t21 + r33 * t31) +
+        T[3,
+        1] = r11 * (r31 * t11 + r32 * t21 + r33 * t31) +
                   r12 * (r31 * t12 + r32 * t22 + r33 * t32) +
                   r13 * (r31 * t13 + r32 * t23 + r33 * t33)
-        T[3, 2] = r21 * (r31 * t11 + r32 * t21 + r33 * t31) +
+        T[3,
+        2] = r21 * (r31 * t11 + r32 * t21 + r33 * t31) +
                   r22 * (r31 * t12 + r32 * t22 + r33 * t32) +
                   r23 * (r31 * t13 + r32 * t23 + r33 * t33)
-        T[3, 3] = r31 * (r31 * t11 + r32 * t21 + r33 * t31) +
+        T[3,
+        3] = r31 * (r31 * t11 + r32 * t21 + r33 * t31) +
                   r32 * (r31 * t12 + r32 * t22 + r33 * t32) +
                   r33 * (r31 * t13 + r32 * t23 + r33 * t33)
     end
