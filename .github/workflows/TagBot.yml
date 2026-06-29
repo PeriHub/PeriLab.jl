@@ -56,7 +56,7 @@ jobs:
       - name: Publish to Registry
         run: docker push perihub/perilab:latest
   Build:
-    if: github.event_name == 'workflow_dispatch' || github.actor == 'JuliaTagBot'
+    # if: github.event_name == 'workflow_dispatch' || github.actor == 'JuliaTagBot'
     runs-on: ${{ matrix.os }} # Use the current OS from the matrix
     strategy:
       matrix:
@@ -69,37 +69,50 @@ jobs:
       - name: Get version from Project.toml
         id: get_version
         run: echo "PERILAB_VERSION=$(awk -F'"' '/version/{print $2}' PeriLab/Project.toml)" >> $GITHUB_OUTPUT
-      - name: Set up Julia
-        uses: julia-actions/setup-julia@v3
-        with:
-          version: "1.12"
-      - name: Cache
-        uses: julia-actions/cache@v3
-      - name: Build Executable
-        run: |
-          # Run JuliaC;
-          julia --project -e 'using Pkg; Pkg.add("JuliaC")'
-          julia --project -e 'import JuliaC; JuliaC.main(["--output-exe", "PeriLab_exe", "--bundle", "build", "PeriLab"])'
+      # - name: Set up Julia
+      #   uses: julia-actions/setup-julia@v3
+      #   with:
+      #     version: "1.12"
+      # - name: Cache
+      #   uses: julia-actions/cache@v3
+      # - name: Build Executable
+      #   run: |
+      #     # Run JuliaC;
+      #     julia --project -e 'using Pkg; Pkg.add("JuliaC")'
+      #     julia --project -e 'import JuliaC; JuliaC.main(["--output-exe", "PeriLab_exe", "--bundle", "build", "PeriLab"])'
 
-      - name: Create Archive (Linux)
+      # - name: Create Archive (Linux)
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: tar -czvf PeriLab.tar.gz build
+
+      # - name: Create Archive (macOS)
+      #   if: matrix.os == 'macos-latest'
+      #   run: tar -czvf PeriLab.tar.gz build
+
+      # - name: Create Archive (Windows)
+      #   if: matrix.os == 'windows-latest'
+      #   # Windows uses a zip instead of tar for better compatibility
+      #   run: Compress-Archive -Path build -DestinationPath PeriLab.zip
+
+      - name: Build
         if: matrix.os == 'ubuntu-latest'
-        run: tar -czvf PeriLab.tar.gz build
+        run: echo ${{ github.sha }} > Release1.txt
 
-      - name: Create Archive (macOS)
-        if: matrix.os == 'macos-latest'
-        run: tar -czvf PeriLab.tar.gz build
-
-      - name: Create Archive (Windows)
+      - name: Build
         if: matrix.os == 'windows-latest'
-        # Windows uses a zip instead of tar for better compatibility
-        run: Compress-Archive -Path build -DestinationPath PeriLab.zip
+        run: echo ${{ github.sha }} > Release2.txt
 
       - name: Upload Release Asset
         # This action automatically finds the release matching the tag and uploads the asset
-        uses: svenstaro/upload-release-action@v2
+        uses: softprops/action-gh-release@v3
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: "${{ matrix.os == 'windows-latest' && 'PeriLab.zip' || 'PeriLab.tar.gz' }}"
-          tag: "v${{ steps.get_version.outputs.PERILAB_VERSION }}"
-          overwrite: true
-          #body: "Binary for ${{ runner.os }}"
+          files: ${{ matrix.os == 'windows-latest' && 'Release.txt2' || 'Release.txt1' }}
+          # files: ${{ matrix.os == 'windows-latest' && 'PeriLab.zip' || 'PeriLab.tar.gz' }}
+          name: "v${{ steps.get_version.outputs.PERILAB_VERSION }}"
+        # uses: svenstaro/upload-release-action@v2
+        # with:
+        #   repo_token: ${{ secrets.GITHUB_TOKEN }}
+        #   file: "${{ matrix.os == 'windows-latest' && 'PeriLab.zip' || 'PeriLab.tar.gz' }}"
+        #   tag: "v${{ steps.get_version.outputs.PERILAB_VERSION }}"
+        #   overwrite: true
+        #   #body: "Binary for ${{ runner.os }}"
