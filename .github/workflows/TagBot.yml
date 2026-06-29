@@ -68,11 +68,11 @@ jobs:
           path: "PeriLab"
       - name: Get version from Project.toml
         if: matrix.os == 'ubuntu-latest'
-        id: get_version
+        id: get_version1
         run: echo "PERILAB_VERSION=$(awk -F'"' '/version/{print $2}' PeriLab/Project.toml)" >> $GITHUB_OUTPUT
       - name: Get version from Project.toml
         if: matrix.os == 'windows-latest'
-        id: get_version
+        id: get_version2
         shell: bash
         run: |
           VERSION=$(grep -m 1 'version' PeriLab/Project.toml | cut -d'"' -f2)
@@ -111,13 +111,24 @@ jobs:
         run: echo ${{ github.sha }} > Release2.txt
 
       - name: Upload Release Asset
+        if: matrix.os == 'ubuntu-latest'
         # This action automatically finds the release matching the tag and uploads the asset
         uses: softprops/action-gh-release@v3
         with:
-          files: ${{ matrix.os == 'windows-latest' && 'Release2.txt' || 'Release1.txt' }}
+          files: "Release1.txt"
           # files: ${{ matrix.os == 'windows-latest' && 'PeriLab.zip' || 'PeriLab.tar.gz' }}
-          name: "v${{ steps.get_version.outputs.PERILAB_VERSION }}"
-          tag_name: "v${{ steps.get_version.outputs.PERILAB_VERSION }}"
+          name: "v${{ steps.get_version1.outputs.PERILAB_VERSION }}"
+          tag_name: "v${{ steps.get_version1.outputs.PERILAB_VERSION }}"
+
+      - name: Upload Release Asset
+        if: matrix.os == 'windows-latest'
+        # This action automatically finds the release matching the tag and uploads the asset
+        uses: softprops/action-gh-release@v3
+        with:
+          files: "Release2.txt"
+          # files: ${{ matrix.os == 'windows-latest' && 'PeriLab.zip' || 'PeriLab.tar.gz' }}
+          name: "v${{ steps.get_version2.outputs.PERILAB_VERSION }}"
+          tag_name: "v${{ steps.get_version2.outputs.PERILAB_VERSION }}"
         # uses: svenstaro/upload-release-action@v2
         # with:
         #   repo_token: ${{ secrets.GITHUB_TOKEN }}
