@@ -561,6 +561,7 @@ function init_write_results(params::Dict,
     for id in eachindex(result_files)
         if result_files[id]["type"] == "Exodus"
             result_files[id]["file"] = init_results_in_exodus(result_files[id]["file"],
+                                                              dof,
                                                               outputs[id],
                                                               coords,
                                                               block_Id[1:nnodes],

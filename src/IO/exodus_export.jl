@@ -137,6 +137,7 @@ Initializes the results in exodus
 - `result_file::Dict{String,Any}`: The result file
 """
 function init_results_in_exodus(exo::ExodusDatabase,
+                                dof,
                                 output::Dict{},
                                 coords::Union{Matrix{Int64},Matrix{Float64}},
                                 block_Id::Vector{Int64},
@@ -189,8 +190,14 @@ function init_results_in_exodus(exo::ExodusDatabase,
             if fem_block[conn[1]]
                 # fem_conn = topology[conn, :]'
                 fem_conn = Matrix(topology')
-                fem_conn[(end - 1):end, :] .= fem_conn[[end; end - 1], :]
-                write_block(exo, block, "QUAD4", fem_conn)
+                if dof == 3
+                    fem_conn[(end - 1):end, :] .= fem_conn[[end; end - 1], :]
+                    fem_conn[(end - 5):(end - 4), :] .= fem_conn[[end-4; end - 5], :]
+                    write_block(exo, block, "HEX8", fem_conn)
+                else
+                    fem_conn[(end - 1):end, :] .= fem_conn[[end; end - 1], :]
+                    write_block(exo, block, "QUAD4", fem_conn)
+                end
                 write_name(exo, Block, block, block_name)
             else
                 write_block(exo, block, "SPHERE", conn)

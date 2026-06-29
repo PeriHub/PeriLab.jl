@@ -204,6 +204,7 @@ exo1 = PeriLab.IO.create_result_file(filename2,
                                      2,
                                      topology)
 exo1["file"] = PeriLab.IO.init_results_in_exodus(exo1["file"],
+                                                 dof,
                                                  outputs,
                                                  coords,
                                                  block_Id[1:nnodes],
@@ -218,6 +219,7 @@ exo1["file"] = PeriLab.IO.init_results_in_exodus(exo1["file"],
 rm(filename2)
 exo = PeriLab.IO.create_result_file(filename, nnodes, dof, maximum(block_Id), length(nsets))
 exo["file"] = PeriLab.IO.init_results_in_exodus(exo["file"],
+                                                dof,
                                                 outputs,
                                                 coords,
                                                 block_Id[1:nnodes],
