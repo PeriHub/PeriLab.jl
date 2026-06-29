@@ -21,6 +21,7 @@ using ......Helpers:
                      get_nearest_neighbors,
                      find_point_in_element
 using LinearAlgebra
+using Statistics
 
 export coupling_name
 export init_coupling_model
@@ -163,6 +164,57 @@ function compute_coupling_matrix(coordinates,
                                  kappa,
                                  p,
                                  dof)
+    if dof == 3
+        # 3D coordinates of the coupling point
+        x_p = coordinates[point_val, 1]
+        y_p = coordinates[point_val, 2]
+        z_p = coordinates[point_val, 3]
+
+        # Assume 8-node hexahedral element (adjust column indexing if your topology format differs)
+        nid = [el_topology[element_number, i] for i in 1:8]
+        x = coordinates[nid, 1]
+        y = coordinates[nid, 2]
+        z = coordinates[nid, 3]
+
+        # Compute element center
+        x_c = mean(x);
+        y_c = mean(y);
+        z_c = mean(z)
+
+        # Compute characteristic half-lengths in each physical direction
+        Lx = 2 * maximum(abs.(x .- x_c))
+        Ly = 2 * maximum(abs.(y .- y_c))
+        Lz = 2 * maximum(abs.(z .- z_c))
+        Lx = maximum([Lx, 1e-10])
+        Ly = maximum([Ly, 1e-10])
+        Lz = maximum([Lz, 1e-10])
+
+        # Map physical point to local [-1, 1] coordinates
+        # (Center-aligned box projection is more robust for 3D than diagonal heuristics)
+        ksi = clamp(2 * (x_p - x_c) / Lx, -1.0, 1.0)
+        eta = clamp(2 * (y_p - y_c) / Ly, -1.0, 1.0)
+        zeta = clamp(2 * (z_p - z_c) / Lz, -1.0, 1.0)
+
+        # Evaluate 1D Lagrange basis functions
+        xi = define_lagrangian_grid_space(dof, p)
+        Nxi = get_recursive_lagrange_shape_functions(xi[1, :], ksi, p[1])
+        Neta = get_recursive_lagrange_shape_functions(xi[2, :], eta, p[2])
+        Nzeta = get_recursive_lagrange_shape_functions(xi[3, :], zeta, p[3])
+
+        # Construct 3D shape functions (assumes p = [1,1,1] → 8 nodes)
+        # Tensor-product ordering matches standard hexahedral topology
+        Np = zeros(1, 8)  # Explicit row vector to match your original syntax
+        idx = 1
+        for i in 1:(p[1] + 1), j in 1:(p[2] + 1), k in 1:(p[3] + 1)
+            Np[1, idx] = Nxi[i] * Neta[j] * Nzeta[k]
+            idx += 1
+        end
+
+        # Form 9x9 coupling matrix: [1 -Np; -Np' Np'Np]
+        local_coupl_matrix = kappa * [1.0 -Np; -Np' Np' * Np]
+
+        return local_coupl_matrix
+    end
     # only one point per call
     # Point coordinates
     x_point = coordinates[point_val, 1]
