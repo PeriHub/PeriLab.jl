@@ -25,36 +25,36 @@ permissions:
   security-events: read
   statuses: read
 jobs:
-  # TagBot:
-  #   if: github.event_name == 'workflow_dispatch' || github.actor == 'JuliaTagBot'
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: JuliaRegistries/TagBot@v1
-  #       with:
-  #         token: ${{ secrets.GITHUB_TOKEN }}
-  #         ssh: ${{ secrets.DOCUMENTER_KEY }}
-  # DockerHub:
-  #   if: github.event_name == 'workflow_dispatch' || github.actor == 'JuliaTagBot'
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v6
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v4
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #     - name: Get version from Project.toml
-  #       id: get_version
-  #       run: echo "PERILAB_VERSION=$(awk -F'"' '/version/{print $2}' Project.toml)" >> $GITHUB_OUTPUT
-  #     - name: Build Docker image
-  #       run: docker build -t perihub/perilab:${{ steps.get_version.outputs.PERILAB_VERSION }} .
-  #     - name: Publish to Registry
-  #       run: docker push perihub/perilab:${{ steps.get_version.outputs.PERILAB_VERSION }}
-  #     - name: Retag latest
-  #       run: docker tag perihub/perilab:${{ steps.get_version.outputs.PERILAB_VERSION }} perihub/perilab:latest
-  #     - name: Publish to Registry
-  #       run: docker push perihub/perilab:latest
+  TagBot:
+    if: github.event_name == 'workflow_dispatch' || github.actor == 'JuliaTagBot'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: JuliaRegistries/TagBot@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ssh: ${{ secrets.DOCUMENTER_KEY }}
+  DockerHub:
+    if: github.event_name == 'workflow_dispatch' || github.actor == 'JuliaTagBot'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Get version from Project.toml
+        id: get_version
+        run: echo "PERILAB_VERSION=$(awk -F'"' '/version/{print $2}' Project.toml)" >> $GITHUB_OUTPUT
+      - name: Build Docker image
+        run: docker build -t perihub/perilab:${{ steps.get_version.outputs.PERILAB_VERSION }} .
+      - name: Publish to Registry
+        run: docker push perihub/perilab:${{ steps.get_version.outputs.PERILAB_VERSION }}
+      - name: Retag latest
+        run: docker tag perihub/perilab:${{ steps.get_version.outputs.PERILAB_VERSION }} perihub/perilab:latest
+      - name: Publish to Registry
+        run: docker push perihub/perilab:latest
   Build:
     if: github.event_name == 'workflow_dispatch' || github.actor == 'JuliaTagBot'
     runs-on: ${{ matrix.os }} # Use the current OS from the matrix
@@ -68,71 +68,52 @@ jobs:
           path: "PeriLab"
       - name: Get version from Project.toml
         if: matrix.os == 'ubuntu-latest'
-        id: get_version1
+        id: get_version_ubuntu
         run: echo "PERILAB_VERSION=$(awk -F'"' '/version/{print $2}' PeriLab/Project.toml)" >> $GITHUB_OUTPUT
       - name: Get version from Project.toml
         if: matrix.os == 'windows-latest'
-        id: get_version2
+        id: get_version_windows
         shell: bash
         run: |
           VERSION=$(grep -m 1 'version' PeriLab/Project.toml | cut -d'"' -f2)
           echo "PERILAB_VERSION=$VERSION" >> $GITHUB_OUTPUT
-      # - name: Set up Julia
-      #   uses: julia-actions/setup-julia@v3
-      #   with:
-      #     version: "1.12"
-      # - name: Cache
-      #   uses: julia-actions/cache@v3
-      # - name: Build Executable
-      #   run: |
-      #     # Run JuliaC;
-      #     julia --project -e 'using Pkg; Pkg.add("JuliaC")'
-      #     julia --project -e 'import JuliaC; JuliaC.main(["--output-exe", "PeriLab_exe", "--bundle", "build", "PeriLab"])'
+      - name: Set up Julia
+        uses: julia-actions/setup-julia@v3
+        with:
+          version: "1.12"
+      - name: Cache
+        uses: julia-actions/cache@v3
+      - name: Build Executable
+        run: |
+          # Run JuliaC;
+          julia --project -e 'using Pkg; Pkg.add("JuliaC")'
+          julia --project -e 'import JuliaC; JuliaC.main(["--output-exe", "PeriLab_exe", "--bundle", "build", "PeriLab"])'
 
-      # - name: Create Archive (Linux)
-      #   if: matrix.os == 'ubuntu-latest'
-      #   run: tar -czvf PeriLab.tar.gz build
+      - name: Create Archive (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: tar -czvf PeriLab.tar.gz build
 
       # - name: Create Archive (macOS)
       #   if: matrix.os == 'macos-latest'
       #   run: tar -czvf PeriLab.tar.gz build
 
-      # - name: Create Archive (Windows)
-      #   if: matrix.os == 'windows-latest'
-      #   # Windows uses a zip instead of tar for better compatibility
-      #   run: Compress-Archive -Path build -DestinationPath PeriLab.zip
-
-      - name: Build
-        if: matrix.os == 'ubuntu-latest'
-        run: echo ${{ github.sha }} > Release1.txt
-
-      - name: Build
+      - name: Create Archive (Windows)
         if: matrix.os == 'windows-latest'
-        run: echo ${{ github.sha }} > Release2.txt
+        # Windows uses a zip instead of tar for better compatibility
+        run: Compress-Archive -Path build -DestinationPath PeriLab.zip
 
       - name: Upload Release Asset
         if: matrix.os == 'ubuntu-latest'
-        # This action automatically finds the release matching the tag and uploads the asset
         uses: softprops/action-gh-release@v3
         with:
-          files: "Release1.txt"
-          # files: ${{ matrix.os == 'windows-latest' && 'PeriLab.zip' || 'PeriLab.tar.gz' }}
-          name: "v${{ steps.get_version1.outputs.PERILAB_VERSION }}"
-          tag_name: "v${{ steps.get_version1.outputs.PERILAB_VERSION }}"
+          files: "PeriLab.tar.gz"
+          name: "v${{ steps.get_version_ubuntu.outputs.PERILAB_VERSION }}"
+          tag_name: "v${{ steps.get_version_ubuntu.outputs.PERILAB_VERSION }}"
 
       - name: Upload Release Asset
         if: matrix.os == 'windows-latest'
-        # This action automatically finds the release matching the tag and uploads the asset
         uses: softprops/action-gh-release@v3
         with:
-          files: "Release2.txt"
-          # files: ${{ matrix.os == 'windows-latest' && 'PeriLab.zip' || 'PeriLab.tar.gz' }}
-          name: "v${{ steps.get_version2.outputs.PERILAB_VERSION }}"
-          tag_name: "v${{ steps.get_version2.outputs.PERILAB_VERSION }}"
-        # uses: svenstaro/upload-release-action@v2
-        # with:
-        #   repo_token: ${{ secrets.GITHUB_TOKEN }}
-        #   file: "${{ matrix.os == 'windows-latest' && 'PeriLab.zip' || 'PeriLab.tar.gz' }}"
-        #   tag: "v${{ steps.get_version.outputs.PERILAB_VERSION }}"
-        #   overwrite: true
-        #   #body: "Binary for ${{ runner.os }}"
+          files: "PeriLab.zip"
+          name: "v${{ steps.get_version_windows.outputs.PERILAB_VERSION }}"
+          tag_name: "v${{ steps.get_version_windows.outputs.PERILAB_VERSION }}"
