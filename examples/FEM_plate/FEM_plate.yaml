@@ -52,7 +52,7 @@ PeriLab:
       Numerical Damping: 1e-05
   Outputs:
     Output1:
-      Output Filename: "FEM_plate`_check"
+      Output Filename: "FEM_plate_check"
       Output File Type: Exodus
       Output Frequency: 10
       Output Variables:
