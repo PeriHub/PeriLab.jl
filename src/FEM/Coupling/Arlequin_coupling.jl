@@ -164,6 +164,8 @@ function compute_coupling_matrix(coordinates,
                                  kappa,
                                  p,
                                  dof)
+    xi = define_lagrangian_grid_space(dof, p)
+
     if dof == 3
         # 3D coordinates of the coupling point
         x_p = coordinates[point_val, 1]
@@ -176,12 +178,12 @@ function compute_coupling_matrix(coordinates,
         y = coordinates[nid, 2]
         z = coordinates[nid, 3]
 
-        # Compute element center
-        x_c = mean(x);
-        y_c = mean(y);
+        # Element center
+        x_c = mean(x)
+        y_c = mean(y)
         z_c = mean(z)
 
-        # Compute characteristic half-lengths in each physical direction
+        # Characteristic half-lengths in each physical direction
         Lx = 2 * maximum(abs.(x .- x_c))
         Ly = 2 * maximum(abs.(y .- y_c))
         Lz = 2 * maximum(abs.(z .- z_c))
@@ -190,37 +192,36 @@ function compute_coupling_matrix(coordinates,
         Lz = maximum([Lz, 1e-10])
 
         # Map physical point to local [-1, 1] coordinates
-        # (Center-aligned box projection is more robust for 3D than diagonal heuristics)
+        # (Center-aligned box projection is more robust than diagonal heuristics)
         ksi = clamp(2 * (x_p - x_c) / Lx, -1.0, 1.0)
         eta = clamp(2 * (y_p - y_c) / Ly, -1.0, 1.0)
         zeta = clamp(2 * (z_p - z_c) / Lz, -1.0, 1.0)
 
         # Evaluate 1D Lagrange basis functions
-        xi = define_lagrangian_grid_space(dof, p)
         Nxi = get_recursive_lagrange_shape_functions(xi[1, :], ksi, p[1])
         Neta = get_recursive_lagrange_shape_functions(xi[2, :], eta, p[2])
         Nzeta = get_recursive_lagrange_shape_functions(xi[3, :], zeta, p[3])
 
-        # Construct 3D shape functions (assumes p = [1,1,1] → 8 nodes)
+        # Construct 3D shape functions (assumes p = [1,1,1] -> 8 nodes)
         # Tensor-product ordering matches standard hexahedral topology
-        Np = zeros(1, 8)  # Explicit row vector to match your original syntax
+        Np = zeros(1, 8)
         idx = 1
         for i in 1:(p[1] + 1), j in 1:(p[2] + 1), k in 1:(p[3] + 1)
             Np[1, idx] = Nxi[i] * Neta[j] * Nzeta[k]
             idx += 1
         end
 
-        # Form 9x9 coupling matrix: [1 -Np; -Np' Np'Np]
-        local_coupl_matrix = kappa * [1.0 -Np; -Np' Np' * Np]
-
-        return local_coupl_matrix
+        # 9x9 coupling matrix: [1 -Np; -Np' Np'Np]
+        return kappa * [1.0 -Np; -Np' Np'*Np]
     end
-    # only one point per call
-    # Point coordinates
+
+    ### 2D branch ###
+    # only one point per call, right now only for linear elements
     x_point = coordinates[point_val, 1]
     y_point = coordinates[point_val, 2]
-    #
-    ### Right now only for linear elements
+
+    # Node remapping: topology order (1,2,4,3) -> tensor-grid order (1,2,3,4)
+    # so that node1=(-1,-1), node2=(1,-1), node3=(-1,1), node4=(1,1) in local coords
     x1 = coordinates[el_topology[element_number, 1], 1]
     y1 = coordinates[el_topology[element_number, 1], 2]
     x2 = coordinates[el_topology[element_number, 2], 1]
@@ -229,33 +230,31 @@ function compute_coupling_matrix(coordinates,
     y3 = coordinates[el_topology[element_number, 4], 2]
     x4 = coordinates[el_topology[element_number, 3], 1]
     y4 = coordinates[el_topology[element_number, 3], 2]
-    #### this is not correct, because diag2 is dx
-    dx = sqrt((x2 - x1)^2 + (y2 - y1)^2)
 
-    # Compute diagonal lengths
-    diag1 = sqrt((x3 - x1)^2 + (y3 - y1)^2)
-    diag2 = sqrt((x2 - x1)^2 + (y2 - y1)^2)
-    diag3 = sqrt((x4 - x1)^2 + (y4 - y1)^2)
+    x = [x1, x2, x3, x4]
+    y = [y1, y2, y3, y4]
 
-    if diag1 > dx
-        ksi = 2 * (x_point - (x3 + x1) / 2) / dx
-        eta = 2 * (y_point - (y3 + y1) / 2) / dx
-    elseif diag2 > dx
-        ksi = 2 * (x_point - (x2 + x1) / 2) / dx
-        eta = 2 * (y_point - (y2 + y1) / 2) / dx
-    elseif diag3 > dx
-        ksi = 2 * (x_point - (x4 + x1) / 2) / dx
-        eta = 2 * (y_point - (y4 + y1) / 2) / dx
-    else
-        # Fallback to center or default values
-        ksi = 0.0
-        eta = 0.0
-    end
+    # Element center
+    x_c = mean(x)
+    y_c = mean(y)
 
-    xi = define_lagrangian_grid_space(dof, p)
+    # Characteristic half-lengths in each physical direction
+    Lx = 2 * maximum(abs.(x .- x_c))
+    Ly = 2 * maximum(abs.(y .- y_c))
+    Lx = maximum([Lx, 1e-10])
+    Ly = maximum([Ly, 1e-10])
+
+    # Map physical point to local [-1, 1] coordinates
+    # (Center-aligned box projection, consistent with the 3D branch above,
+    #  replaces the previous diagonal heuristic which used the wrong edge length)
+    ksi = clamp(2 * (x_point - x_c) / Lx, -1.0, 1.0)
+    eta = clamp(2 * (y_point - y_c) / Ly, -1.0, 1.0)
+
+    # Evaluate 1D Lagrange basis functions
     Nxi = get_recursive_lagrange_shape_functions(xi[1, :], ksi, p[1])
     Neta = get_recursive_lagrange_shape_functions(xi[2, :], eta, p[2])
-    # shape functions of PD point in local coord
+
+    # Shape functions of the PD point in local coordinates
     # notation from Lagrange_element.jl
     N1p = Nxi[1] * Neta[1] #(1 - ksi) * (1 - eta)
     N2p = Nxi[2] * Neta[1] #(1 + ksi) * (1 - eta)
@@ -263,9 +262,9 @@ function compute_coupling_matrix(coordinates,
     N4p = Nxi[2] * Neta[2] #(1 + ksi) * (1 + eta)
 
     Np = [N1p N2p N3p N4p]
-    local_coupl_matrix = kappa * [1 -Np; -Np' Np'*Np]
 
-    return local_coupl_matrix
+    # 5x5 coupling matrix: [1 -Np; -Np' Np'Np]
+    return kappa * [1 -Np; -Np' Np'*Np]
 end
 
 function find_point_in_elements(coordinates, el_topology, points_to_check, dof)

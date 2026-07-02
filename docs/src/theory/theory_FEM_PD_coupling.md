@@ -47,3 +47,6 @@ $$\kappa\begin{bmatrix}
 \end{bmatrix}$$
 
 The Integration is illustrated in [WillbergC2025](@cite).
+
+!!! warn "Element distorsion"
+    There is a limitation in the element shape. They must be rectangular, quadratic or parallelograms in the coupling zone.
