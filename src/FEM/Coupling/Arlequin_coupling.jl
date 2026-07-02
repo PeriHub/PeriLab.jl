@@ -300,11 +300,13 @@ function find_point_in_elements(coordinates, el_topology, points_to_check, dof,
     # nearest neighbors -> centroid ID is equal to the element
 
     @timeit "find_point_in_element" coupling_dict = find_point_in_element(el_topology,
+                                                                          points_to_check,
                                                                           near_points,
                                                                           coordinates,
                                                                           inside_check,
                                                                           coupling_type,
                                                                           Dict{Int64,Int64}())
+
     if length(coupling_dict) == 0
         @warn "No coupling pairs found, make sure a coupling area exist!"
     end

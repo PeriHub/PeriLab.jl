@@ -13,11 +13,12 @@ end
     elements = 1:2  # FE        #@info elements
     nodes = 1:10   # beide
     nFEnodes = 6            # number of FE nodes
+    coupling_type = zeros(11)
     nodesFE = nodes[1:nFEnodes, 1]
     nodesPD = nodes[(nFEnodes + 1):end, 1]
     topology = Array{Int64}(zeros(2, 4))
-    topology[1, :] = [1, 2, 6, 4]
-    topology[2, :] = [6, 4, 5, 3]
+    topology[1, :] = [6, 1, 2, 4]
+    topology[2, :] = [5, 6, 4, 3]
 
     coordinates = zeros(11, 2)
     coordinates[1, :] = [2, 0]
@@ -34,11 +35,11 @@ end
     test_dict = PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.find_point_in_elements(coordinates,
                                                                                              topology,
                                                                                              nodesPD,
-                                                                                             2)
-    @test collect(keys(test_dict)) == [4, 2, 1]
-    @test test_dict[4] == 1
-    @test test_dict[2] == 1
-    @test test_dict[1] == 1
+                                                                                             2,
+                                                                                             coupling_type)
+    @test collect(keys(test_dict)) == [7, 8]
+    @test test_dict[7] == 2
+    @test test_dict[8] == 1
 end
 
 @testset "ut_compute_coupling_matrix" begin
