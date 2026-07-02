@@ -4,6 +4,7 @@
 
 module Arlequin_Coupling
 
+using TimerOutputs: @timeit
 using ......Data_Manager
 using ......PeriLabExceptions: @abort
 include("../Element_formulation/Lagrange_element.jl")
@@ -57,6 +58,7 @@ function init_coupling_model(nodes, fe_params::Dict{String,Any})
     coupling_matrix = Data_Manager.create_constant_node_tensor_field("Coupling Matrix",
                                                                      Float64,
                                                                      (prod(p .+ 1) + 1))
+    coupling_type = Data_Manager.create_constant_node_scalar_field("Coupling Type", Int64)
 
     if any(x -> x > 1, p)
         @abort "Coupling is supported only for linear elements yet."
@@ -72,19 +74,22 @@ function init_coupling_model(nodes, fe_params::Dict{String,Any})
     # Assign Element ids
     @info "Find Coupling Pairs"
 
-    coupling_dict = find_point_in_elements(coordinates, el_topology, pd_nodes, dof)
+    @timeit "find_point_in_elements" coupling_dict = find_point_in_elements(coordinates,
+                                                                            el_topology,
+                                                                            pd_nodes, dof,
+                                                                            coupling_type)
     # point should be inside element -> for Arlequin; more stable
     rho = Data_Manager.get_field("Density")
     @info "Create Coupling Matrix"
     for (coupling_node, coupling_element) in pairs(coupling_dict)
-        coupling_matrix[coupling_node, :,
+        @timeit "compute_coupling_matrix" coupling_matrix[coupling_node, :,
         :] = compute_coupling_matrix(coordinates,
-                                                                       el_topology,
-                                                                       coupling_node,
-                                                                       coupling_element,
-                                                                       kappa,
-                                                                       p,
-                                                                       dof)
+                                                                                                         el_topology,
+                                                                                                         coupling_node,
+                                                                                                         coupling_element,
+                                                                                                         kappa,
+                                                                                                         p,
+                                                                                                         dof)
         rho[coupling_node] *= (1 - weight_coefficient)
     end
     Data_Manager.set_coupling_dict(coupling_dict)
@@ -268,7 +273,8 @@ function compute_coupling_matrix(coordinates,
     return local_coupl_matrix
 end
 
-function find_point_in_elements(coordinates, el_topology, points_to_check, dof)
+function find_point_in_elements(coordinates, el_topology, points_to_check, dof,
+                                coupling_type)
     if dof == 2
         fu = get_ring
         inside_check = find_point_in_polygon
@@ -276,26 +282,34 @@ function find_point_in_elements(coordinates, el_topology, points_to_check, dof)
         fu = get_hexagon
         inside_check = find_point_in_hexagon
     end
-    el_centroid,
-    search_radius = create_centroid_and_search_radius(coordinates, el_topology,
-                                                      dof, fu)
+    @timeit "create_centroid_and_search_radius" el_centroid,
+                                                search_radius = create_centroid_and_search_radius(coordinates,
+                                                                                                  el_topology,
+                                                                                                  dof,
+                                                                                                  fu)
     near_points = fill(Vector{Int64}([]), length(search_radius))
 
-    @views near_points,
-           _ = get_nearest_neighbors(1:length(search_radius),
-                                     dof,
-                                     el_centroid,
-                                     coordinates[points_to_check, :],
-                                     search_radius,
-                                     near_points,
-                                     true)
+    @timeit "get_nearest_neighbors" @views near_points,
+                                           _ = get_nearest_neighbors(1:length(search_radius),
+                                                                     dof,
+                                                                     el_centroid,
+                                                                     coordinates[points_to_check,
+                                                                     :],
+                                                                     search_radius,
+                                                                     near_points,
+                                                                     true)
     # nearest neighbors -> centroid ID is equal to the element
 
-    return find_point_in_element(el_topology,
-                                 near_points,
-                                 coordinates,
-                                 inside_check,
-                                 Dict{Int64,Int64}())
+    @timeit "find_point_in_element" coupling_dict = find_point_in_element(el_topology,
+                                                                          near_points,
+                                                                          coordinates,
+                                                                          inside_check,
+                                                                          coupling_type,
+                                                                          Dict{Int64,Int64}())
+    if length(coupling_dict) == 0
+        @warn "No coupling pairs found, make sure a coupling area exist!"
+    end
+    return coupling_dict
 end
 
 ## TODO does only work if the PD point is not on a FE - point, line or surface (3D)

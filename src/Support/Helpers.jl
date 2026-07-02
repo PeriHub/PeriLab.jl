@@ -338,9 +338,11 @@ function create_centroid_and_search_radius(coor::Union{Matrix{Float64},Matrix{In
     return el_centroid, search_radius
 end
 
-function find_point_in_element(el_topology, near_points, coor, fu, coupling_dict)
+function find_point_in_element(el_topology, near_points, coor, fu, coupling_type,
+                               coupling_dict)
     @inbounds @fastmath for iel in axes(el_topology, 1)
         topo = el_topology[iel, :]
+        coupling_type[near_points[iel]] .= 1
         for point in near_points[iel]
             if haskey(coupling_dict, point)
                 # only of elment per point for coupling
@@ -348,6 +350,7 @@ function find_point_in_element(el_topology, near_points, coor, fu, coupling_dict
             end
             if fu(coor[point, :], coor, topo)
                 coupling_dict[point] = iel
+                coupling_type[point] = 2
             end
         end
     end

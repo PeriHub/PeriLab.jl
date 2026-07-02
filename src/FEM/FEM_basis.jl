@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 module FEM_Basis
 
+using TimerOutputs: @timeit
 using LinearAlgebra
 using StaticArrays
 using FastGaussQuadrature
@@ -94,10 +95,14 @@ function compute_FEM(elements::AbstractVector{Int64},
         le = dof * length(topo)
         nnodes::Int64 = length(topo)
 
+        f_workspace = zeros(le)
+
         for id_int in eachindex(B_matrix[1, :, 1, 1])
-            strain_NP1[id_el, id_int, :] = B_matrix[id_el, id_int, :, :]' *
+            strain_NP1[id_el, id_int,
+            :] = B_matrix[id_el, id_int, :, :]' *
                                            reshape((uNP1[topo, :])', le)
-            strain_increment[id_el, id_int, :] = strain_NP1[id_el, id_int, :] -
+            strain_increment[id_el, id_int,
+            :] = strain_NP1[id_el, id_int, :] -
                                                  strain_N[id_el, id_int, :]
 
             if rotation
@@ -108,20 +113,22 @@ function compute_FEM(elements::AbstractVector{Int64},
 
             # in future this part must be changed -> using set Modules
 
-            stress_NP1[id_el, id_int, :] = compute_stresses(dof,
-                                                            convert(Dict{String,Any},
-                                                                    params["Material Model"]),
-                                                            time,
-                                                            dt,
-                                                            strain_increment[id_el,
-                                                            id_int,
-                                                            :],
-                                                            stress_N[id_el,
-                                                            id_int,
-                                                            :],
-                                                            stress_NP1[id_el,
-                                                            id_int,
-                                                            :])
+            @timeit "compute_stresses" stress_NP1[id_el, id_int,
+            :] = compute_stresses(dof,
+                                                                                       convert(Dict{String,
+                                                                                                    Any},
+                                                                                               params["Material Model"]),
+                                                                                       time,
+                                                                                       dt,
+                                                                                       strain_increment[id_el,
+                                                                                       id_int,
+                                                                                       :],
+                                                                                       stress_N[id_el,
+                                                                                       id_int,
+                                                                                       :],
+                                                                                       stress_NP1[id_el,
+                                                                                       id_int,
+                                                                                       :])
 
             #specifics = Dict{String,String}("Call Function" => "compute_stresses", "Name" => "material_name") -> tbd
             # material_model is missing
@@ -132,23 +139,30 @@ function compute_FEM(elements::AbstractVector{Int64},
                 #rotate(nodes, stress_NP1, rotation_tensor, true)
             end
             # specific force density
+            @timeit "reshape" begin
+                f_workspace = B_matrix[id_el, id_int, :, :] * stress_NP1[id_el, id_int, :] .*
+                              det_jacobian[id_el, id_int]
+                forces[topo, :] .-= reshape(f_workspace, (dof, nnodes))'
+            end
 
-            forces[topo,
-            :] -= reshape(B_matrix[id_el, id_int, :, :] *
-                                       stress_NP1[id_el, id_int, :] .*
-                                       det_jacobian[id_el, id_int],
-                                       (dof, nnodes))' #./ volume[topo]
+            # @timeit "reshape" forces[topo,
+            #                          :] -= reshape(B_matrix[id_el, id_int, :, :] *
+            #                                        stress_NP1[id_el, id_int, :] .*
+            #                                        det_jacobian[id_el, id_int],
+            #                                        (dof, nnodes))' #./ volume[topo]
             # if you do not use permutedims you will get some index errors
             stress_temp .+= stress_NP1[id_el, id_int, :] .* det_jacobian[id_el, id_int]
         end
 
         # as long as no elements stresses are written
-        temp = permutedims(cauchy_stress[topo, :, :], (2, 3, 1))
+        @timeit "permutedims" temp = permutedims(cauchy_stress[topo, :, :], (2, 3, 1))
         temp[:, :, 1:nnodes] .= voigt_to_matrix(stress_temp)
         # no avering over element borders
-        cauchy_stress[topo, :,
-        :] = permutedims(temp[:, :, 1:nnodes], (3, 1, 2)) ./
-                                    sum(det_jacobian[id_el, :])
+        @timeit "cauchy_stress" cauchy_stress[topo, :,
+        :] = permutedims(temp[:, :,
+                                                                             1:nnodes],
+                                                                        (3, 1, 2)) ./
+                                                            sum(det_jacobian[id_el, :])
         stress_temp .= 0
     end
 end

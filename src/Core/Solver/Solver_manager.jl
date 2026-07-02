@@ -174,9 +174,9 @@ function init(params::Dict,
     #end
 
     if Data_Manager.fem_active()
-        FEM.init_FEM(params)
-        FEM.Coupling.init_coupling(1:Data_Manager.get_nnodes(),
-                                   params)
+        @timeit "init_FEM" FEM.init_FEM(params)
+        @timeit "init_coupling" FEM.Coupling.init_coupling(1:Data_Manager.get_nnodes(),
+                                                           params)
     end
     if !Data_Manager.has_key("Active")
         active = Data_Manager.create_constant_node_scalar_field("Active", Bool;
