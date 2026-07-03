@@ -248,7 +248,8 @@ function find_point_in_polygon(point, coor, topo)
     return Point(point[1], point[2]) in get_ring(coor, topo)
 end
 
-function find_point_in_hexagon(point, coor, topo)
+function find_point_in_hexagon(point::Vector{Float64}, coor::Matrix{Float64},
+                               topo::Vector{Int64})
     return Point(point[1], point[2], point[3]) in get_hexagon(coor, topo)
 end
 
