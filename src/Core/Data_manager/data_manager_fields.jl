@@ -30,6 +30,20 @@ export
        BondVectorState,
        BondTensorState
 
+mutable struct PartitionedStiffness
+    K_ff::SparseMatrixCSC{Float64,Int}   # K[non_BCs, non_BCs]
+    K_fb::SparseMatrixCSC{Float64,Int}   # K[non_BCs, bc_dofs]
+    K_bf::SparseMatrixCSC{Float64,Int}   # K[bc_dofs, :]
+    #  K_eff_lu::Union{Nothing,SuiteSparse.UMFPACK.UmfpackLU{Float64,Int}}
+    non_BCs::Vector{Int}                 # free
+    bc_dofs::Vector{Int}                 # Dirichlet DOFs
+
+    function PartitionedStiffness()
+        z = spzeros(0, 0)
+        new(z, z, z, nothing, Int[], Int[])
+    end
+end
+
 """
 	get_field(name::String, time::String)
 

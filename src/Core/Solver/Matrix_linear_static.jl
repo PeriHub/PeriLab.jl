@@ -28,7 +28,7 @@ using ..Model_Factory: compute_stiff_matrix_compatible_models,
                        compute_matrix_based_bond_forces
 
 using ..Correspondence_matrix_based: init_model, init_matrix,
-                                     compute_model
+                                     compute_matrix
 using ..Model_Factory.Pre_Calculation.Bond_Deformation
 
 export init_solver
@@ -515,13 +515,6 @@ function compute_displacements_active_subset!(K_active::AbstractMatrix{Float64},
     end
 
     return nothing
-end
-
-function compute_matrix(nodes::AbstractVector{Int64})
-    if length(nodes) == 0
-        return Data_Manager.get_stiffness_matrix()
-    end
-    compute_model(nodes)
 end
 
 """

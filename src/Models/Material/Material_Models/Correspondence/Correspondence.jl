@@ -53,7 +53,7 @@ function init_model(nodes::AbstractVector{Int64},
 
     Data_Manager.create_constant_node_tensor_field("Strain Increment", Float64, dof)
     Data_Manager.create_node_tensor_field("Cauchy Stress", Float64, dof)
-
+    Data_Manager.create_node_scalar_field("Strain Energy", Float64)
     Data_Manager.create_node_scalar_field("von Mises Stress", Float64)
     rotation::Bool = Data_Manager.get_rotation()
     material_models = split(material_parameter["Material Model"], "+")
@@ -165,6 +165,7 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
     rotation::Bool = Data_Manager.get_rotation()
     dof::Int64 = Data_Manager.get_dof()
     deformation_gradient::NodeTensorField{Float64} = Data_Manager.get_field("Deformation Gradient")
+    strain_energy::NodeScalarField{Float64} = Data_Manager.get_field("Strain Energy", "NP1")
     bond_force::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
     bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
     undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
@@ -212,7 +213,13 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
                                  stress_NP1)
         end
     end
-
+    for iID in nodes
+        for i in 1:dof
+            for j in 1:dof
+                strain_energy[iID] += 0.5 * strain_NP1[iID, i, j] * stress_NP1[iID, i, j]
+            end
+        end
+    end
     if rotation
         @timeit "rotate back" begin
             rotate(nodes, stress_NP1, rotation_tensor, true)

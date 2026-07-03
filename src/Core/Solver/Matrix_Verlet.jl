@@ -33,7 +33,7 @@ include("../Model_reduction/Model_reduction.jl")
 using .Model_reduction: init_reduce_model
 include("../../Compute/compute_field_values.jl")
 using ..Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
-                                     compute_model
+                                     compute_matrix
 export init_solver, run_solver
 
 function solver_name()

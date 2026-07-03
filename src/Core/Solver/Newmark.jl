@@ -23,7 +23,7 @@ using ..Model_Factory: compute_stiff_matrix_compatible_models,
                        compute_matrix_based_bond_forces
 
 using ..Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
-                                     compute_model
+                                     compute_matrix
 using ..Model_Factory.Pre_Calculation.Bond_Deformation
 
 export init_solver
@@ -435,11 +435,6 @@ function newmark_step!(K::AbstractMatrix{Float64},
     end
 
     return nothing
-end
-
-function compute_matrix(nodes::AbstractVector{Int64})
-    isempty(nodes) && return Data_Manager.get_stiffness_matrix()
-    compute_model(nodes)
 end
 
 end # module Newmark
