@@ -248,7 +248,8 @@ function find_point_in_polygon(point, coor, topo)
     return Point(point[1], point[2]) in get_ring(coor, topo)
 end
 
-function find_point_in_hexagon(point, coor, topo)
+function find_point_in_hexagon(point::Vector{Float64}, coor::Matrix{Float64},
+                               topo::Vector{Int64})
     return Point(point[1], point[2], point[3]) in get_hexagon(coor, topo)
 end
 
@@ -265,7 +266,7 @@ This function gives the hexahedron model back to compute centroids of this surfa
 - `Hexahedron`: eight point hexahedron.
 
 """
-function get_hexagon(coor::Union{Matrix{Float64},Matrix{Int64}}, topo::Vector{Int64})
+function get_hexagon(coor::Matrix{T}, topo::Vector{Int64}) where {T<:Union{Int64,Float64}}
     return Hexahedron(Point(coor[topo[1], 1], coor[topo[1], 2], coor[topo[1], 3]),
                       Point(coor[topo[2], 1], coor[topo[2], 2], coor[topo[2], 3]),
                       Point(coor[topo[4], 1], coor[topo[4], 2], coor[topo[4], 3]),
@@ -289,7 +290,7 @@ This function gives the ring model back to compute centroids of this surface and
 - `Ring`: four point closed surface.
 
 """
-function get_ring(coor::Union{Matrix{Float64},Matrix{Int64}}, topo::Vector{Int64})
+function get_ring(coor::Matrix{T}, topo::Vector{Int64}) where {T<:Union{Int64,Float64}}
     return Ring(Point(coor[topo[1], 1], coor[topo[1], 2]),
                 Point(coor[topo[2], 1], coor[topo[2], 2]),
                 Point(coor[topo[4], 1], coor[topo[4], 2]),

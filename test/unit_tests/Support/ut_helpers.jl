@@ -6,7 +6,164 @@
 using ProgressBars
 using LinearAlgebra
 using StaticArrays
-#using PeriLab
+
+using Test
+using LinearAlgebra: norm
+
+@testset "PeriLab.Helpers.create_centroid_and_search_radius" begin
+    @testset "unit cube - centroid and circumradius" begin
+        coor = [0.0 0.0 0.0
+                1.0 0.0 0.0
+                0.0 1.0 0.0
+                1.0 1.0 0.0
+                0.0 0.0 1.0
+                1.0 0.0 1.0
+                0.0 1.0 1.0
+                1.0 1.0 1.0]
+        el_topology = reshape(collect(1:8), 1, 8)
+        centroid,
+        radius = PeriLab.Helpers.create_centroid_and_search_radius(coor, el_topology, 3,
+                                                                   PeriLab.Helpers.get_hexagon)
+
+        @test centroid[1, :] ≈ [0.5, 0.5, 0.5]
+        # circumradius of a unit cube = sqrt(3)/2 (center to corner)
+        @test radius[1] ≈ sqrt(3) / 2
+    end
+
+    @testset "non-cubic box - radius bounds every corner" begin
+        coor = [0.0 0.0 0.0
+                2.0 0.0 0.0
+                0.0 1.0 0.0
+                2.0 1.0 0.0
+                0.0 0.0 3.0
+                2.0 0.0 3.0
+                0.0 1.0 3.0
+                2.0 1.0 3.0]
+        el_topology = reshape(collect(1:8), 1, 8)
+
+        centroid,
+        radius = PeriLab.Helpers.create_centroid_and_search_radius(coor, el_topology, 3,
+                                                                   PeriLab.Helpers.get_hexagon)
+
+        # Every corner node must lie on or inside the returned enclosing sphere.
+        for p in eachrow(coor)
+            @test norm(centroid[1, :] .- p) == radius[1]
+        end
+    end
+
+    @testset "corner node sits exactly on its own search radius (real coupling case)" begin
+        coor = [0.074 0.049 0.0
+                0.075 0.049 0.0
+                0.074 0.05 0.0
+                0.075 0.05 0.0
+                0.074 0.049 0.001
+                0.075 0.049 0.001
+                0.074 0.05 0.001
+                0.075 0.05 0.001]
+        el_topology = reshape(collect(1:8), 1, 8)
+        query_point = [0.075, 0.05, 0.0]  # == coor[4, :], corner node 4
+
+        centroid,
+        radius = PeriLab.Helpers.create_centroid_and_search_radius(coor, el_topology, 3,
+                                                                   PeriLab.Helpers.get_hexagon)
+        dist = norm(centroid[1, :] .- query_point)
+
+        @test dist ≈ radius[1]
+        # A tolerant "<=" pre-check must accept this point ...
+        @test dist <= radius[1] + 1e-9
+        # ... while a strict "<" pre-check (as used in the broad-phase search)
+        # would incorrectly reject it. This documents the bug, it should NOT
+        # be "fixed" by changing this assertion - it must be fixed at the
+        # call site / in the comparison operator instead.
+        @test !(dist < radius[1])
+    end
+
+    @testset "multiple elements - independent centroids and radii" begin
+        coor = [0.0 0.0 0.0
+                1.0 0.0 0.0
+                0.0 1.0 0.0
+                1.0 1.0 0.0
+                0.0 0.0 1.0
+                1.0 0.0 1.0
+                0.0 1.0 1.0
+                1.0 1.0 1.0
+                2.0 0.0 0.0
+                3.0 0.0 0.0
+                2.0 1.0 0.0
+                3.0 1.0 0.0
+                2.0 0.0 1.0
+                3.0 0.0 1.0
+                2.0 1.0 1.0
+                3.0 1.0 1.0]
+        el_topology = [1 2 3 4 5 6 7 8
+                       9 10 11 12 13 14 15 16]
+
+        centroid,
+        radius = PeriLab.Helpers.create_centroid_and_search_radius(coor, el_topology, 3,
+                                                                   PeriLab.Helpers.get_hexagon)
+
+        @test size(centroid) == (2, 3)
+        @test length(radius) == 2
+        @test centroid[1, :] ≈ [0.5, 0.5, 0.5]
+        @test centroid[2, :] ≈ [2.5, 0.5, 0.5]
+        # Identical geometry, just translated -> identical radius.
+        @test radius[1] ≈ radius[2]
+    end
+end
+
+@testset "PeriLab.Helpers.find_point_in_hexagon" begin
+
+    # Einheitswürfel, Knotenreihenfolge gemäß Tensor-Grid-Konvention
+    # (node1=(0,0,0), node2=(1,0,0), node3=(0,1,0), node4=(1,1,0),
+    #  node5=(0,0,1), node6=(1,0,1), node7=(0,1,1), node8=(1,1,1))
+    coor = [0.0 0.0 0.0
+            1.0 0.0 0.0
+            0.0 1.0 0.0
+            1.0 1.0 0.0
+            0.0 0.0 1.0
+            1.0 0.0 1.0
+            0.0 1.0 1.0
+            1.0 1.0 1.0]
+    topo = collect(1:8)
+
+    @testset "Center" begin
+        @test PeriLab.Helpers.find_point_in_hexagon([0.5, 0.5, 0.5], coor, topo) == true
+    end
+
+    @testset "Edge nodes" begin
+        @test PeriLab.Helpers.find_point_in_hexagon([0.0, 0.0, 0.0], coor, topo) == true
+        @test PeriLab.Helpers.find_point_in_hexagon([1.0, 1.0, 1.0], coor, topo) == true
+    end
+
+    @testset "Surface" begin
+        @test PeriLab.Helpers.find_point_in_hexagon([0.5, 0.5, 0.0], coor, topo) == true
+    end
+
+    @testset "External" begin
+        @test PeriLab.Helpers.find_point_in_hexagon([2.0, 2.0, 2.0], coor, topo) == false
+        @test PeriLab.Helpers.find_point_in_hexagon([-1.0, 0.5, 0.5], coor, topo) == false
+
+        @test PeriLab.Helpers.find_point_in_hexagon([0.5, 0.5, 1.0 + 1e-6], coor, topo) ==
+              false
+    end
+
+    @testset "distorted" begin
+        coor_skew = [0.0 0.0 0.0
+                     1.0 0.0 0.0
+                     0.2 1.0 0.0
+                     1.2 1.0 0.0
+                     0.0 0.0 1.0
+                     1.0 0.0 1.0
+                     0.2 1.0 1.0
+                     1.2 1.0 1.0]
+        topo_skew = collect(1:8)
+
+        @test PeriLab.Helpers.find_point_in_hexagon([0.6, 0.5, 0.5], coor_skew,
+                                                    topo_skew) == true
+        @test PeriLab.Helpers.find_point_in_hexagon([-0.5, 0.5, 0.5], coor_skew,
+                                                    topo_skew) == false
+    end
+end
 
 @testset "ut_create_permutation" begin
     nnodes = 3
