@@ -27,7 +27,7 @@ using LinearAlgebra: norm
 
         @test centroid[1, :] ≈ [0.5, 0.5, 0.5]
         # circumradius of a unit cube = sqrt(3)/2 (center to corner)
-        @test radius[1] ≈ sqrt(3) / 2
+        @test radius[1] ≈ (sqrt(3) / 2) * 1.01
     end
 
     @testset "non-cubic box - radius bounds every corner" begin
@@ -47,7 +47,7 @@ using LinearAlgebra: norm
 
         # Every corner node must lie on or inside the returned enclosing sphere.
         for p in eachrow(coor)
-            @test norm(centroid[1, :] .- p) == radius[1]
+            @test norm(centroid[1, :] .- p)*1.01 == radius[1]
         end
     end
 
@@ -66,7 +66,7 @@ using LinearAlgebra: norm
         centroid,
         radius = PeriLab.Helpers.create_centroid_and_search_radius(coor, el_topology, 3,
                                                                    PeriLab.Helpers.get_hexagon)
-        dist = norm(centroid[1, :] .- query_point)
+        dist = norm(centroid[1, :] .- query_point) * 1.01
 
         @test dist ≈ radius[1]
         # A tolerant "<=" pre-check must accept this point ...

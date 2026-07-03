@@ -335,7 +335,7 @@ function create_centroid_and_search_radius(coor::Union{Matrix{Float64},Matrix{In
         topo = el_topology[iel, :]
         el_centroid[iel, :] .= get_centroid(fu(coor, topo), dof)
         search_radius[iel] = maximum([norm(el_centroid[iel, :] .- p)
-                                      for p in eachrow(coor[topo, :])]) * 1.01
+                                      for p in eachrow(coor[topo, :])]) * 1.01 #Increased slightly for nodes on element edges.
     end
     return el_centroid, search_radius
 end
