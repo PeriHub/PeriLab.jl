@@ -6,7 +6,60 @@
 using ProgressBars
 using LinearAlgebra
 using StaticArrays
-#using PeriLab
+
+@testset "PeriLab.Helpers.find_point_in_hexagon" begin
+
+    # Einheitswürfel, Knotenreihenfolge gemäß Tensor-Grid-Konvention
+    # (node1=(0,0,0), node2=(1,0,0), node3=(0,1,0), node4=(1,1,0),
+    #  node5=(0,0,1), node6=(1,0,1), node7=(0,1,1), node8=(1,1,1))
+    coor = [0.0 0.0 0.0
+            1.0 0.0 0.0
+            0.0 1.0 0.0
+            1.0 1.0 0.0
+            0.0 0.0 1.0
+            1.0 0.0 1.0
+            0.0 1.0 1.0
+            1.0 1.0 1.0]
+    topo = collect(1:8)
+
+    @testset "Center" begin
+        @test PeriLab.Helpers.find_point_in_hexagon([0.5, 0.5, 0.5], coor, topo) == true
+    end
+
+    @testset "Edge nodes" begin
+        @test PeriLab.Helpers.find_point_in_hexagon([0.0, 0.0, 0.0], coor, topo) == true
+        @test PeriLab.Helpers.find_point_in_hexagon([1.0, 1.0, 1.0], coor, topo) == true
+    end
+
+    @testset "Surface" begin
+        @test PeriLab.Helpers.find_point_in_hexagon([0.5, 0.5, 0.0], coor, topo) == true
+    end
+
+    @testset "External" begin
+        @test PeriLab.Helpers.find_point_in_hexagon([2.0, 2.0, 2.0], coor, topo) == false
+        @test PeriLab.Helpers.find_point_in_hexagon([-1.0, 0.5, 0.5], coor, topo) == false
+
+        @test PeriLab.Helpers.find_point_in_hexagon([0.5, 0.5, 1.0 + 1e-6], coor, topo) ==
+              false
+    end
+
+    @testset "distorted" begin
+        coor_skew = [0.0 0.0 0.0
+                     1.0 0.0 0.0
+                     0.2 1.0 0.0
+                     1.2 1.0 0.0
+                     0.0 0.0 1.0
+                     1.0 0.0 1.0
+                     0.2 1.0 1.0
+                     1.2 1.0 1.0]
+        topo_skew = collect(1:8)
+
+        @test PeriLab.Helpers.find_point_in_hexagon([0.6, 0.5, 0.5], coor_skew,
+                                                    topo_skew) == true
+        @test PeriLab.Helpers.find_point_in_hexagon([-0.5, 0.5, 0.5], coor_skew,
+                                                    topo_skew) == false
+    end
+end
 
 @testset "ut_create_permutation" begin
     nnodes = 3
