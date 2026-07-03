@@ -21,10 +21,9 @@ using LinearAlgebra: norm
                 0.0 1.0 1.0
                 1.0 1.0 1.0]
         el_topology = reshape(collect(1:8), 1, 8)
-        extract_hex_points = PeriLab.Helpers.get_hexagon
         centroid,
         radius = PeriLab.Helpers.create_centroid_and_search_radius(coor, el_topology, 3,
-                                                                   extract_hex_points)
+                                                                   PeriLab.Helpers.get_hexagon)
 
         @test centroid[1, :] ≈ [0.5, 0.5, 0.5]
         # circumradius of a unit cube = sqrt(3)/2 (center to corner)
@@ -44,7 +43,7 @@ using LinearAlgebra: norm
 
         centroid,
         radius = PeriLab.Helpers.create_centroid_and_search_radius(coor, el_topology, 3,
-                                                                   extract_hex_points)
+                                                                   PeriLab.Helpers.get_hexagon)
 
         # Every corner node must lie on or inside the returned enclosing sphere.
         for p in eachrow(coor)
@@ -66,7 +65,7 @@ using LinearAlgebra: norm
 
         centroid,
         radius = PeriLab.Helpers.create_centroid_and_search_radius(coor, el_topology, 3,
-                                                                   extract_hex_points)
+                                                                   PeriLab.Helpers.get_hexagon)
         dist = norm(centroid[1, :] .- query_point)
 
         @test dist ≈ radius[1]
@@ -101,7 +100,7 @@ using LinearAlgebra: norm
 
         centroid,
         radius = PeriLab.Helpers.create_centroid_and_search_radius(coor, el_topology, 3,
-                                                                   extract_hex_points)
+                                                                   PeriLab.Helpers.get_hexagon)
 
         @test size(centroid) == (2, 3)
         @test length(radius) == 2
