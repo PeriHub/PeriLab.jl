@@ -25,7 +25,7 @@ include("./Coupling/Coupling_Factory.jl")
 # in future using set modules for material
 # test case is correspondence material
 using ...Helpers: fast_mul!, get_mapping
-using ..Material_Basis: get_Hooke_matrix
+using ..Material_Basis: get_Hooke_matrix, get_all_elastic_moduli
 # using .Correspondence_Elastic
 using .Coupling
 export init_FEM
@@ -49,6 +49,7 @@ function init_FEM(complete_params::Dict)
     Data_Manager.set_property("FEM",
                               "Material Model",
                               complete_params["Models"]["Material Models"][params["Material Model"]])
+    get_all_elastic_moduli(Data_Manager.get_properties(1, "FEM")["Material Model"])
 
     dof = Data_Manager.get_dof()
     nelements = Data_Manager.get_num_elements()

@@ -30,10 +30,10 @@ function compute_FEM(elements::AbstractVector{Int64},
                      compute_stresses,
                      time::Float64,
                      dt::Float64)
-    rotation::Bool = Data_Manager.get_element_rotation()
-    if rotation
-        rotation_tensor = Data_Manager.get_field("Rotation Tensor")
-    end
+    # rotation::Bool = Data_Manager.get_element_rotation()
+    # if rotation
+    #     rotation_tensor = Data_Manager.get_field("Rotation Tensor")
+    # end
     dof = Data_Manager.get_dof()
 
     forces = Data_Manager.get_field("Forces", "NP1")
@@ -53,43 +53,7 @@ function compute_FEM(elements::AbstractVector{Int64},
 
     stress_temp = @MVector zeros(3 * dof - 3)
     le::Int64 = 0
-    #
-    parameter = params["Material Model"]
-    K = get(parameter, "Bulk Modulus", nothing)
-    E = get(parameter, "Young's Modulus", nothing)
-    G = get(parameter, "Shear Modulus", nothing)
-    nu = get(parameter, "Poisson's Ratio", nothing)
 
-    if !isnothing(K) && !isnothing(nu)
-        E = 3 * K * (1 .- 2 * nu)
-        G = 3 * K * (1 .- 2 * nu) ./ (2 .+ 2 * nu)
-    end
-    if !isnothing(G) && !isnothing(nu)
-        E = 2 * G * (1 .+ nu)
-        K = 2 * G * (1 .+ nu) ./ (3 .- 6 * nu)
-    end
-    if !isnothing(K) && !isnothing(G)
-        E = 9 * K * G ./ (3 * K .+ G)
-        nu = (3 * K .- 2 * G) ./ (6 * K .+ 2 * G)
-    end
-    if !isnothing(E) && !isnothing(G)
-        K = E * G ./ (9 * G .- 3 * E)
-        nu = E ./ (2 * G) .- 1
-    end
-
-    if !isnothing(E) && !isnothing(K)
-        G = 3 * K * E ./ (9 * K .- E)
-        nu = (3 * K .- E) ./ (6 * K)
-    end
-    if !isnothing(E) && !isnothing(nu)
-        K = E ./ (3 .- 6 * nu)
-        G = E ./ (2 .+ 2 * nu)
-    end
-
-    parameter["Bulk Modulus"] = K
-    parameter["Young's Modulus"] = E
-    parameter["Shear Modulus"] = G
-    parameter["Poisson's Ratio"] = nu
     for id_el in elements
         topo = view(topology, id_el, :)
         le = dof * length(topo)
@@ -98,18 +62,20 @@ function compute_FEM(elements::AbstractVector{Int64},
         f_workspace = zeros(le)
 
         for id_int in eachindex(B_matrix[1, :, 1, 1])
-            strain_NP1[id_el, id_int,
-            :] = B_matrix[id_el, id_int, :, :]' *
-                                           reshape((uNP1[topo, :])', le)
-            strain_increment[id_el, id_int,
-            :] = strain_NP1[id_el, id_int, :] -
-                                                 strain_N[id_el, id_int, :]
-
-            if rotation
-                #tbd
-                # rotate(nodes, stress_N, rotation_tensor, false)
-                # rotate(nodes, strain_increment, rotation_tensor, false)
+            @timeit "strain" begin
+                strain_NP1[id_el, id_int,
+                :] = B_matrix[id_el, id_int, :, :]' *
+                                               reshape((uNP1[topo, :])', le)
+                strain_increment[id_el, id_int,
+                :] = strain_NP1[id_el, id_int, :] -
+                                                     strain_N[id_el, id_int, :]
             end
+
+            # if rotation
+            #tbd
+            # rotate(nodes, stress_N, rotation_tensor, false)
+            # rotate(nodes, strain_increment, rotation_tensor, false)
+            # end
 
             # in future this part must be changed -> using set Modules
 
@@ -134,10 +100,10 @@ function compute_FEM(elements::AbstractVector{Int64},
             # material_model is missing
             #stress_NP1 = Set_modules.create_module_specifics(material_model, module_list, specifics, (nodes, dof, material_parameter, time, dt, strain_increment, stress_N, stress_NP1))
 
-            if rotation
-                #tbd
-                #rotate(nodes, stress_NP1, rotation_tensor, true)
-            end
+            # if rotation
+            #tbd
+            #rotate(nodes, stress_NP1, rotation_tensor, true)
+            # end
             # specific force density
             @timeit "reshape" begin
                 f_workspace = B_matrix[id_el, id_int, :, :] * stress_NP1[id_el, id_int, :] .*
@@ -156,7 +122,7 @@ function compute_FEM(elements::AbstractVector{Int64},
 
         # as long as no elements stresses are written
         @timeit "permutedims" temp = permutedims(cauchy_stress[topo, :, :], (2, 3, 1))
-        temp[:, :, 1:nnodes] .= voigt_to_matrix(stress_temp)
+        @timeit "voigt_to_matrix" temp[:, :, 1:nnodes] .= voigt_to_matrix(stress_temp)
         # no avering over element borders
         @timeit "cauchy_stress" cauchy_stress[topo, :,
         :] = permutedims(temp[:, :,
