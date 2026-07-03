@@ -125,7 +125,7 @@ end
     # only in tests for resize or redefinition reasons
     PeriLab.Data_Manager.fields[Int64]["FE Topology"] = zeros(Int64, 1, 6)
     @test_logs (:error,
-                "The FEM material model Dict{String, Any}(\"Shear Modulus\" => 2000.0, \"Poisson's Ratio\" => 0.33, \"Material Model\" => \"Correspondence Elastic\", \"Young's Modulus\" => 2500.0, \"Symmetry\" => \"isotropic plane strain\") is not defined") @test_throws PeriLab.PeriLabError begin
+                "The FEM material model Dict{String, Any}(\"Shear Modulus\" => 2000.0, \"Poisson's Ratio\" => 0.33000000000000007, \"Material Model\" => \"Correspondence Elastic\", \"Young's Modulus\" => 5320.0, \"Bulk Modulus\" => 5215.686274509806, \"Computed\" => true, \"Symmetry\" => \"isotropic plane strain\") is not defined") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.FEM.init_FEM(params)
     end
 end

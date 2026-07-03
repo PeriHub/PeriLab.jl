@@ -36,20 +36,20 @@ function compute_FEM(elements::AbstractVector{Int64},
     # end
     dof = Data_Manager.get_dof()
 
-    forces = Data_Manager.get_field("Forces", "NP1")
-    uNP1 = Data_Manager.get_field("Displacements", "NP1")
-    strain_N = Data_Manager.get_field("Element Strain", "N")
-    strain_NP1 = Data_Manager.get_field("Element Strain", "NP1")
-    stress_N = Data_Manager.get_field("Element Stress", "N")
-    stress_NP1 = Data_Manager.get_field("Element Stress", "NP1")
-    strain_increment = Data_Manager.get_field("Element Strain Increment")
-    topology = Data_Manager.get_field("FE Topology")
-    jacobian = Data_Manager.get_field("Element Jacobi Matrix")
-    det_jacobian = Data_Manager.get_field("Element Jacobi Determinant")
+    forces::NodeVectorField{Float64} = Data_Manager.get_field("Forces", "NP1")
+    uNP1::NodeVectorField{Float64} = Data_Manager.get_field("Displacements", "NP1")
+    strain_N::FreeSizeField{Float64} = Data_Manager.get_field("Element Strain", "N")
+    strain_NP1::FreeSizeField{Float64} = Data_Manager.get_field("Element Strain", "NP1")
+    stress_N::FreeSizeField{Float64} = Data_Manager.get_field("Element Stress", "N")
+    stress_NP1::FreeSizeField{Float64} = Data_Manager.get_field("Element Stress", "NP1")
+    strain_increment::FreeSizeField{Float64} = Data_Manager.get_field("Element Strain Increment")
+    topology::FreeSizeField{Int64} = Data_Manager.get_field("FE Topology")
+    jacobian::FreeSizeField{Float64} = Data_Manager.get_field("Element Jacobi Matrix")
+    det_jacobian::FreeSizeField{Float64} = Data_Manager.get_field("Element Jacobi Determinant")
     # not avveraged Cauchy stresses -> element stresses will be later available in Exodus
-    cauchy_stress = Data_Manager.get_field("Cauchy Stress", "NP1")
+    cauchy_stress::NodeTensorField{Float64} = Data_Manager.get_field("Cauchy Stress", "NP1")
 
-    B_matrix = Data_Manager.get_field("B Matrix")
+    B_matrix::FreeSizeField{Float64} = Data_Manager.get_field("B Matrix")
 
     stress_temp = @MVector zeros(3 * dof - 3)
     le::Int64 = 0
