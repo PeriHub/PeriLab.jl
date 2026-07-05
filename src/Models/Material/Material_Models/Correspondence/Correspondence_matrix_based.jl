@@ -622,7 +622,6 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
     nodes = collect(1:Data_Manager.get_nnodes())
     dof = Data_Manager.get_dof()
     nnodes = length(nodes)
-    K = Data_Manager.PartitionedStiffness()
     bond_geometry = Data_Manager.get_field("Bond Geometry")
     inverse_shape_tensor = Data_Manager.get_field("Inverse Shape Tensor")
     nlist = Data_Manager.get_nlist()
@@ -664,11 +663,9 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
                                                            bond_geometry, omega,
                                                            bond_damage, zStiff)
 
-    #Data_Manager.set_stiffness_matrix(-K_sparse)
     non_BCs = Data_Manager.get_bc_free_dof()
-    bc_dofs = setdiff(1:(nnodes * dof), non_BCs)
-    K_ff = sparse(-K_sparse[non_BCs, non_BCs])
-    K_fbc = sparse(-K_sparse[bc_dofs, non_BCs])
+    Data_Manager.set_stiffness_matrix(-K_sparse, non_BCs, nnodes * dof)
+    @info "Assemble matrix done"
 end
 
 function compute_model(nodes::AbstractVector{Int64},
@@ -695,7 +692,7 @@ function compute_model(nodes::AbstractVector{Int64},
     end
 
     # Reuse existing K, colptr and rowval — sparsity pattern does not change
-    K_sparse = Data_Manager.get_stiffness_matrix()
+    K_sparse = spzeros(Float64, nnodes * dof, nnodes * dof)
     K_colptr, K_rowval = Data_Manager.get_nzval_map()
 
     # Reuse CB tensors allocated in init_matrix — no allocation
@@ -710,7 +707,7 @@ function compute_model(nodes::AbstractVector{Int64},
                                                            bond_geometry, omega,
                                                            bond_damage, zStiff)
 
-    Data_Manager.set_stiffness_matrix(-K_sparse)
+    Data_Manager.set_stiffness_matrix(-K_sparse, non_BCs, nnodes * dof)
 end
 
 # =============================================================================

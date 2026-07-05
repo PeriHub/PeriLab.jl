@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 export get_all_field_keys
 
 export create_constant_node_scalar_field
@@ -29,20 +30,6 @@ export
        BondScalarState,
        BondVectorState,
        BondTensorState
-
-mutable struct PartitionedStiffness
-    K_ff::SparseMatrixCSC{Float64,Int}   # K[non_BCs, non_BCs]
-    K_fb::SparseMatrixCSC{Float64,Int}   # K[non_BCs, bc_dofs]
-    K_bf::SparseMatrixCSC{Float64,Int}   # K[bc_dofs, :]
-    #  K_eff_lu::Union{Nothing,SuiteSparse.UMFPACK.UmfpackLU{Float64,Int}}
-    non_BCs::Vector{Int}                 # free
-    bc_dofs::Vector{Int}                 # Dirichlet DOFs
-
-    function PartitionedStiffness()
-        z = spzeros(0, 0)
-        new(z, z, z, nothing, Int[], Int[])
-    end
-end
 
 """
 	get_field(name::String, time::String)

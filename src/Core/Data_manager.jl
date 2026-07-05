@@ -7,7 +7,7 @@ using MPI
 using SparseArrays
 using DataStructures: OrderedDict
 using ...PeriLabExceptions: @abort
-
+using SuiteSparse
 ##########################
 # Variables
 ##########################
@@ -21,17 +21,46 @@ struct DataField{T,D}
     data::D
 end
 
-mutable struct PD_matrix
-    xID::Vector{Int64}
-    yID::Vector{Int64}
-    sparse_matrix::SparseMatrixCSC{Float64,Int64}
+mutable struct PartitionedStiffness
+    # Partitioned stiffness blocks
+    K_ff::SparseMatrixCSC{Float64,Int64}                                    # K[non_BCs, non_BCs]
+    K_fb::SparseMatrixCSC{Float64,Int64}                                    # K[non_BCs, bc_dofs]
+    K_bc::SparseMatrixCSC{Float64,Int64}                                    # K[bc_dofs, :]
+    K_eff_lu::Union{Nothing,SuiteSparse.UMFPACK.UmfpackLU{Float64,Int64}}
 
-    # Konstruktor 1: Erstellt sparse_matrix aus Daten
-    # function PD_matrix(I::Vector{Int64}, J::Vector{Int64}, V::Vector{Float64},
-    #                    N::Int64)
-    #     sparse_matrix = sparse(I, J, V, N, N)
-    #     new(I, J, sparse_matrix)
-    # end
+    # DOF partitioning
+    non_BCs::Vector{Int64}
+    bc_dofs::Vector{Int64}
+    bc_mask::BitVector
+
+    # Work arrays
+    F_eff::Vector{Float64}
+    F_bc::Vector{Float64}
+    u_free::Vector{Float64}
+    temp::Vector{Float64}
+
+    function PartitionedStiffness(K::AbstractMatrix{Float64},
+                                  non_BCs::Vector{Int64},
+                                  n_total::Int64)
+        n_free = length(non_BCs)
+
+        bc_mask = trues(n_total)
+        @inbounds for i in non_BCs
+            bc_mask[i] = false
+        end
+        bc_dofs = findall(bc_mask)
+
+        K_ff = sparse(K[non_BCs, non_BCs])
+        K_fb = sparse(K[non_BCs, bc_dofs])
+        K_bc = sparse(K[bc_dofs, :])
+
+        new(K_ff, K_fb, K_bc, nothing,
+            copy(non_BCs), bc_dofs, bc_mask,
+            Vector{Float64}(undef, n_free),
+            Vector{Float64}(undef, length(bc_dofs)),
+            Vector{Float64}(undef, n_free),
+            Vector{Float64}(undef, n_free))
+    end
 end
 
 struct FieldManager
@@ -142,7 +171,6 @@ function initialize_data()
     data["field_types"] = Dict()
     data["field_names"] = Vector{String}([])
     data["fields_to_synch"] = Dict()
-    data["Stiffness Matrix"] = PD_matrix
     data["local_fields_to_synch"] = Dict("Material Model" => Dict(),
                                          "Damage Model" => Dict(),
                                          "Thermal Model" => Dict(),
@@ -1078,11 +1106,12 @@ function set_verbose(value::Bool)
     data["verbose"] = value
 end
 
-function set_stiffness_matrix(sparse_mat)
+function set_stiffness_matrix(K_sparse::AbstractMatrix{Float64}, non_BCs::Vector{Int64},
+                              ndofs::Int64)
     data["matrix_exists"] = true
     #data["Stiffness Matrix"] = PD_matrix(xID, yID, sparse_data,
     #	data["Stiffness Matrix"].sparse_matrix)
-    data["Stiffness Matrix"] = sparse_mat
+    data["Stiffness Matrix"] = PartitionedStiffness(K_sparse, non_BCs, ndofs)
 end
 
 function set_mass_matrix(sparse_mat)

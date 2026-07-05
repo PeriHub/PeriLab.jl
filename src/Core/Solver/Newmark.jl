@@ -9,7 +9,7 @@ using LinearAlgebra
 using TimerOutputs: @timeit
 using ProgressBars: set_multiline_postfix, set_postfix
 
-using ...Data_Manager
+using ...Data_Manager: PartitionedStiffness, Data_Manager
 using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
 using ...Parameter_Handling: get_initial_time,
@@ -36,23 +36,6 @@ end
 # ────────────────────────────────────────────────────────────
 # Cache
 # ────────────────────────────────────────────────────────────
-mutable struct NewmarkCache
-    F_eff::Vector{Float64}
-    bc_mask::BitVector
-    temp::Vector{Float64}
-    u_free::Vector{Float64}
-    K_eff_lu::Union{Nothing,Any}
-    last_non_BCs::Vector{Int}
-    bc_dofs::Vector{Int}
-    K_bc::Union{Nothing,SparseMatrixCSC{Float64,Int}}
-    F_bc::Vector{Float64}
-
-    function NewmarkCache(n::Int)
-        new(Float64[], BitVector(undef, n), Float64[], Float64[],
-            nothing, Int[],
-            Int[], nothing, Float64[])
-    end
-end
 
 # ────────────────────────────────────────────────────────────
 # Init
@@ -233,10 +216,11 @@ function run_solver(solver_options::Dict{Any,Any},
     active_list = Data_Manager.get_field("Active")
     active_nodes = find_active_nodes(active_list, active_nodes, nodes)
 
-    K = Data_Manager.get_stiffness_matrix()
+    K_partioned = Data_Manager.get_stiffness_matrix()
+    @info K_partioned
+    @info "Stiffness matrix partitioned: $(typeof(K_partioned))"
     non_BCs = Data_Manager.get_bc_free_dof()
 
-    cache = NewmarkCache(nnodes * dof)
     iter = progress_bar(rank, nsteps, silent)
 
     for idt in iter
@@ -273,16 +257,16 @@ function run_solver(solver_options::Dict{Any,Any},
             if matrix_update
                 @timeit "update stiffness" begin
                     compute_matrix(collect(1:nnodes))
-                    K = Data_Manager.get_stiffness_matrix()
+                    K_partioned = Data_Manager.get_stiffness_matrix()
                     cache.K_eff_lu = nothing
                 end
             end
 
             # Solve
-            @timeit "newmark_solve" @views newmark_step!(K, M, non_BCs,
+            @timeit "newmark_solve" @views newmark_step!(K_partioned, M, non_BCs,
                                                          uN, uNP1, velN, velNP1, aN, aNP1,
                                                          force_densities_NP1,
-                                                         external_force_densities, cache,
+                                                         external_force_densities,
                                                          a0, a2, a3, a6, a7, nnodes, dof)
 
             # Post
@@ -324,7 +308,8 @@ end
 # ────────────────────────────────────────────────────────────
 # Core: one Newmark step
 # ────────────────────────────────────────────────────────────
-function newmark_step!(K::AbstractMatrix{Float64},
+
+function newmark_step!(ps::PartitionedStiffness,
                        M::Vector{Float64},
                        non_BCs::Vector{Int},
                        uN::Matrix{Float64},
@@ -335,103 +320,76 @@ function newmark_step!(K::AbstractMatrix{Float64},
                        aNP1::Matrix{Float64},
                        F_int::Matrix{Float64},
                        F_ext::Matrix{Float64},
-                       cache::NewmarkCache,
                        a0, a2, a3, a6, a7,
                        nnodes::Int, dof::Int)
-    @timeit "initialize Newmark step" begin
-        n_total = nnodes * dof
-        n_free = length(non_BCs)
-        isempty(non_BCs) && return nothing
-        u_vec = vec(uNP1)
-        F_int_vec = vec(F_int)
-        F_ext_vec = vec(F_ext)
-    end
+    n_total = nnodes * dof
+    n_free = length(non_BCs)
+    isempty(non_BCs) && return nothing
 
-    # Detect BC change ONCE at the start
-    bcs_changed = cache.last_non_BCs != non_BCs
+    bcs_changed = ps.non_BCs != non_BCs
 
     # ── Effective force for free DOFs ──
     @timeit "compute F_eff" begin
-        resize!(cache.F_eff, n_free)
+        F_int_vec = vec(F_int)
+        F_ext_vec = vec(F_ext)
+
+        resize!(ps.F_eff, n_free)
         @inbounds for (idx, i) in enumerate(non_BCs)
-            m_rhs = M[i] * (a0 * uN[i] + a2 * vN[i] + a3 * aN[i])
-            cache.F_eff[idx] = -F_ext_vec[i] - F_int_vec[i] + m_rhs
+            ps.F_eff[idx] = -F_ext_vec[i] - F_int_vec[i] +
+                            M[i] * (a0 * uN[i] + a2 * vN[i] + a3 * aN[i])
         end
     end
 
-    @timeit "bc" begin
-        # ── Prescribed DOF contributions ──
-        has_BCs = n_free < n_total
-        if has_BCs
-            # bc_mask & bc_dofs nur bei BC-Wechsel neu berechnen
-            if bcs_changed
-                resize!(cache.bc_mask, n_total)
-                fill!(cache.bc_mask, true)
-                @inbounds for i in non_BCs
-                    cache.bc_mask[i] = false
-                end
-                cache.bc_dofs = findall(cache.bc_mask)   # ← FIX 1: in cache!
+    # ── Prescribed DOF contributions ──
+    @timeit "BC coupling" begin
+        if !isempty(ps.bc_dofs)
+            resize!(ps.temp, n_free)
+            mul!(ps.temp, ps.K_fb, @view(vec(uNP1)[ps.bc_dofs]))
+            @inbounds for idx in 1:n_free
+                ps.F_eff[idx] += ps.temp[idx]
             end
-            resize!(cache.temp, n_free)
-            mul!(cache.temp, K[non_BCs, cache.bc_mask], @view(u_vec[cache.bc_mask]))
-            @inbounds for (idx, i) in enumerate(non_BCs)
-                cache.F_eff[idx] += cache.temp[idx]
-            end
-        else
-            empty!(cache.bc_dofs)
         end
     end
 
+    # ── Factorise K_eff = -K_ff + a0·diag(M_free) ──
     @timeit "factorisation" begin
-        # ── Factorise K_eff = K_free + a0·diag(M_free) ──
-        if cache.K_eff_lu === nothing || bcs_changed
-            @timeit "K_eff factorisation" begin
-                K_free = -sparse(K[non_BCs, non_BCs])
-                @inbounds for (idx, i) in enumerate(non_BCs)
-                    K_free[idx, idx] += a0 * M[i]
-                end
-            end
-            @timeit "lu" cache.K_eff_lu=lu(K_free)
-        end
-    end
-
-    @timeit "rest of newmark step" begin
-        # ── Solve ──
-        resize!(cache.u_free, n_free)
-        @timeit "ldiv" ldiv!(cache.u_free, cache.K_eff_lu, cache.F_eff)
-
-        @timeit "update uNP1" begin
+        if ps.K_eff_lu === nothing
+            K_eff = -ps.K_ff
             @inbounds for (idx, i) in enumerate(non_BCs)
-                uNP1[i] = cache.u_free[idx]
+                K_eff[idx, idx] += a0 * M[i]
             end
+            ps.K_eff_lu = lu(K_eff)
         end
+    end
 
-        if !isempty(cache.bc_dofs)
-            @timeit "update forces" begin
-                if cache.K_bc === nothing || bcs_changed
-                    cache.K_bc = K[cache.bc_dofs, :]
-                    resize!(cache.F_bc, length(cache.bc_dofs))
-                end
-                # Eine sparse Mat-Vec statt n_bc Zeilen-Loops
-                mul!(cache.F_bc, cache.K_bc, u_vec)
-                @inbounds for (idx, j) in enumerate(cache.bc_dofs)
-                    F_int_vec[j] = cache.F_bc[idx] - F_ext_vec[j]
-                end
-            end
+    # ── Solve ──
+    @timeit "solve" begin
+        resize!(ps.u_free, n_free)
+        ldiv!(ps.u_free, ps.K_eff_lu, ps.F_eff)
+
+        @inbounds for (idx, i) in enumerate(non_BCs)
+            uNP1[i] = ps.u_free[idx]
         end
+    end
 
-        # ── Update acceleration and velocity ──
-        @timeit "update accel and vel" begin
-            @inbounds for i in 1:n_total
-                aNP1[i] = a0 * (uNP1[i] - uN[i]) - a2 * vN[i] - a3 * aN[i]
-                vNP1[i] = vN[i] + a6 * aN[i] + a7 * aNP1[i]
+    # ── Reaction forces at constrained DOFs ──
+    @timeit "reaction forces" begin
+        if !isempty(ps.bc_dofs)
+            u_vec = vec(uNP1)
+            resize!(ps.F_bc, length(ps.bc_dofs))
+            mul!(ps.F_bc, ps.K_bc, u_vec)
+            @inbounds for (idx, j) in enumerate(ps.bc_dofs)
+                F_int_vec[j] = ps.F_bc[idx] - F_ext_vec[j]
             end
         end
     end
 
-    # ── FIX 2: last_non_BCs erst am ENDE updaten ──
-    if bcs_changed
-        cache.last_non_BCs = copy(non_BCs)
+    # ── Update acceleration and velocity ──
+    @timeit "update accel/vel" begin
+        @inbounds for i in 1:n_total
+            aNP1[i] = a0 * (uNP1[i] - uN[i]) - a2 * vN[i] - a3 * aN[i]
+            vNP1[i] = vN[i] + a6 * aN[i] + a7 * aNP1[i]
+        end
     end
 
     return nothing
