@@ -169,9 +169,9 @@ function compute_stresses(dof::Int64,
                           material_parameter::Dict,
                           time::Float64,
                           dt::Float64,
-                          strain_increment::FreeSizeField{Float64},
-                          stress_N::FreeSizeField{Float64},
-                          stress_NP1::FreeSizeField{Float64})
+                          strain_increment::AbstractArray{Float64},
+                          stress_N::AbstractArray{Float64},
+                          stress_NP1::AbstractArray{Float64})
     hookeMatrix = get_Hooke_matrix(material_parameter,
                                    material_parameter["Symmetry"],
                                    dof)
