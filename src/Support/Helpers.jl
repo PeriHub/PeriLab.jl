@@ -51,6 +51,7 @@ export get_shared_horizon
 export matrix_style
 export matrix_to_voigt
 export voigt_to_matrix
+export voigt_to_matrix!
 export matrix_to_vector
 export matrix_to_vector_of_vector
 export vector_to_matrix
@@ -1256,6 +1257,28 @@ function voigt_to_matrix(voigt::Union{MVector,SVector,Vector})
     else
         @abort "Unsupported matrix size for voigt_to_matrix"
     end
+end
+
+function voigt_to_matrix!(out::MMatrix, voigt::Union{MVector,SVector,Vector})
+    if length(voigt) == 3
+        out[1, 1] = voigt[1];
+        out[1, 2] = voigt[3]
+        out[2, 1] = voigt[3];
+        out[2, 2] = voigt[2]
+    elseif length(voigt) == 6
+        out[1, 1] = voigt[1];
+        out[1, 2] = voigt[6];
+        out[1, 3] = voigt[5]
+        out[2, 1] = voigt[6];
+        out[2, 2] = voigt[2];
+        out[2, 3] = voigt[4]
+        out[3, 1] = voigt[5];
+        out[3, 2] = voigt[4];
+        out[3, 3] = voigt[3]
+    else
+        @abort "Unsupported matrix size for voigt_to_matrix"
+    end
+    return out
 end
 
 """

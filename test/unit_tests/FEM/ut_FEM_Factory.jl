@@ -27,15 +27,17 @@ end
     PeriLab.Data_Manager.set_num_controller(6)
     rho = PeriLab.Data_Manager.create_constant_node_scalar_field("Density", Float64)
     rho .= 2
+    block_nodes = Dict(1=>[1, 2, 3, 4])
     @test_logs (:error, "Invalid FEM parameters") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,
-                                                 Any}())
+                                                 Any}(), block_nodes)
     end
     @test_logs (:error,
                 "The FEM material model b is not defined") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,
                                                  Any}("Models" => Dict("Material Models" => Dict("a" => "a")),
-                                                      "FEM" => Dict("Material Model" => "b")))
+                                                      "FEM" => Dict("Material Model" => "b")),
+                                            block_nodes)
     end
     dof = 2
     PeriLab.Data_Manager.set_dof(dof)
@@ -78,7 +80,7 @@ end
                                                                                                 "Shear Modulus" => 2.0e3))))
     @test_logs (:error,
                 "The FEM material model Elastic Model is not defined") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.FEM.init_FEM(params)
+        PeriLab.Solver_Manager.FEM.init_FEM(params, block_nodes)
     end
     params = Dict{String,Any}("FEM" => Dict("Degree" => 1,
                                             "Element Type" => "Lagrange",
@@ -89,7 +91,7 @@ end
                                                                                                              "Poisson's Ratio" => 0.33,
                                                                                                              "Shear Modulus" => 2.0e3))))
 
-    PeriLab.Solver_Manager.FEM.init_FEM(params)
+    PeriLab.Solver_Manager.FEM.init_FEM(params, block_nodes)
 
     @test "N Matrix" in PeriLab.Data_Manager.get_all_field_keys()
     @test "B Matrix" in PeriLab.Data_Manager.get_all_field_keys()
@@ -126,11 +128,12 @@ end
     PeriLab.Data_Manager.fields[Int64]["FE Topology"] = zeros(Int64, 1, 6)
     @test_logs (:error,
                 "The FEM material model Dict{String, Any}(\"Shear Modulus\" => 2000.0, \"Poisson's Ratio\" => 0.33000000000000007, \"Material Model\" => \"Correspondence Elastic\", \"Young's Modulus\" => 5320.0, \"Bulk Modulus\" => 5215.686274509806, \"Computed\" => true, \"Symmetry\" => \"isotropic plane strain\") is not defined") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.FEM.init_FEM(params)
+        PeriLab.Solver_Manager.FEM.init_FEM(params, block_nodes)
     end
 end
 
 @testset "ut_eval" begin
+    block_nodes = Dict(1=>[1, 2, 3, 4, 5, 6])
     PeriLab.Data_Manager.initialize_data()
     dof = 2
     PeriLab.Data_Manager.set_dof(dof)
@@ -181,7 +184,7 @@ end
                                                                                                  "Poisson's Ratio" => 0.33,
                                                                                                  "Shear Modulus" => 0.5639))))
 
-    PeriLab.Solver_Manager.FEM.init_FEM(params)
+    PeriLab.Solver_Manager.FEM.init_FEM(params, block_nodes)
     elements = Vector{Int64}([1, 2])
     PeriLab.Solver_Manager.FEM.eval_FEM(elements,
                                         PeriLab.Data_Manager.get_properties(1,

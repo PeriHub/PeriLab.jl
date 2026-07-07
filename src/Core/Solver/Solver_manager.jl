@@ -144,37 +144,9 @@ function init(params::Dict,
                     bcs,
                     block_nodes)
     Data_Manager.set_model_module(get_solver_name(solver_params), mod)
-    #if get_solver_name(solver_params) == "Verlet"
-
-    #    @debug "Init " * get_solver_name(solver_params)
-    #    @timeit "init_solver" Verlet_Solver.init_solver(solver_options,
-    #                                                    solver_params,
-    #                                                    bcs,
-    #                                                    block_nodes)
-    #elseif solver_options["Solver"] == "Static"
-    #    @timeit "init_solver" Static_Solver.init_solver(solver_options,
-    #                                                    solver_params,
-    #                                                    bcs,
-    #                                                    block_nodes)
-    #elseif solver_options["Solver"] == "Linear Static Matrix Based"
-    #    @timeit "init_solver" Linear_static_matrix_based.init_solver(solver_options,
-    #                                                                 solver_params,
-    #                                                                 bcs,
-    #                                                                 block_nodes)
-    #elseif solver_options["Solver"] == "Verlet Matrix Based"
-    #    @timeit "init_solver" Matrix_Verlet.init_solver(solver_options,
-    #                                                    solver_params,
-    #                                                    bcs,
-    #                                                    block_nodes)
-    #elseif solver_options["Solver"] == "Newmark"
-    #    @timeit "init_solver" Newmark.init_solver(solver_options,
-    #                                              solver_params,
-    #                                              bcs,
-    #                                              block_nodes)
-    #end
 
     if Data_Manager.fem_active()
-        @timeit "init_FEM" FEM.init_FEM(params)
+        @timeit "init_FEM" FEM.init_FEM(params, block_nodes)
         @timeit "init_coupling" FEM.Coupling.init_coupling(1:Data_Manager.get_nnodes(),
                                                            params)
     end

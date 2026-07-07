@@ -4,6 +4,7 @@
 module FEM
 
 using ...Data_Manager
+using LinearAlgebra
 using ...PeriLabExceptions: @abort
 using ..Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "element_name")
@@ -22,16 +23,12 @@ using .FEM_Basis:
                   create_B_matrix
 include("./Coupling/Coupling_Factory.jl")
 
-# in future using set modules for material
-# test case is correspondence material
 using ...Helpers: fast_mul!, get_mapping
-using ..Material_Basis: get_Hooke_matrix, get_all_elastic_moduli
-# using .Correspondence_Elastic
 using .Coupling
 export init_FEM
 export eval_FEM
 
-function init_FEM(complete_params::Dict)
+function init_FEM(complete_params::Dict, block_nodes::Dict{Int64,Vector{Int64}})
     if !haskey(complete_params, "FEM")
         @abort "Invalid FEM parameters"
         return
@@ -45,17 +42,17 @@ function init_FEM(complete_params::Dict)
         return
     end
     @info "Initialize FEM"
-    @warn "FEM Material models are set to all blocks. TODO must be changed in future."
-    Data_Manager.set_property("FEM",
-                              "Material Model",
-                              complete_params["Models"]["Material Models"][params["Material Model"]])
-    get_all_elastic_moduli(Data_Manager.get_properties(1, "FEM")["Material Model"])
 
     dof = Data_Manager.get_dof()
     nelements = Data_Manager.get_num_elements()
     elements::Vector{Int64} = 1:nelements
     p = get_polynomial_degree(params, dof)
     coordinates = Data_Manager.get_field("Coordinates")
+
+    if !("Material Gradient" in Data_Manager.get_all_field_keys())
+        @error "FEM Material must have a ''Material Gradient''. This is the Hooke matrix for linear elasticity. Please use elastic correspondence or the UMAT interace."
+    end
+
     if isnothing(p)
         return p
     end
@@ -139,8 +136,14 @@ function init_FEM(complete_params::Dict)
     lumped_mass = get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho,
                                   lumped_mass)
     B_matrix = create_B_matrix(elements, dof, B_elem, jacobian, B_matrix)
-
     get_FEM_nodes(topology)
+
+    connected_el = Data_Manager.create_constant_node_scalar_field("Connected Elements",
+                                                                  Int64)
+    for id_el in elements
+        topo = view(topology, id_el, :)
+        connected_el[topo] .+= 1
+    end
     @info "End FEM init"
 end
 
@@ -165,18 +168,15 @@ function valid_models(params::Dict)
     end
 end
 
-function compute_stresses(dof::Int64,
-                          material_parameter::Dict,
-                          time::Float64,
-                          dt::Float64,
-                          strain_increment::AbstractArray{Float64},
-                          stress_N::AbstractArray{Float64},
-                          stress_NP1::AbstractArray{Float64})
-    hookeMatrix = get_Hooke_matrix(material_parameter,
-                                   material_parameter["Symmetry"],
-                                   dof)
-
-    return hookeMatrix * strain_increment + stress_N
+function compute_stresses!(dof::Int64,
+                           hooke_matrix::AbstractArray{Float64},
+                           time::Float64,
+                           dt::Float64,
+                           strain_increment::AbstractArray{Float64},
+                           stress_N::AbstractArray{Float64},
+                           stress_NP1::AbstractArray{Float64})
+    mul!(stress_NP1, hooke_matrix, strain_increment)
+    stress_NP1 .+= stress_N
 end
 
 function eval_FEM(elements::AbstractVector{Int64},
@@ -185,7 +185,7 @@ function eval_FEM(elements::AbstractVector{Int64},
                   dt::Float64)
     return compute_FEM(elements,
                        params,
-                       compute_stresses,
+                       compute_stresses!,
                        time,
                        dt)
 end
