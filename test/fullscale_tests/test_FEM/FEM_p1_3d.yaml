@@ -60,4 +60,5 @@ PeriLab:
       Output Frequency: 1
       Output Variables:
         Cauchy Stress: True
+        Strain: True
         Displacements: True
