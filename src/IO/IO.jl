@@ -307,8 +307,6 @@ function get_results_mapping(params::Dict, path::String)
             output_template = Dict("fieldname" => fieldname[1],
                                    "time" => fieldname[2],
                                    "global_var" => global_var,
-                                   "type" => typeof(datafield[1,
-                                                              1]),
                                    "compute_params" => compute_params,
                                    "nodeset" => nodeset)
             for node_id in node_ids
@@ -325,11 +323,13 @@ function get_results_mapping(params::Dict, path::String)
                         end
                         output_dict = copy(output_template)
                         output_dict["dof"] = dof
+                        output_dict["type"] = typeof(datafield[1, 1])
                         output_mapping[id]["Fields"][temp_name] = output_dict
                     end
                 elseif n_sizedata == 1
                     output_dict = copy(output_template)
                     output_dict["dof"] = 1
+                    output_dict["type"] = typeof(datafield[1, 1])
                     output_mapping[id]["Fields"][base_name] = output_dict
                 elseif n_sizedata == 2
                     i_ref_dof = sizedatafield[2]
@@ -337,6 +337,7 @@ function get_results_mapping(params::Dict, path::String)
                         temp_name = base_name * get_paraview_coordinates(dof, i_ref_dof)
                         output_dict = copy(output_template)
                         output_dict["dof"] = dof
+                        output_dict["type"] = typeof(datafield[1, 1])
                         output_mapping[id]["Fields"][temp_name] = output_dict
                     end
                 elseif n_sizedata == 3
@@ -350,6 +351,7 @@ function get_results_mapping(params::Dict, path::String)
                             output_dict = copy(output_template)
                             output_dict["i_dof"] = i_dof
                             output_dict["j_dof"] = j_dof
+                            output_dict["type"] = typeof(datafield[1, 1, 1])
                             output_mapping[id]["Fields"][temp_name] = output_dict
                         end
                     end
