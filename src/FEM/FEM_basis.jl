@@ -45,32 +45,39 @@ function compute_FEM(elements::AbstractVector{Int64},
         det_jacobian::FreeSizeField{Float64} = Data_Manager.get_field("Element Jacobi Determinant")
         cauchy_stress::NodeTensorField{Float64} = Data_Manager.get_field("Cauchy Stress",
                                                                          "NP1")
+        strain::NodeTensorField{Float64} = Data_Manager.get_field("Strain",
+                                                                  "NP1")
         hooke_matrix::NodeTensorField{Float64} = Data_Manager.get_field("Material Gradient")
         B_matrix::FreeSizeField{Float64} = Data_Manager.get_field("B Matrix")
         connected_el::NodeScalarField{Int64} = Data_Manager.get_field("Connected Elements")
         stress_temp = @MVector zeros(3 * dof - 3)
         stress_temp_matrix = @MMatrix zeros(dof, dof)
+        strain_temp = @MVector zeros(3 * dof - 3)
+        strain_temp_matrix = @MMatrix zeros(dof, dof)
         le::Int64 = 0
         hm = zeros(3 * dof - 3, 3 * dof - 3)
+        topo = view(topology, 1, :)
+        le = dof * length(topo)
+        f_workspace = zeros(le)
     end
     @timeit "eval loop" begin
         for id_el in elements
             topo = view(topology, id_el, :)
             le = dof * length(topo)
-
             @views hm = avg_mat(hooke_matrix[topo, :, :])
-            f_workspace .= zeros(le)
 
             for id_int in eachindex(B_matrix[1, :, 1, 1])
                 @timeit "strain" begin
                     sNP1 = view_function(strain_NP1, id_el, id_int)
                     compute_strain!(sNP1, B_matrix, uNP1, topo, id_el, id_int)
+
                     sInc = view_function(strain_increment, id_el, id_int)
                     sN = view_function(strain_N, id_el, id_int)
                     diff_strain!(sInc, sNP1, sN)
                 end
-                stressN = view_function(strain_N, id_el, id_int)
-                stressNP1 = view_function(strain_NP1, id_el, id_int)
+
+                stressN = view_function(stress_N, id_el, id_int)
+                stressNP1 = view_function(stress_NP1, id_el, id_int)
                 @timeit "compute_stresses" compute_stresses!(dof,
                                                              hm,
                                                              time,
@@ -85,18 +92,23 @@ function compute_FEM(elements::AbstractVector{Int64},
                                                                stressNP1, topo, dof,
                                                                det_jacobian[id_el, id_int])
 
-                @timeit "stress_temp" @views stress_temp .+= stress_NP1[id_el, id_int, :] .*
+                @timeit "stress_temp" @views stress_temp .+= stressNP1 .*
                                                              det_jacobian[id_el, id_int]
+                strain_temp .+= sNP1
             end
 
             # as long as no elements stresses are written
             @timeit "voigt_to_matrix" begin
                 voigt_to_matrix!(stress_temp_matrix, stress_temp)
-                add_Cauchy_stress!(cauchy_stress, stress_temp_matrix, dof, topo,
-                                   connected_el)
+                add_nodal_values!(cauchy_stress, stress_temp_matrix, dof, topo,
+                                  connected_el)
+                voigt_to_matrix!(strain_temp_matrix, strain_temp)
+                add_nodal_values!(strain, strain_temp_matrix, dof, topo,
+                                  connected_el)
             end
 
             stress_temp .= 0
+            strain_temp .= 0
         end
     end
 end
@@ -105,10 +117,11 @@ function compute_strain!(strain::AbstractVector{Float64},
                          B::Array{Float64,4},   # (le, nstrain), le = nnodes*ndof
                          uNP1::Matrix{Float64}, # (:, ndof)
                          topo::AbstractVector{<:Integer}, id_el::Int64, id_int::Int64)
-    nstrain = size(B, 2)
+    nstrain = size(B, 4)
     nnodes = length(topo)
     ndof = size(uNP1, 2)
-    @inbounds for s in 1:nstrain
+
+    for s in 1:nstrain
         acc = 0.0
         for n in 1:nnodes
             node = topo[n]
@@ -121,15 +134,15 @@ function compute_strain!(strain::AbstractVector{Float64},
     end
 end
 
-function add_Cauchy_stress!(cauchy_stress::NodeTensorField{Float64},
-                            stress_temp_matrix::AbstractMatrix{Float64},
-                            dof::Int64,
-                            topo::AbstractVector{Int64},
-                            connected_el::NodeScalarField{Int64})
+function add_nodal_values!(nodal_field::NodeTensorField{Float64},
+                           temp_matrix::AbstractMatrix{Float64},
+                           dof::Int64,
+                           topo::AbstractVector{Int64},
+                           connected_el::NodeScalarField{Int64})
     for node in topo
         for i in 1:dof
             for j in 1:dof
-                cauchy_stress[node, i, j] += stress_temp_matrix[i, j] / connected_el[node]
+                nodal_field[node, i, j] += temp_matrix[i, j] / connected_el[node]
             end
         end
     end
@@ -144,7 +157,7 @@ function accumulate_forces!(forces::AbstractMatrix{Float64},
                             scale::Float64)
     mul!(f_workspace, B, stressNP1)
     nnodes = length(topo)
-    @inbounds for n in 1:nnodes
+    for n in 1:nnodes
         node = topo[n]
         base = (n - 1) * dof
         for d in 1:dof

@@ -4,4 +4,7 @@
   "files.insertFinalNewline": true,
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[julia]": {
+    "editor.defaultFormatter": "julialang.language-julia"
+  }
 }

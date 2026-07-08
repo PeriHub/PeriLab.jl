@@ -28,7 +28,7 @@ using .Coupling
 export init_FEM
 export eval_FEM
 
-function init_FEM(complete_params::Dict, block_nodes::Dict{Int64,Vector{Int64}})
+function init_FEM(complete_params::Dict)
     if !haskey(complete_params, "FEM")
         @abort "Invalid FEM parameters"
         return
@@ -41,6 +41,10 @@ function init_FEM(complete_params::Dict, block_nodes::Dict{Int64,Vector{Int64}})
         @abort "The FEM material model $(params["Material Model"]) is not defined"
         return
     end
+    if !("Material Gradient" in Data_Manager.get_all_field_keys())
+        @abort "FEM Material must have the field Material Gradient. This is the Hooke matrix for linear elasticity. Please use elastic correspondence or the UMAT interace."
+        return
+    end
     @info "Initialize FEM"
 
     dof = Data_Manager.get_dof()
@@ -48,10 +52,6 @@ function init_FEM(complete_params::Dict, block_nodes::Dict{Int64,Vector{Int64}})
     elements::Vector{Int64} = 1:nelements
     p = get_polynomial_degree(params, dof)
     coordinates = Data_Manager.get_field("Coordinates")
-
-    if !("Material Gradient" in Data_Manager.get_all_field_keys())
-        @error "FEM Material must have a ''Material Gradient''. This is the Hooke matrix for linear elasticity. Please use elastic correspondence or the UMAT interace."
-    end
 
     if isnothing(p)
         return p

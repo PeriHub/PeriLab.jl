@@ -146,7 +146,7 @@ function init(params::Dict,
     Data_Manager.set_model_module(get_solver_name(solver_params), mod)
 
     if Data_Manager.fem_active()
-        @timeit "init_FEM" FEM.init_FEM(params, block_nodes)
+        @timeit "init_FEM" FEM.init_FEM(params)
         @timeit "init_coupling" FEM.Coupling.init_coupling(1:Data_Manager.get_nnodes(),
                                                            params)
     end
