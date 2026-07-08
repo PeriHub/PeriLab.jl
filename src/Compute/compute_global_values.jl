@@ -69,7 +69,7 @@ function calculate_nodelist(field_key::String,
         if length(local_nodes) == 0
             value = field_type(0)
         else
-            @assert length(local_nodes) == 1
+            # @assert length(local_nodes) == 1
             value = field[local_nodes, dof][1]
         end
     else

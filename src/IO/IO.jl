@@ -215,6 +215,7 @@ function get_results_mapping(params::Dict, path::String)
     outputs = get_outputs(params, Data_Manager.get_all_field_keys(), compute_names)
     computes = get_computes(params, Data_Manager.get_all_field_keys())
     output_mapping = Dict{Int64,Dict{}}()
+    nsets = Data_Manager.get_nsets()
 
     for (id, output) in enumerate(keys(outputs))
         output_mapping[id] = Dict{}()
@@ -230,6 +231,8 @@ function get_results_mapping(params::Dict, path::String)
             compute_params = Dict{}
             global_var = false
             nodeset = []
+            multi_ids = false
+            node_ids = [-1]
 
             for key in keys(computes)
                 if fieldname[1] == key
@@ -243,6 +246,15 @@ function get_results_mapping(params::Dict, path::String)
                     global_var = true
                     if computes[key]["Compute Class"] == "Node_Set_Data"
                         nodeset = computes[key]["Node Set"]
+                        num_nodes = length(nsets[nodeset])
+                        if num_nodes > 1 &&
+                           !haskey(computes[key], "Calculation Type")
+                            if num_nodes > 10
+                                @warn "Compute $key references $num_nodes nodes and will create output entries for each of them in $output, make sure this is intendend!"
+                            end
+                            multi_ids = true
+                            node_ids = nsets[nodeset]
+                        end
                     elseif computes[key]["Compute Class"] == "Nearest_Point_Data"
                         #find neares_point_id and reduce over cores
 
@@ -290,100 +302,55 @@ function get_results_mapping(params::Dict, path::String)
                 return nothing
             end
 
-            if fieldname[1] == "State Variables"
-                nstatev = length(sizedatafield) == 1 ? 1 : sizedatafield[2]
-                for dof in 1:nstatev
-                    if global_var
-                        output_mapping[id]["Fields"][compute_name * "_" * string(dof)] = Dict("fieldname" => fieldname[1],
-                                                                                              "time" => fieldname[2],
-                                                                                              "global_var" => global_var,
-                                                                                              "dof" => dof,
-                                                                                              "type" => typeof(datafield[1,
-                                                                                                                         1]),
-                                                                                              "compute_params" => compute_params,
-                                                                                              "nodeset" => nodeset)
-                    else
-                        output_mapping[id]["Fields"]["State_Variable_" * string(dof)] = Dict("fieldname" => fieldname[1],
-                                                                                             "time" => fieldname[2],
-                                                                                             "global_var" => global_var,
-                                                                                             "dof" => dof,
-                                                                                             "type" => typeof(datafield[1,
-                                                                                                                        1]))
-                    end
-                end
-                continue
-            end
+            n_sizedata = length(sizedatafield)
 
-            if length(sizedatafield) == 1
-                if global_var
-                    output_mapping[id]["Fields"][compute_name] = Dict("fieldname" => fieldname[1],
-                                                                      "time" => fieldname[2],
-                                                                      "global_var" => global_var,
-                                                                      "dof" => 1,
-                                                                      "type" => typeof(datafield[1,
-                                                                                                 1]),
-                                                                      "compute_params" => compute_params,
-                                                                      "nodeset" => nodeset)
-                else
-                    output_mapping[id]["Fields"][fieldname[1]] = Dict("fieldname" => fieldname[1],
-                                                                      "time" => fieldname[2],
-                                                                      "global_var" => global_var,
-                                                                      "dof" => 1,
-                                                                      "type" => typeof(datafield[1,
-                                                                                                 1]))
+            output_template = Dict("fieldname" => fieldname[1],
+                                   "time" => fieldname[2],
+                                   "global_var" => global_var,
+                                   "type" => typeof(datafield[1,
+                                                              1]),
+                                   "compute_params" => compute_params,
+                                   "nodeset" => nodeset)
+            for node_id in node_ids
+                base_name = global_var ? compute_name : fieldname[1]
+                if multi_ids
+                    base_name *= "_" * string(node_id)
                 end
-            elseif length(sizedatafield) == 2
-                i_ref_dof = sizedatafield[2]
-                for dof in 1:i_ref_dof
-                    if global_var
-                        output_mapping[id]["Fields"][compute_name * get_paraview_coordinates(dof,
-                                                                                                                          i_ref_dof)] = Dict("fieldname" => fieldname[1],
-                                                                                                                     "time" => fieldname[2],
-                                                                                                                     "global_var" => global_var,
-                                                                                                                     "dof" => dof,
-                                                                                                                     "type" => typeof(datafield[1,
-                                                                                                                                                1]),
-                                                                                                                     "compute_params" => compute_params,
-                                                                                                                     "nodeset" => nodeset)
-                    else
-                        output_mapping[id]["Fields"][fieldname[1] * get_paraview_coordinates(dof,
-                                                                                                                          i_ref_dof)] = Dict("fieldname" => fieldname[1],
-                                                                                                                     "time" => fieldname[2],
-                                                                                                                     "global_var" => global_var,
-                                                                                                                     "dof" => dof,
-                                                                                                                     "type" => typeof(datafield[1,
-                                                                                                                                                1]))
+                if fieldname[1] == "State Variables"
+                    nstatev = n_sizedata == 1 ? 1 : sizedatafield[2]
+                    for dof in 1:nstatev
+                        temp_name = base_name * "_" * string(dof)
+                        if multi_ids
+                            temp_name *= "_" * string(node_id)
+                        end
+                        output_dict = copy(output_template)
+                        output_dict["dof"] = dof
+                        output_mapping[id]["Fields"][temp_name] = output_dict
                     end
-                end
-            elseif length(sizedatafield) == 3
-                i_ref_dof = sizedatafield[2]
-                j_ref_dof = sizedatafield[3]
-                for i_dof in 1:i_ref_dof
-                    for j_dof in 1:j_ref_dof
-                        if global_var
-                            output_mapping[id]["Fields"][compute_name * get_paraview_coordinates(i_dof,
-                                                                                                                              i_ref_dof) * get_paraview_coordinates(j_dof,
-                                                                                                                                                                    j_ref_dof)] = Dict("fieldname" => fieldname[1],
-                                                                                                                                                                        "time" => fieldname[2],
-                                                                                                                                                                        "global_var" => global_var,
-                                                                                                                                                                        "i_dof" => i_dof,
-                                                                                                                                                                        "j_dof" => j_dof,
-                                                                                                                                                                        "type" => typeof(datafield[1,
-                                                                                                                                                                                                   1,
-                                                                                                                                                                                                   1]),
-                                                                                                                                                                        "compute_params" => compute_params,
-                                                                                                                                                                        "nodeset" => nodeset)
-                        else
-                            output_mapping[id]["Fields"][fieldname[1] * get_paraview_coordinates(i_dof,
-                                                                                                                              i_ref_dof) * get_paraview_coordinates(j_dof,
-                                                                                                                                                                    j_ref_dof)] = Dict("fieldname" => fieldname[1],
-                                                                                                                                                                        "time" => fieldname[2],
-                                                                                                                                                                        "global_var" => global_var,
-                                                                                                                                                                        "i_dof" => i_dof,
-                                                                                                                                                                        "j_dof" => j_dof,
-                                                                                                                                                                        "type" => typeof(datafield[1,
-                                                                                                                                                                                                   1,
-                                                                                                                                                                                                   1]))
+                elseif n_sizedata == 1
+                    output_dict = copy(output_template)
+                    output_dict["dof"] = 1
+                    output_mapping[id]["Fields"][temp_name] = output_dict
+                elseif n_sizedata == 2
+                    i_ref_dof = sizedatafield[2]
+                    for dof in 1:i_ref_dof
+                        temp_name = base_name * get_paraview_coordinates(dof, i_ref_dof)
+                        output_dict = copy(output_template)
+                        output_dict["dof"] = dof
+                        output_mapping[id]["Fields"][temp_name] = output_dict
+                    end
+                elseif n_sizedata == 3
+                    i_ref_dof = sizedatafield[2]
+                    j_ref_dof = sizedatafield[3]
+                    for i_dof in 1:i_ref_dof
+                        for j_dof in 1:j_ref_dof
+                            temp_name = base_name *
+                                        get_paraview_coordinates(i_dof, i_ref_dof)
+                            temp_name *= get_paraview_coordinates(j_dof, j_ref_dof)
+                            output_dict = copy(output_template)
+                            output_dict["i_dof"] = i_dof
+                            output_dict["j_dof"] = j_dof
+                            output_mapping[id]["Fields"][temp_name] = output_dict
                         end
                     end
                 end
