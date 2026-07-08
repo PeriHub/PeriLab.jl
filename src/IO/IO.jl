@@ -330,7 +330,7 @@ function get_results_mapping(params::Dict, path::String)
                 elseif n_sizedata == 1
                     output_dict = copy(output_template)
                     output_dict["dof"] = 1
-                    output_mapping[id]["Fields"][temp_name] = output_dict
+                    output_mapping[id]["Fields"][base_name] = output_dict
                 elseif n_sizedata == 2
                     i_ref_dof = sizedatafield[2]
                     for dof in 1:i_ref_dof
