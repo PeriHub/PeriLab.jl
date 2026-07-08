@@ -22,11 +22,13 @@ PeriLab.Data_Manager.initialize_data()
 end
 @testset "ut_init_FEM" begin
     nelements = 2
-    PeriLab.Data_Manager.set_dof(2)
+    dof = 2
+    PeriLab.Data_Manager.set_dof(dof)
     PeriLab.Data_Manager.set_num_elements(nelements)
     PeriLab.Data_Manager.set_num_controller(6)
     rho = PeriLab.Data_Manager.create_constant_node_scalar_field("Density", Float64)
     rho .= 2
+    block_nodes = Dict(1=>[1, 2, 3, 4])
     @test_logs (:error, "Invalid FEM parameters") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,
                                                  Any}())
@@ -37,8 +39,7 @@ end
                                                  Any}("Models" => Dict("Material Models" => Dict("a" => "a")),
                                                       "FEM" => Dict("Material Model" => "b")))
     end
-    dof = 2
-    PeriLab.Data_Manager.set_dof(dof)
+
     PeriLab.Data_Manager.create_node_vector_field("Displacements", Float64, dof)
     coordinates = PeriLab.Data_Manager.create_constant_node_vector_field("Coordinates",
                                                                          Float64, dof)
@@ -71,15 +72,16 @@ end
     params = Dict{String,Any}("FEM" => Dict("Degree" => 1,
                                             "Element Type" => "Lagrange",
                                             "Material Model" => "Elastic Model"),
-                              "Models" => Dict("Material Models" => Dict("Not FEM name" => Dict("Material Model" => "Correspondence Elastic",
-                                                                                                "Symmetry" => "isotropic plane strain",
-                                                                                                "Young's Modulus" => 2.5e+3,
-                                                                                                "Poisson's Ratio" => 0.33,
-                                                                                                "Shear Modulus" => 2.0e3))))
+                              "Models" => Dict{String,Any}("Material Models" => Dict("No FEM Model" => Dict("Material Model" => "Correspondence Elastic",
+                                                                                                            "Symmetry" => "isotropic plane strain",
+                                                                                                            "Young's Modulus" => 2.5e+3,
+                                                                                                            "Poisson's Ratio" => 0.33,
+                                                                                                            "Shear Modulus" => 2.0e3))))
     @test_logs (:error,
                 "The FEM material model Elastic Model is not defined") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.FEM.init_FEM(params)
     end
+
     params = Dict{String,Any}("FEM" => Dict("Degree" => 1,
                                             "Element Type" => "Lagrange",
                                             "Material Model" => "Elastic Model"),
@@ -88,7 +90,11 @@ end
                                                                                                              "Young's Modulus" => 2.5e+3,
                                                                                                              "Poisson's Ratio" => 0.33,
                                                                                                              "Shear Modulus" => 2.0e3))))
-
+    @test_logs (:error,
+                "FEM Material must have the field Material Gradient. This is the Hooke matrix for linear elasticity. Please use elastic correspondence or the UMAT interace.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.Solver_Manager.FEM.init_FEM(params)
+    end
+    PeriLab.Data_Manager.create_constant_node_tensor_field("Material Gradient", Float64, 3)
     PeriLab.Solver_Manager.FEM.init_FEM(params)
 
     @test "N Matrix" in PeriLab.Data_Manager.get_all_field_keys()
@@ -121,13 +127,6 @@ end
     lumped_mass = PeriLab.Data_Manager.get_field("Lumped Mass Matrix")
 
     @test isapprox(lumped_mass[:], [2, 4, 2, 4, 2, 2])
-
-    # only in tests for resize or redefinition reasons
-    PeriLab.Data_Manager.fields[Int64]["FE Topology"] = zeros(Int64, 1, 6)
-    @test_logs (:error,
-                "The FEM material model Dict{String, Any}(\"Shear Modulus\" => 2000.0, \"Poisson's Ratio\" => 0.33000000000000007, \"Material Model\" => \"Correspondence Elastic\", \"Young's Modulus\" => 5320.0, \"Bulk Modulus\" => 5215.686274509806, \"Computed\" => true, \"Symmetry\" => \"isotropic plane strain\") is not defined") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.FEM.init_FEM(params)
-    end
 end
 
 @testset "ut_eval" begin
@@ -138,10 +137,14 @@ end
     PeriLab.Data_Manager.set_num_controller(6)
     rho = PeriLab.Data_Manager.create_constant_node_scalar_field("Density", Float64)
     rho .= 2
+    PeriLab.Data_Manager.create_node_tensor_field("Strain", Float64, dof)
     PeriLab.Data_Manager.create_node_tensor_field("Cauchy Stress", Float64, dof)
     PeriLab.Data_Manager.create_node_vector_field("Force Densities", Float64, dof)
     PeriLab.Data_Manager.create_node_vector_field("Displacements", Float64, dof)
     PeriLab.Data_Manager.create_node_vector_field("Forces", Float64, dof)
+    hooke = PeriLab.Data_Manager.create_constant_node_tensor_field("Material Gradient",
+                                                                   Float64, 3)
+
     coordinates = PeriLab.Data_Manager.create_constant_node_vector_field("Coordinates",
                                                                          Float64, dof)
     # only in tests for resize or redefinition reasons
@@ -199,6 +202,16 @@ end
             end
         end
     end
+    E = 1.5
+    nu = 0.33
+    G = 0.5639
+    lambda = E * nu / ((1 + nu) * (1 - 2nu))
+    mu = E / (2 * (1 + nu))            # = Schubmodul G
+    for iID in 1:6
+        @views hooke[iID, :, :] = [lambda+2mu lambda 0.0
+                                   lambda lambda+2mu 0.0
+                                   0.0 0.0 mu]
+    end
     displacements = PeriLab.Data_Manager.get_field("Displacements", "NP1")
 
     displacements[1, 1] = -1
@@ -226,8 +239,8 @@ end
             @test isapprox(strain[iEl, i_int, 1], 1)
             @test isapprox(strain[iEl, i_int, 2] + 1, 1)
             @test isapprox(strain[iEl, i_int, 3] + 1, 1)
-            @test isapprox(stress[iEl, i_int, 1], 2.2224294117647054)
-            @test isapprox(stress[iEl, i_int, 2], 1.0946294117647055)
+            @test isapprox(stress[iEl, i_int, 1], 2.2224679345422382)
+            @test isapprox(stress[iEl, i_int, 2], 1.0946483856700575)
             @test isapprox(stress[iEl, i_int, 3] + 1, 1)
         end
     end

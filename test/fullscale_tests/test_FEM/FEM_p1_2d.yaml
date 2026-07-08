@@ -40,7 +40,7 @@ PeriLab:
       Variable: "Displacements"
       Node Set: "Node Set 2"
       Coordinate: "x"
-      Value: "1.0"
+      Value: "1.0 * t"
       Type: "Dirichlet"
   Solver:
     Initial Time: 0.0

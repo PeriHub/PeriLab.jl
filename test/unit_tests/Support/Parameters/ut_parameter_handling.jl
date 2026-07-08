@@ -839,7 +839,6 @@ end
     file = open(filename, "w")
     println(file, "header: global_id")
     close(file)
-    # @test_logs (:error, "Node set file is empty test.txt. The node set is excluded.") @test_throws PeriLab.PeriLabError begin PeriLab.Solver_Manager.FEM.init_FEM(Dict{String, Any}()) PeriLab.Parameter_Handling.get_node_sets(params, "", DataFrame(x = [])) end
     rm(filename)
     filename = "test.txt"
     file = open(filename, "w")

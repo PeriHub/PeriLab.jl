@@ -11,7 +11,7 @@ using Statistics
 
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
-using ....Helpers: invert, determinant, voigt_to_matrix
+using ....Helpers: invert, determinant, voigt_to_matrix!
 
 function get_FE_material_model(params::Dict{String,Any}, name::String)
     if !haskey(params["Material Models"], params["FEM"][name]["Material Model"])
@@ -27,110 +27,159 @@ end
 
 function compute_FEM(elements::AbstractVector{Int64},
                      params::Dict{String,Any},
-                     compute_stresses,
+                     compute_stresses!::Function,
                      time::Float64,
                      dt::Float64)
-    # rotation::Bool = Data_Manager.get_element_rotation()
-    # if rotation
-    #     rotation_tensor = Data_Manager.get_field("Rotation Tensor")
-    # end
-    dof = Data_Manager.get_dof()
+    @timeit "load_data" begin
+        dof = Data_Manager.get_dof()
 
-    forces::NodeVectorField{Float64} = Data_Manager.get_field("Forces", "NP1")
-    uNP1::NodeVectorField{Float64} = Data_Manager.get_field("Displacements", "NP1")
-    strain_N::FreeSizeField{Float64} = Data_Manager.get_field("Element Strain", "N")
-    strain_NP1::FreeSizeField{Float64} = Data_Manager.get_field("Element Strain", "NP1")
-    stress_N::FreeSizeField{Float64} = Data_Manager.get_field("Element Stress", "N")
-    stress_NP1::FreeSizeField{Float64} = Data_Manager.get_field("Element Stress", "NP1")
-    strain_increment::FreeSizeField{Float64} = Data_Manager.get_field("Element Strain Increment")
-    topology::FreeSizeField{Int64} = Data_Manager.get_field("FE Topology")
-    jacobian::FreeSizeField{Float64} = Data_Manager.get_field("Element Jacobi Matrix")
-    det_jacobian::FreeSizeField{Float64} = Data_Manager.get_field("Element Jacobi Determinant")
-    # not avveraged Cauchy stresses -> element stresses will be later available in Exodus
-    cauchy_stress::NodeTensorField{Float64} = Data_Manager.get_field("Cauchy Stress", "NP1")
-
-    B_matrix::FreeSizeField{Float64} = Data_Manager.get_field("B Matrix")
-
-    stress_temp = @MVector zeros(3 * dof - 3)
-    le::Int64 = 0
-
-    for id_el in elements
-        topo = view(topology, id_el, :)
+        forces::NodeVectorField{Float64} = Data_Manager.get_field("Forces", "NP1")
+        uNP1::NodeVectorField{Float64} = Data_Manager.get_field("Displacements", "NP1")
+        strain_N::FreeSizeField{Float64} = Data_Manager.get_field("Element Strain", "N")
+        strain_NP1::FreeSizeField{Float64} = Data_Manager.get_field("Element Strain", "NP1")
+        stress_N::FreeSizeField{Float64} = Data_Manager.get_field("Element Stress", "N")
+        stress_NP1::FreeSizeField{Float64} = Data_Manager.get_field("Element Stress", "NP1")
+        strain_increment::FreeSizeField{Float64} = Data_Manager.get_field("Element Strain Increment")
+        topology::FreeSizeField{Int64} = Data_Manager.get_field("FE Topology")
+        jacobian::FreeSizeField{Float64} = Data_Manager.get_field("Element Jacobi Matrix")
+        det_jacobian::FreeSizeField{Float64} = Data_Manager.get_field("Element Jacobi Determinant")
+        cauchy_stress::NodeTensorField{Float64} = Data_Manager.get_field("Cauchy Stress",
+                                                                         "NP1")
+        strain::NodeTensorField{Float64} = Data_Manager.get_field("Strain",
+                                                                  "NP1")
+        hooke_matrix::NodeTensorField{Float64} = Data_Manager.get_field("Material Gradient")
+        B_matrix::FreeSizeField{Float64} = Data_Manager.get_field("B Matrix")
+        connected_el::NodeScalarField{Int64} = Data_Manager.get_field("Connected Elements")
+        stress_temp = @MVector zeros(3 * dof - 3)
+        stress_temp_matrix = @MMatrix zeros(dof, dof)
+        strain_temp = @MVector zeros(3 * dof - 3)
+        strain_temp_matrix = @MMatrix zeros(dof, dof)
+        le::Int64 = 0
+        hm = zeros(3 * dof - 3, 3 * dof - 3)
+        topo = view(topology, 1, :)
         le = dof * length(topo)
-        nnodes::Int64 = length(topo)
-
         f_workspace = zeros(le)
-
-        for id_int in eachindex(B_matrix[1, :, 1, 1])
-            @timeit "strain" begin
-                strain_NP1[id_el, id_int,
-                :] = B_matrix[id_el, id_int, :, :]' *
-                                               reshape((uNP1[topo, :])', le)
-                strain_increment[id_el, id_int,
-                :] = strain_NP1[id_el, id_int, :] -
-                                                     strain_N[id_el, id_int, :]
-            end
-
-            # if rotation
-            #tbd
-            # rotate(nodes, stress_N, rotation_tensor, false)
-            # rotate(nodes, strain_increment, rotation_tensor, false)
-            # end
-
-            # in future this part must be changed -> using set Modules
-
-            @timeit "compute_stresses" stress_NP1[id_el, id_int,
-            :] = compute_stresses(dof,
-                                                                                       convert(Dict{String,
-                                                                                                    Any},
-                                                                                               params["Material Model"]),
-                                                                                       time,
-                                                                                       dt,
-                                                                                       strain_increment[id_el,
-                                                                                       id_int,
-                                                                                       :],
-                                                                                       stress_N[id_el,
-                                                                                       id_int,
-                                                                                       :],
-                                                                                       stress_NP1[id_el,
-                                                                                       id_int,
-                                                                                       :])
-
-            #specifics = Dict{String,String}("Call Function" => "compute_stresses", "Name" => "material_name") -> tbd
-            # material_model is missing
-            #stress_NP1 = Set_modules.create_module_specifics(material_model, module_list, specifics, (nodes, dof, material_parameter, time, dt, strain_increment, stress_N, stress_NP1))
-
-            # if rotation
-            #tbd
-            #rotate(nodes, stress_NP1, rotation_tensor, true)
-            # end
-            # specific force density
-            @timeit "reshape" begin
-                f_workspace = B_matrix[id_el, id_int, :, :] * stress_NP1[id_el, id_int, :] .*
-                              det_jacobian[id_el, id_int]
-                forces[topo, :] .-= reshape(f_workspace, (dof, nnodes))'
-            end
-
-            # @timeit "reshape" forces[topo,
-            #                          :] -= reshape(B_matrix[id_el, id_int, :, :] *
-            #                                        stress_NP1[id_el, id_int, :] .*
-            #                                        det_jacobian[id_el, id_int],
-            #                                        (dof, nnodes))' #./ volume[topo]
-            # if you do not use permutedims you will get some index errors
-            stress_temp .+= stress_NP1[id_el, id_int, :] .* det_jacobian[id_el, id_int]
-        end
-
-        # as long as no elements stresses are written
-        @timeit "permutedims" temp = permutedims(cauchy_stress[topo, :, :], (2, 3, 1))
-        @timeit "voigt_to_matrix" temp[:, :, 1:nnodes] .= voigt_to_matrix(stress_temp)
-        # no avering over element borders
-        @timeit "cauchy_stress" cauchy_stress[topo, :,
-        :] = permutedims(temp[:, :,
-                                                                             1:nnodes],
-                                                                        (3, 1, 2)) ./
-                                                            sum(det_jacobian[id_el, :])
-        stress_temp .= 0
     end
+    @timeit "eval loop" begin
+        for id_el in elements
+            topo = view(topology, id_el, :)
+            le = dof * length(topo)
+            @views hm = avg_mat(hooke_matrix[topo, :, :])
+
+            for id_int in eachindex(B_matrix[1, :, 1, 1])
+                @timeit "strain" begin
+                    sNP1 = view_function(strain_NP1, id_el, id_int)
+                    compute_strain!(sNP1, B_matrix, uNP1, topo, id_el, id_int)
+
+                    sInc = view_function(strain_increment, id_el, id_int)
+                    sN = view_function(strain_N, id_el, id_int)
+                    diff_strain!(sInc, sNP1, sN)
+                end
+
+                stressN = view_function(stress_N, id_el, id_int)
+                stressNP1 = view_function(stress_NP1, id_el, id_int)
+                @timeit "compute_stresses" compute_stresses!(dof,
+                                                             hm,
+                                                             time,
+                                                             dt,
+                                                             sInc,
+                                                             stressN,
+                                                             stressNP1)
+
+                @timeit "accumulate_forces" accumulate_forces!(forces, f_workspace,
+                                                               @view(B_matrix[id_el, id_int,
+                                                                              :, :]),
+                                                               stressNP1, topo, dof,
+                                                               det_jacobian[id_el, id_int])
+
+                @timeit "stress_temp" @views stress_temp .+= stressNP1 .*
+                                                             det_jacobian[id_el, id_int]
+                strain_temp .+= sNP1
+            end
+
+            # as long as no elements stresses are written
+            @timeit "voigt_to_matrix" begin
+                voigt_to_matrix!(stress_temp_matrix, stress_temp)
+                add_nodal_values!(cauchy_stress, stress_temp_matrix, dof, topo,
+                                  connected_el)
+                voigt_to_matrix!(strain_temp_matrix, strain_temp)
+                add_nodal_values!(strain, strain_temp_matrix, dof, topo,
+                                  connected_el)
+            end
+
+            stress_temp .= 0
+            strain_temp .= 0
+        end
+    end
+end
+
+function compute_strain!(strain::AbstractVector{Float64},
+                         B::Array{Float64,4},   # (le, nstrain), le = nnodes*ndof
+                         uNP1::Matrix{Float64}, # (:, ndof)
+                         topo::AbstractVector{<:Integer}, id_el::Int64, id_int::Int64)
+    nstrain = size(B, 4)
+    nnodes = length(topo)
+    ndof = size(uNP1, 2)
+
+    for s in 1:nstrain
+        acc = 0.0
+        for n in 1:nnodes
+            node = topo[n]
+            base = (n - 1) * ndof
+            for d in 1:ndof
+                acc += B[id_el, id_int, base + d, s] * uNP1[node, d]
+            end
+        end
+        strain[s] = acc
+    end
+end
+
+function add_nodal_values!(nodal_field::NodeTensorField{Float64},
+                           temp_matrix::AbstractMatrix{Float64},
+                           dof::Int64,
+                           topo::AbstractVector{Int64},
+                           connected_el::NodeScalarField{Int64})
+    for node in topo
+        for i in 1:dof
+            for j in 1:dof
+                nodal_field[node, i, j] += temp_matrix[i, j] / connected_el[node]
+            end
+        end
+    end
+end
+
+function accumulate_forces!(forces::AbstractMatrix{Float64},
+                            f_workspace::AbstractVector{Float64},  # länge dof*nnodes, vorallokiert
+                            B::AbstractMatrix{Float64},
+                            stressNP1::AbstractVector{Float64},
+                            topo::AbstractVector{<:Integer},
+                            dof::Int,
+                            scale::Float64)
+    mul!(f_workspace, B, stressNP1)
+    nnodes = length(topo)
+    for n in 1:nnodes
+        node = topo[n]
+        base = (n - 1) * dof
+        for d in 1:dof
+            forces[node, d] -= f_workspace[base + d] * scale
+        end
+    end
+    return forces
+end
+
+function view_function(A::AbstractArray{Float64,3}, i::Int64, j::Int64)
+    view(A, i, j, :)
+end
+
+function diff_strain!(strain_increment::AbstractVector{Float64},
+                      strain_NP1::AbstractVector{Float64},
+                      strain_N::AbstractVector{Float64})
+    strain_increment .= strain_NP1 .- strain_N
+end
+
+function avg_mat(A::AbstractArray{T,3}) where {T}
+    # creates the material average matrix for the element, because the material is defined at the points
+    dropdims(mean(A, dims = 1), dims = 1)
 end
 
 function get_lumped_mass(elements::Vector{Int64},
