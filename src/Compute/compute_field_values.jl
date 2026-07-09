@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using ...Data_Manager
-using ...Helpers: find_active_nodes, get_active_update_nodes, add_in_place!, invert
+using ...Helpers: find_active_nodes, add_in_place!, invert
 using StaticArrays: MMatrix, SMatrix
 using ..Material_Basis:
                         get_strain, get_Hooke_matrix,

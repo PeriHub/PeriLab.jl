@@ -55,9 +55,22 @@ export voigt_to_matrix!
 export matrix_to_vector
 export matrix_to_vector_of_vector
 export vector_to_matrix
-
+export get_update_nodes
 const MAPPING_2D = @SMatrix [1 1; 2 2; 2 1]
 const MAPPING_3D = @SMatrix [1 1; 2 2; 3 3; 2 3; 1 3; 1 2]
+
+function get_update_nodes(active_list,
+                          update_list,
+                          nodes,
+                          update_nodes,
+                          active_nodes,
+                          active_model_name)
+    if active_model_name == "Damage Model"
+        return @view active_nodes[:]
+    else
+        return get_active_update_nodes(active_list, update_list, nodes, update_nodes)
+    end
+end
 
 @inline function get_mapping(dof::Int64)
     if dof == 2
@@ -615,7 +628,9 @@ Returns the active nodes and the update nodes.
 # Returns
 - `update_nodes::Vector{Int64}`: The nodes of `update` that are true.
 """
-function get_active_update_nodes(active, update, nodes, index)
+function get_active_update_nodes(active::AbstractVector{Bool},
+                                 update::AbstractVector{Bool},
+                                 nodes::AbstractVector{Int64}, index::Vector{Int64})
     count::Int64 = 0
     for node in nodes
         if active[node] && update[node]

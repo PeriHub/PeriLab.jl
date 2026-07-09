@@ -8,8 +8,8 @@ using TimerOutputs: @timeit
 using ...Data_Manager
 using ...PeriLabExceptions: @abort
 using ...Helpers:
-                  check_inf_or_nan, find_active_nodes, get_active_update_nodes, invert,
-                  determinant, matrix_style, eigvals
+                  check_inf_or_nan, find_active_nodes, invert,
+                  determinant, matrix_style, eigvals, get_update_nodes
 include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("./Surface_correction/Surface_correction.jl")
 include("./Contact/Contact_Factory.jl")
@@ -72,7 +72,8 @@ function init_models(params::Dict,
     end
 
     if isnothing(Data_Manager.get_step()) || Data_Manager.get_step() == 1
-        for (active_model_name, active_model) in pairs(Data_Manager.get_active_models(true))
+        for (active_model_name,
+             active_model) in pairs(Data_Manager.get_active_models(true))
             @debug "Init $active_model_name fields"
             @timeit "$active_model_name model fields" active_model.init_fields()
         end
@@ -412,19 +413,6 @@ function compute_matrix_based_bond_forces(block_nodes::Dict{Int64,Vector{Int64}}
                                                                                       time,
                                                                                       dt)
         end
-    end
-end
-
-function get_update_nodes(active_list,
-                          update_list,
-                          nodes,
-                          update_nodes,
-                          active_nodes,
-                          active_model_name)
-    if active_model_name == "Damage Model"
-        return @view active_nodes[:]
-    else
-        return get_active_update_nodes(active_list, update_list, nodes, update_nodes)
     end
 end
 
