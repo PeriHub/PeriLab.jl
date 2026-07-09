@@ -36,7 +36,7 @@ using ..Parameter_Handling: get_solver_steps, get_flush_file, get_write_after_da
                             get_fem_block
 using ..Geometry: rotation_tensor
 
-using OrderedCollections
+using DataStructures
 using NearestNeighbors: KDTree, nn
 export initialize_data
 export init_write_results

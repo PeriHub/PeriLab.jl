@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using OrderedCollections: OrderedDict
+using DataStructures: OrderedDict
 
 export get_computes_names
 export get_output_variables
