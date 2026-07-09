@@ -25,7 +25,7 @@ end
 @testset "ut_main" begin
     @test_logs (:error, "Please provide at least one filename, f.e. 'PeriLab example.yaml'") PeriLab.main([])
     @test_logs min_level=Logging.Warn PeriLab.main([
-                                                       "fullscale_tests/test_bond_based_elastic/test_bond_based_elastic_1D.yaml",
+                                                       "fullscale_tests/test_Bond_Based_Elastic/test_bond_based_elastic_1D.yaml",
                                                        "-s"
                                                    ])
 end

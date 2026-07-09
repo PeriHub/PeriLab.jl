@@ -212,17 +212,55 @@ end
 Copy the examples folder to the current directory.
 """
 function get_examples()
-    options = ["Abaqus", "DCB", "Quit"]
-    description = ["Abaqus .inp file", "Double cantilver beam", ""]
+    options = [
+        "Abaqus",
+        "Additive",
+        "Bond_Based_Elastic",
+        "Correspondence_Elastic",
+        "Correspondence_Elastic_Plastic",
+        "DCB",
+        "Dogbone",
+        "FEM_Coupling",
+        "Gmsh",
+        "Hetval",
+        "Multistep",
+        "Newmark",
+        "PD_Solid_Elastic",
+        "Penalty_Contact",
+        "Surface_Correction",
+        "Umat",
+        "Quit"
+    ]
+    description = [
+        "Abaqus INP mesh import of a plate with C3D8R elements",
+        "Additive manufacturing thermal process with layer deposition",
+        "Bond-based PD elastic solid (2D/3D, 4-point bending)",
+        "Correspondence elastic material with prescribed strain/stress BCs",
+        "Correspondence elastoplastic material with damage",
+        "Double cantilever beam fracture (multiple PD models)",
+        "Dogbone tensile specimen with critical energy damage",
+        "FEM-PD coupled simulation (Arlequin method)",
+        "Gmsh .msh import for 2D/3D elastic plates",
+        "Temperature-dependent thermal flux via HETVAL Fortran library",
+        "Multi-step sequential thermo-mechanical analysis",
+        "Newmark time integration for dynamic PD problems",
+        "PD solid elastic model under prescribed strain states",
+        "Penalty-based contact between distinct PD bodies",
+        "Volume-based surface (boundary) correction",
+        "User-defined material via compiled Fortran UMAT/VUMAT",
+        ""
+    ]
 
     package_dir = dirname(dirname(pathof(PeriLab)))
     test_dir = joinpath(package_dir, "test", "fullscale_tests")
+    yaml_name = ""
 
     while true
         println("\nWhich example to you like to try?")
         for (i, opt) in enumerate(options)
             if description[i] != ""
-                println("$(i). $opt ($(description[i]))")
+                label = i<10 ? rpad("$opt", 35) : rpad("$opt", 34)
+                println("$(i). $label $(description[i])")
             else
                 println("$(i). $opt")
             end
@@ -245,6 +283,8 @@ function get_examples()
                 if isdir(examples_dir)
                     if !isdir(dest_folder)
                         mkdir(dest_folder)
+                    end
+                    if !isdir(joinpath(dest_folder, choice_name))
                         mkdir(joinpath(dest_folder, choice_name))
                     end
                     # copy folder without .cmd and .license files
@@ -253,8 +293,11 @@ function get_examples()
                             cp(joinpath(examples_dir, file),
                                joinpath(dest_folder, choice_name, file))
                         end
+                        if endswith(file, ".yaml")
+                            yaml_name = file
+                        end
                     end
-                    println("Example copied, use 'PeriLab examples/$choice_name/$choice_name.yaml' to run it.")
+                    println("Example copied, use 'PeriLab examples/$choice_name/$yaml_name' to run it.")
                 end
                 break  # Exit loop after selection (or remove to repeat)
             else
