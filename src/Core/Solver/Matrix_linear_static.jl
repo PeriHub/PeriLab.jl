@@ -344,7 +344,7 @@ function run_solver(solver_options::Dict{Any,Any},
 
                         # Solve system using same structure as reference
                         # but with mapping for active nodes
-                        compute_displacements_active_subset!(K_active,
+                        compute_displacements_active_subset!(-K_active,
                                                              active_dofs_global,
                                                              active_non_BCs_local,
                                                              u_active_nodes,

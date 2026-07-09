@@ -279,7 +279,7 @@ function run_solver(solver_options::Dict{Any,Any},
             end
 
             # Solve
-            @timeit "newmark_solve" @views newmark_step!(K, M, non_BCs,
+            @timeit "newmark_solve" @views newmark_step!(-K, M, non_BCs,
                                                          uN, uNP1, velN, velNP1, aN, aNP1,
                                                          force_densities_NP1,
                                                          external_force_densities, cache,

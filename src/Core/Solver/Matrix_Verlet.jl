@@ -196,11 +196,13 @@ function run_solver(solver_options::Dict{Any,Any},
                 end
             end
             @timeit "compute Velocity" begin
-                @. @views vNP1[active_nodes, :] = (1 - numerical_damping) *
+                @. @views vNP1[active_nodes,
+                :] = (1 - numerical_damping) *
                                                   vN[active_nodes, :] +
                                                   0.5 * dt * aN[active_nodes, :]
 
-                @. @views uNP1[active_nodes, :] = uN[active_nodes, :] +
+                @. @views uNP1[active_nodes,
+                :] = uN[active_nodes, :] +
                                                   dt * vNP1[active_nodes, :]
             end
 
@@ -220,7 +222,7 @@ function run_solver(solver_options::Dict{Any,Any},
 
                 @views fNP1 = force_densities_NP1[active_nodes, :]
 
-                @timeit "Force matrix computations" f_int_inplace!(fNP1, temp, K,
+                @timeit "Force matrix computations" f_int_inplace!(fNP1, temp, -K,
                                                                    vec(uNP1[active_nodes,
                                                                             :]), sa)
 

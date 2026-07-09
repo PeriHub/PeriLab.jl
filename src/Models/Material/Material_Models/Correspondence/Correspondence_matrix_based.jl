@@ -9,7 +9,7 @@ using SparseArrays
 using TimerOutputs: @timeit
 using ...Data_Manager
 using ...PeriLabExceptions: @abort
-using ....Helpers: get_fourth_order
+using ....Helpers: get_fourth_order, find_active_nodes, get_active_update_nodes
 using ..Zero_Energy_Control
 
 export init_model
@@ -137,13 +137,17 @@ function compute_stiffness_contribution!(CB_k::Array{Float64,4},
         DX_2 = D_inv_i[2, 1] * X_ij[1] + D_inv_i[2, 2] * X_ij[2]
         factor = omega_ij * omega_ik * V_k
         @inbounds begin
-            K_block[1, 1] = factor *
+            K_block[1,
+            1] = factor *
                             (CB_k[k_idx, 1, 1, 1] * DX_1 + CB_k[k_idx, 1, 2, 1] * DX_2)
-            K_block[1, 2] = factor *
+            K_block[1,
+            2] = factor *
                             (CB_k[k_idx, 1, 1, 2] * DX_1 + CB_k[k_idx, 1, 2, 2] * DX_2)
-            K_block[2, 1] = factor *
+            K_block[2,
+            1] = factor *
                             (CB_k[k_idx, 2, 1, 1] * DX_1 + CB_k[k_idx, 2, 2, 1] * DX_2)
-            K_block[2, 2] = factor *
+            K_block[2,
+            2] = factor *
                             (CB_k[k_idx, 2, 1, 2] * DX_1 + CB_k[k_idx, 2, 2, 2] * DX_2)
         end
     elseif dof == 3
@@ -152,31 +156,40 @@ function compute_stiffness_contribution!(CB_k::Array{Float64,4},
         DX_3 = D_inv_i[3, 1] * X_ij[1] + D_inv_i[3, 2] * X_ij[2] + D_inv_i[3, 3] * X_ij[3]
         factor = omega_ij * omega_ik * V_k
         @inbounds begin
-            K_block[1, 1] = factor *
+            K_block[1,
+            1] = factor *
                             (CB_k[k_idx, 1, 1, 1] * DX_1 + CB_k[k_idx, 1, 2, 1] * DX_2 +
                              CB_k[k_idx, 1, 3, 1] * DX_3)
-            K_block[1, 2] = factor *
+            K_block[1,
+            2] = factor *
                             (CB_k[k_idx, 1, 1, 2] * DX_1 + CB_k[k_idx, 1, 2, 2] * DX_2 +
                              CB_k[k_idx, 1, 3, 2] * DX_3)
-            K_block[1, 3] = factor *
+            K_block[1,
+            3] = factor *
                             (CB_k[k_idx, 1, 1, 3] * DX_1 + CB_k[k_idx, 1, 2, 3] * DX_2 +
                              CB_k[k_idx, 1, 3, 3] * DX_3)
-            K_block[2, 1] = factor *
+            K_block[2,
+            1] = factor *
                             (CB_k[k_idx, 2, 1, 1] * DX_1 + CB_k[k_idx, 2, 2, 1] * DX_2 +
                              CB_k[k_idx, 2, 3, 1] * DX_3)
-            K_block[2, 2] = factor *
+            K_block[2,
+            2] = factor *
                             (CB_k[k_idx, 2, 1, 2] * DX_1 + CB_k[k_idx, 2, 2, 2] * DX_2 +
                              CB_k[k_idx, 2, 3, 2] * DX_3)
-            K_block[2, 3] = factor *
+            K_block[2,
+            3] = factor *
                             (CB_k[k_idx, 2, 1, 3] * DX_1 + CB_k[k_idx, 2, 2, 3] * DX_2 +
                              CB_k[k_idx, 2, 3, 3] * DX_3)
-            K_block[3, 1] = factor *
+            K_block[3,
+            1] = factor *
                             (CB_k[k_idx, 3, 1, 1] * DX_1 + CB_k[k_idx, 3, 2, 1] * DX_2 +
                              CB_k[k_idx, 3, 3, 1] * DX_3)
-            K_block[3, 2] = factor *
+            K_block[3,
+            2] = factor *
                             (CB_k[k_idx, 3, 1, 2] * DX_1 + CB_k[k_idx, 3, 2, 2] * DX_2 +
                              CB_k[k_idx, 3, 3, 2] * DX_3)
-            K_block[3, 3] = factor *
+            K_block[3,
+            3] = factor *
                             (CB_k[k_idx, 3, 1, 3] * DX_1 + CB_k[k_idx, 3, 2, 3] * DX_2 +
                              CB_k[k_idx, 3, 3, 3] * DX_3)
         end
@@ -435,12 +448,9 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int64},
                                              bond_geometry::Vector{Vector{Vector{Float64}}},
                                              omega::Vector{Vector{Float64}},
                                              bond_damage::Vector{Vector{Float64}},
-                                             zStiff::Array{Float64,3})
+                                             zStiff::Array{Float64,3}; sign = 1)
     nnodes::Int = maximum(nodes)
     max_neighbors = maximum(number_of_neighbors)
-
-    # Reset K — sparsity pattern stays, values zeroed
-    fill!(K.nzval, 0.0)
 
     # CB tensors allocated once externally, reused across calls
     @timeit "precompute_CB" precompute_CB_all_nodes!(all_CB_tensors, nodes, C_Voigt,
@@ -572,7 +582,8 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int64},
                         val = K_local[(m - 1) * blk1 + r, (o - 1) * blk1 + c]
                         abs(val) <= 1e-14 && continue
                         nzval[local_nzidx[(m - 1) * blk1 + r,
-                        (o - 1) * blk1 + c]] += val
+                        (o - 1) * blk1 + c]] += sign *
+                                                                                      val
                     end
                 end
             end  # scatter_to_K
@@ -625,20 +636,35 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
 
     bond_geometry = Data_Manager.get_field("Bond Geometry")
     inverse_shape_tensor = Data_Manager.get_field("Inverse Shape Tensor")
+    # Create a constant node tensor field for the old inverse shape tensor
+    # TODO maybe later an N; NP1 field
+    inverse_shape_tensorN = Data_Manager.create_constant_node_tensor_field("Old Inverse Shape Tensor",
+                                                                           Float64, dof)
+    inverse_shape_tensorN .= inverse_shape_tensor
     nlist = Data_Manager.get_nlist()
     number_of_neighbors = Data_Manager.get_field("Number of Neighbors")
     volume = Data_Manager.get_field("Volume")
     omega = Data_Manager.get_field("Influence Function")
     C_voigt = Data_Manager.get_field("Material Gradient")
+    C_voigt_old = Data_Manager.create_constant_node_tensor_field("Old Material Gradient",
+                                                                 Float64,
+                                                                 Int64((dof *
+                                                                        (dof +
+                                                                         1)) /
+                                                                       2))
     bond_damage = Data_Manager.get_field("Bond Damage", "NP1")
 
     C_voigt_trafo = _apply_rotation(C_voigt, dof, nnodes)
+    C_voigt_old .= C_voigt_trafo
 
     use_zero_energy,
     zStiff = _setup_zero_energy(nodes, dof, C_voigt_trafo,
                                 inverse_shape_tensor,
                                 include_zero_energy)
-
+    zStiffOld = include_zero_energy ?
+                Data_Manager.create_constant_node_tensor_field("Old Zero Energy Stiffness",
+                                                               Float64, dof) : nothing
+    zStiffOld .= zStiff
     # Build sparsity pattern + nzval map ONCE and store in Data_Manager
     @timeit "build_sparsity" begin
         @info "Build sparsity pattern"
@@ -664,12 +690,14 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
                                                            bond_geometry, omega,
                                                            bond_damage, zStiff)
 
-    Data_Manager.set_stiffness_matrix(-K_sparse)
+    Data_Manager.set_stiffness_matrix(K_sparse)
 end
 
 function compute_model(nodes::AbstractVector{Int64},
                        use_block_style::Bool = true,
                        include_zero_energy::Bool = true)
+    unodes = get_stiffness_update_nodes(nodes)
+
     dof = Data_Manager.get_dof()
     nnodes = Data_Manager.get_nnodes()
     all_nodes = collect(1:nnodes)
@@ -680,8 +708,10 @@ function compute_model(nodes::AbstractVector{Int64},
     volume = Data_Manager.get_field("Volume")
     number_of_neighbors = Data_Manager.get_field("Number of Neighbors")
     omega = Data_Manager.get_field("Influence Function")
-    bond_damage = Data_Manager.get_field("Bond Damage", "NP1")
+    bond_damageN = Data_Manager.get_field("Bond Damage", "N")
+    bond_damageNP1 = Data_Manager.get_field("Bond Damage", "NP1")
     C_voigt = Data_Manager.get_field("Material Gradient")
+
     zStiff = include_zero_energy ?
              Data_Manager.get_field("Zero Energy Stiffness") : nothing
 
@@ -696,17 +726,38 @@ function compute_model(nodes::AbstractVector{Int64},
 
     # Reuse CB tensors allocated in init_matrix — no allocation
     all_CB_tensors = Data_Manager.get_cb_tensors()
+    inverse_shape_tensorN = Data_Manager.get_field("Old Inverse Shape Tensor")
+    C_voigtN = Data_Manager.get_field("Old Material Gradient")
+    zStiffN = include_zero_energy ?
+              Data_Manager.get_field("Old Zero Energy Stiffness") : nothing
 
     @timeit "assemble" assemble_stiffness_with_zero_energy(K_sparse, K_colptr, K_rowval,
-                                                           all_CB_tensors, all_nodes, nodes,
+                                                           all_CB_tensors, all_nodes,
+                                                           unodes,
+                                                           dof, C_voigtN,
+                                                           inverse_shape_tensorN,
+                                                           number_of_neighbors, nlist,
+                                                           volume,
+                                                           bond_geometry, omega,
+                                                           bond_damageN, zStiffN;
+                                                           sign = -1.0)
+
+    @timeit "assemble" assemble_stiffness_with_zero_energy(K_sparse, K_colptr, K_rowval,
+                                                           all_CB_tensors, all_nodes,
+                                                           unodes,
                                                            dof, C_voigt,
                                                            inverse_shape_tensor,
                                                            number_of_neighbors, nlist,
                                                            volume,
                                                            bond_geometry, omega,
-                                                           bond_damage, zStiff)
+                                                           bond_damageNP1, zStiff)
 
-    Data_Manager.set_stiffness_matrix(-K_sparse)
+    @views inverse_shape_tensorN[unodes, :, :] .= inverse_shape_tensor[unodes, :, :]
+    @views C_voigtN[unodes, :, :] .= C_voigt[unodes, :, :]
+    if include_zero_energy
+        @views zStiffN[unodes, :, :] .= zStiff[unodes, :, :]
+    end
+    Data_Manager.set_stiffness_matrix(K_sparse)
 end
 
 # =============================================================================
@@ -750,6 +801,14 @@ function _setup_zero_energy(nodes, dof, C_voigt_trafo, inverse_shape_tensor,
         end
     end
     return use_zero_energy, zStiff
+end
+
+function get_stiffness_update_nodes(nodes::AbstractVector{Int64})
+    active_list = Data_Manager.get_field("Active")
+    update_list = Data_Manager.get_field("Update")
+    update_nodes = Data_Manager.get_field("Update Nodes")
+
+    return get_active_update_nodes(active_list, update_list, nodes, update_nodes)
 end
 
 end # module

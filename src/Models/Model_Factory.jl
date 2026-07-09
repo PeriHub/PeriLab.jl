@@ -340,7 +340,10 @@ function compute_stiff_matrix_compatible_models(block_nodes::Dict{Int64,Vector{I
                                                 options::Vector{String},
                                                 synchronise_field)
     active_list = Data_Manager.get_field("Active")
-
+    update_list = Data_Manager.get_field("Update")
+    for (block, nodes) in pairs(block_nodes)
+        update_list[nodes] .= false
+    end
     for (active_model_name, active_model) in pairs(Data_Manager.get_active_models())
 
         #local_synch(Data_Manager, active_model_name, "upload_to_cores", synchronise_field)
