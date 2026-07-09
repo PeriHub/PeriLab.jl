@@ -217,13 +217,13 @@ MPI.Init()
             include("fullscale_tests/test_Newmark/test_Newmark.jl")
         end
         @testset "test_surface_correction" begin
-            include("fullscale_tests/test_Surface_Correction/test_Surface_correction.jl")
+            include("fullscale_tests/test_Surface_Correction/test_Surface_Correction.jl")
         end
         @testset "test_global_variables" begin
             include("fullscale_tests/test_global_variables/test_global_variables.jl")
         end
         @testset "test_multistep" begin
-            include("fullscale_tests/test_Multistep/test_multistep.jl")
+            include("fullscale_tests/test_Multistep/test_Multistep.jl")
         end
         @testset "test_dry_run" begin
             include("fullscale_tests/test_dry_run/test_dry_run.jl")
@@ -250,7 +250,7 @@ MPI.Init()
         #     include("fullscale_tests/test_body_force/test_body_force.jl")
         # end
         @testset "test_PD_Solid_Elastic" begin
-            include("fullscale_tests/test_PD_Solid_Elastic/test_PD_solid_elastic.jl")
+            include("fullscale_tests/test_PD_Solid_Elastic/test_PD_Solid_Elastic.jl")
         end
         @testset "test_PD_Solid_Plastic" begin
             include("fullscale_tests/test_PD_solid_plastic/test_PD_solid_plastic.jl")
@@ -271,16 +271,16 @@ MPI.Init()
             include("fullscale_tests/test_thermal_flow/test_thermal_flow.jl")
         end
         @testset "test_hetval" begin
-            include("fullscale_tests/test_Hetval/test_hetval.jl")
+            include("fullscale_tests/test_Hetval/test_Hetval.jl")
         end
         @testset "test_thermal_decomp" begin
             include("fullscale_tests/test_thermal_decomp/test_thermal_decomp.jl")
         end
         @testset "test_Correspondence_Elastic" begin
-            include("fullscale_tests/test_Correspondence_Elastic/test_correspondence_elastic.jl")
+            include("fullscale_tests/test_Correspondence_Elastic/test_Correspondence_Elastic.jl")
         end
         @testset "test_Correspondence_Elastic_Plastic" begin
-            include("fullscale_tests/test_Correspondence_Elastic_Plastic/test_correspondence_elastic_plastic.jl")
+            include("fullscale_tests/test_Correspondence_Elastic_Plastic/test_Correspondence_Elastic_Plastic.jl")
         end
         @testset "test_Correspondence_Elastic_with_zero_E_control" begin
             include("fullscale_tests/test_correspondence_elastic_with_zero_E_control/test_correspondence_elastic_with_zero_E_control.jl")
@@ -295,7 +295,7 @@ MPI.Init()
             include("fullscale_tests/test_Abaqus/test_Abaqus.jl")
         end
         @testset "test_gmsh" begin
-            include("fullscale_tests/test_Gmsh/test_gmsh.jl")
+            include("fullscale_tests/test_Gmsh/test_Gmsh.jl")
         end
         @testset "test_aniso_damage" begin
             include("fullscale_tests/test_aniso_damage/test_aniso_damage.jl")
@@ -316,19 +316,19 @@ MPI.Init()
             include("fullscale_tests/test_large_model_matrix_based/test_large_model_matrix_based.jl")
         end
         @testset "test_FEM_coupling" begin
-            include("fullscale_tests/test_FEM_Coupling/test_FEM_coupling.jl")
+            include("fullscale_tests/test_FEM_Coupling/test_FEM_Coupling.jl")
         end
         @testset "test_umat" begin
-            include("fullscale_tests/test_Umat/test_umat.jl")
+            include("fullscale_tests/test_Umat/test_Umat.jl")
         end
         @testset "test_bond_based_elastic" begin
-            include("fullscale_tests/test_Bond_Based_Elastic/test_bond_based_elastic.jl")
+            include("fullscale_tests/test_Bond_Based_Elastic/test_Bond_Based_Elastic.jl")
         end
         @testset "test_PD_Solid_Elastic_3D" begin
             include("fullscale_tests/test_PD_solid_elastic_3D/test_PD_solid_elastic_3D.jl")
         end
         @testset "test_penalty_contact" begin
-            include("fullscale_tests/test_Penalty_Contact/test_penalty_contact.jl")
+            include("fullscale_tests/test_Penalty_Contact/test_Penalty_Contact.jl")
         end
     end
 end
