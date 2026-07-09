@@ -377,7 +377,7 @@ function run_solver(solver_options::Dict{Any,Any},
                 all_dofs = collect(1:(nnodes * dof))
 
                 @timeit "compute_displacements (all active)" begin
-                    @views compute_displacements!(K,
+                    @views compute_displacements!(-K,
                                                   all_dofs,
                                                   non_BCs_global,
                                                   uNP1,
