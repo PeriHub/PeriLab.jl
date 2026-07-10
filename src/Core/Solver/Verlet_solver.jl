@@ -235,21 +235,18 @@ function run_solver(solver_options::Dict{Any,Any},
             if "Material" in solver_options["Models"]
                 uNP1::NodeVectorField{Float64} = Data_Manager.get_field("Displacements",
                                                                         "NP1")
-                deformed_coorNP1::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
-                                                                                    "NP1")
-                forces::NodeVectorField{Float64} = Data_Manager.get_field("Forces",
-                                                                          "NP1")
-                force_densities::NodeVectorField{Float64} = Data_Manager.get_field("Force Densities",
-                                                                                   "NP1")
+
                 uN::NodeVectorField{Float64} = Data_Manager.get_field("Displacements",
                                                                       "N")
                 vN::NodeVectorField{Float64} = Data_Manager.get_field("Velocity", "N")
                 vNP1::NodeVectorField{Float64} = Data_Manager.get_field("Velocity",
                                                                         "NP1")
-                aN = Data_Manager.get_field("Acceleration", "N")
-                aNP1 = Data_Manager.get_field("Acceleration", "NP1")
+                aN::NodeVectorField{Float64} = Data_Manager.get_field("Acceleration", "N")
+                aNP1::NodeVectorField{Float64} = Data_Manager.get_field("Acceleration",
+                                                                        "NP1")
             end
-
+            deformed_coorNP1::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
+                                                                                "NP1")
             if "Damage" in solver_options["Models"]
                 damage = Data_Manager.get_damage("NP1")
             end
@@ -287,7 +284,7 @@ function run_solver(solver_options::Dict{Any,Any},
             #needed because of optional deformation_gradient, Deformed bonds, etc.
             # all points to guarantee that the neighbors have coor as coordinates if they are not active
 
-            update_deformed_coordinates!(deformed_coorNP1, coor, uNP1, active_nodes,
+            update_deformed_coordinates!(deformed_coorNP1, coor, active_nodes,
                                          "Material" in solver_options["Models"])
 
             @timeit "upload_to_cores" Data_Manager.synch_manager(synchronise_field,
@@ -319,6 +316,7 @@ function run_solver(solver_options::Dict{Any,Any},
             active_nodes = find_active_nodes(active_list, active_nodes,
                                              1:Data_Manager.get_nnodes())
             if "Material" in solver_options["Models"]
+                force_densities = Data_Manager.get_field("Force Densities", "NP1")
                 check_inf_or_nan(force_densities, "Force Densities")
 
                 if fem_option
@@ -329,9 +327,8 @@ function run_solver(solver_options::Dict{Any,Any},
                                                      active_nodes,
                                                      1:Data_Manager.get_nnodes())
 
-                    compute_forces_add!(forces, force_densities, aNP1,
-                                        external_forces, external_force_densities,
-                                        volume, density, active_nodes)
+                    compute_forces_add!(volume, density, active_nodes,
+                                        "Material" in solver_options["Models"])
 
                     active_nodes = Data_Manager.get_field("Active Nodes")
                     active_nodes = find_active_nodes(fe_nodes,
@@ -340,9 +337,8 @@ function run_solver(solver_options::Dict{Any,Any},
                                                      false)
                 end
                 @timeit "compute_forces!" begin
-                    compute_forces!(forces, force_densities, aNP1,
-                                    external_forces, external_force_densities,
-                                    volume, density, active_nodes)
+                    compute_forces!(volume, density, active_nodes,
+                                    "Material" in solver_options["Models"])
                 end
             end
 
@@ -397,8 +393,16 @@ function run_solver(solver_options::Dict{Any,Any},
     Data_Manager.set_current_time(final_time)
     return result_files
 end
-function compute_forces!(forces, force_densities, aNP1, external_forces,
-                         external_force_densities, volume, density, active_nodes)
+function compute_forces!(volume, density, active_nodes,
+                         has_material::Bool)
+    if !has_material
+        return nothing
+    end
+    external_forces = Data_Manager.get_field("External Forces")
+    external_force_densities = Data_Manager.get_field("External Force Densities")
+    forces = Data_Manager.get_field("Forces", "NP1")
+    force_densities = Data_Manager.get_field("Force Densities", "NP1")
+    aNP1 = Data_Manager.get_field("Acceleration", "NP1")
     @inbounds for i in active_nodes
         for d in axes(forces, 2)
             forces[i, d] = external_forces[i, d]
@@ -412,8 +416,15 @@ function compute_forces!(forces, force_densities, aNP1, external_forces,
     return nothing
 end
 
-function compute_forces_add!(forces, force_densities, aNP1, external_forces,
-                             external_force_densities, volume, mass, active_nodes)
+function compute_forces_add!(volume, mass, active_nodes, has_material::Bool)
+    if !has_material
+        return nothing
+    end
+    external_forces = Data_Manager.get_field("External Forces")
+    external_force_densities = Data_Manager.get_field("External Force Densities")
+    forces = Data_Manager.get_field("Forces", "NP1")
+    force_densities = Data_Manager.get_field("Force Densities", "NP1")
+    aNP1 = Data_Manager.get_field("Acceleration", "NP1")
     @inbounds for i in active_nodes
         for d in axes(forces, 2)
             forces[i, d] += external_forces[i, d]
@@ -426,8 +437,11 @@ function compute_forces_add!(forces, force_densities, aNP1, external_forces,
     end
     return nothing
 end
-function update_deformed_coordinates!(deformed_coorNP1, coor, uNP1, active_nodes,
+function update_deformed_coordinates!(deformed_coorNP1, coor, active_nodes,
                                       has_material::Bool)
+    has_material ?
+    uNP1::NodeVectorField{Float64} = Data_Manager.get_field("Displacements",
+                                                            "NP1") : nothing
     @inbounds for i in active_nodes
         for d in axes(coor, 2)
             if has_material
