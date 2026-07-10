@@ -235,7 +235,7 @@ MPI.Init()
             include("fullscale_tests/test_symmetry/test_symmetry.jl")
         end
         @testset "test_additive_simple" begin
-            include("fullscale_tests/test_Additive/test_additive.jl")
+            include("fullscale_tests/test_Additive/test_Additive.jl")
         end
         @testset "test_matrix_based_additive" begin
             include("fullscale_tests/test_matrix_based_additive/test_matrix_based_additive.jl")
