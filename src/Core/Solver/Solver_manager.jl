@@ -138,7 +138,10 @@ function init(params::Dict,
                " not found. Check if the solver name is correct and if the module file is in the Solver folder."
         return nothing
     end
-
+    if !Data_Manager.has_key("Active")
+        active = Data_Manager.create_constant_node_scalar_field("Active", Bool;
+                                                                default_value = true)
+    end
     mod.init_solver(solver_options,
                     solver_params,
                     bcs,
@@ -150,10 +153,7 @@ function init(params::Dict,
         @timeit "init_coupling" FEM.Coupling.init_coupling(1:Data_Manager.get_nnodes(),
                                                            params)
     end
-    if !Data_Manager.has_key("Active")
-        active = Data_Manager.create_constant_node_scalar_field("Active", Bool;
-                                                                default_value = true)
-    end
+
     #TODO: sync active with Data_Manager
 
     remove_models(solver_options["Models"])
