@@ -160,7 +160,7 @@ end
           (8, 2 / 3, 8 / 9)
 end
 
-@testset "ut_get_bond_forces" begin
+@testset "ut_get_bond_forces!" begin
     vec = Vector{Int64}(1:nnodes)
     dof = 2
     nBonds = fill(dof, nnodes)
@@ -170,12 +170,12 @@ end
     deformed_bond[1][2][1] = 1
     bond_force = [[fill(0.0, dof) for j in 1:n] for n in nBonds]
     temp = [fill(0.0, n) for n in nBonds]
-    bond_force = PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.get_bond_forces(vec,
-                                                                                        bond_force_length,
-                                                                                        deformed_bond,
-                                                                                        deformed_bond_length,
-                                                                                        bond_force,
-                                                                                        temp)
+    PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.get_bond_forces!(vec,
+                                                                            bond_force_length,
+                                                                            deformed_bond,
+                                                                            deformed_bond_length,
+                                                                            bond_force,
+                                                                            temp)
     @test bond_force == [[[0.5, 0.0], [0.5, 0.0]], [[0.0, 0.0], [0.0, 0.0]]]
     # deformed_bond_length[2][1] = 0
     # @test isnothing(

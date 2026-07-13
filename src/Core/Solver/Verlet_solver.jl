@@ -257,19 +257,13 @@ function run_solver(solver_options::Dict{Any,Any},
 
             # one step more, because of init step (time = 0)
 
-            if "Material" in solver_options["Models"]
-                c = 0.5 * dt
-                @. @views vNP1[active_nodes,
-                :] = (1 - numerical_damping) .*
-                                                  vN[active_nodes, :] +
-                                                  c * aN[active_nodes, :]
-
-                apply_bc_dirichlet(["Velocity"], bcs, time,
-                                   step_time)
-                @. @views uNP1[active_nodes,
-                :] = uN[active_nodes, :] +
-                                                  dt * vNP1[active_nodes, :]
-            end
+            update_velocity_and_position!(dt,
+                                          numerical_damping,
+                                          active_nodes,
+                                          "Material" in solver_options["Models"],
+                                          bcs,
+                                          time,
+                                          step_time)
 
             compute_parabolic_problems_before_model_evaluation(active_nodes,
                                                                solver_options)
@@ -393,6 +387,45 @@ function run_solver(solver_options::Dict{Any,Any},
     Data_Manager.set_current_time(final_time)
     return result_files
 end
+
+function update_velocity_and_position!(dt::Float64,
+                                       numerical_damping::Float64,
+                                       active_nodes::Vector{Int},
+                                       has_material::Bool,
+                                       bcs,
+                                       time::Float64,
+                                       step_time::Float64)
+    if !has_material
+        return nothing
+    end
+
+    vN::NodeVectorField{Float64} = Data_Manager.get_field("Velocity", "N")
+    vNP1::NodeVectorField{Float64} = Data_Manager.get_field("Velocity", "NP1")
+    aN::NodeVectorField{Float64} = Data_Manager.get_field("Acceleration", "N")
+    uN::NodeVectorField{Float64} = Data_Manager.get_field("Displacements", "N")
+    uNP1::NodeVectorField{Float64} = Data_Manager.get_field("Displacements", "NP1")
+
+    c::Float64 = 0.5 * dt
+    damping::Float64 = 1.0 - numerical_damping
+
+    # Prädiktor-Halbschritt für die Geschwindigkeit
+    @inbounds for i in active_nodes
+        for d in axes(vNP1, 2)
+            vNP1[i, d] = damping * vN[i, d] + c * aN[i, d]
+        end
+    end
+
+    apply_bc_dirichlet(["Velocity"], bcs, time, step_time)
+
+    @inbounds for i in active_nodes
+        for d in axes(uNP1, 2)
+            uNP1[i, d] = uN[i, d] + dt * vNP1[i, d]
+        end
+    end
+
+    return nothing
+end
+
 function compute_forces!(volume::Vector{Float64}, density::Vector{Float64},
                          active_nodes::Vector{Int}, has_material::Bool)
     if !has_material
