@@ -179,10 +179,12 @@ function compute_model(nodes::AbstractVector{Int64},
         end
 
         for material_model in Data_Manager.get_analysis_model("Material Model", block)
-            mod = Data_Manager.get_model_module(material_model)
+            @timeit "material" begin
+                @timeit "material 1" mod::Module = Data_Manager.get_model_module(material_model)
 
-            mod.compute_model(nodes, model_param, block, time,
-                              dt)
+                @timeit "material 2" mod.compute_model(nodes, model_param, block, time,
+                                                       dt)
+            end
         end
     end
 end

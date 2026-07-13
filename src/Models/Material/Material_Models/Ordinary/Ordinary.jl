@@ -12,7 +12,7 @@ using .....Helpers: div_in_place!, mul_in_place!
 
 export compute_dilatation!
 export compute_weighted_volume!
-export get_bond_forces
+export get_bond_forces!
 export calculate_symmetry_params
 
 """
@@ -59,7 +59,7 @@ function compute_weighted_volume!(weighted_volume::NodeScalarField{Float64},
 end
 
 """
-    get_bond_forces(nodes::AbstractVector{Int64},
+    get_bond_forces!(nodes::AbstractVector{Int64},
                     bond_force_length::AbstractVector{<:AbstractVector{Float64}},
                     deformed_bond::SubArray,
                     deformed_bond_length::SubArray,
@@ -75,20 +75,19 @@ Calculate the forces on the bonds in a peridynamic material.
 - `bond_force::Vector{Matrix{Float64}}`: Vector representing the resulting forces on the bonds.
 
 # Returns
-- `bond_force::Vector{Matrix{Float64}}`: Vector containing the resulting forces on the bonds.
+
 """
 
-function get_bond_forces(nodes::AbstractVector{Int64},
-                         bond_force_length::AbstractVector{<:AbstractVector{Float64}},
-                         deformed_bond::BondVectorState{Float64},
-                         deformed_bond_length::BondScalarState{Float64},
-                         bond_force::BondVectorState{Float64},
-                         temp::BondScalarState{Float64})
+function get_bond_forces!(nodes::AbstractVector{Int64},
+                          bond_force_length::BondScalarState{Float64},
+                          deformed_bond::BondVectorState{Float64},
+                          deformed_bond_length::BondScalarState{Float64},
+                          bond_force::BondVectorState{Float64},
+                          temp::BondScalarState{Float64})
     div_in_place!(temp, bond_force_length, deformed_bond_length)
     for iID in nodes
         mul_in_place!(bond_force[iID], deformed_bond[iID], temp[iID])
     end
-    return bond_force
 end
 
 """

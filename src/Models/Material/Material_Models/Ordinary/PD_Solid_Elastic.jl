@@ -11,7 +11,7 @@ using ......Helpers: add_in_place!
 using StaticArrays
 using ..Ordinary:
                   compute_weighted_volume!, compute_dilatation!, calculate_symmetry_params,
-                  get_bond_forces
+                  get_bond_forces!
 export fe_support
 export init_model
 export material_name
@@ -102,23 +102,25 @@ function compute_model(nodes::AbstractVector{Int64},
     # global dof
     # global nlist
     # global volume
-    dof = Data_Manager.get_dof()
-    nlist = Data_Manager.get_nlist()
-    volume = Data_Manager.get_field("Volume")
+    dof::Int64 = Data_Manager.get_dof()
+    nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
+    volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
 
-    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
-    deformed_bond_length = Data_Manager.get_field("Deformed Bond Length", "NP1")
-    bond_damage = Data_Manager.get_bond_damage("NP1")
-    omega = Data_Manager.get_field("Influence Function")
-    undeformed_bond_length = Data_Manager.get_field("Bond Length")
-    bond_force = Data_Manager.get_field("Bond Forces")
-    temp = Data_Manager.get_field("Temporary Bond Field")
+    deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
+                                                                     "NP1")
+    deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
+                                                                            "NP1")
+    bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
+    omega::BondScalarState{Float64} = Data_Manager.get_field("Influence Function")
+    undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
+    bond_force::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
+    temp::BondScalarState{Float64} = Data_Manager.get_field("Temporary Bond Field")
 
-    bond_force_deviatoric_part = Data_Manager.get_field("Bond Forces Deviatoric")
-    bond_force_isotropic_part = Data_Manager.get_field("Bond Forces Isotropic")
+    bond_force_deviatoric_part::BondScalarState{Float64} = Data_Manager.get_field("Bond Forces Deviatoric")
+    bond_force_isotropic_part::BondScalarState{Float64} = Data_Manager.get_field("Bond Forces Isotropic")
     # isotropic; deviatoric; all
-    weighted_volume = Data_Manager.get_field("Weighted Volume")
-    theta = Data_Manager.get_field("Dilatation")
+    weighted_volume::NodeScalarField{Float64} = Data_Manager.get_field("Weighted Volume")
+    theta::NodeScalarField{Float64} = Data_Manager.get_field("Dilatation")
 
     # optimizing, because if no damage it has not to be updated
     # TBD update_list should be used here as in shape_tensor.jl
@@ -138,6 +140,10 @@ function compute_model(nodes::AbstractVector{Int64},
                                              weighted_volume,
                                              omega,
                                              theta)
+    shear_modulus::Union{Float64,Vector{Float64}} = material_parameter["Shear Modulus"]
+    bulk_modulus::Union{Float64,Vector{Float64}} = material_parameter["Bulk Modulus"]
+
+    symmetry::String = get_symmetry(material_parameter)
     @timeit "elastic" elastic!(nodes,
                                undeformed_bond_length,
                                deformed_bond_length,
@@ -145,13 +151,15 @@ function compute_model(nodes::AbstractVector{Int64},
                                theta,
                                weighted_volume,
                                omega,
-                               material_parameter,
+                               symmetry,
+                               shear_modulus,
+                               bulk_modulus,
                                bond_force_deviatoric_part,
                                bond_force_isotropic_part)
     add_in_place!(temp, bond_force_deviatoric_part, bond_force_isotropic_part)
-    @timeit "get_bond_forces" bond_force=get_bond_forces(nodes, temp, deformed_bond,
-                                                         deformed_bond_length,
-                                                         bond_force, temp)
+    @timeit "get_bond_forces!" get_bond_forces!(nodes, temp, deformed_bond,
+                                                deformed_bond_length,
+                                                bond_force, temp)
 end
 
 """
@@ -184,32 +192,69 @@ function elastic!(nodes::AbstractVector{Int64},
                   theta::NodeScalarField{Float64},
                   weighted_volume::NodeScalarField{Float64},
                   omega::BondScalarState{Float64},
-                  material::Dict,
+                  symmetry::String,
+                  shear_modulus::Vector{Float64},
+                  bulk_modulus::Vector{Float64},
                   bond_force_deviatoric_part::BondScalarState{Float64},
                   bond_force_isotropic_part::BondScalarState{Float64})
-    shear_modulus = material["Shear Modulus"]
-    bulk_modulus = material["Bulk Modulus"]
-
-    symmetry::String = get_symmetry(material)
-    # kappa::Float64 = 0
-    # gamma::Float64 = 0
-    # alpha::Float64 = 0
-    if shear_modulus isa Float64
-        alpha, gamma,
-        kappa = calculate_symmetry_params(symmetry, shear_modulus,
-                                          bulk_modulus)
-    end
+    kappa::Float64 = 0
+    gamma::Float64 = 0
+    alpha::Float64 = 0
 
     for iID in nodes
         # Calculate alpha and beta
         if weighted_volume[iID] == 0
             continue
         end
-        if !(shear_modulus isa Float64)
-            alpha, gamma,
-            kappa = calculate_symmetry_params(symmetry,
-                                              shear_modulus[iID],
-                                              bulk_modulus[iID])
+
+        alpha, gamma,
+        kappa = calculate_symmetry_params(symmetry,
+                                          shear_modulus[iID],
+                                          bulk_modulus[iID])
+
+        deviatoric_deformation::Float64 = 0.0
+        @inbounds @simd for jID in eachindex(deformed_bond_length[iID])
+            deviatoric_deformation = deformed_bond_length[iID][jID] -
+                                     undeformed_bond_length[iID][jID] -
+                                     (gamma * theta[iID] / 3) *
+                                     undeformed_bond_length[iID][jID]
+            bond_force_deviatoric_part[iID][jID] = bond_damage[iID][jID] * omega[iID][jID] *
+                                                   alpha *
+                                                   deviatoric_deformation /
+                                                   weighted_volume[iID]
+            bond_force_isotropic_part[iID][jID] = bond_damage[iID][jID] * omega[iID][jID] *
+                                                  kappa *
+                                                  theta[iID] *
+                                                  undeformed_bond_length[iID][jID] /
+                                                  weighted_volume[iID]
+        end
+    end
+end
+
+function elastic!(nodes::AbstractVector{Int64},
+                  undeformed_bond_length::BondScalarState{Float64},
+                  deformed_bond_length::BondScalarState{Float64},
+                  bond_damage::BondScalarState{Float64},
+                  theta::NodeScalarField{Float64},
+                  weighted_volume::NodeScalarField{Float64},
+                  omega::BondScalarState{Float64},
+                  symmetry::String,
+                  shear_modulus::Float64,
+                  bulk_modulus::Float64,
+                  bond_force_deviatoric_part::BondScalarState{Float64},
+                  bond_force_isotropic_part::BondScalarState{Float64})
+    kappa::Float64 = 0
+    gamma::Float64 = 0
+    alpha::Float64 = 0
+
+    alpha, gamma,
+    kappa = calculate_symmetry_params(symmetry, shear_modulus,
+                                      bulk_modulus)
+
+    for iID in nodes
+        # Calculate alpha and beta
+        if weighted_volume[iID] == 0
+            continue
         end
 
         deviatoric_deformation::Float64 = 0.0
