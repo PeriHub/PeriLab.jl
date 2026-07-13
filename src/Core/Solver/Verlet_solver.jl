@@ -393,16 +393,17 @@ function run_solver(solver_options::Dict{Any,Any},
     Data_Manager.set_current_time(final_time)
     return result_files
 end
-function compute_forces!(volume, density, active_nodes,
-                         has_material::Bool)
+function compute_forces!(volume::Vector{Float64}, density::Vector{Float64},
+                         active_nodes::Vector{Int}, has_material::Bool)
     if !has_material
         return nothing
     end
-    external_forces = Data_Manager.get_field("External Forces")
-    external_force_densities = Data_Manager.get_field("External Force Densities")
-    forces = Data_Manager.get_field("Forces", "NP1")
-    force_densities = Data_Manager.get_field("Force Densities", "NP1")
-    aNP1 = Data_Manager.get_field("Acceleration", "NP1")
+    external_forces::NodeVectorField{Float64} = Data_Manager.get_field("External Forces")
+    external_force_densities::NodeVectorField{Float64} = Data_Manager.get_field("External Force Densities")
+    forces::NodeVectorField{Float64} = Data_Manager.get_field("Forces", "NP1")
+    force_densities::NodeVectorField{Float64} = Data_Manager.get_field("Force Densities",
+                                                                       "NP1")
+    aNP1::NodeVectorField{Float64} = Data_Manager.get_field("Acceleration", "NP1")
     @inbounds for i in active_nodes
         for d in axes(forces, 2)
             forces[i, d] = external_forces[i, d]
