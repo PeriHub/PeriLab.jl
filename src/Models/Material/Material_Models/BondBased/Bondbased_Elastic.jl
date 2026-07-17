@@ -9,7 +9,7 @@ using .......PeriLabExceptions: @abort
 using ....Material_Basis: get_symmetry, apply_pointwise_E, compute_bond_based_constants
 using .......Helpers: is_dependent
 using LoopVectorization
-
+using TimerOutputs: @timeit
 export init_model
 export fe_support
 export material_name
@@ -78,13 +78,15 @@ function compute_model(nodes::AbstractVector{Int64},
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    constant = Data_Manager.get_field("Bond Based Constant")
+    constant::NodeScalarField{Float64} = Data_Manager.get_field("Bond Based Constant")
 
-    undeformed_bond_length = Data_Manager.get_field("Bond Length")
-    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
-    deformed_bond_length = Data_Manager.get_field("Deformed Bond Length", "NP1")
-    bond_damage = Data_Manager.get_bond_damage("NP1")
-    bond_force = Data_Manager.get_field("Bond Forces")
+    undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
+    deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
+                                                                     "NP1")
+    deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
+                                                                            "NP1")
+    bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
+    bond_force::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
 
     E = material_parameter["Young's Modulus"]
 
@@ -92,23 +94,27 @@ function compute_model(nodes::AbstractVector{Int64},
     dependent_field = is_dependent("Young's Modulus", material_parameter)
 
     for iID in nodes
-        if any(deformed_bond_length[iID] .== 0)
-            @abort "Length of bond is zero due to its deformation."
-            return nothing
+        @timeit "any zero" begin
+            for deformed_length in deformed_bond_length[iID]
+                if deformed_length == 0
+                    @abort "Length of bond is zero due to its deformation."
+                    return nothing
+                end
+            end
         end
         # Calculate the bond force
-        compute_bb_force!(bond_force[iID],
-                          0.5 * constant[iID],
-                          bond_damage[iID],
-                          deformed_bond_length[iID],
-                          undeformed_bond_length[iID],
-                          deformed_bond[iID])
+        @timeit "compute_bb_force!" compute_bb_force!(bond_force[iID],
+                                                      0.5 * constant[iID],
+                                                      bond_damage[iID],
+                                                      deformed_bond_length[iID],
+                                                      undeformed_bond_length[iID],
+                                                      deformed_bond[iID])
     end
     # might be put in constant
     if dependend_value
-        apply_pointwise_E(nodes, E, bond_force, dependent_field)
+        @timeit "apply_pointwise_E" apply_pointwise_E(nodes, E, bond_force, dependent_field)
     else
-        apply_pointwise_E(nodes, E, bond_force)
+        @timeit "apply_pointwise_E" apply_pointwise_E(nodes, E, bond_force)
     end
 end
 
