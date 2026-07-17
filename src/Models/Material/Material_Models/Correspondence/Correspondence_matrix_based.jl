@@ -734,26 +734,42 @@ function compute_model(nodes::AbstractVector{Int64},
     zStiffN = include_zero_energy ?
               Data_Manager.get_field("Old Zero Energy Stiffness") : nothing
 
-    @timeit "assemble" assemble_stiffness_with_zero_energy(K_sparse, K_colptr, K_rowval,
-                                                           all_CB_tensors, all_nodes,
-                                                           unodes,
-                                                           dof, C_voigtN,
-                                                           inverse_shape_tensorN,
-                                                           number_of_neighbors, nlist,
-                                                           volume,
-                                                           bond_geometry, omega,
-                                                           bond_damageN, zStiffN;
-                                                           sign = -1.0)
+    if "Additive Model" in keys(Data_Manager.get_active_models())
+        fill!(K_sparse.nzval, 0.0)
+        assemble_stiffness_with_zero_energy(K_sparse, K_colptr, K_rowval,
+                                            all_CB_tensors, all_nodes,
+                                            nodes,
+                                            dof, C_voigt,
+                                            inverse_shape_tensor,
+                                            number_of_neighbors, nlist,
+                                            volume,
+                                            bond_geometry, omega,
+                                            bond_damageNP1, zStiff)
 
-    @timeit "assemble" assemble_stiffness_with_zero_energy(K_sparse, K_colptr, K_rowval,
-                                                           all_CB_tensors, all_nodes,
-                                                           unodes,
-                                                           dof, C_voigt,
-                                                           inverse_shape_tensor,
-                                                           number_of_neighbors, nlist,
-                                                           volume,
-                                                           bond_geometry, omega,
-                                                           bond_damageNP1, zStiff)
+    else
+        @timeit "assemble" begin
+            assemble_stiffness_with_zero_energy(K_sparse, K_colptr, K_rowval,
+                                                all_CB_tensors, all_nodes,
+                                                unodes,
+                                                dof, C_voigtN,
+                                                inverse_shape_tensorN,
+                                                number_of_neighbors, nlist,
+                                                volume,
+                                                bond_geometry, omega,
+                                                bond_damageN, zStiffN;
+                                                sign = -1.0)
+
+            assemble_stiffness_with_zero_energy(K_sparse, K_colptr, K_rowval,
+                                                all_CB_tensors, all_nodes,
+                                                unodes,
+                                                dof, C_voigt,
+                                                inverse_shape_tensor,
+                                                number_of_neighbors, nlist,
+                                                volume,
+                                                bond_geometry, omega,
+                                                bond_damageNP1, zStiff)
+        end
+    end
 
     @views inverse_shape_tensorN[unodes, :, :] .= inverse_shape_tensor[unodes, :, :]
     @views C_voigtN[unodes, :, :] .= C_voigt[unodes, :, :]
