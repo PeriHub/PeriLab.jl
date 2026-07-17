@@ -26,3 +26,20 @@ The crack path is given here and practically identical.
 The force displacement curve is given here. It shows that all variants are in good agreement.
 
 ![w:600](../assets/force–displacement_curves_for_the_DCB_simulation.png)
+
+
+## Kalthoff-Winkler Experiment
+The classical Kalthoff-Winkler experiment was applied. The data is provided by [LiuY2024](@cite).
+The displacement, initiation and fracture angle are in good agreement with the experiment.
+
+| Material properties               | Symbol      | Unit  | Value |
+|-----------------------------------|-------------|-------|-------|
+| Young's modulus                   | $E$         | GPa   | 190   |
+| Poisson's ratio                   | $\nu$       | –     | 0.3   |
+| Density                           | $\rho$      | g/cm³ | 8     |
+| Critical energy release rate      | $G_c$       | N/mm  | 22.2  |
+
+
+![w:600](../assets/Kalthoff-Winkler_displacements.png)
+
+![w:600](../assets/Kalthoff-Winkler_damage.png)
