@@ -86,7 +86,7 @@ function compute_model(nodes::AbstractVector{Int64},
 
     dependend_value, dependent_field = is_dependent("Critical Value", damage_parameter)
 
-    tension::Bool = get(damage_parameter, "Only Tension", false)
+    tension::Bool = get(damage_parameter, "Only Tension", true)
     inter_block_damage::Bool = Data_Manager.haskey(damage_parameter, "Interblock Damage")
     if inter_block_damage
         inter_critical_energy::Array{Float64,3} = Data_Manager.get_crit_values_matrix()
