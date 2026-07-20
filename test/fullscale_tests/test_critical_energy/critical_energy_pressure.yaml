@@ -27,6 +27,7 @@ PeriLab:
       Dam_2:
         Damage Model: "Critical Energy"
         Critical Value: 0.1
+        Only Tension: false
   Blocks:
     block_1:
       Block ID: 1

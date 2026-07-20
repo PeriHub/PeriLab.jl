@@ -39,13 +39,13 @@ PeriLab:
       Coordinate: y
       Node Set: Node Set 1
       Variable: Displacements
-      Value: -4.4*t
+      Value: 4.4*t
       Type: Dirichlet
     BC_2:
       Coordinate: y
       Node Set: Node Set 2
       Variable: Displacements
-      Value: 4.4*t
+      Value: -4.4*t
       Type: Dirichlet
     BC_3:
       Variable: "Temperature"
