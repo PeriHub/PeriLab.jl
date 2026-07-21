@@ -186,10 +186,10 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
 
             if fem_option # TODO might lead to problems in 3D
                 # find all non-FEM nodes in active nodes
-                active_nodes = Data_Manager.get_field("Active Nodes")
+                #active_nodes = Data_Manager.get_field("Active Nodes")
                 active_nodes = find_active_nodes(fe_nodes,
                                                  active_nodes,
-                                                 1:Data_Manager.get_nnodes(),
+                                                 nodes,
                                                  false)
                 if active_nodes == []
                     continue
@@ -228,10 +228,10 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
             active_nodes = find_active_nodes(active_list, active_nodes, nodes)
             if fem_option
                 # FEM active means FEM nodes
-                active_nodes = Data_Manager.get_field("Active Nodes")
+                #active_nodes = Data_Manager.get_field("Active Nodes")
                 active_nodes = find_active_nodes(fe_nodes,
                                                  active_nodes,
-                                                 1:Data_Manager.get_nnodes(),
+                                                 nodes,
                                                  false)
                 if active_nodes == []
                     continue
