@@ -8,6 +8,23 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.2] - 2025-07-21
+
+### Added
+
+- Multiple nodes can now be written to global outputs #345
+
+### Changed
+
+- FEM evaluation routine optimized #380
+- Matrix based solver optimized
+- Removed OrderedCollections #381
+- More examples for PeriLab -e
+
+### Fixed
+
+- Sign error in matrix linear static
+
 ## [2.2.1] - 2025-07-03
 
 ### Added
