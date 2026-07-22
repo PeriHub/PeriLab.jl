@@ -398,7 +398,8 @@ function run(filename::String;
             for step_id in steps
                 # MPI.Barrier(comm)
                 if !isnothing(step_id)
-                    @info "Step: " * string(step_id) * " of " * string(length(steps))
+                    println() # Add vertical space
+                    @info "────── Step: $(string(step_id)) of $(string(length(steps))) ──────"
                 end
                 Data_Manager.set_cancel(false)
                 Data_Manager.set_step(step_id)
