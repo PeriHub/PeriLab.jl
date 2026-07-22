@@ -27,11 +27,6 @@ Initializes the fields.
 """
 function init_fields()
     dof = Data_Manager.get_dof()
-    deformed_coorN,
-    deformed_coorNP1 = Data_Manager.create_node_vector_field("Deformed Coordinates",
-                                                             Float64, dof)
-    deformed_coorN = copy(Data_Manager.get_field("Coordinates"))
-    deformed_coorNP1 = copy(Data_Manager.get_field("Coordinates"))
     Data_Manager.create_bond_vector_state("Deformed Bond Geometry", Float64, dof)
     Data_Manager.create_bond_scalar_state("Deformed Bond Length", Float64)
     Data_Manager.create_node_vector_field("Displacements", Float64, dof)
@@ -51,7 +46,8 @@ function init_model(nodes::AbstractVector{Int64},
     dof = Data_Manager.get_dof()
     ## das muss hier rein. Das ist keine Komfortfunktion, sondern setzt Abhängigkeiten
 
-    for (active_model_name, active_model) in pairs(Data_Manager.get_properties(block,
+    for (active_model_name,
+         active_model) in pairs(Data_Manager.get_properties(block,
                                           "Pre Calculation Model"))
         if active_model
             mod = create_module_specifics(active_model_name,
@@ -157,8 +153,8 @@ function check_dependencies(block_nodes::Dict{Int64,Vector{Int64}})
                                                    "Deformation Gradient" => true)))
         end
         # Check dependencies inside the pre calculation
-        for (active_model_name, active_model) in
-            pairs(Data_Manager.get_properties(block_id,
+        for (active_model_name,
+             active_model) in pairs(Data_Manager.get_properties(block_id,
                                               "Pre Calculation Model"))
             if !active_model
                 continue

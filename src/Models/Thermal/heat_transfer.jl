@@ -89,16 +89,16 @@ function compute_model(nodes::AbstractVector{Int64},
     end
     allow_surface_change = get(thermal_parameter, "Allow Surface Change", true)
     additive_enabled = haskey(Data_Manager.get_active_models(), "Additive Model")
-    heat_flow = Data_Manager.get_field("Heat Flow", "NP1")
-    temperature = Data_Manager.get_field("Temperature", "NP1")
-    surface_nodes = Data_Manager.get_field("Surface_Nodes")
-    specific_volume = Data_Manager.get_field("Specific Volume")
-    active = Data_Manager.get_field("Active")
-    bond_norm = Data_Manager.get_field("Bond Norm")
+    heat_flow::NodeScalarField{Float64} = Data_Manager.get_field("Heat Flow", "NP1")
+    temperature::NodeScalarField{Float64} = Data_Manager.get_field("Temperature", "NP1")
+    surface_nodes::NodeScalarField{Bool} = Data_Manager.get_field("Surface_Nodes")
+    specific_volume::NodeScalarField{Int64} = Data_Manager.get_field("Specific Volume")
+    active::NodeScalarField{Bool} = Data_Manager.get_field("Active")
+    bond_norm::BondVectorState{Float64} = Data_Manager.get_field("Bond Norm")
     rotation_tensor = Data_Manager.get_rotation() ?
                       Data_Manager.get_field("Rotation Tensor") : nothing
-    specific_volume_check = Data_Manager.get_field("Specific Volume Check")
-    nlist = Data_Manager.get_nlist()
+    specific_volume_check::NodeScalarField{Bool} = Data_Manager.get_field("Specific Volume Check")
+    nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
     dx = 1.0
 
     kappa = thermal_parameter["Heat Transfer Coefficient"]
@@ -149,13 +149,13 @@ Calculates the specific volume.
 # Returns
 - `specific_volume::Union{SubArray,Vector{Bool}}`: The surface nodes.
 """
-function calculate_specific_volume!(specific_volume::Vector{Int64},
+function calculate_specific_volume!(specific_volume::NodeScalarField{Int64},
                                     nodes::AbstractVector{Int64},
                                     nlist::Union{SubArray,BondScalarState{Int64}},
-                                    active::Vector{Bool},
+                                    active::NodeScalarField{Bool},
                                     bond_norm::BondVectorState{Float64},
                                     rotation_tensor::Union{Array{Float64,3},Nothing},
-                                    specific_volume_check::Vector{Bool},
+                                    specific_volume_check::NodeScalarField{Bool},
                                     dof::Int64)
     directions = [[1, 0], [-1, 0], [0, 1], [0, -1]]
     if dof == 3

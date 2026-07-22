@@ -12,6 +12,9 @@ using .....Data_Manager
 using .....PeriLabExceptions: @abort
 
 global hetval_file_path = ""
+global hetval_cmname::Cstring
+# set to 1 to avoid a later check if the state variable field exists or not
+global num_state_vars::Int64 = 1
 
 """
     thermal_model_name()
@@ -52,27 +55,56 @@ function compute_model(nodes::AbstractVector{Int64},
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    CMNAME::Cstring = malloc_cstring(thermal_parameter["HETVAL Material Name"])
-    temp_N = Data_Manager.get_field("Temperature", "N")
-    temp_NP1 = Data_Manager.get_field("Temperature", "NP1")
-    deltaT = Data_Manager.get_field("Delta Temperature")
-    statev = Data_Manager.get_field("State Variables")
-    flux_N = Data_Manager.get_field("Heat Flow", "N")
-    flux_NP1 = Data_Manager.get_field("Heat Flow", "NP1")
-    PREDEF = Data_Manager.get_field("Predefined Fields")
-    DPRED = Data_Manager.get_field("Predefined Fields Increment")
+    global hetval_cmname
+    global num_state_vars
+    # CMNAME::Cstring = malloc_cstring(thermal_parameter["HETVAL Material Name"])
+    temp_N::NodeScalarField{Float64} = Data_Manager.get_field("Temperature", "N")
+    temp_NP1::NodeScalarField{Float64} = Data_Manager.get_field("Temperature", "NP1")
+    # deltaT::NodeScalarField{Float64} = Data_Manager.get_field("Delta Temperature")
+    flux_N::NodeScalarField{Float64} = Data_Manager.get_field("Heat Flow", "N")
+    flux_NP1::NodeScalarField{Float64} = Data_Manager.get_field("Heat Flow", "NP1")
+    statev::NodeField{Float64} = Data_Manager.get_field("State Variables")
+    PREDEF::NodeField{Float64} = Data_Manager.get_field("Predefined Fields")
+    DPRED::NodeField{Float64} = Data_Manager.get_field("Predefined Fields Increment")
+
+    # Pre-allocated work arrays — reused every iteration
+    T_in = Vector{Float64}(undef, 2)      # Temperature + ΔT
+    t_in = Vector{Float64}(undef, 2)      # [time, time+dt]
+    STATEV = Vector{Float64}(undef, num_state_vars)
+    flux_out = Vector{Float64}(undef, 2)      # heat flow output
 
     for iID in nodes
-        STATEV_temp = statev[iID, :]
-        HETVAL_interface(CMNAME,
-                         [temp_N[iID], temp_NP1[iID] - temp_N[iID]],
-                         [time, time + dt],
+        # Temperature inputs — fill pre-allocated buffer (no alloc)
+        T_in[1] = temp_N[iID]
+        T_in[2] = temp_NP1[iID] - temp_N[iID]
+
+        t_in[1] = time
+        t_in[2] = time + dt
+
+        # Reuse state buffer — no copy from statev
+        STATEV .= view(statev, iID, :)   # or copy!(STATEV, ...) if HETVAL modifies in-place
+
+        flux_out[1] = flux_N[iID]
+        flux_out[2] = flux_NP1[iID]
+        # STATEV_temp = statev[iID, :]
+        HETVAL_interface(hetval_cmname,
+                         T_in,
+                         t_in,
                          dt,
-                         STATEV_temp,
-                         [flux_N[iID], flux_NP1[iID]],
+                         STATEV,
+                         flux_out,
                          PREDEF[iID, :],
                          DPRED[iID, :])
-        statev[iID, :] = STATEV_temp
+        # HETVAL_interface(global hetval_cmname,
+        #                  [temp_N[iID], temp_NP1[iID] - temp_N[iID]],
+        #                  [time, time + dt],
+        #                  dt,
+        #                  STATEV_temp,
+        #                  [flux_N[iID], flux_NP1[iID]],
+        #                  PREDEF[iID, :],
+        #                  DPRED[iID, :])
+        copyto!(view(statev, iID, :), STATEV)
+        # statev[iID, :] = STATEV_temp
     end
 end
 
@@ -131,8 +163,7 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 """
 function init_model(nodes::AbstractVector{Int64},
                     thermal_parameter::Dict)
-    # set to 1 to avoid a later check if the state variable field exists or not
-    num_state_vars::Int64 = 1
+    global num_state_vars
     if !haskey(thermal_parameter, "File")
         @abort "HETVAL file is not defined."
         return
@@ -158,6 +189,7 @@ function init_model(nodes::AbstractVector{Int64},
     if !haskey(thermal_parameter, "HETVAL Material Name")
         @warn "No HETVAL Material Name is defined. Please check if you use it as method to check different material in your HETVAL."
         thermal_parameter["HETVAL Material Name"] = ""
+        global hetval_cmname = malloc_cstring(thermal_parameter["HETVAL Material Name"])
     end
     if length(thermal_parameter["HETVAL Material Name"]) > 80
         @abort "Due to old Fortran standards only a name length of 80 is supported"

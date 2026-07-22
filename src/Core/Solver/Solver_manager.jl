@@ -64,6 +64,7 @@ Initialize the solver
 function init(params::Dict,
               step_id::Union{Nothing,Int64} = nothing)
     solver_options = Dict()
+    dof = Data_Manager.get_dof()
     nnodes = Data_Manager.get_nnodes()
     num_responder = Data_Manager.get_num_responder()
     block_ids = Data_Manager.get_field("Block_Id")
@@ -76,13 +77,18 @@ function init(params::Dict,
     Data_Manager.set_block_id_list(block_id_list)
     density = Data_Manager.create_constant_node_scalar_field("Density", Float64)
     horizon = Data_Manager.create_constant_node_scalar_field("Horizon", Float64)
+    deformed_coorN,
+    deformed_coorNP1 = Data_Manager.create_node_vector_field("Deformed Coordinates",
+                                                             Float64, dof)
+    deformed_coorN = copy(Data_Manager.get_field("Coordinates"))
+    deformed_coorNP1 = copy(Data_Manager.get_field("Coordinates"))
     if Data_Manager.fem_active()
         fem_block = Data_Manager.create_constant_node_scalar_field("FEM Block", Bool;
                                                                    default_value = false)
         fem_block = set_fem_block(params, block_nodes_with_neighbors, fem_block) # includes the neighbors
     end
-    active_nodes = Data_Manager.create_constant_node_scalar_field("Active Nodes", Int64)
-    update_nodes = Data_Manager.create_constant_node_scalar_field("Update Nodes", Int64)
+    Data_Manager.create_constant_node_scalar_field("Active Nodes", Int64)
+    Data_Manager.create_constant_node_scalar_field("Update Nodes", Int64)
     Data_Manager.create_constant_node_scalar_field("Update", Bool; default_value = true)
     density = set_density(params, block_nodes_with_neighbors, density) # includes the neighbors
     horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors

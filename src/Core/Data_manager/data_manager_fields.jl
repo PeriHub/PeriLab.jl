@@ -26,9 +26,11 @@ export
        NodeScalarField,
        NodeVectorField,
        NodeTensorField,
+       NodeField,
        BondScalarState,
        BondVectorState,
        BondTensorState,
+       BondState,
        FreeSizeField
 
 """
@@ -113,10 +115,12 @@ end
 const NodeScalarField = Vector{T} where {T<:Union{Int64,Float64,Bool}}
 const NodeVectorField = Matrix{T} where {T<:Union{Int64,Float64,Bool}}
 const NodeTensorField = Array{T,3} where {T<:Union{Int64,Float64,Bool}}
+const NodeField{T} = Union{NodeScalarField{T},NodeVectorField{T},NodeTensorField{T}}
 
 const BondScalarState = Vector{Vector{T}} where {T<:Union{Int64,Float64,Bool}}
 const BondVectorState = Vector{Vector{Vector{T}}} where {T<:Union{Int64,Float64,Bool}}
 const BondTensorState = Vector{Array{T,3}} where {T<:Union{Int64,Float64,Bool}}
+const BondState{T} = Union{BondScalarState{T},BondVectorState{T},BondTensorState{T}}
 
 const FreeSizeField = Array{T,N} where {T<:Union{Int64,Float64,Bool},N}
 

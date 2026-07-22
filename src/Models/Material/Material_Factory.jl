@@ -59,11 +59,6 @@ function init_fields()
     Data_Manager.create_node_vector_field("Velocity", Float64, dof)
     Data_Manager.create_constant_bond_vector_state("Bond Forces", Float64, dof)
     Data_Manager.create_constant_bond_scalar_state("Temporary Bond Field", Float64)
-    deformed_coorN,
-    deformed_coorNP1 = Data_Manager.create_node_vector_field("Deformed Coordinates",
-                                                             Float64, dof)
-    deformed_coorN = copy(Data_Manager.get_field("Coordinates"))
-    deformed_coorNP1 = copy(Data_Manager.get_field("Coordinates"))
     Data_Manager.create_node_vector_field("Displacements", Float64, dof)
     Data_Manager.create_bond_vector_state("Deformed Bond Geometry", Float64, dof)
     Data_Manager.create_bond_scalar_state("Deformed Bond Length", Float64)
