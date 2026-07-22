@@ -333,6 +333,7 @@ function run(filename::String;
              silent::Bool = false,
              reload::Bool = false,)
     reset_timer!()
+    t0 = time()
     @timeit "PeriLab" begin
         if !MPI.Initialized()
             MPI.Init()
@@ -504,7 +505,7 @@ function run(filename::String;
         reset_timer!(to)
     end
     @info Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
-    @info "PeriLab finished"
+    @info "PeriLab finished in $(ceil(time() - t0))s"
 end
 
 end # module
