@@ -114,7 +114,7 @@ function init(params::Dict,
     end
     Data_Manager.create_bond_scalar_state("Bond Damage", Float64; default_value = 1)
     @debug "Read properties"
-    read_properties(params, "Material" in solver_options["All Models"])
+    read_properties(params, "Material" in solver_options["Models"])
     @debug "Init models"
     @timeit "init_models" init_models(params,
                                       block_nodes,
