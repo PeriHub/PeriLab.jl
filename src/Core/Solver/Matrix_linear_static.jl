@@ -149,6 +149,9 @@ function init_solver(solver_options::Dict{Any,Any},
 
     for (block, nodes) in pairs(block_nodes)
         model_param = Data_Manager.get_properties(block, "Material Model")
+        if !occursin("Correspondence", model_param["Material Model"])
+            @abort "Only Correspondence Models are supported with the Linear Static Matrix based solver"
+        end
         init_model(nodes, model_param, block)
     end
 
