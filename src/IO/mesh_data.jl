@@ -739,6 +739,7 @@ function read_mesh(filename::String, params::Dict)
         nodes = mesh["nodes"]
         elements = mesh["elements"]
         element_sets = mesh["element_sets"]
+        @assert length(element_sets) > 0
         element_types = mesh["element_types"]
 
         dof = 2
@@ -825,7 +826,9 @@ function read_mesh(filename::String, params::Dict)
         @info "Found $(block_id-1) block(s)"
         @info "Blocks: $block_names"
         @info "Found $(length(nsets)) node set(s)"
-        @info "NodeSets: $(keys(nsets))"
+        if length(nsets) > 0
+            @info "NodeSets: $(keys(nsets))"
+        end
 
         mesh = nothing
         nodes = nothing
