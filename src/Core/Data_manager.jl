@@ -88,6 +88,7 @@ export get_max_rank
 export get_cancel
 export get_output_frequency
 export get_element_rotation
+export get_horizon_mesh_scaling
 export init_properties
 export remove_active_model
 export set_accuracy_order
@@ -113,6 +114,7 @@ export set_cancel
 export set_output_frequency
 export set_rotation
 export set_element_rotation
+export set_horizon_mesh_scaling
 
 """
 	initialize_data()
@@ -198,6 +200,7 @@ function initialize_data()
     data["Global Slave Search Nodes"] = Dict()
     data["matrix_exists"] = false
     data["Reduced PD Nodes"] = Vector{Int64}([])
+    data["Horizon Mesh Scaling"] = Vector{Float64}([])
     fields[Int64] = Dict()
     fields[Float64] = Dict()
     fields[Bool] = Dict()
@@ -1243,6 +1246,14 @@ end
 
 function get_reduced_model_master()
     return data["Reduced Nodes"]
+end
+
+function set_horizon_mesh_scaling(mesh_scaling::Vector{Float64})
+    data["Horizon Mesh Scaling"] = mesh_scaling
+end
+
+function get_horizon_mesh_scaling()
+    return data["Horizon Mesh Scaling"]
 end
 
 end

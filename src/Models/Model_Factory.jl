@@ -642,12 +642,14 @@ function compute_mechanical_critical_time_step(nodes::AbstractVector{Int64},
     undeformed_bond_length = Data_Manager.get_field("Bond Length")
     volume = Data_Manager.get_field("Volume")
     horizon = Data_Manager.get_field("Horizon")
+    mesh_scaling = Data_Manager.get_horizon_mesh_scaling()
 
     for iID in nodes
         denominator = get_cs_denominator(volume[nlist[iID]], undeformed_bond_length[iID])
         # TODO Adapt to 2D applications
         springConstant = 18.0 * maximum(bulk_modulus) /
-                         (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
+                         (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID] /
+                          (sum(mesh_scaling)-2))
 
         t = density[iID] / (denominator * springConstant)
         critical_time_step = test_timestep(t, critical_time_step)

@@ -6,6 +6,7 @@ export get_external_topology_name
 export get_bond_filters
 export get_node_sets
 export get_header
+export get_mesh_scaling
 using AbaqusReader
 using Exodus
 """
@@ -195,4 +196,18 @@ function get_node_sets(params::Dict, path::String, mesh_df::DataFrame)
         end
     end
     return nsets
+end
+
+function get_mesh_scaling(params::Dict)
+    mesh_scaling = [1.0, 1.0, 1.0]
+    if haskey(params["Discretization"], "Horizon Mesh Scaling X")
+        mesh_scaling[1] = params["Discretization"]["Horizon Mesh Scaling X"]
+    end
+    if haskey(params["Discretization"], "Horizon Mesh Scaling Y")
+        mesh_scaling[2] = params["Discretization"]["Horizon Mesh Scaling Y"]
+    end
+    if haskey(params["Discretization"], "Horizon Mesh Scaling Z")
+        mesh_scaling[3] = params["Discretization"]["Horizon Mesh Scaling Z"]
+    end
+    return mesh_scaling
 end

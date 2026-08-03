@@ -9,7 +9,8 @@ using Meshes: Ring, Point, centroid, Hexahedron
 #using Tensors
 using Dierckx: Spline1D, evaluate
 using ProgressBars: ProgressBar
-using LinearAlgebra: Adjoint, dot, det, norm, pinv, eigvals, inv
+using LinearAlgebra: Adjoint, dot, det, norm, pinv, eigvals, inv, normalize, cross, diagm,
+                     cholesky
 using StaticArrays: MMatrix, MVector, SMatrix, @SMatrix, SVector, @SVector
 using LoopVectorization
 using Unitful: ustrip
@@ -224,24 +225,34 @@ function get_block_nodes(block_ids, nnodes)
     end
     return block_nodes
 end
-
 function get_nearest_neighbors(nodes,
                                dof::Int64,
                                system_coordinates,
                                neighbor_coordinates,
                                radius::Union{Int64,Float64,Vector{Float64},Vector{Int64}},
                                neighborList,
-                               diffent_lists = false)
+                               diffent_lists = false;
+                               mesh_scaling::Vector{Float64} = [1.0, 1.0, 1.0])
     nhs = GridNeighborhoodSearch{dof}(search_radius = maximum(radius),
                                       n_points = length(nodes))
-    initialize_grid!(nhs, system_coordinates')
-    initialize_grid!(nhs, neighbor_coordinates')
+    if mesh_scaling != [1.0, 1.0, 1.0]
+        U = diagm(0 => mesh_scaling)
+
+        coords_sys = U * system_coordinates'
+        coords_nb = U * neighbor_coordinates'
+
+    else
+        coords_sys = system_coordinates'
+        coords_nb = neighbor_coordinates'
+    end
+    initialize_grid!(nhs, coords_sys)
+    initialize_grid!(nhs, coords_nb)
     list_empty = true
 
     for iID in nodes
         neighbors = []
-        foreach_neighbor(system_coordinates',# System coordinates -> must be transpose for the datamanager definition
-                         neighbor_coordinates',# Potential neighbor coordinates -> must be transpose for the datamanager definition
+        foreach_neighbor(coords_sys,# System coordinates -> must be transpose for the datamanager definition
+                         coords_nb,# Potential neighbor coordinates -> must be transpose for the datamanager definition
                          nhs,
                          iID,
                          search_radius = radius isa AbstractVector ? radius[iID] : radius) do i,

@@ -193,12 +193,14 @@ Get the quadric of the horizon.
 # Returns
 - `quad_horizon::Float64`: The quadric of the horizon.
 """
-function get_quad_horizon(horizon::Float64, dof::Int64, thickness::Float64)
-    #TODO: Use average horizon
+function get_quad_horizon(horizon::Float64, dof::Int64, thickness::Float64,
+                          mesh_scaling_sum::Float64)
+    avg_horizon = horizon / 3 * mesh_scaling_sum
     if dof == 2
-        return Float64(3 / (pi * horizon^3 * thickness))
+        return Float64(3 / (pi * avg_horizon^3 * thickness))
     end
-    return Float64(4 / (pi * horizon^4))
+    #TODO: Use average horizon
+    return Float64(4 / (pi * avg_horizon^4))
 end
 
 function init_model(nodes::AbstractVector{Int64},
@@ -209,8 +211,10 @@ function init_model(nodes::AbstractVector{Int64},
     Data_Manager.create_constant_bond_vector_state("Bond Displacements", Float64, dof)
     horizon = Data_Manager.get_field("Horizon")
     thickness::Float64 = get(damage_parameter, "Thickness", 1)
+    mesh_scaling = Data_Manager.get_horizon_mesh_scaling()
     for iID in nodes
-        quad_horizons[iID] = get_quad_horizon(horizon[iID], dof, thickness)
+        quad_horizons[iID] = get_quad_horizon(horizon[iID], dof, thickness,
+                                              sum(inv, mesh_scaling))
     end
 end
 end

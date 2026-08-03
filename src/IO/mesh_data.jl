@@ -17,7 +17,8 @@ include("volume.jl")
 using ..Helpers: fastdot, get_nearest_neighbors, find_inverse_bond_id
 using ..Logging_Module: print_table
 using ..Parameter_Handling: get_mesh_name, get_header, get_node_sets,
-                            get_external_topology_name, get_horizon, get_angles
+                            get_external_topology_name, get_horizon, get_angles,
+                            get_mesh_scaling
 using ..Geometry: bond_geometry!
 
 #export read_mesh
@@ -101,6 +102,7 @@ function init_data(params::Dict,
         Data_Manager.set_overlap_map(overlap_map)
         Data_Manager.set_num_controller(num_controller)
         Data_Manager.set_num_responder(num_responder)
+        Data_Manager.set_horizon_mesh_scaling(get_mesh_scaling(params))
         @debug "Get node sets"
         define_nsets(nsets)
         # defines the order of the global nodes to the local core nodes
@@ -1542,8 +1544,10 @@ function neighbors(mesh::DataFrame, params::Dict,
     for iID in 1:nnodes
         radius[iID] = get_horizon(params, mesh[!, "block_id"][iID])
     end
+    mesh_scaling = get_mesh_scaling(params)
 
-    return get_nearest_neighbors(1:nnodes, dof, data, data, radius, neighborList)
+    return get_nearest_neighbors(1:nnodes, dof, data, data, radius, neighborList;
+                                 mesh_scaling = mesh_scaling)
 end
 
 """
