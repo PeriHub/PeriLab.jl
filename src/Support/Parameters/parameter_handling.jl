@@ -340,6 +340,21 @@ global expected_structure = Dict("PeriLab" => [
                                                                                        ]),
                                                                          false
                                                                      ],
+                                                                     "Horizon Mesh Scaling X" => [
+                                                                         Union{Float64,
+                                                                               Int64},
+                                                                         false
+                                                                     ],
+                                                                     "Horizon Mesh Scaling Y" => [
+                                                                         Union{Float64,
+                                                                               Int64},
+                                                                         false
+                                                                     ],
+                                                                     "Horizon Mesh Scaling Z" => [
+                                                                         Union{Float64,
+                                                                               Int64},
+                                                                         false
+                                                                     ],
                                                                      "Gcode" => [
                                                                          Dict{Any,Any}("Overwrite Mesh" => [
                                                                                            Bool,
@@ -573,7 +588,8 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                      ],
                                                                                                      "Yield Stress" => [
                                                                                                          Union{Float64,
-                                                                                                               Int64},
+                                                                                                               Int64,
+                                                                                                               String},
                                                                                                          false
                                                                                                      ],
                                                                                                      "Zero Energy Control" => [

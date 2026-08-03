@@ -9,7 +9,8 @@ using TimerOutputs: @timeit
 using ......Data_Manager
 using ......PeriLabExceptions: @abort
 using ....Material_Basis: get_symmetry
-using ......Helpers: add_in_place!, mul_in_place!, sub_in_place!
+using ......Helpers: add_in_place!, mul_in_place!, sub_in_place!, is_dependent,
+                     interpol_data, get_dependent_value
 using ..Ordinary: calculate_symmetry_params, get_bond_forces!
 
 export fe_support
@@ -54,8 +55,9 @@ function init_model(nodes::AbstractVector{Int64},
         @abort "Yield Stress is not defined in input deck"
         return
     end
-    yield_stress = material_parameter["Yield Stress"]
+
     yield = Data_Manager.create_constant_node_scalar_field("Yield Value", Float64)
+    yield_stress = get_dependent_value("Yield Stress", material_parameter)
 
     if get_symmetry(material_parameter) == "3D"
         yield[nodes] .= 25 * yield_stress * yield_stress ./ (8 * pi .* horizon[nodes] .^ 5)
@@ -64,6 +66,7 @@ function init_model(nodes::AbstractVector{Int64},
         yield[nodes] .= 225 * yield_stress * yield_stress ./
                         (24 * thickness * pi .* horizon[nodes] .^ 4)
     end
+
     Data_Manager.create_constant_bond_scalar_state("Deviatoric Plastic Extension State",
                                                    Float64)
     Data_Manager.create_node_scalar_field("Lambda Plastic", Float64)
@@ -145,6 +148,24 @@ function compute_model(nodes::AbstractVector{Int64},
     td_norm = Data_Manager.get_field("TD Norm")
     lambdaN = Data_Manager.get_field("Lambda Plastic", "N")
     lambdaNP1 = Data_Manager.get_field("Lambda Plastic", "NP1")
+
+    dependend_value, dependent_field = is_dependent("Yield Stress", material_parameter)
+    warning_flag = true
+    if dependend_value
+        for iID in nodes
+            yield_stress = interpol_data(dependent_field[iID],
+                                         material_parameter["Yield Stress"]["Data"],
+                                         warning_flag)
+            if get_symmetry(material_parameter) == "3D"
+                yield_value[iID] = 25 * yield_stress * yield_stress ./
+                                   (8 * pi .* horizon[iID] .^ 5)
+            else
+                thickness::Float64 = 1 # is a placeholder
+                yield_value[iID] = 225 * yield_stress * yield_stress ./
+                                   (24 * thickness * pi .* horizon[iID] .^ 4)
+            end
+        end
+    end
 
     @timeit "calculate_symmetry_params" alpha, gamma,
                                         kappa=calculate_symmetry_params(symmetry,
