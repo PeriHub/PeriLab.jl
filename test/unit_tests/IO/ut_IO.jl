@@ -76,7 +76,7 @@ block_Id[end] = 2
     for i in 2:3
         dof_force = 0
         dof_disp::Int64 = 0
-        for entry in keys(sort(output[i]["Fields"]))
+        for entry in sort(collect(keys(output[i]["Fields"])))
             if occursin("Forces", entry)
                 dof_force += 1
                 @test output[i]["Fields"][entry]["fieldname"] == "Forces"
@@ -126,7 +126,7 @@ end
     for i in 2:3
         dofForce = 0
         dofDisp = 0
-        for entry in keys(sort(outputs[i]["Fields"]))
+        for entry in sort(collect(keys(outputs[i]["Fields"])))
             if occursin("Forces", entry)
                 dofForce += 1
                 @test outputs[i]["Fields"][entry]["fieldname"] == "Forces"
