@@ -72,9 +72,9 @@ end
         sigma22 = stress_NP1[iID, 2, 2]
         sigma12 = stress_NP1[iID, 1, 2]
 
-        vm = sigma11 * sigma11 + sigma22 * sigma22 - sigma11 * sigma22 +
-             3 * sigma12 * sigma12
-        von_Mises_stress[iID] = sqrt(vm)
+        vm = sigma11^2 + sigma22^2 - sigma11 * sigma22 +
+             3 * sigma12^2
+        von_Mises_stress[iID] = sqrt(max(vm, 0.0))
     end
 end
 
@@ -88,11 +88,11 @@ end
         sigma13 = stress_NP1[iID, 1, 3]
         sigma23 = stress_NP1[iID, 2, 3]
 
-        vm = sigma11 * sigma11 + sigma22 * sigma22 + sigma33 * sigma33 -
+        vm = sigma11^2 + sigma22^2 + sigma33^2 -
              sigma11 * sigma22 - sigma11 * sigma33 - sigma22 * sigma33 +
-             3 * (sigma12 * sigma12 + sigma13 * sigma13 + sigma23 * sigma23)
+             3 * (sigma12^2 + sigma13^2 + sigma23^2)
 
-        von_Mises_stress[iID] = sqrt(vm)
+        von_Mises_stress[iID] = sqrt(max(vm, 0.0))
     end
 end
 
@@ -138,7 +138,7 @@ function calculate_stresses(block_nodes::Dict{Int64,Vector{Int64}},
                 get_partial_stresses(active_nodes)
             end
         end
-        if options["Calculate von Mises stress"] | correspondence
+        if options["Calculate von Mises stress"] #| correspondence
             calculate_von_mises_stress(active_nodes)
         end
         if options["Calculate Strain"] && !correspondence
