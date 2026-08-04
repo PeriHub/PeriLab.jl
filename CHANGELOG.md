@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Horizon Mesh Scaling for reduced neighborhoods of irregural meshes #384
+- Horizon Mesh Scaling for reduced neighborhoods of irregular meshes #384
 - Support for temperature dependent yield stress #387
 
 ### Changed
