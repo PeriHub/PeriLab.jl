@@ -102,7 +102,7 @@ function parseFile(path::String, callbacks::Dict{String,Function}, dataObject, s
                 callbacks[command](dataObject, z)
                 continue
             else
-                command = x[2:end]
+                command = strip(x[2:end])
             end
             if haskey(callbacks, command)
                 if dataObject === nothing
