@@ -6,7 +6,6 @@ module Global_Zero_Energy_Control
 
 using StaticArrays: MMatrix, MVector
 using LoopVectorization
-
 using ....Data_Manager
 using ....Helpers: get_fourth_order
 using ...Material_Basis: get_Hooke_matrix
@@ -14,7 +13,7 @@ using ....Geometry: rotation_tensor
 
 export init_model
 export control_name
-export compute_control
+export compute_zero_energy_control
 export global_zero_energy_mode_stiffness
 
 """
@@ -22,6 +21,7 @@ export global_zero_energy_mode_stiffness
 
 Returns the name of the zero energy control
 """
+const df = MVector{2,Float64}(undef)
 function control_name()
     return "Global"
 end
@@ -71,7 +71,7 @@ function compute_control(nodes::AbstractVector{Int64},
                          material_parameter::Dict{String,Any},
                          time::Float64,
                          dt::Float64)
-    dof = Data_Manager.get_dof()
+    dof::Int64 = Data_Manager.get_dof()
     deformation_gradient::NodeTensorField{Float64} = Data_Manager.get_field("Deformation Gradient")
     bond_force::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
     undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
@@ -85,11 +85,15 @@ function compute_control(nodes::AbstractVector{Int64},
 
     if !haskey(material_parameter, "UMAT Material Name")
         if rotation
-            angles = Data_Manager.get_field("Angles")
+            angles::NodeTensorField{Float64} = Data_Manager.get_field("Angles")
             create_zero_energy_mode_stiffness!(nodes, dof, hooke_matrix, angles, Kinv,
                                                zStiff)
         else
-            create_zero_energy_mode_stiffness!(nodes, dof, hooke_matrix, Kinv, zStiff)
+            create_zero_energy_mode_stiffness!(nodes,
+                                               dof,
+                                               hooke_matrix,
+                                               Kinv,
+                                               zStiff)
         end
     end
 
@@ -131,7 +135,6 @@ function get_zero_energy_mode_force_2d!(nodes::AbstractVector{Int64},
                                         undeformed_bond::BondVectorState{Float64},
                                         deformed_bond::BondVectorState{Float64},
                                         bond_force::BondVectorState{Float64})
-    df = MVector{2}(zeros(Float64, 2))
     @inbounds @fastmath for iID in nodes
         @inbounds @fastmath @views for nID in axes(undeformed_bond[iID], 1)
             @inbounds @fastmath @views for m in axes(deformation_gradient, 2)

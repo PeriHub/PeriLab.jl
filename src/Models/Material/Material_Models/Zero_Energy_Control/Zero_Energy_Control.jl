@@ -31,11 +31,11 @@ function init_model(nodes::AbstractVector{Int64}, material_parameter::Dict, bloc
     end
 end
 
-function compute_control(nodes::AbstractVector{Int64},
-                         material_parameter::Dict{String,Any},
-                         block::Int64,
-                         time::Float64,
-                         dt::Float64)
+function compute_zero_energy_control(nodes::AbstractVector{Int64},
+                                     material_parameter::Dict{String,Any},
+                                     block::Int64,
+                                     time::Float64,
+                                     dt::Float64)
     for zero_energy_model in Data_Manager.get_analysis_model("Zero Energy Control Model",
                                         block)
         if zero_energy_model == ""

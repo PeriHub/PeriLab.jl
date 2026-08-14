@@ -62,10 +62,13 @@ Compute the bond deformation.
 function compute(nodes::AbstractVector{Int64},
                  parameter::Union{Dict,OrderedDict},
                  block::Int64)
-    nlist = Data_Manager.get_nlist()
-    deformed_coor = Data_Manager.get_field("Deformed Coordinates", "NP1")
-    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
-    deformed_bond_length = Data_Manager.get_field("Deformed Bond Length", "NP1")
+    nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
+    deformed_coor::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
+                                                                     "NP1")
+    deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
+                                                                     "NP1")
+    deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
+                                                                            "NP1")
     bond_geometry!(deformed_bond,
                    deformed_bond_length,
                    nodes,

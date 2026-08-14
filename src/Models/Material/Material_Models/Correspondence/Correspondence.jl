@@ -227,11 +227,11 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
                                                        stress_NP1,
                                                        bond_force)
 
-    @timeit "zero energy" Zero_Energy_Control.compute_control(nodes,
-                                                              material_parameter,
-                                                              block,
-                                                              time,
-                                                              dt)
+    @timeit "zero energy" Zero_Energy_Control.compute_zero_energy_control(nodes,
+                                                                          material_parameter,
+                                                                          block,
+                                                                          time,
+                                                                          dt)
 end
 
 """
