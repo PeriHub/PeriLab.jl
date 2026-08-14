@@ -85,7 +85,7 @@ function compute_control(nodes::AbstractVector{Int64},
 
     if !haskey(material_parameter, "UMAT Material Name")
         if rotation
-            angles::NodeTensorField{Float64} = Data_Manager.get_field("Angles")
+            angles::NodeVectorField{Float64} = Data_Manager.get_field("Angles")
             create_zero_energy_mode_stiffness!(nodes, dof, hooke_matrix, angles, Kinv,
                                                zStiff)
         else
