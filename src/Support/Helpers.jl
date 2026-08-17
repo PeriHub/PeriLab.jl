@@ -82,8 +82,8 @@ end
         @abort "$dof is no valid mapping option."
     end
 end
-function get_shared_horizon(id)
-    horizon = Data_Manager.get_field("Shared Horizon")
+function get_shared_horizon(id::Int64)::Float64
+    horizon::Matrix{Float64} = Data_Manager.get_field("Shared Horizon")
     return horizon[id]
 end
 
