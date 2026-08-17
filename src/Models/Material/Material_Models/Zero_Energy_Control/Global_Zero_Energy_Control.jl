@@ -13,7 +13,7 @@ using ....Geometry: rotation_tensor
 
 export init_model
 export control_name
-export compute_zero_energy_control
+export compute_control
 export global_zero_energy_mode_stiffness
 
 """
