@@ -255,16 +255,17 @@ function compute_slave_force_density(id_s, id_m, contact_force)
     compute_force_density(id_s, id_m, contact_force)
 end
 
-function compute_force_density(id_1, id_2, contact_force)
-    mapping = Data_Manager.get_exchange_id_to_local_id()
+function compute_force_density(id_1::Int64, id_2::Int64, contact_force::Vector{Float64})
+    mapping::Dict{Int64,Int64} = Data_Manager.get_exchange_id_to_local_id()
 
     if isnothing(get(mapping, id_1, nothing))
         return
     end
-    shared_volume = Data_Manager.get_field("Shared Volumes")
-    force_densities = Data_Manager.get_field("Force Densities", "NP1")
+    shared_volume::Matrix{Float64} = Data_Manager.get_field("Shared Volumes")
+    force_densities::NodeVectorField{Float64} = Data_Manager.get_field("Force Densities",
+                                                                       "NP1")
 
-    force_densities[mapping[id_1], :] .+= contact_force .* shared_volume[id_2]
+    @views force_densities[mapping[id_1], :] .+= contact_force .* shared_volume[id_2]
     #println(force_densities[mapping[id_1], :])
 end
 """

@@ -7,10 +7,24 @@ module Penalty_Model
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
 using .....Helpers: get_shared_horizon, dot, norm
+using TimerOutputs: @timeit
 
 export contact_model_name
 export init_contact_model
 export compute_contact_model
+
+const normal_force2D = zeros(2)
+const normal_force3D = zeros(3)
+const velo_cm2D = zeros(2)
+const velo_cm3D = zeros(3)
+const velo_id2D = zeros(2)
+const velo_slave_id2D = zeros(2)
+const velo_id3D = zeros(3)
+const velo_slave_id3D = zeros(3)
+const friction_id_id2D = zeros(2)
+const friction_slave_id2D = zeros(2)
+const friction_id_id3D = zeros(3)
+const friction_slave_id3D = zeros(3)
 
 function contact_model_name()
     return "Penalty Contact"
@@ -41,17 +55,24 @@ end
     Computes a Penalty model taken from [Peridigm](https://github.com/peridigm/peridigm/blob/master/src/contact/Peridigm_ShortRangeForceContactModel.cpp)
 
 """
-function compute_contact_model(cg, params, compute_master_force_density,
-                               compute_slave_force_density)
+function compute_contact_model(cg, params, compute_master_force_density::Function,
+                               compute_slave_force_density::Function)
     contact_dict = Data_Manager.get_contact_dict(cg)
-    contact_stiffness = params["Contact Stiffness"]
-    contact_radius = params["Contact Radius"]
-    normal_force = zeros(Data_Manager.get_dof())
+    contact_stiffness::Float64 = params["Contact Stiffness"]
+    contact_radius::Float64 = params["Contact Radius"]
+    dof = Data_Manager.get_dof()
+    if dof == 2
+        normal_force = normal_force2D
+    else
+        normal_force = normal_force3D
+    end
     #Data_Manager.get_symmetry() # TODO store in materials the information
     for (master_id, contact) in pairs(contact_dict)
+        distances::Vector{Float64} = contact["Distances"]
+        normals::Matrix{Float64} = contact["Normals"]
         for id in 1:contact["nSlaves"]
             slave_id = contact["Slaves"][id]
-            horizon = get_shared_horizon(slave_id) # needed to get the correct contact horizon
+            horizon::Float64 = get_shared_horizon(slave_id) # needed to get the correct contact horizon
             # TODO symmetry needed
             if params["Symmetry"] == "plane stress"
                 stiffness = 9 / (pi * horizon^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
@@ -62,19 +83,25 @@ function compute_contact_model(cg, params, compute_master_force_density,
                 #stiffness = 12 / (pi * horizon^4)  # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
             end
 
-            @views distance = contact["Distances"][id]
-            @views normal = contact["Normals"][id, :]
-            temp = contact_stiffness * stiffness * (contact_radius - distance)
+            distance::Float64 = distances[id]
+            normal = @views normals[id, :]
+
+            temp = contact_stiffness * stiffness *
+                   (contact_radius - distance)
             normal_force = temp .* normal
             friction_id,
             friction_slave_id = compute_friction(id, slave_id,
                                                  params["Friction Coefficient"],
                                                  normal_force, normal)
 
-            compute_master_force_density(master_id, slave_id,
-                                         normal_force .+ friction_id)
-            compute_slave_force_density(slave_id, master_id,
-                                        normal_force .+ friction_slave_id)
+            compute_master_force_density(master_id,
+                                         slave_id,
+                                         normal_force .+
+                                         friction_id)
+            compute_slave_force_density(slave_id,
+                                        master_id,
+                                        normal_force .+
+                                        friction_slave_id)
         end
     end
 end
@@ -86,8 +113,15 @@ code was taken from Peridigm
 function compute_friction(id, slave_id, friction_coefficient, normal_force,
                           normal)
     dof = Data_Manager.get_dof()
-    friction_id = zeros(dof)
-    friction_slave_id = zeros(dof)
+
+    if dof == 2
+        friction_id = friction_id_id2D
+        friction_slave_id = friction_slave_id2D
+    else
+        friction_id = friction_id_id3D
+        friction_slave_id = friction_slave_id3D
+    end
+
     if friction_coefficient == 0
         return friction_id, friction_slave_id
     end
@@ -98,21 +132,31 @@ function compute_friction(id, slave_id, friction_coefficient, normal_force,
         return friction_id, friction_slave_id
     end
 
-    velocity = Data_Manager.get_field("Velocity", "NP1")
+    velocity::NodeVectorField{Float64} = Data_Manager.get_field("Velocity", "NP1")
+    if dof == 2
+        velo_id = velo_id2D
+        velo_slave_id = velo_slave_id2D
+        vel_cm = velo_cm2D
+    else
+        velo_id = velo_id3D
+        velo_slave_id = velo_slave_id3D
+        vel_cm = velo_cm3D
+    end
 
-    velo_id = zeros(dof)
-    velo_slave_id = zeros(dof)
-    vel_cm = zeros(dof)
     norm_vel_id = Float64(0)
     norm_velo_slave_id = Float64(0)
+    @views velo_master = velocity[mapping[id], :]
+    @views velo_slave = velocity[mapping[slave_id], :]
 
-    @views current_dot_normal = dot(velocity[mapping[id], :], normal)
-    @views current_dot_neighbor = dot(velocity[mapping[slave_id], :], normal)
-    @views velo_id = velocity[mapping[id], :] .- current_dot_normal .* normal
-    @views velo_slave_id = velocity[mapping[slave_id], :] .- current_dot_neighbor .* normal
-    @views vel_cm = 0.5 .* (velo_slave_id + velo_id)
-    @views velo_id .-= vel_cm
-    @views velo_slave_id .-= vel_cm
+    current_dot_normal = dot(velo_master, normal)
+    current_dot_neighbor = dot(velo_slave, normal)
+    velo_id = velo_master .- current_dot_normal .* normal
+    velo_slave_id = velo_slave .-
+                    current_dot_neighbor .* normal
+    vel_cm = 0.5 .* (velo_slave_id + velo_id)
+    velo_id .-= vel_cm
+    velo_slave_id .-= vel_cm
+
     norm_vel_id = norm(velo_id)
     norm_velo_slave_id = norm(velo_slave_id)
 
