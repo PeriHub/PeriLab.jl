@@ -170,6 +170,8 @@ function write_mesh(gcode_file, commands_dict,
     callbacks = Dict{String,Function}()
     callbacks["G0"] = move # just move the printhead
     callbacks["G1"] = extrude  # move the printhead as well as extrude material
+    callbacks["G2"] = arc_cw   # clockwise arc with extrusion
+    callbacks["G3"] = arc_ccw  # counter-clockwise arc with extrusion
     callbacks["G4"] = dwell
     callbacks["new_layer"] = new_layer
 
@@ -343,6 +345,229 @@ function dwell(cmds, dataobject)
     end
     dataobject["previous_time"] = dataobject["time"]
     dataobject["time"] += wait_time
+end
+
+"""
+    arc(cmds, dataobject, clockwise::Bool)
+
+G02/G03 arc interpolation with extrusion. Computes points along a circular arc
+defined by the destination (X, Y) and either the I, J offset of the arc center
+or the R radius.
+"""
+function arc(cmds, dataobject, clockwise::Bool)
+    movement(cmds, dataobject)
+
+    e = findfirst((x -> lowercase(x.first) == "e"), cmds)
+    if e !== nothing
+        e_val = parse(Float64, cmds[e].second)
+
+        if dataobject["positioning"] === "absolute"
+            de = e_val - dataobject["e"]
+            dataobject["e"] = e_val
+        else
+            de = e_val
+        end
+
+        if e_val <= 0.0
+            return
+        end
+
+        dataobject["filamentUsage"] += de
+        if !dataobject["relevant_component"]
+            dataobject["previous_extruding"] = true
+            return
+        end
+
+        # Find arc endpoints and center
+        px0 = dataobject["previous_x"]
+        py0 = dataobject["previous_y"]
+        px1 = dataobject["x"]
+        py1 = dataobject["y"]
+
+        # Support I/J center-offset OR R radius syntax
+        has_r = false
+        r = 0.0
+        ic, jc = 0.0, 0.0
+        for p in cmds
+            lp = lowercase(p.first)
+            if lp == "i"
+                ic = parse(Float64, p.second)
+            elseif lp == "j"
+                jc = parse(Float64, p.second)
+            elseif lp == "r"
+                has_r = true
+                r = parse(Float64, p.second)
+            end
+        end
+
+        if has_r
+            # R syntax: compute center from radius and chord
+            dx = px1 - px0
+            dy = py1 - py0
+            d = sqrt(dx^2 + dy^2)
+            if d < 1e-12
+                return  # zero-length chord, cannot compute arc
+            end
+            h = sqrt(max(0.0, r^2 - (d / 2)^2))
+            # Perpendicular direction from start→end chord
+            if clockwise
+                cx = (px0 + px1) / 2 - h * dy / d
+                cy = (py0 + py1) / 2 + h * dx / d
+            else
+                cx = (px0 + px1) / 2 + h * dy / d
+                cy = (py0 + py1) / 2 - h * dx / d
+            end
+        else
+            cx = px0 + ic
+            cy = py0 + jc
+            r = sqrt(ic^2 + jc^2)
+        end
+
+        # Get arc angles via atan2
+        θ1 = atan(py0 - cy, px0 - cx)
+        θ2 = atan(py1 - cy, px1 - cx)
+
+        # Handle the θ1 ≈ θ2 case (180° arc with R = d/2):
+        # don't let the normal logic wrap it into a full circle
+        if abs(θ2 - θ1) < 1e-12
+            θ2 = θ1 + π * (clockwise ? -1.0 : 1.0)
+        elseif clockwise
+            if θ2 >= θ1
+                θ2 -= 2π
+            end
+        else
+            if θ2 <= θ1
+                θ2 += 2π
+            end
+        end
+
+        # Compute number of sampling points on the arc
+        arc_len = abs(θ2 - θ1) * r
+        n_pts = max(2, floor(Int, arc_len / dataobject["pd_mesh"]["sampling"])) + 1
+
+        # Interpolate along the arc
+        prev_px = px0
+        prev_py = py0
+        prev_pz = dataobject["previous_z"]
+
+        for k in 1:(n_pts - 1)
+            θ = θ1 + (θ2 - θ1) * (k / (n_pts - 1))
+            ax = cx + r * cos(θ)
+            ay = cy + r * sin(θ)
+
+            write_pd_mesh_arc(dataobject, prev_px, prev_py, prev_pz, ax, ay,
+                              dataobject["z"])
+            prev_px = ax
+            prev_py = ay
+        end
+
+        # Final point
+        write_pd_mesh_arc(dataobject, prev_px, prev_py, prev_pz, px1, py1,
+                          dataobject["z"])
+
+        dataobject["previous_x"] = dataobject["x"]
+        dataobject["previous_y"] = dataobject["y"]
+        dataobject["previous_z"] = dataobject["z"]
+        dataobject["layer_points"] = [dataobject["layer_points"];
+                                      [dataobject["x"] dataobject["y"] dataobject["z"]]]
+        dataobject["previous_extruding"] = true
+    end
+end
+
+arc_cw(cmds, dataobject) = arc(cmds, dataobject, true)
+arc_ccw(cmds, dataobject) = arc(cmds, dataobject, false)
+
+"""
+    write_pd_mesh_arc(dataobject, sx, sy, sz, ex, ey, ez)
+
+Variant of `write_pd_mesh` for arc segments. Uses the provided start/end
+points instead of reading them from `dataobject`.
+"""
+function write_pd_mesh_arc(dataobject,
+                           sx::Number, sy::Number, sz::Number,
+                           ex::Number, ey::Number, ez::Number)
+    pd_mesh = dataobject["pd_mesh"]
+
+    pd_mesh["start_point"][1] = sx
+    pd_mesh["start_point"][2] = sy
+    pd_mesh["start_point"][3] = sz
+    pd_mesh["point"][1] = ex
+    pd_mesh["point"][2] = ey
+    pd_mesh["point"][3] = ez
+    sub_in_place!(pd_mesh["point_diff"], pd_mesh["point"], pd_mesh["start_point"])
+    distance = norm(pd_mesh["point_diff"])
+    if distance > 1e-12
+        roll, pitch,
+        yaw = tait_bryant_angles(pd_mesh["point_diff"],
+                                 dataobject["up_vector"])
+    else
+        roll = pitch = yaw = 0.0
+    end
+    normalize_in_place!(pd_mesh["dir"], pd_mesh["point_diff"])
+
+    if distance + pd_mesh["remaining_distance"] < pd_mesh["sampling"]
+        pd_mesh["remaining_distance"] += distance
+        return
+    else
+        pd_mesh["remaining_distance"] = pd_mesh["sampling"] - pd_mesh["remaining_distance"]
+    end
+
+    pd_mesh["start_point"][1] += pd_mesh["remaining_distance"] * pd_mesh["dir"][1]
+    pd_mesh["start_point"][2] += pd_mesh["remaining_distance"] * pd_mesh["dir"][2]
+    pd_mesh["start_point"][3] += pd_mesh["remaining_distance"] * pd_mesh["dir"][3]
+    sub_in_place!(pd_mesh["point_diff"], pd_mesh["point"], pd_mesh["start_point"])
+    distance = norm(pd_mesh["point_diff"])
+    pd_mesh["remaining_distance"] = mod(distance, pd_mesh["sampling"])
+
+    num_of_points::Int64 = floor(distance / pd_mesh["sampling"]) + 1
+    if num_of_points > 1
+        line_x = collect(range(pd_mesh["start_point"][1],
+                               pd_mesh["point"][1] -
+                               pd_mesh["remaining_distance"] * pd_mesh["dir"][1],
+                               num_of_points))
+        line_y = collect(range(pd_mesh["start_point"][2],
+                               pd_mesh["point"][2] -
+                               pd_mesh["remaining_distance"] * pd_mesh["dir"][2],
+                               num_of_points))
+        line_z = collect(range(pd_mesh["start_point"][3],
+                               pd_mesh["point"][3] -
+                               pd_mesh["remaining_distance"] * pd_mesh["dir"][3],
+                               num_of_points))
+    else
+        line_x = [pd_mesh["start_point"][1]]
+        line_y = [pd_mesh["start_point"][2]]
+        line_z = [pd_mesh["start_point"][3]]
+    end
+
+    for i in eachindex(line_x)
+        pd_mesh["point"][1] = line_x[i]
+        pd_mesh["point"][2] = line_y[i]
+        pd_mesh["point"][3] = line_z[i]
+        sub_in_place!(pd_mesh["point_diff"], pd_mesh["point"], pd_mesh["start_point"])
+        dist_along_line = distance_along_line(pd_mesh["dir"], pd_mesh["point_diff"])
+
+        time_to_activation = dist_along_line / v
+        block_id = 1
+        if !isnothing(pd_mesh["blocks"])
+            for block in pd_mesh["blocks"]
+                if eval(Meta.parse(block[2]))
+                    block_id = block[1]
+                end
+            end
+        end
+        push!(pd_mesh["mesh_df"],
+              [
+                  pd_mesh["point"][1],
+                  pd_mesh["point"][2],
+                  pd_mesh["point"][3],
+                  block_id,
+                  pd_mesh["volume"],
+                  time_to_activation + dataobject["previous_time"],
+                  roll * 180 / pi,
+                  pitch * 180 / pi,
+                  yaw * 180 / pi
+              ])
+    end
 end
 function switch_on(dataobject)
     dataobject["relevant_component"] = true
