@@ -84,17 +84,19 @@ function compute_model(nodes::AbstractVector{Int64},
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    dof = Data_Manager.get_dof()
-    nlist = Data_Manager.get_nlist()
-    coordinates = Data_Manager.get_field("Coordinates")
-    bond_damage = Data_Manager.get_bond_damage("NP1")
-    heat_flow = Data_Manager.get_field("Heat Flow", "NP1")
-    undeformed_bond = Data_Manager.get_field("Bond Geometry")
-    undeformed_bond_length = Data_Manager.get_field("Bond Length")
-    volume = Data_Manager.get_field("Volume")
-    temperature = Data_Manager.get_field("Temperature", "NP1")
+    dof::Int64 = Data_Manager.get_dof()
+    nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
+    coordinates::NodeVectorField{Float64} = Data_Manager.get_field("Coordinates")
+    bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
+    heat_flow::NodeScalarField{Float64} = Data_Manager.get_field("Heat Flow", "NP1")
+
+    undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
+    undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
+    volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
+    temperature::NodeScalarField{Float64} = Data_Manager.get_field("Temperature", "NP1")
     active = Data_Manager.get_field("Active")
-    lambda = thermal_parameter["Thermal Conductivity"]
+
+    lambda::Float64 = thermal_parameter["Thermal Conductivity"]
     rotation::Bool = Data_Manager.get_element_rotation()
     rotation_tensor = nothing
     if rotation
@@ -102,8 +104,8 @@ function compute_model(nodes::AbstractVector{Int64},
     end
     apply_print_bed = false
 
-    t_bed = 0.0
-    lambda_bed = 0.0
+    t_bed::Float64 = 0.0
+    lambda_bed::Float64 = 0.0
 
     if haskey(thermal_parameter, "Print Bed Temperature")
         apply_print_bed = true
@@ -112,29 +114,29 @@ function compute_model(nodes::AbstractVector{Int64},
     end
 
     print_bed_z_coord = get(thermal_parameter, "Print Bed Z Coordinate", 0.0)
-    lambda = thermal_parameter["Thermal Conductivity"]
 
     if thermal_parameter["Type"] == "Bond based"
         horizon = Data_Manager.get_field("Horizon")
         if length(lambda) > 1
             lambda = lambda[1]
         end
-        @timeit "heat_flow" heat_flow=compute_heat_flow_state_bond_based(nodes,
-                                                                         dof,
-                                                                         nlist,
-                                                                         lambda,
-                                                                         apply_print_bed,
-                                                                         t_bed,
-                                                                         lambda_bed,
-                                                                         print_bed_z_coord,
-                                                                         coordinates,
-                                                                         bond_damage,
-                                                                         active,
-                                                                         undeformed_bond_length,
-                                                                         horizon,
-                                                                         temperature,
-                                                                         volume,
-                                                                         heat_flow)
+
+        @timeit "heat_flow" compute_heat_flow_state_bond_based!(nodes,
+                                                                dof,
+                                                                nlist,
+                                                                lambda,
+                                                                apply_print_bed,
+                                                                t_bed,
+                                                                lambda_bed,
+                                                                print_bed_z_coord,
+                                                                coordinates,
+                                                                bond_damage,
+                                                                active,
+                                                                undeformed_bond_length,
+                                                                horizon,
+                                                                temperature,
+                                                                volume,
+                                                                heat_flow)
         return
 
     elseif thermal_parameter["Type"] == "Correspondence"
@@ -149,17 +151,17 @@ function compute_model(nodes::AbstractVector{Int64},
                 lambda_matrix[i, i] = lambda[i]
             end
         end
-        @timeit "heat_flow_correspondence" heat_flow=compute_heat_flow_state_correspondence(nodes,
-                                                                                            dof,
-                                                                                            nlist,
-                                                                                            lambda_matrix,
-                                                                                            rotation_tensor,
-                                                                                            bond_damage,
-                                                                                            undeformed_bond,
-                                                                                            Kinv,
-                                                                                            temperature,
-                                                                                            volume,
-                                                                                            heat_flow)
+        @timeit "heat_flow_correspondence" compute_heat_flow_state_correspondence!(nodes,
+                                                                                   dof,
+                                                                                   nlist,
+                                                                                   lambda_matrix,
+                                                                                   rotation_tensor,
+                                                                                   bond_damage,
+                                                                                   undeformed_bond,
+                                                                                   Kinv,
+                                                                                   temperature,
+                                                                                   volume,
+                                                                                   heat_flow)
     end
 end
 
@@ -167,17 +169,17 @@ end
 [BrighentiR2021](@cite)
 is a prototype with some errors
 """
-function compute_heat_flow_state_correspondence(nodes::AbstractVector{Int64},
-                                                dof::Int64,
-                                                nlist::BondScalarState{Int64},
-                                                lambda::Union{Matrix{Float64},MMatrix},
-                                                rotation_tensor,
-                                                bond_damage::BondScalarState{Float64},
-                                                undeformed_bond::BondVectorState{Float64},
-                                                Kinv::Array{Float64,3},
-                                                temperature::NodeScalarField{Float64},
-                                                volume::NodeScalarField{Float64},
-                                                heat_flow::NodeScalarField{Float64})
+function compute_heat_flow_state_correspondence!(nodes::AbstractVector{Int64},
+                                                 dof::Int64,
+                                                 nlist::BondScalarState{Int64},
+                                                 lambda::Union{Matrix{Float64},MMatrix},
+                                                 rotation_tensor,
+                                                 bond_damage::BondScalarState{Float64},
+                                                 undeformed_bond::BondVectorState{Float64},
+                                                 Kinv::Array{Float64,3},
+                                                 temperature::NodeScalarField{Float64},
+                                                 volume::NodeScalarField{Float64},
+                                                 heat_flow::NodeScalarField{Float64})
     nablaT = @MVector zeros(Float64, dof)
     H = @MVector zeros(Float64, dof)
     for iID in nodes
@@ -201,7 +203,6 @@ function compute_heat_flow_state_correspondence(nodes::AbstractVector{Int64},
             heat_flow[neighborID] += dot(temp, q) * volume[iID]
         end
     end
-    return heat_flow
 end
 
 """
@@ -233,22 +234,22 @@ Calculate Heat Flow based on a bond-based model for thermal analysis.
 This function calculates the Heat Flow between neighboring nodes based on a bond-based model for thermal analysis [OterkusS2014b](@cite). It considers various parameters, including thermal conductivity, damage state of bonds, geometry of bonds, horizons, temperature, and volume. The calculated bond Heat Flow values are stored in the `heat_flow` array.
 
 """
-function compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64},
-                                            dof::Int64,
-                                            nlist::BondScalarState{Int64},
-                                            lambda::Union{Float64,Int64},
-                                            apply_print_bed::Bool,
-                                            t_bed::Float64,
-                                            lambda_bed::Float64,
-                                            print_bed_z_coord::Float64,
-                                            coordinates::Matrix{Float64},
-                                            bond_damage::BondScalarState{Float64},
-                                            active::Vector{Bool},
-                                            undeformed_bond_length::BondScalarState{Float64},
-                                            horizon::NodeScalarField{Float64},
-                                            temperature::NodeScalarField{Float64},
-                                            volume::NodeScalarField{Float64},
-                                            heat_flow::NodeScalarField{Float64})
+function compute_heat_flow_state_bond_based!(nodes::AbstractVector{Int64},
+                                             dof::Int64,
+                                             nlist::BondScalarState{Int64},
+                                             lambda::Float64,
+                                             apply_print_bed::Bool,
+                                             t_bed::Float64,
+                                             lambda_bed::Float64,
+                                             print_bed_z_coord::Float64,
+                                             coordinates::Matrix{Float64},
+                                             bond_damage::BondScalarState{Float64},
+                                             active::NodeScalarField{Bool},
+                                             undeformed_bond_length::BondScalarState{Float64},
+                                             horizon::NodeScalarField{Float64},
+                                             temperature::NodeScalarField{Float64},
+                                             volume::NodeScalarField{Float64},
+                                             heat_flow::NodeScalarField{Float64})
     kernel::Float64 = 0.0
     for iID in nodes
         if !active[iID]

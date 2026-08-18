@@ -27,7 +27,7 @@ function init_fields()
     Data_Manager.create_node_scalar_field("Temperature", Float64)
     Data_Manager.create_constant_node_scalar_field("Delta Temperature", Float64)
     Data_Manager.create_node_scalar_field("Heat Flow", Float64)
-    Data_Manager.create_constant_node_scalar_field("Specific Volume", Int64)
+    Data_Manager.create_constant_node_scalar_field("Specific Volume", Float64)
     # if it is already initialized via mesh file no new field is created here
     Data_Manager.create_constant_node_scalar_field("Surface_Nodes", Bool;
                                                    default_value = true)
@@ -54,7 +54,8 @@ function compute_model(nodes::AbstractVector{Int64},
     thermal_models = map(r -> strip(r), thermal_models)
     for thermal_model in thermal_models
         mod = get_model_module(thermal_model)
-        @timeit "$thermal_model" mod.compute_model(nodes, model_param, block, time, dt)
+        @timeit "$thermal_model" mod.compute_model(nodes, model_param, block, time,
+                                                   dt)
     end
 end
 

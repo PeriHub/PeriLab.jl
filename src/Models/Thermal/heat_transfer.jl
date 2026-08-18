@@ -7,9 +7,14 @@ using LinearAlgebra: dot
 export compute_model
 export thermal_model_name
 export init_model
-
+using TimerOutputs: @timeit
 using .....Data_Manager
 using .....Helpers: normalize_in_place!
+
+const directions2D = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+const directions3D = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
+const directions_free2D = fill(true, 4)
+const directions_free3D = fill(true, 6)
 """
     thermal_model_name()
 
@@ -79,8 +84,9 @@ function compute_model(nodes::AbstractVector{Int64},
                        time::Float64,
                        dt::Float64)
     dof = Data_Manager.get_dof()
-    volume = Data_Manager.get_field("Volume")
-    kappa = thermal_parameter["Heat Transfer Coefficient"]
+    volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
+    kappa::Float64 = thermal_parameter["Heat Transfer Coefficient"]
+    Tenv::Float64 = 0.0
     if thermal_parameter["Environmental Temperature"] isa String
         global t = time
         Tenv = eval(Meta.parse(thermal_parameter["Environmental Temperature"]))
@@ -92,7 +98,7 @@ function compute_model(nodes::AbstractVector{Int64},
     heat_flow::NodeScalarField{Float64} = Data_Manager.get_field("Heat Flow", "NP1")
     temperature::NodeScalarField{Float64} = Data_Manager.get_field("Temperature", "NP1")
     surface_nodes::NodeScalarField{Bool} = Data_Manager.get_field("Surface_Nodes")
-    specific_volume::NodeScalarField{Int64} = Data_Manager.get_field("Specific Volume")
+    specific_volume::NodeScalarField{Float64} = Data_Manager.get_field("Specific Volume")
     active::NodeScalarField{Bool} = Data_Manager.get_field("Active")
     bond_norm::BondVectorState{Float64} = Data_Manager.get_field("Bond Norm")
     rotation_tensor = Data_Manager.get_rotation() ?
@@ -101,19 +107,41 @@ function compute_model(nodes::AbstractVector{Int64},
     nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
     dx = 1.0
 
-    kappa = thermal_parameter["Heat Transfer Coefficient"]
-
     if allow_surface_change
-        calculate_specific_volume!(specific_volume,
-                                   nodes,
-                                   nlist,
-                                   active,
-                                   bond_norm,
-                                   rotation_tensor,
-                                   specific_volume_check,
-                                   dof)
+        @timeit "calculate_specific_volume!" calculate_specific_volume!(specific_volume,
+                                                                        nodes,
+                                                                        nlist,
+                                                                        active,
+                                                                        bond_norm,
+                                                                        rotation_tensor,
+                                                                        specific_volume_check,
+                                                                        dof)
     end
-    for iID in nodes
+    @timeit "apply_surface_heat_flow!" begin
+        apply_surface_heat_flow!(heat_flow, temperature, volume, specific_volume,
+                                 surface_nodes, nodes, kappa, Tenv,
+                                 additive_enabled, allow_surface_change, Val(dof))
+    end
+end
+
+"""
+    apply_surface_heat_flow!(..., ::Val{DOF})
+
+Surface heat flow kernel, spezialisiert auf dof == 2 bzw. dof == 3.
+Die `dx`-Berechnung wird über den Val-Parameter zur Compile-Zeit aufgelöst.
+"""
+function apply_surface_heat_flow!(heat_flow::Vector{Float64},
+                                  temperature::Vector{Float64},
+                                  volume::Vector{Float64},
+                                  specific_volume::Vector{Float64},
+                                  surface_nodes::Vector{Bool},
+                                  nodes::AbstractVector{Int64},
+                                  kappa::Float64,
+                                  Tenv::T,
+                                  additive_enabled::Bool,
+                                  allow_surface_change::Bool,
+                                  ::Val{2}) where {T<:Union{Int64,Float64}}
+    @inbounds for iID in nodes
         if !surface_nodes[iID] && (additive_enabled || !allow_surface_change)
             continue
         end
@@ -121,17 +149,43 @@ function compute_model(nodes::AbstractVector{Int64},
             if !additive_enabled
                 surface_nodes[iID] = true
             end
-            if dof == 2
-                dx = sqrt(volume[iID])
-            elseif dof == 3
-                dx = volume[iID]^(1 / 3)
-            end
+            dx = sqrt(volume[iID])
             heat_flow[iID] += (kappa * (temperature[iID] - Tenv)) / dx *
                               specific_volume[iID]
         else
             surface_nodes[iID] = false
         end
     end
+    return nothing
+end
+
+function apply_surface_heat_flow!(heat_flow::Vector{Float64},
+                                  temperature::Vector{Float64},
+                                  volume::Vector{Float64},
+                                  specific_volume::Vector{Float64},
+                                  surface_nodes::Vector{Bool},
+                                  nodes::AbstractVector{Int64},
+                                  kappa::Float64,
+                                  Tenv::T,
+                                  additive_enabled::Bool,
+                                  allow_surface_change::Bool,
+                                  ::Val{3}) where {T<:Union{Int64,Float64}}
+    @inbounds for iID in nodes
+        if !surface_nodes[iID] && (additive_enabled || !allow_surface_change)
+            continue
+        end
+        if specific_volume[iID] > 0 || !allow_surface_change
+            if !additive_enabled
+                surface_nodes[iID] = true
+            end
+            dx = cbrt(volume[iID])
+            heat_flow[iID] += (kappa * (temperature[iID] - Tenv)) / dx *
+                              specific_volume[iID]
+        else
+            surface_nodes[iID] = false
+        end
+    end
+    return nothing
 end
 
 #TODO @Jan-Timo update documentation
@@ -149,27 +203,29 @@ Calculates the specific volume.
 # Returns
 - `specific_volume::Union{SubArray,Vector{Bool}}`: The surface nodes.
 """
-function calculate_specific_volume!(specific_volume::NodeScalarField{Int64},
+function calculate_specific_volume!(specific_volume::NodeScalarField{Float64},
                                     nodes::AbstractVector{Int64},
                                     nlist::Union{SubArray,BondScalarState{Int64}},
                                     active::NodeScalarField{Bool},
                                     bond_norm::BondVectorState{Float64},
-                                    rotation_tensor::Union{Array{Float64,3},Nothing},
+                                    rotation_tensor::Array{Float64,3},
                                     specific_volume_check::NodeScalarField{Bool},
                                     dof::Int64)
-    directions = [[1, 0], [-1, 0], [0, 1], [0, -1]]
-    if dof == 3
-        directions = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
+    if dof == 2
+        directions = directions2D
+        directions_free = directions_free2D
+    else
+        directions = directions3D
+        directions_free = directions_free3D
     end
     rot_directions = copy(directions)
-    directions_free = fill(true, dof*2)
+
     for iID in nodes
         !specific_volume_check[iID] && continue
 
-        if !isnothing(rotation_tensor)
-            rot_directions = [rotation_tensor[iID, :, :] * direction
-                              for direction in directions]
-        end
+        rot_directions = [rotation_tensor[iID, :, :] * direction
+                          for direction in directions]
+
         directions_free .= true
         for (jID, neighborID) in enumerate(nlist[iID])
             !active[neighborID] && continue
@@ -190,6 +246,46 @@ function calculate_specific_volume!(specific_volume::NodeScalarField{Int64},
         specific_volume[iID] = sum(directions_free)
     end
 end
+
+function calculate_specific_volume!(specific_volume::NodeScalarField{Float64},
+                                    nodes::AbstractVector{Int64},
+                                    nlist::Union{SubArray,BondScalarState{Int64}},
+                                    active::NodeScalarField{Bool},
+                                    bond_norm::BondVectorState{Float64},
+                                    rotation_tensor::Nothing,
+                                    specific_volume_check::NodeScalarField{Bool},
+                                    dof::Int64)
+    if dof == 2
+        directions = directions2D
+        directions_free = directions_free2D
+    else
+        directions = directions3D
+        directions_free = directions_free3D
+    end
+
+    for iID in nodes
+        !specific_volume_check[iID] && continue
+        directions_free .= true
+        for (jID, neighborID) in enumerate(nlist[iID])
+            !active[neighborID] && continue
+
+            for (kID, direction) in enumerate(directions)
+                !directions_free[kID] && continue
+
+                if dot(bond_norm[iID][jID], direction) >= 0.6
+                    directions_free[kID] = false
+                    break
+                end
+            end
+        end
+        # If the up direction is not free, the specific_volume should not change
+        if dof == 3 && !directions_free[5]
+            specific_volume_check[iID] = false
+        end
+        specific_volume[iID] = sum(directions_free)
+    end
+end
+
 """
     fields_for_local_synchronization(model::String)
 
