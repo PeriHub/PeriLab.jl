@@ -134,20 +134,24 @@ function compute_model(nodes::AbstractVector{Int64},
     end
 end
 
-#TODO @Jan-Timo update documentation
 """
-  calculate_specific_volume(nodes::Int64, nlist::SubArray, coordinates::Union{SubArray,Vector{Float64}}, volume::SubArray, surface_nodes::Union{SubArray,Vector{Bool}})
+    calculate_specific_volume!(specific_volume::NodeScalarField{Int64}, nodes::AbstractVector{Int64}, nlist::BondScalarState{Int64}, active::NodeScalarField{Bool}, bond_norm::BondVectorState{Float64}, rotation_tensor::Union{Array{Float64,3},Nothing}, specific_volume_check::NodeScalarField{Bool}, dof::Int64)
 
-Calculates the specific volume.
+Counts the number of free surface directions for each node to determine its specific volume.
+A direction is considered "free" if no neighbor exists along that axis (within a cosine threshold).
 
 # Arguments
-- `iID::Int64`: The index of the node.
-- `nlist::SubArray`: The neighbor list.
-- `coordinates::Union{SubArray,Vector{Float64}}`: The coordinates of the nodes.
-- `volume::SubArray`: The volume of the nodes.
-- `surface_nodes::Union{SubArray,Vector{Bool}}`: The surface nodes.
+- `specific_volume`: Output field storing the count of free directions per node.
+- `nodes`: Vector of active node indices.
+- `nlist`: Neighbor list for each node.
+- `active`: Boolean mask indicating which nodes are active.
+- `bond_norm`: Normalized bond vectors to neighbors.
+- `rotation_tensor`: Optional rotation tensor (for rotated meshes). If nothing, directions are not rotated.
+- `specific_volume_check`: Boolean field indicating which nodes need volume recalculation.
+- `dof`: Spatial dimensionality (2 or 3).
+
 # Returns
-- `specific_volume::Union{SubArray,Vector{Bool}}`: The surface nodes.
+- Updates `specific_volume` in-place with the count of free surface directions.
 """
 function calculate_specific_volume!(specific_volume::NodeScalarField{Int64},
                                     nodes::AbstractVector{Int64},
