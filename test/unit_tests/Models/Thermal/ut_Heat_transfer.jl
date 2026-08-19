@@ -58,7 +58,7 @@
     volume = PeriLab.Data_Manager.create_constant_node_scalar_field("Volume", Float64;
                                                                     default_value = 0.25)
     specific_volume = PeriLab.Data_Manager.create_constant_node_scalar_field("specific_volume",
-                                                                             Int64)
+                                                                             Float64)
     active = PeriLab.Data_Manager.create_constant_node_scalar_field("Active", Bool;
                                                                     default_value = true)
     specific_volume_check = PeriLab.Data_Manager.create_constant_node_scalar_field("Specific Volume Check",

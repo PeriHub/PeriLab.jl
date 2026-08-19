@@ -101,9 +101,11 @@ function compute_model(nodes::AbstractVector{Int64},
     temperature_NP1::NodeScalarField{Float64} = Data_Manager.get_field("Temperature",
                                                                        "NP1")
     dof::Int64 = Data_Manager.get_dof()
+    alpha::Union{Float64,
+                 Matrix{Float64}} = thermal_parameter["Thermal Expansion Coefficient"]
 
-    @timeit "thermal_expansion_matrix" alpha_mat::AbstractMatrix{Float64}=thermal_expansion_matrix(thermal_parameter["Thermal Expansion Coefficient"],
-                                                                                                   Val(dof))
+    @timeit "thermal_expansion_matrix" alpha_mat=thermal_expansion_matrix(alpha,
+                                                                          Val(dof))
     ref_temp::Float64 = get(thermal_parameter, "Reference Temperature", 0.0)
 
     undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
