@@ -8,6 +8,21 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.4] - 2026-08-19
+
+### Added
+
+- G2 and G3 arc command support #389
+
+### Changed
+
+- Contact optimized
+- Small improvements
+
+### Fixed
+
+- Von mises calculation domain error
+
 ## [2.2.3] - 2026-08-03
 
 ### Added
