@@ -60,7 +60,7 @@ import .Logging_Module
 import .IO
 using .Solver_Manager
 
-PERILAB_VERSION = "2.2.4"
+PERILAB_VERSION = "2.2.5"
 
 export main
 
@@ -397,10 +397,8 @@ function run(filename::String;
             Data_Manager.set_max_step(steps[end])
             for step_id in steps
                 # MPI.Barrier(comm)
-                if !isnothing(step_id)
-                    println() # Add vertical space
-                    @info "────── Step: $(string(step_id)) of $(string(length(steps))) ──────"
-                end
+                println() # Add vertical space
+                @info "────── Step: $(string(step_id)) of $(string(length(steps))) ──────"
                 Data_Manager.set_cancel(false)
                 Data_Manager.set_step(step_id)
                 @info "Init Solver"
@@ -427,7 +425,7 @@ function run(filename::String;
                                     silent,
                                     comm)
                 @debug "Init write results"
-                if isnothing(step_id) || step_id == 1
+                if step_id == 1
                     @timeit "IO.init_write_results" result_files,
                                                     outputs=IO.init_write_results(params,
                                                                                   output_dir,

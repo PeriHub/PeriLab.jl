@@ -29,7 +29,7 @@ Get the solver steps
 """
 function get_solver_steps(params::Dict)
     if !haskey(params, "Multistep Solver")
-        return [nothing]
+        return [1]
     end
     step_id = []
     for step_name in keys(params["Multistep Solver"])

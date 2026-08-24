@@ -564,9 +564,9 @@ Sets the output frequency.
 """
 function set_output_frequency(params::Dict,
                               nsteps::Int64,
-                              step_id::Union{Nothing,Int64} = nothing)
+                              step_id::Int64)
     output_frequencies = get_output_frequencies(params, nsteps, step_id)
-    if isnothing(step_id) || step_id == 1
+    if step_id == 1
         output_frequency = []
         for id in eachindex(output_frequencies)
             push!(output_frequency,
