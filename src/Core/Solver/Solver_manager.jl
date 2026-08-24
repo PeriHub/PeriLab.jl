@@ -94,12 +94,12 @@ function init(params::Dict,
     horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
     set_angles(params, block_nodes_with_neighbors) # includes the Neighbors
     max_step = Data_Manager.get_max_step()
-    solver_params = step_id == -1 ? params["Solver"] :
+    solver_params = max_step == -1 ? params["Solver"] :
                     get_solver_params(params, step_id)
     solver_options["Models"] = get_model_options(solver_params)
     solver_options["All Models"] = get_model_options(solver_params)
     solver_options["Calculation"] = get_calculation_options(solver_params)
-    if step_id != -1
+    if max_step != -1
         for step in 1:Data_Manager.get_max_step()
             step_solver_params = get_solver_params(params, step)
             append!(solver_options["All Models"],

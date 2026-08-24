@@ -397,7 +397,9 @@ function run(filename::String;
             Data_Manager.set_max_step(steps[end])
             for step_id in steps
                 # MPI.Barrier(comm)
-                println() # Add vertical space
+                if !silent
+                    println() # Add vertical space
+                end
                 @info "────── Step: $(string(step_id)) of $(string(length(steps))) ──────"
                 Data_Manager.set_cancel(false)
                 Data_Manager.set_step(step_id)
