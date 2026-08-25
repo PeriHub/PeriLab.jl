@@ -52,7 +52,7 @@ function check_valid_bcs(bcs::Dict{String,Any})
     working_bcs = Dict()
     for bc in keys(bcs)
         if haskey(bcs[bc], "Step ID")
-            if !isnothing(Data_Manager.get_step()) &&
+            if Data_Manager.get_step() != -1 &&
                !(string(Data_Manager.get_step()) in split(string(bcs[bc]["Step ID"]), ","))
                 continue
             end
