@@ -31,8 +31,7 @@ export find_files_with_ending
 export get_block_nodes
 export matrix_style
 export get_fourth_order
-export interpolation
-export interpol_data
+export get_dependent_value_function
 export progress_bar
 export invert
 export compute_distance_and_normals
@@ -931,6 +930,43 @@ function interpol_data(x::Union{Vector{Float64},Vector{Int64},Float64,Int64},
         warning_flag = false
     end
     return evaluate(values["spl"], x)
+end
+
+abstract type AbstractDependentValue end
+
+# Case 1: constant parameter (not field-dependent)
+struct ConstantValue{T} <: AbstractDependentValue
+    value::T
+end
+(cv::ConstantValue)(iID::Int64) = cv.value
+
+# Case 2: field-dependent, interpolated per node
+struct InterpolatedValue{F,D} <: AbstractDependentValue
+    field::F                      # e.g. Data_Manager field (NP1)
+    data::D                       # parameter[field_name]["Data"]
+    warning_flag::Base.RefValue{Bool}
+end
+function (iv::InterpolatedValue)(iID::Int64)
+    val = interpol_data(iv.field[iID], iv.data, iv.warning_flag[])
+    iv.warning_flag[] = false      # only warn once, on first call
+    return val
+end
+
+"""
+    get_dependent_value_function(field_name, parameter) -> AbstractDependentValue
+
+Call once per field before a loop. Returns a callable `f(iID)` that
+gives either the constant value or the interpolated field value.
+"""
+function get_dependent_value_function(field_name::String, parameter::Dict)
+    dependent_value, dependent_field = is_dependent(field_name, parameter)
+    if dependent_value
+        return InterpolatedValue(dependent_field,
+                                 parameter[field_name]["Data"],
+                                 Ref(true))
+    else
+        return ConstantValue(parameter[field_name])
+    end
 end
 
 function invert(A::AbstractMatrix{Float64},

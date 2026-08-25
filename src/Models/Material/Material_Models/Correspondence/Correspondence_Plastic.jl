@@ -8,7 +8,7 @@ using ......PeriLabExceptions: @abort
 using .....Material_Basis:
                            flaw_function, get_von_mises_yield_stress,
                            compute_deviatoric_and_spherical_stresses
-using .....Helpers: is_dependent, interpol_data
+using .....Helpers: get_dependent_value_function
 using LinearAlgebra
 using StaticArrays
 export fe_support
@@ -158,8 +158,7 @@ function compute_stresses(nodes,
                                                                           "NP1")
     coordinates::NodeVectorField{Float64} = Data_Manager.get_field("Coordinates")
 
-    dependend_value, dependent_field = is_dependent("Yield Stress", material_parameter)
-    warning_flag = true
+    yield_stress_fn = get_dependent_value_function("Yield Stress", material_parameter)
 
     spherical_stress_N = 0.0
     spherical_stress_NP1 = 0.0
@@ -170,13 +169,7 @@ function compute_stresses(nodes,
 
     # sqrt23::Float64 = sqrt(2 / 3)
     for iID in nodes
-        if dependend_value
-            yield_stress = interpol_data(dependent_field[iID],
-                                         material_parameter["Yield Stress"]["Data"],
-                                         warning_flag)
-        else
-            yield_stress = material_parameter["Yield Stress"]
-        end
+        yield_stress = yield_stress_fn(iID)
         # @views reduced_yield_stress = yield_stress
         reduced_yield_stress = flaw_function(material_parameter, coordinates[iID, :],
                                              yield_stress)
@@ -230,17 +223,10 @@ function compute_stresses_ba(nodes,
     spherical_stress_NP1::Float64 = 0
     deviatoric_stress_NP1 = @MMatrix zeros(dof, dof)
 
-    dependend_value, dependent_field = is_dependent("Yield Stress", material_parameter)
-    warning_flag = true
+    yield_stress_fn = get_dependent_value_function("Yield Stress", material_parameter)
 
     for iID in nodes
-        if dependend_value
-            yield_stress = interpol_data(dependent_field[iID],
-                                         material_parameter["Yield Stress"]["Data"],
-                                         warning_flag)
-        else
-            yield_stress = material_parameter["Yield Stress"]
-        end
+        yield_stress = yield_stress_fn(iID)
         @views reduced_yield_stress = yield_stress
         @views reduced_yield_stress = flaw_function(material_parameter, coordinates[iID, :],
                                                     yield_stress)
