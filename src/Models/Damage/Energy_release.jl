@@ -15,8 +15,7 @@ using ......Helpers:
                      sub_in_place!,
                      div_in_place!,
                      mul_in_place!,
-                     interpol_data,
-                     is_dependent
+                     get_dependent_value_function
 
 export compute_model
 export damage_name
@@ -84,7 +83,7 @@ function compute_model(nodes::AbstractVector{Int64},
     quad_horizons::NodeScalarField{Float64} = Data_Manager.get_field("Quad Horizon")
     inverse_nlist::Vector{Dict{Int64,Int64}} = Data_Manager.get_inverse_nlist()
 
-    dependend_value, dependent_field = is_dependent("Critical Value", damage_parameter)
+    critical_value_fn = get_dependent_value_function("Critical Value", damage_parameter)
 
     tension::Bool = get(damage_parameter, "Only Tension", true)
     inter_block_damage::Bool = Data_Manager.haskey(damage_parameter, "Interblock Damage")
@@ -99,7 +98,6 @@ function compute_model(nodes::AbstractVector{Int64},
     temp_vector::Vector{Float64} = zeros(Float64, dof)
 
     sub_in_place!(bond_displacements, deformed_bond, undeformed_bond)
-    warning_flag = true
 
     for iID in nodes
         @fastmath @inbounds for jID in eachindex(nlist[iID])
@@ -150,12 +148,8 @@ function compute_model(nodes::AbstractVector{Int64},
                 #                                           damage_parameter[param_name]["Data"],
                 #                                           warning_flag)
                 # end
-            elseif dependend_value
-                critical_energy_value = interpol_data(dependent_field[iID],
-                                                      damage_parameter["Critical Value"]["Data"],
-                                                      warning_flag)
             else
-                critical_energy_value = critical_energy
+                critical_energy_value = critical_value_fn(iID)
             end
 
             product = critical_energy_value * quad_horizons[iID]

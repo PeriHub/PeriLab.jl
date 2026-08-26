@@ -238,7 +238,7 @@ Gets the output frequencies.
 - `freq::Vector{Int64}`: The output frequencies
 """
 function get_output_frequencies(params::Dict, nsteps::Int64,
-                                step_id::Union{Nothing,Int64} = nothing)
+                                step_id::Int64)
     freq = zeros(1)
     if haskey(params::Dict, "Outputs")
         outputs = params["Outputs"]
@@ -259,10 +259,8 @@ function get_output_frequencies(params::Dict, nsteps::Int64,
                 value = outputs[output]["Number of Output Steps"]
             end
             if typeof(value) == String
-                if isnothing(step_id)
-                    @abort "Output frequency or number of output steps must be an integer."
-                end
                 value = parse(Int, split(value)[step_id])
+                # @abort "Output frequency or number of output steps must be an integer."
             end
             if use_frequency
                 freq[id] = value

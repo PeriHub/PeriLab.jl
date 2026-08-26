@@ -71,7 +71,7 @@ function init_models(params::Dict,
         heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
     end
 
-    if isnothing(Data_Manager.get_step()) || Data_Manager.get_step() == 1
+    if Data_Manager.get_step() <= 1
         for (active_model_name,
              active_model) in pairs(Data_Manager.get_active_models(true))
             @debug "Init $active_model_name fields"

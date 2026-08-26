@@ -252,23 +252,23 @@ end
     params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 2),
                                     "Output2" => Dict("Number of Output Steps" => 1,
                                                       "Output Frequency" => 1)))
-    freq = PeriLab.Parameter_Handling.get_output_frequencies(params, nsteps)
+    freq = PeriLab.Parameter_Handling.get_output_frequencies(params, nsteps, 1)
     @test freq[1] == 2
     @test freq[2] == 40
 
     params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 20),
                                     "Output2" => Dict("Number of Output Steps" => 10)))
-    freq = PeriLab.Parameter_Handling.get_output_frequencies(params, nsteps)
+    freq = PeriLab.Parameter_Handling.get_output_frequencies(params, nsteps, 1)
     @test freq[1] == 20
     @test freq[2] == 4
 
     nsteps = 1000
-    freq = PeriLab.Parameter_Handling.get_output_frequencies(params, nsteps)
+    freq = PeriLab.Parameter_Handling.get_output_frequencies(params, nsteps, 1)
     @test freq[1] == 20
     @test freq[2] == 100
 
     nsteps = 2
-    freq = PeriLab.Parameter_Handling.get_output_frequencies(params, nsteps)
+    freq = PeriLab.Parameter_Handling.get_output_frequencies(params, nsteps, 1)
     @test freq[1] == 2
     @test freq[2] == 1
 
@@ -277,7 +277,7 @@ end
                                     "Output2" => Dict("Number of Output Steps" => 10,
                                                       "Output Frequency" => 20)))
     nsteps = 1000
-    freq = PeriLab.Parameter_Handling.get_output_frequencies(params, nsteps)
+    freq = PeriLab.Parameter_Handling.get_output_frequencies(params, nsteps, 1)
     @test (freq[1] == 100) || (freq[1] == 20)
     @test (freq[2] == 100) || (freq[2] == 20)
 end

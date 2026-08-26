@@ -62,7 +62,7 @@ Initialize the solver
 - `solver_options::Dict{String,Any}`: A dictionary containing solver options.
 """
 function init(params::Dict,
-              step_id::Union{Nothing,Int64} = nothing)
+              step_id::Int64)
     solver_options = Dict()
     dof = Data_Manager.get_dof()
     nnodes = Data_Manager.get_nnodes()
@@ -93,12 +93,12 @@ function init(params::Dict,
     density = set_density(params, block_nodes_with_neighbors, density) # includes the neighbors
     horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
     set_angles(params, block_nodes_with_neighbors) # includes the Neighbors
-    solver_params = isnothing(step_id) ? params["Solver"] :
+    solver_params = step_id == -1 ? params["Solver"] :
                     get_solver_params(params, step_id)
     solver_options["Models"] = get_model_options(solver_params)
     solver_options["All Models"] = get_model_options(solver_params)
     solver_options["Calculation"] = get_calculation_options(solver_params)
-    if !isnothing(step_id)
+    if step_id != -1
         for step in 1:Data_Manager.get_max_step()
             step_solver_params = get_solver_params(params, step)
             append!(solver_options["All Models"],
