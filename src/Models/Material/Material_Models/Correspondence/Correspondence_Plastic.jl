@@ -5,6 +5,7 @@
 module Correspondence_Plastic
 using ......Data_Manager
 using ......PeriLabExceptions: @abort
+using TimerOutputs: @timeit
 using .....Material_Basis:
                            flaw_function, get_von_mises_yield_stress,
                            compute_deviatoric_and_spherical_stresses
@@ -15,24 +16,28 @@ export fe_support
 export init_model
 export fields_for_local_synchronization
 
-yield_stress::Float64 = 1.0
-reduced_yield_stress::Float64 = 0.0
-spherical_stress_N::Float64 = 0.0
-spherical_stress_NP1::Float64 = 0.0
+const yield_stress::Float64 = 1.0
+const reduced_yield_stress::Float64 = 0.0
+const spherical_stress_N::Float64 = 0.0
+const spherical_stress_NP1::Float64 = 0.0
 
-deviatoric_stress_N::Matrix{Float64} = zeros(2, 2)
-deviatoric_stress_NP1::Matrix{Float64} = zeros(2, 2)
-temp_A::Matrix{Float64} = zeros(2, 2)
-temp_B::Matrix{Float64} = zeros(2, 2)
+const deviatoric_stress_N2D::Matrix{Float64} = zeros(2, 2)
+const deviatoric_stress_NP12D::Matrix{Float64} = zeros(2, 2)
+const temp_A2D::Matrix{Float64} = zeros(2, 2)
+const temp_B2D::Matrix{Float64} = zeros(2, 2)
+const dev_strain_inc2D::Matrix{Float64} = zeros(2, 2)
 
-temp_scalar::Float64 = 0.0
+const deviatoric_stress_N3D::Matrix{Float64} = zeros(3, 3)
+const deviatoric_stress_NP13D::Matrix{Float64} = zeros(3, 3)
+const temp_A3D::Matrix{Float64} = zeros(3, 3)
+const temp_B3D::Matrix{Float64} = zeros(3, 3)
+const dev_strain_inc3D::Matrix{Float64} = zeros(3, 3)
 
-sqrt23::Float64 = sqrt(2 / 3)
-deviatoric_stress_magnitude_N::Float64 = 0.0
-deviatoric_stress_magnitude_NP1::Float64 = 0.0
+const temp_scalar::Float64 = 0.0
 
-dev_strain_inc::Matrix{Float64} = zeros(2, 2)
-spherical_strain::Float64 = 0.0
+const sqrt23::Float64 = sqrt(2 / 3)
+
+const spherical_strain::Float64 = 0.0
 
 """
   fe_support()
@@ -63,8 +68,7 @@ Initializes the material model.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 """
-function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
+function init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
     if !haskey(material_parameter, "Shear Modulus")
         @abort "Shear Modulus must be defined to be able to run this plastic material"
         return
@@ -82,12 +86,6 @@ function init_model(nodes::AbstractVector{Int64},
         Data_Manager.create_bond_scalar_state("von Mises Bond Yield Stress", Float64)
         Data_Manager.create_bond_scalar_state("Plastic Bond Strain", Float64)
     end
-    dof = Data_Manager.get_dof()
-    deviatoric_stress_N = zeros(dof, dof)
-    deviatoric_stress_NP1 = zeros(dof, dof)
-    temp_A = zeros(dof, dof)
-    temp_B = zeros(dof, dof)
-    dev_strain_inc = zeros(dof, dof)
 end
 
 """
@@ -140,15 +138,19 @@ function compute_stresses(nodes,
                           strain_increment::Union{SubArray,NodeTensorField{Float64}},
                           stress_N::Union{SubArray,NodeTensorField{Float64}},
                           stress_NP1::Union{SubArray,NodeTensorField{Float64}})
-    global yield_stress
-    global reduced_yield_stress
-    global spherical_stress_N
-    global spherical_stress_NP1
-    global deviatoric_stress_N
-    global deviatoric_stress_NP1
-    global temp_A
-    global temp_B
-    global sqrt23
+    if dof == 2
+        deviatoric_stress_N = deviatoric_stress_N2D
+        deviatoric_stress_NP1 = deviatoric_stress_NP12D
+        temp_A = temp_A2D
+        temp_B = temp_B2D
+        dev_strain_inc=dev_strain_inc2D
+    else
+        deviatoric_stress_N = deviatoric_stress_N3D
+        deviatoric_stress_NP1 = deviatoric_stress_NP13D
+        temp_A = temp_A3D
+        temp_B = temp_B3D
+        dev_strain_inc=dev_strain_inc3D
+    end
 
     von_Mises_stress_yield::NodeScalarField{Float64} = Data_Manager.get_field("von Mises Yield Stress",
                                                                               "NP1")
@@ -161,13 +163,6 @@ function compute_stresses(nodes,
     dependend_value, dependent_field = is_dependent("Yield Stress", material_parameter)
     warning_flag = true
 
-    spherical_stress_N = 0.0
-    spherical_stress_NP1 = 0.0
-    deviatoric_stress_N .= 0.0
-    deviatoric_stress_NP1 .= 0.0
-    temp_A .= 0.0
-    temp_B .= 0.0
-
     # sqrt23::Float64 = sqrt(2 / 3)
     for iID in nodes
         if dependend_value
@@ -175,35 +170,39 @@ function compute_stresses(nodes,
                                          material_parameter["Yield Stress"]["Data"],
                                          warning_flag)
         else
-            yield_stress = material_parameter["Yield Stress"]
+            yield_stress::Float64 = material_parameter["Yield Stress"]
         end
         # @views reduced_yield_stress = yield_stress
         reduced_yield_stress = flaw_function(material_parameter, coordinates[iID, :],
                                              yield_stress)
 
-        stress_NP1[iID, :, :], plastic_strain_NP1[iID],
-        von_Mises_stress_yield[iID] = compute_plastic_model(stress_NP1[iID,
-                                                            :,
-                                                            :],
-                                                            stress_N[iID,
-                                                            :,
-                                                            :],
-                                                            spherical_stress_NP1,
-                                                            spherical_stress_N,
-                                                            deviatoric_stress_NP1,
-                                                            deviatoric_stress_N,
-                                                            strain_increment[iID,
-                                                            :,
-                                                            :],
-                                                            von_Mises_stress_yield[iID],
-                                                            plastic_strain_NP1[iID],
-                                                            plastic_strain_N[iID],
-                                                            reduced_yield_stress,
-                                                            material_parameter["Shear Modulus"],
-                                                            dof,
-                                                            temp_A,
-                                                            temp_B,
-                                                            sqrt23)
+        @timeit "compute_plastic_model" begin
+            stress_NP1[iID, :, :],
+            plastic_strain_NP1[iID],
+            von_Mises_stress_yield[iID] = compute_plastic_model(stress_NP1[iID,
+                                                                :,
+                                                                :],
+                                                                stress_N[iID,
+                                                                :,
+                                                                :],
+                                                                spherical_stress_NP1,
+                                                                spherical_stress_N,
+                                                                deviatoric_stress_NP1,
+                                                                deviatoric_stress_N,
+                                                                strain_increment[iID,
+                                                                :,
+                                                                :],
+                                                                von_Mises_stress_yield[iID],
+                                                                plastic_strain_NP1[iID],
+                                                                plastic_strain_N[iID],
+                                                                reduced_yield_stress,
+                                                                material_parameter["Shear Modulus"],
+                                                                dof,
+                                                                temp_A,
+                                                                temp_B,
+                                                                sqrt23,
+                                                                dev_strain_inc)
+        end
     end
 end
 
@@ -216,8 +215,19 @@ function compute_stresses_ba(nodes,
                              strain_increment::Vector{AbstractArray{Float64,3}},
                              stress_N::Vector{AbstractArray{Float64,3}},
                              stress_NP1::Vector{AbstractArray{Float64,3}})
-    temp_A = @MMatrix zeros(dof, dof)
-    temp_B = @MMatrix zeros(dof, dof)
+    if dof == 2
+        deviatoric_stress_N = deviatoric_stress_N2D
+        deviatoric_stress_NP1 = deviatoric_stress_NP12D
+        temp_A = temp_A2D
+        temp_B = temp_B2D
+        dev_strain_inc=dev_strain_inc2D
+    else
+        deviatoric_stress_N = deviatoric_stress_N3D
+        deviatoric_stress_NP1 = deviatoric_stress_NP13D
+        temp_A = temp_A3D
+        temp_B = temp_B3D
+        dev_strain_inc=dev_strain_inc3D
+    end
 
     sqrt23::Float64 = sqrt(2 / 3)
     von_Mises_stress_yield = Data_Manager.get_field("von Mises Bond Yield Stress", "NP1")
@@ -266,7 +276,8 @@ function compute_stresses_ba(nodes,
                                                                      dof,
                                                                      temp_A,
                                                                      temp_B,
-                                                                     sqrt23)
+                                                                     sqrt23,
+                                                                     dev_strain_inc)
         end
     end
 end
@@ -286,20 +297,14 @@ function compute_plastic_model(stress_NP1,
                                dof,
                                temp_A,
                                temp_B,
-                               sqrt23)
-    global temp_scalar
-    global sqrt23
-    global deviatoric_stress_magnitude_N
-    global deviatoric_stress_magnitude_NP1
-    global dev_strain_inc
-    global spherical_strain
+                               sqrt23,
+                               dev_strain_inc)
+    @timeit "compute_deviatoric_and_spherical_stresses" compute_deviatoric_and_spherical_stresses(stress_NP1,
+                                                                                                  spherical_stress_NP1,
+                                                                                                  deviatoric_stress_NP1,
+                                                                                                  dof)
 
-    compute_deviatoric_and_spherical_stresses(stress_NP1,
-                                              spherical_stress_NP1,
-                                              deviatoric_stress_NP1,
-                                              dof)
-
-    von_Mises_stress_yield = get_von_mises_yield_stress(deviatoric_stress_NP1)
+    @timeit "get_von_mises_yield_stress" von_Mises_stress_yield = get_von_mises_yield_stress(deviatoric_stress_NP1)
     if von_Mises_stress_yield < reduced_yield_stress
         # material is elastic and nothing happens
         plastic_strain_NP1 = plastic_strain_N
