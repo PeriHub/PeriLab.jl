@@ -9,8 +9,8 @@ using TimerOutputs: @timeit
 using ......Data_Manager
 using ......PeriLabExceptions: @abort
 using ....Material_Basis: get_symmetry
-using ......Helpers: add_in_place!, mul_in_place!, sub_in_place!,
-                     get_dependent_value_function
+using ......Helpers: add_in_place!, mul_in_place!, sub_in_place!, is_dependent,
+                     interpol_data, get_dependent_value
 using ..Ordinary: calculate_symmetry_params, get_bond_forces!
 
 export fe_support
@@ -149,12 +149,13 @@ function compute_model(nodes::AbstractVector{Int64},
     lambdaN = Data_Manager.get_field("Lambda Plastic", "N")
     lambdaNP1 = Data_Manager.get_field("Lambda Plastic", "NP1")
 
-    yield_stress_fn = get_dependent_value_function("Yield Stress", material_parameter)
-
+    dependend_value, dependent_field = is_dependent("Yield Stress", material_parameter)
+    warning_flag = true
     if dependend_value
         for iID in nodes
-            yield_stress = yield_stress_fn(iID)
-
+            yield_stress = interpol_data(dependent_field[iID],
+                                         material_parameter["Yield Stress"]["Data"],
+                                         warning_flag)
             if get_symmetry(material_parameter) == "3D"
                 yield_value[iID] = 25 * yield_stress * yield_stress ./
                                    (8 * pi .* horizon[iID] .^ 5)
