@@ -261,6 +261,9 @@ MPI.Init()
         @testset "test_Critical_stretch" begin
             include("fullscale_tests/test_critical_stretch/test_critical_stretch.jl")
         end
+        @testset "test_bond_value_export" begin
+            include("fullscale_tests/test_bond_value_export/test_bond_value_export.jl")
+        end
         @testset "test_critical_energy" begin
             include("fullscale_tests/test_critical_energy/test_critical_energy.jl")
         end

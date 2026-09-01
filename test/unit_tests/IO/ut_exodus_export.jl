@@ -2,10 +2,20 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-#using Test
-using TimerOutputs
-
 using Exodus
+
+@testset "resolve_block_selection" begin
+    @test PeriLab.IO.resolve_block_selection("1,3") == [1, 3]
+    @test PeriLab.IO.resolve_block_selection("1 3") == [1, 3]
+    @test_throws Exception PeriLab.IO.resolve_block_selection("1 x")
+end
+
+@testset "check_block_selection" begin
+    @test PeriLab.IO.check_block_selection([1, 3], 3) == [1, 3]
+    @test isnothing(PeriLab.IO.check_block_selection(nothing, 3))
+    @test_throws Exception PeriLab.IO.check_block_selection([1, 99], 3)
+    @test_throws Exception PeriLab.IO.check_block_selection([0], 3)
+end
 
 PeriLab.Data_Manager.initialize_data()
 @testset "ut_get_block_nodes" begin
@@ -125,76 +135,80 @@ PeriLab.Data_Manager.set_nset("Nset_2", [5])
 nsets = PeriLab.Data_Manager.get_nsets()
 coords = vcat(transpose(coordinates))
 outputs = Dict("Fields" => Dict("Forcesxx" => Dict("fieldname" => "Forces",
-                                                   "time" => "NP1",
-                                                   "global_var" => false,
-                                                   "dof" => 1,
-                                                   "type" => Float64),
-                                "Forcesxy" => Dict("fieldname" => "Forces",
-                                                   "time" => "NP1",
-                                                   "global_var" => false,
-                                                   "dof" => 1,
-                                                   "type" => Float64),
-                                "Forcesxz" => Dict("fieldname" => "Forces",
-                                                   "time" => "NP1",
-                                                   "global_var" => false,
-                                                   "dof" => 1,
-                                                   "type" => Float64),
-                                "Forcesyx" => Dict("fieldname" => "Forces",
-                                                   "time" => "NP1",
-                                                   "global_var" => false,
-                                                   "dof" => 1,
-                                                   "type" => Float64),
-                                "Forcesyy" => Dict("fieldname" => "Forces",
-                                                   "time" => "NP1",
-                                                   "global_var" => false,
-                                                   "dof" => 1,
-                                                   "type" => Float64),
-                                "Forcesyz" => Dict("fieldname" => "Forces",
-                                                   "time" => "NP1",
-                                                   "global_var" => false,
-                                                   "dof" => 1,
-                                                   "type" => Float64),
-                                "Displacements" => Dict("fieldname" => "Displacements",
-                                                        "time" => "NP1",
-                                                        "global_var" => false,
-                                                        "dof" => 1,
-                                                        "type" => Float64),
-                                "External_Displacements" => Dict("fieldname" => "Displacements",
-                                                                 "time" => "NP1",
-                                                                 "global_var" => true,
-                                                                 "dof" => 1,
-                                                                 "type" => Float64,
-                                                                 "compute_params" => Dict("Compute Class" => "Block_Data",
-                                                                                          "Calculation Type" => "Maximum",
-                                                                                          "Block" => "block_1",
-                                                                                          "Variable" => "Displacements")),
-                                "External_Forces" => Dict("fieldname" => "Forces",
-                                                          "time" => "NP1",
-                                                          "global_var" => true,
-                                                          "dof" => 3,
-                                                          "type" => Float64,
-                                                          "compute_params" => Dict("Compute Class" => "Node_Set_Data",
-                                                                                   "Calculation Type" => "Minimum",
-                                                                                   "Node Set" => 1,
-                                                                                   "Variable" => "DisplacementsNP1"))))
-computes = Dict("Fields" => Dict("External_Displacements" => Dict("fieldname" => "Displacements",
-                                                                  "time" => "NP1",
-                                                                  "global_var" => true,
-                                                                  "dof" => 1,
-                                                                  "type" => Float64,
-                                                                  "compute_params" => Dict("Compute Class" => "Block_Data",
-                                                                                           "Calculation Type" => "Maximum",
-                                                                                           "Block" => "block_1",
-                                                                                           "Variable" => "DisplacementsNP1")),
-                                 "External_Forces" => Dict("fieldname" => "Forces",
-                                                           "time" => "NP1",
-                                                           "global_var" => true,
-                                                           "dof" => 3,
-                                                           "type" => Float64,
-                                                           "compute_params" => Dict("Compute Class" => "Node_Set_Data",
-                                                                                    "Calculation Type" => "Minimum",
-                                                                                    "Node Set" => 1,
-                                                                                    "Variable" => "DisplacementsNP1"))))
+                         "time" => "NP1",
+                         "global_var" => false,
+                         "dof" => 1,
+                         "type" => Float64),
+                    "Forcesxy" => Dict("fieldname" => "Forces",
+                         "time" => "NP1",
+                         "global_var" => false,
+                         "dof" => 1,
+                         "type" => Float64),
+                    "Forcesxz" => Dict("fieldname" => "Forces",
+                         "time" => "NP1",
+                         "global_var" => false,
+                         "dof" => 1,
+                         "type" => Float64),
+                    "Forcesyx" => Dict("fieldname" => "Forces",
+                         "time" => "NP1",
+                         "global_var" => false,
+                         "dof" => 1,
+                         "type" => Float64),
+                    "Forcesyy" => Dict("fieldname" => "Forces",
+                         "time" => "NP1",
+                         "global_var" => false,
+                         "dof" => 1,
+                         "type" => Float64),
+                    "Forcesyz" => Dict("fieldname" => "Forces",
+                         "time" => "NP1",
+                         "global_var" => false,
+                         "dof" => 1,
+                         "type" => Float64),
+                    "Displacements" => Dict("fieldname" => "Displacements",
+                         "time" => "NP1",
+                         "global_var" => false,
+                         "dof" => 1,
+                         "type" => Float64),
+                    "External_Displacements" => Dict("fieldname" => "Displacements",
+                         "time" => "NP1",
+                         "global_var" => true,
+                         "dof" => 1,
+                         "type" => Float64,
+                         "compute_params" => Dict("Compute Class" => "Block_Data",
+                              "Calculation Type" => "Maximum",
+                              "Block" => "block_1",
+                              "Variable" => "Displacements")),
+                    "External_Forces" => Dict("fieldname" => "Forces",
+                         "time" => "NP1",
+                         "global_var" => true,
+                         "dof" => 3,
+                         "type" => Float64,
+                         "compute_params" =>
+                             Dict("Compute Class" => "Node_Set_Data",
+                                  "Calculation Type" => "Minimum",
+                                  "Node Set" => 1,
+                                  "Variable" => "DisplacementsNP1"))))
+computes = Dict("Fields" =>
+                    Dict("External_Displacements" => Dict("fieldname" => "Displacements",
+                              "time" => "NP1",
+                              "global_var" => true,
+                              "dof" => 1,
+                              "type" => Float64,
+                              "compute_params" =>
+                                  Dict("Compute Class" => "Block_Data",
+                                       "Calculation Type" => "Maximum",
+                                       "Block" => "block_1",
+                                       "Variable" => "DisplacementsNP1")),
+                         "External_Forces" => Dict("fieldname" => "Forces",
+                              "time" => "NP1",
+                              "global_var" => true,
+                              "dof" => 3,
+                              "type" => Float64,
+                              "compute_params" =>
+                                  Dict("Compute Class" => "Node_Set_Data",
+                                       "Calculation Type" => "Minimum",
+                                       "Node Set" => 1,
+                                       "Variable" => "DisplacementsNP1"))))
 
 exo1 = PeriLab.IO.create_result_file(filename2,
                                      nnodes,

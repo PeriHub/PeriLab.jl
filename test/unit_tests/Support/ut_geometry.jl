@@ -2,10 +2,88 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-#using Test
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
-# include("../../../src/PeriLab.jl")
-# using .PeriLab
+using Test
+
+make_bond_state(values...) = [collect(Float64, v) for v in values]
+
+@testset "compute_stretch!" begin
+    @testset "basic stretch" begin
+        undeformed = make_bond_state([1.0, 2.0, 4.0])
+        deformed = make_bond_state([1.5, 3.0, 4.0])
+        stretch = make_bond_state([0.0, 0.0, 0.0])
+
+        PeriLab.Geometry.compute_stretch!(stretch, deformed, undeformed)
+
+        # (1.5-1)/1 = 0.5, (3-2)/2 = 0.5, (4-4)/4 = 0
+        @test stretch[1] ≈ [0.5, 0.5, 0.0]
+    end
+
+    @testset "compression gives negative stretch" begin
+        undeformed = make_bond_state([2.0, 5.0])
+        deformed = make_bond_state([1.0, 4.0])
+        stretch = make_bond_state([0.0, 0.0])
+
+        PeriLab.Geometry.compute_stretch!(stretch, deformed, undeformed)
+
+        @test stretch[1] ≈ [-0.5, -0.2]
+    end
+
+    @testset "inputs are not modified" begin
+        undeformed = make_bond_state([1.0, 2.0])
+        deformed = make_bond_state([1.1, 2.4])
+        stretch = make_bond_state([0.0, 0.0])
+
+        undeformed_copy = deepcopy(undeformed)
+        deformed_copy = deepcopy(deformed)
+
+        PeriLab.Geometry.compute_stretch!(stretch, deformed, undeformed)
+
+        # The implementation writes into `stretch` twice, using it as its own operand in
+        # the division. Nothing may leak back into the arguments.
+        @test undeformed == undeformed_copy
+        @test deformed == deformed_copy
+    end
+
+    @testset "result is written into the passed container" begin
+        undeformed = make_bond_state([1.0, 1.0])
+        deformed = make_bond_state([2.0, 3.0])
+        stretch = make_bond_state([0.0, 0.0])
+        stretch_ref = stretch
+
+        PeriLab.Geometry.compute_stretch!(stretch, deformed, undeformed)
+
+        # in-place: the caller's object must hold the result, not a fresh allocation
+        @test stretch_ref === stretch
+        @test stretch_ref[1] ≈ [1.0, 2.0]
+    end
+
+    @testset "previous content is overwritten" begin
+        undeformed = make_bond_state([1.0, 1.0])
+        deformed = make_bond_state([1.5, 1.5])
+        stretch = make_bond_state([99.0, -42.0])
+
+        PeriLab.Geometry.compute_stretch!(stretch, deformed, undeformed)
+
+        @test stretch[1] ≈ [0.5, 0.5]
+    end
+
+    @testset "multiple nodes with different neighbour counts" begin
+        undeformed = make_bond_state([1.0, 2.0], [4.0], [1.0, 1.0, 2.0])
+        deformed = make_bond_state([2.0, 3.0], [2.0], [1.0, 1.5, 3.0])
+        stretch = make_bond_state([0.0, 0.0], [0.0], [0.0, 0.0, 0.0])
+
+        compute_stretch!(stretch, deformed, undeformed)
+
+        @test length(stretch) == 3
+        @test stretch[1] ≈ [1.0, 0.5]
+        @test stretch[2] ≈ [-0.5]
+        @test stretch[3] ≈ [0.0, 0.5, 0.5]
+    end
+end
 
 @testset "ut_compute_bond_level_deformation_gradient" begin
     nodes = [1]

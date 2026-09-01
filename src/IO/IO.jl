@@ -200,6 +200,76 @@ function clearNP1(name::String)
 end
 
 """
+    is_bond_field_type(field_type)
+
+Returns whether a field type produced by `Data_Manager.get_field_type` describes a
+bond field.
+
+!!! note
+    This and `gather_bond_values` in `exodus_export.jl` are the only two places that
+    encode how a bond field looks. Adjust both together if the naming or the storage
+    layout of bond fields changes.
+
+# Arguments
+- `field_type`: The field type
+# Returns
+- `::Bool`: `true` for bond fields
+"""
+is_bond_field_type(field_type) = startswith(string(field_type), "Bond")
+
+"""
+    bond_component_size(datafield)
+
+Returns the size of a single bond value, i.e. `()` for a scalar bond field, `(dof,)`
+for a vector one such as `Deformed Bond Geometry`, and `(i_dof, j_dof)` for a tensor
+one.
+
+Handles both the nested layout PeriLab uses for bond fields
+(`field[node][neighbor][...]`) and a flat one (`field[node][neighbor, ...]`). Nodes
+without neighbours are skipped, so a boundary node cannot make a vector field look
+scalar.
+
+# Arguments
+- `datafield`: The bond field, indexed by node
+# Returns
+- `::Tuple`: The component size
+"""
+function bond_component_size(datafield)
+    for node_entry in datafield
+        isempty(node_entry) && continue
+        if ndims(node_entry) == 1
+            # nested: the neighbour entry is the value itself
+            return size(first(node_entry))
+        else
+            # flat: strip the neighbour dimension
+            return size(node_entry)[2:end]
+        end
+    end
+    return ()
+end
+
+"""
+    split_output_fields(fields::Dict)
+
+Splits an output field definition into its nodal, bond and global parts.
+
+# Arguments
+- `fields::Dict`: The `"Fields"` entry of an output definition
+# Returns
+- `nodal::Dict`, `bond::Dict`, `global_::Dict`
+"""
+function split_output_fields(fields::Dict)
+    nodal = Dict(key => value
+                 for (key, value) in fields
+                 if !value["global_var"] && !get(value, "bond_var", false))
+    bond = Dict(key => value
+                for (key, value) in fields
+                if !value["global_var"] && get(value, "bond_var", false))
+    global_ = Dict(key => value for (key, value) in fields if value["global_var"])
+    return nodal, bond, global_
+end
+
+"""
     get_results_mapping(params::Dict, path::String)
 
 Gets the results mapping
@@ -226,6 +296,15 @@ function get_results_mapping(params::Dict, path::String)
         output_mapping[id]["write_after_damage"] = get_write_after_damage(outputs, output)
         output_mapping[id]["start_time"] = get_start_time(outputs, output)
         output_mapping[id]["end_time"] = get_end_time(outputs, output)
+
+        # Bond export settings live in the raw output block of the input deck and have
+        # to be carried over, otherwise init_bond_information_export never sees them and
+        # silently exports every block.
+        output_mapping[id]["Bond Export"] = get(outputs[output], "Bond Export", false)
+        if haskey(outputs[output], "Bond Blocks")
+            output_mapping[id]["Bond Blocks"] = outputs[output]["Bond Blocks"]
+        end
+
         for fieldname in fieldnames
             compute_name = ""
             compute_params = Dict{}
@@ -280,13 +359,20 @@ function get_results_mapping(params::Dict, path::String)
             end
             # end
 
-            if fieldname[2] == "Constant"
-                field_type = Data_Manager.get_field_type(fieldname[1], false)
-            else
-                field_type = Data_Manager.get_field_type(fieldname[1] * fieldname[2], false)
+            # One resolved key for both lookups: the field class (false) decides how the
+            # field is written, the vartype (true) is the scalar element type.
+            field_key = fieldname[2] == "Constant" ? fieldname[1] :
+                        fieldname[1] * fieldname[2]
+            field_type = Data_Manager.get_field_type(field_key, false)
+            sample_type = Data_Manager.get_field_type(field_key, true)
+
+            bond_var = is_bond_field_type(field_type)
+
+            if bond_var && global_var
+                @abort "Field $(fieldname[1]) is a bond field and cannot be used as a global compute."
             end
 
-            if !(field_type in [
+            if !bond_var && !(field_type in [
                      "NodeScalarField",
                      "NodeVectorField",
                      "NodeTensorField",
@@ -298,17 +384,27 @@ function get_results_mapping(params::Dict, path::String)
             datafield = Data_Manager.get_field(fieldname[1], fieldname[2])
             sizedatafield = size(datafield)
             if isempty(sizedatafield)
-                @abort "No field " * fieldname * " exists."
+                @abort "No field " * fieldname[1] * " exists."
                 return nothing
             end
 
-            n_sizedata = length(sizedatafield)
+            # A bond field is stored per node, so its component layout sits one level
+            # down. Strip the neighbour dimension and reuse the nodal logic on the rest.
+            if bond_var
+                component_size = bond_component_size(datafield)
+                n_sizedata = length(component_size) + 1
+                sizedatafield = (sizedatafield[1], component_size...)
+            else
+                n_sizedata = length(sizedatafield)
+            end
 
             output_template = Dict("fieldname" => fieldname[1],
                                    "time" => fieldname[2],
                                    "global_var" => global_var,
+                                   "bond_var" => bond_var,
                                    "compute_params" => compute_params,
                                    "nodeset" => nodeset)
+
             for node_id in node_ids
                 base_name = global_var ? compute_name : fieldname[1]
                 if multi_ids
@@ -323,13 +419,15 @@ function get_results_mapping(params::Dict, path::String)
                         end
                         output_dict = copy(output_template)
                         output_dict["dof"] = dof
-                        output_dict["type"] = typeof(datafield[1, 1])
+                        output_dict["type"] = sample_type
                         output_mapping[id]["Fields"][temp_name] = output_dict
                     end
                 elseif n_sizedata == 1
                     output_dict = copy(output_template)
-                    output_dict["dof"] = 1
-                    output_dict["type"] = typeof(datafield[1, 1])
+                    if !bond_var
+                        output_dict["dof"] = 1
+                    end
+                    output_dict["type"] = sample_type
                     output_mapping[id]["Fields"][base_name] = output_dict
                 elseif n_sizedata == 2
                     i_ref_dof = sizedatafield[2]
@@ -337,7 +435,7 @@ function get_results_mapping(params::Dict, path::String)
                         temp_name = base_name * get_paraview_coordinates(dof, i_ref_dof)
                         output_dict = copy(output_template)
                         output_dict["dof"] = dof
-                        output_dict["type"] = typeof(datafield[1, 1])
+                        output_dict["type"] = sample_type
                         output_mapping[id]["Fields"][temp_name] = output_dict
                     end
                 elseif n_sizedata == 3
@@ -351,7 +449,7 @@ function get_results_mapping(params::Dict, path::String)
                             output_dict = copy(output_template)
                             output_dict["i_dof"] = i_dof
                             output_dict["j_dof"] = j_dof
-                            output_dict["type"] = typeof(datafield[1, 1, 1])
+                            output_dict["type"] = sample_type
                             output_mapping[id]["Fields"][temp_name] = output_dict
                         end
                     end
@@ -423,7 +521,7 @@ function init_orientations(params::Dict)
 end
 
 """
-    init_write_results(params::Dict, output_dir::String, path::String, nsteps::Int64, PERILAB_VERSION::String)
+    init_write_results(params::Dict, output_dir::String, path::String, PERILAB_VERSION::String, qa_vector::Vector{String})
 
 Initialize write results.
 
@@ -431,7 +529,8 @@ Initialize write results.
 - `params::Dict`: The parameters
 - `output_dir::String`: The output directory.
 - `path::String`: The path
-- `nsteps::Int64`: The number of steps
+- `PERILAB_VERSION::String`: The PeriLab version
+- `qa_vector::Vector{String}`: Additional QA records
 # Returns
 - `result_files::Array`: The result files
 - `outputs::Dict`: The outputs
@@ -451,6 +550,7 @@ function init_write_results(params::Dict,
     global_ids = Data_Manager.loc_to_glob(1:nnodes)
     dof = Data_Manager.get_dof()
     nnsets = Data_Manager.get_nnsets()
+    nlist = Data_Manager.get_nlist()
     coordinates = Data_Manager.get_field("Coordinates")
     block_Id = Data_Manager.get_field("Block_Id")
 
@@ -477,23 +577,33 @@ function init_write_results(params::Dict,
     nsets = Data_Manager.get_nsets()
     outputs = get_results_mapping(params, path)
 
+    # Block ids of the locally owned nodes only. Ghost entries would produce bonds and
+    # block members the exodus file was not initialised for.
+    local_block_Id = block_Id[1:nnodes]
+    n_blocks = length(block_name_list)
+
     topology = nothing
     fem_block = nothing
-    num_elements = 0
     elem_global_ids = nothing
+    num_fem_elements = 0
+
     if Data_Manager.fem_active()
         topology = Data_Manager.get_field("FE Topology")
         fem_block = Data_Manager.get_field("FEM Block")
-        num_elements = Data_Manager.get_num_elements()
+        num_fem_elements = Data_Manager.get_num_elements()
         num_nodes_in_topo = length(unique(topology))
-        # @info nnodes, num_elements, num_nodes_in_topo
-        elem_global_ids = Data_Manager.loc_to_glob(1:(num_elements + nnodes - num_nodes_in_topo))
-        # @info elem_global_ids
+        elem_global_ids = Data_Manager.loc_to_glob(1:(num_fem_elements + nnodes - num_nodes_in_topo))
     end
+
     for name in eachindex(nsets)
         existing_nodes = intersect(global_ids, nsets[name])
         nsets[name] = Data_Manager.get_local_nodes(existing_nodes)
     end
+
+    # Bond blocks per output file: the same object supplies the element and block counts
+    # at initialisation, the connectivity, and the per-step values, so the three can
+    # never drift apart.
+    bond_blocks_per_file = Dict{Int64,OrderedDict{Int64,BondBlock}}()
 
     for (id, filename) in enumerate(filenames)
         rank = Data_Manager.get_rank()
@@ -507,13 +617,32 @@ function init_write_results(params::Dict,
                            get_mpi_rank_string(rank, max_rank)
             end
             outputs[id]["Output File Type"] = "Exodus"
+
+            _, bond_fields, _ = split_output_fields(outputs[id]["Fields"])
+
+            # Bond variables need the bond blocks. If the user asked for bond output but
+            # not for "Bond Export", switch it on — but only the export itself, never a
+            # block selection: an explicit "Bond Blocks" entry stays authoritative, and
+            # absence still means "all blocks".
+            if !isempty(bond_fields) && !get(outputs[id], "Bond Export", false)
+                @info "Bond output variables requested, enabling bond export for $filename"
+                outputs[id]["Bond Export"] = true
+            end
+
+            bond_blocks, n_bond_elements,
+            n_bond_blocks = init_bond_information_export(local_block_Id,
+                                                         n_blocks,
+                                                         nlist,
+                                                         outputs[id])
+            bond_blocks_per_file[id] = bond_blocks
+
             push!(result_files,
                   create_result_file(filename,
                                      nnodes,
                                      dof,
-                                     length(block_name_list),
+                                     n_blocks + n_bond_blocks,
                                      nnsets,
-                                     num_elements,
+                                     num_fem_elements + n_bond_elements,
                                      topology))
         elseif ".csv" == filename[(end - 3):end]
             if rank == 0
@@ -529,19 +658,31 @@ function init_write_results(params::Dict,
     coords = vcat(transpose(coordinates[1:nnodes, :]))
     for id in eachindex(result_files)
         if result_files[id]["type"] == "Exodus"
+            bond_blocks = get(bond_blocks_per_file, id,
+                              OrderedDict{Int64,BondBlock}())
+            _, bond_fields, _ = split_output_fields(outputs[id]["Fields"])
+            bond_output_names::Vector{String} = collect(keys(sort!(OrderedDict(bond_fields))))
+
             result_files[id]["file"] = init_results_in_exodus(result_files[id]["file"],
                                                               dof,
                                                               outputs[id],
                                                               coords,
-                                                              block_Id[1:nnodes],
+                                                              local_block_Id,
                                                               block_name_list,
                                                               nsets,
                                                               global_ids,
                                                               PERILAB_VERSION,
-                                                              qa_vector,
-                                                              fem_block,
-                                                              topology,
-                                                              elem_global_ids)
+                                                              qa_vector;
+                                                              bond_blocks = bond_blocks,
+                                                              bond_output_names = bond_output_names,
+                                                              fem_block = fem_block,
+                                                              topology = topology,
+                                                              elem_global_ids = elem_global_ids)
+
+            # The bond blocks are needed again for every write, so they stay with the
+            # result file rather than being rebuilt per step.
+            result_files[id]["bond_blocks"] = bond_blocks
+            result_files[id]["n_blocks"] = n_blocks
         end
 
         if outputs[id]["flush_file"]
@@ -614,29 +755,50 @@ function write_results(result_files::Vector{Dict},
         output_frequency[id]["Counter"] += 1
         if output_frequency[id]["Counter"] == output_frequency[id]["Output Frequency"]
             output_frequency[id]["Step"] += 1
-            nodal_outputs = Dict(key => value
-                                 for
-                                 (key, value) in outputs[id]["Fields"]
-                                 if (!value["global_var"]))
-            global_outputs = Dict(key => value
-                                  for
-                                  (key, value) in outputs[id]["Fields"]
-                                  if (value["global_var"]))
+
+            nodal_outputs, bond_outputs,
+            global_outputs = split_output_fields(outputs[id]["Fields"])
+
             if outputs[id]["flush_file"] &&
                ((Data_Manager.get_rank() == 0 && output_type == "CSV") ||
                 output_type == "Exodus")
                 open_result_file(result_files[id])
             end
-            if output_type == "Exodus" &&
-               length(nodal_outputs) > 0 &&
-               result_files[id]["type"] == "Exodus"
-                result_files[id]["file"] = write_step_and_time(result_files[id]["file"],
-                                                               output_frequency[id]["Step"],
-                                                               time)
-                result_files[id]["file"] = write_nodal_results_in_exodus(result_files[id]["file"],
-                                                                         output_frequency[id]["Step"],
-                                                                         nodal_outputs)
+
+            if output_type == "Exodus" && result_files[id]["type"] == "Exodus"
+                wrote_time = false
+
+                if length(nodal_outputs) > 0
+                    result_files[id]["file"] = write_step_and_time(result_files[id]["file"],
+                                                                   output_frequency[id]["Step"],
+                                                                   time)
+                    wrote_time = true
+                    result_files[id]["file"] = write_nodal_results_in_exodus(result_files[id]["file"],
+                                                                             output_frequency[id]["Step"],
+                                                                             nodal_outputs)
+                end
+
+                if length(bond_outputs) > 0
+                    if !wrote_time
+                        result_files[id]["file"] = write_step_and_time(result_files[id]["file"],
+                                                                       output_frequency[id]["Step"],
+                                                                       time)
+                        wrote_time = true
+                    end
+                    bond_blocks = get(result_files[id], "bond_blocks",
+                                      OrderedDict{Int64,BondBlock}())
+                    n_blocks = get(result_files[id], "n_blocks", 0)
+                    nnodes = Data_Manager.get_nnodes()
+                    block_Id = Data_Manager.get_field("Block_Id")
+                    result_files[id]["file"] = write_bond_results_in_exodus(result_files[id]["file"],
+                                                                            output_frequency[id]["Step"],
+                                                                            bond_outputs,
+                                                                            bond_blocks,
+                                                                            block_Id[1:nnodes],
+                                                                            n_blocks)
+                end
             end
+
             if length(global_outputs) > 0
                 global_values = get_global_values(global_outputs)
                 if output_type == "Exodus"
@@ -975,7 +1137,7 @@ function show_mpi_summary(log_file::String,
         else
             stream = get_log_stream(1)
             if !isnothing(stream)
-                pretty_table(stream, merged_df; show_first_column_label_only = true)
+                pretty_table(stream, df; show_first_column_label_only = true)
             end
         end
     else
