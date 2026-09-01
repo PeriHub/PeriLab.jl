@@ -15,7 +15,7 @@ using ......Helpers:
                      sub_in_place!,
                      div_in_place!,
                      mul_in_place!,
-                     get_dependent_value_function
+                     get_dependent_value
 
 export compute_model
 export damage_name
@@ -84,7 +84,7 @@ function compute_model(nodes::AbstractVector{Int64},
     quad_horizons::NodeScalarField{Float64} = Data_Manager.get_field("Quad Horizon")
     inverse_nlist::Vector{Dict{Int64,Int64}} = Data_Manager.get_inverse_nlist()
 
-    critical_value_fn = get_dependent_value_function("Critical Value", damage_parameter)
+    critical_value_fn = get_dependent_value("Critical Value", damage_parameter)
 
     tension::Bool = get(damage_parameter, "Only Tension", true)
     inter_block_damage::Bool = Data_Manager.haskey(damage_parameter, "Interblock Damage")

@@ -459,19 +459,22 @@ end
 
 """
     init_results_in_exodus(exo, dof, output, coords, block_Id, all_block_name_list,
-                           nsets, global_ids, PERILAB_VERSION, qa_vector;
-                           bond_blocks = ..., bond_output_names = String[],
+                           nsets, global_ids, PERILAB_VERSION, qa_vector,
                            fem_block = nothing, topology = nothing,
-                           elem_global_ids = nothing)
+                           elem_global_ids = nothing;
+                           bond_blocks = ..., bond_output_names = String[])
 
 Initializes the results in exodus.
+
+Works with and without bond export: leaving both keywords out writes a plain nodal
+result file, exactly as before the bond export existed. The FE arguments keep their
+old positional places.
 
 !!! note "Changed interface"
     The former positional arguments `bond_export::Bool` and `nlist` are gone. Pass the
     pre-computed `bond_blocks` from [`init_bond_information_export`](@ref) instead — the
-    same object whose sizes were used for `create_result_file`. The remaining optional
-    arguments are keywords now, which also removes the illegal ordering of the old
-    signature (an optional argument may not precede a required one).
+    same object whose sizes were used for `create_result_file`. Dropping those two also
+    fixes the old signature, which had an optional argument in front of a required one.
 
 # Arguments
 - `exo::ExodusDatabase`: The exodus database
@@ -484,12 +487,12 @@ Initializes the results in exodus.
 - `global_ids::Vector{Int64}`: The global ids
 - `PERILAB_VERSION::String`: PeriLab version string
 - `qa_vector::Vector{String}`: Additional QA records (at most 2 are stored)
-# Keywords
-- `bond_blocks`: Bond blocks, see [`compute_bond_connectivity`](@ref)
-- `bond_output_names::Vector{String}`: Names of the bond variables, written as element variables
 - `fem_block::Union{Nothing,Vector{Bool}}`: Per-node flag marking FE nodes
 - `topology::Union{Nothing,Matrix{Int64}}`: FE topology
 - `elem_global_ids::Union{Nothing,Vector{Int64}}`: Global element ids for the FE part
+# Keywords
+- `bond_blocks`: Bond blocks, see [`compute_bond_connectivity`](@ref). Empty means no bond export.
+- `bond_output_names::Vector{String}`: Names of the bond variables, written as element variables
 # Returns
 - `exo::ExodusDatabase`: The exodus file
 """
@@ -502,13 +505,13 @@ function init_results_in_exodus(exo::ExodusDatabase,
                                 nsets::Dict{String,Vector{Int64}},
                                 global_ids::Vector{Int64},
                                 PERILAB_VERSION::String,
-                                qa_vector::Vector{String};
-                                bond_blocks::AbstractDict{Int64,BondBlock} = OrderedDict{Int64,
-                                                                                         BondBlock}(),
-                                bond_output_names::Vector{String} = String[],
+                                qa_vector::Vector{String},
                                 fem_block::Union{Nothing,Vector{Bool}} = nothing,
                                 topology::Union{Nothing,Matrix{Int64}} = nothing,
-                                elem_global_ids::Union{Nothing,Vector{Int64}} = nothing)
+                                elem_global_ids::Union{Nothing,Vector{Int64}} = nothing;
+                                bond_blocks::AbstractDict{Int64,BondBlock} = OrderedDict{Int64,
+                                                                                         BondBlock}(),
+                                bond_output_names::Vector{String} = String[])
     qa = Matrix{String}(undef, 1, 4)
     # Only 4 entries with 32 chars possible!
     qa[1] = "PeriLab $PERILAB_VERSION"

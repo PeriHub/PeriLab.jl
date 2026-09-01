@@ -9,7 +9,7 @@ using TimerOutputs: @timeit
 using .....Material_Basis:
                            flaw_function, get_von_mises_yield_stress,
                            compute_deviatoric_and_spherical_stresses
-using .....Helpers: get_dependent_value_function
+using .....Helpers: get_dependent_value
 using LinearAlgebra
 using StaticArrays
 export fe_support
@@ -160,7 +160,7 @@ function compute_stresses(nodes,
                                                                           "NP1")
     coordinates::NodeVectorField{Float64} = Data_Manager.get_field("Coordinates")
 
-    yield_stress_fn = get_dependent_value_function("Yield Stress", material_parameter)
+    yield_stress_fn = get_dependent_value("Yield Stress", material_parameter)
 
     # sqrt23::Float64 = sqrt(2 / 3)
     for iID in nodes
@@ -173,18 +173,18 @@ function compute_stresses(nodes,
             stress_NP1[iID, :, :],
             plastic_strain_NP1[iID],
             von_Mises_stress_yield[iID] = compute_plastic_model(stress_NP1[iID,
-                                                                :,
-                                                                :],
+                                                                           :,
+                                                                           :],
                                                                 stress_N[iID,
-                                                                :,
-                                                                :],
+                                                                         :,
+                                                                         :],
                                                                 spherical_stress_NP1,
                                                                 spherical_stress_N,
                                                                 deviatoric_stress_NP1,
                                                                 deviatoric_stress_N,
                                                                 strain_increment[iID,
-                                                                :,
-                                                                :],
+                                                                                 :,
+                                                                                 :],
                                                                 von_Mises_stress_yield[iID],
                                                                 plastic_strain_NP1[iID],
                                                                 plastic_strain_N[iID],
@@ -233,7 +233,7 @@ function compute_stresses_ba(nodes,
     spherical_stress_NP1::Float64 = 0
     deviatoric_stress_NP1 = @MMatrix zeros(dof, dof)
 
-    yield_stress_fn = get_dependent_value_function("Yield Stress", material_parameter)
+    yield_stress_fn = get_dependent_value("Yield Stress", material_parameter)
 
     for iID in nodes
         yield_stress = yield_stress_fn(iID)
@@ -244,16 +244,16 @@ function compute_stresses_ba(nodes,
             stress_NP1[iID][jID, :, :],
             plastic_strain_NP1[iID][jID],
             von_Mises_stress_yield[iID][jID] = compute_plastic_model(stress_NP1[iID][jID, :,
-                                                                     :],
+                                                                                     :],
                                                                      stress_N[iID][jID, :,
-                                                                     :],
+                                                                                   :],
                                                                      spherical_stress_NP1,
                                                                      spherical_stress_N,
                                                                      deviatoric_stress_NP1,
                                                                      deviatoric_stress_N,
                                                                      strain_increment[iID][jID,
-                                                                     :,
-                                                                     :],
+                                                                                           :,
+                                                                                           :],
                                                                      von_Mises_stress_yield[iID][jID],
                                                                      plastic_strain_NP1[iID][jID],
                                                                      plastic_strain_N[iID][jID],

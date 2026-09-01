@@ -76,7 +76,7 @@ make_bond_state(values...) = [collect(Float64, v) for v in values]
         deformed = make_bond_state([2.0, 3.0], [2.0], [1.0, 1.5, 3.0])
         stretch = make_bond_state([0.0, 0.0], [0.0], [0.0, 0.0, 0.0])
 
-        compute_stretch!(stretch, deformed, undeformed)
+        PeriLab.Geometry.compute_stretch!(stretch, deformed, undeformed)
 
         @test length(stretch) == 3
         @test stretch[1] ≈ [1.0, 0.5]

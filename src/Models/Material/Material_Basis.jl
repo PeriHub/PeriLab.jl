@@ -7,7 +7,7 @@ using LinearAlgebra
 using LoopVectorization
 using StaticArrays
 using ......Helpers: get_MMatrix, determinant, invert, smat, interpol_data,
-                     get_dependent_value,
+                     get_dependent_value_with_ID,
                      mat_mul!, matrix_to_voigt, voigt_to_matrix
 using ......Data_Manager
 using ......PeriLabExceptions: @abort
@@ -261,7 +261,7 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
 
     if state_factor_defined && Data_Manager.has_key("State Variables")
         state_factor = Data_Manager.get_field("State Variables")[:,
-        parameter["State Factor ID"]]
+                                                                 parameter["State Factor ID"]]
         K .*= state_factor
         E .*= state_factor
         G .*= state_factor
@@ -305,8 +305,8 @@ function get_Hooke_matrix(parameter::Dict,
         aniso_matrix = get_MMatrix(36)
         for iID in 1:6
             for jID in iID:6
-                value = get_dependent_value("C" * string(iID) * string(jID),
-                                            parameter)
+                value = get_dependent_value_with_ID("C" * string(iID) * string(jID),
+                                                    parameter)
                 aniso_matrix[iID, jID] = value
                 aniso_matrix[jID, iID] = value
             end
@@ -315,15 +315,15 @@ function get_Hooke_matrix(parameter::Dict,
     elseif occursin("orthotropic", symmetry)
         aniso_matrix = get_MMatrix(36)
 
-        E_x = get_dependent_value("Young's Modulus X", parameter, ID)
-        E_y = get_dependent_value("Young's Modulus Y", parameter, ID)
-        E_z = get_dependent_value("Young's Modulus Z", parameter, ID)
-        nu_xy = get_dependent_value("Poisson's Ratio XY", parameter, ID)
-        nu_yz = get_dependent_value("Poisson's Ratio YZ", parameter, ID)
-        nu_xz = get_dependent_value("Poisson's Ratio XZ", parameter, ID)
-        g_xy = get_dependent_value("Shear Modulus XY", parameter, ID)
-        g_yz = get_dependent_value("Shear Modulus YZ", parameter, ID)
-        g_xz = get_dependent_value("Shear Modulus XZ", parameter, ID)
+        E_x = get_dependent_value_with_ID("Young's Modulus X", parameter, ID)
+        E_y = get_dependent_value_with_ID("Young's Modulus Y", parameter, ID)
+        E_z = get_dependent_value_with_ID("Young's Modulus Z", parameter, ID)
+        nu_xy = get_dependent_value_with_ID("Poisson's Ratio XY", parameter, ID)
+        nu_yz = get_dependent_value_with_ID("Poisson's Ratio YZ", parameter, ID)
+        nu_xz = get_dependent_value_with_ID("Poisson's Ratio XZ", parameter, ID)
+        g_xy = get_dependent_value_with_ID("Shear Modulus XY", parameter, ID)
+        g_yz = get_dependent_value_with_ID("Shear Modulus YZ", parameter, ID)
+        g_xz = get_dependent_value_with_ID("Shear Modulus XZ", parameter, ID)
 
         nu_yx = nu_xy * E_y / E_x
         nu_zy = nu_yz * E_z / E_y
@@ -354,12 +354,12 @@ function get_Hooke_matrix(parameter::Dict,
         if dof == 3
             aniso_matrix = get_MMatrix(36)
 
-            E_x = get_dependent_value("Young's Modulus X", parameter, ID)
-            E_y = get_dependent_value("Young's Modulus Y", parameter, ID)
-            nu_xy = get_dependent_value("Poisson's Ratio XY", parameter, ID)
-            nu_yz = get_dependent_value("Poisson's Ratio YZ", parameter, ID)
-            g_xy = get_dependent_value("Shear Modulus XY", parameter, ID)
-            g_yz = get_dependent_value("Shear Modulus YZ", parameter, ID)
+            E_x = get_dependent_value_with_ID("Young's Modulus X", parameter, ID)
+            E_y = get_dependent_value_with_ID("Young's Modulus Y", parameter, ID)
+            nu_xy = get_dependent_value_with_ID("Poisson's Ratio XY", parameter, ID)
+            nu_yz = get_dependent_value_with_ID("Poisson's Ratio YZ", parameter, ID)
+            g_xy = get_dependent_value_with_ID("Shear Modulus XY", parameter, ID)
+            g_yz = get_dependent_value_with_ID("Shear Modulus YZ", parameter, ID)
 
             nu_yx = nu_xy * E_y / E_x
 
@@ -389,11 +389,11 @@ function get_Hooke_matrix(parameter::Dict,
         elseif occursin("plane strain", symmetry)
             aniso_matrix = get_MMatrix(9)
 
-            E_x = get_dependent_value("Young's Modulus X", parameter, ID)
-            E_y = get_dependent_value("Young's Modulus Y", parameter, ID)
-            nu_xy = get_dependent_value("Poisson's Ratio XY", parameter, ID)
-            nu_yz = get_dependent_value("Poisson's Ratio YZ", parameter, ID)
-            g_xy = get_dependent_value("Shear Modulus XY", parameter, ID)
+            E_x = get_dependent_value_with_ID("Young's Modulus X", parameter, ID)
+            E_y = get_dependent_value_with_ID("Young's Modulus Y", parameter, ID)
+            nu_xy = get_dependent_value_with_ID("Poisson's Ratio XY", parameter, ID)
+            nu_yz = get_dependent_value_with_ID("Poisson's Ratio YZ", parameter, ID)
+            g_xy = get_dependent_value_with_ID("Shear Modulus XY", parameter, ID)
 
             nu_yx = nu_xy * E_y / E_x
             D = (1 + nu_yz) * (1 - nu_yz - 2 * nu_xy * nu_yx)
@@ -410,10 +410,10 @@ function get_Hooke_matrix(parameter::Dict,
         elseif occursin("plane stress", symmetry)
             aniso_matrix = get_MMatrix(9)
 
-            E_x = get_dependent_value("Young's Modulus X", parameter, ID)
-            E_y = get_dependent_value("Young's Modulus Y", parameter, ID)
-            nu_xy = get_dependent_value("Poisson's Ratio XY", parameter, ID)
-            g_xy = get_dependent_value("Shear Modulus XY", parameter, ID)
+            E_x = get_dependent_value_with_ID("Young's Modulus X", parameter, ID)
+            E_y = get_dependent_value_with_ID("Young's Modulus Y", parameter, ID)
+            nu_xy = get_dependent_value_with_ID("Poisson's Ratio XY", parameter, ID)
+            g_xy = get_dependent_value_with_ID("Shear Modulus XY", parameter, ID)
 
             nu_yx = nu_xy * E_y / E_x
 
@@ -561,15 +561,15 @@ function distribute_forces!(force_densities::Matrix{Float64},
             @views @inbounds @fastmath for m in axes(force_densities[iID, :], 1)
                 #temp = bond_damage[iID][jID] * bond_force[iID][jID, m]
                 force_densities[iID,
-                m] += bond_damage[iID][jID] *
-                                           bond_force[iID][jID][m] *
-                                           volume[nlist[iID][jID]] *
-                                           bond_mod[jID][m]
+                                m] += bond_damage[iID][jID] *
+                                      bond_force[iID][jID][m] *
+                                      volume[nlist[iID][jID]] *
+                                      bond_mod[jID][m]
                 force_densities[nlist[iID][jID],
-                m] -= bond_damage[iID][jID] *
-                                                       bond_force[iID][jID][m] *
-                                                       volume[iID] *
-                                                       bond_mod[jID][m]
+                                m] -= bond_damage[iID][jID] *
+                                      bond_force[iID][jID][m] *
+                                      volume[iID] *
+                                      bond_mod[jID][m]
             end
         end
     end
@@ -670,48 +670,47 @@ Allows the modification of the yield stress at a specific position. This is typi
 """
 function flaw_function(params::Dict,
                        coor::Union{Vector{Int64},Vector{Float64},SubArray{Float64}},
-                       stress::Float64)
-    if !haskey(params, "Flaw Function")
-        return stress
-    end
-    if !haskey(params["Flaw Function"], "Active")
-        @abort "Flaw Function needs an entry ''Active''."
-        return nothing
-    end
-    if !haskey(params["Flaw Function"], "Function")
-        @abort "Flaw Function needs an entry ''Function''."
-        return nothing
-    end
-    if !params["Flaw Function"]["Active"]
-        return stress
-    end
-    flaw_location::Vector{Float64} = zeros(length(coor))
-    if params["Flaw Function"]["Function"] == "Pre-defined"
-        flaw_size = params["Flaw Function"]["Flaw Size"]
-        flaw_magnitude = params["Flaw Function"]["Flaw Magnitude"]
-        if !(0 < flaw_magnitude <= 1)
-            @abort "Flaw Magnitude should be between 0 and 1"
-            return nothing
-        end
-        flaw_location[1] = params["Flaw Function"]["Flaw Location X"]
-        flaw_location[2] = params["Flaw Function"]["Flaw Location Y"]
-        if haskey(params["Flaw Function"], "Flaw location Z") && length(coor) == 3
-            flaw_location[3] = params["Flaw Function"]["Flaw Location Z"]
-        end
-        modified_stress = stress * (1 -
-                           flaw_magnitude *
-                           exp(-norm(coor - flaw_location) * norm(coor - flaw_location) /
-                               flaw_size /
-                               flaw_size))
+                       stress::T) where {T<:Union{Float64,Int64}}
+    flaw = get(params, "Flaw Function", nothing)
+    isnothing(flaw) && return stress
 
-    else
-        @warn "Not very user friendly right now"
-        #global x = coor[1]
-        #global y = coor[2]
-        #
-        #modified_stress = stress * (1 - eval(Meta.parse(params["Flaw Function"]["Function"])))
+    if !haskey(flaw, "Active")
+        @abort "Flaw Function needs an entry ''Active''."
     end
-    return modified_stress
+    if !haskey(flaw, "Function")
+        @abort "Flaw Function needs an entry ''Function''."
+    end
+
+    flaw["Active"]::Bool || return stress
+
+    if flaw["Function"] != "Pre-defined"
+        @abort "Flaw Function ''$(flaw["Function"])'' is not implemented, " *
+               "only ''Pre-defined'' is supported."
+    end
+
+    flaw_size::Float64 = flaw["Flaw Size"]
+    flaw_magnitude::Float64 = flaw["Flaw Magnitude"]
+
+    if !(0 < flaw_magnitude <= 1)
+        @abort "Flaw Magnitude should be between 0 and 1."
+    end
+    if flaw_size <= 0
+        @abort "Flaw Size must be positive."
+    end
+
+    # Squared distance without building a location vector: no allocation, no sqrt that
+    # would only be squared again.
+    dx = Float64(coor[1]) - Float64(flaw["Flaw Location X"])
+    dy = Float64(coor[2]) - Float64(flaw["Flaw Location Y"])
+    distance_squared = dx * dx + dy * dy
+
+    if length(coor) == 3
+        dz = Float64(coor[3]) - Float64(get(flaw, "Flaw Location Z", 0.0))
+        distance_squared += dz * dz
+    end
+
+    return stress *
+           (1 - flaw_magnitude * exp(-distance_squared / (flaw_size * flaw_size)))
 end
 
 """

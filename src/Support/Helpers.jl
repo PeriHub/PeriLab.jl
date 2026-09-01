@@ -31,7 +31,7 @@ export find_files_with_ending
 export get_block_nodes
 export matrix_style
 export get_fourth_order
-export get_dependent_value_function
+export get_dependent_value
 export progress_bar
 export invert
 export compute_distance_and_normals
@@ -233,10 +233,11 @@ function get_nearest_neighbors(nodes,
                          coords_nb,# Potential neighbor coordinates -> must be transpose for the datamanager definition
                          nhs,
                          iID,
-                         search_radius = radius isa AbstractVector ? radius[iID] : radius) do i,
-                                                                                              j,
-                                                                                              _,
-                                                                                              L
+                         search_radius = radius isa AbstractVector ? radius[iID] : radius
+                         ) do i,
+                              j,
+                              _,
+                              L
             if i != j || diffent_lists
                 push!(neighbors, j)
                 list_empty = false
@@ -886,14 +887,10 @@ function find_inverse_bond_id(nlist::BondScalarState{Int64})
     return inverse_nlist
 end
 
-function get_dependent_value(field_name::String,
-                             parameter::Dict,
-                             iID::Int64 = 1)
-    dependend_value, dependent_field = is_dependent(field_name, parameter)
-
-    return dependend_value ?
-           interpol_data(dependent_field[iID], parameter[field_name]["Data"]) :
-           parameter[field_name]
+function get_dependent_value_with_ID(field_name::String,
+                                     parameter::Dict,
+                                     iID::Int64 = 1)
+    return get_dependent_value(field_name, parameter)(iID)
 end
 
 function is_dependent(field_name::String, damage_parameter::Dict)
@@ -953,12 +950,12 @@ function (iv::InterpolatedValue)(iID::Int64)
 end
 
 """
-    get_dependent_value_function(field_name, parameter) -> AbstractDependentValue
+    get_dependent_value(field_name, parameter) -> AbstractDependentValue
 
 Call once per field before a loop. Returns a callable `f(iID)` that
 gives either the constant value or the interpolated field value.
 """
-function get_dependent_value_function(field_name::String, parameter::Dict)
+function get_dependent_value(field_name::String, parameter::Dict)
     dependent_value, dependent_field = is_dependent(field_name, parameter)
     if dependent_value
         return InterpolatedValue(dependent_field,
@@ -1194,41 +1191,41 @@ function rotation3x3!(R::AbstractMatrix{Float64}, T::AbstractMatrix{Float64})
 
     @inbounds @fastmath begin
         T[1,
-        1] = r11 * (r11 * t11 + r12 * t21 + r13 * t31) +
-                  r12 * (r11 * t12 + r12 * t22 + r13 * t32) +
-                  r13 * (r11 * t13 + r12 * t23 + r13 * t33)
+          1] = r11 * (r11 * t11 + r12 * t21 + r13 * t31) +
+               r12 * (r11 * t12 + r12 * t22 + r13 * t32) +
+               r13 * (r11 * t13 + r12 * t23 + r13 * t33)
         T[1,
-        2] = r21 * (r11 * t11 + r12 * t21 + r13 * t31) +
-                  r22 * (r11 * t12 + r12 * t22 + r13 * t32) +
-                  r23 * (r11 * t13 + r12 * t23 + r13 * t33)
+          2] = r21 * (r11 * t11 + r12 * t21 + r13 * t31) +
+               r22 * (r11 * t12 + r12 * t22 + r13 * t32) +
+               r23 * (r11 * t13 + r12 * t23 + r13 * t33)
         T[1,
-        3] = r31 * (r11 * t11 + r12 * t21 + r13 * t31) +
-                  r32 * (r11 * t12 + r12 * t22 + r13 * t32) +
-                  r33 * (r11 * t13 + r12 * t23 + r13 * t33)
+          3] = r31 * (r11 * t11 + r12 * t21 + r13 * t31) +
+               r32 * (r11 * t12 + r12 * t22 + r13 * t32) +
+               r33 * (r11 * t13 + r12 * t23 + r13 * t33)
         T[2,
-        1] = r11 * (r21 * t11 + r22 * t21 + r23 * t31) +
-                  r12 * (r21 * t12 + r22 * t22 + r23 * t32) +
-                  r13 * (r21 * t13 + r22 * t23 + r23 * t33)
+          1] = r11 * (r21 * t11 + r22 * t21 + r23 * t31) +
+               r12 * (r21 * t12 + r22 * t22 + r23 * t32) +
+               r13 * (r21 * t13 + r22 * t23 + r23 * t33)
         T[2,
-        2] = r21 * (r21 * t11 + r22 * t21 + r23 * t31) +
-                  r22 * (r21 * t12 + r22 * t22 + r23 * t32) +
-                  r23 * (r21 * t13 + r22 * t23 + r23 * t33)
+          2] = r21 * (r21 * t11 + r22 * t21 + r23 * t31) +
+               r22 * (r21 * t12 + r22 * t22 + r23 * t32) +
+               r23 * (r21 * t13 + r22 * t23 + r23 * t33)
         T[2,
-        3] = r31 * (r21 * t11 + r22 * t21 + r23 * t31) +
-                  r32 * (r21 * t12 + r22 * t22 + r23 * t32) +
-                  r33 * (r21 * t13 + r22 * t23 + r23 * t33)
+          3] = r31 * (r21 * t11 + r22 * t21 + r23 * t31) +
+               r32 * (r21 * t12 + r22 * t22 + r23 * t32) +
+               r33 * (r21 * t13 + r22 * t23 + r23 * t33)
         T[3,
-        1] = r11 * (r31 * t11 + r32 * t21 + r33 * t31) +
-                  r12 * (r31 * t12 + r32 * t22 + r33 * t32) +
-                  r13 * (r31 * t13 + r32 * t23 + r33 * t33)
+          1] = r11 * (r31 * t11 + r32 * t21 + r33 * t31) +
+               r12 * (r31 * t12 + r32 * t22 + r33 * t32) +
+               r13 * (r31 * t13 + r32 * t23 + r33 * t33)
         T[3,
-        2] = r21 * (r31 * t11 + r32 * t21 + r33 * t31) +
-                  r22 * (r31 * t12 + r32 * t22 + r33 * t32) +
-                  r23 * (r31 * t13 + r32 * t23 + r33 * t33)
+          2] = r21 * (r31 * t11 + r32 * t21 + r33 * t31) +
+               r22 * (r31 * t12 + r32 * t22 + r33 * t32) +
+               r23 * (r31 * t13 + r32 * t23 + r33 * t33)
         T[3,
-        3] = r31 * (r31 * t11 + r32 * t21 + r33 * t31) +
-                  r32 * (r31 * t12 + r32 * t22 + r33 * t32) +
-                  r33 * (r31 * t13 + r32 * t23 + r33 * t33)
+          3] = r31 * (r31 * t11 + r32 * t21 + r33 * t31) +
+               r32 * (r31 * t12 + r32 * t22 + r33 * t32) +
+               r33 * (r31 * t13 + r32 * t23 + r33 * t33)
     end
     return nothing
 end
@@ -1302,19 +1299,19 @@ end
 
 function voigt_to_matrix!(out::MMatrix, voigt::Union{MVector,SVector,Vector})
     if length(voigt) == 3
-        out[1, 1] = voigt[1];
+        out[1, 1] = voigt[1]
         out[1, 2] = voigt[3]
-        out[2, 1] = voigt[3];
+        out[2, 1] = voigt[3]
         out[2, 2] = voigt[2]
     elseif length(voigt) == 6
-        out[1, 1] = voigt[1];
-        out[1, 2] = voigt[6];
+        out[1, 1] = voigt[1]
+        out[1, 2] = voigt[6]
         out[1, 3] = voigt[5]
-        out[2, 1] = voigt[6];
-        out[2, 2] = voigt[2];
+        out[2, 1] = voigt[6]
+        out[2, 2] = voigt[2]
         out[2, 3] = voigt[4]
-        out[3, 1] = voigt[5];
-        out[3, 2] = voigt[4];
+        out[3, 1] = voigt[5]
+        out[3, 2] = voigt[4]
         out[3, 3] = voigt[3]
     else
         @abort "Unsupported matrix size for voigt_to_matrix"

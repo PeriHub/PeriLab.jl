@@ -10,7 +10,7 @@ using ......Data_Manager
 using ......PeriLabExceptions: @abort
 using ....Material_Basis: get_symmetry
 using ......Helpers: add_in_place!, mul_in_place!, sub_in_place!,
-                     get_dependent_value_function
+                     get_dependent_value
 using ..Ordinary: calculate_symmetry_params, get_bond_forces!
 
 export fe_support
@@ -60,11 +60,16 @@ function init_model(nodes::AbstractVector{Int64},
     yield_stress = get_dependent_value("Yield Stress", material_parameter)
 
     if get_symmetry(material_parameter) == "3D"
-        yield[nodes] .= 25 * yield_stress * yield_stress ./ (8 * pi .* horizon[nodes] .^ 5)
+        for iID in nodes
+            yield[iID] = 25 * yield_stress(iID) * yield_stress(iID) /
+                         (8 * pi * horizon[iID] ^ 5)
+        end
     else
         thickness::Float64 = 1 # is a placeholder
-        yield[nodes] .= 225 * yield_stress * yield_stress ./
-                        (24 * thickness * pi .* horizon[nodes] .^ 4)
+        for iID in nodes
+            yield[iID] = 225 * yield_stress(iID) * yield_stress(iID) /
+                         (24 * thickness * pi * horizon[iID] ^ 4)
+        end
     end
 
     Data_Manager.create_constant_bond_scalar_state("Deviatoric Plastic Extension State",
@@ -149,7 +154,7 @@ function compute_model(nodes::AbstractVector{Int64},
     lambdaN = Data_Manager.get_field("Lambda Plastic", "N")
     lambdaNP1 = Data_Manager.get_field("Lambda Plastic", "NP1")
 
-    yield_stress_fn = get_dependent_value_function("Yield Stress", material_parameter)
+    yield_stress_fn = get_dependent_value("Yield Stress", material_parameter)
 
     if dependend_value
         for iID in nodes
