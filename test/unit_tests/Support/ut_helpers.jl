@@ -10,6 +10,35 @@ using StaticArrays
 using Test
 using LinearAlgebra: norm
 
+@testset "get_dependent_value / _with_ID" begin
+    parameter = Dict("Yield Stress" => 5.3)
+
+    @testset "constant value" begin
+        f = PeriLab.Helpers.get_dependent_value("Yield Stress", parameter)
+
+        @test f(1) == 5.3
+        @test f(42) == 5.3          # constant: independent of the node
+    end
+
+    @testset "with_ID returns a number, not the accessor" begin
+        value = PeriLab.Helpers.get_dependent_value_with_ID("Yield Stress", parameter, 1)
+
+        @test value == 5.3
+    end
+
+    @testset "default iID" begin
+        @test PeriLab.Helpers.get_dependent_value_with_ID("Yield Stress", parameter) == 5.3
+    end
+
+    @testset "with_ID delegates to the factory" begin
+        for iID in (1, 2, 7)
+            @test PeriLab.Helpers.get_dependent_value_with_ID("Yield Stress", parameter,
+                                                              iID) ==
+                  PeriLab.Helpers.get_dependent_value("Yield Stress", parameter)(iID)
+        end
+    end
+end
+
 @testset "PeriLab.Helpers.create_centroid_and_search_radius" begin
     @testset "unit cube - centroid and circumradius" begin
         coor = [0.0 0.0 0.0
