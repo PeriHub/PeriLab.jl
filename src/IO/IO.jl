@@ -661,7 +661,7 @@ function init_write_results(params::Dict,
             bond_blocks = get(bond_blocks_per_file, id,
                               OrderedDict{Int64,BondBlock}())
             _, bond_fields, _ = split_output_fields(outputs[id]["Fields"])
-            bond_output_names = collect(keys(sort!(OrderedDict(bond_fields))))
+            bond_output_names::Vector{String} = collect(keys(sort!(OrderedDict(bond_fields))))
 
             result_files[id]["file"] = init_results_in_exodus(result_files[id]["file"],
                                                               dof,

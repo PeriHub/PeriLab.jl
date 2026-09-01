@@ -669,8 +669,8 @@ Allows the modification of the yield stress at a specific position. This is typi
 - `stress`::Float64: the modified stresses.
 """
 function flaw_function(params::Dict,
-                       coor::Union{Vector{Int64},Vector{Float64},SubArray{Float64}},
-                       stress::T) where {T<:Union{Float64,Int64}}
+                       coor::AbstractVector{<:Real},
+                       stress::T)::Float64 where {T<:Union{Int64,Float64}}
     flaw = get(params, "Flaw Function", nothing)
     isnothing(flaw) && return stress
 
@@ -692,7 +692,7 @@ function flaw_function(params::Dict,
     flaw_magnitude::Float64 = flaw["Flaw Magnitude"]
 
     if !(0 < flaw_magnitude <= 1)
-        @abort "Flaw Magnitude should be between 0 and 1."
+        @abort "Flaw Magnitude should be between 0 and 1"
     end
     if flaw_size <= 0
         @abort "Flaw Size must be positive."
@@ -712,7 +712,6 @@ function flaw_function(params::Dict,
     return stress *
            (1 - flaw_magnitude * exp(-distance_squared / (flaw_size * flaw_size)))
 end
-
 """
 	get_symmetry(material::Dict)
 
