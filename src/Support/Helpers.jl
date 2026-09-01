@@ -932,8 +932,8 @@ end
 abstract type AbstractDependentValue end
 
 # Case 1: constant parameter (not field-dependent)
-struct ConstantValue{T} <: AbstractDependentValue
-    value::T
+struct ConstantValue <: AbstractDependentValue
+    value::Float64
 end
 (cv::ConstantValue)(iID::Int64) = cv.value
 
