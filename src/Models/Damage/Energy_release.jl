@@ -68,6 +68,7 @@ function compute_model(nodes::AbstractVector{Int64},
     update_list::NodeScalarField{Bool} = Data_Manager.get_field("Update")
     bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
 
+    bond_energy::BondScalarState{Float64} = Data_Manager.get_field("Bond Energy")
     undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
     undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
     bond_forces::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
@@ -91,7 +92,6 @@ function compute_model(nodes::AbstractVector{Int64},
         inter_critical_energy::Array{Float64,3} = Data_Manager.get_crit_values_matrix()
     end
 
-    bond_energy::Float64 = 0.0
     norm_displacement::Float64 = 0.0
     product::Float64 = 0.0
 
@@ -131,12 +131,12 @@ function compute_model(nodes::AbstractVector{Int64},
             abs!(relative_displacement)
             mul!(temp_vector, product / norm_displacement, relative_displacement)
             product = dot(temp_vector, relative_displacement)
-            bond_energy = 0.25 * product
+            bond_energy[iID][jID] = 0.25 * product
             if critical_field
                 critical_energy_value = critical_energy[iID]
             elseif inter_block_damage
                 critical_energy_value = inter_critical_energy[block_ids[iID],
-                neighbor_block_id, block]
+                                                              neighbor_block_id, block]
 
                 # param_name = "Interblock Critical Value " * string(block_ids[iID]) * "_" *
                 #              string(block_ids[neighborID])
@@ -153,7 +153,7 @@ function compute_model(nodes::AbstractVector{Int64},
             end
 
             product = critical_energy_value * quad_horizons[iID]
-            if bond_energy > product
+            if bond_energy[iID][jID] > product
                 bond_damage[iID][jID] = 0.0
                 update_list[iID] = true
             end
@@ -206,6 +206,8 @@ function init_model(nodes::AbstractVector{Int64},
     horizon = Data_Manager.get_field("Horizon")
     thickness::Float64 = get(damage_parameter, "Thickness", 1)
     mesh_scaling = Data_Manager.get_horizon_mesh_scaling()
+    bond_energy = Data_Manager.create_constant_bond_scalar_state("Bond Energy",
+                                                                 Float64)
     for iID in nodes
         quad_horizons[iID] = get_quad_horizon(horizon[iID], dof, thickness,
                                               sum(inv, mesh_scaling))

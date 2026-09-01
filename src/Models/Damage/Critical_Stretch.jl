@@ -4,8 +4,7 @@
 
 module Critical_Stretch
 using .....Data_Manager
-using .....Helpers: sub_in_place!, div_in_place!
-
+using .....Geometry: compute_stretch!
 export compute_model
 export damage_name
 export init_model
@@ -57,8 +56,9 @@ function compute_model(nodes::AbstractVector{Int64},
     undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
     deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
                                                                             "NP1")
+    stretch::BondScalarState{Float64} = Data_Manager.get_field("Bond Stretch")
     block_ids::NodeScalarField{Int64} = Data_Manager.get_field("Block_Id")
-    temp::BondScalarState{Float64} = Data_Manager.get_field("Temporary Bond Field")
+
     critical_field = Data_Manager.has_key("Critical_Value")
     if critical_field
         critical_stretch = Data_Manager.get_field("Critical_Value")
@@ -70,11 +70,10 @@ function compute_model(nodes::AbstractVector{Int64},
     if inter_block_damage
         inter_critical_stretch::Array{Float64,3} = Data_Manager.get_crit_values_matrix()
     end
+    compute_stretch!(stretch, deformed_bond_length, undeformed_bond_length)
+    # TBD all points; for MPI it must be only the nodes
 
-    sub_in_place!(temp, deformed_bond_length, undeformed_bond_length)
-    div_in_place!(temp, temp, undeformed_bond_length)
-
-    stretch::Float64 = 0.0
+    stretch_check::Float64 = 0.0
     crit_stretch::Float64 = 0.0
 
     for iID in nodes
@@ -87,12 +86,12 @@ function compute_model(nodes::AbstractVector{Int64},
             else
                 crit_stretch = inter_block_damage ?
                                inter_critical_stretch[block_ids[iID],
-                block_ids[nlist[iID][jID]],
-                block] : critical_stretch
+                                                      block_ids[nlist[iID][jID]],
+                                                      block] : critical_stretch
             end
 
-            stretch = tension ? temp[iID][jID] : abs(temp[iID][jID])
-            if stretch > crit_stretch
+            stretch_check = tension ? stretch[iID][jID] : abs(stretch[iID][jID])
+            if stretch_check > crit_stretch
                 bond_damageNP1[iID][jID] = 0.0
                 update_list[iID] = true
             end
@@ -116,5 +115,8 @@ end
 function init_model(odes::AbstractVector{Int64},
                     damage_parameter::Dict,
                     block::Int64)
+    stretch::BondScalarState{Float64} = Data_Manager.create_constant_bond_scalar_state("Bond Stretch",
+                                                                                       Float64)
 end
+
 end
