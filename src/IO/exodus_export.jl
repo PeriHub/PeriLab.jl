@@ -55,13 +55,14 @@ Creates an exodus file for the results.
 
 !!! important
     `num_elem_blks` must be the **total** number of element blocks that will later be
-    written, i.e. the number of material blocks **plus** the number of non-empty bond
-    blocks. Use [`bond_export_sizes`](@ref) to obtain the latter. exodusII fixes this
-    count at initialisation; writing more blocks than declared makes `ex_put_block`
-    fail.
+    written, i.e. the number of material blocks **plus** the number of bond blocks.
+    Use [`bond_export_sizes`](@ref) to obtain the latter. exodusII fixes this count at
+    initialisation; writing a different number of blocks makes `ex_put_block` fail, and
+    in an MPI run it makes the per-rank files inconsistent so that `epu` cannot merge
+    them.
 
 # Arguments
-- `filename::Union{AbstractString,String}`: The name of the file to create
+- `filename::AbstractString`: The name of the file to create
 - `num_nodes::Int64`: The number of nodes
 - `num_dim::Int64`: The number of dimensions
 - `num_elem_blks::Int64`: Total number of element blocks (material + bond blocks)
@@ -71,7 +72,7 @@ Creates an exodus file for the results.
 # Returns
 - `result_file::Dict{String,Any}`: A dictionary containing the filename and the exodus file
 """
-function create_result_file(filename::Union{AbstractString,String},
+function create_result_file(filename::AbstractString,
                             num_nodes::Int64,
                             num_dim::Int64,
                             num_elem_blks::Int64,
@@ -187,14 +188,17 @@ Neighbours pointing outside the local node range (ghost entries of a decomposed 
 are skipped, because exodusII validates connectivity against the node count of the
 file and those nodes carry no coordinates here.
 
+A selected block with no local bonds is kept with zero elements. Which blocks are
+selected is the same on every rank, whether they hold bonds locally is not, and `epu`
+needs the same block structure in every per-rank file.
+
 # Arguments
 - `block_Id::AbstractVector{Int64}`: Block id per node
 - `n_blocks::Int64`: Number of material blocks
 - `nlist::AbstractVector`: Neighbourhood list
 - `blocks`: Optional subset of block indices to export bonds for
 # Returns
-- `bond_blocks::OrderedDict{Int64,BondBlock}`: Block index -> bond block.
-  Blocks without bonds are absent from the dictionary.
+- `bond_blocks::OrderedDict{Int64,BondBlock}`: Block index -> bond block
 """
 function compute_bond_connectivity(block_Id::AbstractVector{Int64},
                                    n_blocks::Int64,
@@ -229,8 +233,6 @@ function compute_bond_connectivity(block_Id::AbstractVector{Int64},
                 push!(partners, j)
             end
         end
-
-        isempty(owners) && continue
 
         conn = Matrix{Int64}(undef, 2, length(owners))
         conn[1, :] .= owners
@@ -377,7 +379,8 @@ blocks and the bond (BAR2) blocks.
 
 Exodus.jl exposes no truth table API, so an element variable has to be written for
 **every** element block, not only for the bond blocks. This mapping supplies the
-lengths of the zero vectors used for the material blocks.
+lengths of the zero vectors used for the material blocks. Blocks with no local nodes
+are kept with a count of zero, because they exist in the file as well.
 
 # Arguments
 - `block_Id::AbstractVector{Int64}`: Block id per node
@@ -391,9 +394,7 @@ function element_block_sizes(block_Id::AbstractVector{Int64},
                              bond_blocks::AbstractDict{Int64,BondBlock})
     sizes = OrderedDict{Int64,Int64}()
     for block in 1:n_blocks
-        n = count(==(block), block_Id)
-        n == 0 && continue
-        sizes[block] = n
+        sizes[block] = count(==(block), block_Id)
     end
     for (block, bond_block) in bond_blocks
         sizes[n_blocks + block] = length(bond_block)
@@ -409,10 +410,10 @@ connectivity.
 
 Two storage layouts are supported, decided once per field from a sample entry:
 
-- **nested** (`Vector{Vector{...}}`, what PeriLab uses for bond fields):
-  `field[node][neighbor]` is the value itself for a scalar field, a `Vector` for a
-  vector field such as `Deformed Bond Geometry`, and a `Matrix` for a tensor field.
-- **flat** (a `Matrix` or higher array per node): `field[node][neighbor, ...]`.
+- **nested** (`Vector{Vector{...}}`, what PeriLab uses for `BondScalarState` and
+  `BondVectorState`): `field[node][neighbor]` is the value itself for a scalar field
+  and a `Vector` for a vector field such as `Deformed Bond Geometry`.
+- **flat** (an `Array{T,3}` per node, `BondTensorState`): `field[node][neighbor, i, j]`.
 
 # Arguments
 - `field`: The bond field
@@ -469,12 +470,6 @@ Initializes the results in exodus.
 Works with and without bond export: leaving both keywords out writes a plain nodal
 result file, exactly as before the bond export existed. The FE arguments keep their
 old positional places.
-
-!!! note "Changed interface"
-    The former positional arguments `bond_export::Bool` and `nlist` are gone. Pass the
-    pre-computed `bond_blocks` from [`init_bond_information_export`](@ref) instead — the
-    same object whose sizes were used for `create_result_file`. Dropping those two also
-    fixes the old signature, which had an optional argument in front of a required one.
 
 # Arguments
 - `exo::ExodusDatabase`: The exodus database
@@ -554,14 +549,12 @@ function init_results_in_exodus(exo::ExodusDatabase,
     for (block, block_name) in enumerate(all_block_name_list)
         conn = get_block_nodes(block_Id, block)
 
-        if isempty(conn)
-            # An empty block would still consume one of the declared element blocks.
-            @warn "Block $block ($block_name) contains no nodes and is skipped. " *
-                  "The block count passed to create_result_file must not include it."
-            continue
-        end
-
-        if fem_active && !isnothing(fem_block) && fem_block[conn[1]]
+        # Every block in all_block_name_list is written, including one that holds no
+        # local nodes. all_block_name_list is identical on all ranks, so this keeps the
+        # per-rank files structurally identical, which is what epu requires; it also
+        # matches the block count declared in create_result_file. The isempty guard on
+        # the FE branch only protects the conn[1] lookup.
+        if fem_active && !isnothing(fem_block) && !isempty(conn) && fem_block[conn[1]]
             # TODO: this writes the complete topology into every FE block. If more than
             # one FE block exists, restrict it to the elements of this block.
             fem_conn = Matrix(topology')
@@ -598,6 +591,12 @@ function init_results_in_exodus(exo::ExodusDatabase,
     if n_bond_elements > 0
         # The element map has to cover the bond elements as well, otherwise its length
         # does not match num_elems from the initialisation.
+        #
+        # NOTE: in an MPI run these ids are only locally unique. offset is the local
+        # maximum and n_bond_elements the local bond count, so two ranks hand out the
+        # same range and epu cannot tell their bond elements apart. A correct version
+        # needs the global node id maximum (Allreduce) plus a per-rank bond offset
+        # (Exscan over the local bond counts).
         offset = Int32(maximum(element_ids; init = Int32(0)))
         append!(element_ids, Int32.(offset .+ (1:n_bond_elements)))
     end
@@ -784,15 +783,15 @@ function write_global_results_in_exodus(exo::ExodusDatabase, step::Int64, global
 end
 
 """
-    merge_exodus_file(file_name::Union{AbstractString,String})
+    merge_exodus_file(file_name::AbstractString)
 
 Merges the exodus file
 
 # Arguments
-- `file_name::Union{AbstractString,String}`: The name of the file to merge
+- `file_name::AbstractString`: The name of the file to merge
 # Returns
 - `exo::ExodusDatabase`: The exodus file
 """
-function merge_exodus_file(file_name::Union{AbstractString,String})
+function merge_exodus_file(file_name::AbstractString)
     epu(file_name)
 end
