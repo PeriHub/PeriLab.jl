@@ -644,8 +644,12 @@ function init_write_results(params::Dict,
         elem_global_ids = Data_Manager.loc_to_glob(1:(num_fem_elements + nnodes - num_nodes_in_topo))
     end
 
+    # Node sets stay restricted to the nodes this rank owns. global_ids now also covers
+    # the ghost nodes, and a set built from those would make a Node_Set_Data compute
+    # count shared nodes once per rank, so Sum and Average would come out wrong.
+    owned_global_ids = global_ids[1:nnodes]
     for name in eachindex(nsets)
-        existing_nodes = intersect(global_ids, nsets[name])
+        existing_nodes = intersect(owned_global_ids, nsets[name])
         nsets[name] = Data_Manager.get_local_nodes(existing_nodes)
     end
 
@@ -695,7 +699,8 @@ function init_write_results(params::Dict,
                                      n_blocks + n_bond_blocks,
                                      nnsets,
                                      num_fem_elements + n_bond_elements,
-                                     topology))
+                                     topology;
+                                     num_owned_nodes = nnodes))
         elseif ".csv" == filename[(end - 3):end]
             if rank == 0
                 push!(result_files, create_result_file(filename, outputs[id]))

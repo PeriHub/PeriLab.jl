@@ -69,6 +69,9 @@ Creates an exodus file for the results.
 - `num_node_sets::Int64`: The number of node sets
 - `num_elements::Int64`: Number of additional elements (FE elements + bond elements)
 - `FEtopology::Union{Nothing,Matrix{Int64}}`: FE topology, if a FE part is present
+# Keywords
+- `num_owned_nodes::Int64`: Nodes owned by this rank; one SPHERE element each. Defaults
+  to `num_nodes`, which is correct whenever the file holds no ghost nodes.
 # Returns
 - `result_file::Dict{String,Any}`: A dictionary containing the filename and the exodus file
 """
@@ -78,7 +81,8 @@ function create_result_file(filename::AbstractString,
                             num_elem_blks::Int64,
                             num_node_sets::Int64,
                             num_elements::Int64 = 0,
-                            FEtopology::Union{Nothing,Matrix{Int64}} = nothing)
+                            FEtopology::Union{Nothing,Matrix{Int64}} = nothing;
+                            num_owned_nodes::Int64 = num_nodes)
     if isfile(filename)
         rm(filename)
     end
@@ -87,7 +91,11 @@ function create_result_file(filename::AbstractString,
     bulk_int_type = Int32
     float_type = Float64
 
-    num_elems = num_nodes + num_elements
+    # num_nodes counts every node in the file, ghost nodes included, because a bond
+    # crossing a rank boundary has to reference its partner. Elements exist only for
+    # owned nodes, so the element count is built from num_owned_nodes. Without ghost
+    # nodes both are the same and num_owned_nodes defaults to num_nodes.
+    num_elems = num_owned_nodes + num_elements
     if !isnothing(FEtopology)
         element_nodes = unique(reduce(vcat, FEtopology))
         num_elems -= length(element_nodes)
@@ -598,7 +606,10 @@ function init_results_in_exodus(exo::ExodusDatabase,
     if fem_active
         element_ids = Int32.(elem_global_ids)
     else
-        element_ids = Int32.(global_ids)
+        # One element per owned node. global_ids also covers the ghost nodes, which
+        # carry no element, so it must not be used as a whole here. block_Id holds
+        # exactly the owned nodes.
+        element_ids = Int32.(global_ids[1:length(block_Id)])
     end
     if n_bond_elements > 0
         # Bond element ids continue after bond_id_offset. Points and FE elements get
