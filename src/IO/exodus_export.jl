@@ -171,7 +171,8 @@ function get_block_nodes(block_Id::AbstractVector{Int64}, block::Int64)
 end
 
 """
-    compute_bond_connectivity(block_Id, n_blocks, nlist; blocks = nothing)
+    compute_bond_connectivity(block_Id, n_blocks, nlist,
+                              n_total_nodes = length(block_Id); blocks = nothing)
 
 Builds the BAR2 connectivity for the bond export **once**, so that the element count
 used at initialisation, the connectivity written into the file, and the result values
@@ -184,28 +185,31 @@ direction). Each entry of each neighbourhood list therefore becomes its own BAR2
 element, owned by the block of node `i`. Two elements on the same node pair are legal
 in exodusII; they simply overlap geometrically.
 
-Neighbours pointing outside the local node range (ghost entries of a decomposed mesh)
-are skipped, because exodusII validates connectivity against the node count of the
-file and those nodes carry no coordinates here.
+Bonds are owned by the block of node `i`, and only nodes this rank owns are iterated,
+so every directed bond exists exactly once across all ranks. The partner `j` may be a
+ghost node: those are written too, which is why the file has to contain the ghost nodes
+as well (see `init_write_results`). Only neighbours beyond `n_total_nodes` are dropped,
+because they cannot be referenced at all.
 
 A selected block with no local bonds is kept with zero elements. Which blocks are
 selected is the same on every rank, whether they hold bonds locally is not, and `epu`
 needs the same block structure in every per-rank file.
 
 # Arguments
-- `block_Id::AbstractVector{Int64}`: Block id per node
+- `block_Id::AbstractVector{Int64}`: Block id per owned node
 - `n_blocks::Int64`: Number of material blocks
 - `nlist::AbstractVector`: Neighbourhood list
+- `n_total_nodes::Int64`: Nodes in the file, owned plus ghost
 - `blocks`: Optional subset of block indices to export bonds for
 # Returns
 - `bond_blocks::OrderedDict{Int64,BondBlock}`: Block index -> bond block
 """
 function compute_bond_connectivity(block_Id::AbstractVector{Int64},
                                    n_blocks::Int64,
-                                   nlist::AbstractVector;
+                                   nlist::AbstractVector,
+                                   n_total_nodes::Int64 = length(block_Id);
                                    blocks::Union{Nothing,AbstractVector{Int64}} = nothing)
     bond_blocks = OrderedDict{Int64,BondBlock}()
-    n_nodes = length(block_Id)
     n_skipped = 0
 
     for block in 1:n_blocks
@@ -223,8 +227,8 @@ function compute_bond_connectivity(block_Id::AbstractVector{Int64},
             i > length(nlist) && continue
             neighbors = nlist[i]
             for (m, j) in enumerate(neighbors)
-                if j > n_nodes
-                    # ghost node of a decomposed mesh, not present in this file
+                if j > n_total_nodes
+                    # outside every node this file knows, cannot be referenced
                     n_skipped += 1
                     continue
                 end
@@ -335,7 +339,8 @@ function check_block_selection(blocks, n_blocks::Int64)
 end
 
 """
-    init_bond_information_export(block_Id, n_blocks, nlist, parameter)
+    init_bond_information_export(block_Id, n_blocks, nlist, parameter,
+                                 n_total_nodes = length(block_Id))
 
 Convenience wrapper: evaluates the `"Bond Export"` parameter and returns the bond
 blocks together with the sizes required at initialisation.
@@ -347,6 +352,7 @@ blocks together with the sizes required at initialisation.
 - `parameter::Dict`: Output parameter block, may contain `"Bond Export"` and
   `"Bond Blocks"` (whitespace separated indices, e.g. `1 3`). Without `"Bond Blocks"`
   every block is exported.
+- `n_total_nodes::Int64`: Nodes in the file, owned plus ghost
 # Returns
 - `bond_blocks::OrderedDict{Int64,BondBlock}`: Bond blocks (empty if disabled)
 - `n_bond_elements::Int64`: Total number of BAR2 elements
@@ -355,14 +361,16 @@ blocks together with the sizes required at initialisation.
 function init_bond_information_export(block_Id::AbstractVector{Int64},
                                       n_blocks::Int64,
                                       nlist::AbstractVector,
-                                      parameter::Dict)
+                                      parameter::Dict,
+                                      n_total_nodes::Int64 = length(block_Id))
     if !get(parameter, "Bond Export", false)
         return OrderedDict{Int64,BondBlock}(), 0, 0
     end
 
     blocks = resolve_block_selection(get(parameter, "Bond Blocks", nothing))
     check_block_selection(blocks, n_blocks)
-    bond_blocks = compute_bond_connectivity(block_Id, n_blocks, nlist; blocks = blocks)
+    bond_blocks = compute_bond_connectivity(block_Id, n_blocks, nlist, n_total_nodes;
+                                            blocks = blocks)
     n_bond_elements, n_bond_blocks = bond_export_sizes(bond_blocks)
 
     @info "Exporting bond information to exodus file: " *
@@ -463,7 +471,8 @@ end
                            nsets, global_ids, PERILAB_VERSION, qa_vector,
                            fem_block = nothing, topology = nothing,
                            elem_global_ids = nothing;
-                           bond_blocks = ..., bond_output_names = String[])
+                           bond_blocks = ..., bond_output_names = String[],
+                           bond_id_offset = -1)
 
 Initializes the results in exodus.
 
@@ -488,6 +497,8 @@ old positional places.
 # Keywords
 - `bond_blocks`: Bond blocks, see [`compute_bond_connectivity`](@ref). Empty means no bond export.
 - `bond_output_names::Vector{String}`: Names of the bond variables, written as element variables
+- `bond_id_offset::Int64`: First bond element id minus one, from `bond_element_id_offset`.
+  Negative means single rank, then the local maximum is used.
 # Returns
 - `exo::ExodusDatabase`: The exodus file
 """
@@ -506,7 +517,8 @@ function init_results_in_exodus(exo::ExodusDatabase,
                                 elem_global_ids::Union{Nothing,Vector{Int64}} = nothing;
                                 bond_blocks::AbstractDict{Int64,BondBlock} = OrderedDict{Int64,
                                                                                          BondBlock}(),
-                                bond_output_names::Vector{String} = String[])
+                                bond_output_names::Vector{String} = String[],
+                                bond_id_offset::Int64 = -1)
     qa = Matrix{String}(undef, 1, 4)
     # Only 4 entries with 32 chars possible!
     qa[1] = "PeriLab $PERILAB_VERSION"
@@ -589,15 +601,14 @@ function init_results_in_exodus(exo::ExodusDatabase,
         element_ids = Int32.(global_ids)
     end
     if n_bond_elements > 0
-        # The element map has to cover the bond elements as well, otherwise its length
-        # does not match num_elems from the initialisation.
-        #
-        # NOTE: in an MPI run these ids are only locally unique. offset is the local
-        # maximum and n_bond_elements the local bond count, so two ranks hand out the
-        # same range and epu cannot tell their bond elements apart. A correct version
-        # needs the global node id maximum (Allreduce) plus a per-rank bond offset
-        # (Exscan over the local bond counts).
-        offset = Int32(maximum(element_ids; init = Int32(0)))
+        # Bond element ids continue after bond_id_offset. Points and FE elements get
+        # their global ids from loc_to_glob because there is one element per node; a
+        # node owns many bonds, so that map cannot be reused. The caller computes the
+        # offset collectively (see bond_element_id_offset in IO.jl) so that the ranges
+        # of the ranks do not overlap. A negative value means "single rank": then the
+        # local maximum is enough.
+        offset = bond_id_offset < 0 ? Int64(maximum(element_ids; init = Int32(0))) :
+                 bond_id_offset
         append!(element_ids, Int32.(offset .+ (1:n_bond_elements)))
     end
     write_id_map(exo, NodeMap, Int32.(global_ids))
@@ -684,7 +695,11 @@ Writes the nodal results in the exodus file
 function write_nodal_results_in_exodus(exo::ExodusDatabase,
                                        step::Int64,
                                        output::Dict)
-    nnodes = Data_Manager.get_nnodes()
+    # All nodes of the file, owned plus ghost. The file was initialised with that count,
+    # so exodus expects exactly that many values per nodal variable. The output fields
+    # are synchronised onto the responder nodes, so every rank writes the same value for
+    # a shared node and it does not matter which one epu keeps.
+    nnodes = size(Data_Manager.get_field("Coordinates"), 1)
     for varname in keys(output)
         field = Data_Manager.get_field(output[varname]["fieldname"],
                                        output[varname]["time"])

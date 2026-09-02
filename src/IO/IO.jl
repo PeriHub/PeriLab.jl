@@ -270,6 +270,50 @@ function split_output_fields(fields::Dict)
 end
 
 """
+    bond_element_id_offset(element_ids, n_bond_elements)
+
+Returns the offset after which this rank numbers its bond elements, so that bond
+element ids do not overlap between ranks.
+
+Points and FE elements take their global ids from `loc_to_glob`, because there is
+exactly one element per node. A node owns many bonds, so that map cannot be reused and
+the ids are built here: the globally largest element id plus the number of bonds on all
+lower ranks.
+
+A directed bond `i -> j` is written only by the rank owning node `i`, so nothing has to
+be merged; the ranges only have to be disjoint.
+
+!!! warning "Collective"
+    Calls `MPI.Allreduce` and `MPI.Allgather`, so every rank has to reach this function,
+    including ranks that hold no bonds at all.
+
+# Arguments
+- `element_ids::AbstractVector`: Element ids already assigned on this rank
+- `n_bond_elements::Int64`: Number of bond elements on this rank
+# Returns
+- `::Int64`: Offset for the first bond element id of this rank
+"""
+function bond_element_id_offset(element_ids::AbstractVector, n_bond_elements::Int64)
+    local_max = Int64(maximum(element_ids; init = 0))
+
+    if !Data_Manager.get_mpi_active()
+        return local_max
+    end
+
+    comm = Data_Manager.get_comm()
+    global_max = MPI.Allreduce(local_max, MPI.MAX, comm)
+
+    # length per rank, known on every rank; the ranks are then laid out in order
+    counts = MPI.Allgather(n_bond_elements, comm)
+    rank = Data_Manager.get_rank()
+    lower_ranks = sum(counts[1:rank]; init = 0)
+
+    @debug "Bond element ids: global max $global_max, counts per rank $counts"
+
+    return global_max + lower_ranks
+end
+
+"""
     get_results_mapping(params::Dict, path::String)
 
 Gets the results mapping
@@ -547,11 +591,16 @@ function init_write_results(params::Dict,
     result_files::Vector{Dict} = []
 
     nnodes = Data_Manager.get_nnodes()
-    global_ids = Data_Manager.loc_to_glob(1:nnodes)
+    # Ghost (responder) nodes are written to the file as well: a bond crossing a rank
+    # boundary has to reference its partner, and exodus only accepts nodes the file
+    # knows. epu merges nodes by their global id, so the duplicates collapse again.
+    # Elements are still only created for owned nodes, so nothing is written twice.
+    coordinates_all = Data_Manager.get_field("Coordinates")
+    n_total_nodes = size(coordinates_all, 1)
+    global_ids = Data_Manager.loc_to_glob(1:n_total_nodes)
     dof = Data_Manager.get_dof()
     nnsets = Data_Manager.get_nnsets()
     nlist = Data_Manager.get_nlist()
-    coordinates = Data_Manager.get_field("Coordinates")
     block_Id = Data_Manager.get_field("Block_Id")
 
     comm = Data_Manager.get_comm()
@@ -604,6 +653,7 @@ function init_write_results(params::Dict,
     # at initialisation, the connectivity, and the per-step values, so the three can
     # never drift apart.
     bond_blocks_per_file = Dict{Int64,OrderedDict{Int64,BondBlock}}()
+    bond_counts_per_file = Dict{Int64,Int64}()
 
     for (id, filename) in enumerate(filenames)
         rank = Data_Manager.get_rank()
@@ -633,12 +683,14 @@ function init_write_results(params::Dict,
             n_bond_blocks = init_bond_information_export(local_block_Id,
                                                          n_blocks,
                                                          nlist,
-                                                         outputs[id])
+                                                         outputs[id],
+                                                         n_total_nodes)
             bond_blocks_per_file[id] = bond_blocks
+            bond_counts_per_file[id] = n_bond_elements
 
             push!(result_files,
                   create_result_file(filename,
-                                     nnodes,
+                                     n_total_nodes,
                                      dof,
                                      n_blocks + n_bond_blocks,
                                      nnsets,
@@ -655,13 +707,18 @@ function init_write_results(params::Dict,
         end
     end
 
-    coords = vcat(transpose(coordinates[1:nnodes, :]))
+    coords = vcat(transpose(coordinates_all[1:n_total_nodes, :]))
     for id in eachindex(result_files)
         if result_files[id]["type"] == "Exodus"
             bond_blocks = get(bond_blocks_per_file, id,
                               OrderedDict{Int64,BondBlock}())
             _, bond_fields, _ = split_output_fields(outputs[id]["Fields"])
             bond_output_names::Vector{String} = collect(keys(sort!(OrderedDict(bond_fields))))
+
+            # Collective: every rank has to reach this, also one without bonds.
+            element_ids = isnothing(elem_global_ids) ? global_ids : elem_global_ids
+            bond_offset = bond_element_id_offset(element_ids,
+                                                 get(bond_counts_per_file, id, 0))
 
             result_files[id]["file"] = init_results_in_exodus(result_files[id]["file"],
                                                               dof,
@@ -677,7 +734,8 @@ function init_write_results(params::Dict,
                                                               topology,
                                                               elem_global_ids;
                                                               bond_blocks = bond_blocks,
-                                                              bond_output_names = bond_output_names)
+                                                              bond_output_names = bond_output_names,
+                                                              bond_id_offset = bond_offset)
 
             # The bond blocks are needed again for every write, so they stay with the
             # result file rather than being rebuilt per step.
