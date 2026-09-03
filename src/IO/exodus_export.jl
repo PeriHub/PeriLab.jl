@@ -70,8 +70,8 @@ Creates an exodus file for the results.
 - `num_elements::Int64`: Number of additional elements (FE elements + bond elements)
 - `FEtopology::Union{Nothing,Matrix{Int64}}`: FE topology, if a FE part is present
 # Keywords
-- `num_owned_nodes::Int64`: Nodes owned by this rank; one SPHERE element each. Defaults
-  to `num_nodes`, which is correct whenever the file holds no ghost nodes.
+- `num_owned_nodes::Int64`: Master nodes of this rank, one SPHERE element each.
+  Defaults to `num_nodes`, which is right whenever the file holds no responder nodes.
 # Returns
 - `result_file::Dict{String,Any}`: A dictionary containing the filename and the exodus file
 """
@@ -91,10 +91,11 @@ function create_result_file(filename::AbstractString,
     bulk_int_type = Int32
     float_type = Float64
 
-    # num_nodes counts every node in the file, ghost nodes included, because a bond
-    # crossing a rank boundary has to reference its partner. Elements exist only for
-    # owned nodes, so the element count is built from num_owned_nodes. Without ghost
-    # nodes both are the same and num_owned_nodes defaults to num_nodes.
+    # num_nodes counts every node in the file, responder nodes included: a bond crossing
+    # a rank boundary references its partner, and exodus validates connectivity against
+    # the nodes of the file. Elements exist only for the master nodes, so the element
+    # count comes from num_owned_nodes. Without responder nodes both are equal and
+    # num_owned_nodes defaults to num_nodes.
     num_elems = num_owned_nodes + num_elements
     if !isnothing(FEtopology)
         element_nodes = unique(reduce(vcat, FEtopology))
@@ -179,8 +180,7 @@ function get_block_nodes(block_Id::AbstractVector{Int64}, block::Int64)
 end
 
 """
-    compute_bond_connectivity(block_Id, n_blocks, nlist,
-                              n_total_nodes = length(block_Id); blocks = nothing)
+    compute_bond_connectivity(block_Id, n_blocks, nlist; blocks = nothing)
 
 Builds the BAR2 connectivity for the bond export **once**, so that the element count
 used at initialisation, the connectivity written into the file, and the result values
@@ -194,10 +194,11 @@ element, owned by the block of node `i`. Two elements on the same node pair are 
 in exodusII; they simply overlap geometrically.
 
 Bonds are owned by the block of node `i`, and only nodes this rank owns are iterated,
-so every directed bond exists exactly once across all ranks. The partner `j` may be a
-ghost node: those are written too, which is why the file has to contain the ghost nodes
-as well (see `init_write_results`). Only neighbours beyond `n_total_nodes` are dropped,
-because they cannot be referenced at all.
+so every directed bond exists exactly once across all ranks.
+
+The partner `j` may be a responder node. Those bonds are written too, which is why the
+file has to contain the responder nodes as well; see `init_write_results`, where
+`num_nodes` counts them and `num_owned_nodes` does not.
 
 A selected block with no local bonds is kept with zero elements. Which blocks are
 selected is the same on every rank, whether they hold bonds locally is not, and `epu`
@@ -207,18 +208,15 @@ needs the same block structure in every per-rank file.
 - `block_Id::AbstractVector{Int64}`: Block id per owned node
 - `n_blocks::Int64`: Number of material blocks
 - `nlist::AbstractVector`: Neighbourhood list
-- `n_total_nodes::Int64`: Nodes in the file, owned plus ghost
 - `blocks`: Optional subset of block indices to export bonds for
 # Returns
 - `bond_blocks::OrderedDict{Int64,BondBlock}`: Block index -> bond block
 """
 function compute_bond_connectivity(block_Id::AbstractVector{Int64},
                                    n_blocks::Int64,
-                                   nlist::AbstractVector,
-                                   n_total_nodes::Int64 = length(block_Id);
+                                   nlist::AbstractVector;
                                    blocks::Union{Nothing,AbstractVector{Int64}} = nothing)
     bond_blocks = OrderedDict{Int64,BondBlock}()
-    n_skipped = 0
 
     for block in 1:n_blocks
         if !isnothing(blocks) && !(block in blocks)
@@ -227,19 +225,15 @@ function compute_bond_connectivity(block_Id::AbstractVector{Int64},
 
         conn_nodes = get_block_nodes(block_Id, block)
 
-        owners = Int64[]
-        neighbor_indices = Int64[]
-        partners = Int64[]
+        owners::Vector{Int64} = []
+        neighbor_indices::Vector{Int64} = []
+        partners::Vector{Int64} = []
 
+        # No filtering on j: a partner on another rank is a responder node, which the
+        # file contains as well (see init_write_results). Dropping those bonds would
+        # lose every bond across a rank boundary.
         for i in conn_nodes
-            i > length(nlist) && continue
-            neighbors = nlist[i]
-            for (m, j) in enumerate(neighbors)
-                if j > n_total_nodes
-                    # outside every node this file knows, cannot be referenced
-                    n_skipped += 1
-                    continue
-                end
+            for (m, j) in enumerate(nlist[i])
                 push!(owners, i)
                 push!(neighbor_indices, m)
                 push!(partners, j)
@@ -251,11 +245,6 @@ function compute_bond_connectivity(block_Id::AbstractVector{Int64},
         conn[2, :] .= partners
 
         bond_blocks[block] = BondBlock(conn, owners, neighbor_indices)
-    end
-
-    if n_skipped > 0
-        @debug "Bond export: $n_skipped bond(s) point to nodes outside this rank and " *
-               "are not written."
     end
 
     return bond_blocks
@@ -347,8 +336,7 @@ function check_block_selection(blocks, n_blocks::Int64)
 end
 
 """
-    init_bond_information_export(block_Id, n_blocks, nlist, parameter,
-                                 n_total_nodes = length(block_Id))
+    init_bond_information_export(block_Id, n_blocks, nlist, parameter)
 
 Convenience wrapper: evaluates the `"Bond Export"` parameter and returns the bond
 blocks together with the sizes required at initialisation.
@@ -360,7 +348,6 @@ blocks together with the sizes required at initialisation.
 - `parameter::Dict`: Output parameter block, may contain `"Bond Export"` and
   `"Bond Blocks"` (whitespace separated indices, e.g. `1 3`). Without `"Bond Blocks"`
   every block is exported.
-- `n_total_nodes::Int64`: Nodes in the file, owned plus ghost
 # Returns
 - `bond_blocks::OrderedDict{Int64,BondBlock}`: Bond blocks (empty if disabled)
 - `n_bond_elements::Int64`: Total number of BAR2 elements
@@ -369,16 +356,14 @@ blocks together with the sizes required at initialisation.
 function init_bond_information_export(block_Id::AbstractVector{Int64},
                                       n_blocks::Int64,
                                       nlist::AbstractVector,
-                                      parameter::Dict,
-                                      n_total_nodes::Int64 = length(block_Id))
+                                      parameter::Dict)
     if !get(parameter, "Bond Export", false)
         return OrderedDict{Int64,BondBlock}(), 0, 0
     end
 
     blocks = resolve_block_selection(get(parameter, "Bond Blocks", nothing))
     check_block_selection(blocks, n_blocks)
-    bond_blocks = compute_bond_connectivity(block_Id, n_blocks, nlist, n_total_nodes;
-                                            blocks = blocks)
+    bond_blocks = compute_bond_connectivity(block_Id, n_blocks, nlist; blocks = blocks)
     n_bond_elements, n_bond_blocks = bond_export_sizes(bond_blocks)
 
     @info "Exporting bond information to exodus file: " *
@@ -597,6 +582,9 @@ function init_results_in_exodus(exo::ExodusDatabase,
     # with a material block id.
     for (block, bond_block) in bond_blocks
         bond_id = n_blocks + block
+        @debug "write bond block: exodus id $bond_id (material block $block), " *
+               "$(length(bond_block)) elements, conn size $(size(bond_block.conn)), " *
+               "node range $(isempty(bond_block.conn) ? "empty" : string(extrema(bond_block.conn)))"
         write_block(exo, bond_id, "BAR2", bond_block.conn)
         write_name(exo, Block, bond_id, all_block_name_list[block] * "_bonds")
     end
@@ -606,9 +594,8 @@ function init_results_in_exodus(exo::ExodusDatabase,
     if fem_active
         element_ids = Int32.(elem_global_ids)
     else
-        # One element per owned node. global_ids also covers the ghost nodes, which
-        # carry no element, so it must not be used as a whole here. block_Id holds
-        # exactly the owned nodes.
+        # One SPHERE element per master node. global_ids also covers the responder
+        # nodes, which carry no element; block_Id holds exactly the master nodes.
         element_ids = Int32.(global_ids[1:length(block_Id)])
     end
     if n_bond_elements > 0
@@ -621,6 +608,10 @@ function init_results_in_exodus(exo::ExodusDatabase,
         offset = bond_id_offset < 0 ? Int64(maximum(element_ids; init = Int32(0))) :
                  bond_id_offset
         append!(element_ids, Int32.(offset .+ (1:n_bond_elements)))
+        @debug "bond element ids: offset $offset, $n_bond_elements bonds, " *
+               "ids $(offset + 1) to $(offset + n_bond_elements); " *
+               "element map is now $(length(element_ids)) long " *
+               "($(length(global_ids)) node elements + $n_bond_elements bonds)"
     end
     write_id_map(exo, NodeMap, Int32.(global_ids))
     write_id_map(exo, ElementMap, element_ids)
@@ -706,10 +697,10 @@ Writes the nodal results in the exodus file
 function write_nodal_results_in_exodus(exo::ExodusDatabase,
                                        step::Int64,
                                        output::Dict)
-    # All nodes of the file, owned plus ghost. The file was initialised with that count,
-    # so exodus expects exactly that many values per nodal variable. The output fields
-    # are synchronised onto the responder nodes, so every rank writes the same value for
-    # a shared node and it does not matter which one epu keeps.
+    # Every node of the file, master plus responder: the file was initialised with that
+    # count, so exodus expects exactly that many values per nodal variable. The output
+    # fields are synchronised onto the responder nodes, so all ranks write the same
+    # value for a shared node.
     nnodes = size(Data_Manager.get_field("Coordinates"), 1)
     for varname in keys(output)
         field = Data_Manager.get_field(output[varname]["fieldname"],

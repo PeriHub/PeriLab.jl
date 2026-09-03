@@ -272,13 +272,19 @@ end
 """
     bond_element_id_offset(element_ids, n_bond_elements)
 
-Returns the offset after which this rank numbers its bond elements, so that bond
-element ids do not overlap between ranks.
+Returns the offset after which this rank numbers its bond elements: bond element ids
+start after all node elements and are then handed out rank by rank.
+
+    rank 0:  base + 1                          ... base + n_0
+    rank 1:  base + n_0 + 1                    ... base + n_0 + n_1
+    rank 2:  base + n_0 + n_1 + 1              ... base + n_0 + n_1 + n_2
+
+`base` is the total number of nodes over all ranks, so the bond ids start behind the
+node elements. `n_r` is the bond count of rank `r`, obtained from an `Allgather`, so
+every rank can compute the sum of all lower ranks itself.
 
 Points and FE elements take their global ids from `loc_to_glob`, because there is
-exactly one element per node. A node owns many bonds, so that map cannot be reused and
-the ids are built here: the globally largest element id plus the number of bonds on all
-lower ranks.
+exactly one element per node. A node owns many bonds, so that map cannot be reused.
 
 A directed bond `i -> j` is written only by the rank owning node `i`, so nothing has to
 be merged; the ranges only have to be disjoint.
@@ -288,7 +294,8 @@ be merged; the ranges only have to be disjoint.
     including ranks that hold no bonds at all.
 
 # Arguments
-- `element_ids::AbstractVector`: Element ids already assigned on this rank
+- `element_ids::AbstractVector`: Element ids already assigned on this rank, used as the
+  base in the serial case and for the FE part
 - `n_bond_elements::Int64`: Number of bond elements on this rank
 # Returns
 - `::Int64`: Offset for the first bond element id of this rank
@@ -301,16 +308,24 @@ function bond_element_id_offset(element_ids::AbstractVector, n_bond_elements::In
     end
 
     comm = Data_Manager.get_comm()
-    global_max = MPI.Allreduce(local_max, MPI.MAX, comm)
 
-    # length per rank, known on every rank; the ranks are then laid out in order
+    # Total number of nodes over all ranks: every node belongs to exactly one rank, so
+    # summing the local master counts gives the global count. The FE part can push the
+    # element ids beyond that, so the larger of the two is used as the base.
+    n_global_nodes = MPI.Allreduce(Data_Manager.get_nnodes(), +, comm)
+    global_max_element = MPI.Allreduce(local_max, MPI.MAX, comm)
+    base = max(n_global_nodes, global_max_element)
+
+    # Bond count per rank, known on every rank; the ranks follow each other in order.
     counts = MPI.Allgather(n_bond_elements, comm)
     rank = Data_Manager.get_rank()
     lower_ranks = sum(counts[1:rank]; init = 0)
 
-    @debug "Bond element ids: global max $global_max, counts per rank $counts"
+    @debug "Bond element ids: base $base (nodes $n_global_nodes, max element " *
+           "$global_max_element), counts per rank $counts, offset for rank $rank: " *
+           "$(base + lower_ranks)"
 
-    return global_max + lower_ranks
+    return base + lower_ranks
 end
 
 """
@@ -591,13 +606,14 @@ function init_write_results(params::Dict,
     result_files::Vector{Dict} = []
 
     nnodes = Data_Manager.get_nnodes()
-    # Ghost (responder) nodes are written to the file as well: a bond crossing a rank
-    # boundary has to reference its partner, and exodus only accepts nodes the file
-    # knows. epu merges nodes by their global id, so the duplicates collapse again.
-    # Elements are still only created for owned nodes, so nothing is written twice.
-    coordinates_all = Data_Manager.get_field("Coordinates")
-    n_total_nodes = size(coordinates_all, 1)
+    # The file holds master and responder nodes: a bond crossing a rank boundary
+    # references its partner, and exodus validates connectivity against the nodes of the
+    # file. Elements are still created for master nodes only, so nothing is written
+    # twice and epu merges the duplicated nodes by their global id.
+    coordinates = Data_Manager.get_field("Coordinates")
+    n_total_nodes = size(coordinates, 1)
     global_ids = Data_Manager.loc_to_glob(1:n_total_nodes)
+    owned_global_ids = global_ids[1:nnodes]
     dof = Data_Manager.get_dof()
     nnsets = Data_Manager.get_nnsets()
     nlist = Data_Manager.get_nlist()
@@ -644,10 +660,8 @@ function init_write_results(params::Dict,
         elem_global_ids = Data_Manager.loc_to_glob(1:(num_fem_elements + nnodes - num_nodes_in_topo))
     end
 
-    # Node sets stay restricted to the nodes this rank owns. global_ids now also covers
-    # the ghost nodes, and a set built from those would make a Node_Set_Data compute
-    # count shared nodes once per rank, so Sum and Average would come out wrong.
-    owned_global_ids = global_ids[1:nnodes]
+    # Node sets stay on the master nodes: a set built from the responder nodes as well
+    # would make a Node_Set_Data compute count a shared node once per rank.
     for name in eachindex(nsets)
         existing_nodes = intersect(owned_global_ids, nsets[name])
         nsets[name] = Data_Manager.get_local_nodes(existing_nodes)
@@ -687,8 +701,7 @@ function init_write_results(params::Dict,
             n_bond_blocks = init_bond_information_export(local_block_Id,
                                                          n_blocks,
                                                          nlist,
-                                                         outputs[id],
-                                                         n_total_nodes)
+                                                         outputs[id])
             bond_blocks_per_file[id] = bond_blocks
             bond_counts_per_file[id] = n_bond_elements
 
@@ -712,7 +725,7 @@ function init_write_results(params::Dict,
         end
     end
 
-    coords = vcat(transpose(coordinates_all[1:n_total_nodes, :]))
+    coords = vcat(transpose(coordinates[1:n_total_nodes, :]))
     for id in eachindex(result_files)
         if result_files[id]["type"] == "Exodus"
             bond_blocks = get(bond_blocks_per_file, id,
@@ -721,7 +734,7 @@ function init_write_results(params::Dict,
             bond_output_names::Vector{String} = collect(keys(sort!(OrderedDict(bond_fields))))
 
             # Collective: every rank has to reach this, also one without bonds.
-            element_ids = isnothing(elem_global_ids) ? global_ids : elem_global_ids
+            element_ids = isnothing(elem_global_ids) ? owned_global_ids : elem_global_ids
             bond_offset = bond_element_id_offset(element_ids,
                                                  get(bond_counts_per_file, id, 0))
 
