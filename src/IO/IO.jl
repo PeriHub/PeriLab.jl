@@ -606,13 +606,19 @@ function init_write_results(params::Dict,
     result_files::Vector{Dict} = []
 
     nnodes = Data_Manager.get_nnodes()
-    # The file holds master and responder nodes: a bond crossing a rank boundary
-    # references its partner, and exodus validates connectivity against the nodes of the
-    # file. Elements are still created for master nodes only, so nothing is written
-    # twice and epu merges the duplicated nodes by their global id.
+    # Responder nodes go into the file only when bonds are exported: a bond crossing a
+    # rank boundary has to reference its partner, and exodus validates connectivity
+    # against the nodes of the file. Without bond export the file keeps to the master
+    # nodes, which is what a plain point run needs and what it always did.
     coordinates = Data_Manager.get_field("Coordinates")
-    n_total_nodes = size(coordinates, 1)
-    global_ids = Data_Manager.loc_to_glob(1:n_total_nodes)
+    # Master nodes first, responder nodes after them. Taken from the data manager rather
+    # than from the size of the coordinate field, which may hold further rows.
+    n_total_nodes = nnodes + Data_Manager.get_num_responder()
+    # Collected index by index on purpose: the node map has to line up position for
+    # position with the rows of the coordinate matrix, because epu matches nodes across
+    # the per-rank files through it. Slicing the return value of loc_to_glob would rely
+    # on its iteration order, which is not the index order for every container type.
+    global_ids = [Data_Manager.loc_to_glob(i) for i in 1:n_total_nodes]
     owned_global_ids = global_ids[1:nnodes]
     dof = Data_Manager.get_dof()
     nnsets = Data_Manager.get_nnsets()
@@ -672,6 +678,7 @@ function init_write_results(params::Dict,
     # never drift apart.
     bond_blocks_per_file = Dict{Int64,OrderedDict{Int64,BondBlock}}()
     bond_counts_per_file = Dict{Int64,Int64}()
+    n_file_nodes_per_file = Dict{Int64,Int64}()
 
     for (id, filename) in enumerate(filenames)
         rank = Data_Manager.get_rank()
@@ -705,9 +712,27 @@ function init_write_results(params::Dict,
             bond_blocks_per_file[id] = bond_blocks
             bond_counts_per_file[id] = n_bond_elements
 
+            # Only a bond export needs the responder nodes in the file.
+            #
+            # DIAGNOSTIC: set PERILAB_FORCE_RESPONDER_NODES=true to put the responder
+            # nodes into the file even without a bond export. The file then has more
+            # nodes than SPHERE elements, exactly as in the bond case, but carries no
+            # BAR2 blocks. If the component shift in the merged file shows up like this
+            # too, it comes from the node/element count difference; if it does not, it
+            # comes from the bond blocks.
+            force_responder = lowercase(get(ENV, "PERILAB_FORCE_RESPONDER_NODES",
+                                            "false")) == "true"
+            n_file_nodes = (n_bond_elements > 0 || force_responder) ? n_total_nodes :
+                           nnodes
+            n_file_nodes_per_file[id] = n_file_nodes
+            if force_responder && n_bond_elements == 0
+                @info "PERILAB_FORCE_RESPONDER_NODES: file gets $n_file_nodes nodes " *
+                      "for $nnodes point elements, no bond blocks"
+            end
+
             push!(result_files,
                   create_result_file(filename,
-                                     n_total_nodes,
+                                     n_file_nodes,
                                      dof,
                                      n_blocks + n_bond_blocks,
                                      nnsets,
@@ -725,13 +750,16 @@ function init_write_results(params::Dict,
         end
     end
 
-    coords = vcat(transpose(coordinates[1:n_total_nodes, :]))
     for id in eachindex(result_files)
         if result_files[id]["type"] == "Exodus"
             bond_blocks = get(bond_blocks_per_file, id,
                               OrderedDict{Int64,BondBlock}())
             _, bond_fields, _ = split_output_fields(outputs[id]["Fields"])
             bond_output_names::Vector{String} = collect(keys(sort!(OrderedDict(bond_fields))))
+
+            n_file_nodes = get(n_file_nodes_per_file, id, nnodes)
+            coords = vcat(transpose(coordinates[1:n_file_nodes, :]))
+            file_global_ids = global_ids[1:n_file_nodes]
 
             # Collective: every rank has to reach this, also one without bonds.
             element_ids = isnothing(elem_global_ids) ? owned_global_ids : elem_global_ids
@@ -745,7 +773,7 @@ function init_write_results(params::Dict,
                                                               local_block_Id,
                                                               block_name_list,
                                                               nsets,
-                                                              global_ids,
+                                                              file_global_ids,
                                                               PERILAB_VERSION,
                                                               qa_vector,
                                                               fem_block,
@@ -759,6 +787,9 @@ function init_write_results(params::Dict,
             # result file rather than being rebuilt per step.
             result_files[id]["bond_blocks"] = bond_blocks
             result_files[id]["n_blocks"] = n_blocks
+            result_files[id]["n_file_nodes"] = n_file_nodes
+            # epu has to sum the shared nodes only when responder nodes were written.
+            result_files[id]["responder_nodes"] = n_file_nodes > nnodes
         end
 
         if outputs[id]["flush_file"]

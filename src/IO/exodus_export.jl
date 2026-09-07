@@ -17,6 +17,7 @@ export resolve_block_selection
 export check_block_selection
 export element_block_sizes
 export write_bond_results_in_exodus
+export exodus_num_nodes
 export BondBlock
 
 """
@@ -666,6 +667,25 @@ function init_results_in_exodus(exo::ExodusDatabase,
 end
 
 """
+    exodus_num_nodes(exo::ExodusDatabase)
+
+Number of nodes the database was initialised with.
+
+Exodus.jl carries the initialisation as type parameters,
+`Initialization{num_dim, num_nodes, num_elems, num_elem_blks, num_node_sets,
+num_side_sets}` — the same order `create_result_file` builds it in. There is no
+exported accessor, so the parameter is read off the type.
+
+# Arguments
+- `exo::ExodusDatabase`: The exodus file
+# Returns
+- `::Int64`: Node count of the file
+"""
+function exodus_num_nodes(exo::ExodusDatabase)
+    return Int64(typeof(exo.init).parameters[2])
+end
+
+"""
     write_step_and_time(exo::ExodusDatabase, step::Int64, time::Float64)
 
 Writes the step and time in the exodus file
@@ -697,22 +717,29 @@ Writes the nodal results in the exodus file
 function write_nodal_results_in_exodus(exo::ExodusDatabase,
                                        step::Int64,
                                        output::Dict)
-    # Every node of the file, master plus responder: the file was initialised with that
-    # count, so exodus expects exactly that many values per nodal variable. The output
-    # fields are synchronised onto the responder nodes, so all ranks write the same
-    # value for a shared node.
-    nnodes = size(Data_Manager.get_field("Coordinates"), 1)
+    # exodus expects exactly one value per node of the file, and the count comes from the
+    # file itself so it cannot disagree with what it was initialised with. The field has
+    # a row for every node the rank knows, master and responder, which is not necessarily
+    # the same number — slicing the field directly would write too many or too few
+    # values.
+    #
+    # The vector is allocated as Float64 and filled by broadcast, which also converts
+    # integer fields; write_values has no Int method.
+    n_file_nodes = exodus_num_nodes(exo)
+
     for varname in keys(output)
         field = Data_Manager.get_field(output[varname]["fieldname"],
                                        output[varname]["time"])
+        n_write = min(n_file_nodes, size(field, 1))
+
         # exo, timestep::Integer, id::Integer, var_index::Integer, vector
         # => https://github.com/cmhamel/Exodus.jl/blob/master/src/Variables.jl
+        var = zeros(Float64, n_file_nodes)
         if haskey(output[varname], "dof")
-            var = convert(Array{Float64}, field[1:nnodes, output[varname]["dof"]])
+            var[1:n_write] .= field[1:n_write, output[varname]["dof"]]
         else
-            var = convert(Array{Float64},
-                          field[1:nnodes, output[varname]["i_dof"],
-                                output[varname]["j_dof"]])
+            var[1:n_write] .= field[1:n_write, output[varname]["i_dof"],
+                                    output[varname]["j_dof"]]
         end
         # interface does not work with Int yet 28//08//2023
         write_values(exo, NodalVariable, step, varname, var)
@@ -810,5 +837,5 @@ Merges the exodus file
 - `exo::ExodusDatabase`: The exodus file
 """
 function merge_exodus_file(file_name::AbstractString)
-    epu(file_name)
+    return epu(file_name)
 end
