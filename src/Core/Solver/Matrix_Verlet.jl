@@ -30,7 +30,9 @@ using ..Model_Factory: compute_models, compute_crititical_time_step
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
 using ...Logging_Module: print_table
 include("../Model_reduction/Model_reduction.jl")
-using .Model_reduction: init_reduce_model
+using .Model_reduction: init_reduce_model, ReducedState, setup_reduced_state,
+                        n_modal, physical_part, modal_part,
+                        pull_from_nodes!, push_to_nodes!
 include("../../Compute/compute_field_values.jl")
 using ..Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
                                      compute_model
@@ -156,15 +158,14 @@ function run_solver(solver_options::Dict{Any,Any},
     rank = Data_Manager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
     M_fact = Data_Manager.get_mass_matrix()
-    if solver_options["Model Reduction"] != false
-        master_nodes = Data_Manager.get_reduced_model_master()
-        temp = zeros(length(master_nodes) * Data_Manager.get_dof())
-
-    else
-        temp = zeros(Data_Manager.get_dof() * Data_Manager.get_nnodes())
-    end
 
     K = Data_Manager.get_stiffness_matrix()::AbstractMatrix{Float64}
+
+    # Master nodes and state vectors. Without a reduction every node is a master and the
+    # state has no modal part, so the loop below needs no case distinction: the reduced
+    # run differs only in which nodes are masters and in the extra modal entries.
+    master_nodes, state = setup_reduced_state(solver_options["Model Reduction"], K)
+    modal_active = n_modal(state) > 0
 
     @timeit "Matrix Verlet" begin
         @inbounds @fastmath for idt in iter
@@ -197,13 +198,26 @@ function run_solver(solver_options::Dict{Any,Any},
             end
             @timeit "compute Velocity" begin
                 @. @views vNP1[active_nodes,
-                :] = (1 - numerical_damping) *
-                                                  vN[active_nodes, :] +
-                                                  0.5 * dt * aN[active_nodes, :]
+                               :] = (1 - numerical_damping) *
+                                    vN[active_nodes, :] +
+                                    0.5 * dt * aN[active_nodes, :]
 
                 @. @views uNP1[active_nodes,
-                :] = uN[active_nodes, :] +
-                                                  dt * vNP1[active_nodes, :]
+                               :] = uN[active_nodes, :] +
+                                    dt * vNP1[active_nodes, :]
+
+                # The modal coordinates have no node field, so they are integrated here.
+                # Without them the condensed degrees of freedom carry no dynamics and
+                # the modal reduction degenerates to a static one.
+                if modal_active
+                    modal_part(state.q_dot,
+                               state) .= (1 - numerical_damping) .*
+                                         modal_part(state.q_dot, state) .+
+                                         0.5 .* dt .*
+                                         modal_part(state.q_ddot, state)
+                    modal_part(state.q, state) .+= dt .*
+                                                   modal_part(state.q_dot, state)
+                end
             end
 
             @timeit "apply BC" apply_bc_dirichlet(["Displacements", "Temperature"],
@@ -218,25 +232,36 @@ function run_solver(solver_options::Dict{Any,Any},
                                                     solver_options["Models"],
                                                     synchronise_field)
             @timeit "Force computations" begin
-                @timeit "sa" sa=size(aNP1[active_nodes, :])
+                # Displacements of the master nodes into the state; the modal part was
+                # already advanced above and stays as it is.
+                pull_from_nodes!(state.q, uNP1, master_nodes, state)
 
-                @views fNP1 = force_densities_NP1[active_nodes, :]
+                # f = -K q over the whole state, modal coordinates included
+                @timeit "Force matrix computations" mul!(state.f, K, state.q)
+                state.f .*= -1.0
 
-                @timeit "Force matrix computations" f_int_inplace!(fNP1, temp, -K,
-                                                                   vec(uNP1[active_nodes,
-                                                                            :]), sa)
+                # External contributions act on nodes only, so they go into the physical
+                # part. A load on a condensed degree of freedom would have to be
+                # projected onto the modes, which the reduction does not provide.
+                @views @. force_densities_NP1[active_nodes,
+                                              :] += external_force_densities[active_nodes,
+                                                                             :] +
+                                                    external_forces[active_nodes,
+                                                                    :] /
+                                                    volume[active_nodes]
+                pull_from_nodes!(state.q_ddot, force_densities_NP1, master_nodes, state)
+                physical_part(state.f, state) .+= physical_part(state.q_ddot, state)
 
-                @. @views fNP1 .+= external_force_densities[active_nodes, :] +
-                                   external_forces[active_nodes, :] / volume[active_nodes]
+                push_to_nodes!(force_densities_NP1, state.f, master_nodes, state)
 
-                @. @views forces[active_nodes, :] .= fNP1 *
-                                                     volume[active_nodes]
+                @. @views forces[active_nodes,
+                                 :] = force_densities_NP1[active_nodes, :] *
+                                      volume[active_nodes]
                 check_inf_or_nan(force_densities_NP1, "Force Densities")
             end
             @timeit "Accelaration computation" begin
-                @views aNP1[active_nodes, :] = reshape(M_fact \
-                                                       vec(fNP1),
-                                                       sa...)
+                state.q_ddot .= M_fact \ state.f
+                push_to_nodes!(aNP1, state.q_ddot, master_nodes, state)
             end
             @timeit "write_results" result_files=write_results(result_files, time,
                                                                max_damage, outputs)
@@ -262,14 +287,6 @@ function run_solver(solver_options::Dict{Any,Any},
     end
     Data_Manager.set_current_time(final_time)
     return result_files
-end
-
-function f_int_inplace!(F::AbstractMatrix{Float64},
-                        temp::AbstractVector{Float64},
-                        K,
-                        u::AbstractVector{Float64}, sa::Tuple{Int64,Int64})
-    mul!(temp, K, u)
-    F .+= reshape(temp, sa)
 end
 
 """

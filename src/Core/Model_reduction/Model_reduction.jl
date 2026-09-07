@@ -15,6 +15,205 @@ for mod in module_list
     include(mod["File"])
 end
 
+export ReducedState
+export n_physical, n_modal, physical_part, modal_part
+export pull_from_nodes!, push_to_nodes!
+export setup_reduced_state
+
+"""
+    ReducedState
+
+State vectors of the time integration, held flat rather than as node fields.
+
+The vector is ordered `[u_master; eta]`: `n_phys` physical degrees of freedom of the
+master nodes, followed by `n_modal` modal coordinates. A modal coordinate belongs to no
+node and therefore cannot live in a `nnodes x dof` field, which is what this container
+is for.
+
+`n_modal` is zero for a static reduction (Guyan) and for a run without any reduction, in
+which case the state is nothing but the master degrees of freedom and the integration is
+the same as before. The unreduced case is the one where every node is a master.
+
+The physical part is ordered component by component, the same way `vec` flattens an
+`n x dof` node field: first the first component of every master node, then the second,
+and so on. Master node `k` therefore sits at `(d - 1) * n_master + k` for component `d`.
+This has to match the ordering the reduced matrices were built in.
+
+# Fields
+- `n_phys::Int64`: Number of physical degrees of freedom
+- `n_modal::Int64`: Number of modal coordinates
+- `q::Vector{Float64}`: Displacements
+- `q_dot::Vector{Float64}`: Velocities
+- `q_ddot::Vector{Float64}`: Accelerations
+- `f::Vector{Float64}`: Force scratch vector, reused every step
+"""
+struct ReducedState
+    n_phys::Int64
+    n_modal::Int64
+    q::Vector{Float64}
+    q_dot::Vector{Float64}
+    q_ddot::Vector{Float64}
+    f::Vector{Float64}
+end
+
+"""
+    ReducedState(n_phys::Int64, n_total::Int64)
+
+Allocates the state for a system of `n_total` degrees of freedom, the first `n_phys` of
+them physical.
+
+`n_total` comes from `size(K, 1)`, so the number of modal coordinates never has to be
+passed around: it is whatever the reduction scheme added.
+
+# Arguments
+- `n_phys::Int64`: Number of physical degrees of freedom
+- `n_total::Int64`: Size of the system
+# Returns
+- `::ReducedState`: Zero initialised state
+"""
+function ReducedState(n_phys::Int64, n_total::Int64)
+    if n_total < n_phys
+        throw(ArgumentError("System has $n_total degrees of freedom, fewer than the " *
+                            "$n_phys physical ones."))
+    end
+    return ReducedState(n_phys, n_total - n_phys, zeros(n_total), zeros(n_total),
+                        zeros(n_total), zeros(n_total))
+end
+
+"""
+    n_physical(state)
+
+Number of physical degrees of freedom.
+"""
+n_physical(state::ReducedState) = state.n_phys
+
+"""
+    n_modal(state)
+
+Number of modal coordinates; zero without a modal reduction.
+"""
+n_modal(state::ReducedState) = state.n_modal
+
+"""
+    physical_part(vector, state)
+
+View on the entries that belong to master nodes.
+
+Everything with a physical meaning — boundary conditions, external loads, output — must
+only touch this part.
+"""
+physical_part(v::AbstractVector, state::ReducedState) = @view v[1:state.n_phys]
+
+"""
+    modal_part(vector, state)
+
+View on the modal coordinates; empty without a modal reduction.
+"""
+modal_part(v::AbstractVector, state::ReducedState) = @view v[(state.n_phys + 1):end]
+
+"""
+    pull_from_nodes!(vector, field, master_nodes, state)
+
+Copies the master rows of a node field into the physical part of a state vector.
+
+The modal part is left untouched, because a node field says nothing about it.
+
+# Arguments
+- `vector::AbstractVector{Float64}`: Target, length `n_phys + n_modal`
+- `field::AbstractMatrix{Float64}`: Node field, `nnodes x dof`
+- `master_nodes::AbstractVector{Int64}`: Master node indices
+- `state::ReducedState`: The state, for the split position
+# Returns
+- `vector`: The unchanged reference
+"""
+function pull_from_nodes!(vector::AbstractVector{Float64},
+                          field::AbstractMatrix{Float64},
+                          master_nodes::AbstractVector{Int64},
+                          state::ReducedState)
+    dof = size(field, 2)
+    n_master = length(master_nodes)
+    # Component major, matching vec(field[master_nodes, :]).
+    @inbounds for d in 1:dof
+        offset = (d - 1) * n_master
+        for (k, node) in enumerate(master_nodes)
+            vector[offset + k] = field[node, d]
+        end
+    end
+    return vector
+end
+
+"""
+    push_to_nodes!(field, vector, master_nodes, state)
+
+Copies the physical part of a state vector back into the master rows of a node field.
+
+Rows of nodes that are no master are left alone, and the modal part is dropped: it has
+no node to be written to.
+
+# Arguments
+- `field::AbstractMatrix{Float64}`: Node field, `nnodes x dof`
+- `vector::AbstractVector{Float64}`: Source, length `n_phys + n_modal`
+- `master_nodes::AbstractVector{Int64}`: Master node indices
+- `state::ReducedState`: The state, for the split position
+# Returns
+- `field`: The unchanged reference
+"""
+function push_to_nodes!(field::AbstractMatrix{Float64},
+                        vector::AbstractVector{Float64},
+                        master_nodes::AbstractVector{Int64},
+                        state::ReducedState)
+    dof = size(field, 2)
+    n_master = length(master_nodes)
+    # Component major, matching vec(field[master_nodes, :]).
+    @inbounds for d in 1:dof
+        offset = (d - 1) * n_master
+        for (k, node) in enumerate(master_nodes)
+            field[node, d] = vector[offset + k]
+        end
+    end
+    return field
+end
+
+"""
+    setup_reduced_state(model_reduction, K)
+
+Master nodes and state vectors for the time loop.
+
+Without a reduction every node is a master and there are no modal coordinates, so the
+state is the full system written as a flat vector and the time loop needs no branch on
+whether a reduction is active.
+
+# Arguments
+- `model_reduction`: The `"Model Reduction"` solver option, `false` when disabled
+- `K::AbstractMatrix`: The stiffness matrix, reduced or not
+# Returns
+- `master_nodes::Vector{Int64}`: Nodes carrying physical degrees of freedom
+- `state::ReducedState`: Zero initialised state
+"""
+function setup_reduced_state(model_reduction, K::AbstractMatrix)
+    dof = Data_Manager.get_dof()
+
+    master_nodes = model_reduction == false ?
+                   collect(1:Data_Manager.get_nnodes()) :
+                   Data_Manager.get_reduced_model_master()
+
+    n_phys = length(master_nodes) * dof
+    n_total = size(K, 1)
+
+    if n_total < n_phys
+        throw(ArgumentError("Stiffness matrix has $n_total degrees of freedom for " *
+                            "$n_phys master degrees of freedom. Master node list and " *
+                            "matrix disagree."))
+    end
+
+    state = ReducedState(n_phys, n_total)
+    if n_modal(state) > 0
+        @info "Reduced system: $n_phys physical and $(n_modal(state)) modal degrees of freedom"
+    end
+
+    return master_nodes, state
+end
+
 function reduce_model(K::AbstractMatrix{Float64}, M::AbstractMatrix{Float64},
                       m::Vector{Int64}, s::Vector{Int64}; n_modes::Int64 = 1)
     mod = Data_Manager.get_model_module(model_param["Reduction Model"])
@@ -91,7 +290,7 @@ function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int
     K = Data_Manager.get_stiffness_matrix()
     if master_nodes == []
         @warn "No master nodes defined for model reduction. Using full stiffness matrix."
-        retunr
+        return
     end
     if slave_nodes == []
         @warn "No slave nodes defined for model reduction. Using full stiffness matrix."
