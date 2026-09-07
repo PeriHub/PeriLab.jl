@@ -7,4 +7,8 @@ cd("fullscale_tests/" * folder_name) do
     run_perilab("verlet_reduced", 1, true, folder_name)
     run_perilab("verlet_full_matrix", 1, true, folder_name)
     run_perilab("verlet_reduced_3D", 1, true, folder_name)
+    run_perilab("verlet_reduced_CB_mod_1", 1, true, folder_name)
+    run_perilab("verlet_reduced_CB_mod_5", 1, true, folder_name)
+    run_perilab("verlet_reduced_3D_CB_mod_1", 1, true, folder_name)
+    run_perilab("verlet_reduced_3D_CB_mod_5", 1, true, folder_name)
 end
