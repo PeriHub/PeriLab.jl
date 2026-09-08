@@ -7,7 +7,7 @@ module Damage
 using TimerOutputs: @timeit
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
-using ...Solver_Manager: find_module_files, create_module_specifics
+using ....ModuleLoader: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "damage_name")
 for mod in module_list
     include(mod["File"])
@@ -168,7 +168,7 @@ function init_interface_crit_values(damage_parameter::Dict,
             if haskey(damage_parameter["Interblock Damage"], critical_value_name)
                 if damage_parameter["Interblock Damage"][critical_value_name] isa Number
                     inter_critical_value[block_iId, block_jId,
-                    block_id] = damage_parameter["Interblock Damage"][critical_value_name]
+                                         block_id] = damage_parameter["Interblock Damage"][critical_value_name]
                 end
             end
         end

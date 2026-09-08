@@ -6,7 +6,7 @@ module Pre_Calculation
 
 using TimerOutputs: @timeit
 using ....Data_Manager
-using ...Solver_Manager: find_module_files, create_module_specifics
+using ....ModuleLoader: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "pre_calculation_name")
 for mod in module_list
     include(mod["File"])
@@ -48,7 +48,7 @@ function init_model(nodes::AbstractVector{Int64},
 
     for (active_model_name,
          active_model) in pairs(Data_Manager.get_properties(block,
-                                          "Pre Calculation Model"))
+                                                            "Pre Calculation Model"))
         if active_model
             mod = create_module_specifics(active_model_name,
                                           module_list,
@@ -142,7 +142,8 @@ function check_dependencies(block_nodes::Dict{Int64,Vector{Int64}})
                 Data_Manager.set_properties(block_id,
                                             "Pre Calculation Model",
                                             merge(params_dict,
-                                                  Dict("Bond Associated Correspondence" => true)))
+                                                  Dict("Bond Associated Correspondence" =>
+                                                           true)))
                 continue
             end
             params_dict = Data_Manager.get_properties(block_id, "Pre Calculation Model")
@@ -155,7 +156,7 @@ function check_dependencies(block_nodes::Dict{Int64,Vector{Int64}})
         # Check dependencies inside the pre calculation
         for (active_model_name,
              active_model) in pairs(Data_Manager.get_properties(block_id,
-                                              "Pre Calculation Model"))
+                                                                "Pre Calculation Model"))
             if !active_model
                 continue
             end
@@ -187,7 +188,8 @@ function check_dependencies(block_nodes::Dict{Int64,Vector{Int64}})
                                                 "Pre Calculation Model",
                                                 merge(params_dict,
                                                       Dict("Deformed Bond Geometry" => true,
-                                                           "Bond Associated Correspondence" => true)))
+                                                           "Bond Associated Correspondence" =>
+                                                               true)))
                 end
                 continue
             end

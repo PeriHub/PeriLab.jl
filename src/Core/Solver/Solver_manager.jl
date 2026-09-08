@@ -17,8 +17,8 @@ using ..Parameter_Handling:
                             get_block_names_and_ids,
                             get_solver_params
 using ..Helpers
+using ..ModuleLoader: find_module_files, create_module_specifics
 include("../../Models/Material/Material_Basis.jl")
-include("../Module_inclusion/set_Modules.jl")
 include("../../FEM/FEM_Factory.jl")
 include("../../Models/Material/Material_Models/Zero_Energy_Control/Zero_Energy_Control.jl")
 include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")

@@ -6,7 +6,7 @@ module FEM
 using ...Data_Manager
 using LinearAlgebra
 using ...PeriLabExceptions: @abort
-using ..Solver_Manager: find_module_files, create_module_specifics
+using ...ModuleLoader: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "element_name")
 for mod in module_list
     include(mod["File"])

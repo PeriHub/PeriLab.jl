@@ -6,7 +6,7 @@ module Model_reduction
 using TimerOutputs: @timeit
 using ...Data_Manager
 using SparseArrays
-using ...Solver_Manager: find_module_files, create_module_specifics
+using ....ModuleLoader: find_module_files, create_module_specifics
 using ...Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
                                       compute_model
 using ...Helpers: find_active_nodes, create_permutation

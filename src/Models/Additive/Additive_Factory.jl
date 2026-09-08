@@ -6,9 +6,15 @@ module Additive
 
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
-using ...Solver_Manager: find_module_files, create_module_specifics
-global module_list = find_module_files(@__DIR__, "additive_name")
-for mod in module_list
+using .....ModuleLoader: create_module_specifics, licensed_modules, optional_local_modules
+
+local_user_modules = optional_local_modules(@__DIR__, "additive_name")
+licensed = licensed_modules(@__MODULE__, "Additive")
+@info licensed "Licensed Additive Models: $(join(licensed, ", "))"
+
+global all_modules = vcat(local_user_modules, licensed)
+
+for mod in local_user_modules
     include(mod["File"])
 end
 
@@ -87,7 +93,7 @@ function init_model(nodes::AbstractVector{Int64},
                     block::Int64)
     model_param = Data_Manager.get_properties(block, "Additive Model")
     mod = create_module_specifics(model_param["Additive Model"],
-                                  module_list,
+                                  all_modules,
                                   @__MODULE__,
                                   "additive_name")
     if isnothing(mod)
