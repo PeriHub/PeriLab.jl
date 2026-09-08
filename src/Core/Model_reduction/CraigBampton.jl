@@ -25,7 +25,7 @@ end
 
 Craig-Bampton reduction of a stiffness and a lumped mass matrix.
 
-The master degrees of freedom are kept as physical coordinates, the slave ones are
+The master degrees of freedom are kept as physical coordinates, the condensed ones are
 represented by `n_modes` fixed-interface normal modes. The transformation is
 
     | x_m |   | I      0     | | x_m |
@@ -34,7 +34,7 @@ represented by `n_modes` fixed-interface normal modes. The transformation is
 with the constraint modes `Phi_c = -K_ss \\ K_sm`, the same static relation Guyan uses,
 and the normal modes `Phi_n` from the fixed-interface eigenvalue problem
 `K_ss Phi = M_ss Phi Lambda`. Guyan is the special case `n_modes = 0`: the modal part
-is what carries the dynamics of the slave degrees of freedom, which static condensation
+is what carries the dynamics of the condensed degrees of freedom, which static condensation
 drops.
 
 The normal modes are mass normalised, so the lower right block of `K_r` holds the
@@ -50,7 +50,7 @@ are modal coordinates without a physical meaning.
 - `K::AbstractMatrix{Float64}`: Stiffness matrix
 - `M_diag::Vector{Float64}`: Lumped mass matrix as a vector, one entry per degree of freedom
 - `m::Vector{Int64}`: Indices of the master degrees of freedom
-- `s::Vector{Int64}`: Indices of the slave degrees of freedom
+- `s::Vector{Int64}`: Indices of the condensed degrees of freedom
 - `n_modes::Int64`: Number of fixed-interface normal modes to keep
 # Returns
 - `K_reduced::SparseMatrixCSC`: Reduced stiffness matrix, size `length(m) + n_modes`
@@ -62,10 +62,10 @@ function reduce_matrices(K::AbstractMatrix{Float64}, M_diag::Vector{Float64},
     ns = length(s)
 
     if !isempty(intersect(m, s))
-        throw(ArgumentError("Master and slave index sets overlap."))
+        throw(ArgumentError("Master and condensed index sets overlap."))
     end
     if n_modes < 0 || n_modes > ns
-        throw(ArgumentError("n_modes = $n_modes, but only $ns slave degrees of " *
+        throw(ArgumentError("n_modes = $n_modes, but only $ns condensed degrees of " *
                             "freedom are available."))
     end
 
@@ -124,11 +124,6 @@ function reduce_matrices(K::AbstractMatrix{Float64}, M_diag::Vector{Float64},
     M_reduced[1:nm, (nm + 1):end] = Phi_c' * M_ss_diag * Phi_n
     M_reduced[(nm + 1):end, 1:nm] = M_reduced[1:nm, (nm + 1):end]'
     M_reduced[(nm + 1):end, (nm + 1):end] = Matrix{Float64}(I, n_modes, n_modes)
-
-    # Both are symmetric by construction; rounding leaves a small asymmetry that some
-    # solvers reject.
-    K_reduced = (K_reduced + K_reduced') / 2
-    M_reduced = (M_reduced + M_reduced') / 2
 
     return sparse(K_reduced), sparse(M_reduced)
 end

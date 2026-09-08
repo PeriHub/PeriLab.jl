@@ -138,17 +138,17 @@ function compute_stiffness_contribution!(CB_k::Array{Float64,4},
         factor = omega_ij * omega_ik * V_k
         @inbounds begin
             K_block[1,
-            1] = factor *
-                            (CB_k[k_idx, 1, 1, 1] * DX_1 + CB_k[k_idx, 1, 2, 1] * DX_2)
+                    1] = factor *
+                         (CB_k[k_idx, 1, 1, 1] * DX_1 + CB_k[k_idx, 1, 2, 1] * DX_2)
             K_block[1,
-            2] = factor *
-                            (CB_k[k_idx, 1, 1, 2] * DX_1 + CB_k[k_idx, 1, 2, 2] * DX_2)
+                    2] = factor *
+                         (CB_k[k_idx, 1, 1, 2] * DX_1 + CB_k[k_idx, 1, 2, 2] * DX_2)
             K_block[2,
-            1] = factor *
-                            (CB_k[k_idx, 2, 1, 1] * DX_1 + CB_k[k_idx, 2, 2, 1] * DX_2)
+                    1] = factor *
+                         (CB_k[k_idx, 2, 1, 1] * DX_1 + CB_k[k_idx, 2, 2, 1] * DX_2)
             K_block[2,
-            2] = factor *
-                            (CB_k[k_idx, 2, 1, 2] * DX_1 + CB_k[k_idx, 2, 2, 2] * DX_2)
+                    2] = factor *
+                         (CB_k[k_idx, 2, 1, 2] * DX_1 + CB_k[k_idx, 2, 2, 2] * DX_2)
         end
     elseif dof == 3
         DX_1 = D_inv_i[1, 1] * X_ij[1] + D_inv_i[1, 2] * X_ij[2] + D_inv_i[1, 3] * X_ij[3]
@@ -157,41 +157,41 @@ function compute_stiffness_contribution!(CB_k::Array{Float64,4},
         factor = omega_ij * omega_ik * V_k
         @inbounds begin
             K_block[1,
-            1] = factor *
-                            (CB_k[k_idx, 1, 1, 1] * DX_1 + CB_k[k_idx, 1, 2, 1] * DX_2 +
-                             CB_k[k_idx, 1, 3, 1] * DX_3)
+                    1] = factor *
+                         (CB_k[k_idx, 1, 1, 1] * DX_1 + CB_k[k_idx, 1, 2, 1] * DX_2 +
+                          CB_k[k_idx, 1, 3, 1] * DX_3)
             K_block[1,
-            2] = factor *
-                            (CB_k[k_idx, 1, 1, 2] * DX_1 + CB_k[k_idx, 1, 2, 2] * DX_2 +
-                             CB_k[k_idx, 1, 3, 2] * DX_3)
+                    2] = factor *
+                         (CB_k[k_idx, 1, 1, 2] * DX_1 + CB_k[k_idx, 1, 2, 2] * DX_2 +
+                          CB_k[k_idx, 1, 3, 2] * DX_3)
             K_block[1,
-            3] = factor *
-                            (CB_k[k_idx, 1, 1, 3] * DX_1 + CB_k[k_idx, 1, 2, 3] * DX_2 +
-                             CB_k[k_idx, 1, 3, 3] * DX_3)
+                    3] = factor *
+                         (CB_k[k_idx, 1, 1, 3] * DX_1 + CB_k[k_idx, 1, 2, 3] * DX_2 +
+                          CB_k[k_idx, 1, 3, 3] * DX_3)
             K_block[2,
-            1] = factor *
-                            (CB_k[k_idx, 2, 1, 1] * DX_1 + CB_k[k_idx, 2, 2, 1] * DX_2 +
-                             CB_k[k_idx, 2, 3, 1] * DX_3)
+                    1] = factor *
+                         (CB_k[k_idx, 2, 1, 1] * DX_1 + CB_k[k_idx, 2, 2, 1] * DX_2 +
+                          CB_k[k_idx, 2, 3, 1] * DX_3)
             K_block[2,
-            2] = factor *
-                            (CB_k[k_idx, 2, 1, 2] * DX_1 + CB_k[k_idx, 2, 2, 2] * DX_2 +
-                             CB_k[k_idx, 2, 3, 2] * DX_3)
+                    2] = factor *
+                         (CB_k[k_idx, 2, 1, 2] * DX_1 + CB_k[k_idx, 2, 2, 2] * DX_2 +
+                          CB_k[k_idx, 2, 3, 2] * DX_3)
             K_block[2,
-            3] = factor *
-                            (CB_k[k_idx, 2, 1, 3] * DX_1 + CB_k[k_idx, 2, 2, 3] * DX_2 +
-                             CB_k[k_idx, 2, 3, 3] * DX_3)
+                    3] = factor *
+                         (CB_k[k_idx, 2, 1, 3] * DX_1 + CB_k[k_idx, 2, 2, 3] * DX_2 +
+                          CB_k[k_idx, 2, 3, 3] * DX_3)
             K_block[3,
-            1] = factor *
-                            (CB_k[k_idx, 3, 1, 1] * DX_1 + CB_k[k_idx, 3, 2, 1] * DX_2 +
-                             CB_k[k_idx, 3, 3, 1] * DX_3)
+                    1] = factor *
+                         (CB_k[k_idx, 3, 1, 1] * DX_1 + CB_k[k_idx, 3, 2, 1] * DX_2 +
+                          CB_k[k_idx, 3, 3, 1] * DX_3)
             K_block[3,
-            2] = factor *
-                            (CB_k[k_idx, 3, 1, 2] * DX_1 + CB_k[k_idx, 3, 2, 2] * DX_2 +
-                             CB_k[k_idx, 3, 3, 2] * DX_3)
+                    2] = factor *
+                         (CB_k[k_idx, 3, 1, 2] * DX_1 + CB_k[k_idx, 3, 2, 2] * DX_2 +
+                          CB_k[k_idx, 3, 3, 2] * DX_3)
             K_block[3,
-            3] = factor *
-                            (CB_k[k_idx, 3, 1, 3] * DX_1 + CB_k[k_idx, 3, 2, 3] * DX_2 +
-                             CB_k[k_idx, 3, 3, 3] * DX_3)
+                    3] = factor *
+                         (CB_k[k_idx, 3, 1, 3] * DX_1 + CB_k[k_idx, 3, 2, 3] * DX_2 +
+                          CB_k[k_idx, 3, 3, 3] * DX_3)
         end
     end
 end
@@ -572,7 +572,7 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int64},
                                 pos = searchsortedfirst(K_rowval, grow, rlo, rhi,
                                                         Base.Order.Forward)
                                 local_nzidx[(m - 1) * blk1 + r,
-                                (o - 1) * blk1 + c] = pos
+                                            (o - 1) * blk1 + c] = pos
                             end
                         end
                     end
@@ -582,8 +582,8 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int64},
                         val = K_local[(m - 1) * blk1 + r, (o - 1) * blk1 + c]
                         abs(val) <= 1e-14 && continue
                         nzval[local_nzidx[(m - 1) * blk1 + r,
-                        (o - 1) * blk1 + c]] += sign *
-                                                                                      val
+                                          (o - 1) * blk1 + c]] += sign *
+                                                                  val
                     end
                 end
             end  # scatter_to_K
@@ -634,7 +634,7 @@ end
 
 function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = true)
     nodes = collect(1:Data_Manager.get_nnodes())
-    dof = Data_Manager.get_dof()
+    dof::Int64 = Data_Manager.get_dof()
     nnodes = length(nodes)
 
     bond_geometry = Data_Manager.get_field("Bond Geometry")
