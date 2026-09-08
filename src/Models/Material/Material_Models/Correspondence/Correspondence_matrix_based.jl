@@ -384,7 +384,6 @@ function build_sparsity_and_map(nodes::AbstractVector{Int64},
 
     @inbounds for iID in nodes
         nj = nlist[iID]
-        mnj = number_of_neighbors[iID]
 
         local_nodes = (nj..., iID)   # Nachbarn + eigener Knoten
 
@@ -649,6 +648,13 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
     volume = Data_Manager.get_field("Volume")
     omega = Data_Manager.get_field("Influence Function")
     C_voigt = Data_Manager.get_field("Material Gradient")
+
+    for iID in nodes
+        if sum(C_voigt[iID, :, :]) == 0.0
+            blockIDs = Data_Manager.get_field("Block_Id")
+            @abort "Material gradient is zero; Please check if a correspondence material is active for block $(blockIDs[iID])."
+        end
+    end
     C_voigt_old = Data_Manager.create_constant_node_tensor_field("Old Material Gradient",
                                                                  Float64,
                                                                  Int64((dof *
