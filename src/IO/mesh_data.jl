@@ -12,8 +12,10 @@ import Gmsh: gmsh
 using ..Data_Manager
 include("bond_filter.jl")
 import .Bond_Filter: apply_bond_filters
-include("gcode.jl")
-include("volume.jl")
+# include("volume.jl")
+# include("gcode.jl")
+include("Mesh_Import/Mesh_Import.jl")
+using .Mesh_Import: read_mesh
 using ..Helpers: fastdot, get_nearest_neighbors, find_inverse_bond_id
 using ..Logging_Module: print_table
 using ..Parameter_Handling: get_mesh_name, get_header, get_node_sets,
@@ -477,11 +479,11 @@ function distribution_to_cores(comm::MPI.Comm,
                                                              distribution)
             else
                 datafield[:,
-                localDof] = send_vector_from_root_to_core_i(comm,
-                                                                         send_msg,
-                                                                         datafield[:,
-                                                                         localDof],
-                                                                         distribution)
+                          localDof] = send_vector_from_root_to_core_i(comm,
+                                                                      send_msg,
+                                                                      datafield[:,
+                                                                                localDof],
+                                                                      distribution)
             end
         end
     end
@@ -903,7 +905,7 @@ function read_mesh(filename::String, params::Dict)
                 else
                     volume = tetrahedron_volume(nodes)
                     mesh_df[node_id,
-                    :] = [
+                            :] = [
                         center[1],
                         center[2],
                         center[3],
@@ -1011,7 +1013,7 @@ function load_and_evaluate_mesh(params::Dict,
         txt_file = replace(filename, ".gcode" => ".txt")
         @info txt_file
         if params["Discretization"]["Gcode"]["Overwrite Mesh"] || !isfile(txt_file)
-            mesh = get_gcode_mesh(filename, params, silent)
+            mesh = read_mesh(params, path)
         else
             mesh = read_mesh(txt_file, params)
         end
