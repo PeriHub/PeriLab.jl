@@ -12,12 +12,10 @@ using NearestNeighbors
 using ..Helpers: sub_in_place!, normalize_in_place!
 
 function distance_along_line(dir::Vector{Float64}, point_diff::Vector{Float64})
-
     # Calculate the distance from the point to the line segment
-    distance_along_line = dot(point_diff, dir) / dot(dir, dir)
-
-    return distance_along_line
+    return dot(point_diff, dir) / dot(dir, dir)
 end
+
 """
     stripComments(line::String)::String
 
@@ -88,10 +86,6 @@ end
 
 function parseFile(path::String, callbacks::Dict{String,Function}, dataObject, silent)
     lines = readlines(path)
-    # open(path) do f
-    #     line = 1
-    #     while !eof(f)
-    #         x = readline(f);
     iter = progress_bar(0, length(lines) - 1, silent)
     for i in iter
         x = lines[i]
@@ -145,9 +139,6 @@ function parseFile(path::String, callbacks::Dict{String,Function}, dataObject, s
             end
         end
     end
-    #         line += 1;
-    #     end
-    # end
 end
 
 function write_mesh(gcode_file, commands_dict,
@@ -166,6 +157,7 @@ function write_mesh(gcode_file, commands_dict,
     myPrinter["z"] = 0.0
     myPrinter["b"] = 0.0
     myPrinter["c"] = 0.0
+    myPrinter["f"] = 0.0
     myPrinter["e"] = 0.0
     myPrinter["motion_mode"] = "G0"
     myPrinter["filamentUsage"] = 0.0 # store total filament usage (printed length of filament)
@@ -218,357 +210,138 @@ function write_mesh(gcode_file, commands_dict,
     return
 end
 
-function move(cmds, dataobject)
-    movement(cmds, dataobject)
-    dataobject["previous_extruding"] = false
-    new_layer(dataobject)
-    # dataobject["pd_mesh"]["remaining_distance"] = dataobject["pd_mesh"]["sampling"] / 2
+# ---------------------------------------------------------------------------
+# Shared axis / feedrate / extrusion resolution
+# ---------------------------------------------------------------------------
+
+"""
+    resolve_axis!(dataobject, cmds, axis::String)
+
+Parse `axis` (one of "x","y","z","b","c") from `cmds` if present and update
+`dataobject[axis]` according to the current positioning mode: absolute mode
+sets the value directly, relative mode accumulates the delta. Works
+uniformly for translational axes (X/Y/Z) and rotary axes (B/C). Returns the
+signed delta that was applied (0.0 if the axis word wasn't present).
+"""
+function resolve_axis!(dataobject, cmds, axis::String)
+    idx = findfirst((p -> lowercase(p.first) == axis), cmds)
+    idx === nothing && return 0.0
+
+    val = parse(Float64, cmds[idx].second)
+    if dataobject["positioning"] === "absolute"
+        delta = val - dataobject[axis]
+        dataobject[axis] = val
+    else
+        delta = val
+        dataobject[axis] += val
+    end
+    return delta
 end
 
-# function check_min_max(dataobject, str)
-#     if dataobject[str] > dataobject[str * "_max"]
-#         dataobject[str * "_max"] = dataobject[str]
-#     end
-#     if dataobject[str] < dataobject[str * "_min"]
-#         dataobject[str * "_min"] = dataobject[str]
-#     end
-# end
+"""
+    resolve_feedrate!(dataobject, cmds)
+
+Parse F from `cmds` if present. Feedrate is always an absolute quantity,
+regardless of G90/G91 positioning mode. Preserves the existing convention
+that `F0` combined with an `X` word on the same line triggers a new-layer
+flush (used by some slicers as a layer-change marker).
+"""
+function resolve_feedrate!(dataobject, cmds)
+    f_idx = findfirst((p -> lowercase(p.first) == "f"), cmds)
+    f_idx === nothing && return
+
+    val = parse(Float64, cmds[f_idx].second)
+    dataobject["f"] = val
+
+    if val == 0.0 && findfirst((p -> lowercase(p.first) == "x"), cmds) !== nothing
+        new_layer(dataobject)
+    end
+end
 
 """
-    movement(cmds, dataobject)
+    resolve_extrusion!(dataobject, cmds) -> (is_extruding::Bool, de::Float64)
 
-Example movement callback for `G0` and `G1` which calculates the total distance moved in all axes.
-
-It is calculated by watching the `X`, `Y` and `Z` axes movement.
+Parse E from `cmds` if present, update `dataobject["e"]`, and report whether
+this move deposits material and by how much. `is_extruding` is true whenever
+the E word's own value is positive — the relative delta in G91 mode, or the
+absolute total in G90 mode. If no `E` word is present, `is_extruding` is
+`false` (there is currently no "no-E-in-file means every G1 extrudes"
+convention implemented — only explicit positive E values count).
 """
-function movement(cmds, dataobject; arc_len = nothing)
-    dataobject["previous_x"] = dataobject["x"]
-    dataobject["previous_y"] = dataobject["y"]
-    dataobject["previous_z"] = dataobject["z"]
+function resolve_extrusion!(dataobject, cmds)
+    e_idx = findfirst((p -> lowercase(p.first) == "e"), cmds)
+    e_idx === nothing && return false, 0.0
 
-    dx = 0.0
-    dy = 0.0
-    dz = 0.0
-
-    x = findfirst((x -> lowercase(x.first) == "x"), cmds)
-    if x !== nothing
-        val = parse(Float64, cmds[x].second)
-
-        if dataobject["positioning"] === "absolute"
-            dx = val - dataobject["x"]
-            dataobject["x"] = val
-        else
-            dx = val
-        end
+    e_val = parse(Float64, cmds[e_idx].second)
+    if dataobject["positioning"] === "absolute"
+        de = e_val - dataobject["e"]
+        dataobject["e"] = e_val
+    else
+        de = e_val
+        dataobject["e"] += e_val
     end
+    return e_val > 0.0, de
+end
 
-    y = findfirst((x -> lowercase(x.first) == "y"), cmds)
-    if y !== nothing
-        val = parse(Float64, cmds[y].second)
+"""
+    advance_clock!(dataobject, path_length)
 
-        if dataobject["positioning"] === "absolute"
-            dy = val - dataobject["y"]
-            dataobject["y"] = val
-        else
-            dy = val
-        end
-    end
-
-    z = findfirst((x -> lowercase(x.first) == "z"), cmds)
-    if z !== nothing
-        val = parse(Float64, cmds[z].second)
-        # if val > dataobject["z"] && x !== nothing
-        #     new_layer(dataobject)
-        # end
-
-        if dataobject["positioning"] === "absolute"
-            dz = val - dataobject["z"]
-            dataobject["z"] = val
-        else
-            dz = val
-        end
-    end
-
-    # B and C are rotary axes (e.g. a tilt/rotation table). This tool has no
-    # kinematic model relating them to X/Y/Z, so their values are only
-    # tracked for state/reporting purposes and don't contribute to distance.
-    b = findfirst((x -> lowercase(x.first) == "b"), cmds)
-    if b !== nothing
-        val = parse(Float64, cmds[b].second)
-        if dataobject["positioning"] === "absolute"
-            dataobject["b"] = val
-        else
-            dataobject["b"] += val
-        end
-    end
-
-    c = findfirst((x -> lowercase(x.first) == "c"), cmds)
-    if c !== nothing
-        val = parse(Float64, cmds[c].second)
-        if dataobject["positioning"] === "absolute"
-            dataobject["c"] = val
-        else
-            dataobject["c"] += val
-        end
-    end
-
-    f = findfirst((x -> lowercase(x.first) == "f"), cmds)
-    if f !== nothing
-        val = parse(Float64, cmds[f].second)
-        if val == 0 && x !== nothing
-            new_layer(dataobject)
-        end
-
-        if dataobject["positioning"] === "absolute"
-            dataobject["f"] = val
-        end
-    end
-
-    chord_dist = sqrt(dx * dx + dy * dy + dz * dz)
-    # Use arc_len if provided (for G02/G03 arcs), otherwise chord distance
-    move_dist = isnothing(arc_len) ? chord_dist : arc_len
-    dataobject["distanceMoved"] += move_dist
+Updates total distance moved and advances the clock by
+`path_length / feedrate`. Must be called *before* any `deposit_mesh_points!`/
+`trace_arc!` call for the same move, since mesh deposition reads
+`dataobject["time"]`/`["previous_time"]` to compute each point's
+Activation_Time — depositing before advancing the clock would timestamp
+points using the *previous* move's time window instead of the current one.
+"""
+function advance_clock!(dataobject, path_length::Float64)
+    dataobject["distanceMoved"] += path_length
     dataobject["previous_time"] = dataobject["time"]
     if dataobject["f"] > 0.0
-        dataobject["time"] += move_dist / dataobject["f"] * 60
+        dataobject["time"] += path_length / dataobject["f"] * 60
     end
-    return chord_dist
 end
 
 """
-    linear(cmds, dataobject)
+    finalize_extrusion!(dataobject, is_extruding, path_length, de) -> has_motion::Bool
 
-Example extrusion callback for `G1` which calculates total length of filament extruded.
-
-The extruded filament length is obtained by watching the `E` axis movement in the g-code file.
-If no `E` axis is present anywhere in the file, `G1` moves are treated as material
-deposition/cutting moves by convention (only `G0` is a pure travel move).
+Called *after* mesh deposition for a move: records whether this move was an
+extruding move with actual motion, and — if so — accumulates filament usage
+and appends the current position to `layer_points` (used for the next
+new_layer's up-vector estimate). Call `advance_clock!` first.
 """
-function linear(cmds, dataobject)
-    distance = movement(cmds, dataobject)
-
-    # calculate used filament length
-    e = findfirst((x -> lowercase(x.first) == "e"), cmds)
-    is_extruding = false
-    de = 0.0
-    if e !== nothing
-        # Current E axis value
-        e_val = parse(Float64, cmds[e].second)
-
-        # Printed length of a current move
-        if dataobject["positioning"] === "absolute"
-            de = e_val - dataobject["e"]
-            dataobject["e"] = e_val
-        else
-            de = e_val
-        end
-
-        is_extruding = e_val > 0.0
-    end
-
-    # A move only actually deposits/removes material if it went somewhere.
-    # Pure axis moves (e.g. only B/C rotation, no X/Y/Z change) are not
-    # mesh-worthy even if the command is otherwise flagged as "extruding".
-    has_motion = distance > 1e-9
+function finalize_extrusion!(dataobject, is_extruding::Bool, path_length::Float64,
+                             de::Float64)
+    has_motion = path_length > 1e-9
+    dataobject["previous_extruding"] = is_extruding && has_motion
 
     if is_extruding && has_motion
-        # Used filament
-        if e !== nothing
-            dataobject["filamentUsage"] += de
-        end
-        if dataobject["relevant_component"] # && dataobject["previous_extruding"]
-            write_pd_mesh(dataobject)
-        end
-        dataobject["previous_x"] = dataobject["x"]
-        dataobject["previous_y"] = dataobject["y"]
-        dataobject["previous_z"] = dataobject["z"]
-        dataobject["layer_points"] = [dataobject["layer_points"];
-                                      [dataobject["x"] dataobject["y"] dataobject["z"]]]
-    end
-    dataobject["previous_extruding"] = is_extruding && has_motion
-end
-
-function dwell(cmds, dataobject)
-    s = findfirst((x -> lowercase(x.first) == "s"), cmds)
-    p = findfirst((x -> lowercase(x.first) == "p"), cmds)
-    wait_time = 0.0
-    if s !== nothing
-        wait_time = parse(Float64, cmds[s].second)
-    end
-    if p !== nothing
-        wait_time = parse(Float64, cmds[p].second) / 1000
-    end
-    dataobject["previous_time"] = dataobject["time"]
-    dataobject["time"] += wait_time
-end
-
-"""
-    arc(cmds, dataobject, clockwise::Bool)
-
-G02/G03 arc interpolation with extrusion. Computes points along a circular arc
-defined by the destination (X, Y) and either the I, J offset of the arc center
-or the R radius. Follows the same no-`E`-axis convention as `linear`.
-"""
-function arc(cmds, dataobject, clockwise::Bool)
-    pd_mesh = dataobject["pd_mesh"]
-
-    # --- Step 1: Parse I/J/R parameters ---
-    has_r = false
-    r = 0.0
-    ic, jc = 0.0, 0.0
-    for p in cmds
-        lp = lowercase(p.first)
-        if lp == "i"
-            ic = parse(Float64, p.second)
-        elseif lp == "j"
-            jc = parse(Float64, p.second)
-        elseif lp == "r"
-            has_r = true
-            r = parse(Float64, p.second)
-        end
-    end
-
-    # --- Step 2: Pre-compute arc geometry, then call movement() with correct arc length ---
-    start_x = dataobject["x"]
-    start_y = dataobject["y"]
-    start_z = dataobject["z"]
-
-    e_cmd = findfirst((x -> lowercase(x.first) == "e"), cmds)
-    has_e = e_cmd !== nothing
-
-    # Parse the destination X/Y directly from the command instead of reading
-    # dataobject["x"]/["y"] before movement() has run.
-    x_cmd = findfirst((p -> lowercase(p.first) == "x"), cmds)
-    y_cmd = findfirst((p -> lowercase(p.first) == "y"), cmds)
-
-    if dataobject["positioning"] === "absolute"
-        end_x = x_cmd !== nothing ? parse(Float64, cmds[x_cmd].second) : start_x
-        end_y = y_cmd !== nothing ? parse(Float64, cmds[y_cmd].second) : start_y
-    else
-        end_x = start_x + (x_cmd !== nothing ? parse(Float64, cmds[x_cmd].second) : 0.0)
-        end_y = start_y + (y_cmd !== nothing ? parse(Float64, cmds[y_cmd].second) : 0.0)
-    end
-
-    # Compute center, radius and arc angle before movement — needed to pass correct distance
-    if has_r
-        # R syntax: compute center from radius and chord
-        dx = end_x - start_x
-        dy = end_y - start_y
-        chord = sqrt(dx^2 + dy^2)
-        if chord < 1e-12
-            return  # zero-length chord, cannot compute arc
-        end
-        h = sqrt(max(0.0, r^2 - (chord / 2)^2))
-        if clockwise
-            cx = (start_x + end_x) / 2 - h * dy / chord
-            cy = (start_y + end_y) / 2 + h * dx / chord
-        else
-            cx = (start_x + end_x) / 2 + h * dy / chord
-            cy = (start_y + end_y) / 2 - h * dx / chord
-        end
-    else
-        cx = start_x + ic
-        cy = start_y + jc
-        r = sqrt(ic^2 + jc^2)
-    end
-
-    θ1 = atan(start_y - cy, start_x - cx)
-    θ2 = atan(end_y - cy, end_x - cx)
-
-    # Correct signed angle direction.
-    # Clockwise (G02) motion must sweep with *decreasing* angle, so θ2 should
-    # end up <= θ1 (subtract 2π if it's currently greater). Counterclockwise
-    # (G03) must sweep with *increasing* angle, so θ2 should end up >= θ1
-    # (add 2π if it's currently smaller).
-    if abs(θ2 - θ1) < 1e-12
-        θ2 = θ1 + π * (clockwise ? -1.0 : 1.0)
-    elseif clockwise
-        θ2 > θ1 && (θ2 -= 2π)
-    else
-        θ2 < θ1 && (θ2 += 2π)
-    end
-
-    # Compute the true arc length and pass it into movement() so distance/time
-    # tracking use the curved path length instead of the straight chord.
-    arc_len = abs(θ2 - θ1) * r
-    movement(cmds, dataobject; arc_len = arc_len)
-
-    is_extruding = false
-    de = 0.0
-    if has_e
-        e_val = parse(Float64, cmds[e_cmd].second)
-
-        if dataobject["positioning"] === "absolute"
-            de = e_val - dataobject["e"]
-            dataobject["e"] = e_val
-        else
-            de = e_val
-        end
-
-        is_extruding = e_val > 0.0
-    end
-
-    has_motion = arc_len > 1e-9
-    is_extruding = is_extruding && has_motion
-
-    if !has_motion
-        dataobject["previous_extruding"] = false
-        return
-    end
-
-    if is_extruding && has_e
         dataobject["filamentUsage"] += de
-    end
-
-    do_mesh = is_extruding && dataobject["relevant_component"]
-
-    # Compute number of sampling points on the arc
-    n_pts = max(2, floor(Int, arc_len / pd_mesh["sampling"])) + 1
-
-    # Interpolate along the arc
-    prev_px = start_x
-    prev_py = start_y
-    prev_pz = start_z
-
-    for k in 1:(n_pts - 1)
-        θ = θ1 + (θ2 - θ1) * (k / (n_pts - 1))
-        ax = cx + r * cos(θ)
-        ay = cy + r * sin(θ)
-
-        if do_mesh
-            write_pd_mesh_arc(dataobject, prev_px, prev_py, prev_pz, ax, ay,
-                              dataobject["z"])
-        end
-        prev_px = ax
-        prev_py = ay
-    end
-
-    # Final point
-    if do_mesh
-        write_pd_mesh_arc(dataobject, prev_px, prev_py, prev_pz, end_x, end_y,
-                          dataobject["z"])
-
-        dataobject["previous_x"] = dataobject["x"]
-        dataobject["previous_y"] = dataobject["y"]
-        dataobject["previous_z"] = dataobject["z"]
         dataobject["layer_points"] = [dataobject["layer_points"];
                                       [dataobject["x"] dataobject["y"] dataobject["z"]]]
     end
-    dataobject["previous_extruding"] = is_extruding
+
+    return has_motion
 end
 
-arc_cw(cmds, dataobject) = arc(cmds, dataobject, true)
-arc_ccw(cmds, dataobject) = arc(cmds, dataobject, false)
+# ---------------------------------------------------------------------------
+# Mesh deposition (shared by straight moves and each arc sub-chord)
+# ---------------------------------------------------------------------------
 
 """
-    write_pd_mesh_arc(dataobject, sx, sy, sz, ex, ey, ez)
+    deposit_mesh_points!(dataobject, sx, sy, sz, ex, ey, ez)
 
-Variant of `write_pd_mesh` for arc segments. Uses the provided start/end
-points instead of reading them from `dataobject`.
+Sample points along the straight chord from (`sx`,`sy`,`sz`) to
+(`ex`,`ey`,`ez`) at `pd_mesh["sampling"]` spacing, carrying over any leftover
+distance from the previous call via `pd_mesh["remaining_distance"]`, and push
+each sample to `pd_mesh["mesh_df"]` with its estimated activation time,
+block id (when `pd_mesh["blocks"]` is set), and orientation angles. Shared by
+straight moves and by each small sub-chord of an interpolated arc (see
+`trace_arc!`) — replaces the former separate `write_pd_mesh`/
+`write_pd_mesh_arc` pair, so block classification and the time-to-activation
+guard now behave identically for lines and arcs.
 """
-function write_pd_mesh_arc(dataobject,
-                           sx::Number, sy::Number, sz::Number,
-                           ex::Number, ey::Number, ez::Number)
+function deposit_mesh_points!(dataobject, sx::Number, sy::Number, sz::Number,
+                              ex::Number, ey::Number, ez::Number)
     pd_mesh = dataobject["pd_mesh"]
 
     pd_mesh["start_point"][1] = sx
@@ -579,21 +352,21 @@ function write_pd_mesh_arc(dataobject,
     pd_mesh["point"][3] = ez
     sub_in_place!(pd_mesh["point_diff"], pd_mesh["point"], pd_mesh["start_point"])
     distance = norm(pd_mesh["point_diff"])
-    if distance > 1e-12
-        roll, pitch,
-        yaw = tait_bryant_angles(pd_mesh["point_diff"],
-                                 dataobject["up_vector"])
-    else
-        roll = pitch = yaw = 0.0
+    if distance < 1e-12
+        return
     end
+
+    roll, pitch, yaw = tait_bryant_angles(pd_mesh["point_diff"], dataobject["up_vector"])
     normalize_in_place!(pd_mesh["dir"], pd_mesh["point_diff"])
+
+    dt = dataobject["time"] - dataobject["previous_time"]
+    v = dt > 0 ? distance / dt : 0.0
 
     if distance + pd_mesh["remaining_distance"] < pd_mesh["sampling"]
         pd_mesh["remaining_distance"] += distance
         return
-    else
-        pd_mesh["remaining_distance"] = pd_mesh["sampling"] - pd_mesh["remaining_distance"]
     end
+    pd_mesh["remaining_distance"] = pd_mesh["sampling"] - pd_mesh["remaining_distance"]
 
     pd_mesh["start_point"][1] += pd_mesh["remaining_distance"] * pd_mesh["dir"][1]
     pd_mesh["start_point"][2] += pd_mesh["remaining_distance"] * pd_mesh["dir"][2]
@@ -628,16 +401,20 @@ function write_pd_mesh_arc(dataobject,
         pd_mesh["point"][3] = line_z[i]
         sub_in_place!(pd_mesh["point_diff"], pd_mesh["point"], pd_mesh["start_point"])
         dist_along_line = distance_along_line(pd_mesh["dir"], pd_mesh["point_diff"])
+        time_to_activation = v > 0 ? dist_along_line / v : 0.0
 
-        time_to_activation = dist_along_line / v
         block_id = 1
         if !isnothing(pd_mesh["blocks"])
+            global x = pd_mesh["point"][1]
+            global y = pd_mesh["point"][2]
+            global z = pd_mesh["point"][3]
             for block in pd_mesh["blocks"]
                 if eval(Meta.parse(block[2]))
                     block_id = block[1]
                 end
             end
         end
+
         push!(pd_mesh["mesh_df"],
               [
                   pd_mesh["point"][1],
@@ -652,6 +429,276 @@ function write_pd_mesh_arc(dataobject,
               ])
     end
 end
+
+"""
+    trace_arc!(dataobject, cx, cy, r, θ1, θ2,
+              start_x, start_y, start_z, end_x, end_y, end_z;
+              is_extruding) -> arc_len::Float64
+
+Subdivide the circular arc centered at (`cx`,`cy`) with radius `r`, sweeping
+from angle `θ1` to `θ2`, into `pd_mesh["sampling"]`-sized steps, interpolating
+Z linearly from `start_z` to `end_z`. Mesh points are only deposited (via
+`deposit_mesh_points!`) when `is_extruding` and the current component is
+relevant — for a non-extruding arc the subdivision loop is skipped entirely
+and the position simply jumps to the endpoint, since there is no plot to
+draw. The final substep always lands exactly on (`end_x`,`end_y`,`end_z`) to
+avoid trig round-off drift. Returns the total arc length traveled (0.0 for a
+degenerate/zero-length arc).
+"""
+function trace_arc!(dataobject, cx::Float64, cy::Float64, r::Float64,
+                    θ1::Float64, θ2::Float64,
+                    start_x::Float64, start_y::Float64, start_z::Float64,
+                    end_x::Float64, end_y::Float64, end_z::Float64;
+                    is_extruding::Bool)
+    arc_len = abs(θ2 - θ1) * r
+    if arc_len < 1e-9
+        dataobject["x"], dataobject["y"], dataobject["z"] = end_x, end_y, end_z
+        return 0.0
+    end
+
+    pd_mesh = dataobject["pd_mesh"]
+    do_mesh = is_extruding && dataobject["relevant_component"]
+
+    if do_mesh
+        n_steps = max(1, ceil(Int, arc_len / pd_mesh["sampling"]))
+        prev_x, prev_y, prev_z = start_x, start_y, start_z
+        for k in 1:n_steps
+            if k == n_steps
+                nx, ny, nz = end_x, end_y, end_z
+            else
+                frac = k / n_steps
+                θ = θ1 + (θ2 - θ1) * frac
+                nx = cx + r * cos(θ)
+                ny = cy + r * sin(θ)
+                nz = start_z + (end_z - start_z) * frac
+            end
+            deposit_mesh_points!(dataobject, prev_x, prev_y, prev_z, nx, ny, nz)
+            prev_x, prev_y, prev_z = nx, ny, nz
+        end
+    end
+
+    dataobject["x"], dataobject["y"], dataobject["z"] = end_x, end_y, end_z
+    return arc_len
+end
+
+# ---------------------------------------------------------------------------
+# Motion callbacks
+# ---------------------------------------------------------------------------
+
+"""
+    move(cmds, dataobject)
+
+G0 callback: non-extruding travel move. Updates X/Y/Z/B/C per the current
+positioning mode and triggers a new-layer flush.
+"""
+function move(cmds, dataobject)
+    start_x, start_y, start_z = dataobject["x"], dataobject["y"], dataobject["z"]
+    dataobject["previous_x"] = start_x
+    dataobject["previous_y"] = start_y
+    dataobject["previous_z"] = start_z
+
+    resolve_axis!(dataobject, cmds, "x")
+    resolve_axis!(dataobject, cmds, "y")
+    resolve_axis!(dataobject, cmds, "z")
+    resolve_axis!(dataobject, cmds, "b")
+    resolve_axis!(dataobject, cmds, "c")
+    resolve_feedrate!(dataobject, cmds)
+
+    path_length = sqrt((dataobject["x"] - start_x)^2 +
+                       (dataobject["y"] - start_y)^2 +
+                       (dataobject["z"] - start_z)^2)
+
+    advance_clock!(dataobject, path_length)
+    finalize_extrusion!(dataobject, false, path_length, 0.0)
+    new_layer(dataobject)
+end
+
+"""
+    linear(cmds, dataobject)
+
+G1 callback. Two cases:
+- If the line contains a `C` word, it's treated as a cylindrical rotation
+  about the origin: the current radius (distance from origin) is held fixed
+  while C sweeps from its old angle to its new one, traced via `trace_arc!`
+  so the deposited path follows the true arc rather than a straight chord.
+- Otherwise it's a straight-line move between the old and new X/Y/Z.
+
+Extrusion is governed by an `E` word (see `resolve_extrusion!`). The clock is
+advanced via `advance_clock!` *before* any mesh deposition (so activation
+times are computed against this move's own time window), and filament/
+layer_points bookkeeping is finalized afterward via `finalize_extrusion!`.
+"""
+function linear(cmds, dataobject)
+    start_x, start_y, start_z = dataobject["x"], dataobject["y"], dataobject["z"]
+    dataobject["previous_x"] = start_x
+    dataobject["previous_y"] = start_y
+    dataobject["previous_z"] = start_z
+
+    has_c = findfirst((p -> lowercase(p.first) == "c"), cmds) !== nothing
+    old_c = dataobject["c"]
+
+    resolve_axis!(dataobject, cmds, "x")
+    resolve_axis!(dataobject, cmds, "y")
+    resolve_axis!(dataobject, cmds, "z")
+    resolve_axis!(dataobject, cmds, "b")
+    resolve_axis!(dataobject, cmds, "c")
+    resolve_feedrate!(dataobject, cmds)
+
+    is_extruding, de = resolve_extrusion!(dataobject, cmds)
+
+    # First determine the geometry (endpoint + path length) without touching
+    # the clock or the mesh yet. (if/else doesn't introduce its own scope in
+    # Julia, so r/θ1/θ2/end_x/end_y/end_z/path_length assigned below remain
+    # visible for the rest of the function.)
+    if has_c
+        # Cylindrical mapping: C rotates the current radius about the
+        # origin. Radius and start Z are taken from the position *before*
+        # this line's updates; the new C value (already resolved above)
+        # gives the sweep's end angle.
+        r = sqrt(start_x^2 + start_y^2)
+        θ1 = deg2rad(old_c)
+        θ2 = deg2rad(dataobject["c"])
+        end_x = r * cos(θ2)
+        end_y = r * sin(θ2)
+        end_z = dataobject["z"]
+        path_length = abs(θ2 - θ1) * r
+    else
+        end_x, end_y, end_z = dataobject["x"], dataobject["y"], dataobject["z"]
+        dx = end_x - start_x
+        dy = end_y - start_y
+        dz = end_z - start_z
+        path_length = sqrt(dx^2 + dy^2 + dz^2)
+    end
+
+    # Advance the clock BEFORE depositing mesh points: deposit_mesh_points!
+    # reads dataobject["time"]/["previous_time"] to compute each point's
+    # Activation_Time, so the clock must already reflect *this* move.
+    advance_clock!(dataobject, path_length)
+
+    if has_c
+        trace_arc!(dataobject, 0.0, 0.0, r, θ1, θ2,
+                   start_x, start_y, start_z,
+                   end_x, end_y, end_z; is_extruding = is_extruding)
+    elseif is_extruding && path_length > 1e-9 && dataobject["relevant_component"]
+        deposit_mesh_points!(dataobject, start_x, start_y, start_z,
+                             end_x, end_y, end_z)
+    end
+
+    finalize_extrusion!(dataobject, is_extruding, path_length, de)
+end
+
+function dwell(cmds, dataobject)
+    s = findfirst((x -> lowercase(x.first) == "s"), cmds)
+    p = findfirst((x -> lowercase(x.first) == "p"), cmds)
+    wait_time = 0.0
+    if s !== nothing
+        wait_time = parse(Float64, cmds[s].second)
+    end
+    if p !== nothing
+        wait_time = parse(Float64, cmds[p].second) / 1000
+    end
+    dataobject["previous_time"] = dataobject["time"]
+    dataobject["time"] += wait_time
+end
+
+"""
+    arc(cmds, dataobject, clockwise::Bool)
+
+G02/G03 arc interpolation with extrusion. Computes the arc center and radius
+from either I/J (center offset from the start point) or R (radius, with
+center chosen to match the requested rotation direction), then traces it via
+`trace_arc!`. Extrusion is governed by an `E` word exactly as in `linear`.
+"""
+function arc(cmds, dataobject, clockwise::Bool)
+    start_x, start_y, start_z = dataobject["x"], dataobject["y"], dataobject["z"]
+    dataobject["previous_x"] = start_x
+    dataobject["previous_y"] = start_y
+    dataobject["previous_z"] = start_z
+
+    # --- Step 1: Parse I/J/R parameters ---
+    has_r = false
+    r_param = 0.0
+    ic, jc = 0.0, 0.0
+    for p in cmds
+        lp = lowercase(p.first)
+        if lp == "i"
+            ic = parse(Float64, p.second)
+        elseif lp == "j"
+            jc = parse(Float64, p.second)
+        elseif lp == "r"
+            has_r = true
+            r_param = parse(Float64, p.second)
+        end
+    end
+
+    resolve_axis!(dataobject, cmds, "x")
+    resolve_axis!(dataobject, cmds, "y")
+    resolve_axis!(dataobject, cmds, "z")
+    resolve_axis!(dataobject, cmds, "b")
+    resolve_axis!(dataobject, cmds, "c")
+    resolve_feedrate!(dataobject, cmds)
+
+    end_x, end_y, end_z = dataobject["x"], dataobject["y"], dataobject["z"]
+
+    # --- Step 2: Compute center and radius ---
+    if has_r
+        dx = end_x - start_x
+        dy = end_y - start_y
+        chord = sqrt(dx^2 + dy^2)
+        if chord < 1e-12
+            dataobject["previous_extruding"] = false
+            return  # zero-length chord, cannot compute arc
+        end
+        h = sqrt(max(0.0, r_param^2 - (chord / 2)^2))
+        if clockwise
+            cx = (start_x + end_x) / 2 - h * dy / chord
+            cy = (start_y + end_y) / 2 + h * dx / chord
+        else
+            cx = (start_x + end_x) / 2 + h * dy / chord
+            cy = (start_y + end_y) / 2 - h * dx / chord
+        end
+        r = r_param
+    else
+        cx = start_x + ic
+        cy = start_y + jc
+        r = sqrt(ic^2 + jc^2)
+    end
+
+    θ1 = atan(start_y - cy, start_x - cx)
+    θ2 = atan(end_y - cy, end_x - cx)
+
+    # Correct signed angle direction.
+    # Clockwise (G02) motion must sweep with *decreasing* angle, so θ2 should
+    # end up <= θ1 (subtract 2π if it's currently greater). Counterclockwise
+    # (G03) must sweep with *increasing* angle, so θ2 should end up >= θ1
+    # (add 2π if it's currently smaller).
+    if abs(θ2 - θ1) < 1e-12
+        θ2 = θ1 + π * (clockwise ? -1.0 : 1.0)
+    elseif clockwise
+        θ2 > θ1 && (θ2 -= 2π)
+    else
+        θ2 < θ1 && (θ2 += 2π)
+    end
+
+    is_extruding, de = resolve_extrusion!(dataobject, cmds)
+
+    arc_len = abs(θ2 - θ1) * r
+
+    # Advance the clock BEFORE trace_arc! deposits mesh points (see note in
+    # linear()) — otherwise every arc point's Activation_Time is computed
+    # against the previous move's time window instead of this one's.
+    advance_clock!(dataobject, arc_len)
+
+    path_length = trace_arc!(dataobject, cx, cy, r, θ1, θ2,
+                             start_x, start_y, start_z,
+                             end_x, end_y, end_z; is_extruding = is_extruding)
+
+    finalize_extrusion!(dataobject, is_extruding, path_length, de)
+end
+
+arc_cw(cmds, dataobject) = arc(cmds, dataobject, true)
+arc_ccw(cmds, dataobject) = arc(cmds, dataobject, false)
+
 function switch_on(dataobject)
     dataobject["relevant_component"] = true
 end
@@ -693,96 +740,6 @@ function tait_bryant_angles(orientation_vector, up_vector = [0, 0, 1])
     angles = Rotations.params(RotXYZ(R))
 
     return angles[1], angles[2], angles[3]
-end
-function write_pd_mesh(dataobject)
-    pd_mesh = dataobject["pd_mesh"]
-
-    pd_mesh["start_point"][1] = dataobject["previous_x"]
-    pd_mesh["start_point"][2] = dataobject["previous_y"]
-    pd_mesh["start_point"][3] = dataobject["previous_z"]
-    pd_mesh["point"][1] = dataobject["x"]
-    pd_mesh["point"][2] = dataobject["y"]
-    pd_mesh["point"][3] = dataobject["z"]
-    sub_in_place!(pd_mesh["point_diff"], pd_mesh["point"], pd_mesh["start_point"])
-    distance = norm(pd_mesh["point_diff"])
-    roll, pitch, yaw = tait_bryant_angles(pd_mesh["point_diff"], dataobject["up_vector"])
-    v = distance / (dataobject["time"] - dataobject["previous_time"])
-    normalize_in_place!(pd_mesh["dir"], pd_mesh["point_diff"])
-    if distance + pd_mesh["remaining_distance"] < pd_mesh["sampling"]
-        pd_mesh["remaining_distance"] = pd_mesh["remaining_distance"] + distance
-        return
-    else
-        pd_mesh["remaining_distance"] = pd_mesh["sampling"] - pd_mesh["remaining_distance"]
-    end
-
-    pd_mesh["start_point"][1] += pd_mesh["remaining_distance"] * pd_mesh["dir"][1]
-    pd_mesh["start_point"][2] += pd_mesh["remaining_distance"] * pd_mesh["dir"][2]
-    pd_mesh["start_point"][3] += pd_mesh["remaining_distance"] * pd_mesh["dir"][3]
-    sub_in_place!(pd_mesh["point_diff"], pd_mesh["point"], pd_mesh["start_point"])
-    distance = norm(pd_mesh["point_diff"])
-
-    line_x = []
-    line_y = []
-    line_z = []
-
-    num_of_points_on_line::Int64 = floor(distance / pd_mesh["sampling"]) + 1
-    pd_mesh["remaining_distance"] = mod(distance, pd_mesh["sampling"])
-
-    if num_of_points_on_line > 1
-        line_x = collect(range(pd_mesh["start_point"][1],
-                               pd_mesh["point"][1] -
-                               pd_mesh["remaining_distance"] * pd_mesh["dir"][1],
-                               num_of_points_on_line))
-        line_y = collect(range(pd_mesh["start_point"][2],
-                               pd_mesh["point"][2] -
-                               pd_mesh["remaining_distance"] * pd_mesh["dir"][2],
-                               num_of_points_on_line))
-        line_z = collect(range(pd_mesh["start_point"][3],
-                               pd_mesh["point"][3] -
-                               pd_mesh["remaining_distance"] * pd_mesh["dir"][3],
-                               num_of_points_on_line))
-    else
-        line_x = [pd_mesh["start_point"][1]]
-        line_y = [pd_mesh["start_point"][2]]
-        line_z = [pd_mesh["start_point"][3]]
-    end
-
-    if length(line_x) == 0
-        return
-    end
-
-    for i in eachindex(line_x)
-        pd_mesh["point"][1] = line_x[i]
-        pd_mesh["point"][2] = line_y[i]
-        pd_mesh["point"][3] = line_z[i]
-        sub_in_place!(pd_mesh["point_diff"], pd_mesh["point"], pd_mesh["start_point"])
-        dist_along_line = distance_along_line(pd_mesh["dir"], pd_mesh["point_diff"])
-
-        time_to_activation = dist_along_line / v
-        block_id = 1
-        if !isnothing(pd_mesh["blocks"])
-            global x = pd_mesh["point"][1]
-            global y = pd_mesh["point"][2]
-            global z = pd_mesh["point"][3]
-            for block in pd_mesh["blocks"]
-                if eval(Meta.parse(block[2]))
-                    block_id = block[1]
-                end
-            end
-        end
-        push!(pd_mesh["mesh_df"],
-              [
-                  pd_mesh["point"][1],
-                  pd_mesh["point"][2],
-                  pd_mesh["point"][3],
-                  block_id,
-                  pd_mesh["volume"],
-                  time_to_activation + dataobject["previous_time"],
-                  roll * 180 / pi,
-                  pitch * 180 / pi,
-                  yaw * 180 / pi
-              ])
-    end
 end
 
 function get_gcode_mesh(gcode_file::String, params::Dict, silent)
