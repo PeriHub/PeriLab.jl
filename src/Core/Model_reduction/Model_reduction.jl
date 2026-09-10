@@ -324,6 +324,28 @@ function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int
                                                             perm_slave,
                                                             nmodes)
 
+    # Material point nodes get their internal force from the regular, damage-aware
+    # material point Verlet computation, not from K_reduced: their row would otherwise
+    # double count the master region's own self-stiffness on top of that. Coupling
+    # nodes have no such separate computation, so their rows (and every column, pd
+    # nodes included) are left untouched -- they are the only source of dynamics for
+    # the coupling layer. Zeroing whole rows this way only ever touches the physical
+    # part of the state (indices 1:n_phys); the modal block Craig-Bampton adds is
+    # unaffected by construction.
+    if pd_nodes != []
+        @timeit "Zero material point rows" begin
+            node_rank = Dict(node => k for (k, node) in enumerate(master_nodes))
+            pd_rows = Set{Int64}()
+            for node in pd_nodes, d in 1:dof
+                push!(pd_rows, (d - 1) * length(master_nodes) + node_rank[node])
+            end
+            rows, columns, values = findnz(K_reduced)
+            keep = [i for i in eachindex(rows) if rows[i] ∉ pd_rows]
+            K_reduced = sparse(rows[keep], columns[keep], values[keep],
+                               size(K_reduced)...)
+        end
+    end
+
     dropzeros!(mass_reduced)
     dropzeros!(K_reduced)
 
