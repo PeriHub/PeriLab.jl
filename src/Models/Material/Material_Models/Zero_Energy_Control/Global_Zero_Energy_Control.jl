@@ -44,10 +44,10 @@ function init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
 
     for iID in nodes
         @views hooke_matrix[iID, :,
-        :] = get_Hooke_matrix(material_parameter,
-                                                          symmetry,
-                                                          dof,
-                                                          iID)
+                            :] = get_Hooke_matrix(material_parameter,
+                                                  symmetry,
+                                                  dof,
+                                                  iID)
     end
 end
 
@@ -77,6 +77,7 @@ function compute_control(nodes::AbstractVector{Int64},
     undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
     deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
                                                                      "NP1")
+    omega::BondScalarState{Float64} = Data_Manager.get_field("Influence Function")
     Kinv::NodeTensorField{Float64} = Data_Manager.get_field("Inverse Shape Tensor")
 
     hooke_matrix::NodeTensorField{Float64} = Data_Manager.get_field("Material Gradient")
@@ -103,6 +104,7 @@ function compute_control(nodes::AbstractVector{Int64},
                                        deformation_gradient,
                                        undeformed_bond,
                                        deformed_bond,
+                                       omega,
                                        bond_force)
     elseif dof == 3
         get_zero_energy_mode_force_3d!(nodes,
@@ -110,6 +112,7 @@ function compute_control(nodes::AbstractVector{Int64},
                                        deformation_gradient,
                                        undeformed_bond,
                                        deformed_bond,
+                                       omega,
                                        bond_force)
     end
 end
@@ -125,6 +128,7 @@ Computes the zero energy mode force
 - `deformation_gradient::SubArray`: The deformation gradient
 - `undeformed_bond::SubArray`: The bond geometry
 - `deformed_bond::SubArray`: The bond geometry at the next time step
+- `omega::BondScalarState{Float64}`: The influence function
 - `bond_force::SubArray`: The bond force
 # Returns
 - `bond_force::SubArray`: The bond force
@@ -134,6 +138,7 @@ function get_zero_energy_mode_force_2d!(nodes::AbstractVector{Int64},
                                         deformation_gradient::NodeTensorField{Float64},
                                         undeformed_bond::BondVectorState{Float64},
                                         deformed_bond::BondVectorState{Float64},
+                                        omega::BondScalarState{Float64},
                                         bond_force::BondVectorState{Float64})
     @inbounds @fastmath for iID in nodes
         @inbounds @fastmath @views for nID in axes(undeformed_bond[iID], 1)
@@ -144,29 +149,31 @@ function get_zero_energy_mode_force_2d!(nodes::AbstractVector{Int64},
                 end
                 df[m] = df_i - deformed_bond[iID][nID][m]
             end
-            @views bond_force_computation_2d!(zStiff[iID, :, :], df,
+            @views bond_force_computation_2d!(zStiff[iID, :, :], df, omega[iID][nID],
                                               bond_force[iID][nID])
         end
     end
 end
 function bond_force_computation_2d!(zStiff::AbstractArray{Float64}, df::MVector{2},
+                                    omega::Float64,
                                     bond_force::Vector{Float64})
     @inbounds @fastmath @views for m in axes(zStiff, 1)
         bf_i = zero(eltype(zStiff))
         @inbounds @fastmath @views for n in axes(zStiff, 2)
             bf_i -= zStiff[m, n] * df[n]
         end
-        bond_force[m] += bf_i
+        bond_force[m] += bf_i * omega
     end
 end
 function bond_force_computation_3d!(zStiff::AbstractArray{Float64}, df::MVector{3},
+                                    omega::Float64,
                                     bond_force::Vector{Float64})
     @inbounds @fastmath @views for m in axes(zStiff, 1)
         bf_i = zero(eltype(zStiff))
         @inbounds @fastmath @views for n in axes(zStiff, 2)
             bf_i -= zStiff[m, n] * df[n]
         end
-        bond_force[m] += bf_i
+        bond_force[m] += bf_i * omega
     end
 end
 
@@ -175,6 +182,7 @@ function get_zero_energy_mode_force_3d!(nodes::AbstractVector{Int64},
                                         deformation_gradient::NodeTensorField{Float64},
                                         undeformed_bond::BondVectorState{Float64},
                                         deformed_bond::BondVectorState{Float64},
+                                        omega::BondScalarState{Float64},
                                         bond_force::BondVectorState{Float64})
     df = MVector{3}(zeros(Float64, 3))
     @inbounds @fastmath for iID in nodes
@@ -186,7 +194,7 @@ function get_zero_energy_mode_force_3d!(nodes::AbstractVector{Int64},
                 end
                 df[m] = df_i - deformed_bond[iID][nID][m]
             end
-            @views bond_force_computation_3d!(zStiff[iID, :, :], df,
+            @views bond_force_computation_3d!(zStiff[iID, :, :], df, omega[iID][nID],
                                               bond_force[iID][nID])
         end
     end

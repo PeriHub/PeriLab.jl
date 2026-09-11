@@ -169,7 +169,7 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
     bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
     undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
     inverse_shape_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Inverse Shape Tensor")
-
+    omega::BondScalarState{Float64} = Data_Manager.get_field("Influence Function")
     strain_N::NodeTensorField{Float64} = Data_Manager.get_field("Strain", "N")
     strain_NP1::NodeTensorField{Float64} = Data_Manager.get_field("Strain", "NP1")
     stress_N::NodeTensorField{Float64} = Data_Manager.get_field("Cauchy Stress", "N")
@@ -223,6 +223,7 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
                                                        deformation_gradient,
                                                        undeformed_bond,
                                                        bond_damage,
+                                                       omega,
                                                        inverse_shape_tensor,
                                                        stress_NP1,
                                                        bond_force)
@@ -244,6 +245,7 @@ Calculate bond forces for specified nodes based on deformation gradients.
 - `deformation_gradient::SubArray`: Deformation gradient.
 - `undeformed_bond::BondVectorState{Float64}`: Undeformed bond geometry.
 - `bond_damage::BondScalarState{Float64}`: Bond damage.
+- `omega::BondScalarState{Float64}`: Influence function.
 - `inverse_shape_tensor::Array{Float64, 3}`: Inverse shape tensor.
 - `stress_NP1::Array{Float64, 3}`: Stress at time step n+1.
 - `bond_force::BondVectorState{Float64}`: Bond force.
@@ -255,6 +257,7 @@ function calculate_bond_force!(nodes::AbstractVector{Int64},
                                deformation_gradient::NodeTensorField{Float64},
                                undeformed_bond::BondVectorState{Float64},
                                bond_damage::BondScalarState{Float64},
+                               omega::BondScalarState{Float64},
                                inverse_shape_tensor::NodeTensorField{Float64},
                                stress_NP1::NodeTensorField{Float64},
                                bond_force::BondVectorState{Float64})
@@ -264,6 +267,7 @@ function calculate_bond_force!(nodes::AbstractVector{Int64},
                                         deformation_gradient,
                                         undeformed_bond,
                                         bond_damage,
+                                        omega,
                                         inverse_shape_tensor,
                                         stress_NP1)
     elseif dof == 3
@@ -272,6 +276,7 @@ function calculate_bond_force!(nodes::AbstractVector{Int64},
                                         deformation_gradient,
                                         undeformed_bond,
                                         bond_damage,
+                                        omega,
                                         inverse_shape_tensor,
                                         stress_NP1)
     end
@@ -282,6 +287,7 @@ function calculate_bond_force_2d!(bond_force::BondVectorState{Float64},
                                   deformation_gradient::NodeTensorField{Float64},
                                   undeformed_bond::BondVectorState{Float64},
                                   bond_damage::BondScalarState{Float64},
+                                  omega::BondScalarState{Float64},
                                   inverse_shape_tensor::NodeTensorField{Float64},
                                   stress_NP1::NodeTensorField{Float64})
     pk11, pk12, pk21, pk22 = 0.0, 0.0, 0.0, 0.0
@@ -327,7 +333,7 @@ function calculate_bond_force_2d!(bond_force::BondVectorState{Float64},
 
         # Bond forces (inline)
         @fastmath for jID in eachindex(bond_damage[iID])
-            bd = bond_damage[iID][jID]
+            bd = bond_damage[iID][jID] * omega[iID][jID]
             xi1 = undeformed_bond[iID][jID][1]
             xi2 = undeformed_bond[iID][jID][2]
 
@@ -343,6 +349,7 @@ function calculate_bond_force_3d!(bond_force::BondVectorState{Float64},
                                   deformation_gradient::NodeTensorField{Float64},
                                   undeformed_bond::BondVectorState{Float64},
                                   bond_damage::BondScalarState{Float64},
+                                  omega::BondScalarState{Float64},
                                   inverse_shape_tensor::NodeTensorField{Float64},
                                   stress_NP1::NodeTensorField{Float64})
     pk11, pk12, pk13 = 0.0, 0.0, 0.0
@@ -433,7 +440,7 @@ function calculate_bond_force_3d!(bond_force::BondVectorState{Float64},
 
         # Bond forces (inline)
         @fastmath for jID in eachindex(bond_damage[iID])
-            bd = bond_damage[iID][jID]
+            bd = bond_damage[iID][jID] * omega[iID][jID]
             xi1 = undeformed_bond[iID][jID][1]
             xi2 = undeformed_bond[iID][jID][2]
             xi3 = undeformed_bond[iID][jID][3]
