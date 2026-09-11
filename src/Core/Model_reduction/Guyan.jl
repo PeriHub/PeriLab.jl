@@ -39,6 +39,13 @@ The mass term omits the coupling blocks `M_ms T` and `T' M_sm`, which is correct
 because the mass matrix is lumped and therefore has no off-diagonal entries. With a
 consistent mass matrix those blocks would have to be included.
 
+A master degree of freedom with no bond into the condensed region has an all-zero column
+in `K_sm`, so its column of `T` is `K_ss^-1 * 0 = 0`, and — independently — an all-zero
+row in `K_ms` makes its row of `K_ms T` zero regardless of `T`. `coupling` is the union
+of both, so `K_ms T` and `T' M_ss T` are computed only on that `nc x nc` block instead of
+densely over all `nm` master degrees of freedom; every other entry of `K_r`/`M_r` is
+exactly `K_mm`/`Diagonal(M_diag[m])`. This holds without assuming `K` symmetric.
+
 `n_modes` is not used; it is part of the signature so that all reduction schemes share
 one interface.
 
@@ -61,41 +68,50 @@ function reduce_matrices(K::AbstractMatrix{Float64}, M_diag::Vector{Float64},
         throw(ArgumentError("Master and condensed index sets overlap."))
     end
 
-    # Extract submatrices
     K_mm = K[m, m]
     K_ms = K[m, s]
     K_ss = K[s, s]
     K_sm = K[s, m]
 
-    # Compute transformation matrix: T = -K_ss^(-1) * K_sm
-    K_ss_fact = lu(K_ss)
+    coupling = union(findall(!iszero, vec(sum(abs, K_ms; dims = 2))),
+                     findall(!iszero, vec(sum(abs, K_sm; dims = 1))))
+    nc = length(coupling)
 
-    K_sm_dense = Matrix(K_sm)
-    T = similar(K_sm_dense)
-    ldiv!(T, K_ss_fact, K_sm_dense)
+    K_ss_fact = lu(K_ss)
+    T = Matrix(K_sm[:, coupling])
+    ldiv!(K_ss_fact, T)
     T .*= -1.0
 
-    # Stiffness reduction: K_reduced = K_mm + K_ms * T
-    temp_K = zeros(nm, nm)
-    mul!(temp_K, K_ms, T)
-    K_reduced = K_mm + temp_K
+    Kbb_fill = Matrix{Float64}(undef, nc, nc)
+    mul!(Kbb_fill, K_ms[coupling, :], T)
 
-    # Mass reduction: M_reduced = M_mm + T^T * M_ss * T
-    # Step 1: temp_M = Diagonal(M_ss) * T
-    M_ss_diag = Diagonal(M_diag[s])
-    temp_M = zeros(ns, nm)
-    mul!(temp_M, M_ss_diag, T)  # Diagonal * Matrix multiplication
-
-    # Step 2: M_reduced = T^T * temp_M
-    M_reduced = zeros(nm, nm)
-    mul!(M_reduced, T', temp_M)
-
-    # Step 3: Add M_mm diagonal
-    @inbounds for i in 1:nm
-        M_reduced[i, i] += M_diag[m[i]]
+    rows, columns, values = findnz(K_mm)
+    @inbounds for (j, cj) in enumerate(coupling), (i, ci) in enumerate(coupling)
+        push!(rows, ci)
+        push!(columns, cj)
+        push!(values, Kbb_fill[i, j])
     end
+    K_reduced = sparse(rows, columns, values, nm, nm)
 
-    return sparse(K_reduced), sparse(M_reduced)
+    # M_ss is diagonal, so scaling T by sqrt(M_ss) turns T' M_ss T into a plain product.
+    root_mass = sqrt.(M_diag[s])
+    @inbounds for j in 1:nc, i in 1:ns
+        T[i, j] *= root_mass[i]
+    end
+    Mbb_fill = Matrix{Float64}(undef, nc, nc)
+    mul!(Mbb_fill, T', T)
+
+    m_rows = collect(1:nm)
+    m_columns = collect(1:nm)
+    m_values = M_diag[m]
+    @inbounds for (j, cj) in enumerate(coupling), (i, ci) in enumerate(coupling)
+        push!(m_rows, ci)
+        push!(m_columns, cj)
+        push!(m_values, Mbb_fill[i, j])
+    end
+    M_reduced = sparse(m_rows, m_columns, m_values, nm, nm)
+
+    return K_reduced, M_reduced
 end
 
 end

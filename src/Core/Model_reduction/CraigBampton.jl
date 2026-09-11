@@ -540,14 +540,11 @@ function reduce_matrices(K::AbstractMatrix,
 
     @timeit "CB reduced stiffness" begin
         rows, columns, values = findnz(Krr)
-        rows = collect(Int64, rows)
-        columns = collect(Int64, columns)
-        values = collect(Float64, values)
 
         if nc > 0
             # Only the coupling rows of Krl carry entries, so the product is nc x nc.
-            Kbb_fill = Matrix(Krl[coupling, :] * B)
-            Kbb_fill .*= -1.0
+            Kbb_fill = Matrix{Float64}(undef, nc, nc)
+            mul!(Kbb_fill, Krl[coupling, :], B, -1.0, 0.0)
             add_dense_block!(rows, columns, values, Kbb_fill, coupling)
         end
         for k in 1:n_modes
@@ -584,13 +581,13 @@ function reduce_matrices(K::AbstractMatrix,
         end
 
         if n_modes > 0 && nc > 0
-            X_scaled = similar(X)
+            # X is not needed unscaled again, so it is scaled in place like B was above.
             @inbounds for k in 1:n_modes, i in 1:nl
-                X_scaled[i, k] = root_mass[i] * X[i, k]
+                X[i, k] *= root_mass[i]
             end
             # Mbm = -B' Mll X, the minus coming from u_l = -B u_r + X eta.
             Mbm = Matrix{Float64}(undef, nc, n_modes)
-            mul!(Mbm, transpose(B), X_scaled, -1.0, 0.0)
+            mul!(Mbm, transpose(B), X, -1.0, 0.0)
 
             threshold = 1.0e-12 * max(maximum(abs, Mbm; init = 0.0), eps())
             @inbounds for k in 1:n_modes, i in 1:nc

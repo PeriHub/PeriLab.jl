@@ -214,80 +214,179 @@ function setup_reduced_state(model_reduction, K::AbstractMatrix)
     return master_nodes, state
 end
 
-function reduce_model(K::AbstractMatrix{Float64}, M::AbstractMatrix{Float64},
-                      m::Vector{Int64}, s::Vector{Int64}; n_modes::Int64 = 1)
-    mod = Data_Manager.get_model_module(model_param["Reduction Model"])
+"""
+    parse_reduction_blocks(model_param)
 
-    mod.reduced_matrices(K, M, m, s; n_modes)
+Block IDs to condense away, read from the `"Reduction Blocks"` input deck entry.
 
-    if isnothing(Data_Manager.get_filtered_nlist())
-        @timeit "compute index" return damage_index(nodes)
-    end
-end
+Accepts a single integer or a string of block IDs separated by commas/whitespace -- the
+two forms the YAML parser can hand back. Logs and returns `nothing` if the entry is
+absent or of an unsupported type, so the caller only has to check for that.
 
-function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int64}},
-                           density)
-    reduction_blocks = []
-
+# Arguments
+- `model_param::Dict`: The `"Model Reduction"` solver parameters
+# Returns
+- `Union{Nothing,Vector{Int64}}`: The block IDs, or `nothing` if none were usable
+"""
+function parse_reduction_blocks(model_param::Dict)
     reduction_blocks = get(model_param, "Reduction Blocks", nothing)
-
     if isnothing(reduction_blocks)
         @warn "No reduction blocks defined for model reduction. If you want to use a reduced model please define 'Reduction Blocks' in the yaml input deck."
-        return
+        return nothing
     end
     if reduction_blocks isa Float64
         @error "Type Float is not supported for Reduction Blocks"
-        return
+        return nothing
     end
+    reduction_blocks isa Int64 && return [reduction_blocks]
+    return parse.(Int64, filter(!isempty, split(reduction_blocks, r"[,\s]")))
+end
 
-    if reduction_blocks isa Int64
-        reduction_blocks = [reduction_blocks]
-    else
-        reduction_blocks = parse.(Int64,
-                                  filter(!isempty,
-                                         split(model_param["Reduction Blocks"],
-                                               r"[,\s]")))
-    end
+"""
+    partition_nodes(block_nodes, reduction_blocks, material_point_region)
 
-    @info "Model Reduction Type: $(model_param["Type"])"
-    mod = create_module_specifics(model_param["Type"],
-                                  module_list,
-                                  @__MODULE__,
-                                  "model_reduction_name")
+Splits every node into the sets the reduction needs.
 
-    nmodes = get(model_param, "Number of Modes", 1)
-    master_nodes = Int64[]
-    slave_nodes = Int64[]
-    pd_nodes = Int64[]
+Master nodes are the material point nodes plus every one of their bonded neighbours --
+peridynamics' nonlocal (horizon-based) interactions mean that boundary layer has to stay
+physical, even where it geometrically belongs to a reduction block. Coupling nodes are
+exactly that layer, `master \\ material point`: master nodes with no separate force
+computation of their own, relying entirely on the reduced operator.
 
+`material_point_region = false` empties the material point set, folding every master node
+into the coupling layer instead.
+
+# Arguments
+- `block_nodes::Dict{Int64,Vector{Int64}}`: Nodes per block
+- `reduction_blocks::Vector{Int64}`: Block IDs to condense away
+- `material_point_region::Bool`: Whether the non-reduction blocks keep their own force computation
+# Returns
+- `master_nodes::Vector{Int64}`, `slave_nodes::Vector{Int64}`,
+  `pd_nodes::Vector{Int64}`, `coupling_nodes::Vector{Int64}`, all sorted
+"""
+function partition_nodes(block_nodes::Dict{Int64,Vector{Int64}},
+                         reduction_blocks::Vector{Int64}, material_point_region::Bool)
     nlist = Data_Manager.get_nlist()
-    # only for visualization and debugging.
-    cn = Data_Manager.create_constant_node_scalar_field("Coupling Nodes", Int64)
+    nnodes = Data_Manager.get_nnodes()
+
     full_blocks = setdiff(collect(keys(block_nodes)), reduction_blocks)
-    @info "Reduction blocks: $reduction_blocks"
+    pd_nodes = Int64[]
     for block in full_blocks
         append!(pd_nodes, block_nodes[block])
     end
 
+    master_nodes = Int64[]
     for node in pd_nodes
         append!(master_nodes, nlist[node])
     end
-
     append!(master_nodes, pd_nodes)
-
     master_nodes = sort(unique(master_nodes))
 
-    if !(get(model_param, "Material Point Region", true))
-        pd_nodes::Vector{Int64} = []
-    end
+    material_point_region || empty!(pd_nodes)
     sort!(pd_nodes)
-    slave_nodes = sort!(setdiff(collect(1:Data_Manager.get_nnodes()), master_nodes))
+
+    slave_nodes = sort!(setdiff(collect(1:nnodes), master_nodes))
+    coupling_nodes = setdiff(master_nodes, pd_nodes)
+
+    return master_nodes, slave_nodes, pd_nodes, coupling_nodes
+end
+
+"""
+    mark_coupling_field!(master_nodes, slave_nodes, pd_nodes, coupling_nodes)
+
+Fills the `"Coupling Nodes"` field for visualisation and debugging; it has no effect on
+the reduction itself.
+"""
+function mark_coupling_field!(master_nodes::Vector{Int64}, slave_nodes::Vector{Int64},
+                              pd_nodes::Vector{Int64}, coupling_nodes::Vector{Int64})
+    cn = Data_Manager.create_constant_node_scalar_field("Coupling Nodes", Int64)
+    cn[master_nodes] .= 3
+    cn[slave_nodes] .= 6
+    cn[pd_nodes] .+= 1  # added to be sure that all points are handled
+    cn[coupling_nodes] .+= 3  # added to be sure that all points are handled
+    return nothing
+end
+
+"""
+    expand_density_per_dof(density, dof)
+
+Repeats each node's density across its `dof` degrees of freedom, the lumped mass
+convention `Matrix_Verlet.jl` also uses for the unreduced system.
+"""
+function expand_density_per_dof(density, dof::Int64)
+    density_mass = zeros(Float64, length(density) * dof)
+    for iID in eachindex(density_mass)
+        density_mass[iID] = density[Int(ceil(iID / dof))]
+    end
+    return density_mass
+end
+
+"""
+    zero_material_point_rows!(K_reduced, master_nodes, pd_nodes, dof)
+
+Deletes the material point nodes' own rows from the reduced stiffness, in place.
+
+Material point nodes get their internal force from the regular, damage-aware material
+point Verlet computation, not from `K_reduced`: their row would otherwise double count
+the master region's own self-stiffness on top of that. Coupling nodes have no such
+separate computation, so their rows (and every column, material point nodes included)
+are left untouched -- they are the only source of dynamics for the coupling layer.
+Zeroing whole rows this way only ever touches the physical part of the state (indices
+`1:n_phys`); the modal block Craig-Bampton adds is unaffected by construction. Entries
+are only set to zero here, not removed from the sparsity pattern -- the caller's
+`dropzeros!` does that compaction, together with whatever `reduce_matrices` itself left
+as explicit zeros.
+
+# Arguments
+- `K_reduced::SparseMatrixCSC`: The reduced stiffness, mutated in place
+- `master_nodes::Vector{Int64}`: Sorted master node list, the reduction's dof ordering
+- `pd_nodes::Vector{Int64}`: Material point nodes
+- `dof::Int64`: Degrees of freedom per node
+# Returns
+- `K_reduced`: The same matrix, mutated
+"""
+function zero_material_point_rows!(K_reduced::SparseMatrixCSC,
+                                   master_nodes::Vector{Int64}, pd_nodes::Vector{Int64},
+                                   dof::Int64)
+    isempty(pd_nodes) && return K_reduced
+
+    n_master = length(master_nodes)
+    node_rank = Dict(node => k for (k, node) in enumerate(master_nodes))
+    pd_rows = Set{Int64}()
+    for node in pd_nodes, d in 1:dof
+        push!(pd_rows, (d - 1) * n_master + node_rank[node])
+    end
+
+    rows = rowvals(K_reduced)
+    values = nonzeros(K_reduced)
+    @inbounds for i in eachindex(rows)
+        rows[i] in pd_rows && (values[i] = 0.0)
+    end
+    return K_reduced
+end
+
+function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int64}},
+                           density)
+    reduction_blocks = parse_reduction_blocks(model_param)
+    isnothing(reduction_blocks) && return
+
+    @info "Model Reduction Type: $(model_param["Type"])"
+    @info "Reduction blocks: $reduction_blocks"
+    mod = create_module_specifics(model_param["Type"], module_list, @__MODULE__,
+                                  "model_reduction_name")
+    nmodes = get(model_param, "Number of Modes", 1)
+    material_point_region = get(model_param, "Material Point Region", true)
+
+    master_nodes, slave_nodes, pd_nodes,
+    coupling_nodes = partition_nodes(block_nodes, reduction_blocks, material_point_region)
+
     if pd_nodes != []
         nodes = setdiff(collect(1:Data_Manager.get_nnodes()), pd_nodes)
         # update matrix excluding PD nodes
         @timeit "update_material_point_part" compute_model(nodes)
     end
     K = Data_Manager.get_stiffness_matrix()
+
     if master_nodes == []
         @warn "No master nodes defined for model reduction. Using full stiffness matrix."
         return
@@ -296,55 +395,21 @@ function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int
         @warn "No slave nodes defined for model reduction. Using full stiffness matrix."
         return
     end
-    coupling_nodes = setdiff(master_nodes, pd_nodes)
 
-    cn[master_nodes] .= 3
-    cn[slave_nodes] .= 6
-    cn[pd_nodes] .+= 1  # added to be sure that all points are handled
-    cn[coupling_nodes] .+= 3  # added to be sure that all points are handled
+    mark_coupling_field!(master_nodes, slave_nodes, pd_nodes, coupling_nodes)
 
-    nnodes = Data_Manager.get_nnodes()
     dof = Data_Manager.get_dof()
-    perm_master = create_permutation(master_nodes, Data_Manager.get_dof(), nnodes)
-    perm_slave = create_permutation(slave_nodes, Data_Manager.get_dof(), nnodes)
-
-    # create the mass part.
-
-    density_mass = zeros(Float64, length(density) * dof)
-
-    for iID in eachindex(density_mass)
-        density_mass[iID] = density[Int(ceil(iID / dof))]
-    end
-    # perform the condensation of the system
+    nnodes = Data_Manager.get_nnodes()
+    perm_master = create_permutation(master_nodes, dof, nnodes)
+    perm_slave = create_permutation(slave_nodes, dof, nnodes)
+    density_mass = expand_density_per_dof(density, dof)
 
     @timeit "Condensation" K_reduced,
-                           mass_reduced=mod.reduce_matrices(K,
-                                                            density_mass,
-                                                            perm_master,
-                                                            perm_slave,
-                                                            nmodes)
+                           mass_reduced=mod.reduce_matrices(K, density_mass, perm_master,
+                                                            perm_slave, nmodes)
 
-    # Material point nodes get their internal force from the regular, damage-aware
-    # material point Verlet computation, not from K_reduced: their row would otherwise
-    # double count the master region's own self-stiffness on top of that. Coupling
-    # nodes have no such separate computation, so their rows (and every column, pd
-    # nodes included) are left untouched -- they are the only source of dynamics for
-    # the coupling layer. Zeroing whole rows this way only ever touches the physical
-    # part of the state (indices 1:n_phys); the modal block Craig-Bampton adds is
-    # unaffected by construction.
-    if pd_nodes != []
-        @timeit "Zero material point rows" begin
-            node_rank = Dict(node => k for (k, node) in enumerate(master_nodes))
-            pd_rows = Set{Int64}()
-            for node in pd_nodes, d in 1:dof
-                push!(pd_rows, (d - 1) * length(master_nodes) + node_rank[node])
-            end
-            rows, columns, values = findnz(K_reduced)
-            keep = [i for i in eachindex(rows) if rows[i] ∉ pd_rows]
-            K_reduced = sparse(rows[keep], columns[keep], values[keep],
-                               size(K_reduced)...)
-        end
-    end
+    @timeit "Zero material point rows" zero_material_point_rows!(K_reduced, master_nodes,
+                                                                 pd_nodes, dof)
 
     dropzeros!(mass_reduced)
     dropzeros!(K_reduced)
