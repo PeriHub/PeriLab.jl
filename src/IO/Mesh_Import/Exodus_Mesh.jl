@@ -13,7 +13,8 @@ module Exodus_Mesh
 
 using ....PeriLabExceptions: @abort
 using DataFrames
-using ..Mesh_Volume: tetrahedron_volume
+using ..Mesh_Volume: tetrahedron_volume, hex8_volume
+using Exodus
 
 export mesh_import_name
 export read_mesh
