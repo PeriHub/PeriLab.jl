@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
 # SPDX-License-Identifier: BSD-3-Clause
 include("./PeriLabInputSchema.jl")
 using .Schema
@@ -5,12 +7,13 @@ using JSON3
 
 # --- 1. Validation, replacing validate_yaml's inner call ---------------------
 
-example_params = Dict(
-    "Blocks" => Dict("block_1" => Dict("Block ID" => 1, "Density" => 2700.0, "Horizon" => 3.0)),
-    "Discretization" => Dict("Input Mesh File" => "mesh.txt", "Type" => "Text File"),
-    "Solver" => Dict("Verlet" => Dict("Safety Factor" => 0.7),
-                     "Final Time" => 1.0, "Initial Time" => 0.0),
-)
+example_params = Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
+                                                         "Density" => 2700.0,
+                                                         "Horizon" => 3.0)),
+                      "Discretization" => Dict("Input Mesh File" => "mesh.txt",
+                                               "Type" => "Text File"),
+                      "Solver" => Dict("Verlet" => Dict("Safety Factor" => 0.7),
+                                       "Final Time" => 1.0, "Initial Time" => 0.0))
 
 errors = Schema.validate_params(PERILAB_SCHEMA, example_params)
 if isempty(errors)

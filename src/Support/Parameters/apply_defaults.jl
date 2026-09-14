@@ -1,6 +1,6 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
 # SPDX-License-Identifier: BSD-3-Clause
-# Call this once, right after validate_params succeeds, so accessors can
-# assume every SField with a default is actually present.
 
 function apply_defaults!(node::SObject, dict::AbstractDict)
     for (key, child) in node.fields

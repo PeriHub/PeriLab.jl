@@ -19,13 +19,15 @@ module Mesh_Import
 using ...Data_Manager
 using ...PeriLabExceptions: @abort
 using ...ModuleLoader: find_module_files, create_module_specifics
+using ...Parameter_Handling: get_mesh_name
+
+include("Mesh_Volume.jl")
+using .Mesh_Volume
 
 global module_list = find_module_files(@__DIR__, "mesh_import_name")
 for mod in module_list
     include(mod["File"])
 end
-
-using .Mesh_Volume
 
 export read_mesh
 
@@ -49,6 +51,12 @@ Dispatches to the importer whose `mesh_import_name()` matches
 """
 function read_mesh(params::Dict, path::String)
     mesh_name = get_mesh_name(params)
+    mesh_path = joinpath(path, mesh_name)
+    if !isfile(mesh_path)
+        @abort "Mesh file $mesh_path does not exist"
+        return
+    end
+
     type = params["Discretization"]["Type"]
 
     importer = create_module_specifics(type,
@@ -60,8 +68,8 @@ function read_mesh(params::Dict, path::String)
         return nothing
     end
 
-    @info "Read mesh file $(joinpath(path, mesh_name))"
-    return importer.read_mesh(params, joinpath(path, mesh_name))
+    @info "Read mesh file $mesh_path using importer $(importer.mesh_import_name())"
+    return importer.read_mesh(params, mesh_path)
 end
 
 end # module Mesh_Import

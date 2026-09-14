@@ -11,7 +11,8 @@ module so the mesh importers can reuse the same volume calculations.
 """
 module Mesh_Volume
 
-using ...PeriLabExceptions: @abort
+using ....PeriLabExceptions: @abort
+using LinearAlgebra: det
 
 export calculate_volume
 export tetrahedron_volume

@@ -10,7 +10,6 @@ using .....ModuleLoader: create_module_specifics, licensed_modules, optional_loc
 
 local_user_modules = optional_local_modules(@__DIR__, "additive_name")
 licensed = licensed_modules(@__MODULE__, "Additive")
-@info licensed "Licensed Additive Models: $(join(licensed, ", "))"
 
 global all_modules = vcat(local_user_modules, licensed)
 

@@ -14,10 +14,10 @@ using LinearAlgebra
 using LazyGrids
 using Rotations
 using CSV, DataFrames
-using ProgressBars
 using NearestNeighbors
-using ...Helpers: sub_in_place!, normalize_in_place!
-using ...Data_Manager
+using ....Helpers: sub_in_place!, normalize_in_place!, progress_bar
+using ....Data_Manager
+using ....PeriLabExceptions: @abort
 
 export mesh_import_name
 export read_mesh
@@ -79,7 +79,7 @@ end
 
 function parseFile(path::String, callbacks::Dict{String,Function}, dataObject, silent)
     lines = readlines(path)
-    iter = ProgressBars.progress(0, length(lines) - 1)
+    iter = progress_bar(0, length(lines) - 1, silent)
     for i in iter
         x = lines[i]
         if occursin(";Z:", x)

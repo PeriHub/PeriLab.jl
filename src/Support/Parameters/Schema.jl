@@ -1,5 +1,7 @@
-# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
+# SPDX-License-Identifier: BSD-3-Clause
+
 # Core DSL for defining PeriLab's input schema once, and deriving from it:
 #   1. runtime validation of loaded YAML/JSON params (validate_params)
 #   2. a JSON Schema document for PeriHub / frontend / API (to_json_schema)
@@ -72,7 +74,7 @@ struct SAny <: SchemaNode
     description::String
 end
 function SAny(value::SchemaNode; required::Bool = false, min_entries = nothing,
-             description = "")
+              description = "")
     SAny(value, required, min_entries, description)
 end
 
@@ -131,7 +133,7 @@ struct SWith <: SchemaNode
     description::String
 end
 function SWith(base::SObject, constraints::Vector; required::Bool = base.required,
-              description = base.description)
+               description = base.description)
     SWith(base, Vector{NamedTuple}(constraints), required, description)
 end
 
@@ -143,15 +145,16 @@ Typical use: a physical quantity (e.g. a stiffness matrix) that's only
 meaningful when fully specified.
 """
 function requires_together(keys::Vector{String}; description::String = "")
-    check = (dict, path) -> begin
+    check = (dict,
+             path) -> begin
         errs = ValidationError[]
         present = [k for k in keys if haskey(dict, k)]
         if !isempty(present) && length(present) < length(keys)
             missing = setdiff(keys, present)
             push!(errs,
-                 ValidationError(path,
-                                 "$(join(present, ", ")) given, also requires: $(join(missing, ", "))" *
-                                 (isempty(description) ? "" : " ($description)")))
+                  ValidationError(path,
+                                  "$(join(present, ", ")) given, also requires: $(join(missing, ", "))" *
+                                  (isempty(description) ? "" : " ($description)")))
         end
         return errs
     end
@@ -166,23 +169,23 @@ If `dict[discriminant_key] == discriminant_value`, then all of
 `required_keys` must be present. Typical use: "Symmetry" == "anisotropic"
 implies a specific subset of Cij entries is required.
 """
-function required_if(discriminant_key::String, discriminant_value, required_keys::Vector{String})
-    check = (dict, path) -> begin
+function required_if(discriminant_key::String, discriminant_value,
+                     required_keys::Vector{String})
+    check = (dict,
+             path) -> begin
         errs = ValidationError[]
         if get(dict, discriminant_key, nothing) == discriminant_value
             missing = [k for k in required_keys if !haskey(dict, k)]
             if !isempty(missing)
                 push!(errs,
-                     ValidationError(path,
-                                     "$discriminant_key = $discriminant_value requires: $(join(missing, ", "))"))
+                      ValidationError(path,
+                                      "$discriminant_key = $discriminant_value requires: $(join(missing, ", "))"))
             end
         end
         return errs
     end
-    if_then = Dict(
-        "if" => Dict("properties" => Dict(discriminant_key => Dict("const" => discriminant_value))),
-        "then" => Dict("required" => required_keys),
-    )
+    if_then = Dict("if" => Dict("properties" => Dict(discriminant_key => Dict("const" => discriminant_value))),
+                   "then" => Dict("required" => required_keys))
     return (; check, if_then)
 end
 
@@ -205,8 +208,8 @@ end
 function _validate!(errors::Vector{ValidationError}, node::SField, value, path::String)
     if !_type_ok(value, node.type)
         push!(errors,
-             ValidationError(path,
-                             "expected type $(join(node.type, " or ")), got $(typeof(value))"))
+              ValidationError(path,
+                              "expected type $(join(node.type, " or ")), got $(typeof(value))"))
         return
     end
     if node.enum !== nothing && !(value in node.enum)
@@ -222,7 +225,8 @@ end
 
 function _validate!(errors::Vector{ValidationError}, node::SObject, value, path::String)
     if !(value isa AbstractDict)
-        push!(errors, ValidationError(path, "expected an object/dict, got $(typeof(value))"))
+        push!(errors,
+              ValidationError(path, "expected an object/dict, got $(typeof(value))"))
         return
     end
     for (key, child) in node.fields
@@ -247,11 +251,13 @@ end
 
 function _validate!(errors::Vector{ValidationError}, node::SAny, value, path::String)
     if !(value isa AbstractDict)
-        push!(errors, ValidationError(path, "expected an object/dict, got $(typeof(value))"))
+        push!(errors,
+              ValidationError(path, "expected an object/dict, got $(typeof(value))"))
         return
     end
     if node.min_entries !== nothing && length(value) < node.min_entries
-        push!(errors, ValidationError(path, "expected at least $(node.min_entries) entries"))
+        push!(errors,
+              ValidationError(path, "expected at least $(node.min_entries) entries"))
     end
     for (key, entry) in value
         key == "Globals" && continue
@@ -261,18 +267,20 @@ end
 
 function _validate!(errors::Vector{ValidationError}, node::SOneOf, value, path::String)
     if !(value isa AbstractDict)
-        push!(errors, ValidationError(path, "expected an object/dict, got $(typeof(value))"))
+        push!(errors,
+              ValidationError(path, "expected an object/dict, got $(typeof(value))"))
         return
     end
     present = [k for k in keys(node.options) if haskey(value, k)]
     if length(present) == 0
         push!(errors,
-             ValidationError(path,
-                             "must contain exactly one of: $(join(keys(node.options), ", "))"))
+              ValidationError(path,
+                              "must contain exactly one of: $(join(keys(node.options), ", "))"))
         return
     end
     if length(present) > 1
-        push!(errors, ValidationError(path, "must contain only one of: $(join(present, ", "))"))
+        push!(errors,
+              ValidationError(path, "must contain only one of: $(join(present, ", "))"))
         return
     end
     chosen = present[1]
@@ -319,12 +327,10 @@ end
 # JSON Schema export
 # ---------------------------------------------------------------------------
 
-_JULIA_TO_JSON_TYPE = Dict(
-    Int64 => "integer", Int32 => "integer",
-    Float64 => "number", Float32 => "number",
-    String => "string",
-    Bool => "boolean",
-)
+_JULIA_TO_JSON_TYPE = Dict(Int64 => "integer", Int32 => "integer",
+                           Float64 => "number", Float32 => "number",
+                           String => "string",
+                           Bool => "boolean")
 
 function _json_types(types::Vector{DataType})
     jtypes = unique(get(_JULIA_TO_JSON_TYPE, t, "string") for t in types)
