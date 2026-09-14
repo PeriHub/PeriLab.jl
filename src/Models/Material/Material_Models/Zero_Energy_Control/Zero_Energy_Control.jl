@@ -6,7 +6,7 @@ module Zero_Energy_Control
 using TimerOutputs: @timeit
 
 using .....Data_Manager
-using .....Solver_Manager: find_module_files, create_module_specifics
+using .....ModuleLoader: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "control_name")
 for mod in module_list
     include(mod["File"])
@@ -37,7 +37,7 @@ function compute_zero_energy_control(nodes::AbstractVector{Int64},
                                      time::Float64,
                                      dt::Float64)
     for zero_energy_model in Data_Manager.get_analysis_model("Zero Energy Control Model",
-                                        block)
+                                                             block)
         if zero_energy_model == ""
             continue
         end

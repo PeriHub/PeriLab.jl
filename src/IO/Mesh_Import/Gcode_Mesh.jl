@@ -1,15 +1,38 @@
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-# Gcode functions taken from MIT Project GcodeParser.jl https://github.com/janvorisek/GcodeParser.jl
+"""
+    Gcode_Mesh
+
+Gcode mesh importer. Parses a Gcode file and simulates the additive printing
+process to build the peridynamic mesh. The Gcode parsing logic is taken from the
+MIT licensed GcodeParser.jl project (https://github.com/janvorisek/GcodeParser.jl).
+"""
+module Gcode_Mesh
 
 using LinearAlgebra
 using LazyGrids
 using Rotations
 using CSV, DataFrames
-using ProgressBars
 using NearestNeighbors
-using ..Helpers: sub_in_place!, normalize_in_place!
+using ....Helpers: sub_in_place!, normalize_in_place!, progress_bar
+using ....Data_Manager
+using ....PeriLabExceptions: @abort
+
+export mesh_import_name
+export read_mesh
+
+"""
+    mesh_import_name()
+
+Gives the mesh importer name. It is needed for comparison with the yaml input deck.
+
+# Returns
+- `name::String`: The name of the mesh importer.
+"""
+function mesh_import_name()
+    return "Gcode"
+end
 
 function distance_along_line(dir::Vector{Float64}, point_diff::Vector{Float64})
     # Calculate the distance from the point to the line segment
@@ -742,7 +765,20 @@ function tait_bryant_angles(orientation_vector, up_vector = [0, 0, 1])
     return angles[1], angles[2], angles[3]
 end
 
-function get_gcode_mesh(gcode_file::String, params::Dict, silent)
+"""
+    read_mesh(params::Dict, filename::String)
+
+Reads a Gcode file and builds the peridynamic mesh by simulating the additive
+printing process. The result is cached to a text file so subsequent runs do not
+have to re-parse the gcode unless the user asks for it.
+
+# Arguments
+- `params::Dict`: The parameters.
+- `filename::String`: The path to the gcode file.
+# Returns
+- `mesh::DataFrame`: The mesh data as a DataFrame.
+"""
+function read_mesh(params::Dict, filename::String)
     sampling = params["Discretization"]["Gcode"]["Sampling"]
     scale = get(params["Discretization"]["Gcode"], "Scale", 1)
     width = params["Discretization"]["Gcode"]["Width"]
@@ -766,7 +802,7 @@ function get_gcode_mesh(gcode_file::String, params::Dict, silent)
         end
     end
 
-    @info "Read gcode file $gcode_file"
+    @info "Read gcode file $filename"
     @info "Params: Sampling $sampling, width $width and scale $scale "
 
     pd_mesh = Dict{String,Any}()
@@ -792,7 +828,7 @@ function get_gcode_mesh(gcode_file::String, params::Dict, silent)
     pd_mesh["point_diff"] = zeros(3)
 
     @info "Writing mesh"
-    write_mesh(gcode_file, commands_dict, silent, pd_mesh)
+    write_mesh(filename, commands_dict, Data_Manager.get_silent(), pd_mesh)
 
     if size(pd_mesh["mesh_df"], 1) == 0
         @abort "No points found in the gcode file, maybe the gcode format is not supported?"
@@ -801,7 +837,7 @@ function get_gcode_mesh(gcode_file::String, params::Dict, silent)
     @info "Number of points: $(size(pd_mesh["mesh_df"],1))"
     @info "Printing time: $(maximum(pd_mesh["mesh_df"].Activation_Time)) seconds"
 
-    txt_file = replace(gcode_file, ".gcode" => ".txt")
+    txt_file = replace(filename, ".gcode" => ".txt")
     write(txt_file,
           "header: x y z block_id volume Activation_Time Angles_x Angles_y Angles_z\n")
     CSV.write(txt_file, pd_mesh["mesh_df"]; delim = ' ', append = true)
@@ -810,3 +846,5 @@ function get_gcode_mesh(gcode_file::String, params::Dict, silent)
 
     return pd_mesh["mesh_df"]
 end
+
+end # module Gcode_Mesh

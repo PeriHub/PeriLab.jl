@@ -43,6 +43,7 @@ include("./Support/Geometry.jl")
 include("./IO/logging.jl")
 include("./MPI_communication/MPI_communication.jl")
 include("./Support/Parameters/parameter_handling.jl")
+include("./Support/ModuleLoader.jl")
 include("./IO/IO.jl")
 include("./Core/Solver/Solver_manager.jl")
 
@@ -58,6 +59,7 @@ using .Data_Manager
 using .PeriLabExceptions: @abort, PeriLabError
 import .Logging_Module
 import .IO
+using .ModuleLoader
 using .Solver_Manager
 
 PERILAB_VERSION = "2.2.5"

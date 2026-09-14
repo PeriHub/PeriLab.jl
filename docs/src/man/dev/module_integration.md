@@ -48,7 +48,7 @@ Data_Manager.set_model_module(material_model, mod)
 The module_list is optained, by applying
 
 ```julia
-using ...Solver_Manager: find_module_files, create_module_specifics
+using ...ModuleLoader: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "material_name")
 for mod in module_list
     include(mod["File"])
