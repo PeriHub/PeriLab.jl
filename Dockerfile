@@ -2,52 +2,40 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM julia:1.12 AS build
-
-
-# Copy only necessary files for building
-COPY src ./PeriLab/src
-COPY Project.toml ./PeriLab/Project.toml
+FROM julia:1.12
 
 WORKDIR /PeriLab
 
-# Install build dependencies
 RUN apt-get update \
-    && apt-get install -yq build-essential libxml2
+    && apt-get install -yq --no-install-recommends build-essential libxml2 \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN julia --project -e 'using Pkg; Pkg.add("JuliaC")'
-RUN julia --project -e 'import JuliaC; JuliaC.main(["--output-exe", "PeriLab", "--bundle", "build", "."])'
-# --trim=safe --experimental
+COPY Project.toml ./Project.toml
 
-#TODO: use alpine
-FROM debian:trixie-slim AS main
+RUN julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
 
-WORKDIR /app
+COPY src ./src
 
-# Create the destination directory
-RUN mkdir PeriLab
+# Install PeriLab itself as an app (pkg> app develop path) so `using
+# PeriLab` / `main()` work from the project path at /PeriLab.
+RUN julia --project=. -e 'using Pkg; Pkg.Apps.develop(path=".")'
 
-# Assuming /PeriLab/build is the build directory from previous stages
-COPY --from=build /PeriLab/build /app/PeriLab
-COPY Project.toml /app/Project.toml
+# Ensure `julia` is on PATH inside the container; load ~/.bashrc settings
+# (licenses, env vars) for interactive and `docker exec` sessions.
+RUN echo 'export PATH="$HOME/.julia/bin:$PATH"' >> ~/.bashrc \
+    && (source ~/.bashrc || true)
 
-# Move the build folder, set permissions, and delete the rest
-RUN chmod +x /app/PeriLab/bin/PeriLab
+# Thin wrapper so `docker exec <container> run-perilab <args>` is the whole
+# invocation -- the PeriLab App executable resolves on PATH and takes the
+# passed-through CLI args (e.g. an input deck path).
+RUN printf '#!/bin/bash\nexec PeriLab "$@"\n' \
+    > /usr/local/bin/run-perilab \
+    && chmod +x /usr/local/bin/run-perilab
 
-ENV PATH="/app/PeriLab/bin:${PATH}"
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
 
-# Install SSH server and other dependencies
-RUN apt-get update && apt-get install -yq openssh-server libxml2
-
-# Configure SSH server
-RUN echo 'root:root' | chpasswd \
-    && sed -i'' -e's/^#PermitRootLogin prohibit-password$/PermitRootLogin yes/' /etc/ssh/sshd_config \
-    && sed -i'' -e's/^#PasswordAuthentication yes$/PasswordAuthentication yes/' /etc/ssh/sshd_config \
-    && sed -i'' -e's/^#PermitEmptyPasswords no$/PermitEmptyPasswords yes/' /etc/ssh/sshd_config \
-    && sed -i'' -e's/^UsePAM yes/UsePAM no/' /etc/ssh/sshd_config
-
-# Start SSH service
-CMD ["/usr/sbin/sshd", "-D"]
-
-# Expose SSH port
-EXPOSE 22
+# Keeps the container alive for `docker exec` -- this process does
+# nothing else. Each actual simulation run is a separate `docker exec
+# <container> run-perilab <args>` call, not this CMD.
+ENTRYPOINT ["./docker-entrypoint.sh"]
+CMD ["sleep", "infinity"]
