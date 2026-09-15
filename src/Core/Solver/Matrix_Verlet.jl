@@ -15,7 +15,7 @@ using LinearAlgebra: lu
 using ...Data_Manager
 using ...PeriLabExceptions: @abort
 
-using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
+using ...Helpers: check_inf_or_nan, progress_bar, matrix_style
 
 using ...Parameter_Handling:
                              get_initial_time,
@@ -120,6 +120,9 @@ function init_solver(solver_options::Dict{Any,Any},
     # if not reduced the mass has to be created here.
     mass = Diagonal(density_mass)
     Data_Manager.set_mass_matrix(lu(sparse(mass)))
+    # No material point region without a reduction -- compute_models must not
+    # contribute anywhere, K alone drives the whole domain. See run_solver.
+    Data_Manager.set_reduced_model_pd(Int64[])
 
     return
 end
@@ -182,19 +185,16 @@ function run_solver(solver_options::Dict{Any,Any},
                 aNP1::Matrix{Float64} = Data_Manager.get_field("Acceleration", "NP1")
                 force_densities_NP1::Matrix{Float64} = Data_Manager.get_field("Force Densities",
                                                                               "NP1")
-                active_nodes::Vector{Int64} = Data_Manager.get_field("Active Nodes")
-
-                if solver_options["Model Reduction"] != false
-                    active_nodes = master_nodes
-                    active_list .= false
-                    # coupling region and material point region must be active. shown in symbolic code.
-                    active_list[Data_Manager.get_reduced_model_pd()] .= true
-
-                else
-                    @timeit "active nodes" active_nodes=find_active_nodes(active_list,
-                                                                          active_nodes,
-                                                                          1:Data_Manager.get_nnodes())
-                end
+                # Force computation is split the same way regardless of whether a
+                # reduction is active: K covers every node by default, and
+                # compute_models covers exactly the material point nodes that have
+                # been swapped out of K -- empty without a reduction, so
+                # compute_models contributes nothing anywhere and K alone drives
+                # the whole domain. master_nodes already covers every node in that
+                # case too, so no case distinction is needed here either.
+                active_nodes::Vector{Int64} = master_nodes
+                active_list .= false
+                active_list[Data_Manager.get_reduced_model_pd()] .= true
             end
             @timeit "compute Velocity" begin
                 @. @views vNP1[active_nodes,
