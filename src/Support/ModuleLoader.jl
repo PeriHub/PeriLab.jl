@@ -101,7 +101,8 @@ import JSON3
 import SHA
 
 export find_module_files, create_module_specifics,
-       load_licensed_modules, licensed_modules, optional_local_modules
+       load_licensed_modules, licensed_modules, optional_local_modules,
+       default_machine_id, check_license_on_startup
 
 # =========================================================================
 # Local, directory-scanned modules (moved here verbatim from wherever
@@ -278,7 +279,6 @@ end
 # =========================================================================
 # License-server-fetched modules (formerly LicenseModuleLoader.jl).
 # =========================================================================
-
 # --- process-wide cache -------------------------------------------------
 # The network round trip (validate + download + verify) doesn't depend on
 # which feature module is asking, so it happens at most once per process.
@@ -294,6 +294,116 @@ const _FETCH_CACHE = Ref{Union{Nothing,Vector{_Entry}}}(nothing)
 const _INCLUDED = IdDict{Module,Set{String}}()
 const _CACHE_LOCK = ReentrantLock()
 const _WARNED_NOT_CONFIGURED = Ref(false)
+
+# """
+#     __init__()
+
+# Resets all cache state fresh on every new process. This matters
+# specifically because precompilation (a plain `Pkg.precompile()`, an app
+# registration step like `Pkg.Apps.develop`, or a PackageCompiler sysimage
+# build) can execute a package's real entry point once as part of building
+# it -- if `licensed_modules()` happens to run during that step (e.g.
+# because it runs before any license env vars exist, during `docker
+# build`), the resulting "no license configured" state would otherwise get
+# frozen into the precompiled cache and never be re-checked again at actual
+# runtime, no matter what env vars a container is started or exec'd with
+# later.
+
+# `__init__()` runs fresh every time a module is loaded into a NEW Julia
+# process, regardless of what happened during precompilation -- that's
+# precisely what it's for, and it doesn't require discarding or
+# regenerating any compiled code to get a correct, fresh check on each real
+# invocation. This is the reason a `.ji`-cache-deletion workaround in a
+# container entrypoint shouldn't be necessary: it forces a full recompile to
+# get a fresh check, when only the cache in this module needs resetting.
+
+# Also runs `_check_license_on_startup()` -- see its docstring for why this
+# check is unconditional (not deferred until a licensed module is actually
+# needed).
+# """
+# function __init__()
+#     _FETCH_CACHE[] = nothing
+#     empty!(_INCLUDED)
+#     _WARNED_NOT_CONFIGURED[] = false
+
+#     _check_license_on_startup()
+# end
+
+"""
+    check_license_on_startup()
+
+Calls `/validate` unconditionally on every process start when a license
+server is configured -- NOT deferred until a caller actually asks
+`licensed_modules` for a specific type. Two reasons this needs to happen
+here, in `__init__`, rather than only inside `licensed_modules`:
+
+1. **Revocation must be caught promptly.** If this check only ran when a
+   run actually used a licensed feature, a long-lived or repeatedly
+   re-invoked container that never happens to touch Additive/GcodeInput
+   in a given run would keep working indefinitely on a license that's
+   since expired or been revoked -- the whole point of a server-side
+   license check is defeated if it's only sometimes exercised.
+2. **`last_seen` needs to reflect actual usage**, not just "this license
+   feature was used at least once." Without this, a license server's
+   activation-TTL cleanup (see server/app/main.py) can't distinguish an
+   actively-used deployment from an abandoned one, since `/validate` would
+   only ever be called on the (possibly rare) runs that happen to load a
+   licensed material model.
+
+This call intentionally does NOT populate `_FETCH_CACHE` -- it's a
+lightweight liveness/revocation check only (no module content is
+downloaded or verified here). `licensed_modules()` still does its own
+independent validate+fetch when a caller actually needs a module. This
+does mean two `/validate` calls happen on a run that ends up using a
+licensed module (this one, plus `licensed_modules`'s own) -- accepted as
+a minor redundancy in exchange for not caching a short-lived
+`download_token` this far ahead of when it'd actually be used, which
+could expire before anything calls `licensed_modules` in a slow-starting
+or delayed run.
+
+Behavior:
+- Local dev mode configured (`LICENSED_MODULES_CONFIG`/`LICENSED_MODULES_DIR`):
+  no server involved, nothing to check, returns immediately.
+- Neither `LICENSE_SERVER_URL` nor `PERIHUB_LICENSE_KEY` set: licensing is
+  optional, nothing to check, returns immediately.
+- Exactly one of `LICENSE_SERVER_URL`/`PERIHUB_LICENSE_KEY` set: same
+  misconfiguration handling as `licensed_modules` -- throws.
+- Both set, but the server reports the license invalid/expired/revoked/
+  over the activation limit: throws, which -- since this runs from
+  `__init__`, itself triggered by `using PeriLab` -- prevents PeriLab from
+  starting at all. This is deliberate: it's what actually stops a
+  container from running indefinitely on a bad license, rather than just
+  failing to load new licensed modules while everything already-loaded
+  keeps working.
+"""
+function check_license_on_startup()
+    @info "Hi"
+    local_config = get(ENV, "LICENSED_MODULES_CONFIG", "")
+    local_dir = get(ENV, "LICENSED_MODULES_DIR", "")
+    if !isempty(local_config) || !isempty(local_dir)
+        return  # local dev mode: no server involved
+    end
+
+    url = get(ENV, "LICENSE_SERVER_URL", "")
+    key = get(ENV, "PERIHUB_LICENSE_KEY", "")
+
+    if isempty(url) && isempty(key)
+        return  # licensing not configured at all: optional, nothing to check
+    end
+    if isempty(url) || isempty(key)
+        error("Only one of LICENSE_SERVER_URL/PERIHUB_LICENSE_KEY is set -- " *
+              "set both to enable licensing, or neither to disable it.")
+    end
+
+    validation = _validate(url, key, gethostname())
+    if !validation.valid
+        error("PeriHub license check failed at startup: " *
+              "$(get(validation, :reason, "unknown reason")). Refusing to start -- " *
+              "this check exists specifically so a long-lived or repeatedly " *
+              "re-invoked container can't keep running indefinitely once its " *
+              "license has expired or been revoked.")
+    end
+end
 
 """
     licensed_modules(target_module::Module, wanted_type=nothing;

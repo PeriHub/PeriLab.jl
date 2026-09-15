@@ -12,13 +12,13 @@ RUN apt-get update \
 
 COPY Project.toml ./Project.toml
 
-RUN julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+RUN julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 COPY src ./src
 
 # Install PeriLab itself as an app (pkg> app develop path) so `using
 # PeriLab` / `main()` work from the project path at /PeriLab.
-RUN julia --project=. -e 'using Pkg; Pkg.Apps.develop(path=".")'
+RUN julia --project=. -e 'using Pkg; Pkg.precompile(); Pkg.Apps.develop(path=".")'
 
 # Ensure `julia` is on PATH inside the container; load ~/.bashrc settings
 # (licenses, env vars) for interactive and `docker exec` sessions.
