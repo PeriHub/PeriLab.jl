@@ -101,8 +101,7 @@ import JSON3
 import SHA
 
 export find_module_files, create_module_specifics,
-       load_licensed_modules, licensed_modules, optional_local_modules,
-       default_machine_id, check_license_on_startup
+       licensed_modules, optional_local_modules, check_license_on_startup
 
 # =========================================================================
 # Local, directory-scanned modules (moved here verbatim from wherever
@@ -391,17 +390,14 @@ function check_license_on_startup()
         return  # licensing not configured at all: optional, nothing to check
     end
     if isempty(url) || isempty(key)
-        error("Only one of LICENSE_SERVER_URL/PERIHUB_LICENSE_KEY is set -- " *
-              "set both to enable licensing, or neither to disable it.")
+        @abort "Only one of LICENSE_SERVER_URL/PERIHUB_LICENSE_KEY is set -- " *
+               "set both to enable licensing, or neither to disable it."
     end
 
     validation = _validate(url, key, gethostname())
     if !validation.valid
-        error("PeriHub license check failed at startup: " *
-              "$(get(validation, :reason, "unknown reason")). Refusing to start -- " *
-              "this check exists specifically so a long-lived or repeatedly " *
-              "re-invoked container can't keep running indefinitely once its " *
-              "license has expired or been revoked.")
+        @abort "PeriHub license check failed at startup: " *
+               "$(get(validation, :reason, "unknown reason"))."
     end
 end
 
@@ -461,8 +457,8 @@ function licensed_modules(target_module::Module,
 
     if !isempty(local_config) || !isempty(local_dir)
         if isempty(local_config) || isempty(local_dir)
-            error("Only one of LICENSED_MODULES_CONFIG/LICENSED_MODULES_DIR is set -- " *
-                  "set both to enable local dev mode, or neither to use the license server.")
+            @abort "Only one of LICENSED_MODULES_CONFIG/LICENSED_MODULES_DIR is set -- " *
+                   "set both to enable local dev mode, or neither to use the license server."
         end
         return _licensed_modules_local(target_module, wanted_type, local_config, local_dir)
     end
@@ -482,13 +478,13 @@ function licensed_modules(target_module::Module,
     end
 
     if isempty(url) || isempty(key)
-        error("Only one of LICENSE_SERVER_URL/PERIHUB_LICENSE_KEY is set -- " *
-              "set both to enable licensed modules, or neither to disable them.")
+        @abort "Only one of LICENSE_SERVER_URL/PERIHUB_LICENSE_KEY is set -- " *
+               "set both to enable licensed modules, or neither to disable them."
     end
     if isempty(secret)
-        error("LICENSE_SERVER_URL/PERIHUB_LICENSE_KEY are set but " *
-              "CONTENT_SIGNING_SECRET is not -- refusing to load licensed " *
-              "modules without a way to verify their integrity.")
+        @abort "LICENSE_SERVER_URL/PERIHUB_LICENSE_KEY are set but " *
+               "CONTENT_SIGNING_SECRET is not -- refusing to load licensed " *
+               "modules without a way to verify their integrity."
     end
 
     entries = lock(_CACHE_LOCK) do
@@ -555,10 +551,10 @@ function _licensed_modules_local(target_module::Module,
                                  config_path::AbstractString,
                                  modules_dir::AbstractString)
     if !isfile(config_path)
-        error("LICENSED_MODULES_CONFIG is set to '$(config_path)' but that file doesn't exist")
+        @abort "LICENSED_MODULES_CONFIG is set to '$(config_path)' but that file doesn't exist"
     end
     if !isdir(modules_dir)
-        error("LICENSED_MODULES_DIR is set to '$(modules_dir)' but that directory doesn't exist")
+        @abort "LICENSED_MODULES_DIR is set to '$(modules_dir)' but that directory doesn't exist"
     end
 
     # ASSUMPTION (verify against your YAML.jl version): `YAML.load_file`
@@ -630,41 +626,6 @@ function optional_local_modules(directory::AbstractString, specific::String)
     return find_module_files(directory, specific)
 end
 
-"""
-    load_licensed_modules(license_server_url, license_key, content_signing_secret;
-                           target_module=Main, machine_id=gethostname(), wanted_type=nothing)
-
-Low-level, explicit-argument version: no ENV reading, no caching, always
-performs the full validate+download+verify round trip and
-`include_string`s into `target_module`. `wanted_type` behaves exactly as
-in `licensed_modules` -- filters which of the license's entitled modules
-actually get loaded into `target_module` by their server-assigned type
-(which can match zero, one, or many files), without affecting what's
-fetched. Prefer `licensed_modules` for normal use; this remains for tests
-or advanced setups (e.g. more than one license server in the same
-process).
-"""
-function load_licensed_modules(license_server_url::AbstractString,
-                               license_key::AbstractString,
-                               content_signing_secret::AbstractString;
-                               target_module::Module = Main,
-                               machine_id::AbstractString = gethostname(),
-                               wanted_type::Union{Nothing,AbstractString} = nothing)
-    entries = _fetch_and_verify_all(license_server_url, license_key, content_signing_secret,
-                                    machine_id)
-    module_list = Vector{Any}()
-    for entry in entries
-        if wanted_type !== nothing && entry.module_type != wanted_type
-            continue
-        end
-        Base.include_string(target_module, entry.source, entry.module_name)
-        push!(module_list,
-              Dict("File" => "license://" * entry.module_name,
-                   "Module Name" => entry.detected_name))
-    end
-    return module_list
-end
-
 function _fetch_and_verify_all(license_server_url::AbstractString,
                                license_key::AbstractString,
                                content_signing_secret::AbstractString,
@@ -672,7 +633,7 @@ function _fetch_and_verify_all(license_server_url::AbstractString,
     validation = _validate(license_server_url, license_key, machine_id)
 
     if !validation.valid
-        error("PeriHub license check failed: $(get(validation, :reason, "unknown reason"))")
+        @abort "PeriHub license check failed: $(get(validation, :reason, "unknown reason"))"
     end
 
     # Module downloads use the short-lived, module-scoped download_token
@@ -687,11 +648,11 @@ function _fetch_and_verify_all(license_server_url::AbstractString,
 
         expected_signature = bytes2hex(_hmac_sha256(content_signing_secret, source))
         if isempty(signature)
-            error("Server did not return X-Content-Signature for module '$(module_name)' -- refusing to load it")
+            @abort "Server did not return X-Content-Signature for module '$(module_name)' -- refusing to load it"
         elseif signature != expected_signature
-            error("Content signature mismatch for module '$(module_name)': " *
-                  "expected $(expected_signature), got $(signature). Refusing to " *
-                  "load it (module may have been tampered with in transit).")
+            @abort "Content signature mismatch for module '$(module_name)': " *
+                   "expected $(expected_signature), got $(signature). Refusing to " *
+                   "load it (module may have been tampered with in transit)."
         end
 
         # Falls back to the file name itself as its own type if the server
@@ -728,7 +689,7 @@ function _detect_module_name(source::AbstractString)
             return split(line)[2]
         end
     end
-    error("Downloaded module source has no top-level `module ... end` block")
+    @abort "Downloaded module source has no top-level `module ... end` block"
 end
 
 # Hand-rolled HMAC-SHA256 (RFC 2104) built directly on SHA.sha256, rather
