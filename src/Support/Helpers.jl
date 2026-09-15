@@ -50,6 +50,7 @@ export get_hexagon
 export get_shared_horizon
 export matrix_style
 export matrix_to_voigt
+export matrix_to_engineering_voigt
 export voigt_to_matrix
 export voigt_to_matrix!
 export matrix_to_vector
@@ -1273,6 +1274,26 @@ function matrix_to_voigt(matrix::AbstractMatrix{Float64})
     else
         @abort "Unsupported matrix size for matrix_to_voigt"
     end
+end
+
+"""
+	matrix_to_engineering_voigt(matrix)
+
+Convert a 2x2 or 3x3 symmetric matrix to Voigt notation using engineering shear strain
+(gamma = 2*epsilon), the convention external material subroutines (UMAT/VUMAT) expect
+for strain. `matrix_to_voigt` itself has no notion of engineering vs. tensor strain --
+it is also used for stress, which needs no such factor -- so the doubling is applied
+here instead of inside it.
+
+# Arguments
+- `matrix::AbstractMatrix{Float64}`: The matrix.
+# Returns
+- `voigt::AbstractVector{Float64}`: The Voigt notation, shear entries doubled.
+"""
+function matrix_to_engineering_voigt(matrix::AbstractMatrix{Float64})
+    voigt = matrix_to_voigt(matrix)
+    scale = length(voigt) == 3 ? (1.0, 1.0, 2.0) : (1.0, 1.0, 1.0, 2.0, 2.0, 2.0)
+    return voigt .* scale
 end
 
 """

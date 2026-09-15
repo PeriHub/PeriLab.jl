@@ -311,7 +311,6 @@ covering both the node itself and all its neighbors.
 
 function build_sparsity_and_map(nodes::AbstractVector{Int64},
                                 nlist::Vector{Vector{Int64}},
-                                number_of_neighbors::Vector{Int64},
                                 nnodes::Int,
                                 dof::Int)
     n = dof * nnodes
@@ -373,13 +372,10 @@ end
 """
 
 function build_sparsity_and_map(nodes::AbstractVector{Int64},
-                                nlist::Vector{Vector{Int64}},
-                                number_of_neighbors::Vector{Int64},
-                                nnodes::Int,
-                                dof::Int)
+                                nlist::Vector{Vector{Int64}}, nnodes::Int64,
+                                dof::Int64)
     n = dof * nnodes
 
-    # pro Spalte: Menge eindeutiger Zeilen
     col_rows = [Set{Int64}() for _ in 1:n]
 
     @inbounds for iID in nodes
@@ -679,7 +675,7 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
         @info "Build sparsity pattern"
         K_sparse, K_colptr,
         K_rowval = build_sparsity_and_map(nodes, nlist,
-                                          number_of_neighbors, nnodes,
+                                          nnodes,
                                           dof)
     end
     Data_Manager.set_stiffness_matrix(K_sparse)

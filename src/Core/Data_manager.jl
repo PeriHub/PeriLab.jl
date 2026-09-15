@@ -1248,7 +1248,7 @@ function set_reduced_model_pd(master_nodes::Vector{Int64})
 end
 
 function get_reduced_model_pd()
-    return data["Reduced PD Nodes"]
+    return get(data, "Reduced PD Nodes", Int64[])
 end
 
 function set_reduced_model_master(master_nodes::Vector{Int64})

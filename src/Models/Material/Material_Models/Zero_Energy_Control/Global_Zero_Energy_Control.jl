@@ -44,10 +44,10 @@ function init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
 
     for iID in nodes
         @views hooke_matrix[iID, :,
-        :] = get_Hooke_matrix(material_parameter,
-                                                          symmetry,
-                                                          dof,
-                                                          iID)
+                            :] = get_Hooke_matrix(material_parameter,
+                                                  symmetry,
+                                                  dof,
+                                                  iID)
     end
 end
 
@@ -144,6 +144,7 @@ function get_zero_energy_mode_force_2d!(nodes::AbstractVector{Int64},
                 end
                 df[m] = df_i - deformed_bond[iID][nID][m]
             end
+
             @views bond_force_computation_2d!(zStiff[iID, :, :], df,
                                               bond_force[iID][nID])
         end
