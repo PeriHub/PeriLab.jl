@@ -23,14 +23,6 @@ on:
     branches-ignore:
       - release
 
-# Licensing (see src/Support/ModuleLoader.jl) requires the license server URL,
-# license key, and content-signing secret to be present in ENV at compile time.
-# Values come from repository secrets -- never commit them into this file.
-env:
-  LICENSE_SERVER_URL: ${{ secrets.CI_LICENSE_SERVER_URL }}
-  PERIHUB_LICENSE_KEY: ${{ secrets.CI_PERIHUB_LICENSE_KEY }}
-  CONTENT_SIGNING_SECRET: ${{ secrets.CI_CONTENT_SIGNING_SECRET }}
-
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   test:
@@ -58,6 +50,10 @@ jobs:
         uses: julia-actions/cache@v3
       - name: Run Tests
         uses: julia-actions/julia-runtest@v1
+        env:
+          LICENSE_SERVER_URL: ${{ secrets.CI_LICENSE_SERVER_URL }}
+          PERIHUB_LICENSE_KEY: ${{ secrets.CI_PERIHUB_LICENSE_KEY }}
+          CONTENT_SIGNING_SECRET: ${{ secrets.CI_CONTENT_SIGNING_SECRET }}
       - name: Archive Test Results
         if: failure()
         uses: actions/upload-artifact@v7
