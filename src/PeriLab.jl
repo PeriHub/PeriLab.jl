@@ -433,17 +433,19 @@ function run(filename::String;
                                     silent,
                                     comm)
                 @debug "Init write results"
+                reuse = solver_options["Initial Time"] != 0.0
                 if step_id <= 1
                     @timeit "IO.init_write_results" result_files,
                                                     outputs=IO.init_write_results(params,
                                                                                   output_dir,
                                                                                   filedirectory,
                                                                                   PERILAB_VERSION,
-                                                                                  qa_vector)
+                                                                                  qa_vector,
+                                                                                  reuse)
                 end
                 IO.set_output_frequency(params,
                                         solver_options["Number of Steps"],
-                                        step_id)
+                                        step_id, reuse)
                 if verbose
                     fields = Data_Manager.get_all_field_keys()
                     @info "Found " * string(length(fields)) * " Fields"

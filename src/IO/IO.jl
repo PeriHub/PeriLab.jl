@@ -598,7 +598,7 @@ function init_write_results(params::Dict,
                             output_dir::String,
                             path::String,
                             PERILAB_VERSION::String,
-                            qa_vector::Vector{String})
+                            qa_vector::Vector{String}, reuse::Bool)
     filenames = get_output_filenames(params, output_dir)
     if length(filenames) == 0
         @warn "No output file or output defined"
@@ -730,18 +730,28 @@ function init_write_results(params::Dict,
                       "for $nnodes point elements, no bond blocks"
             end
 
-            push!(result_files,
-                  create_result_file(filename,
-                                     n_file_nodes,
-                                     dof,
-                                     n_blocks + n_bond_blocks,
-                                     nnsets,
-                                     num_fem_elements + n_bond_elements,
-                                     topology;
-                                     num_owned_nodes = nnodes))
+            if reuse
+                push!(result_files,
+                      open_result_file(filename))
+            else
+                push!(result_files,
+                      create_result_file(filename,
+                                         n_file_nodes,
+                                         dof,
+                                         n_blocks + n_bond_blocks,
+                                         nnsets,
+                                         num_fem_elements + n_bond_elements,
+                                         topology;
+                                         num_owned_nodes = nnodes))
+            end
         elseif ".csv" == filename[(end - 3):end]
             if rank == 0
-                push!(result_files, create_result_file(filename, outputs[id]))
+                if reuse
+                    push!(result_files,
+                          open_csv_result_file(filename))
+                else
+                    push!(result_files, create_result_file(filename, outputs[id]))
+                end
             else
                 push!(result_files,
                       Dict("filename" => filename, "file" => nothing, "type" => "CSV"))
@@ -766,22 +776,24 @@ function init_write_results(params::Dict,
             bond_offset = bond_element_id_offset(element_ids,
                                                  get(bond_counts_per_file, id, 0))
 
-            result_files[id]["file"] = init_results_in_exodus(result_files[id]["file"],
-                                                              dof,
-                                                              outputs[id],
-                                                              coords,
-                                                              local_block_Id,
-                                                              block_name_list,
-                                                              nsets,
-                                                              file_global_ids,
-                                                              PERILAB_VERSION,
-                                                              qa_vector,
-                                                              fem_block,
-                                                              topology,
-                                                              elem_global_ids;
-                                                              bond_blocks = bond_blocks,
-                                                              bond_output_names = bond_output_names,
-                                                              bond_id_offset = bond_offset)
+            if !reuse
+                result_files[id]["file"] = init_results_in_exodus(result_files[id]["file"],
+                                                                  dof,
+                                                                  outputs[id],
+                                                                  coords,
+                                                                  local_block_Id,
+                                                                  block_name_list,
+                                                                  nsets,
+                                                                  file_global_ids,
+                                                                  PERILAB_VERSION,
+                                                                  qa_vector,
+                                                                  fem_block,
+                                                                  topology,
+                                                                  elem_global_ids;
+                                                                  bond_blocks = bond_blocks,
+                                                                  bond_output_names = bond_output_names,
+                                                                  bond_id_offset = bond_offset)
+            end
 
             # The bond blocks are needed again for every write, so they stay with the
             # result file rather than being rebuilt per step.
@@ -812,9 +824,10 @@ Sets the output frequency.
 """
 function set_output_frequency(params::Dict,
                               nsteps::Int64,
-                              step_id::Int64)
+                              step_id::Int64,
+                              reuse::Bool)
     output_frequencies = get_output_frequencies(params, nsteps, step_id)
-    if step_id <= 1
+    if step_id <= 1 && !reuse
         output_frequency = []
         for id in eachindex(output_frequencies)
             push!(output_frequency,
@@ -1121,7 +1134,7 @@ function show_block_summary(solver_options::Dict,
                 # elseif !(name in solver_options["Models"])
                 #     push!(row, "")
             elseif haskey(params["Blocks"][block_name_list[id]], name * " Model")
-                push!(row, params["Blocks"][block_name_list[id]][name * " Model"])
+                push!(row, params["Blocks"][block_name_list[id]][name*" Model"])
             elseif haskey(params["Blocks"][block_name_list[id]], name)
                 push!(row, @sprintf("%.3e", (params["Blocks"][block_name_list[id]][name])))
             else

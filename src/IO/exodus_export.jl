@@ -121,6 +121,15 @@ function create_result_file(filename::AbstractString,
     return Dict("filename" => filename, "file" => exo_db, "type" => "Exodus")
 end
 
+function open_result_file(filename::AbstractString)
+    if !isfile(filename)
+        error("File $filename does not exist, cannot reuse it.")
+    end
+    @info "Reusing output " * filename
+    exo_db = ExodusDatabase(filename, "rw")
+    return Dict("filename" => filename, "file" => exo_db, "type" => "Exodus")
+end
+
 """
     paraview_specifics(dof::Int64)
 

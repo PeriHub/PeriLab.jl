@@ -59,7 +59,7 @@ checkpoint file is found, so passing `--reload` on a first run is harmless.
 function read_checkpoint!(directory::String, rank::Int64)
     path = checkpoint_file(directory, rank)
     if !isfile(path)
-        @warn "No checkpoint found at $(path); starting fresh instead of reloading."
+        @info "No checkpoint found; starting fresh instead of reloading."
         return
     end
     checkpoint = open(deserialize, path)
