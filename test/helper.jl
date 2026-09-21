@@ -53,7 +53,11 @@ function run_perilab(filename, cores, compare, folder_name = ""; silent = true,
             mv("exodiff.log", filename * "_exodiff.log", force = true)
         end
     else
-        rm(filename * ".e")
+        try
+            rm(filename * ".e")
+        catch
+            # File does not exist
+        end
     end
     if compare_csv
         results_csv = CSV.read(open(filename * ".csv"), DataFrame)
