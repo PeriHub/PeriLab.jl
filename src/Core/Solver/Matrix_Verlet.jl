@@ -32,7 +32,7 @@ using ...Logging_Module: print_table
 include("../Model_reduction/Model_reduction.jl")
 using .Model_reduction: init_reduce_model, ReducedState, setup_reduced_state,
                         n_modal, physical_part, modal_part,
-                        pull_from_nodes!, push_to_nodes!
+                        pull_from_nodes!, add_from_nodes!, push_to_nodes!
 include("../../Compute/compute_field_values.jl")
 using ..Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
                                      compute_model
@@ -231,6 +231,7 @@ function run_solver(solver_options::Dict{Any,Any},
                                                     time,
                                                     solver_options["Models"],
                                                     synchronise_field)
+
             @timeit "Force computations" begin
                 # Displacements of the master nodes into the state; the modal part was
                 # already advanced above and stays as it is.
@@ -249,8 +250,7 @@ function run_solver(solver_options::Dict{Any,Any},
                                                     external_forces[active_nodes,
                                                                     :] /
                                                     volume[active_nodes]
-                pull_from_nodes!(state.q_ddot, force_densities_NP1, master_nodes, state)
-                physical_part(state.f, state) .+= physical_part(state.q_ddot, state)
+                add_from_nodes!(state.f, force_densities_NP1, master_nodes, state)
 
                 push_to_nodes!(force_densities_NP1, state.f, master_nodes, state)
 
@@ -260,9 +260,11 @@ function run_solver(solver_options::Dict{Any,Any},
                 check_inf_or_nan(force_densities_NP1, "Force Densities")
             end
             @timeit "Accelaration computation" begin
-                state.q_ddot .= M_fact \ state.f
+                #state.q_ddot .= M_fact \ state.f
+                ldiv!(state.q_ddot, M_fact, state.f)
                 push_to_nodes!(aNP1, state.q_ddot, master_nodes, state)
             end
+
             @timeit "write_results" result_files=write_results(result_files, time,
                                                                max_damage, outputs)
 

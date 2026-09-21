@@ -100,7 +100,8 @@ difference dominates the whole reduction.
 
 A failure is informative in itself: `Kll` is then not positive definite, which for a
 fixed interface points at a condensed region falling apart into pieces not tied to any
-retained degree of freedom.
+retained degree of freedom — or, in peridynamics, simply at a stiffness that is not
+symmetric.
 
 # Arguments
 - `Kll::AbstractMatrix`: Stiffness of the condensed part
@@ -178,6 +179,11 @@ freedom the dense route is the cheaper one and is taken instead.
 
 The eigenvectors are mass normalised, `X' Mll X = I`. Without that the modal blocks of
 the reduced matrices have no defined scaling.
+
+Both routes treat `Kll` as symmetric. For an unsymmetric `Kll` the modes are those of
+its symmetric part, which is an approximation — the coupling blocks formed in
+[`reduce_matrices`](@ref) no longer cancel then, which is why they are formed
+explicitly.
 
 # Arguments
 - `Kll::AbstractMatrix`: Stiffness of the condensed part
@@ -319,57 +325,71 @@ function copy_sparse_columns!(target::AbstractMatrix{Float64}, A::AbstractMatrix
 end
 
 """
-    check_symmetry(K, r, l; samples = 2000, tolerance = 1e-8)
+    check_symmetry(K; samples = 2000, tolerance = 1e-8)
 
-Warns if the stiffness is not symmetric, judged from a random sample of entries.
+Measures how far the stiffness is from symmetric, sampling stored entries.
 
-Craig-Bampton assumes symmetry: the fixed-interface modes use the symmetric solver, and
-the coupling blocks of the reduced stiffness are dropped because `Kll B = Klr` makes
-them cancel, which needs `Kll' = Kll`. In peridynamics the stiffness is not symmetric in
-general, two points with different horizons do not contribute equally to each other. A
-sample is compared rather than the full matrix, which would cost as much memory as the
-reduction saves.
+Craig-Bampton is built on symmetry: the fixed-interface modes use the symmetric solver,
+and the classical derivation drops the stiffness coupling blocks because `Kll B = Klr`
+makes them cancel — which needs `Krl = Klr'`. In peridynamics the stiffness is not
+symmetric in general, two points with different horizons do not contribute equally to
+each other, so the deviation is measured rather than assumed away. The coupling blocks
+are formed explicitly either way; this only reports how much they will carry.
+
+Sampling runs over the stored entries of `K`, not over random index pairs. For a sparse
+matrix a random pair is almost surely a structural zero on both sides, which would make
+any deviation invisible and report perfect symmetry for every input.
 
 # Arguments
 - `K::AbstractMatrix`: The full stiffness matrix
-- `r::Vector{Int64}`, `l::Vector{Int64}`: Retained and condensed index sets
 # Keywords
-- `samples::Int64`: Number of entries drawn
+- `samples::Int64`: Number of stored entries drawn
 - `tolerance::Float64`: Relative deviation accepted as rounding
 # Returns
-- `::Bool`: Whether the sample looked symmetric
+- `::Float64`: The largest relative deviation found
 """
-function check_symmetry(K::AbstractMatrix, r::Vector{Int64}, l::Vector{Int64};
-                        samples::Int64 = 2000, tolerance::Float64 = 1e-8)
-    indices = vcat(r, l)
-    n = length(indices)
-    n < 2 && return true
+function check_symmetry(K::SparseMatrixCSC; samples::Int64 = 2000,
+                        tolerance::Float64 = 1e-8)
+    rows = rowvals(K)
+    values = nonzeros(K)
+    total = length(values)
+    total == 0 && return 0.0
 
+    stride = max(1, total ÷ samples)
     scale = 0.0
     deviation = 0.0
-    for _ in 1:samples
-        i = indices[rand(1:n)]
-        j = indices[rand(1:n)]
-        upper = K[i, j]
-        lower = K[j, i]
-        scale = max(scale, abs(upper), abs(lower))
-        deviation = max(deviation, abs(upper - lower))
+    drawn = 0
+
+    @inbounds for column in axes(K, 2)
+        for index in nzrange(K, column)
+            index % stride == 0 || continue
+            i = rows[index]
+            upper = values[index]
+            lower = K[column, i]
+            scale = max(scale, abs(upper), abs(lower))
+            deviation = max(deviation, abs(upper - lower))
+            drawn += 1
+        end
     end
 
-    scale = max(scale, eps())
-    if deviation / scale > tolerance
-        @warn "Stiffness matrix appears not to be symmetric (relative deviation " *
-              "$(round(deviation / scale; sigdigits = 3))). Craig-Bampton assumes " *
-              "symmetry; unequal horizons in the condensed region are the usual cause."
-        return false
+    drawn == 0 && return 0.0
+    relative = deviation / max(scale, eps())
+
+    if relative > tolerance
+        @warn "Stiffness matrix is not symmetric (largest relative deviation " *
+              "$(round(relative; sigdigits = 3)) over $drawn sampled entries). The " *
+              "modal coupling blocks are kept, so the reduction stays consistent, but " *
+              "the fixed-interface modes are those of the symmetric part."
     end
-    return true
+    return relative
 end
+
+check_symmetry(K::AbstractMatrix; kwargs...) = check_symmetry(sparse(K); kwargs...)
 
 """
     add_dense_block!(rows, columns, values, block, positions)
 
-Appends a dense block to a coordinate list, mapped to the given global positions.
+Appends a dense square block to a coordinate list, mapped to the given global positions.
 
 Entries below the rounding level of the block are skipped: they are fill-in that carries
 no information and would only make the result denser.
@@ -389,46 +409,77 @@ function add_dense_block!(rows::Vector{Int64}, columns::Vector{Int64},
 end
 
 """
-    report_modal_coupling(M_reduced, nr, n_modes)
+    add_dense_block!(rows, columns, values, block, row_positions, column_positions)
 
-Reports the mass coupling between the retained and the modal part, and warns if it is
-empty.
+Appends a rectangular block, rows and columns mapped independently. Used for the
+coupling blocks between the retained and the modal part, which are `nc x n_modes`.
+"""
+function add_dense_block!(rows::Vector{Int64}, columns::Vector{Int64},
+                          values::Vector{Float64}, block::AbstractMatrix{Float64},
+                          row_positions::AbstractVector{Int64},
+                          column_positions::AbstractVector{Int64};
+                          threshold::Float64 = -1.0)
+    if threshold < 0
+        threshold = 1.0e-12 * max(maximum(abs, block; init = 0.0), eps())
+    end
+    @inbounds for j in axes(block, 2), i in axes(block, 1)
+        value = block[i, j]
+        abs(value) <= threshold && continue
+        push!(rows, row_positions[i])
+        push!(columns, column_positions[j])
+        push!(values, value)
+    end
+    return nothing
+end
 
-The modes are driven through the mass, not through the stiffness: `Kbm` is zero because
-recovery modes and fixed-interface modes are K-orthogonal, so the only path from a
-moving retained degree of freedom to a modal amplitude is `Mbm`. An empty `Mbm` leaves
-the modes at rest for the whole simulation — they still carry mass and shift the
-eigenfrequencies, but never respond, which makes the result worse than the static
-condensation it was meant to improve on.
+"""
+    report_modal_coupling(K_reduced, M_reduced, nr, n_modes)
 
-An empty block usually means the mass coupling was dropped by the threshold in
-[`add_dense_block!`](@ref), or that `Mbm` came out with the wrong sign convention and
-cancelled itself.
+Reports the coupling between the retained and the modal part, and warns if it is empty.
+
+A mode that no block couples to stays at rest for the whole simulation. It still carries
+mass and shifts the eigenfrequencies, but never responds, which makes the result worse
+than the static condensation it was meant to improve on — and, characteristically,
+independent of the number of modes.
+
+There are two paths. `Mbm` drives the modes through the acceleration of the retained
+degrees of freedom and is always present. `Kbm` drives them through the displacement and
+vanishes exactly for a symmetric stiffness, so an empty one is only expected there.
 
 # Arguments
-- `M_reduced::SparseMatrixCSC`: The reduced mass matrix
+- `K_reduced::SparseMatrixCSC`, `M_reduced::SparseMatrixCSC`: The reduced matrices
 - `nr::Int64`: Number of retained degrees of freedom
 - `n_modes::Int64`: Number of modes
 # Returns
-- `::Bool`: Whether the coupling holds entries
+- `::Bool`: Whether any coupling holds entries
 """
-function report_modal_coupling(M_reduced::SparseMatrixCSC, nr::Int64, n_modes::Int64)
+function report_modal_coupling(K_reduced::SparseMatrixCSC, M_reduced::SparseMatrixCSC,
+                               nr::Int64, n_modes::Int64)
     n_modes == 0 && return true
 
-    coupling_block = M_reduced[1:nr, (nr + 1):(nr + n_modes)]
-    entries = nnz(coupling_block)
+    modal = (nr + 1):(nr + n_modes)
+    mass_coupling = M_reduced[1:nr, modal]
+    stiffness_coupling = K_reduced[1:nr, modal]
 
-    if entries == 0
-        @warn "The mass coupling between the retained and the modal part is empty. " *
-              "The modes are driven through the mass only, so they will stay at rest " *
-              "and the reduction behaves worse than a static condensation."
+    mass_entries = nnz(mass_coupling)
+    stiffness_entries = nnz(stiffness_coupling)
+
+    if mass_entries == 0 && stiffness_entries == 0
+        @warn "Neither the mass nor the stiffness couples the retained and the modal " *
+              "part. The modes will stay at rest and the reduction behaves worse than " *
+              "a static condensation."
         return false
     end
 
-    modal_mass = maximum(abs, nonzeros(coupling_block))
     retained_mass = maximum(abs, nonzeros(M_reduced[1:nr, 1:nr]); init = 0.0)
-    @info "Modal coupling: $entries entries, largest $(round(modal_mass; sigdigits = 3)) " *
-          "against $(round(retained_mass; sigdigits = 3)) in the retained block"
+    retained_stiffness = maximum(abs, nonzeros(K_reduced[1:nr, 1:nr]); init = 0.0)
+
+    @info "Modal coupling: mass $mass_entries entries, largest " *
+          "$(round(maximum(abs, nonzeros(mass_coupling); init = 0.0); sigdigits = 3)) " *
+          "against $(round(retained_mass; sigdigits = 3)); stiffness " *
+          "$stiffness_entries entries, largest " *
+          "$(round(maximum(abs, nonzeros(stiffness_coupling); init = 0.0); sigdigits = 3)) " *
+          "against $(round(retained_stiffness; sigdigits = 3))"
 
     return true
 end
@@ -449,15 +500,26 @@ The retained ones stay physical coordinates, the condensed ones are represented 
 with the recovery modes `B = Kll^-1 Klr`, the same static relation Guyan uses. The
 reduced blocks are
 
-    Kbb = Krr - Krl B          Kmm = W
+    Kbb = Krr - Krl B          Kmm = X' Kll X
+    Kbm = Krl X - B' Kll X     Kmb = X' Klr - X' Kll B
     Mbb = Mrr + B' Mll B       Mmm = I
-    Mbm = -B' Mll X            Kbm = 0
+    Mbm = -B' Mll X
 
-The stiffness coupling blocks vanish: `Kll B = Klr` makes the two contributions
-`Krl X` and `-B' Kll X` cancel, so recovery modes and fixed-interface modes are
-K-orthogonal. The mass has no such cancellation. The mass coupling terms `Mrl X` vanish
-as well, but for a different reason: the mass matrix is diagonal and the two index sets
-are disjoint.
+The textbook derivation drops `Kbm` and `Kmb`: with `Kll B = Klr` the two contributions
+to `Kbm` become `Krl X - Klr' X`, which is zero for `Krl = Klr'`. That holds for a
+symmetric stiffness only. Peridynamic stiffness matrices are not symmetric in general —
+two points with different horizons do not contribute equally to each other — and
+dropping the blocks then removes the path through which a displacement of the retained
+region drives the modes. What remains is the mass coupling alone, the modes stay
+underexcited, and adding modes no longer changes the answer. The blocks are therefore
+formed explicitly; for a symmetric `K` they come out at rounding level and are dropped
+by the threshold, leaving the classical result unchanged.
+
+`Kmm` is formed as `X' Kll X` for the same reason, rather than being set to the
+eigenvalues, which are the right answer only for a symmetric `Kll`.
+
+The mass coupling terms `Mrl X` vanish for a genuine reason and are not formed: the mass
+matrix is diagonal and the two index sets are disjoint.
 
 The reduced matrices stay sparse. Only retained degrees of freedom with a bond into the
 condensed region appear in `Klr`; the reduction fills in exactly their rows and columns,
@@ -505,8 +567,7 @@ function reduce_matrices(K::AbstractMatrix,
     end
 
     if check_symmetry_sample > 0
-        @timeit "CB symmetry check" check_symmetry(K, r, l;
-                                                   samples = check_symmetry_sample)
+        @timeit "CB symmetry check" check_symmetry(K; samples = check_symmetry_sample)
     end
 
     @timeit "CB extract submatrices" begin
@@ -521,7 +582,10 @@ function reduce_matrices(K::AbstractMatrix,
         Mll = Diagonal(mass_l)
     end
 
-    coupling = nonzero_columns(Klr)
+    # A retained dof with a nonzero Krl row but (for an unsymmetric K) a zero Klr
+    # column would otherwise be silently dropped from the coupling correction; see
+    # Guyan.reduce_matrices for the same fix on the same asymmetry.
+    coupling = union(nonzero_rows(Krl), nonzero_columns(Klr))
     nc = length(coupling)
 
     @info "Craig-Bampton: $nr retained, $nl condensed, $nc coupling, $n_modes modes; " *
@@ -536,7 +600,15 @@ function reduce_matrices(K::AbstractMatrix,
     # The modes are normalised against Mll, so X' Mll X = I.
     @timeit "CB fixed interface modes" X, w=fixed_interface_modes(Kll, Mll, n_modes)
 
+    if n_modes > 0
+        f_lo = sqrt(w[1]) / (2 * pi)
+        f_hi = sqrt(w[end]) / (2 * pi)
+        @info "Craig-Bampton fixed-interface frequencies: $(round(f_lo; sigdigits = 4)) Hz " *
+              "(mode 1) to $(round(f_hi; sigdigits = 4)) Hz (mode $n_modes)"
+    end
+
     n_total = nr + n_modes
+    modal_positions = collect((nr + 1):(nr + n_modes))
 
     @timeit "CB reduced stiffness" begin
         rows, columns, values = findnz(Krr)
@@ -547,18 +619,51 @@ function reduce_matrices(K::AbstractMatrix,
             mul!(Kbb_fill, Krl[coupling, :], B, -1.0, 0.0)
             add_dense_block!(rows, columns, values, Kbb_fill, coupling)
         end
-        for k in 1:n_modes
-            push!(rows, nr + k)
-            push!(columns, nr + k)
-            push!(values, w[k])
+
+        if n_modes > 0
+            Kll_X = Kll * X                                  # nl x n_modes
+
+            if nc > 0
+                # Kbm = Krl X - B' Kll X
+                Kbm = Matrix{Float64}(undef, nc, n_modes)
+                mul!(Kbm, Krl[coupling, :], X)
+                mul!(Kbm, transpose(B), Kll_X, -1.0, 1.0)
+
+                # For an unsymmetric K the transposed block is not Kbm', so it is
+                # formed separately: Kmb = X' Klr - (Kll' X)' B
+                Kmb = Matrix{Float64}(undef, n_modes, nc)
+                mul!(Kmb, transpose(X), Klr[:, coupling])
+                mul!(Kmb, transpose(transpose(Kll) * X), B, -1.0, 1.0)
+
+                threshold = 1.0e-12 *
+                            max(maximum(abs, Kbm; init = 0.0),
+                                maximum(abs, Kmb; init = 0.0), eps())
+                add_dense_block!(rows, columns, values, Kbm, coupling, modal_positions;
+                                 threshold = threshold)
+                add_dense_block!(rows, columns, values, Kmb, modal_positions, coupling;
+                                 threshold = threshold)
+
+                reference = maximum(abs, nonzeros(Krr); init = eps())
+                @info "Craig-Bampton modal stiffness coupling: largest |Kbm| = " *
+                      "$(round(maximum(abs, Kbm; init = 0.0); sigdigits = 3)), " *
+                      "|Kmb| = $(round(maximum(abs, Kmb; init = 0.0); sigdigits = 3)), " *
+                      "against $(round(reference; sigdigits = 3)) in Krr"
+            end
+
+            # Kmm = X' Kll X. Equal to diagm(w) for a symmetric Kll; formed explicitly
+            # so that an unsymmetric one does not silently fall back to the eigenvalues.
+            Kmm = transpose(X) * Kll_X
+            add_dense_block!(rows, columns, values, Kmm, modal_positions,
+                             modal_positions)
         end
+
         K_reduced = sparse(rows, columns, values, n_total, n_total)
     end
 
     @timeit "CB reduced mass" begin
         # Both mass blocks have the form Y' Mll Z with a diagonal Mll, so scaling the
-        # factors by sqrt(Mll) turns them into plain products. B is scaled in place,
-        # which is why the stiffness block above had to be formed first.
+        # factors by sqrt(Mll) turns them into plain products. B and X are scaled in
+        # place, which is why the stiffness block above had to be formed first.
         root_mass = sqrt.(mass_l)
         @inbounds for j in 1:nc, i in 1:nl
             B[i, j] *= root_mass[i]
@@ -581,7 +686,6 @@ function reduce_matrices(K::AbstractMatrix,
         end
 
         if n_modes > 0 && nc > 0
-            # X is not needed unscaled again, so it is scaled in place like B was above.
             @inbounds for k in 1:n_modes, i in 1:nl
                 X[i, k] *= root_mass[i]
             end
@@ -590,16 +694,10 @@ function reduce_matrices(K::AbstractMatrix,
             mul!(Mbm, transpose(B), X, -1.0, 0.0)
 
             threshold = 1.0e-12 * max(maximum(abs, Mbm; init = 0.0), eps())
-            @inbounds for k in 1:n_modes, i in 1:nc
-                value = Mbm[i, k]
-                abs(value) <= threshold && continue
-                push!(rows, coupling[i])
-                push!(columns, nr + k)
-                push!(values, value)
-                push!(rows, nr + k)
-                push!(columns, coupling[i])
-                push!(values, value)
-            end
+            add_dense_block!(rows, columns, values, Mbm, coupling, modal_positions;
+                             threshold = threshold)
+            add_dense_block!(rows, columns, values, transpose(Mbm), modal_positions,
+                             coupling; threshold = threshold)
         end
 
         for k in 1:n_modes
@@ -611,7 +709,7 @@ function reduce_matrices(K::AbstractMatrix,
         M_reduced = sparse(rows, columns, values, n_total, n_total)
     end
 
-    report_modal_coupling(M_reduced, nr, n_modes)
+    report_modal_coupling(K_reduced, M_reduced, nr, n_modes)
 
     @debug "Reduced matrices: K with $(nnz(K_reduced)) entries, M with " *
            "$(nnz(M_reduced)) entries, out of $(n_total^2) possible"

@@ -8,7 +8,7 @@ using ...Data_Manager
 using SparseArrays
 using ...Solver_Manager: find_module_files, create_module_specifics
 using ...Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
-                                      compute_model
+                                      rebuild_matrix!
 using ...Helpers: find_active_nodes, create_permutation
 global module_list = find_module_files(@__DIR__, "model_reduction_name")
 for mod in module_list
@@ -17,7 +17,7 @@ end
 
 export ReducedState
 export n_physical, n_modal, physical_part, modal_part
-export pull_from_nodes!, push_to_nodes!
+export pull_from_nodes!, add_from_nodes!, push_to_nodes!
 export setup_reduced_state
 
 """
@@ -136,7 +136,42 @@ function pull_from_nodes!(vector::AbstractVector{Float64},
     @inbounds for d in 1:dof
         offset = (d - 1) * n_master
         for (k, node) in enumerate(master_nodes)
-            vector[offset + k] = field[node, d]
+            vector[offset+k] = field[node, d]
+        end
+    end
+    return vector
+end
+
+"""
+    add_from_nodes!(vector, field, master_nodes, state)
+
+Adds the master rows of a node field onto the physical part of a state vector.
+
+Same as [`pull_from_nodes!`](@ref), but accumulates instead of overwriting -- for adding
+a node field's contribution onto a vector that already holds something else, such as
+`state.f` already holding the stiffness-matrix force before the material point
+contribution is added onto it. The modal part is left untouched, for the same reason as
+`pull_from_nodes!`.
+
+# Arguments
+- `vector::AbstractVector{Float64}`: Target, length `n_phys + n_modal`, mutated in place
+- `field::AbstractMatrix{Float64}`: Node field, `nnodes x dof`
+- `master_nodes::AbstractVector{Int64}`: Master node indices
+- `state::ReducedState`: The state, for the split position
+# Returns
+- `vector`: The same vector, mutated
+"""
+function add_from_nodes!(vector::AbstractVector{Float64},
+                         field::AbstractMatrix{Float64},
+                         master_nodes::AbstractVector{Int64},
+                         state::ReducedState)
+    dof = size(field, 2)
+    n_master = length(master_nodes)
+    # Component major, matching vec(field[master_nodes, :]).
+    @inbounds for d in 1:dof
+        offset = (d - 1) * n_master
+        for (k, node) in enumerate(master_nodes)
+            vector[offset+k] += field[node, d]
         end
     end
     return vector
@@ -168,7 +203,7 @@ function push_to_nodes!(field::AbstractMatrix{Float64},
     @inbounds for d in 1:dof
         offset = (d - 1) * n_master
         for (k, node) in enumerate(master_nodes)
-            field[node, d] = vector[offset + k]
+            field[node, d] = vector[offset+k]
         end
     end
     return field
@@ -331,6 +366,12 @@ point Verlet computation, not from `K_reduced`: their row would otherwise double
 the master region's own self-stiffness on top of that. Coupling nodes have no such
 separate computation, so their rows (and every column, material point nodes included)
 are left untouched -- they are the only source of dynamics for the coupling layer.
+
+Also zeroing the PD columns (removing `K_reduced[coupling, pd]`, on the assumption that
+`distribute_forces!` already supplies that same coupling reciprocally) was tried and made
+the result worse, not better -- the K-based and bond-force-based paths evidently are not
+interchangeable at that boundary, so the column stays.
+
 Zeroing whole rows this way only ever touches the physical part of the state (indices
 `1:n_phys`); the modal block Craig-Bampton adds is unaffected by construction. Entries
 are only set to zero here, not removed from the sparsity pattern -- the caller's
@@ -381,9 +422,14 @@ function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int
     coupling_nodes = partition_nodes(block_nodes, reduction_blocks, material_point_region)
 
     if pd_nodes != []
+        # init_matrix already assembled every node, PD included, since it runs before
+        # the reduction blocks (and therefore pd_nodes) are known. Rebuild from a blank
+        # slate with them excluded now that they are known, rather than patch the
+        # existing assembly: compute_model's subtract-old/add-new is a no-op here (old
+        # and current state are still identical at this point in setup), so it would
+        # leave their init_matrix contribution in place instead of removing it.
         nodes = setdiff(collect(1:Data_Manager.get_nnodes()), pd_nodes)
-        # update matrix excluding PD nodes
-        @timeit "update_material_point_part" compute_model(nodes)
+        @timeit "update_material_point_part" rebuild_matrix!(nodes)
     end
     K = Data_Manager.get_stiffness_matrix()
 
@@ -408,9 +454,6 @@ function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int
                            mass_reduced=mod.reduce_matrices(K, density_mass, perm_master,
                                                             perm_slave, nmodes)
 
-    @timeit "Zero material point rows" zero_material_point_rows!(K_reduced, master_nodes,
-                                                                 pd_nodes, dof)
-
     dropzeros!(mass_reduced)
     dropzeros!(K_reduced)
 
@@ -421,7 +464,8 @@ function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int
     Data_Manager.set_reduced_model_master(master_nodes)
 
     @info "Model reduction is applied"
-    @info "Condensed: $(length(slave_nodes)), Master: $(length(master_nodes)), PD: $(length(pd_nodes))."
+    @info "condensed $(length(slave_nodes)), coupling $(length(coupling_nodes)), " *
+          "material point $(length(pd_nodes))"
     return
 end
 
