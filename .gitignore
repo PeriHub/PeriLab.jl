@@ -10,6 +10,7 @@ Manifest.toml
 *.csv
 *.out
 *.sbatch
+*.jls
 !**/Reference/*.e*
 !**/Reference/*.csv*
 LocalPreferences.toml

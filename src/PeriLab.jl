@@ -61,6 +61,7 @@ import .Logging_Module
 import .IO
 using .ModuleLoader
 using .Solver_Manager
+using .Parameter_Handling: get_initial_time
 
 PERILAB_VERSION = "2.2.5"
 
@@ -385,11 +386,12 @@ function run(filename::String;
                 output_dir = filedirectory
             end
 
-            if !reload
-                Data_Manager.initialize_data()
-            else
-                @info "PeriLab started in the reload mode"
+            Data_Manager.initialize_data()
+            if reload
+                @info "Reloading from checkpoint"
+                Data_Manager.read_checkpoint!(output_dir, rank)
             end
+
             Data_Manager.set_silent(silent)
             Data_Manager.set_verbose(verbose)
             @timeit "IO.initialize_data" params,
@@ -431,17 +433,19 @@ function run(filename::String;
                                     silent,
                                     comm)
                 @debug "Init write results"
+                reuse = solver_options["Initial Time"] != 0.0
                 if step_id <= 1
                     @timeit "IO.init_write_results" result_files,
                                                     outputs=IO.init_write_results(params,
                                                                                   output_dir,
                                                                                   filedirectory,
                                                                                   PERILAB_VERSION,
-                                                                                  qa_vector)
+                                                                                  qa_vector,
+                                                                                  reuse)
                 end
                 IO.set_output_frequency(params,
                                         solver_options["Number of Steps"],
-                                        step_id)
+                                        step_id, reuse)
                 if verbose
                     fields = Data_Manager.get_all_field_keys()
                     @info "Found " * string(length(fields)) * " Fields"
@@ -477,6 +481,11 @@ function run(filename::String;
                                                                                        IO.write_results,
                                                                                        silent)
                 end
+                if reload
+                    @info "Writing checkpoint"
+                    @timeit "Data_Manager.write_checkpoint" Data_Manager.write_checkpoint(output_dir,
+                                                                                          rank)
+                end
             end
 
         catch e
@@ -498,7 +507,7 @@ function run(filename::String;
                 IO.merge_exodus_files(result_files, output_dir)
             end
             MPI.Barrier(comm)
-            if (size > 1 && !debug) || dry_run
+            if (size > 1 && !debug && !reload) || dry_run
                 IO.delete_files(result_files, output_dir)
             end
         end

@@ -374,7 +374,7 @@ function run_solver(solver_options::Dict{Any,Any},
             step_time += dt
             Data_Manager.set_current_time(time)
 
-            if idt % ceil(nsteps / 100) == 0
+            if idt % ceil(nsteps / 100) == 0 || idt == 1 || idt == nsteps + 1
                 @info "Step: $idt / $(nsteps+1) [$(@sprintf("%.3e", time)) s]"
             end
             if rank == 0 && !silent
