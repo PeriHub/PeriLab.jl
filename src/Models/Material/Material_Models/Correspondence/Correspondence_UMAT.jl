@@ -7,7 +7,7 @@ using StaticArrays
 
 using ......Data_Manager
 using ......PeriLabExceptions: @abort
-using ......Helpers: voigt_to_matrix, matrix_to_voigt
+using ......Helpers: voigt_to_matrix, matrix_to_voigt, matrix_to_engineering_voigt
 using .....Material_Basis: get_Hooke_matrix, get_all_elastic_moduli
 export fe_support
 export init_model
@@ -170,10 +170,10 @@ function init_model(nodes::AbstractVector{Int64},
 
     for iID in nodes
         @views DDSDDE[iID, :,
-        :] = get_Hooke_matrix(material_parameter,
-                                                    symmetry,
-                                                    dof,
-                                                    iID)
+                      :] = get_Hooke_matrix(material_parameter,
+                                            symmetry,
+                                            dof,
+                                            iID)
     end
 end
 
@@ -301,8 +301,8 @@ function compute_stresses(nodes::AbstractVector{Int64},
                        DDSDDT_temp,
                        DRPLDE_temp,
                        DRPLDT_temp,
-                       matrix_to_voigt(strain_N[iID, :, :]),
-                       matrix_to_voigt(strain_increment[iID, :, :]),
+                       matrix_to_engineering_voigt(strain_N[iID, :, :]),
+                       matrix_to_engineering_voigt(strain_increment[iID, :, :]),
                        [time, time + dt],
                        dt,
                        temp[iID],

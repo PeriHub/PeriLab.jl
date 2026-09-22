@@ -7,8 +7,8 @@ using StaticArrays
 
 using ......Data_Manager
 using ......PeriLabExceptions: @abort
-using ......Helpers: voigt_to_matrix, matrix_to_voigt, matrix_to_vector,
-                     vector_to_matrix
+using ......Helpers: voigt_to_matrix, matrix_to_voigt, matrix_to_engineering_voigt,
+                     matrix_to_vector, vector_to_matrix
 using .....Material_Basis: get_Hooke_matrix
 export fe_support
 export init_model
@@ -203,7 +203,7 @@ function compute_stresses(nodes::AbstractVector{Int64},
     enerInelasNew = Data_Manager.get_field("Dissipated inelastic energy", "NP1")
 
     for iID in nodes
-        strainInc[iID, :] = matrix_to_voigt(strain_increment[iID, :, :])
+        strainInc[iID, :] = matrix_to_engineering_voigt(strain_increment[iID, :, :])
         stressOld[iID, :] = matrix_to_voigt(stress_N[iID, :, :])
         defGradNew[iID, :] = matrix_to_vector(deformation_gradient[iID, :, :])
         if Data_Manager.get_iteration() == 1
