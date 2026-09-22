@@ -356,56 +356,6 @@ function expand_density_per_dof(density, dof::Int64)
     return density_mass
 end
 
-"""
-    zero_material_point_rows!(K_reduced, master_nodes, pd_nodes, dof)
-
-Deletes the material point nodes' own rows from the reduced stiffness, in place.
-
-Material point nodes get their internal force from the regular, damage-aware material
-point Verlet computation, not from `K_reduced`: their row would otherwise double count
-the master region's own self-stiffness on top of that. Coupling nodes have no such
-separate computation, so their rows (and every column, material point nodes included)
-are left untouched -- they are the only source of dynamics for the coupling layer.
-
-Also zeroing the PD columns (removing `K_reduced[coupling, pd]`, on the assumption that
-`distribute_forces!` already supplies that same coupling reciprocally) was tried and made
-the result worse, not better -- the K-based and bond-force-based paths evidently are not
-interchangeable at that boundary, so the column stays.
-
-Zeroing whole rows this way only ever touches the physical part of the state (indices
-`1:n_phys`); the modal block Craig-Bampton adds is unaffected by construction. Entries
-are only set to zero here, not removed from the sparsity pattern -- the caller's
-`dropzeros!` does that compaction, together with whatever `reduce_matrices` itself left
-as explicit zeros.
-
-# Arguments
-- `K_reduced::SparseMatrixCSC`: The reduced stiffness, mutated in place
-- `master_nodes::Vector{Int64}`: Sorted master node list, the reduction's dof ordering
-- `pd_nodes::Vector{Int64}`: Material point nodes
-- `dof::Int64`: Degrees of freedom per node
-# Returns
-- `K_reduced`: The same matrix, mutated
-"""
-function zero_material_point_rows!(K_reduced::SparseMatrixCSC,
-                                   master_nodes::Vector{Int64}, pd_nodes::Vector{Int64},
-                                   dof::Int64)
-    isempty(pd_nodes) && return K_reduced
-
-    n_master = length(master_nodes)
-    node_rank = Dict(node => k for (k, node) in enumerate(master_nodes))
-    pd_rows = Set{Int64}()
-    for node in pd_nodes, d in 1:dof
-        push!(pd_rows, (d - 1) * n_master + node_rank[node])
-    end
-
-    rows = rowvals(K_reduced)
-    values = nonzeros(K_reduced)
-    @inbounds for i in eachindex(rows)
-        rows[i] in pd_rows && (values[i] = 0.0)
-    end
-    return K_reduced
-end
-
 function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int64}},
                            density)
     reduction_blocks = parse_reduction_blocks(model_param)
