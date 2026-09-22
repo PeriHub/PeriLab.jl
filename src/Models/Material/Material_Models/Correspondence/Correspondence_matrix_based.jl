@@ -585,7 +585,6 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int64},
             end  # scatter_to_K
         end  # iID loop
     end  # assembly
-    dropzeros!(K)
 
     return K
 end
