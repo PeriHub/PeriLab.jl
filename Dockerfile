@@ -2,40 +2,40 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM julia:1.12
+FROM julia:1.12 AS build
+
+
+# Copy only necessary files for building
+COPY src ./PeriLab/src
+COPY Project.toml ./PeriLab/Project.toml
 
 WORKDIR /PeriLab
 
+# Install build dependencies
 RUN apt-get update \
-    && apt-get install -yq --no-install-recommends build-essential libxml2 \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get install -yq build-essential libxml2
 
-COPY Project.toml ./Project.toml
+ENV JULIA_CPU_TARGET="generic"
 
-RUN julia --project=. -e 'using Pkg; Pkg.instantiate()'
+RUN julia --project -e 'using Pkg; Pkg.add("JuliaC")'
+RUN julia --project -e 'import JuliaC; JuliaC.main(["--output-exe", "PeriLab", "--bundle", "build", "."])'
+# --trim=safe --experimental
 
-COPY src ./src
+#TODO: use alpine
+FROM debian:trixie-slim AS main
 
-# Install PeriLab itself as an app (pkg> app develop path) so `using
-# PeriLab` / `main()` work from the project path at /PeriLab.
-RUN julia --project=. -e 'using Pkg; Pkg.precompile(); Pkg.Apps.develop(path=".")'
+WORKDIR /app
 
-# Ensure `julia` is on PATH inside the container; load ~/.bashrc settings
-# (licenses, env vars) for interactive and `docker exec` sessions.
-RUN echo 'export PATH="$HOME/.julia/bin:$PATH"' >> ~/.bashrc \
-    && (source ~/.bashrc || true)
+# Create the destination directory
+RUN mkdir PeriLab
 
-# Thin wrapper so `docker exec <container> run-perilab <args>` is the whole
-# invocation -- the PeriLab App executable resolves on PATH and takes the
-# passed-through CLI args (e.g. an input deck path).
-RUN printf '#!/bin/bash\nexec PeriLab "$@"\n' \
-    > /usr/local/bin/run-perilab \
-    && chmod +x /usr/local/bin/run-perilab
+# Assuming /PeriLab/build is the build directory from previous stages
+COPY --from=build /PeriLab/build /app/PeriLab
+COPY Project.toml /app/Project.toml
 
-COPY docker-entrypoint.sh ./docker-entrypoint.sh
+# Move the build folder, set permissions, and delete the rest
+RUN chmod +x /app/PeriLab/bin/PeriLab
 
-# Keeps the container alive for `docker exec` -- this process does
-# nothing else. Each actual simulation run is a separate `docker exec
-# <container> run-perilab <args>` call, not this CMD.
-ENTRYPOINT ["./docker-entrypoint.sh"]
+ENV PATH="/app/PeriLab/bin:${PATH}"
+
 CMD ["sleep", "infinity"]

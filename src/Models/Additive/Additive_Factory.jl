@@ -9,9 +9,6 @@ using .....PeriLabExceptions: @abort
 using .....ModuleLoader: create_module_specifics, licensed_modules, optional_local_modules
 
 local_user_modules = optional_local_modules(@__DIR__, "additive_name")
-licensed = licensed_modules(@__MODULE__, "Additive")
-
-global all_modules = vcat(local_user_modules, licensed)
 
 for mod in local_user_modules
     include(mod["File"])
@@ -91,6 +88,10 @@ init_model(my_data_manager, [1, 2, 3], 1)
 function init_model(nodes::AbstractVector{Int64},
                     block::Int64)
     model_param = Data_Manager.get_properties(block, "Additive Model")
+
+    licensed = licensed_modules(@__MODULE__, "Additive")
+    all_modules = vcat(local_user_modules, licensed)
+
     mod = create_module_specifics(model_param["Additive Model"],
                                   all_modules,
                                   @__MODULE__,
@@ -100,7 +101,7 @@ function init_model(nodes::AbstractVector{Int64},
         return
     end
     Data_Manager.set_model_module(model_param["Additive Model"], mod)
-    mod.init_model(nodes, model_param, block)
+    Base.invokelatest(mod.init_model, nodes, model_param, block)
 end
 
 """

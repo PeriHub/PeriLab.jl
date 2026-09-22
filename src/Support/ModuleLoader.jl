@@ -376,7 +376,6 @@ Behavior:
   keeps working.
 """
 function check_license_on_startup()
-    @info "Hi"
     local_config = get(ENV, "LICENSED_MODULES_CONFIG", "")
     local_dir = get(ENV, "LICENSED_MODULES_DIR", "")
     if !isempty(local_config) || !isempty(local_dir)
@@ -452,6 +451,8 @@ function licensed_modules(target_module::Module,
                           wanted_type::Union{Nothing,AbstractString} = nothing;
                           force_refresh::Bool = false,
                           machine_id::AbstractString = gethostname())
+    DotEnv.load!()
+
     local_config = get(ENV, "LICENSED_MODULES_CONFIG", "")
     local_dir = get(ENV, "LICENSED_MODULES_DIR", "")
 
