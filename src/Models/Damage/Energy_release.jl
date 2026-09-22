@@ -136,7 +136,7 @@ function compute_model(nodes::AbstractVector{Int64},
                 critical_energy_value = critical_energy[iID]
             elseif inter_block_damage
                 critical_energy_value = inter_critical_energy[block_ids[iID],
-                                                              neighbor_block_id, block]
+                neighbor_block_id, block]
 
                 # param_name = "Interblock Critical Value " * string(block_ids[iID]) * "_" *
                 #              string(block_ids[neighborID])

@@ -9,24 +9,23 @@ using DataFrames
 
 @testset "ut_read_mesh" begin
     path = "./unit_tests/IO/"
-    params = Dict("Discretization" => Dict("Type" => "not supported"))
+    params = Dict("Discretization" => Dict("Type" => "not supported",
+                                           "Input Mesh File" => "example_mesh.txt"))
     @test_logs (:error,
-                "Discretization type not supported") @test_throws PeriLab.PeriLabError begin
-        PeriLab.IO.read_mesh(joinpath(path,
-                                      "example_mesh.txt"),
-                             params)
+                "No mesh importer for type 'not supported' exists.") @test_throws PeriLab.PeriLabError begin
+        PeriLab.IO.read_mesh(params, path)
     end
 
-    params = Dict("Discretization" => Dict("Type" => "Text File"))
-    @test_logs (:error, "File ./ does not exist") @test_throws PeriLab.PeriLabError begin
-        PeriLab.IO.read_mesh("./",
-                             params)
+    params = Dict("Discretization" => Dict("Type" => "Text File",
+                                           "Input Mesh File" => "example_mesh.txt"))
+    @test_logs (:error, "Mesh file ./example_mesh.txt does not exist") @test_throws PeriLab.PeriLabError begin
+        PeriLab.IO.read_mesh(params, "./")
     end
 
-    data = PeriLab.IO.read_mesh(joinpath(path, "example_mesh.txt"), params)
+    data = PeriLab.IO.read_mesh(params, path)
     if isnothing(data)
         path = "./test/unit_tests/IO/"
-        data = PeriLab.IO.read_mesh(joinpath(path, "example_mesh.txt"), params)
+        data = PeriLab.IO.read_mesh(params, path)
     end
     @test length(data[:, 1]) == 3
     @test data[!, "x"] == [-1.5, -0.5, 0.5]
@@ -42,8 +41,9 @@ using DataFrames
     @test collect(skipmissing(data[3, :])) == [2, 3, 4, 5, 6, 7]
     @test collect(skipmissing(data[4, :])) == [5, 6, 7, 8]
 
-    params = Dict("Discretization" => Dict("Type" => "Exodus"))
-    data = PeriLab.IO.read_mesh(joinpath(path, "example_mesh.g"), params)
+    params = Dict("Discretization" => Dict("Type" => "Exodus",
+                                           "Input Mesh File" => "example_mesh.g"))
+    data = PeriLab.IO.read_mesh(params, path)
     @test length(data[:, 1]) == 324
     @test data[!, "block_id"][1] == 1
     @test isapprox(data[!, "volume"][1], 0.03314393939393944, atol = 1e-15)
@@ -51,13 +51,17 @@ end
 
 @testset "ut_check_dataframe" begin
     path = "./unit_tests/IO/"
-    params = Dict("Discretization" => Dict("Type" => "Text File"))
-    data = PeriLab.IO.read_mesh(joinpath(path, "example_mesh.txt"), params)
-    data_wrong = PeriLab.IO.read_mesh(joinpath(path, "example_wrong_mesh.txt"), params)
+    params = Dict("Discretization" => Dict("Type" => "Text File",
+                                           "Input Mesh File" => "example_mesh.txt"))
+    data = PeriLab.IO.read_mesh(params, path)
+    params["Discretization"]["Input Mesh File"] = "example_wrong_mesh.txt"
+    data_wrong = PeriLab.IO.read_mesh(params, path)
     if isnothing(data)
         path = "./test/unit_tests/IO/"
-        data = PeriLab.IO.read_mesh(joinpath(path, "example_mesh.txt"), params)
-        data_wrong = PeriLab.IO.read_mesh(joinpath(path, "example_wrong_mesh.txt"), params)
+        params["Discretization"]["Input Mesh File"] = "example_mesh.txt"
+        data = PeriLab.IO.read_mesh(params, path)
+        params["Discretization"]["Input Mesh File"] = "example_wrong_mesh.txt"
+        data_wrong = PeriLab.IO.read_mesh(params, path)
     end
     PeriLab.IO.check_types_in_dataframe(data)
     @test_logs (:error,
@@ -636,14 +640,14 @@ end
     vertices::Vector{Vector{Float64}} = [[0, 0], [1, 0], [1, 1], [0, 1]]
     @test_logs (:error,
                 "Element type NotSupported currently not supported") @test_throws PeriLab.PeriLabError begin
-        PeriLab.IO.calculate_volume("NotSupported",
-                                    vertices)
+        PeriLab.IO.Mesh_Import.Mesh_Volume.calculate_volume("NotSupported",
+                                                            vertices)
     end
-    @test PeriLab.IO.calculate_volume("Quad4", vertices) == 1
+    @test PeriLab.IO.Mesh_Import.Mesh_Volume.calculate_volume("Quad4", vertices) == 1
     vertices = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [1, 1, 1]]
-    @test PeriLab.IO.calculate_volume("Tet4", vertices) == 1 / 6
+    @test PeriLab.IO.Mesh_Import.Mesh_Volume.calculate_volume("Tet4", vertices) == 1 / 6
     vertices = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [1, 1, 1]]
-    @test PeriLab.IO.calculate_volume("Wedge6", vertices) == 0.5
+    @test PeriLab.IO.Mesh_Import.Mesh_Volume.calculate_volume("Wedge6", vertices) == 0.5
     vertices = [
         [0, 0, 0],
         [1, 0, 0],
@@ -654,7 +658,7 @@ end
         [1, 1, 1],
         [0, 1, 1]
     ]
-    @test PeriLab.IO.calculate_volume("Hex8", vertices) == 1
+    @test PeriLab.IO.Mesh_Import.Mesh_Volume.calculate_volume("Hex8", vertices) == 1
 end
 
 @testset "ut_extrude_surface_mesh" begin

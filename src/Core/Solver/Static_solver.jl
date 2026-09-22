@@ -138,11 +138,11 @@ function init_solver(solver_options::Dict{Any,Any},
             start_u .= ls[1]
         else
             for idof in 1:dof
-                m = (ls[2 * idof] - ls[2 * idof - 1]) /
+                m = (ls[2*idof] - ls[2*idof-1]) /
                     (maximum(coor[:, idof]) - minimum(coor[:, idof]))
-                n = ls[2 * idof] - m * maximum(coor[:, idof])
+                n = ls[2*idof] - m * maximum(coor[:, idof])
                 start_u[:, idof] = (m .* coor[:, idof] .+ n) ./ nsteps .* final_time
-                n = ls[2 * idof] - m * maximum(coor[:, idof])
+                n = ls[2*idof] - m * maximum(coor[:, idof])
                 start_u[:, idof] = (m .* coor[:, idof] .+ n) ./ nsteps
             end
         end
@@ -306,7 +306,7 @@ function run_solver(solver_options::Dict{Any,Any},
         time += dt
         step_time += dt
         Data_Manager.set_current_time(time)
-        if idt % ceil(nsteps / 100) == 0
+        if idt % ceil(nsteps / 100) == 0 || idt == 1 || idt == nsteps + 1
             @info "Step: $idt / $(nsteps+1) [$(@sprintf("%.3e", time)) s]"
         end
         # if rank == 0 && !silent

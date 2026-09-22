@@ -3,6 +3,24 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """
+    Mesh_Volume
+
+Geometry helpers for calculating the volume (or area, in 2D) of the finite
+element shapes PeriLab supports. Moved out of `mesh_data.jl` into its own
+module so the mesh importers can reuse the same volume calculations.
+"""
+module Mesh_Volume
+
+using ....PeriLabExceptions: @abort
+using LinearAlgebra: det
+
+export calculate_volume
+export tetrahedron_volume
+export hex8_volume
+export wedge6_volume
+export area_of_polygon
+
+"""
     calculate_volume(element_type::String, vertices::Vector{Vector{Float64}})
 
 Calculate the volume of a element.
@@ -51,16 +69,6 @@ function tetrahedron_volume(tet_vertices::Vector{Vector{T}}) where {T<:Union{Int
     return volume
 end
 
-"""
-    tetrahedron_volume(tet_vertices)
-
-Calculate the volume of a tetrahedron.
-
-# Arguments
-- `tet_vertices`: The vertices of the tetrahedron.
-# Returns
-- `volume`: The volume of the tetrahedron.
-"""
 function tetrahedron_volume(tet_vertices::Matrix{T}) where {T<:Union{Int64,Float64}}
     mat = hcat(tet_vertices', ones(4))  # Augmenting matrix with ones in the fourth column
     volume = abs(det(mat) / 6)   # Using det function to calculate determinant
@@ -73,9 +81,9 @@ hex8_volume(hex_vertices)
 Calculate the volume of a hex.
 
 # Arguments
-- `hex_vertices`: The vertices of the wedge.
+- `hex_vertices`: The vertices of the hex.
 # Returns
-- `volume`: The volume of the wedge.
+- `volume`: The volume of the hex.
 """
 function hex8_volume(hex_vertices::Vector{Vector{T}}) where {T<:Union{Int64,Float64}}
     tets = [
@@ -94,16 +102,6 @@ function hex8_volume(hex_vertices::Vector{Vector{T}}) where {T<:Union{Int64,Floa
     return volume
 end
 
-"""
-hex8_volume(hex_vertices)
-
-Calculate the volume of a hex.
-
-# Arguments
-- `hex_vertices`: The vertices of the wedge.
-# Returns
-- `volume`: The volume of the wedge.
-"""
 function hex8_volume(hex_vertices::Matrix{T}) where {T<:Union{Int64,Float64}}
     tets = [
         [hex_vertices[:, 1], hex_vertices[:, 2], hex_vertices[:, 4], hex_vertices[:, 5]],
@@ -167,3 +165,5 @@ function area_of_polygon(vertices)
 
     return abs(area) / 2.0
 end
+
+end # module Mesh_Volume

@@ -9,7 +9,7 @@ include("Material_Models/Ordinary/Ordinary.jl")
 using TimerOutputs: @timeit
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
-using ...Solver_Manager: find_module_files, create_module_specifics
+using ....ModuleLoader: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "material_name")
 for mod in module_list
     include(mod["File"])

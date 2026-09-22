@@ -12,6 +12,7 @@ using PrettyTables
 using Dates
 
 using ..Data_Manager
+using ..PeriLabExceptions: PeriLabError
 
 export init_logging
 export get_current_git_info
@@ -181,6 +182,14 @@ Initialize the logging.
 """
 function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, size::Int64)
     global log_file
+
+    filedirectory = dirname(filename)
+    if isempty(filedirectory)
+        filedirectory = pwd()
+    end
+    if !isdir(filedirectory)
+        return
+    end
 
     log_file = set_log_file(filename, debug, rank, size)
 

@@ -121,6 +121,15 @@ function create_result_file(filename::AbstractString,
     return Dict("filename" => filename, "file" => exo_db, "type" => "Exodus")
 end
 
+function open_result_file(filename::AbstractString)
+    if !isfile(filename)
+        error("File $filename does not exist, cannot reuse it.")
+    end
+    @info "Reusing output " * filename
+    exo_db = ExodusDatabase(filename, "rw")
+    return Dict("filename" => filename, "file" => exo_db, "type" => "Exodus")
+end
+
 """
     paraview_specifics(dof::Int64)
 
@@ -399,7 +408,7 @@ function element_block_sizes(block_Id::AbstractVector{Int64},
         sizes[block] = count(==(block), block_Id)
     end
     for (block, bond_block) in bond_blocks
-        sizes[n_blocks + block] = length(bond_block)
+        sizes[n_blocks+block] = length(bond_block)
     end
     return sizes
 end
@@ -522,7 +531,7 @@ function init_results_in_exodus(exo::ExodusDatabase,
     end
     for (id, entry) in enumerate(qa_vector)
         id > 2 && break
-        qa[2 + id] = entry
+        qa[2+id] = entry
     end
     write_qa(exo, qa)
 
@@ -739,7 +748,7 @@ function write_nodal_results_in_exodus(exo::ExodusDatabase,
             var[1:n_write] .= field[1:n_write, output[varname]["dof"]]
         else
             var[1:n_write] .= field[1:n_write, output[varname]["i_dof"],
-                                    output[varname]["j_dof"]]
+            output[varname]["j_dof"]]
         end
         # interface does not work with Int yet 28//08//2023
         write_values(exo, NodalVariable, step, varname, var)

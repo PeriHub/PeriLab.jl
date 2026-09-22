@@ -5,9 +5,9 @@ module Bond_Filter
 using ...Parameter_Handling: get_bond_filters
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
+using ....ModuleLoader: find_module_files, create_module_specifics
 using DataFrames
 
-include("../Core/Module_inclusion/set_Modules.jl")
 global module_list = find_module_files(@__DIR__, "bond_filter_name")
 for mod in module_list
     include(mod["File"])
@@ -77,7 +77,7 @@ function apply_bond_filters(nlist::BondScalarState{Int64},
                 if get(filter, "Allow Contact", false) &&
                    any(x -> x == false, filter_flag[iID])
                     indices = findall(x -> x in setdiff(nlist[iID],
-                                                        nlist[iID][filter_flag[iID]]),
+                                                   nlist[iID][filter_flag[iID]]),
                                       nlist[iID])
                     nlist_filtered_ids[iID] = indices
                     for jID in indices

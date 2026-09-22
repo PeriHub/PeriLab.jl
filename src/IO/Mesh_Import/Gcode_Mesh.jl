@@ -1,74 +1,37 @@
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-# Gcode functions taken from MIT Project GcodeParser.jl https://github.com/janvorisek/GcodeParser.jl
+"""
+    Gcode_Mesh
 
-using Plots
+Gcode mesh importer. Parses a Gcode file and simulates the additive printing
+process to build the peridynamic mesh. The Gcode parsing logic is taken from the
+MIT licensed GcodeParser.jl project (https://github.com/janvorisek/GcodeParser.jl).
+"""
+module Gcode_Mesh
+
 using LinearAlgebra
 using LazyGrids
 using Rotations
 using CSV, DataFrames
-using ProgressBars
 using NearestNeighbors
-using ArgParse
+using ....Helpers: sub_in_place!, normalize_in_place!, progress_bar
+using ....Data_Manager
+using ....PeriLabExceptions: @abort
 
-function parse_commandline()
-    s = ArgParseSettings()
+export mesh_import_name
+export read_mesh
 
-    @add_arg_table! s begin
-        "--sampling", "-s"
-        help = "sampling"
-        arg_type = Float64
-        default = 0.2
-        "--width", "-w"
-        help = "width"
-        arg_type = Float64
-        default = 0.4
-        "--height", "-t"
-        help = "height"
-        arg_type = Float64
-        default = 0.2
-        "--plot_enabled", "-p"
-        help = "plot_enabled"
-        arg_type = Bool
-        default = true
-        "--start", "-a"
-        help = "start command"
-        arg_type = String
-        default = nothing
-        "--stop", "-o"
-        help = "stop command"
-        arg_type = String
-        default = nothing
-        "--end", "-e"
-        help = "end command"
-        arg_type = String
-        default = nothing
-        "--plot_moves", "-m"
-        help = "Plot non-extrusion (travel) moves in a separate color"
-        arg_type = Bool
-        default = true
-        "filename"
-        help = "filename"
-        required = true
-    end
+"""
+    mesh_import_name()
 
-    return parse_args(s)
-end
+Gives the mesh importer name. It is needed for comparison with the yaml input deck.
 
-function sub_in_place!(C::Vector{T}, A::Vector{T}, B::Vector{T}) where {T<:Number}
-    @assert length(C) == length(A) == length(B)
-
-    @inbounds for i in eachindex(A)
-        C[i] = A[i] - B[i]
-    end
-end
-
-function normalize_in_place!(B::Vector{T}, A::Vector{T}) where {T<:Number}
-    nrm = norm(A)
-    @inbounds for i in eachindex(A)
-        B[i] = A[i] / nrm
-    end
+# Returns
+- `name::String`: The name of the mesh importer.
+"""
+function mesh_import_name()
+    return "Gcode"
 end
 
 function distance_along_line(dir::Vector{Float64}, point_diff::Vector{Float64})
@@ -144,9 +107,9 @@ function parseLine(line::String,
     return matches
 end
 
-function parseFile(path::String, callbacks::Dict{String,Function}, dataObject)
+function parseFile(path::String, callbacks::Dict{String,Function}, dataObject, silent)
     lines = readlines(path)
-    iter = ProgressBar(eachindex(lines))
+    iter = progress_bar(0, length(lines) - 1, silent)
     for i in iter
         x = lines[i]
         if occursin(";", x)
@@ -156,7 +119,7 @@ function parseFile(path::String, callbacks::Dict{String,Function}, dataObject)
                 callbacks[command](dataObject, z)
                 continue
             else
-                command = x[2:end]
+                command = strip(x[2:end])
             end
             if haskey(callbacks, command)
                 if dataObject === nothing
@@ -202,13 +165,12 @@ function parseFile(path::String, callbacks::Dict{String,Function}, dataObject)
 end
 
 function write_mesh(gcode_file, commands_dict,
-                    pd_mesh = Dict())
+                    silent = false, pd_mesh = Dict())
 
     # create any data object
     # it will be passed as a second parameter to your callbacks
     # here simple dictionary is used to store information during the print
     myPrinter = Dict{String,Any}()
-    myPrinter["plot"] = Plots.plot()
     myPrinter["positioning"] = "absolute"
     myPrinter["x"] = 0.0
     myPrinter["y"] = 0.0
@@ -239,9 +201,8 @@ function write_mesh(gcode_file, commands_dict,
 
     # Setup a dictionary of callbacks for specified commands
     callbacks = Dict{String,Function}()
-    callbacks["G0"] = travel   # travel move (no extrusion)
-    callbacks["G1"] = linear   # linear move, extrudes if E present; also handles
-    # cylindrical (C-axis) rotation moves
+    callbacks["G0"] = move # just move the printhead
+    callbacks["G1"] = linear  # move the printhead linear
     callbacks["G2"] = arc_cw   # clockwise arc with extrusion
     callbacks["G3"] = arc_ccw  # counter-clockwise arc with extrusion
     callbacks["G4"] = dwell
@@ -267,26 +228,7 @@ function write_mesh(gcode_file, commands_dict,
     callbacks["G91"] = (cmds, dataobject) -> dataobject["positioning"] = "relative"
 
     # parse g-code file and simulate print using our own callbacks and data object
-    parseFile(gcode_file, callbacks, myPrinter)
-
-    # Only flush here if there is content that hasn't already been saved by a
-    # new_layer() call during parsing (e.g. the file doesn't end on a G0/new
-    # layer trigger). Otherwise this would overwrite the last real save with
-    # a blank plot, since new_layer() already resets the plot after saving.
-    if pd_mesh["plot_enabled"] && !isempty(pd_mesh["x_peri"])
-        myPrinter["plot"] = scatter!(myPrinter["plot"],
-                                     pd_mesh["x_peri"],
-                                     pd_mesh["y_peri"],
-                                     title = "Layer" * string(myPrinter["z"]),
-                                     xlabel = "X",
-                                     ylabel = "Y",
-                                     ma = 0.5,
-                                     ms = 1)
-        savefig(myPrinter["plot"], "Output/layer" * string(myPrinter["z"]) * ".svg")
-        myPrinter["plot"] = Plots.plot()
-        pd_mesh["x_peri"] = []
-        pd_mesh["y_peri"] = []
-    end
+    parseFile(gcode_file, callbacks, myPrinter, silent)
 
     return
 end
@@ -343,10 +285,11 @@ end
     resolve_extrusion!(dataobject, cmds) -> (is_extruding::Bool, de::Float64)
 
 Parse E from `cmds` if present, update `dataobject["e"]`, and report whether
-this move deposits material and by how much. `is_extruding` mirrors the
-long-standing (and slightly quirky) convention: true whenever the E word's
-own value is positive — the relative delta in G91 mode, or the absolute
-total in G90 mode.
+this move deposits material and by how much. `is_extruding` is true whenever
+the E word's own value is positive — the relative delta in G91 mode, or the
+absolute total in G90 mode. If no `E` word is present, `is_extruding` is
+`false` (there is currently no "no-E-in-file means every G1 extrudes"
+convention implemented — only explicit positive E values count).
 """
 function resolve_extrusion!(dataobject, cmds)
     e_idx = findfirst((p -> lowercase(p.first) == "e"), cmds)
@@ -364,22 +307,33 @@ function resolve_extrusion!(dataobject, cmds)
 end
 
 """
-    finalize_move!(dataobject, path_length, is_extruding, de) -> has_motion::Bool
+    advance_clock!(dataobject, path_length)
 
-Shared bookkeeping for any completed move (straight line, cylindrical
-C-rotation, or G2/G3 arc): updates total distance moved, advances the clock
-by `path_length / feedrate`, records whether this move was an extruding move
-with actual motion, and — if so — accumulates filament usage and appends the
-current position to `layer_points` (used for the next new_layer's up-vector
-estimate).
+Updates total distance moved and advances the clock by
+`path_length / feedrate`. Must be called *before* any `deposit_mesh_points!`/
+`trace_arc!` call for the same move, since mesh deposition reads
+`dataobject["time"]`/`["previous_time"]` to compute each point's
+Activation_Time — depositing before advancing the clock would timestamp
+points using the *previous* move's time window instead of the current one.
 """
-function finalize_move!(dataobject, path_length::Float64, is_extruding::Bool, de::Float64)
+function advance_clock!(dataobject, path_length::Float64)
     dataobject["distanceMoved"] += path_length
     dataobject["previous_time"] = dataobject["time"]
     if dataobject["f"] > 0.0
         dataobject["time"] += path_length / dataobject["f"] * 60
     end
+end
 
+"""
+    finalize_extrusion!(dataobject, is_extruding, path_length, de) -> has_motion::Bool
+
+Called *after* mesh deposition for a move: records whether this move was an
+extruding move with actual motion, and — if so — accumulates filament usage
+and appends the current position to `layer_points` (used for the next
+new_layer's up-vector estimate). Call `advance_clock!` first.
+"""
+function finalize_extrusion!(dataobject, is_extruding::Bool, path_length::Float64,
+                             de::Float64)
     has_motion = path_length > 1e-9
     dataobject["previous_extruding"] = is_extruding && has_motion
 
@@ -393,28 +347,8 @@ function finalize_move!(dataobject, path_length::Float64, is_extruding::Bool, de
 end
 
 # ---------------------------------------------------------------------------
-# Geometry tracing (shared by G2/G3 arcs and G1 C-axis cylindrical rotation)
+# Mesh deposition (shared by straight moves and each arc sub-chord)
 # ---------------------------------------------------------------------------
-
-"""
-    plot_segment!(dataobject, x1, y1, x2, y2; extruding)
-
-Draw one straight XY segment on `dataobject["plot"]`: black when `extruding`
-is true, gray when false. No-op if plotting is disabled.
-"""
-function plot_segment!(dataobject, x1, y1, x2, y2; extruding::Bool)
-    pd_mesh = dataobject["pd_mesh"]
-    if !pd_mesh["plot_enabled"]
-        return
-    end
-    if extruding
-        dataobject["plot"] = plot!(dataobject["plot"], [x1, x2], [y1, y2],
-                                   legend = false, lc = :black, lw = 1)
-    elseif pd_mesh["plot_moves"]
-        dataobject["plot"] = plot!(dataobject["plot"], [x1, x2], [y1, y2],
-                                   legend = false, lc = :gray60, lw = 0.8)
-    end
-end
 
 """
     deposit_mesh_points!(dataobject, sx, sy, sz, ex, ey, ez)
@@ -422,16 +356,23 @@ end
 Sample points along the straight chord from (`sx`,`sy`,`sz`) to
 (`ex`,`ey`,`ez`) at `pd_mesh["sampling"]` spacing, carrying over any leftover
 distance from the previous call via `pd_mesh["remaining_distance"]`, and push
-each sample to `pd_mesh["mesh_df"]` with its estimated activation time and
-orientation angles. Shared by straight moves and by each small sub-chord of
-an interpolated arc (see `trace_arc!`).
+each sample to `pd_mesh["mesh_df"]` with its estimated activation time,
+block id (when `pd_mesh["blocks"]` is set), and orientation angles. Shared by
+straight moves and by each small sub-chord of an interpolated arc (see
+`trace_arc!`) — replaces the former separate `write_pd_mesh`/
+`write_pd_mesh_arc` pair, so block classification and the time-to-activation
+guard now behave identically for lines and arcs.
 """
 function deposit_mesh_points!(dataobject, sx::Number, sy::Number, sz::Number,
                               ex::Number, ey::Number, ez::Number)
     pd_mesh = dataobject["pd_mesh"]
 
-    pd_mesh["start_point"] .= (sx, sy, sz)
-    pd_mesh["point"] .= (ex, ey, ez)
+    pd_mesh["start_point"][1] = sx
+    pd_mesh["start_point"][2] = sy
+    pd_mesh["start_point"][3] = sz
+    pd_mesh["point"][1] = ex
+    pd_mesh["point"][2] = ey
+    pd_mesh["point"][3] = ez
     sub_in_place!(pd_mesh["point_diff"], pd_mesh["point"], pd_mesh["start_point"])
     distance = norm(pd_mesh["point_diff"])
     if distance < 1e-12
@@ -485,22 +426,30 @@ function deposit_mesh_points!(dataobject, sx::Number, sy::Number, sz::Number,
         dist_along_line = distance_along_line(pd_mesh["dir"], pd_mesh["point_diff"])
         time_to_activation = v > 0 ? dist_along_line / v : 0.0
 
+        block_id = 1
+        if !isnothing(pd_mesh["blocks"])
+            global x = pd_mesh["point"][1]
+            global y = pd_mesh["point"][2]
+            global z = pd_mesh["point"][3]
+            for block in pd_mesh["blocks"]
+                if eval(Meta.parse(block[2]))
+                    block_id = block[1]
+                end
+            end
+        end
+
         push!(pd_mesh["mesh_df"],
               [
                   pd_mesh["point"][1],
                   pd_mesh["point"][2],
                   pd_mesh["point"][3],
-                  1,
+                  block_id,
                   pd_mesh["volume"],
                   time_to_activation + dataobject["previous_time"],
                   roll * 180 / pi,
                   pitch * 180 / pi,
                   yaw * 180 / pi
               ])
-        if pd_mesh["plot_enabled"]
-            push!(pd_mesh["x_peri"], pd_mesh["point"][1])
-            push!(pd_mesh["y_peri"], pd_mesh["point"][2])
-        end
     end
 end
 
@@ -510,13 +459,14 @@ end
               is_extruding) -> arc_len::Float64
 
 Subdivide the circular arc centered at (`cx`,`cy`) with radius `r`, sweeping
-from angle `θ1` to `θ2`, into `pd_mesh["sampling"]`-sized steps. Z is
-interpolated linearly from `start_z` to `end_z` across the steps. Draws each
-sub-segment (colored by `is_extruding`) and, when extruding and the current
-component is relevant, deposits mesh points along it. The final substep
-always lands exactly on (`end_x`,`end_y`,`end_z`) to avoid trig round-off
-drift. Leaves `dataobject["x"]`/`["y"]`/`["z"]` at the arc's true endpoint.
-Returns the total arc length traveled (0.0 for a degenerate/zero-length arc).
+from angle `θ1` to `θ2`, into `pd_mesh["sampling"]`-sized steps, interpolating
+Z linearly from `start_z` to `end_z`. Mesh points are only deposited (via
+`deposit_mesh_points!`) when `is_extruding` and the current component is
+relevant — for a non-extruding arc the subdivision loop is skipped entirely
+and the position simply jumps to the endpoint, since there is no plot to
+draw. The final substep always lands exactly on (`end_x`,`end_y`,`end_z`) to
+avoid trig round-off drift. Returns the total arc length traveled (0.0 for a
+degenerate/zero-length arc).
 """
 function trace_arc!(dataobject, cx::Float64, cy::Float64, r::Float64,
                     θ1::Float64, θ2::Float64,
@@ -531,28 +481,23 @@ function trace_arc!(dataobject, cx::Float64, cy::Float64, r::Float64,
 
     pd_mesh = dataobject["pd_mesh"]
     do_mesh = is_extruding && dataobject["relevant_component"]
-    n_steps = max(1, ceil(Int, arc_len / pd_mesh["sampling"]))
 
-    prev_x, prev_y, prev_z = start_x, start_y, start_z
-    for k in 1:n_steps
-        if k == n_steps
-            # Land exactly on the true endpoint on the last step, rather than
-            # accumulating trig round-off from repeated cos/sin evaluation.
-            nx, ny, nz = end_x, end_y, end_z
-        else
-            frac = k / n_steps
-            θ = θ1 + (θ2 - θ1) * frac
-            nx = cx + r * cos(θ)
-            ny = cy + r * sin(θ)
-            nz = start_z + (end_z - start_z) * frac
-        end
-
-        plot_segment!(dataobject, prev_x, prev_y, nx, ny; extruding = is_extruding)
-        if do_mesh
+    if do_mesh
+        n_steps = max(1, ceil(Int, arc_len / pd_mesh["sampling"]))
+        prev_x, prev_y, prev_z = start_x, start_y, start_z
+        for k in 1:n_steps
+            if k == n_steps
+                nx, ny, nz = end_x, end_y, end_z
+            else
+                frac = k / n_steps
+                θ = θ1 + (θ2 - θ1) * frac
+                nx = cx + r * cos(θ)
+                ny = cy + r * sin(θ)
+                nz = start_z + (end_z - start_z) * frac
+            end
             deposit_mesh_points!(dataobject, prev_x, prev_y, prev_z, nx, ny, nz)
+            prev_x, prev_y, prev_z = nx, ny, nz
         end
-
-        prev_x, prev_y, prev_z = nx, ny, nz
     end
 
     dataobject["x"], dataobject["y"], dataobject["z"] = end_x, end_y, end_z
@@ -564,13 +509,12 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    travel(cmds, dataobject)
+    move(cmds, dataobject)
 
 G0 callback: non-extruding travel move. Updates X/Y/Z/B/C per the current
-positioning mode, draws a travel-colored segment, and triggers a new-layer
-flush.
+positioning mode and triggers a new-layer flush.
 """
-function travel(cmds, dataobject)
+function move(cmds, dataobject)
     start_x, start_y, start_z = dataobject["x"], dataobject["y"], dataobject["z"]
     dataobject["previous_x"] = start_x
     dataobject["previous_y"] = start_y
@@ -587,9 +531,8 @@ function travel(cmds, dataobject)
                        (dataobject["y"] - start_y)^2 +
                        (dataobject["z"] - start_z)^2)
 
-    plot_segment!(dataobject, start_x, start_y, dataobject["x"], dataobject["y"];
-                  extruding = false)
-    finalize_move!(dataobject, path_length, false, 0.0)
+    advance_clock!(dataobject, path_length)
+    finalize_extrusion!(dataobject, false, path_length, 0.0)
     new_layer(dataobject)
 end
 
@@ -600,12 +543,13 @@ G1 callback. Two cases:
 - If the line contains a `C` word, it's treated as a cylindrical rotation
   about the origin: the current radius (distance from origin) is held fixed
   while C sweeps from its old angle to its new one, traced via `trace_arc!`
-  so the path follows the true arc rather than a straight chord.
+  so the deposited path follows the true arc rather than a straight chord.
 - Otherwise it's a straight-line move between the old and new X/Y/Z.
 
-Either way, extrusion is governed by an `E` word exactly as before, and
-bookkeeping (distance, time, filament, layer_points) is shared via
-`finalize_move!`.
+Extrusion is governed by an `E` word (see `resolve_extrusion!`). The clock is
+advanced via `advance_clock!` *before* any mesh deposition (so activation
+times are computed against this move's own time window), and filament/
+layer_points bookkeeping is finalized afterward via `finalize_extrusion!`.
 """
 function linear(cmds, dataobject)
     start_x, start_y, start_z = dataobject["x"], dataobject["y"], dataobject["z"]
@@ -625,7 +569,10 @@ function linear(cmds, dataobject)
 
     is_extruding, de = resolve_extrusion!(dataobject, cmds)
 
-    path_length = 0.0
+    # First determine the geometry (endpoint + path length) without touching
+    # the clock or the mesh yet. (if/else doesn't introduce its own scope in
+    # Julia, so r/θ1/θ2/end_x/end_y/end_z/path_length assigned below remain
+    # visible for the rest of the function.)
     if has_c
         # Cylindrical mapping: C rotates the current radius about the
         # origin. Radius and start Z are taken from the position *before*
@@ -637,36 +584,53 @@ function linear(cmds, dataobject)
         end_x = r * cos(θ2)
         end_y = r * sin(θ2)
         end_z = dataobject["z"]
-
-        path_length = trace_arc!(dataobject, 0.0, 0.0, r, θ1, θ2,
-                                 start_x, start_y, start_z,
-                                 end_x, end_y, end_z; is_extruding = is_extruding)
+        path_length = abs(θ2 - θ1) * r
     else
         end_x, end_y, end_z = dataobject["x"], dataobject["y"], dataobject["z"]
         dx = end_x - start_x
         dy = end_y - start_y
         dz = end_z - start_z
         path_length = sqrt(dx^2 + dy^2 + dz^2)
-        has_motion = path_length > 1e-9
-
-        plot_segment!(dataobject, start_x, start_y, end_x, end_y;
-                      extruding = is_extruding && has_motion)
-        if is_extruding && has_motion && dataobject["relevant_component"]
-            deposit_mesh_points!(dataobject, start_x, start_y, start_z,
-                                 end_x, end_y, end_z)
-        end
     end
 
-    finalize_move!(dataobject, path_length, is_extruding, de)
+    # Advance the clock BEFORE depositing mesh points: deposit_mesh_points!
+    # reads dataobject["time"]/["previous_time"] to compute each point's
+    # Activation_Time, so the clock must already reflect *this* move.
+    advance_clock!(dataobject, path_length)
+
+    if has_c
+        trace_arc!(dataobject, 0.0, 0.0, r, θ1, θ2,
+                   start_x, start_y, start_z,
+                   end_x, end_y, end_z; is_extruding = is_extruding)
+    elseif is_extruding && path_length > 1e-9 && dataobject["relevant_component"]
+        deposit_mesh_points!(dataobject, start_x, start_y, start_z,
+                             end_x, end_y, end_z)
+    end
+
+    finalize_extrusion!(dataobject, is_extruding, path_length, de)
+end
+
+function dwell(cmds, dataobject)
+    s = findfirst((x -> lowercase(x.first) == "s"), cmds)
+    p = findfirst((x -> lowercase(x.first) == "p"), cmds)
+    wait_time = 0.0
+    if s !== nothing
+        wait_time = parse(Float64, cmds[s].second)
+    end
+    if p !== nothing
+        wait_time = parse(Float64, cmds[p].second) / 1000
+    end
+    dataobject["previous_time"] = dataobject["time"]
+    dataobject["time"] += wait_time
 end
 
 """
     arc(cmds, dataobject, clockwise::Bool)
 
-G2/G3 arc callback. Computes the arc center and radius from either I/J
-(center offset from the start point) or R (radius, with center picked to
-match the requested rotation direction), then traces it via `trace_arc!`.
-Extrusion is governed by an `E` word exactly as in `linear`.
+G02/G03 arc interpolation with extrusion. Computes the arc center and radius
+from either I/J (center offset from the start point) or R (radius, with
+center chosen to match the requested rotation direction), then traces it via
+`trace_arc!`. Extrusion is governed by an `E` word exactly as in `linear`.
 """
 function arc(cmds, dataobject, clockwise::Bool)
     start_x, start_y, start_z = dataobject["x"], dataobject["y"], dataobject["z"]
@@ -674,6 +638,7 @@ function arc(cmds, dataobject, clockwise::Bool)
     dataobject["previous_y"] = start_y
     dataobject["previous_z"] = start_z
 
+    # --- Step 1: Parse I/J/R parameters ---
     has_r = false
     r_param = 0.0
     ic, jc = 0.0, 0.0
@@ -698,13 +663,14 @@ function arc(cmds, dataobject, clockwise::Bool)
 
     end_x, end_y, end_z = dataobject["x"], dataobject["y"], dataobject["z"]
 
+    # --- Step 2: Compute center and radius ---
     if has_r
         dx = end_x - start_x
         dy = end_y - start_y
         chord = sqrt(dx^2 + dy^2)
         if chord < 1e-12
             dataobject["previous_extruding"] = false
-            return
+            return  # zero-length chord, cannot compute arc
         end
         h = sqrt(max(0.0, r_param^2 - (chord / 2)^2))
         if clockwise
@@ -724,10 +690,13 @@ function arc(cmds, dataobject, clockwise::Bool)
     θ1 = atan(start_y - cy, start_x - cx)
     θ2 = atan(end_y - cy, end_x - cx)
 
-    # Correct signed angle direction: G02 (clockwise) must sweep with
-    # decreasing angle, G03 (counter-clockwise) with increasing angle.
+    # Correct signed angle direction.
+    # Clockwise (G02) motion must sweep with *decreasing* angle, so θ2 should
+    # end up <= θ1 (subtract 2π if it's currently greater). Counterclockwise
+    # (G03) must sweep with *increasing* angle, so θ2 should end up >= θ1
+    # (add 2π if it's currently smaller).
     if abs(θ2 - θ1) < 1e-12
-        θ2 = θ1 + π * (clockwise ? -1 : 1)
+        θ2 = θ1 + π * (clockwise ? -1.0 : 1.0)
     elseif clockwise
         θ2 > θ1 && (θ2 -= 2π)
     else
@@ -736,30 +705,22 @@ function arc(cmds, dataobject, clockwise::Bool)
 
     is_extruding, de = resolve_extrusion!(dataobject, cmds)
 
+    arc_len = abs(θ2 - θ1) * r
+
+    # Advance the clock BEFORE trace_arc! deposits mesh points (see note in
+    # linear()) — otherwise every arc point's Activation_Time is computed
+    # against the previous move's time window instead of this one's.
+    advance_clock!(dataobject, arc_len)
+
     path_length = trace_arc!(dataobject, cx, cy, r, θ1, θ2,
                              start_x, start_y, start_z,
                              end_x, end_y, end_z; is_extruding = is_extruding)
 
-    finalize_move!(dataobject, path_length, is_extruding, de)
+    finalize_extrusion!(dataobject, is_extruding, path_length, de)
 end
 
 arc_cw(cmds, dataobject) = arc(cmds, dataobject, true)
 arc_ccw(cmds, dataobject) = arc(cmds, dataobject, false)
-
-function dwell(cmds, dataobject)
-    s = findfirst((x -> lowercase(x.first) == "s"), cmds)
-    p = findfirst((x -> lowercase(x.first) == "p"), cmds)
-    wait_time = 0.0
-    if s !== nothing
-        wait_time = parse(Float64, cmds[s].second)
-    end
-    if p !== nothing
-        wait_time = parse(Float64, cmds[p].second) / 1000
-    end
-    dataobject["previous_time"] = dataobject["time"]
-    dataobject["time"] += wait_time
-    dataobject["previous_extruding"] = false
-end
 
 function switch_on(dataobject)
     dataobject["relevant_component"] = true
@@ -771,8 +732,7 @@ function finished(dataobject)
     dataobject["relevant_component"] = false
     dataobject["finsihed"] = true
 end
-
-function new_layer(dataobject, z = nothing)
+function new_layer(dataobject, z = -1)
     if dataobject["finsihed"] | !dataobject["relevant_component"]
         return
     end
@@ -782,31 +742,15 @@ function new_layer(dataobject, z = nothing)
     if size(dataobject["layer_points"])[1] != 0
         kdtree = KDTree(transpose(dataobject["layer_points"]))
         point = [dataobject["x"], dataobject["y"], dataobject["z"]]
-        if z !== nothing
+        if z != -1
             point = [dataobject["x"], dataobject["y"], z]
         end
         idx, dist = nn(kdtree, point)
         point_diff = point - dataobject["layer_points"][idx, :]
         dataobject["up_vector"] = point_diff ./ norm(point_diff)
-        dataobject["layer_points"] = Matrix{Float64}(undef, 0, 3)
-    end
-
-    if pd_mesh["plot_enabled"]
-        dataobject["plot"] = scatter!(dataobject["plot"],
-                                      pd_mesh["x_peri"],
-                                      pd_mesh["y_peri"],
-                                      title = "Layer" * string(dataobject["z"]),
-                                      xlabel = "X",
-                                      ylabel = "Y",
-                                      ma = 0.5,
-                                      ms = 1)
-        savefig(dataobject["plot"], "Output/layer" * string(dataobject["z"]) * ".svg")
-        dataobject["plot"] = Plots.plot()
-        pd_mesh["x_peri"] = []
-        pd_mesh["y_peri"] = []
+        dataobject["layer_points"] = Matrix{Int}(undef, 0, 3)
     end
 end
-
 function tait_bryant_angles(orientation_vector, up_vector = [0, 0, 1])
     forward = orientation_vector ./ norm(orientation_vector)
     right = cross(up_vector, forward)
@@ -821,31 +765,53 @@ function tait_bryant_angles(orientation_vector, up_vector = [0, 0, 1])
     return angles[1], angles[2], angles[3]
 end
 
-function main(gcode_file::String,
-              sampling::Float64,
-              width::Float64,
-              height::Float64,
-              plot_enabled::Bool,
-              plot_moves::Bool,
-              commands_dict)
-    @info "Read gcode file $gcode_file"
+"""
+    read_mesh(params::Dict, filename::String)
 
-    mkpath("Output")
+Reads a Gcode file and builds the peridynamic mesh by simulating the additive
+printing process. The result is cached to a text file so subsequent runs do not
+have to re-parse the gcode unless the user asks for it.
+
+# Arguments
+- `params::Dict`: The parameters.
+- `filename::String`: The path to the gcode file.
+# Returns
+- `mesh::DataFrame`: The mesh data as a DataFrame.
+"""
+function read_mesh(params::Dict, filename::String)
+    sampling = params["Discretization"]["Gcode"]["Sampling"]
+    scale = get(params["Discretization"]["Gcode"], "Scale", 1)
+    width = params["Discretization"]["Gcode"]["Width"]
+    height = params["Discretization"]["Gcode"]["Height"]
+    blocks = get(params["Discretization"]["Gcode"], "Blocks", nothing)
+
+    commands_dict = Dict{String,Any}()
+    commands_dict["Start"] = get(params["Discretization"]["Gcode"], "Start Command",
+                                 nothing)
+    commands_dict["Stop"] = get(params["Discretization"]["Gcode"], "Stop Command", nothing)
+    commands_dict["End"] = get(params["Discretization"]["Gcode"], "End Command", nothing)
+
+    if !isnothing(commands_dict["Start"])
+        if isnothing(commands_dict["Stop"])
+            @abort "Start command is set but no stop command"
+        end
+    end
+    if !isnothing(commands_dict["Stop"])
+        if isnothing(commands_dict["Start"])
+            @abort "Stop command is set but no start command"
+        end
+    end
+
+    @info "Read gcode file $filename"
+    @info "Params: Sampling $sampling, width $width and scale $scale "
 
     pd_mesh = Dict{String,Any}()
-    pd_mesh["plot_enabled"] = plot_enabled
-    pd_mesh["plot_moves"] = plot_moves
-    if plot_enabled
-        pd_mesh["x_peri"] = []
-        pd_mesh["y_peri"] = []
-    end
     pd_mesh["sampling"] = sampling
     pd_mesh["volume"] = sampling * width * height
-    pd_mesh["previous_time"] = 0
     pd_mesh["previous_extruding"] = 0
-    pd_mesh["remaining_distance"] = sampling / 2
     pd_mesh["width"] = width
-    pd_mesh["height"] = height
+    pd_mesh["remaining_distance"] = sampling / 2
+    pd_mesh["blocks"] = blocks
 
     pd_mesh["mesh_df"] = DataFrame(x = Float64[],
                                    y = Float64[],
@@ -862,32 +828,23 @@ function main(gcode_file::String,
     pd_mesh["point_diff"] = zeros(3)
 
     @info "Writing mesh"
-    write_mesh(gcode_file, commands_dict, pd_mesh)
+    write_mesh(filename, commands_dict, Data_Manager.get_silent(), pd_mesh)
 
-    txt_file = joinpath("Output", split(replace(gcode_file, ".gcode" => ".txt"), "/")[end])
-    num_points = size(pd_mesh["mesh_df"], 1)
-    @info "Number of points: $(num_points)"
-    if num_points == 0
-        @info "No points to write. Exiting."
-        return
+    if size(pd_mesh["mesh_df"], 1) == 0
+        @abort "No points found in the gcode file, maybe the gcode format is not supported?"
+        return nothing
     end
+    @info "Number of points: $(size(pd_mesh["mesh_df"],1))"
     @info "Printing time: $(maximum(pd_mesh["mesh_df"].Activation_Time)) seconds"
-    write(txt_file, "header: x y z block_id volume Activation_Time\n")
+
+    txt_file = replace(filename, ".gcode" => ".txt")
+    write(txt_file,
+          "header: x y z block_id volume Activation_Time Angles_x Angles_y Angles_z\n")
     CSV.write(txt_file, pd_mesh["mesh_df"]; delim = ' ', append = true)
 
-    @info "Finished"
+    @info "Finished reading mesh data"
+
+    return pd_mesh["mesh_df"]
 end
 
-parsed_args = parse_commandline()
-
-commands_dict = Dict{String,Any}()
-commands_dict["Start"] = parsed_args["start"]
-commands_dict["Stop"] = parsed_args["stop"]
-commands_dict["End"] = parsed_args["end"]
-
-main(parsed_args["filename"],
-     parsed_args["sampling"],
-     parsed_args["width"],
-     parsed_args["height"],
-     parsed_args["plot_enabled"],
-     parsed_args["plot_moves"], commands_dict)
+end # module Gcode_Mesh

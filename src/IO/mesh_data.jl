@@ -12,8 +12,8 @@ import Gmsh: gmsh
 using ..Data_Manager
 include("bond_filter.jl")
 import .Bond_Filter: apply_bond_filters
-include("gcode.jl")
-include("volume.jl")
+# include("volume.jl")
+# include("gcode.jl")
 using ..Helpers: fastdot, get_nearest_neighbors, find_inverse_bond_id
 using ..Logging_Module: print_table
 using ..Parameter_Handling: get_mesh_name, get_header, get_node_sets,
@@ -21,11 +21,34 @@ using ..Parameter_Handling: get_mesh_name, get_header, get_node_sets,
                             get_mesh_scaling
 using ..Geometry: bond_geometry!
 
-#export read_mesh
 #export load_mesh_and_distribute
 export init_data
 
 const TOLERANCE = 1.0e-14
+
+"""
+    csv_reader(filename::String)
+
+Read csv and return it as a DataFrame.
+
+# Arguments
+- `filename::String`: The path to the mesh file.
+# Returns
+- `csvData::DataFrame`: The csv data a DataFrame.
+"""
+function csv_reader(filename::String)
+    header_line, header = get_header(filename)
+    return CSV.read(filename,
+                    DataFrame;
+                    delim = " ",
+                    ignorerepeated = true,
+                    header = header,
+                    skipto = header_line + 1,
+                    comment = "#",)
+end
+
+include("Mesh_Import/Mesh_Import.jl")
+using .Mesh_Import: read_mesh
 
 """
     init_data(params::Dict, path::String, comm::MPI.Comm)
@@ -59,8 +82,7 @@ function init_data(params::Dict,
                                              topology,
                                              element_distribution=load_and_evaluate_mesh(params,
                                                                                          path,
-                                                                                         size,
-                                                                                         Data_Manager.get_silent())
+                                                                                         size)
             if !isnothing(element_distribution)
                 fem_active = true
             end
@@ -593,343 +615,6 @@ function read_external_topology(filename::String)
 end
 
 """
-    csv_reader(filename::String)
-
-Read csv and return it as a DataFrame.
-
-# Arguments
-- `filename::String`: The path to the mesh file.
-# Returns
-- `csvData::DataFrame`: The csv data a DataFrame.
-"""
-function csv_reader(filename::String)
-    header_line, header = get_header(filename)
-    return CSV.read(filename,
-                    DataFrame;
-                    delim = " ",
-                    ignorerepeated = true,
-                    header = header,
-                    skipto = header_line + 1,
-                    comment = "#",)
-end
-
-"""
-    read_mesh(filename::String, params::Dict)
-
-Read mesh data from a file and return it as a DataFrame.
-
-# Arguments
-- `filename::String`: The path to the mesh file.
-- `params::Dict`: The input parameters.
-# Returns
-- `mesh::DataFrame`: The mesh data as a DataFrame.
-"""
-function read_mesh(filename::String, params::Dict)
-    if !isfile(filename)
-        @abort "File $filename does not exist"
-        return
-    end
-
-    @info "Read mesh file $filename"
-
-    if params["Discretization"]["Type"] == "Exodus"
-        exo = ExodusDatabase(filename, "r")
-
-        coords = read_coordinates(exo)
-        mesh_df = DataFrame(x = Float64[],
-                            y = Float64[],
-                            z = Float64[],
-                            volume = Float64[],
-                            block_id = Int64[])
-        block_ids = read_ids(exo, Block)
-
-        nodal_var_names = read_names(exo, NodalVariable)
-        elem_var_names = read_names(exo, ElementVariable)
-        num_nodal_var = length(nodal_var_names)
-        num_elem_var = length(elem_var_names)
-        if num_nodal_var > 0
-            @info "Found $(num_nodal_var) nodal variables: $(nodal_var_names)"
-        end
-        if num_elem_var > 0
-            @info "Found $(num_elem_var) element variables: $(elem_var_names)"
-        end
-
-        nodals = Dict()
-        for nodal_var_name in nodal_var_names
-            nodals[nodal_var_name] = read_values(exo, NodalVariable, 1, 1, nodal_var_name)
-            nodals[nodal_var_name * "_sorted"] = []
-        end
-
-        for (iID, block_id) in enumerate(block_ids)
-            block = read_block(exo, block_id)
-            block_id_map = Exodus.read_block_connectivity(exo,
-                                                          block_id,
-                                                          block.num_nodes_per_elem *
-                                                          block.num_elem)
-            if block.elem_type == "TETRA"
-                for i in 1:(block.num_elem)
-                    indices = (block.num_nodes_per_elem * (i - 1) + 1):(block.num_nodes_per_elem * i)
-                    node_ids = block_id_map[indices]
-                    vertices = coords[:, node_ids]
-                    center = sum(vertices, dims = 2) / size(vertices)[2]
-                    volume = tetrahedron_volume(vertices)
-                    push!(mesh_df,
-                          (x = center[1],
-                           y = center[2],
-                           z = center[3],
-                           volume = volume,
-                           block_id = Int64(block_id)))
-                end
-            elseif block.elem_type == "HEX8"
-                for i in 1:(block.num_elem)
-                    indices = (block.num_nodes_per_elem * (i - 1) + 1):(block.num_nodes_per_elem * i)
-                    node_ids = block_id_map[indices]
-                    vertices = coords[:, node_ids]
-                    center = sum(vertices, dims = 2) / size(vertices)[2]
-                    volume = hex8_volume(vertices)
-                    push!(mesh_df,
-                          (x = center[1],
-                           y = center[2],
-                           z = center[3],
-                           volume = volume,
-                           block_id = Int64(block_id)))
-                end
-            elseif block.elem_type == "SPHERE"
-                volume_nodal_name = nothing
-                for name in nodal_var_names
-                    if lowercase(name) == "volume"
-                        volume_nodal_name = name
-                        break
-                    end
-                end
-                if volume_nodal_name === nothing
-                    @abort "Volume is missing. Please define a 'Volume' for each point in the mesh file."
-                end
-
-                for i in 1:(block.num_elem)
-                    node_ids = block_id_map[i]
-                    vertices = coords[:, node_ids]
-                    volume = nodals[volume_nodal_name][node_ids]
-                    push!(mesh_df,
-                          (x = vertices[1],
-                           y = vertices[2],
-                           z = vertices[3],
-                           volume = volume,
-                           block_id = Int64(block_id)))
-                    for nodal_var_name in nodal_var_names
-                        append!(nodals[nodal_var_name * "_sorted"],
-                                nodals[nodal_var_name][node_ids])
-                    end
-                end
-            else
-                @abort "Element type $(block.elem_type) not supported"
-            end
-        end
-        for nodal_var_name in nodal_var_names
-            mesh_df[!, nodal_var_name] = nodals[nodal_var_name * "_sorted"]
-        end
-
-        close(exo)
-        coords = nothing
-        block_ids = nothing
-
-        return mesh_df
-
-    elseif params["Discretization"]["Type"] == "Abaqus"
-        mesh = abaqus_read_mesh(filename; verbose = false)
-
-        nodes = mesh["nodes"]
-        elements = mesh["elements"]
-        element_sets = mesh["element_sets"]
-        @assert length(element_sets) > 0
-        element_types = mesh["element_types"]
-
-        dof = 2
-        nodes_vector = collect(values(nodes))
-        if size(nodes_vector[1])[1] == 3
-            dof = 3
-        end
-        @info "Abaqus mesh with $dof DOF"
-
-        num_elements = length(elements)
-        mesh_df = ifelse(dof == 2,
-                         DataFrame(x = Array{Float64,1}(undef, num_elements),
-                                   y = Array{Float64,1}(undef, num_elements),
-                                   volume = Array{Float64,1}(undef, num_elements),
-                                   block_id = Array{Int64,1}(undef, num_elements)),
-                         DataFrame(x = Array{Float64,1}(undef, num_elements),
-                                   y = Array{Float64,1}(undef, num_elements),
-                                   z = Array{Float64,1}(undef, num_elements),
-                                   volume = Array{Float64,1}(undef, num_elements),
-                                   block_id = Array{Int64,1}(undef, num_elements)))
-
-        id = 1
-        block_id = 1
-        # element_written = Array{Int64,1}(undef, num_elements)
-        element_written = []
-        nsets = Dict{String,Vector{Int64}}()
-
-        nset_names = []
-
-        for boundary_condtion in keys(params["Boundary Conditions"])
-            if haskey(params["Boundary Conditions"][boundary_condtion], "Node Set")
-                push!(nset_names,
-                      params["Boundary Conditions"][boundary_condtion]["Node Set"])
-            end
-        end
-        nset_names = unique(nset_names)
-
-        # sort element_sets by length
-        # element_sets_keys = sort(collect(keys(element_sets)), by=x -> length(element_sets[x]), rev=true)
-        element_sets_keys = collect(keys(element_sets))
-        for nset in nset_names
-            if nset in element_sets_keys
-                deleteat!(element_sets_keys, findfirst(x -> x == nset, element_sets_keys))
-                push!(element_sets_keys, nset)
-            end
-        end
-        block_names = []
-        for key in element_sets_keys
-            element_set = element_sets[key]
-            ns_nodes = Array{Int64,1}(undef, length(element_set))
-            nset_only = true
-            for (jID, element_id) in enumerate(element_set)
-                if element_id in element_written
-                    # push!(ns_nodes, findfirst(x -> x == element_id, element_written))
-                    if key in nset_names
-                        ns_nodes[jID] = findfirst(x -> x == element_id, element_written)
-                    end
-                    continue
-                end
-                nset_only = false
-                ns_nodes[jID] = id
-                node_ids = elements[element_id]
-                element_type = element_types[element_id]
-                vertices = [nodes[node_id] for node_id in node_ids]
-                volume = calculate_volume(string(element_type), vertices)
-                center = sum(vertices) / length(vertices)
-                if dof == 2
-                    mesh_df[id, :] = [center[1], center[2], volume, block_id]
-                else
-                    mesh_df[id, :] = [center[1], center[2], center[3], volume, block_id]
-                end
-                # element_written[id] = element_id
-                push!(element_written, element_id)
-                id += 1
-            end
-            if key in nset_names
-                nsets[key] = ns_nodes
-            end
-            if !nset_only
-                block_id += 1
-                push!(block_names, key)
-            end
-        end
-        @info "Found $(block_id-1) block(s)"
-        @info "Blocks: $block_names"
-        @info "Found $(length(nsets)) node set(s)"
-        if length(nsets) > 0
-            @info "NodeSets: $(keys(nsets))"
-        end
-
-        mesh = nothing
-        nodes = nothing
-        elements = nothing
-        element_sets = nothing
-
-        return mesh_df, nsets
-
-    elseif params["Discretization"]["Type"] == "Gmsh"
-        gmsh.initialize()
-
-        gmsh.open(filename)
-
-        dof = 3 # only 3d supported currntly
-
-        if gmsh.model.mesh.getElements(3)[2] == []
-            dof = 2
-        end
-
-        num_elements = length(gmsh.model.mesh.getElements(dof)[2][1])
-
-        mesh_df = ifelse(dof == 2,
-                         DataFrame(x = Array{Float64,1}(undef, num_elements),
-                                   y = Array{Float64,1}(undef, num_elements),
-                                   volume = Array{Float64,1}(undef, num_elements),
-                                   block_id = Array{Int64,1}(undef, num_elements)),
-                         DataFrame(x = Array{Float64,1}(undef, num_elements),
-                                   y = Array{Float64,1}(undef, num_elements),
-                                   z = Array{Float64,1}(undef, num_elements),
-                                   volume = Array{Float64,1}(undef, num_elements),
-                                   block_id = Array{Int64,1}(undef, num_elements)))
-
-        ids = gmsh.model.getPhysicalGroups(3)
-        no_groups = false
-        if ids == []
-            ids = [1]
-            no_groups = true
-        end
-        node_id = 1
-        block_id = 0
-        block_names = []
-        # nsets = Dict{String,Vector{Int64}}()
-        for id in ids
-            # ns_nodes = []
-            if no_groups
-                block_id = 1
-            else
-                block_id = Int64(id[2])
-            end
-            name = gmsh.model.getPhysicalName(dof, block_id)
-            push!(block_names, name)
-            if no_groups
-                element_tags = gmsh.model.mesh.gmsh.model.mesh.getElements(dof)[2][1]
-            else
-                element_tags = gmsh.model.mesh.gmsh.model.mesh.getElements(dof, block_id)[2][1]
-            end
-            for element_tag in element_tags
-                element = gmsh.model.mesh.getElement(element_tag)
-                node_tags = element[2]
-                nodes = []
-                for node_tag in node_tags
-                    node = gmsh.model.mesh.getNode(node_tag)[1]
-                    push!(nodes, node)
-                end
-                # @info nodes
-                center = sum(nodes) / length(nodes)
-                if dof == 2
-                    volume = area_of_polygon(nodes)
-                    mesh_df[node_id, :] = [center[1], center[2], volume, block_id]
-                else
-                    volume = tetrahedron_volume(nodes)
-                    mesh_df[node_id,
-                    :] = [
-                        center[1],
-                        center[2],
-                        center[3],
-                        volume,
-                        block_id
-                    ]
-                end
-                # push!(ns_nodes, node_id)
-                node_id += 1
-            end
-            # nsets[name] = ns_nodes
-        end
-        @info "Found $(block_id) block(s)"
-        @info "Blocks: $block_names"
-        # @info "Found $(length(nsets)) node set(s)"
-        # @info "NodeSets: $(keys(nsets))"
-
-        return mesh_df# nsets
-    elseif params["Discretization"]["Type"] in ["Text File", "Gcode"]
-        return csv_reader(filename)
-    else
-        @abort "Discretization type not supported"
-    end
-end
-
-"""
     set_dof(mesh::DataFrame)
 
 Set the degrees of freedom (DOF) for the mesh elements.
@@ -999,26 +684,23 @@ Load and evaluate the mesh data.
 """
 function load_and_evaluate_mesh(params::Dict,
                                 path::String,
-                                ranksize::Int64,
-                                silent::Bool)
-    filename = joinpath(path, get_mesh_name(params))
+                                ranksize::Int64)
     if params["Discretization"]["Type"] == "Abaqus"
-        @timeit "read_mesh" mesh, nsets=read_mesh(filename, params)
+        @timeit "read_mesh" mesh, nsets=read_mesh(params, path)
     elseif params["Discretization"]["Type"] == "Gmsh"
-        @timeit "read_mesh" mesh=read_mesh(filename, params)
+        @timeit "read_mesh" mesh=read_mesh(params, path)
         nsets = get_node_sets(params, path, mesh)
     elseif params["Discretization"]["Type"] == "Gcode"
+        filename = joinpath(path, get_mesh_name(params))
         txt_file = replace(filename, ".gcode" => ".txt")
-        @info txt_file
-        if params["Discretization"]["Gcode"]["Overwrite Mesh"] || !isfile(txt_file)
-            mesh = get_gcode_mesh(filename, params, silent)
-        else
-            mesh = read_mesh(txt_file, params)
+        if !params["Discretization"]["Gcode"]["Overwrite Mesh"] && isfile(txt_file)
+            params["Discretization"]["Type"] == "Text File"
         end
+        @timeit "read_mesh" mesh = read_mesh(params, path)
         nsets = get_node_sets(params, path, mesh)
     else
         @debug "Read node sets"
-        @timeit "read_mesh" mesh=read_mesh(filename, params)
+        @timeit "read_mesh" mesh=read_mesh(params, path)
         nsets = get_node_sets(params, path, mesh)
     end
     nnodes = size(mesh, 1) + 1
