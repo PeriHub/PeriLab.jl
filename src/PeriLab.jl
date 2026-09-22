@@ -63,7 +63,7 @@ using .ModuleLoader
 using .Solver_Manager
 using .Parameter_Handling: get_initial_time
 
-PERILAB_VERSION = "2.2.5"
+PERILAB_VERSION = "2.2.6"
 
 export main
 
