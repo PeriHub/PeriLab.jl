@@ -345,9 +345,9 @@ function get_Hooke_matrix(parameter::Dict,
         aniso_matrix[2, 3] = (nu_zy + nu_zx * nu_xy) / (E_z * E_x * delta)
         aniso_matrix[3, 2] = (nu_yz + nu_xz * nu_yx) / (E_x * E_y * delta)
 
-        aniso_matrix[4, 4] = 2 * g_yz
-        aniso_matrix[5, 5] = 2 * g_xz
-        aniso_matrix[6, 6] = 2 * g_xy
+        aniso_matrix[4, 4] = g_yz
+        aniso_matrix[5, 5] = g_xz
+        aniso_matrix[6, 6] = g_xy
 
         return get_2D_Hooke_matrix(aniso_matrix, symmetry, dof)
     elseif occursin("transverse isotropic", symmetry)
@@ -381,9 +381,9 @@ function get_Hooke_matrix(parameter::Dict,
 
             aniso_matrix[3, 3] = delta + 2 * g_yz
 
-            aniso_matrix[4, 4] = 2 * g_yz
-            aniso_matrix[5, 5] = 2 * g_xy
-            aniso_matrix[6, 6] = 2 * g_xy
+            aniso_matrix[4, 4] = g_yz
+            aniso_matrix[5, 5] = g_xy
+            aniso_matrix[6, 6] = g_xy
 
             return aniso_matrix
         elseif occursin("plane strain", symmetry)
@@ -404,7 +404,7 @@ function get_Hooke_matrix(parameter::Dict,
             aniso_matrix[1, 2] = ((nu_yx * (1 + nu_yz)) / D) * E_x
             aniso_matrix[2, 1] = ((nu_xy * (1 + nu_yz)) / D) * E_y
 
-            aniso_matrix[3, 3] = 2 * g_xy
+            aniso_matrix[3, 3] = g_xy
 
             return aniso_matrix
         elseif occursin("plane stress", symmetry)
@@ -423,7 +423,7 @@ function get_Hooke_matrix(parameter::Dict,
             aniso_matrix[1, 2] = (nu_yx * E_x) / (1 - nu_xy * nu_yx)
             aniso_matrix[2, 1] = (nu_xy * E_y) / (1 - nu_xy * nu_yx)
 
-            aniso_matrix[3, 3] = 2 * g_xy
+            aniso_matrix[3, 3] = g_xy
 
             return aniso_matrix
         else
@@ -452,9 +452,9 @@ function get_Hooke_matrix(parameter::Dict,
             matrix[3, 1] = nu * temp
             matrix[2, 3] = nu * temp
             matrix[3, 2] = nu * temp
-            matrix[4, 4] = (1 - 2 * nu) * temp
-            matrix[5, 5] = (1 - 2 * nu) * temp
-            matrix[6, 6] = (1 - 2 * nu) * temp
+            matrix[4, 4] = G
+            matrix[5, 5] = G
+            matrix[6, 6] = G
             return matrix
         elseif occursin("plane strain", symmetry)
             matrix = get_MMatrix(9)
@@ -792,7 +792,13 @@ end
 """
 function get_strain(stress_NP1::Matrix{Float64},
                     hooke_matrix::AbstractMatrix{Float64})
-    return voigt_to_matrix(hooke_matrix' * matrix_to_voigt(stress_NP1))
+    strain_voigt = hooke_matrix' * matrix_to_voigt(stress_NP1)
+    # hooke_matrix is a compliance matrix here (see calculate_strain), so this product
+    # is engineering shear strain (gamma = 2*epsilon) in the Voigt shear slots, the
+    # standard Voigt compliance convention. voigt_to_matrix expects tensor strain
+    # (undoubled), so halve the shear entries back before the reverse conversion.
+    scale = length(strain_voigt) == 3 ? (1.0, 1.0, 0.5) : (1.0, 1.0, 1.0, 0.5, 0.5, 0.5)
+    return voigt_to_matrix(strain_voigt .* scale)
 end
 
 function compute_Piola_Kirchhoff_stress!(pk_stress::AbstractMatrix{Float64},

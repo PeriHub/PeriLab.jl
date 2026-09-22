@@ -16,12 +16,15 @@
                 "Representative Young's modulus is missing.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.Material_Basis.init_local_damping_due_to_damage(collect(1:2),
                                                                                Dict(),
-                                                                               Dict("Local Damping" => Dict()))
+                                                                               Dict("Local Damping" =>
+                                                                                        Dict()))
     end
     @test_logs (:error, "Damping coefficient is missing.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.Material_Basis.init_local_damping_due_to_damage(collect(1:2),
                                                                                Dict(),
-                                                                               Dict("Local Damping" => Dict("Representative Young's modulus" => 0)))
+                                                                               Dict("Local Damping" =>
+                                                                                        Dict("Representative Young's modulus" =>
+                                                                                                 0)))
     end
 end
 
@@ -77,16 +80,16 @@ end
     expected_force_densities = copy(force_densities)
     for iID in nodes
         expected_force_densities[iID,
-        :] .+= transpose(sum(bond_damage[iID] .*
-                                                           mapreduce(permutedims, vcat,
-                                                                     bond_force[iID]) .*
-                                                           volume[nlist[iID]],
-                                                           dims = 1))
+                                 :] .+= transpose(sum(bond_damage[iID] .*
+                                                      mapreduce(permutedims, vcat,
+                                                                bond_force[iID]) .*
+                                                      volume[nlist[iID]],
+                                                      dims = 1))
         expected_force_densities[nlist[iID],
-        :] .-= bond_damage[iID] .*
-                                                    mapreduce(permutedims, vcat,
-                                                              bond_force[iID]) .*
-                                                    volume[iID]
+                                 :] .-= bond_damage[iID] .*
+                                        mapreduce(permutedims, vcat,
+                                                  bond_force[iID]) .*
+                                        volume[iID]
     end
 
     PeriLab.Solver_Manager.Material_Basis.distribute_forces!(force_densities, nodes, nlist,
@@ -111,25 +114,33 @@ end
     end
     @test_logs (:error,
                 "Flaw Function needs an entry ''Function''.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => false)),
+        PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" =>
+                                                                     Dict("Active" => false)),
                                                             Vector{Float64}([
                                                                                 1,
                                                                                 2
                                                                             ]),
                                                             stress)
     end
-    @test PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => false,
-                                                                                           "Function" => "Pre-defined")),
+    @test PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" =>
+                                                                       Dict("Active" =>
+                                                                                false,
+                                                                            "Function" => "Pre-defined")),
                                                               Vector{Float64}([1, 2]),
                                                               stress) == stress
     @test_logs (:error,
                 "Flaw Magnitude should be between 0 and 1") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => true,
-                                                                                         "Function" => "Pre-defined",
-                                                                                         "Flaw Location X" => 1.1,
-                                                                                         "Flaw Location Y" => 1.1,
-                                                                                         "Flaw Magnitude" => 1.3,
-                                                                                         "Flaw Size" => 0.2)),
+        PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" =>
+                                                                     Dict("Active" => true,
+                                                                          "Function" => "Pre-defined",
+                                                                          "Flaw Location X" =>
+                                                                              1.1,
+                                                                          "Flaw Location Y" =>
+                                                                              1.1,
+                                                                          "Flaw Magnitude" =>
+                                                                              1.3,
+                                                                          "Flaw Size" =>
+                                                                              0.2)),
                                                             Vector{Float64}([
                                                                                 1,
                                                                                 2
@@ -138,12 +149,17 @@ end
     end
     @test_logs (:error,
                 "Flaw Magnitude should be between 0 and 1") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => true,
-                                                                                         "Function" => "Pre-defined",
-                                                                                         "Flaw Location X" => 1.1,
-                                                                                         "Flaw Location Y" => 1.1,
-                                                                                         "Flaw Magnitude" => -1.3,
-                                                                                         "Flaw Size" => 0.2)),
+        PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" =>
+                                                                     Dict("Active" => true,
+                                                                          "Function" => "Pre-defined",
+                                                                          "Flaw Location X" =>
+                                                                              1.1,
+                                                                          "Flaw Location Y" =>
+                                                                              1.1,
+                                                                          "Flaw Magnitude" =>
+                                                                              -1.3,
+                                                                          "Flaw Size" =>
+                                                                              0.2)),
                                                             Vector{Float64}([
                                                                                 1,
                                                                                 2
@@ -151,12 +167,18 @@ end
                                                             stress)
     end
 
-    @test isapprox(PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => true,
-                                                                                                    "Function" => "Pre-defined",
-                                                                                                    "Flaw Location X" => 1.1,
-                                                                                                    "Flaw Location Y" => 1.1,
-                                                                                                    "Flaw Magnitude" => 0.3,
-                                                                                                    "Flaw Size" => 0.2)),
+    @test isapprox(PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" =>
+                                                                                Dict("Active" =>
+                                                                                         true,
+                                                                                     "Function" => "Pre-defined",
+                                                                                     "Flaw Location X" =>
+                                                                                         1.1,
+                                                                                     "Flaw Location Y" =>
+                                                                                         1.1,
+                                                                                     "Flaw Magnitude" =>
+                                                                                         0.3,
+                                                                                     "Flaw Size" =>
+                                                                                         0.2)),
                                                                        Vector{Float64}([
                                                                                            1,
                                                                                            2
@@ -164,13 +186,20 @@ end
                                                                        stress),
                    5.29999999)
 
-    @test isapprox(PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => true,
-                                                                                                    "Function" => "Pre-defined",
-                                                                                                    "Flaw Location X" => 1.1,
-                                                                                                    "Flaw Location Y" => 1.1,
-                                                                                                    "Flaw Location Z" => 2.1,
-                                                                                                    "Flaw Magnitude" => 0.3,
-                                                                                                    "Flaw Size" => 0.2)),
+    @test isapprox(PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" =>
+                                                                                Dict("Active" =>
+                                                                                         true,
+                                                                                     "Function" => "Pre-defined",
+                                                                                     "Flaw Location X" =>
+                                                                                         1.1,
+                                                                                     "Flaw Location Y" =>
+                                                                                         1.1,
+                                                                                     "Flaw Location Z" =>
+                                                                                         2.1,
+                                                                                     "Flaw Magnitude" =>
+                                                                                         0.3,
+                                                                                     "Flaw Size" =>
+                                                                                         0.2)),
                                                                        Vector{Float64}([
                                                                                            1,
                                                                                            2,
@@ -374,7 +403,7 @@ end
                                                                symmetry, 3)
     for iID in 1:3
         @test isapprox(C[iID, iID], E * (1 - nu) * temp)
-        @test C[iID + 3, iID + 3] == (1 - 2 * nu) * temp * E
+        @test isapprox(C[iID + 3, iID + 3], 0.5 * (1 - 2 * nu) * temp * E)
         for jID in 1:3
             if iID != jID
                 @test isapprox(C[iID, jID], E * nu * temp)
@@ -472,8 +501,6 @@ end
                                                                2)
     end
 
-    #TODO: Check above
-
     symmetry = "Orthotropic"
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Young's Modulus X" => 5,
@@ -497,9 +524,9 @@ end
     @test C[3, 1] == 2.8051427617298383
     @test C[3, 2] == 2.068792786775756
     @test C[3, 3] == 8.660878276840876
-    @test C[4, 4] == 4
-    @test C[5, 5] == 6
-    @test C[6, 6] == 2
+    @test C[4, 4] == 2
+    @test C[5, 5] == 3
+    @test C[6, 6] == 1
     E = 7000
     nu = 0.3
     G = E / (2 * (1 + nu))
@@ -537,18 +564,18 @@ end
                                  "Shear Modulus YZ" => G,
                                  "Compute_Hook" => true)
     C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(parameter, symmetry, 3)
-    @test C[1, 1] == 9423.076923076922
-    @test C[1, 2] == 4038.461538461538
-    @test C[1, 3] == 4038.461538461538
-    @test C[2, 1] == 4038.461538461538
-    @test C[2, 2] == 9423.076923076922
-    @test C[2, 3] == 4038.461538461538
-    @test C[3, 1] == 4038.461538461538
-    @test C[3, 2] == 4038.461538461538
-    @test C[3, 3] == 9423.076923076922
-    @test C[4, 4] == 5384.615384615385
-    @test C[5, 5] == 5384.615384615385
-    @test C[6, 6] == 5384.615384615385
+    @test isapprox(C[1, 1], 9423.076923076922)
+    @test isapprox(C[1, 2], 4038.461538461538)
+    @test isapprox(C[1, 3], 4038.461538461538)
+    @test isapprox(C[2, 1], 4038.461538461538)
+    @test isapprox(C[2, 2], 9423.076923076922)
+    @test isapprox(C[2, 3], 4038.461538461538)
+    @test isapprox(C[3, 1], 4038.461538461538)
+    @test isapprox(C[3, 2], 4038.461538461538)
+    @test isapprox(C[3, 3], 9423.076923076922)
+    @test isapprox(C[4, 4], 2692.307692307692)
+    @test isapprox(C[5, 5], 2692.307692307692)
+    @test isapprox(C[6, 6], 2692.307692307692)
 
     symmetry = "transverse isotropic plane strain"
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
@@ -559,15 +586,15 @@ end
                                  "Shear Modulus XY" => G,
                                  "Compute_Hook" => true)
     C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(parameter, symmetry, 2)
-    @test C[1, 1] == 9423.076923076922
-    @test C[1, 2] == 4038.461538461538
-    @test C[1, 3] == 0.0
-    @test C[2, 1] == 4038.461538461538
-    @test C[2, 2] == 9423.076923076922
-    @test C[2, 3] == 0.0
-    @test C[3, 1] == 0.0
-    @test C[3, 2] == 0.0
-    @test C[3, 3] == 5384.615384615385
+    @test isapprox(C[1, 1], 9423.076923076922)
+    @test isapprox(C[1, 2], 4038.461538461538)
+    @test isapprox(C[1, 3], 0.0)
+    @test isapprox(C[2, 1], 4038.461538461538)
+    @test isapprox(C[2, 2], 9423.076923076922)
+    @test isapprox(C[2, 3], 0.0)
+    @test isapprox(C[3, 1], 0.0)
+    @test isapprox(C[3, 2], 0.0)
+    @test isapprox(C[3, 3], 2692.307692307692)
 
     symmetry = "transverse isotropic plane stress"
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
@@ -577,15 +604,15 @@ end
                                  "Shear Modulus XY" => G,
                                  "Compute_Hook" => true)
     C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(parameter, symmetry, 2)
-    @test C[1, 1] == 7692.307692307692
-    @test C[1, 2] == 2307.6923076923076
-    @test C[1, 3] == 0.0
-    @test C[2, 1] == 2307.6923076923076
-    @test C[2, 2] == 7692.307692307692
-    @test C[2, 3] == 0.0
-    @test C[3, 1] == 0.0
-    @test C[3, 2] == 0.0
-    @test C[3, 3] == 5384.615384615385
+    @test isapprox(C[1, 1], 7692.307692307692)
+    @test isapprox(C[1, 2], 2307.6923076923076)
+    @test isapprox(C[1, 3], 0.0)
+    @test isapprox(C[2, 1], 2307.6923076923076)
+    @test isapprox(C[2, 2], 7692.307692307692)
+    @test isapprox(C[2, 3], 0.0)
+    @test isapprox(C[3, 1], 0.0)
+    @test isapprox(C[3, 2], 0.0)
+    @test isapprox(C[3, 3], 2692.3076923076924)
 end
 
 @testset "ut_compute_Piola_Kirchhoff_stress" begin

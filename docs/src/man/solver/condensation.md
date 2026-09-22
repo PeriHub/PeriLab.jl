@@ -113,3 +113,91 @@ The distance to the reduced nodes is large enough. The figure shows that $2\delt
 
 
 ![w:600](../../assets/effect_of_coupling_size.png)
+
+## Craig Bampton condensation
+
+Guyan condensation carries the mass of the slave region through
+$\mathbf{T}^T\mathbf{M}_{ss}\mathbf{T}$, but admits no deformation of $\Omega_s$ other
+than the static one prescribed by $\mathbf{T}$. The slave region contributes inertia
+without deformation modes of its own, which introduces errors at higher frequencies.
+Craig-Bampton condensation [CraigRR1968](@cite) retains the static relation and adds those modes.
+
+The partitioning into slave $s$ and master $m$ dof is the one used above. The
+displacement field is expressed through two sets of shape functions:
+
+$$\begin{equation}
+\begin{bmatrix} \mathbf{u}_m \\ \mathbf{u}_s \end{bmatrix} =
+\underbrace{\begin{bmatrix}
+\mathbf{I} & \mathbf{0} \\
+\boldsymbol{\Phi}_c & \boldsymbol{\Phi}_n
+\end{bmatrix}}_{\mathbf{T}}
+\begin{bmatrix} \mathbf{u}_m \\ \boldsymbol{\eta} \end{bmatrix}
+\end{equation}$$
+
+The constraint modes $\boldsymbol{\Phi}_c = -\mathbf{K}_{ss}^{-1}\mathbf{K}_{sm}$ are
+the static response of $\Omega_s$ to a unit displacement of each master dof and are
+identical to the Guyan transformation. The fixed-interface normal modes
+$\boldsymbol{\Phi}_n$ follow from the eigenvalue problem of the slave region with all
+master dof held fixed:
+
+$$\begin{equation}
+\mathbf{K}_{ss}\boldsymbol{\Phi}_n = \mathbf{M}_{ss}\boldsymbol{\Phi}_n\boldsymbol{\Lambda},
+\qquad \boldsymbol{\Lambda} = \mathrm{diag}(\omega_1^2,\dots,\omega_{n}^2)
+\end{equation}$$
+
+Only the $n$ lowest modes are retained; the modal amplitudes $\boldsymbol{\eta}$ are not
+displacements. Mass normalisation of the modes,
+
+$$\begin{equation}
+\boldsymbol{\Phi}_n^T\mathbf{M}_{ss}\boldsymbol{\Phi}_n = \mathbf{I},
+\qquad
+\boldsymbol{\Phi}_n^T\mathbf{K}_{ss}\boldsymbol{\Phi}_n = \boldsymbol{\Lambda}
+\end{equation}$$
+
+determines the structure of the reduced matrices
+$\hat{\mathbf{K}} = \mathbf{T}^T\mathbf{K}\mathbf{T}$ and
+$\hat{\mathbf{M}} = \mathbf{T}^T\mathbf{M}\mathbf{T}$:
+
+$$\begin{equation}
+\hat{\mathbf{K}} =
+\begin{bmatrix}
+\hat{\mathbf{K}}_{mm} & \mathbf{0} \\
+\mathbf{0} & \boldsymbol{\Lambda}
+\end{bmatrix},
+\qquad
+\hat{\mathbf{M}} =
+\begin{bmatrix}
+\hat{\mathbf{M}}_{mm} & \boldsymbol{\Phi}_c^T\mathbf{M}_{ss}\boldsymbol{\Phi}_n \\
+\boldsymbol{\Phi}_n^T\mathbf{M}_{ss}\boldsymbol{\Phi}_c & \mathbf{I}
+\end{bmatrix}
+\end{equation}$$
+
+The blocks $\hat{\mathbf{K}}_{mm}$ and $\hat{\mathbf{M}}_{mm}$ are those of the Guyan
+reduction; setting $n = 0$ removes the modal block and recovers it exactly. The
+off-diagonal blocks of $\hat{\mathbf{K}}$ vanish because
+$\mathbf{K}_{ss}\boldsymbol{\Phi}_c = -\mathbf{K}_{sm}$ makes the contributions
+$\mathbf{K}_{ms}\boldsymbol{\Phi}_n$ and
+$\boldsymbol{\Phi}_c^T\mathbf{K}_{ss}\boldsymbol{\Phi}_n$ cancel: constraint modes and
+fixed-interface modes are $\mathbf{K}$-orthogonal. The mass exhibits no such
+cancellation, so both parts remain coupled through inertia. The condensed system reads:
+
+$$\begin{equation}
+\hat{\mathbf{M}}
+\begin{bmatrix} \ddot{\mathbf{u}}_m \\ \ddot{\boldsymbol{\eta}} \end{bmatrix}
++
+\hat{\mathbf{K}}
+\begin{bmatrix} \mathbf{u}_m \\ \boldsymbol{\eta} \end{bmatrix}
+=
+\begin{bmatrix} \mathbf{F}_m \\ \mathbf{0} \end{bmatrix}
+\end{equation}$$
+
+It has $n_m + n$ dof. Boundary conditions and external loads act on the $n_m$ physical
+master dof; the $n$ modal amplitudes are integrated alongside them. Loads on slave dof
+would require the projection
+$\mathbf{F}_\eta = \boldsymbol{\Phi}_n^T\mathbf{F}_s$ and are not supported.
+
+$\Omega_s$ must remain linear elastic and undamaged, since $\boldsymbol{\Phi}_c$ and
+$\boldsymbol{\Phi}_n$ are computed once from the initial stiffness. The eigenvalue
+problem adds to the preprocessing cost of the factorization of $\mathbf{K}_{ss}$. In
+return, waves crossing the $\Omega_s$/$\Omega_m$ interface are transmitted correctly up
+to approximately $\omega_n$; above that frequency they are reflected.
