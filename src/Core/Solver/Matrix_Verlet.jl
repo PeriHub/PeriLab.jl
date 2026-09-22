@@ -202,6 +202,8 @@ function run_solver(solver_options::Dict{Any,Any},
                                     vN[active_nodes, :] +
                                     0.5 * dt * aN[active_nodes, :]
 
+                apply_bc_dirichlet(["Velocity"], bcs, time, step_time)
+
                 @. @views uNP1[active_nodes,
                                :] = uN[active_nodes, :] +
                                     dt * vNP1[active_nodes, :]
