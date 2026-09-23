@@ -4,7 +4,6 @@
 
 FROM julia:1.12 AS build
 
-
 # Copy only necessary files for building
 COPY src ./PeriLab/src
 COPY Project.toml ./PeriLab/Project.toml
@@ -38,4 +37,27 @@ RUN chmod +x /app/PeriLab/bin/PeriLab
 
 ENV PATH="/app/PeriLab/bin:${PATH}"
 
-CMD ["sleep", "infinity"]
+# --- API wrapper additions -------------------------------------------------
+
+# Python runtime for the HTTP wrapper around the PeriLab binary
+RUN apt-get update \
+    && apt-get install -yq --no-install-recommends python3 python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt /app/requirements.txt
+RUN pip3 install --no-cache-dir --break-system-packages -r /app/requirements.txt
+
+COPY app /app/api
+
+# Where uploaded job inputs and results are written; mount a volume here
+# for persistence across container restarts.
+RUN mkdir -p /app/simulations
+ENV PERILAB_BIN="/app/PeriLab/bin/PeriLab"
+ENV PERILAB_JOBS_DIR="/app/simulations"
+ENV MAX_CONCURRENT_JOBS="2"
+# ENV PERILAB_MPI_LAUNCHER="mpiexecjl"   # set this if you add MPI to the image
+
+EXPOSE 8000
+
+WORKDIR /app
+CMD ["python3", "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
