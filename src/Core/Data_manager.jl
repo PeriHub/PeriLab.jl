@@ -745,7 +745,7 @@ function init_properties()
         data["properties"][iblock] = OrderedDict{String,Dict{String,Any}}()
 
         for prop_name in ["Additive Model", "Damage Model", "Pre Calculation Model",
-            "Thermal Model", "Degradation Model", "Material Model"]
+                "Thermal Model", "Degradation Model", "Material Model"]
             data["properties"][iblock][prop_name] = Dict{String,Any}()
         end
     end
@@ -1181,8 +1181,10 @@ function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
         if dof == 0
             dof = length(field[1, :, :])
         end
-        data["fields_to_synch"][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
-                                                         "download_from_cores" => download_from_cores,
+        data["fields_to_synch"][name] = Dict{String,Any}("upload_to_cores" =>
+                                                             upload_to_cores,
+                                                         "download_from_cores" =>
+                                                             download_from_cores,
                                                          "dof" => dof,
                                                          "time" => "Constant")
     elseif name * "NP1" in get_all_field_keys()
@@ -1190,8 +1192,10 @@ function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
         if dof == 0
             dof = length(field[1, :, :])
         end
-        data["fields_to_synch"][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
-                                                         "download_from_cores" => download_from_cores,
+        data["fields_to_synch"][name] = Dict{String,Any}("upload_to_cores" =>
+                                                             upload_to_cores,
+                                                         "download_from_cores" =>
+                                                             download_from_cores,
                                                          "dof" => length(field[1, :, :]),
                                                          "time" => "NP1")
     end
@@ -1217,8 +1221,10 @@ function set_local_synch(model, name, download_from_cores, upload_to_cores, dof 
         if dof == 0
             dof = length(field[1, :, :])
         end
-        data["local_fields_to_synch"][model][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
-                                                                      "download_from_cores" => download_from_cores,
+        data["local_fields_to_synch"][model][name] = Dict{String,Any}("upload_to_cores" =>
+                                                                          upload_to_cores,
+                                                                      "download_from_cores" =>
+                                                                          download_from_cores,
                                                                       "dof" => dof,
                                                                       "time" => "Constant")
     elseif name * "NP1" in get_all_field_keys()
@@ -1226,28 +1232,31 @@ function set_local_synch(model, name, download_from_cores, upload_to_cores, dof 
         if dof == 0
             dof = length(field[1, :, :])
         end
-        data["local_fields_to_synch"][model][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
-                                                                      "download_from_cores" => download_from_cores,
-                                                                      "dof" => length(field[1,
-                                                                                            :,
-                                                                                            :]),
+        data["local_fields_to_synch"][model][name] = Dict{String,Any}("upload_to_cores" =>
+                                                                          upload_to_cores,
+                                                                      "download_from_cores" =>
+                                                                          download_from_cores,
+                                                                      "dof" =>
+                                                                          length(field[1,
+                                                                                       :,
+                                                                                       :]),
                                                                       "time" => "NP1")
     end
 end
 
-function set_reduced_model_pd(master_nodes::Vector{Int64})
-    data["Reduced PD Nodes"] = master_nodes
+function set_reduced_model_pd(pd_nodes::Vector{Int64})
+    data["Reduced PD Nodes"] = pd_nodes
 end
 
 function get_reduced_model_pd()
     return get(data, "Reduced PD Nodes", Int64[])
 end
 
-function set_reduced_model_master(master_nodes::Vector{Int64})
-    data["Reduced Nodes"] = master_nodes
+function set_reduced_model_retained(retained_nodes::Vector{Int64})
+    data["Reduced Nodes"] = retained_nodes
 end
 
-function get_reduced_model_master()
+function get_reduced_model_retained()
     return data["Reduced Nodes"]
 end
 

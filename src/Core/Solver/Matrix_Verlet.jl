@@ -164,10 +164,11 @@ function run_solver(solver_options::Dict{Any,Any},
 
     K = Data_Manager.get_stiffness_matrix()::AbstractMatrix{Float64}
 
-    # Master nodes and state vectors. Without a reduction every node is a master and the
-    # state has no modal part, so the loop below needs no case distinction: the reduced
-    # run differs only in which nodes are masters and in the extra modal entries.
-    master_nodes, state = setup_reduced_state(solver_options["Model Reduction"], K)
+    # Retained nodes and state vectors. Without a reduction every node is retained and
+    # the state has no modal part, so the loop below needs no case distinction: the
+    # reduced run differs only in which nodes are retained and in the extra modal
+    # entries.
+    retained_nodes, state = setup_reduced_state(solver_options["Model Reduction"], K)
     modal_active = n_modal(state) > 0
 
     @timeit "Matrix Verlet" begin
@@ -190,9 +191,9 @@ function run_solver(solver_options::Dict{Any,Any},
                 # compute_models covers exactly the material point nodes that have
                 # been swapped out of K -- empty without a reduction, so
                 # compute_models contributes nothing anywhere and K alone drives
-                # the whole domain. master_nodes already covers every node in that
+                # the whole domain. retained_nodes already covers every node in that
                 # case too, so no case distinction is needed here either.
-                active_nodes::Vector{Int64} = master_nodes
+                active_nodes::Vector{Int64} = retained_nodes
                 active_list .= false
                 active_list[Data_Manager.get_reduced_model_pd()] .= true
             end
@@ -235,9 +236,9 @@ function run_solver(solver_options::Dict{Any,Any},
                                                     synchronise_field)
 
             @timeit "Force computations" begin
-                # Displacements of the master nodes into the state; the modal part was
+                # Displacements of the retained nodes into the state; the modal part was
                 # already advanced above and stays as it is.
-                pull_from_nodes!(state.q, uNP1, master_nodes, state)
+                pull_from_nodes!(state.q, uNP1, retained_nodes, state)
 
                 # f = -K q over the whole state, modal coordinates included
                 @timeit "Force matrix computations" mul!(state.f, K, state.q)
@@ -252,9 +253,9 @@ function run_solver(solver_options::Dict{Any,Any},
                                                     external_forces[active_nodes,
                                                                     :] /
                                                     volume[active_nodes]
-                add_from_nodes!(state.f, force_densities_NP1, master_nodes, state)
+                add_from_nodes!(state.f, force_densities_NP1, retained_nodes, state)
 
-                push_to_nodes!(force_densities_NP1, state.f, master_nodes, state)
+                push_to_nodes!(force_densities_NP1, state.f, retained_nodes, state)
 
                 @. @views forces[active_nodes,
                                  :] = force_densities_NP1[active_nodes, :] *
@@ -264,7 +265,7 @@ function run_solver(solver_options::Dict{Any,Any},
             @timeit "Accelaration computation" begin
                 #state.q_ddot .= M_fact \ state.f
                 ldiv!(state.q_ddot, M_fact, state.f)
-                push_to_nodes!(aNP1, state.q_ddot, master_nodes, state)
+                push_to_nodes!(aNP1, state.q_ddot, retained_nodes, state)
             end
 
             @timeit "write_results" result_files=write_results(result_files, time,

@@ -25,19 +25,19 @@ export setup_reduced_state
 
 State vectors of the time integration, held flat rather than as node fields.
 
-The vector is ordered `[u_master; eta]`: `n_phys` physical degrees of freedom of the
-master nodes, followed by `n_modal` modal coordinates. A modal coordinate belongs to no
+The vector is ordered `[u_retained; eta]`: `n_phys` physical degrees of freedom of the
+retained nodes, followed by `n_modal` modal coordinates. A modal coordinate belongs to no
 node and therefore cannot live in a `nnodes x dof` field, which is what this container
 is for.
 
 `n_modal` is zero for a static reduction (Guyan) and for a run without any reduction, in
-which case the state is nothing but the master degrees of freedom and the integration is
-the same as before. The unreduced case is the one where every node is a master.
+which case the state is nothing but the retained degrees of freedom and the integration
+is the same as before. The unreduced case is the one where every node is retained.
 
 The physical part is ordered component by component, the same way `vec` flattens an
-`n x dof` node field: first the first component of every master node, then the second,
-and so on. Master node `k` therefore sits at `(d - 1) * n_master + k` for component `d`.
-This has to match the ordering the reduced matrices were built in.
+`n x dof` node field: first the first component of every retained node, then the second,
+and so on. Retained node `k` therefore sits at `(d - 1) * n_retained + k` for component
+`d`. This has to match the ordering the reduced matrices were built in.
 
 # Fields
 - `n_phys::Int64`: Number of physical degrees of freedom
@@ -97,7 +97,7 @@ n_modal(state::ReducedState) = state.n_modal
 """
     physical_part(vector, state)
 
-View on the entries that belong to master nodes.
+View on the entries that belong to retained nodes.
 
 Everything with a physical meaning — boundary conditions, external loads, output — must
 only touch this part.
@@ -112,30 +112,30 @@ View on the modal coordinates; empty without a modal reduction.
 modal_part(v::AbstractVector, state::ReducedState) = @view v[(state.n_phys + 1):end]
 
 """
-    pull_from_nodes!(vector, field, master_nodes, state)
+    pull_from_nodes!(vector, field, retained_nodes, state)
 
-Copies the master rows of a node field into the physical part of a state vector.
+Copies the retained rows of a node field into the physical part of a state vector.
 
 The modal part is left untouched, because a node field says nothing about it.
 
 # Arguments
 - `vector::AbstractVector{Float64}`: Target, length `n_phys + n_modal`
 - `field::AbstractMatrix{Float64}`: Node field, `nnodes x dof`
-- `master_nodes::AbstractVector{Int64}`: Master node indices
+- `retained_nodes::AbstractVector{Int64}`: Retained node indices
 - `state::ReducedState`: The state, for the split position
 # Returns
 - `vector`: The unchanged reference
 """
 function pull_from_nodes!(vector::AbstractVector{Float64},
                           field::AbstractMatrix{Float64},
-                          master_nodes::AbstractVector{Int64},
+                          retained_nodes::AbstractVector{Int64},
                           state::ReducedState)
     dof = size(field, 2)
-    n_master = length(master_nodes)
-    # Component major, matching vec(field[master_nodes, :]).
+    n_retained = length(retained_nodes)
+    # Component major, matching vec(field[retained_nodes, :]).
     @inbounds for d in 1:dof
-        offset = (d - 1) * n_master
-        for (k, node) in enumerate(master_nodes)
+        offset = (d - 1) * n_retained
+        for (k, node) in enumerate(retained_nodes)
             vector[offset+k] = field[node, d]
         end
     end
@@ -143,9 +143,9 @@ function pull_from_nodes!(vector::AbstractVector{Float64},
 end
 
 """
-    add_from_nodes!(vector, field, master_nodes, state)
+    add_from_nodes!(vector, field, retained_nodes, state)
 
-Adds the master rows of a node field onto the physical part of a state vector.
+Adds the retained rows of a node field onto the physical part of a state vector.
 
 Same as [`pull_from_nodes!`](@ref), but accumulates instead of overwriting -- for adding
 a node field's contribution onto a vector that already holds something else, such as
@@ -156,21 +156,21 @@ contribution is added onto it. The modal part is left untouched, for the same re
 # Arguments
 - `vector::AbstractVector{Float64}`: Target, length `n_phys + n_modal`, mutated in place
 - `field::AbstractMatrix{Float64}`: Node field, `nnodes x dof`
-- `master_nodes::AbstractVector{Int64}`: Master node indices
+- `retained_nodes::AbstractVector{Int64}`: Retained node indices
 - `state::ReducedState`: The state, for the split position
 # Returns
 - `vector`: The same vector, mutated
 """
 function add_from_nodes!(vector::AbstractVector{Float64},
                          field::AbstractMatrix{Float64},
-                         master_nodes::AbstractVector{Int64},
+                         retained_nodes::AbstractVector{Int64},
                          state::ReducedState)
     dof = size(field, 2)
-    n_master = length(master_nodes)
-    # Component major, matching vec(field[master_nodes, :]).
+    n_retained = length(retained_nodes)
+    # Component major, matching vec(field[retained_nodes, :]).
     @inbounds for d in 1:dof
-        offset = (d - 1) * n_master
-        for (k, node) in enumerate(master_nodes)
+        offset = (d - 1) * n_retained
+        for (k, node) in enumerate(retained_nodes)
             vector[offset+k] += field[node, d]
         end
     end
@@ -178,31 +178,31 @@ function add_from_nodes!(vector::AbstractVector{Float64},
 end
 
 """
-    push_to_nodes!(field, vector, master_nodes, state)
+    push_to_nodes!(field, vector, retained_nodes, state)
 
-Copies the physical part of a state vector back into the master rows of a node field.
+Copies the physical part of a state vector back into the retained rows of a node field.
 
-Rows of nodes that are no master are left alone, and the modal part is dropped: it has
+Rows of nodes that are not retained are left alone, and the modal part is dropped: it has
 no node to be written to.
 
 # Arguments
 - `field::AbstractMatrix{Float64}`: Node field, `nnodes x dof`
 - `vector::AbstractVector{Float64}`: Source, length `n_phys + n_modal`
-- `master_nodes::AbstractVector{Int64}`: Master node indices
+- `retained_nodes::AbstractVector{Int64}`: Retained node indices
 - `state::ReducedState`: The state, for the split position
 # Returns
 - `field`: The unchanged reference
 """
 function push_to_nodes!(field::AbstractMatrix{Float64},
                         vector::AbstractVector{Float64},
-                        master_nodes::AbstractVector{Int64},
+                        retained_nodes::AbstractVector{Int64},
                         state::ReducedState)
     dof = size(field, 2)
-    n_master = length(master_nodes)
-    # Component major, matching vec(field[master_nodes, :]).
+    n_retained = length(retained_nodes)
+    # Component major, matching vec(field[retained_nodes, :]).
     @inbounds for d in 1:dof
-        offset = (d - 1) * n_master
-        for (k, node) in enumerate(master_nodes)
+        offset = (d - 1) * n_retained
+        for (k, node) in enumerate(retained_nodes)
             field[node, d] = vector[offset+k]
         end
     end
@@ -212,9 +212,9 @@ end
 """
     setup_reduced_state(model_reduction, K)
 
-Master nodes and state vectors for the time loop.
+Retained nodes and state vectors for the time loop.
 
-Without a reduction every node is a master and there are no modal coordinates, so the
+Without a reduction every node is retained and there are no modal coordinates, so the
 state is the full system written as a flat vector and the time loop needs no branch on
 whether a reduction is active.
 
@@ -222,23 +222,23 @@ whether a reduction is active.
 - `model_reduction`: The `"Model Reduction"` solver option, `false` when disabled
 - `K::AbstractMatrix`: The stiffness matrix, reduced or not
 # Returns
-- `master_nodes::Vector{Int64}`: Nodes carrying physical degrees of freedom
+- `retained_nodes::Vector{Int64}`: Nodes carrying physical degrees of freedom
 - `state::ReducedState`: Zero initialised state
 """
 function setup_reduced_state(model_reduction, K::AbstractMatrix)
     dof = Data_Manager.get_dof()
 
-    master_nodes = model_reduction == false ?
-                   collect(1:Data_Manager.get_nnodes()) :
-                   Data_Manager.get_reduced_model_master()
+    retained_nodes = model_reduction == false ?
+                     collect(1:Data_Manager.get_nnodes()) :
+                     Data_Manager.get_reduced_model_retained()
 
-    n_phys = length(master_nodes) * dof
+    n_phys = length(retained_nodes) * dof
     n_total = size(K, 1)
 
     if n_total < n_phys
         throw(ArgumentError("Stiffness matrix has $n_total degrees of freedom for " *
-                            "$n_phys master degrees of freedom. Master node list and " *
-                            "matrix disagree."))
+                            "$n_phys retained degrees of freedom. Retained node list " *
+                            "and matrix disagree."))
     end
 
     state = ReducedState(n_phys, n_total)
@@ -246,7 +246,7 @@ function setup_reduced_state(model_reduction, K::AbstractMatrix)
         @info "Reduced system: $n_phys physical and $(n_modal(state)) modal degrees of freedom"
     end
 
-    return master_nodes, state
+    return retained_nodes, state
 end
 
 """
@@ -282,21 +282,21 @@ end
 
 Splits every node into the sets the reduction needs.
 
-Master nodes are the material point nodes plus every one of their bonded neighbours --
+Retained nodes are the material point nodes plus every one of their bonded neighbours --
 peridynamics' nonlocal (horizon-based) interactions mean that boundary layer has to stay
 physical, even where it geometrically belongs to a reduction block. Coupling nodes are
-exactly that layer, `master \\ material point`: master nodes with no separate force
+exactly that layer, `retained \\ material point`: retained nodes with no separate force
 computation of their own, relying entirely on the reduced operator.
 
-`material_point_region = false` empties the material point set, folding every master node
-into the coupling layer instead.
+`material_point_region = false` empties the material point set, folding every retained
+node into the coupling layer instead.
 
 # Arguments
 - `block_nodes::Dict{Int64,Vector{Int64}}`: Nodes per block
 - `reduction_blocks::Vector{Int64}`: Block IDs to condense away
 - `material_point_region::Bool`: Whether the non-reduction blocks keep their own force computation
 # Returns
-- `master_nodes::Vector{Int64}`, `slave_nodes::Vector{Int64}`,
+- `retained_nodes::Vector{Int64}`, `condensed_nodes::Vector{Int64}`,
   `pd_nodes::Vector{Int64}`, `coupling_nodes::Vector{Int64}`, all sorted
 """
 function partition_nodes(block_nodes::Dict{Int64,Vector{Int64}},
@@ -310,33 +310,34 @@ function partition_nodes(block_nodes::Dict{Int64,Vector{Int64}},
         append!(pd_nodes, block_nodes[block])
     end
 
-    master_nodes = Int64[]
+    retained_nodes = Int64[]
     for node in pd_nodes
-        append!(master_nodes, nlist[node])
+        append!(retained_nodes, nlist[node])
     end
-    append!(master_nodes, pd_nodes)
-    master_nodes = sort(unique(master_nodes))
+    append!(retained_nodes, pd_nodes)
+    retained_nodes = sort(unique(retained_nodes))
 
     material_point_region || empty!(pd_nodes)
     sort!(pd_nodes)
 
-    slave_nodes = sort!(setdiff(collect(1:nnodes), master_nodes))
-    coupling_nodes = setdiff(master_nodes, pd_nodes)
+    condensed_nodes = sort!(setdiff(collect(1:nnodes), retained_nodes))
+    coupling_nodes = setdiff(retained_nodes, pd_nodes)
 
-    return master_nodes, slave_nodes, pd_nodes, coupling_nodes
+    return retained_nodes, condensed_nodes, pd_nodes, coupling_nodes
 end
 
 """
-    mark_coupling_field!(master_nodes, slave_nodes, pd_nodes, coupling_nodes)
+    mark_coupling_field!(retained_nodes, condensed_nodes, pd_nodes, coupling_nodes)
 
 Fills the `"Coupling Nodes"` field for visualisation and debugging; it has no effect on
 the reduction itself.
 """
-function mark_coupling_field!(master_nodes::Vector{Int64}, slave_nodes::Vector{Int64},
+function mark_coupling_field!(retained_nodes::Vector{Int64},
+                              condensed_nodes::Vector{Int64},
                               pd_nodes::Vector{Int64}, coupling_nodes::Vector{Int64})
     cn = Data_Manager.create_constant_node_scalar_field("Coupling Nodes", Int64)
-    cn[master_nodes] .= 3
-    cn[slave_nodes] .= 6
+    cn[retained_nodes] .= 3
+    cn[condensed_nodes] .= 6
     cn[pd_nodes] .+= 1  # added to be sure that all points are handled
     cn[coupling_nodes] .+= 3  # added to be sure that all points are handled
     return nothing
@@ -368,7 +369,7 @@ function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int
     nmodes = get(model_param, "Number of Modes", 1)
     material_point_region = get(model_param, "Material Point Region", true)
 
-    master_nodes, slave_nodes, pd_nodes,
+    retained_nodes, condensed_nodes, pd_nodes,
     coupling_nodes = partition_nodes(block_nodes, reduction_blocks, material_point_region)
 
     if pd_nodes != []
@@ -383,26 +384,27 @@ function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int
     end
     K = Data_Manager.get_stiffness_matrix()
 
-    if master_nodes == []
-        @warn "No master nodes defined for model reduction. Using full stiffness matrix."
+    if retained_nodes == []
+        @warn "No retained nodes defined for model reduction. Using full stiffness matrix."
         return
     end
-    if slave_nodes == []
-        @warn "No slave nodes defined for model reduction. Using full stiffness matrix."
+    if condensed_nodes == []
+        @warn "No condensed nodes defined for model reduction. Using full stiffness matrix."
         return
     end
 
-    mark_coupling_field!(master_nodes, slave_nodes, pd_nodes, coupling_nodes)
+    mark_coupling_field!(retained_nodes, condensed_nodes, pd_nodes, coupling_nodes)
 
     dof = Data_Manager.get_dof()
     nnodes = Data_Manager.get_nnodes()
-    perm_master = create_permutation(master_nodes, dof, nnodes)
-    perm_slave = create_permutation(slave_nodes, dof, nnodes)
+    perm_retained = create_permutation(retained_nodes, dof, nnodes)
+    perm_condensed = create_permutation(condensed_nodes, dof, nnodes)
     density_mass = expand_density_per_dof(density, dof)
 
     @timeit "Condensation" K_reduced,
-                           mass_reduced=mod.reduce_matrices(K, density_mass, perm_master,
-                                                            perm_slave, nmodes)
+                           mass_reduced=mod.reduce_matrices(K, density_mass,
+                                                            perm_retained,
+                                                            perm_condensed, nmodes)
 
     dropzeros!(mass_reduced)
     dropzeros!(K_reduced)
@@ -411,10 +413,10 @@ function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int
     Data_Manager.set_mass_matrix(mass_reduced)
 
     Data_Manager.set_reduced_model_pd(pd_nodes)
-    Data_Manager.set_reduced_model_master(master_nodes)
+    Data_Manager.set_reduced_model_retained(retained_nodes)
 
     @info "Model reduction is applied"
-    @info "condensed $(length(slave_nodes)), coupling $(length(coupling_nodes)), " *
+    @info "condensed $(length(condensed_nodes)), coupling $(length(coupling_nodes)), " *
           "material point $(length(pd_nodes))"
     return
 end

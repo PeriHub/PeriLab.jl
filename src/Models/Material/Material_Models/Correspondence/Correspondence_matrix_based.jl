@@ -301,124 +301,79 @@ end
 # =============================================================================
 
 """
-    build_nzval_map(nodes, nlist, nnodes, dof) -> SparseMatrixCSC, Dict
+    build_sparsity_and_map(nodes, nlist, nnodes, dof)
 
-Build the global stiffness matrix K with the correct sparsity pattern
-(all entries initialised to eps()) and a map (grow, gcol) → nzval index
-for O(1) direct writes in the assembly loop.
+Builds the stiffness matrix's sparsity pattern, node by node first and expanded to
+degrees of freedom only once at the end.
 
-The sparsity pattern includes all (iID, jID) pairs where jID ∈ nlist[iID],
-covering both the node itself and all its neighbors.
+The shape-tensor assembly (`k_loop!`) couples every pair of nodes in a node's own family
+(its neighbours plus itself), so the sparsity pattern needs a slot for every such pair --
+building it degree-of-freedom by degree-of-freedom, as an earlier version of this
+function did, repeats that union `dof^2` times over (once per row/column component pair)
+for no different result, since which nodes couple does not depend on which component is
+asked about. Deduplicating once per node pair instead and expanding to the `dof x dof`
+block only for the final, already-deduplicated result cuts the number of set insertions
+by `dof^2` -- decisive in 3D, where both the typical neighbour count and `dof` are larger
+than in 2D, and this step's cost had become dominant.
 
-function build_sparsity_and_map(nodes::AbstractVector{Int64},
-                                nlist::Vector{Vector{Int64}},
-                                nnodes::Int,
-                                dof::Int)
-    n = dof * nnodes
-
-    # ── Step 1: collect unique row indices per column using sorted sets ───────
-    # Each column gcol = (o-1)*nnodes + col_node receives rows from all nodes
-    # iID where col_node ∈ {nlist[iID] ∪ iID}.
-    # We use a Vector{Vector{Int64}} (one per column) and sort+unique at the end.
-    col_rows = [Vector{Int64}() for _ in 1:n]
-
-    @inbounds for iID in nodes
-        nj = nlist[iID]
-        mnj = number_of_neighbors[iID]
-        # row nodes for iID: nj ∪ iID
-        for r in 1:(mnj + 1)
-            row_node = r <= mnj ? nj[r] : iID
-            for m in 1:dof
-                grow = (m - 1) * nnodes + row_node
-                # col nodes for iID: nj ∪ iID
-                for c in 1:(mnj + 1)
-                    col_node = c <= mnj ? nj[c] : iID
-                    for o in 1:dof
-                        gcol = (o - 1) * nnodes + col_node
-                        push!(col_rows[gcol], grow)
-                    end
-                end
-            end
-        end
-    end
-
-    # ── Step 2: build CSC colptr and rowval directly — no sparse() call ───────
-    colptr = Vector{Int64}(undef, n + 1)
-    colptr[1] = 1
-    @inbounds for col in 1:n
-        v = col_rows[col]
-        sort!(v)
-        unique!(v)
-        colptr[col + 1] = colptr[col] + length(v)
-    end
-
-    nnz_total = colptr[n + 1] - 1
-    rowval = Vector{Int64}(undef, nnz_total)
-    nzval_arr = fill(eps(), nnz_total)
-
-    @inbounds for col in 1:n
-        v = col_rows[col]
-        pos = colptr[col]
-        for (k, r) in enumerate(v)
-            rowval[pos + k - 1] = r
-        end
-    end
-
-    K = SparseMatrixCSC(n, n, colptr, rowval, nzval_arr)
-
-    # Return colptr + rowval for O(log n) binary search in scatter
-    return K, colptr, rowval
-end
-
+# Arguments
+- `nodes::AbstractVector{Int64}`: Nodes whose families are included
+- `nlist::Vector{Vector{Int64}}`: Neighbour list per node
+- `nnodes::Int64`: Total number of nodes
+- `dof::Int64`: Degrees of freedom per node
+# Returns
+- `K::SparseMatrixCSC`: Zero-valued sparse matrix with the pattern, size `dof*nnodes`
+- `colptr::Vector{Int64}`, `rowval::Vector{Int64}`: `K`'s CSC structure, cached
+  separately since the caller's fast index lookup (`searchsortedfirst`) needs them
+  outside a `SparseMatrixCSC` too
 """
-
 function build_sparsity_and_map(nodes::AbstractVector{Int64},
                                 nlist::Vector{Vector{Int64}}, nnodes::Int64,
                                 dof::Int64)
     n = dof * nnodes
 
-    col_rows = [Set{Int64}() for _ in 1:n]
-
+    # Node-level sparsity: which node couples to which, deduplicated once regardless of
+    # dof.
+    node_cols = [Set{Int64}() for _ in 1:nnodes]
     @inbounds for iID in nodes
         nj = nlist[iID]
-
         local_nodes = (nj..., iID)   # Nachbarn + eigener Knoten
-
-        for row_node in local_nodes
-            for m in 1:dof
-                grow = (m - 1) * nnodes + row_node
-
-                for col_node in local_nodes
-                    for o in 1:dof
-                        gcol = (o - 1) * nnodes + col_node
-                        push!(col_rows[gcol], grow)
-                    end
-                end
-            end
+        for row_node in local_nodes, col_node in local_nodes
+            push!(node_cols[row_node], col_node)
         end
     end
 
-    # CSC aufbauen
+    sorted_node_cols = Vector{Vector{Int64}}(undef, nnodes)
+    @inbounds for node in 1:nnodes
+        v = collect(node_cols[node])
+        sort!(v)
+        sorted_node_cols[node] = v
+    end
+
+    # Expand to the full dof x dof structure. Column gcol = (o-1)*nnodes+col_node has the
+    # same row node set for every component o of col_node, repeated for every row
+    # component m -- the m-blocks come out in ascending order since row indices within a
+    # block are already sorted and every entry of block m is below every entry of block
+    # m+1, so rowval ends up sorted per column without an extra sort.
     colptr = Vector{Int64}(undef, n + 1)
     colptr[1] = 1
-
-    sorted_cols = Vector{Vector{Int64}}(undef, n)
-
-    @inbounds for col in 1:n
-        v = collect(col_rows[col])
-        sort!(v)
-        sorted_cols[col] = v
-        colptr[col+1] = colptr[col] + length(v)
+    @inbounds for o in 1:dof, col_node in 1:nnodes
+        gcol = (o - 1) * nnodes + col_node
+        colptr[gcol + 1] = colptr[gcol] + length(sorted_node_cols[col_node]) * dof
     end
 
     nnz_total = colptr[end] - 1
     rowval = Vector{Int64}(undef, nnz_total)
     nzval_arr = fill(eps(), nnz_total)
 
-    @inbounds for col in 1:n
-        v = sorted_cols[col]
-        start = colptr[col]
-        rowval[start:(start + length(v) - 1)] .= v
+    @inbounds for o in 1:dof, col_node in 1:nnodes
+        gcol = (o - 1) * nnodes + col_node
+        rows_for_col = sorted_node_cols[col_node]
+        idx = colptr[gcol]
+        for m in 1:dof, row_node in rows_for_col
+            rowval[idx] = (m - 1) * nnodes + row_node
+            idx += 1
+        end
     end
 
     K = SparseMatrixCSC(n, n, colptr, rowval, nzval_arr)

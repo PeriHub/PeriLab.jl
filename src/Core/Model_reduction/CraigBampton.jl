@@ -88,7 +88,20 @@ end
 nonzero_columns(A::AbstractMatrix) = findall(!iszero, vec(sum(abs, A; dims = 1)))
 
 """
-    factorize_condensed(Kll)
+    _warn_not_pd(err = nothing)
+
+Warns that the condensed stiffness failed to factorize as positive definite, shared
+between the dense in-place path and the sparse fallback below.
+"""
+function _warn_not_pd(err = nothing)
+    @warn "Cholesky of the condensed stiffness failed, falling back to LU. Kll is not " *
+          "positive definite: check whether every condensed node is tied to the " *
+          "retained region -- an isolated node or a detached cluster has a rigid body " *
+          "mode." exception=err
+end
+
+"""
+    factorize_condensed!(Kll)
 
 Factorization of the condensed stiffness, Cholesky where possible.
 
@@ -103,19 +116,40 @@ fixed interface points at a condensed region falling apart into pieces not tied 
 retained degree of freedom — or, in peridynamics, simply at a stiffness that is not
 symmetric.
 
+Dense `Kll` (a `StridedMatrix` of a BLAS float type -- what a single, small condensed
+region typically comes down to) factorizes in place: LAPACK's `potrf` touches only the
+upper triangle it is asked for, so on failure the lower triangle plus the saved diagonal
+is enough to rebuild the original matrix for the LU fallback, without a second copy of
+`Kll`. Anything else -- in particular a `SparseMatrixCSC`, which `cholesky!`/`lu!` do not
+support in place -- goes through the ordinary, allocating `cholesky`/`lu`.
+
 # Arguments
 - `Kll::AbstractMatrix`: Stiffness of the condensed part
 # Returns
 - A factorization object supporting `ldiv!`
 """
-function factorize_condensed(Kll::AbstractMatrix)
+function factorize_condensed!(Kll::StridedMatrix{<:LinearAlgebra.BlasFloat})
+    n = LinearAlgebra.checksquare(Kll)
+    d = diag(Kll)                                   # nur die Diagonale sichern
+    F = cholesky!(Symmetric(Kll, :U); check = false)
+    issuccess(F) && return F
+
+    _warn_not_pd()
+    # potrf hat nur das obere Dreieck inkl. Diagonale verändert; das untere ist intakt
+    @inbounds for j in 1:n
+        Kll[j, j] = d[j]
+        for i in 1:(j - 1)
+            Kll[i, j] = Kll[j, i]
+        end
+    end
+    return lu!(Kll)
+end
+
+function factorize_condensed!(Kll::AbstractMatrix)
     try
         return cholesky(Symmetric(Kll))
     catch err
-        @warn "Cholesky of the condensed stiffness failed, falling back to LU. Kll is " *
-              "not positive definite: check whether every condensed node is tied to " *
-              "the retained region, an isolated node or a detached cluster has a " *
-              "rigid body mode." exception=err
+        _warn_not_pd(err)
         return lu(Kll)
     end
 end
@@ -228,7 +262,7 @@ function fixed_interface_modes(Kll::AbstractMatrix, Mll::Diagonal, n_modes::Int6
         return X, factorization.values[1:n_modes]
     end
 
-    operator = ShiftInvertOperator(factorize_condensed(K_active), scale,
+    operator = ShiftInvertOperator(factorize_condensed!(K_active), scale,
                                    Vector{Float64}(undef, length(active)))
 
     last_error = nothing
@@ -592,7 +626,7 @@ function reduce_matrices(K::AbstractMatrix,
           "reduced size $(nr + n_modes), dense blocks of " *
           "$(round(nc^2 * 8 / 2^20; digits = 1)) MiB"
 
-    @timeit "CB factorize Kll" factorization=factorize_condensed(Kll)
+    @timeit "CB factorize Kll" factorization=factorize_condensed!(Kll)
 
     @timeit "CB recovery modes" B=recovery_modes(factorization, Klr, coupling;
                                                  block_size = block_size)
