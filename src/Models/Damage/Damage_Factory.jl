@@ -168,7 +168,7 @@ function init_interface_crit_values(damage_parameter::Dict,
             if haskey(damage_parameter["Interblock Damage"], critical_value_name)
                 if damage_parameter["Interblock Damage"][critical_value_name] isa Number
                     inter_critical_value[block_iId, block_jId,
-                                         block_id] = damage_parameter["Interblock Damage"][critical_value_name]
+                    block_id] = damage_parameter["Interblock Damage"][critical_value_name]
                 end
             end
         end
@@ -198,14 +198,6 @@ function init_aniso_crit_values(damage_parameter::Dict,
         aniso_crit[block_id] = [crit_x, crit_y, crit_z]
     end
     Data_Manager.set_aniso_crit_values(aniso_crit)
-
-    # if !haskey(damage_parameter, "Anisotropic Damage")
-    #     return
-    # end
-    # aniso_crit[block_id] =  damage_parameter["Anisotropic Damage"]
-    # Data_Manager.set_aniso_crit_values(aniso_crit)
-
-    return
 end
 
 """

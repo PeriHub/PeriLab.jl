@@ -59,48 +59,6 @@ mutable struct DisplacementSolverCache
     end
 end
 
-# """
-# 	compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64}, lambda::Float64, Cv::Float64)
-
-# Calculate the critical time step for a thermodynamic simulation based on  [OterkusS2014](@cite).
-
-# This function iterates over a collection of nodes and computes the critical time step for each node using provided input data and parameters.
-
-# # Arguments
-# - `nodes::AbstractVector{Int64}`: The collection of nodes to calculate the critical time step for.
-# - `lambda::Float64`: The material parameter used in the calculations.
-# - `Cv::Float64`: The heat capacity at constant volume used in the calculations.
-
-# # Returns
-# - `Float64`: The calculated critical time step for the thermodynamic simulation.
-
-# # Dependencies
-# This function depends on the following data fields from the `datamanager` module:
-# - `get_nlist()`: Returns the neighbor list.
-# - `get_field("Density")`: Returns the density field.
-# - `get_field("Bond Length")`: Returns the bond distance field.
-# - `get_field("Volume")`: Returns the volume field.
-# - `get_field("Number of Neighbors")`: Returns the number of neighbors field.
-# """
-# function compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64},
-#                                                   lambda::Union{Float64,Int64})
-#     critical_time_step::Float64 = 1.0e50
-#     nlist = Data_Manager.get_nlist()
-#     density = Data_Manager.get_field("Density")
-#     undeformed_bond_length = Data_Manager.get_field("Bond Length")
-#     volume = Data_Manager.get_field("Volume")
-#     Cv = Data_Manager.get_field("Specific Heat Capacity")
-#     lambda = matrix_style(lambda)
-#     eigLam = maximum(eigvals(lambda))
-
-#     for iID in nodes
-#         denominator = get_cs_denominator(volume[nlist[iID]], undeformed_bond_length[iID])
-#         t = density[iID] * Cv[iID] / (eigLam * denominator)
-#         critical_time_step = test_timestep(t, critical_time_step)
-#     end
-#     return sqrt(critical_time_step)
-# end
-
 """
 	init_solver(params::Dict, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 

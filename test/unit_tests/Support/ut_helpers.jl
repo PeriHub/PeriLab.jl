@@ -528,27 +528,6 @@ end
     @test sum(size(Atest)) == 6
 end
 
-@testset "ut_find_files_with_ending" begin
-    # Create a temporary test directory with sample files
-    tmpdir = mktempdir()
-    touch(joinpath(tmpdir, "file1.txt"))
-    touch(joinpath(tmpdir, "file2.txt"))
-    touch(joinpath(tmpdir, "file3.csv"))
-    touch(joinpath(tmpdir, "file4.csv"))
-    mkdir(joinpath(tmpdir, "subdir"))
-
-    # Test case 1: Find .txt files
-    @test PeriLab.Solver_Manager.Helpers.find_files_with_ending(tmpdir, ".txt") ==
-          ["file1.txt", "file2.txt"]
-
-    # Test case 2: Find .csv files
-    @test PeriLab.Solver_Manager.Helpers.find_files_with_ending(tmpdir, ".csv") ==
-          ["file3.csv", "file4.csv"]
-
-    # Clean up: Remove the temporary test directory and files
-    rm(tmpdir; recursive = true)
-end
-
 # only interface test, because the called fromVoigt function is tested in "Tensors"
 @testset "ut_get_fourth_order" begin
     @test size(PeriLab.Solver_Manager.Helpers.get_fourth_order(zeros(Float64, 6, 6),

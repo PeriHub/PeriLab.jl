@@ -194,8 +194,6 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
         end
     end
 
-    # material_models = split(material_parameter["Material Model"], "+")
-    # material_models = map(r -> strip(r), material_models)
     @timeit "compute material" begin
         material_models::Vector{String} = Data_Manager.get_analysis_model("Correspondence Model",
                                                                           block)

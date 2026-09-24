@@ -27,7 +27,6 @@ export find_active_nodes
 export get_active_update_nodes
 export find_indices
 export find_inverse_bond_id
-export find_files_with_ending
 export get_block_nodes
 export matrix_style
 export get_fourth_order
@@ -48,7 +47,6 @@ export get_ring
 export get_hexagon
 # export nearest_point_id
 export get_shared_horizon
-export matrix_style
 export matrix_to_voigt
 export matrix_to_engineering_voigt
 export voigt_to_matrix
@@ -234,11 +232,10 @@ function get_nearest_neighbors(nodes,
                          coords_nb,# Potential neighbor coordinates -> must be transpose for the datamanager definition
                          nhs,
                          iID,
-                         search_radius = radius isa AbstractVector ? radius[iID] : radius
-                         ) do i,
-                              j,
-                              _,
-                              L
+                         search_radius = radius isa AbstractVector ? radius[iID] : radius) do i,
+                                                                                              j,
+                                                                                              _,
+                                                                                              L
             if i != j || diffent_lists
                 push!(neighbors, j)
                 list_empty = false
@@ -603,7 +600,7 @@ Returns the indices of `vector` that are equal to `what`.
 - `indices::Vector`: The indices of `vector` that are equal to `what`.
 """
 function find_indices(vector::Vector{T}, what::T) where {T<:Union{Int64,Float64,Bool}}
-    return findall(item -> item == what, vector)
+    return findall(==(what), vector)
 end
 
 """
@@ -647,23 +644,6 @@ function find_active_nodes(active::AbstractVector{Bool},
 end
 
 """
-	find_files_with_ending(folder_path::AbstractString, file_ending::AbstractString)
-
-Returns a list of files in `folder_path` that end with `file_ending`.
-
-# Arguments
-- `folder_path::AbstractString`: The path to the folder.
-- `file_ending::AbstractString`: The ending of the files.
-# Returns
-- `file_list::Vector{String}`: The list of files that end with `file_ending`.
-"""
-function find_files_with_ending(folder_path::AbstractString, file_ending::AbstractString)
-    file_list = filter(x -> isfile(joinpath(folder_path, x)) && endswith(x, file_ending),
-                       readdir(folder_path))
-    return file_list
-end
-
-"""
 	check_inf_or_nan(array, msg)
 
 Checks if the sum of an array is finite and has only numbers. If not, an error is raised.
@@ -676,9 +656,10 @@ Checks if the sum of an array is finite and has only numbers. If not, an error i
 """
 function check_inf_or_nan(array::AbstractArray{T},
                           msg::String) where {T<:Union{Int64,Float64}}
-    if isnan(sum(array))
+    total = sum(array)
+    if isnan(total)
         @abort "Field ''$msg'' has NaN elements."
-    elseif !isfinite(sum(array))
+    elseif !isfinite(total)
         @abort "Field ''$msg'' is infinite."
     end
 end
@@ -1192,41 +1173,41 @@ function rotation3x3!(R::AbstractMatrix{Float64}, T::AbstractMatrix{Float64})
 
     @inbounds @fastmath begin
         T[1,
-          1] = r11 * (r11 * t11 + r12 * t21 + r13 * t31) +
-               r12 * (r11 * t12 + r12 * t22 + r13 * t32) +
-               r13 * (r11 * t13 + r12 * t23 + r13 * t33)
+        1] = r11 * (r11 * t11 + r12 * t21 + r13 * t31) +
+                  r12 * (r11 * t12 + r12 * t22 + r13 * t32) +
+                  r13 * (r11 * t13 + r12 * t23 + r13 * t33)
         T[1,
-          2] = r21 * (r11 * t11 + r12 * t21 + r13 * t31) +
-               r22 * (r11 * t12 + r12 * t22 + r13 * t32) +
-               r23 * (r11 * t13 + r12 * t23 + r13 * t33)
+        2] = r21 * (r11 * t11 + r12 * t21 + r13 * t31) +
+                  r22 * (r11 * t12 + r12 * t22 + r13 * t32) +
+                  r23 * (r11 * t13 + r12 * t23 + r13 * t33)
         T[1,
-          3] = r31 * (r11 * t11 + r12 * t21 + r13 * t31) +
-               r32 * (r11 * t12 + r12 * t22 + r13 * t32) +
-               r33 * (r11 * t13 + r12 * t23 + r13 * t33)
+        3] = r31 * (r11 * t11 + r12 * t21 + r13 * t31) +
+                  r32 * (r11 * t12 + r12 * t22 + r13 * t32) +
+                  r33 * (r11 * t13 + r12 * t23 + r13 * t33)
         T[2,
-          1] = r11 * (r21 * t11 + r22 * t21 + r23 * t31) +
-               r12 * (r21 * t12 + r22 * t22 + r23 * t32) +
-               r13 * (r21 * t13 + r22 * t23 + r23 * t33)
+        1] = r11 * (r21 * t11 + r22 * t21 + r23 * t31) +
+                  r12 * (r21 * t12 + r22 * t22 + r23 * t32) +
+                  r13 * (r21 * t13 + r22 * t23 + r23 * t33)
         T[2,
-          2] = r21 * (r21 * t11 + r22 * t21 + r23 * t31) +
-               r22 * (r21 * t12 + r22 * t22 + r23 * t32) +
-               r23 * (r21 * t13 + r22 * t23 + r23 * t33)
+        2] = r21 * (r21 * t11 + r22 * t21 + r23 * t31) +
+                  r22 * (r21 * t12 + r22 * t22 + r23 * t32) +
+                  r23 * (r21 * t13 + r22 * t23 + r23 * t33)
         T[2,
-          3] = r31 * (r21 * t11 + r22 * t21 + r23 * t31) +
-               r32 * (r21 * t12 + r22 * t22 + r23 * t32) +
-               r33 * (r21 * t13 + r22 * t23 + r23 * t33)
+        3] = r31 * (r21 * t11 + r22 * t21 + r23 * t31) +
+                  r32 * (r21 * t12 + r22 * t22 + r23 * t32) +
+                  r33 * (r21 * t13 + r22 * t23 + r23 * t33)
         T[3,
-          1] = r11 * (r31 * t11 + r32 * t21 + r33 * t31) +
-               r12 * (r31 * t12 + r32 * t22 + r33 * t32) +
-               r13 * (r31 * t13 + r32 * t23 + r33 * t33)
+        1] = r11 * (r31 * t11 + r32 * t21 + r33 * t31) +
+                  r12 * (r31 * t12 + r32 * t22 + r33 * t32) +
+                  r13 * (r31 * t13 + r32 * t23 + r33 * t33)
         T[3,
-          2] = r21 * (r31 * t11 + r32 * t21 + r33 * t31) +
-               r22 * (r31 * t12 + r32 * t22 + r33 * t32) +
-               r23 * (r31 * t13 + r32 * t23 + r33 * t33)
+        2] = r21 * (r31 * t11 + r32 * t21 + r33 * t31) +
+                  r22 * (r31 * t12 + r32 * t22 + r33 * t32) +
+                  r23 * (r31 * t13 + r32 * t23 + r33 * t33)
         T[3,
-          3] = r31 * (r31 * t11 + r32 * t21 + r33 * t31) +
-               r32 * (r31 * t12 + r32 * t22 + r33 * t32) +
-               r33 * (r31 * t13 + r32 * t23 + r33 * t33)
+        3] = r31 * (r31 * t11 + r32 * t21 + r33 * t31) +
+                  r32 * (r31 * t12 + r32 * t22 + r33 * t32) +
+                  r33 * (r31 * t13 + r32 * t23 + r33 * t33)
     end
     return nothing
 end

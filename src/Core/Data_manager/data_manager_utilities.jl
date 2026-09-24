@@ -24,7 +24,5 @@ Example:
 ```
 """
 function set_nnodes()
-    data["num_controller"]
-    data["num_responder"]
     data["nnodes"] = data["num_controller"] + data["num_responder"]
 end

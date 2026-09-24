@@ -41,7 +41,6 @@ function init_influence_function(nodes::AbstractVector{Int64},
 
     # --- 2) Fallback: generic string expression ---
     influence_function_from_string!(omega, nodes, bond_geometry, bond_length, dof, expr_str)
-    return
 end
 
 """
