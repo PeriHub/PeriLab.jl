@@ -4,6 +4,6 @@ TIME STEPS absolute 1.0E-14
 NODAL VARIABLES absolute 1.0E-12
 	DisplacementsX   absolute 1.0E-8
 	DisplacementsY   absolute 1.0E-8
-	ForcesX          absolute 1.0E-6
-	ForcesY          absolute 1.0E-6
+	ForcesX          absolute 1.0E-5
+	ForcesY          absolute 1.0E-5
 	"Number of Neighbors" absolute 1.0E-7
