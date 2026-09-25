@@ -395,7 +395,7 @@ function distribute_neighborhoodlist_to_cores(comm::MPI.Comm,
                                                                     Int64)
     end
 
-    nlist_core .= nlist[distribution[rank + 1][:]]
+    nlist_core .= nlist[distribution[rank+1][:]]
     nlist_core .= get_local_neighbors(Data_Manager.get_local_nodes, nlist_core)
     nlist = 0
 end
@@ -556,7 +556,7 @@ function check_mesh_elements(mesh::DataFrame, dof::Int64)
         else
             if "_x" == mesh_entry[(end - 1):end]
                 if id + 1 <= length(mnames)
-                    if mnames[id + 1][(end - 1):end] == "_y"
+                    if mnames[id+1][(end - 1):end] == "_y"
                         name = mesh_entry[1:(end - 2)]
                         mesh_id = [name * "_x", name * "_y"]
                         if dof == 3
@@ -1299,7 +1299,7 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
     node_sets = Dict("Extruded_1" => [], "Extruded_2" => [])
 
     for i in (coord_max + step_x):step_x:(coord_max + step_x * number),
-        j in row_min:step_y:(row_max + step_y),
+        j in row_min:step_y:row_max,
         k in min_z:step_z:max_z
         if direction == "X"
             if dof == 2
@@ -1331,7 +1331,7 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
     block_id += 1
 
     for i in (coord_min - step_x):(-step_x):(coord_min - step_x * number),
-        j in row_min:step_y:(row_max + step_y),
+        j in row_min:step_y:row_max,
         k in min_z:step_z:max_z
         if direction == "X"
             if dof == 2

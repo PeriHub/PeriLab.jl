@@ -687,14 +687,10 @@ end
                                   1.0,
                                   2.0,
                                   2.0,
-                                  2.0,
-                                  3.0,
                                   3.0,
                                   3.0,
                                   -1.0,
                                   -1.0,
-                                  -1.0,
-                                  -2.0,
                                   -2.0,
                                   -2.0
                               ],
@@ -705,16 +701,12 @@ end
                                   1.0,
                                   0.0,
                                   1.0,
-                                  2.0,
                                   0.0,
                                   1.0,
-                                  2.0,
                                   0.0,
                                   1.0,
-                                  2.0,
                                   0.0,
-                                  1.0,
-                                  2.0
+                                  1.0
                               ],
                               volume = [
                                   0.2,
@@ -728,19 +720,15 @@ end
                                   1.0,
                                   1.0,
                                   1.0,
-                                  1.0,
-                                  1.0,
-                                  1.0,
-                                  1.0,
                                   1.0
                               ],
-                              block_id = [1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3])
+                              block_id = [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3])
 
     mesh_return, node_sets = PeriLab.IO.extrude_surface_mesh(mesh, params)
 
     @test mesh_expected == mesh_return
     @test node_sets ==
-          Dict("Extruded_2" => [6, 7, 8, 9, 10, 11], "Extruded_1" => [0, 1, 2, 3, 4, 5])
+          Dict("Extruded_2" => [4, 5, 6, 7], "Extruded_1" => [0, 1, 2, 3])
 
     params = Dict("Discretization" => Dict("Surface Extrusion" => Dict("Direction" => "Y",
                                                                        "Step_X" => 1.0,
@@ -768,14 +756,10 @@ end
                                   1.0,
                                   2.0,
                                   2.0,
-                                  2.0,
-                                  3.0,
                                   3.0,
                                   3.0,
                                   -1.0,
                                   -1.0,
-                                  -1.0,
-                                  -2.0,
                                   -2.0,
                                   -2.0
                               ],
@@ -786,22 +770,14 @@ end
                                   1.0,
                                   0.0,
                                   1.0,
-                                  2.0,
                                   0.0,
                                   1.0,
-                                  2.0,
                                   0.0,
                                   1.0,
-                                  2.0,
                                   0.0,
-                                  1.0,
-                                  2.0
+                                  1.0
                               ],
                               z = [
-                                  0.0,
-                                  0.0,
-                                  0.0,
-                                  0.0,
                                   0.0,
                                   0.0,
                                   0.0,
@@ -827,19 +803,15 @@ end
                                   1.0,
                                   1.0,
                                   1.0,
-                                  1.0,
-                                  1.0,
-                                  1.0,
-                                  1.0,
                                   1.0
                               ],
-                              block_id = [1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3])
+                              block_id = [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3])
 
     mesh_return, node_sets = PeriLab.IO.extrude_surface_mesh(mesh, params)
 
     @test mesh_expected == mesh_return
     @test node_sets ==
-          Dict("Extruded_2" => [6, 7, 8, 9, 10, 11], "Extruded_1" => [0, 1, 2, 3, 4, 5])
+          Dict("Extruded_2" => [4, 5, 6, 7], "Extruded_1" => [0, 1, 2, 3])
 
     mesh = DataFrame(x = [0.0, 1.0, 0.0, 1.0],
                      y = [0.0, 0.0, 1.0, 1.0],
@@ -860,16 +832,12 @@ end
                                   1.0,
                                   0.0,
                                   1.0,
-                                  2.0,
                                   0.0,
                                   1.0,
-                                  2.0,
                                   0.0,
                                   1.0,
-                                  2.0,
                                   0.0,
-                                  1.0,
-                                  2.0
+                                  1.0
                               ],
                               y = [
                                   0.0,
@@ -878,22 +846,14 @@ end
                                   1.0,
                                   2.0,
                                   2.0,
-                                  2.0,
-                                  3.0,
                                   3.0,
                                   3.0,
                                   -1.0,
                                   -1.0,
-                                  -1.0,
-                                  -2.0,
                                   -2.0,
                                   -2.0
                               ],
                               z = [
-                                  0.0,
-                                  0.0,
-                                  0.0,
-                                  0.0,
                                   0.0,
                                   0.0,
                                   0.0,
@@ -919,17 +879,13 @@ end
                                   1.0,
                                   1.0,
                                   1.0,
-                                  1.0,
-                                  1.0,
-                                  1.0,
-                                  1.0,
                                   1.0
                               ],
-                              block_id = [1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3])
+                              block_id = [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3])
 
     mesh_return, node_sets = PeriLab.IO.extrude_surface_mesh(mesh, params)
 
     @test mesh_expected == mesh_return
     @test node_sets ==
-          Dict("Extruded_2" => [6, 7, 8, 9, 10, 11], "Extruded_1" => [0, 1, 2, 3, 4, 5])
+          Dict("Extruded_2" => [4, 5, 6, 7], "Extruded_1" => [0, 1, 2, 3])
 end

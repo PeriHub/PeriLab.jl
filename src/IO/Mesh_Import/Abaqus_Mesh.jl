@@ -76,7 +76,7 @@ function read_mesh(params::Dict, filename::String)
     element_written = []
     nsets = Dict{String,Vector{Int64}}()
 
-    nset_names = []
+    nset_names = ["All"]
 
     for boundary_condtion in keys(params["Boundary Conditions"])
         if haskey(params["Boundary Conditions"][boundary_condtion], "Node Set")
@@ -128,6 +128,7 @@ function read_mesh(params::Dict, filename::String)
             push!(block_names, key)
         end
     end
+    nsets["All"] = collect(1:(id - 1))
     @info "Found $(block_id-1) block(s)"
     @info "Blocks: $block_names"
     @info "Found $(length(nsets)) node set(s)"

@@ -1052,16 +1052,15 @@ global expected_structure = Dict("PeriLab" => [
                                                                          false
                                                                      ],
                                                                      "Linear Static Matrix Based" => [
-                                                                         Dict{Any,
-                                                                              Any}("Safety Factor" => [
-                                                                                       Union{Float64,
-                                                                                             Int64},
-                                                                                       false
-                                                                                   ],
-                                                                                   "Matrix Update" => [
-                                                                                       Bool,
-                                                                                       false
-                                                                                   ]),
+                                                                         Dict{Any,Any}("Safety Factor" => [
+                                                                                           Union{Float64,
+                                                                                                 Int64},
+                                                                                           false
+                                                                                       ],
+                                                                                       "Matrix Update" => [
+                                                                                           Bool,
+                                                                                           false
+                                                                                       ]),
                                                                          false
                                                                      ],
                                                                      "Newmark" => [
@@ -1212,6 +1211,23 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                 Any}("Safety Factor" => [
                                                                                                          Union{Float64,
                                                                                                                Int64},
+                                                                                                         false
+                                                                                                     ],
+                                                                                                     "Matrix Update" => [
+                                                                                                         Bool,
+                                                                                                         false
+                                                                                                     ]),
+                                                                                           false
+                                                                                       ],
+                                                                                       "Newmark" => [
+                                                                                           Dict{Any,
+                                                                                                Any}("Safety Factor" => [
+                                                                                                         Union{Float64,
+                                                                                                               Int64},
+                                                                                                         false
+                                                                                                     ],
+                                                                                                     "Matrix Update" => [
+                                                                                                         Bool,
                                                                                                          false
                                                                                                      ]),
                                                                                            false
