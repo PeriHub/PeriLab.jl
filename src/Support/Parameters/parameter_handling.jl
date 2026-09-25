@@ -799,7 +799,8 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                      ],
                                                                                                      "Thermal Expansion Coefficient" => [
                                                                                                          Union{Float64,
-                                                                                                               Int64},
+                                                                                                               Int64,
+                                                                                                               Vector{Float64}},
                                                                                                          false
                                                                                                      ],
                                                                                                      "Reference Temperature" => [

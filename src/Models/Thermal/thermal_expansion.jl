@@ -37,7 +37,7 @@ function thermal_model_name()
 end
 
 function thermal_expansion_matrix(alpha::T,
-                                  ::Val{2}) where {T<:Union{Float64,Matrix{Float64}}}
+                                  ::Val{2}) where {T<:Union{Float64,Vector{Float64}}}
     if length(alpha) == 1
         return alpha_mat = SMatrix{2,2,Float64}(alpha, 0.0, 0.0, alpha)
     elseif length(alpha) == 2
@@ -48,7 +48,7 @@ function thermal_expansion_matrix(alpha::T,
     end
 end
 function thermal_expansion_matrix(alpha::T,
-                                  ::Val{3}) where {T<:Union{Float64,Matrix{Float64}}}
+                                  ::Val{3}) where {T<:Union{Float64,Vector{Float64}}}
     if length(alpha) == 1
         return alpha_mat = SMatrix{3,3,Float64}(alpha, 0.0, 0.0, 0.0, alpha, 0.0, 0.0, 0.0,
                                                 alpha)
@@ -102,7 +102,7 @@ function compute_model(nodes::AbstractVector{Int64},
                                                                        "NP1")
     dof::Int64 = Data_Manager.get_dof()
     alpha::Union{Float64,
-                 Matrix{Float64}} = thermal_parameter["Thermal Expansion Coefficient"]
+                 Vector{Float64}} = thermal_parameter["Thermal Expansion Coefficient"]
 
     @timeit "thermal_expansion_matrix" alpha_mat=thermal_expansion_matrix(alpha,
                                                                           Val(dof))
