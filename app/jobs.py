@@ -29,7 +29,6 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-
 class JobStatus(str, Enum):
     QUEUED = "queued"
     RUNNING = "running"
@@ -37,7 +36,6 @@ class JobStatus(str, Enum):
     FAILED = "failed"
     CANCELLED = "cancelled"
     INTERRUPTED = "interrupted"  # was running when the server restarted
-
 
 @dataclass
 class Job:
