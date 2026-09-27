@@ -16,7 +16,6 @@ restart can at least recover job history (running jobs are marked
 
 from __future__ import annotations
 
-import io
 import json
 import os
 import re
@@ -236,7 +235,8 @@ class JobManager:
                 proc.wait()
                 monitor.join()
                 job.exit_code = proc.returncode
-                job.status = JobStatus.COMPLETED if proc.returncode == 0 else JobStatus.FAILED
+                if job.status == JobStatus.RUNNING:  # don't clobber CANCELLED
+                    job.status = JobStatus.COMPLETED if proc.returncode == 0 else JobStatus.FAILED
             except FileNotFoundError as e:
                 job.error = f"could not launch PeriLab binary: {e}"
                 job.status = JobStatus.FAILED
@@ -260,12 +260,14 @@ class JobManager:
         step_re = re.compile(
             r"Step:\s*(\d+)\s*/\s*(\d+)\s*\[([0-9eE.+-]+)\s*s\]"
         )
+        proc = job._process
         while True:
+            # Checked before reading so the last pass sees the final log lines.
+            done = proc.poll() is not None
             log_path = self.log_path(job)
             if log_path is not None:
                 try:
                     with open(log_path, "r") as f:
-                        f.seek(0, io.SEEK_END)
                         f.seek(0)
                         lines = f.readlines()
                 except OSError:
@@ -280,7 +282,7 @@ class JobManager:
                         except ValueError:
                             pass
                         job.save()
-            if job.status not in (JobStatus.QUEUED, JobStatus.RUNNING):
+            if done:
                 break
             time.sleep(0.2)
 

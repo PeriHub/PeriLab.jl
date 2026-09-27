@@ -202,13 +202,15 @@ def get_log(job_id: str, tail: Optional[int] = None):
 async def stream_log(job_id: str):
     """Server-sent, append-only tail of the log until the job finishes."""
     job = _get_or_404(job_id)
-    log_path = manager.log_path(job)
 
     async def generator():
         pos = 0
+        log_path = None
         # PeriLab's log appears partway through the run. It's append-only
-        # once created, so resolve it once and only tail it.
+        # once created, so resolve it until found, then only tail it.
         while True:
+            done = job.status not in (JobStatus.QUEUED, JobStatus.RUNNING)
+            log_path = log_path or manager.log_path(job)
             if log_path is not None:
                 with open(log_path, "r", errors="replace") as f:
                     f.seek(pos)
@@ -216,7 +218,7 @@ async def stream_log(job_id: str):
                     pos = f.tell()
                 if chunk:
                     yield chunk
-            if job.status not in (JobStatus.QUEUED, JobStatus.RUNNING):
+            if done:
                 break
             await asyncio.sleep(1)
 
