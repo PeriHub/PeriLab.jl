@@ -188,11 +188,11 @@ function (@main)(ARGS)
     if rank == 0
         if parsed_args["examples"]
             get_examples()
-            return
+            return 0
         end
         if length(parsed_args["filenames"]) == 0
             @error "Please provide at least one filename, f.e. 'PeriLab example.yaml'"
-            return
+            return 1
         end
     end
     MPI.Barrier(comm)
@@ -206,7 +206,7 @@ function (@main)(ARGS)
             reload = parsed_args["reload"])
     end
     # MPI.Finalize()
-    return
+    return 0
 end
 
 """

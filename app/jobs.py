@@ -179,6 +179,10 @@ class JobManager:
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_bytes(content)
 
+        extra_args = list(extra_args)
+        if "-s" not in extra_args and "--silent" not in extra_args:
+            extra_args.insert(0, "-s")
+
         command = [self.binary_path, str(main_rel), *extra_args]
         if num_procs and num_procs > 1:
             if not self.mpi_launcher:

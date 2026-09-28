@@ -57,7 +57,7 @@ ENV PERILAB_JOBS_DIR="/app/simulations"
 ENV MAX_CONCURRENT_JOBS="2"
 # ENV PERILAB_MPI_LAUNCHER="mpiexecjl"   # set this if you add MPI to the image
 
-EXPOSE 8000
+EXPOSE 3000
 
 WORKDIR /app
-CMD ["python3", "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python3", "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "3000"]
