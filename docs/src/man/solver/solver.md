@@ -132,17 +132,23 @@ It is the same solver as the Verlet based solver above. The main difference is, 
 !!! warning "Models"
     If update is active it is not very efficient, because the creation of new matrix is more costly than the material point approach.
 
-| Parameter       | Type | Optional | Description                                  |
-| --------------- | ---- | -------- | -------------------------------------------- |
-| Update Matrix   | Bool | Yes      | Activates the update of the stiffness matrix |
-| Model reduction | Dict | Yes      | Defines the model reduction options          |
+| Parameter             | Type   | Optional | Description                                                                                                                    |
+| --------------------- | ------ | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Update Matrix          | Bool   | Yes      | Activates the update of the stiffness matrix                                                                                     |
+| Model reduction        | Dict   | Yes      | Defines the model reduction options, see below                                                                                   |
+| Stiffness Matrix Cache | String | Yes      | File path. If it exists, the stiffness matrix (and its sparsity pattern) is loaded from it instead of being assembled; if it does not exist yet, the freshly assembled matrix is written there for the next run to reuse. Useful while iterating on solver/reduction settings without paying the assembly cost every time. Not checked against the deck in any way -- an outdated cache for a changed mesh/material is the user's own responsibility to delete. |
 
 If model reduction
 
-| Parameter        | Type          | Optional | Description                                                               |
-| ---------------- | ------------- | -------- | ------------------------------------------------------------------------- |
-| Type             | String        | No       | Defines the type of model redction (Static Condensationn)                 |
-| Redcution Blocks | String or Int | No       | Defines the blocks to be condensed; defintion are (4 or 1 2 4 or 1, 2, 4) |
+| Parameter          | Type          | Optional | Description                                                                                                                                                                                                                              |
+| ------------------ | ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Type               | String        | No       | Defines the type of model reduction: `Static Condensation` (Guyan), `Craig Bampton` (single-level), or `Craig Bampton Cascade` (multi-level, for a condensed region too large to factorize in one piece, see [Condensation](@ref))       |
+| Reduction Blocks   | String or Int | No       | Defines the blocks to be condensed; definitions are e.g. `4` or `1 2 4` or `1, 2, 4`                                                                                                                                                     |
+| Number of Modes    | Int           | Yes      | Number of fixed-interface modes retained per Craig-Bampton reduction (`Craig Bampton`/`Craig Bampton Cascade` only); `0` is the exact, static (Guyan) limit. Ignored for `Static Condensation`. Default: `1`                            |
+| Material Point Region | Bool        | Yes      | Whether the non-reduced blocks keep their own material-point force computation (`true`) or are folded into the coupling layer instead. Default: `true`                                                                                 |
+| Max Memory MiB     | Float or null | Yes      | `Craig Bampton Cascade` only. Aborts the reduction with an informative, catchable error once this process' peak resident memory exceeds this many MiB, checked once per level -- the only way to get a diagnosable stop instead of an unrecoverable OS/scheduler OOM kill (`SIGKILL`), which no Julia code can catch. `null` disables the check. Default: `8192` (8 GiB)                                                                                        |
+| Dense Shell Limit  | Int           | Yes      | `Craig Bampton Cascade` only. Above this many physical degrees of freedom, a level's own local system is built and factorized sparse instead of dense -- a shell this wide makes the dense `O(n^2)` memory and `O(n^3)` factorization/eigensolve cost of the default path impractical. Lower it if a level's shell is an outlier in size (see the `@warn` the cascade logs for this) and memory is still tight; raising it trades memory for the faster dense path on levels that fit. Default: `1500`                                                          |
+| Reduced Matrix Cache | String      | Yes      | File path. If it exists, the reduced stiffness/mass matrices are loaded from it instead of being recomputed (validated against the run's retained node list and `dof` before being trusted); if it does not exist yet, the freshly computed reduced matrices are written there. Intended for a parameter study that only ever changes the free (non-reduced) region, never the reduced block's own material/geometry/reduction settings -- the reduction itself is otherwise redone identically on every run. Not a full guarantee the rest of the deck is unchanged. |
 
 
 ## Computational effort

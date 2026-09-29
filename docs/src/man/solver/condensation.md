@@ -201,3 +201,45 @@ $\boldsymbol{\Phi}_n$ are computed once from the initial stiffness. The eigenval
 problem adds to the preprocessing cost of the factorization of $\mathbf{K}_{ll}$. In
 return, waves crossing the $\Omega_l$/$\Omega_r$ interface are transmitted correctly up
 to approximately $\omega_n$; above that frequency they are reflected.
+
+## Multi-Level Craig-Bampton (Cascade)
+
+For a condensed region too large to factorize and solve the eigenvalue problem for in one
+piece -- both scale with the total number of condensed dof -- the reduction can instead be
+done in several levels. The condensed region grows from the side farthest from $\Omega_r$
+inward, one shell $S_k$ at a time; each level condenses only that shell together with the
+superelement carried in from the level before it, never the whole remaining region.
+
+Level 1 reduces $\Omega_1$ exactly as above, giving a superelement with dof
+$\mathbf{x}^{(1)} = [\mathbf{u}_{\Gamma_1}^T,\,\mathbf{q}_1^T]^T$: the interface
+$\Gamma_1$ (the material points of $\Omega_1$ with a bond outside it) plus $\mathbf{q}_1$,
+its own fixed-interface modes. On level $k \ge 2$ the region is extended by the next shell,
+$\Omega_k = \Omega_{k-1} \cup S_k$. Because $\Gamma_{k-1}$ was constructed to be exactly
+the boundary of $\Omega_{k-1}$, $S_k$ only couples to the previous superelement through
+that interface, so the two combine into one local system without anything else from
+$\Omega_{k-1}$ re-entering it. Of that local system, only the new interface
+$\Gamma_k \subset S_k$ stays retained; the rest of $S_k$, the previous interface
+$\Gamma_{k-1}$, and the previous modes $\mathbf{q}_{k-1}$ are all condensed together --
+replaced by a fresh $\Gamma_k$ and a fresh $\mathbf{q}_k$, not accumulated with the
+earlier ones. After the last level $K$, $\Gamma_K$ borders $\Omega_r$ itself and the
+resulting $\hat{\mathbf{K}}$, $\hat{\mathbf{M}}$ enter the time integration exactly like
+the single-level ones above.
+
+The size of the system solved on level $k$ is therefore bounded by the width of $S_k$ and
+the size of $\Gamma_{k-1}$/$\mathbf{q}_{k-1}$ -- never by how much of $\Omega_l$ has
+already been absorbed -- so the cost grows with the number of levels, not with the size of
+the whole condensed region. Two consequences follow directly. Replacing rather than
+accumulating the physical interface is exact, for the same reason the single-level
+reduction is exact: two condensed dof at different levels can only be directly coupled if
+their levels are adjacent, so nothing outside a shell and the interface it replaces is
+ever reachable from what that level eliminates. Replacing the modal coordinates is not:
+each level's $\mathbf{q}_k$ is a fresh fixed-interface eigenproblem of only that level's
+local system, not of $\Omega_l$ as a whole, so truncation error accumulates across levels.
+Using the same mode count/cutoff frequency throughout, well above the frequency band that
+actually matters, keeps this controlled; `Number of Modes` `= 0` remains the exact, static
+(Guyan) limit at every level, unaffected by any of this.
+
+In practice the levels are found and sized automatically -- there is no user-facing
+"level count" to set. `Max Memory MiB` and `Dense Shell Limit` are the two knobs that
+matter for a condensed region large enough to need this scheme at all; see the option
+table under [Verlet Matrix Based](@ref) for both.
