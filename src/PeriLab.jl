@@ -196,17 +196,18 @@ function (@main)(ARGS)
         end
     end
     MPI.Barrier(comm)
+    exit_code = 0
     for filename in parsed_args["filenames"]
-        run(filename;
-            output_dir = parsed_args["output_dir"],
-            dry_run = parsed_args["dry_run"],
-            verbose = parsed_args["verbose"],
-            debug = parsed_args["debug"],
-            silent = parsed_args["silent"],
-            reload = parsed_args["reload"])
+        exit_code |= run(filename;
+                         output_dir = parsed_args["output_dir"],
+                         dry_run = parsed_args["dry_run"],
+                         verbose = parsed_args["verbose"],
+                         debug = parsed_args["debug"],
+                         silent = parsed_args["silent"],
+                         reload = parsed_args["reload"])
     end
     # MPI.Finalize()
-    return 0
+    return exit_code
 end
 
 """
@@ -337,6 +338,8 @@ function run(filename::String;
              reload::Bool = false,)
     reset_timer!()
     t0 = time()
+    exit_code = 0
+    previous_logger = global_logger()
     @timeit "PeriLab" begin
         if !MPI.Initialized()
             MPI.Init()
@@ -489,26 +492,30 @@ function run(filename::String;
             end
 
         catch e
+            exit_code = 1
             if e isa InterruptException
                 @info "PeriLab was interrupted"
             elseif !isa(e, PeriLabError)
                 Logging_Module.print_exception(e)
                 rethrow(e)
             end
-            if size > 1
-                MPI.Abort(comm, 0)
+        finally
+            if !isnothing(result_files)
+                @debug "Close result files"
+                IO.close_result_files(result_files, outputs)
             end
-        end
-        if !isnothing(result_files)
-            @debug "Close result files"
-            IO.close_result_files(result_files, outputs)
-
-            if size > 1 && rank == 0
-                IO.merge_exodus_files(result_files, output_dir)
+            # ponytail: the other ranks may be stuck in a collective, so no merge after an error
+            if size > 1 && exit_code != 0
+                MPI.Abort(comm, exit_code)
             end
-            MPI.Barrier(comm)
-            if (size > 1 && !debug && !reload) || dry_run
-                IO.delete_files(result_files, output_dir)
+            if !isnothing(result_files)
+                if size > 1 && rank == 0
+                    IO.merge_exodus_files(result_files, output_dir)
+                end
+                MPI.Barrier(comm)
+                if (size > 1 && !debug && !reload) || dry_run
+                    IO.delete_files(result_files, output_dir)
+                end
             end
         end
     end
@@ -520,6 +527,8 @@ function run(filename::String;
     end
     @info Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
     @info "PeriLab finished in $(ceil(time() - t0))s"
+    global_logger(previous_logger)
+    return exit_code
 end
 
 end # module

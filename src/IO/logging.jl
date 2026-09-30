@@ -72,9 +72,27 @@ function print_exception(e::Exception)
         end
     end
 end
+"""
+    AbortLogger
+
+Forwards every message to `logger`; after an `@error` has been written it throws a
+`PeriLabError`, which cancels the simulation. `catch_exceptions` is `false`, otherwise
+Julia's logging would swallow the exception.
+"""
+struct AbortLogger{T<:AbstractLogger} <: AbstractLogger
+    logger::T
+end
+Logging.min_enabled_level(l::AbortLogger) = Logging.min_enabled_level(l.logger)
+Logging.shouldlog(l::AbortLogger, args...) = Logging.shouldlog(l.logger, args...)
+Logging.catch_exceptions(::AbortLogger) = false
+function Logging.handle_message(l::AbortLogger, level, message, args...; kwargs...)
+    Logging.handle_message(l.logger, level, message, args...; kwargs...)
+    level >= Logging.Error && throw(PeriLabError("Fatal", string(message)))
+end
+
 function get_log_stream(id::Int64)
     try
-        return current_logger().loggers[id].logger.stream
+        return current_logger().logger.loggers[id].logger.stream
     catch
         return nothing
     end
@@ -194,74 +212,39 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
     log_file = set_log_file(filename, debug, rank, size)
 
     if log_file == ""
-        Logging.disable_logging(Logging.Error)
+        # MPI ranks without their own log file only report errors
+        global_logger(AbortLogger(MinLevelLogger(ConsoleLogger(stderr), Logging.Error)))
         return
     end
-    demux_logger = nothing
-    # try
     if debug
         file_logger = FormatLogger(log_file; append = false) do io, args
-            if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
-                println(io,
-                        "[",
-                        args.level,
-                        "] ",
-                        args._module,
-                        ", ",
-                        args.line,
-                        " | ",
-                        args.message)
-            end
-        end
-        error_logger = FormatLogger(log_file; append = false) do io, args
-            if args.level == Logging.Error
-                throw(PeriLabError(args, args.message))
-            end
+            println(io,
+                    "[",
+                    args.level,
+                    "] ",
+                    args._module,
+                    ", ",
+                    args.line,
+                    " | ",
+                    args.message)
         end
         filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
         demux_logger = TeeLogger(MinLevelLogger(filtered_logger, Logging.Debug),
-                                 MinLevelLogger(file_logger, Logging.Debug),
-                                 MinLevelLogger(error_logger, Logging.Info))
-    elseif silent
-        io = open(log_file, "a")
-        redirect_stderr(io)
-        file_logger = FormatLogger(log_file; append = false) do io, args
-            if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
-                println(io, "[", args.level, "] ", args.message)
-            end
-        end
-        error_logger = FormatLogger(log_file; append = false) do io, args
-            # if args.level == Logging.Error
-            #     throw(PeriLabError(args, args.message))
-            # end
-        end
-        demux_logger = TeeLogger(MinLevelLogger(file_logger, Logging.Debug),
-                                 MinLevelLogger(error_logger, Logging.Info))
+                                 MinLevelLogger(file_logger, Logging.Debug))
     else
         file_logger = FormatLogger(log_file; append = false) do io, args
-            if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
-                println(io, "[", args.level, "] ", args.message)
-            end
+            println(io, "[", args.level, "] ", args.message)
         end
-        error_logger = FormatLogger(log_file; append = false) do io, args
-            # if args.level == Logging.Error
-            #     throw(PeriLabError(args, args.message))
-            # end
+        if silent
+            redirect_stderr(open(log_file, "a"))
+            demux_logger = TeeLogger(MinLevelLogger(file_logger, Logging.Debug))
+        else
+            filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
+            demux_logger = TeeLogger(MinLevelLogger(filtered_logger, Logging.Info),
+                                     MinLevelLogger(file_logger, Logging.Debug))
         end
-        filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
-        demux_logger = TeeLogger(MinLevelLogger(filtered_logger, Logging.Info),
-                                 MinLevelLogger(file_logger, Logging.Debug),
-                                 MinLevelLogger(error_logger, Logging.Info))
     end
-    # catch e
-    #     if e isa SystemError
-    #         @error "Could not open log file: $log_file, make sure the directory exists."
-    #         throw(PeriLabError(e))
-    #     else
-    #         rethrow(e)
-    #     end
-    # end
-    global_logger(demux_logger)
+    global_logger(AbortLogger(demux_logger))
 end
 
 function get_current_git_info(repo_path::AbstractString, rank::Int64)

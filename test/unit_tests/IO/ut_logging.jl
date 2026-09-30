@@ -7,6 +7,7 @@ using LoggingExtras
 # import .Logging_Module
 
 @testset "ut_init_logging" begin
+    previous_logger = global_logger()
     PeriLab.Logging_Module.init_logging("test", false, false, 0, 1)
     # @test typeof(current_logger()) ==
     #       LoggingExtras.TeeLogger{Tuple{MinLevelLogger{ActiveFilteredLogger{ConsoleLogger,
@@ -68,4 +69,8 @@ using LoggingExtras
     #                                                    Base.CoreLogging.LogLevel}}}
     # @test contains(current_logger().loggers[2].logger.stream.name, "<file test_2.1")
     PeriLab.Logging_Module.init_logging("test", false, false, 0, 1)
+    @test_throws PeriLab.PeriLabError @error "abort test"
+    @test contains(read(PeriLab.Logging_Module.get_log_file(), String),
+                   "[Error] abort test")
+    global_logger(previous_logger)
 end
