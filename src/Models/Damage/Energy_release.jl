@@ -41,7 +41,7 @@ function damage_name()
 end
 
 """
-    compute_model(nodes, damage_parameter, block, time, dt)
+compute_model(nodes, damage_parameter, block, time, dt)
 
 Calculates the elastic energy of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
 [WillbergC2019](@cite), [FosterJT2011](@cite)

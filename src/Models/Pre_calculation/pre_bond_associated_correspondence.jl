@@ -72,7 +72,7 @@ function init_model(nodes::AbstractVector{Int64},
 end
 
 """
-    compute(nodes)
+compute(nodes)
 
 Compute the bond deformation gradient.
 

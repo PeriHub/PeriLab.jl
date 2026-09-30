@@ -127,7 +127,7 @@ function compute_strain!(strain::AbstractVector{Float64},
             node = topo[n]
             base = (n - 1) * ndof
             for d in 1:ndof
-                acc += B[id_el, id_int, base + d, s] * uNP1[node, d]
+                acc += B[id_el, id_int, base+d, s] * uNP1[node, d]
             end
         end
         strain[s] = acc
@@ -161,7 +161,7 @@ function accumulate_forces!(forces::AbstractMatrix{Float64},
         node = topo[n]
         base = (n - 1) * dof
         for d in 1:dof
-            forces[node, d] -= f_workspace[base + d] * scale
+            forces[node, d] -= f_workspace[base+d] * scale
         end
     end
     return forces
@@ -195,7 +195,7 @@ function get_lumped_mass(elements::Vector{Int64},
             nnodes = length(topology[id_el, :])
             mean_rho = mean(rho[topology[id_el, :]])
             for i_node in 1:nnodes
-                lumped_mass[topology[id_el, i_node]] += sum(temp[(i_node - 1) * dof + 1, :]) .*
+                lumped_mass[topology[id_el, i_node]] += sum(temp[(i_node-1)*dof+1, :]) .*
                                                         mean_rho
                 # no volume is needed, because the time integration is done F/V
                 #* determinant_jacobian[id_el, id_int]
@@ -304,7 +304,7 @@ function get_Jacobian(elements::Vector{Int64},
                                                               :],
                                                      idof],
                                          B[id_int,
-                                           mapping .+ (jdof - 1),
+                                           mapping .+ (jdof-1),
                                            jdof])
                 end
             end
@@ -348,7 +348,7 @@ function get_polynomial_degree(params::AbstractDict{String,Any}, dof::Int64)
 end
 
 """
-    create_element_matrices()
+create_element_matrices()
 
 Compute the matrix of shape functions (N) and its derivative (B) for 2D and 3D.
 N^TN*\rho give than the mass matrix and B^TCB the stiffness matrix [WillbergC2013](@cite)

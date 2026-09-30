@@ -208,7 +208,7 @@ function compute_model(nodes::AbstractVector{Int64},
 end
 
 """
-    compute_deviatoric_force_state_norm(nodes::AbstractVector{Int64},
+compute_deviatoric_force_state_norm(nodes::AbstractVector{Int64},
                                         nlist::SubArray,
                                         alpha::Float64,
                                         bond_force_deviatoric::SubArray,
@@ -273,7 +273,7 @@ function compute_deviatoric_force_state_norm!(td_norm::Vector{Float64},
 end
 
 """
-    plastic(nodes::AbstractVector{Int64},
+plastic(nodes::AbstractVector{Int64},
             td_norm::Vector{Float64},
             yield_value::Vector{Float64},
             lambdaNP1::Vector{Float64},

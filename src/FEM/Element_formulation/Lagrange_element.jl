@@ -15,7 +15,7 @@ function element_name()
 end
 
 """
-    init_element(elements::AbstractVector{Int64}, element_params::AbstractDict, p::Vector{Int64})
+init_element(elements::AbstractVector{Int64}, element_params::AbstractDict, p::Vector{Int64})
 
 Init the Lagrange element of a given polynomial degree. This degree can be different for each direction
 
@@ -65,7 +65,7 @@ function define_lagrangian_grid_space(dof::Int64, p::Vector{Int64})
 end
 
 """
-    get_recursive_lagrange_shape_functions(xi::Vector{Float64}, element_coordinate::Union{Float64,Int64}, p::Int64)
+get_recursive_lagrange_shape_functions(xi::Vector{Float64}, element_coordinate::Union{Float64,Int64}, p::Int64)
 
 Generate the values of a recursive Lagrange shape function at a value.
 
@@ -158,13 +158,13 @@ function get_2D_matrices(p::Vector{Int64},
                                                                              ip_coordinate[1],
                                                                              p[1])[iID] *
                            ip_weight[1]
-                N[point_id, pos + 1, 1] = Nxi[iID] * Neta[jID]
-                N[point_id, pos + 2, 2] = Nxi[iID] * Neta[jID]
+                N[point_id, pos+1, 1] = Nxi[iID] * Neta[jID]
+                N[point_id, pos+2, 2] = Nxi[iID] * Neta[jID]
 
-                B[point_id, pos + 1, 1] = Bxi[iID] * Neta[jID]
-                B[point_id, pos + 2, 2] = Nxi[iID] * Beta[jID]
-                B[point_id, pos + 1, 3] = Nxi[iID] * Beta[jID]
-                B[point_id, pos + 2, 3] = Bxi[iID] * Neta[jID]
+                B[point_id, pos+1, 1] = Bxi[iID] * Neta[jID]
+                B[point_id, pos+2, 2] = Nxi[iID] * Beta[jID]
+                B[point_id, pos+1, 3] = Nxi[iID] * Beta[jID]
+                B[point_id, pos+2, 3] = Bxi[iID] * Neta[jID]
             end
         end
     end
@@ -213,19 +213,19 @@ function get_3D_matrices(p::Vector{Int64},
                                                                                  ip_coordinate[1],
                                                                                  p[1])[iID] *
                                ip_weights[1]
-                    N[point_id, pos + 2, 2] = Nxi[iID] * Neta[jID] * Npsi[kID]
-                    N[point_id, pos + 1, 1] = Nxi[iID] * Neta[jID] * Npsi[kID]
-                    N[point_id, pos + 3, 3] = Nxi[iID] * Neta[jID] * Npsi[kID]
+                    N[point_id, pos+2, 2] = Nxi[iID] * Neta[jID] * Npsi[kID]
+                    N[point_id, pos+1, 1] = Nxi[iID] * Neta[jID] * Npsi[kID]
+                    N[point_id, pos+3, 3] = Nxi[iID] * Neta[jID] * Npsi[kID]
 
-                    B[point_id, pos + 1, 1] = Bxi[iID] * Neta[jID] * Npsi[kID]
-                    B[point_id, pos + 2, 2] = Nxi[iID] * Beta[jID] * Npsi[kID]
-                    B[point_id, pos + 3, 3] = Nxi[iID] * Neta[jID] * Bpsi[kID]
-                    B[point_id, pos + 2, 4] = Nxi[iID] * Neta[jID] * Bpsi[kID]
-                    B[point_id, pos + 3, 4] = Nxi[iID] * Beta[jID] * Npsi[kID]
-                    B[point_id, pos + 1, 5] = Nxi[iID] * Neta[jID] * Bpsi[kID]
-                    B[point_id, pos + 3, 5] = Bxi[iID] * Neta[jID] * Npsi[kID]
-                    B[point_id, pos + 1, 6] = Nxi[iID] * Beta[jID] * Npsi[kID]
-                    B[point_id, pos + 2, 6] = Bxi[iID] * Neta[jID] * Npsi[kID]
+                    B[point_id, pos+1, 1] = Bxi[iID] * Neta[jID] * Npsi[kID]
+                    B[point_id, pos+2, 2] = Nxi[iID] * Beta[jID] * Npsi[kID]
+                    B[point_id, pos+3, 3] = Nxi[iID] * Neta[jID] * Bpsi[kID]
+                    B[point_id, pos+2, 4] = Nxi[iID] * Neta[jID] * Bpsi[kID]
+                    B[point_id, pos+3, 4] = Nxi[iID] * Beta[jID] * Npsi[kID]
+                    B[point_id, pos+1, 5] = Nxi[iID] * Neta[jID] * Bpsi[kID]
+                    B[point_id, pos+3, 5] = Bxi[iID] * Neta[jID] * Npsi[kID]
+                    B[point_id, pos+1, 6] = Nxi[iID] * Beta[jID] * Npsi[kID]
+                    B[point_id, pos+2, 6] = Bxi[iID] * Neta[jID] * Npsi[kID]
                 end
             end
         end

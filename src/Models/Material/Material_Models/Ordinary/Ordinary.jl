@@ -58,7 +58,7 @@ function compute_weighted_volume!(weighted_volume::NodeScalarField{Float64},
 end
 
 """
-    get_bond_forces!(nodes::AbstractVector{Int64},
+get_bond_forces!(nodes::AbstractVector{Int64},
                     bond_force_length::AbstractVector{<:AbstractVector{Float64}},
                     deformed_bond::SubArray,
                     deformed_bond_length::SubArray,
@@ -90,7 +90,7 @@ function get_bond_forces!(nodes::AbstractVector{Int64},
 end
 
 """
-    calculate_symmetry_params(symmetry::String, shear_modulus::Float64, bulk_modulus::Float64)
+calculate_symmetry_params(symmetry::String, shear_modulus::Float64, bulk_modulus::Float64)
 
 Calculate the symmetry parameters based on the given material symmetry. These parameters are defined in [BobaruF2016](@cite) Section 6.3, 6.3.1.1 and 6.3.1.2.
 
@@ -123,7 +123,7 @@ function calculate_symmetry_params(symmetry::String,
 end
 
 """
-    compute_dilatation(nodes::AbstractVector{Int64}, nlist::BondScalarState{Int64},
+compute_dilatation(nodes::AbstractVector{Int64}, nlist::BondScalarState{Int64},
                              undeformed_bond_length::BondScalarState{Float64},
                              deformed_bond_length::BondScalarState{Float64},
                              bond_damage::BondScalarState{Float64},

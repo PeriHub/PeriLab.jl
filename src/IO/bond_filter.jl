@@ -15,7 +15,7 @@ end
 export apply_bond_filters
 
 """
-    apply_bond_filters(nlist::BondScalarState{Int64}, mesh::DataFrame, params::AbstractDict, dof::Int64)
+apply_bond_filters(nlist::BondScalarState{Int64}, mesh::DataFrame, params::AbstractDict, dof::Int64)
 
 Apply the bond filters to the neighborhood list.
 

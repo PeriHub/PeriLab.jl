@@ -16,7 +16,7 @@ export compute_shape_tensors!
 export compute_deformation_gradients!
 
 """
-     bond_geometry(undeformed_bond::BondVectorState{Float64},
+bond_geometry(undeformed_bond::BondVectorState{Float64},
     undeformed_bond_length::BondScalarState{Float64},
     nodes::AbstractVector{Int64},
     nlist::BondScalarState{Int64},

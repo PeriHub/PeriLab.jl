@@ -96,7 +96,7 @@ function compute_model(nodes::AbstractVector{Int64},
 end
 
 """
-    fields_for_local_synchronization(model, block)
+fields_for_local_synchronization(model, block)
 
 Defines all synchronization fields for local synchronization
 

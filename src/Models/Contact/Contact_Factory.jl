@@ -356,7 +356,7 @@ function compute_and_set_free_contact_nodes(all_positions, ids,
 end
 
 """
-    synchronize_contact_points(what::String, step::String,
+synchronize_contact_points(what::String, step::String,
                                     synch_vector))
 
 Synchronises the deformation relevant for contact. These are the deformed coordinates of the surfaces of the contact blocks. The deformed surface vector is set to zero and than filled at each core from data from the deformed coordinate field. To bring it together the vector is summed at the root and send back to all cores.

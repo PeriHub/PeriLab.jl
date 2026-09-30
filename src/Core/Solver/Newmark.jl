@@ -106,11 +106,8 @@ function init_solver(solver_options::Dict{Any,Any},
     end
 end
 
-# ────────────────────────────────────────────────────────────
-# Run
-# ────────────────────────────────────────────────────────────
 """
-    run_solver(solver_options, block_nodes, bcs, outputs, result_files,
+run_solver(solver_options, block_nodes, bcs, outputs, result_files,
                synchronise_field, write_results,
                compute_parabolic_problems_before_model_evaluation,
                compute_parabolic_problems_after_model_evaluation, silent)
