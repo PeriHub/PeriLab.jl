@@ -269,8 +269,7 @@ class JobManager:
             log_path = self.log_path(job)
             if log_path is not None:
                 try:
-                    with open(log_path, "r") as f:
-                        f.seek(0)
+                    with open(log_path, "r", errors="replace") as f:
                         lines = f.readlines()
                 except OSError:
                     lines = []
