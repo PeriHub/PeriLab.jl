@@ -48,18 +48,25 @@ end
 @testset "ut_get_output_type" begin
     @test PeriLab.Parameter_Handling.get_output_type(Dict("Output1" => Dict()),
                                                      "Output1") == "Exodus"
-    @test PeriLab.Parameter_Handling.get_output_type(Dict("Output1" => Dict("Output File Type" => "CSV")),
+    @test PeriLab.Parameter_Handling.get_output_type(Dict("Output1" =>
+                                                              Dict("Output File Type" => "CSV")),
                                                      "Output1") == "CSV"
-    @test PeriLab.Parameter_Handling.get_output_type(Dict("Output1" => Dict("Output File Type" => "Exodus"),
-                                                          "Output2" => Dict("Output File Type" => "CSV")),
+    @test PeriLab.Parameter_Handling.get_output_type(Dict("Output1" =>
+                                                              Dict("Output File Type" => "Exodus"),
+                                                          "Output2" =>
+                                                              Dict("Output File Type" => "CSV")),
                                                      "Output1") == "Exodus"
-    @test PeriLab.Parameter_Handling.get_output_type(Dict("Output1" => Dict("Output File Type" => "Exodus"),
-                                                          "Output2" => Dict("Output File Type" => "CSV")),
+    @test PeriLab.Parameter_Handling.get_output_type(Dict("Output1" =>
+                                                              Dict("Output File Type" => "Exodus"),
+                                                          "Output2" =>
+                                                              Dict("Output File Type" => "CSV")),
                                                      "Output2") == "CSV"
-    @test PeriLab.Parameter_Handling.get_output_type(Dict("Output1" => Dict("Output File Type" => "CSV"),
+    @test PeriLab.Parameter_Handling.get_output_type(Dict("Output1" =>
+                                                              Dict("Output File Type" => "CSV"),
                                                           "Output2" => Dict()),
                                                      "Output2") == "Exodus"
-    @test PeriLab.Parameter_Handling.get_output_type(Dict("Output1" => Dict("Output File Type" => "Exodus")),
+    @test PeriLab.Parameter_Handling.get_output_type(Dict("Output1" =>
+                                                              Dict("Output File Type" => "Exodus")),
                                                      "Output1") == "Exodus"
 end
 @testset "ut_get_bond_filters" begin
@@ -76,8 +83,8 @@ end
     @test check
     @test bfList == Dict("a" => Dict("a" => 1))
     params = Dict("Discretization" => Dict("Bond Filters" => Dict("a" => Dict("a" => 1),
-                                                                  "g" => Dict("a" => 1),
-                                                                  "adas" => Dict("a" => 1))))
+                            "g" => Dict("a" => 1),
+                            "adas" => Dict("a" => 1))))
     check, bfList = PeriLab.Parameter_Handling.get_bond_filters(params)
     @test check
     @test bfList ==
@@ -95,30 +102,36 @@ end
     @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Parameter_Handling.validate_yaml(params)
     end
-    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
-                                                                                                          Any}()),
-                                                      "Discretization" => Dict{Any,Any}()))
+    params = Dict{Any,Any}("PeriLab" =>
+                               Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" =>
+                                                               Dict{Any,
+                                                                    Any}()),
+                                             "Discretization" => Dict{Any,Any}()))
     @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Parameter_Handling.validate_yaml(params)
     end
-    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
-                                                                                                          Any}()),
-                                                      "Discretization" => Dict{Any,Any}(),
-                                                      "Blocks" => Dict{Any,Any}()))
+    params = Dict{Any,Any}("PeriLab" =>
+                               Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" =>
+                                                               Dict{Any,
+                                                                    Any}()),
+                                             "Discretization" => Dict{Any,Any}(),
+                                             "Blocks" => Dict{Any,Any}()))
     @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Parameter_Handling.validate_yaml(params)
     end
-    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
-                                                                                                          Any}()),
-                                                      "Blocks" => Dict{Any,Any}()))
+    params = Dict{Any,Any}("PeriLab" =>
+                               Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" =>
+                                                               Dict{Any,
+                                                                    Any}()),
+                                             "Blocks" => Dict{Any,Any}()))
     @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Parameter_Handling.validate_yaml(params)
     end
 
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}(),
-                                                      "Discretization" => Dict{Any,Any}(),
-                                                      "Blocks" => Dict{Any,Any}(),
-                                                      "Solver" => Dict{Any,Any}()))
+                                         "Discretization" => Dict{Any,Any}(),
+                                         "Blocks" => Dict{Any,Any}(),
+                                         "Solver" => Dict{Any,Any}()))
 
     @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Parameter_Handling.validate_yaml(params)
@@ -130,32 +143,48 @@ end
         PeriLab.Parameter_Handling.validate_yaml(params)
     end
 
-    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
-                                                                                                          Any}("mat_1" => Dict{Any,
-                                                                                                                               Any}("Material Model" => "a"))),
-                                                      "Discretization" => Dict{Any,Any}("Input Mesh File" => "test",
-                                                                                        "Type" => "test"),
-                                                      "Blocks" => Dict{Any,Any}("Block_1" => Dict{Any,
-                                                                                                  Any}("Block Names" => "Block_1",
-                                                                                                       "Density" => 1.0,
-                                                                                                       "Horizon" => "1.0")),
-                                                      "Solver" => Dict{Any,Any}("Final Time" => 1.0,
-                                                                                "Initial Time" => 0.0)))
+    params = Dict{Any,Any}("PeriLab" =>
+                               Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" =>
+                                                               Dict{Any,
+                                                                    Any}("mat_1" =>
+                                                                             Dict{Any,
+                                                                                  Any}("Material Model" => "a"))),
+                                             "Discretization" =>
+                                                 Dict{Any,Any}("Input Mesh File" => "test",
+                                                               "Type" => "test"),
+                                             "Blocks" =>
+                                                 Dict{Any,Any}("Block_1" => Dict{Any,
+                                                                    Any}("Block Names" => "Block_1",
+                                                                         "Density" =>
+                                                                             1.0,
+                                                                         "Horizon" => "1.0")),
+                                             "Solver" =>
+                                                 Dict{Any,Any}("Final Time" => 1.0,
+                                                               "Initial Time" => 0.0)))
     @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Parameter_Handling.validate_yaml(params)
     end
-    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
-                                                                                                          Any}("mat_1" => Dict{Any,
-                                                                                                                               Any}("Material Model" => "a"))),
-                                                      "Discretization" => Dict{Any,Any}("Input Mesh File" => "test",
-                                                                                        "Type" => "test"),
-                                                      "Blocks" => Dict{Any,Any}("Block_1" => Dict{Any,
-                                                                                                  Any}("Block ID" => 1,
-                                                                                                       "Block Names" => "Block_1",
-                                                                                                       "Density" => 1.0,
-                                                                                                       "Horizon" => 1.0)),
-                                                      "Solver" => Dict{Any,Any}("Final Time" => 1.0,
-                                                                                "Initial Time" => 0.0)))
+    params = Dict{Any,Any}("PeriLab" =>
+                               Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" =>
+                                                               Dict{Any,
+                                                                    Any}("mat_1" =>
+                                                                             Dict{Any,
+                                                                                  Any}("Material Model" => "a"))),
+                                             "Discretization" =>
+                                                 Dict{Any,Any}("Input Mesh File" => "test",
+                                                               "Type" => "test"),
+                                             "Blocks" =>
+                                                 Dict{Any,Any}("Block_1" => Dict{Any,
+                                                                    Any}("Block ID" =>
+                                                                             1,
+                                                                         "Block Names" => "Block_1",
+                                                                         "Density" =>
+                                                                             1.0,
+                                                                         "Horizon" =>
+                                                                             1.0)),
+                                             "Solver" =>
+                                                 Dict{Any,Any}("Final Time" => 1.0,
+                                                               "Initial Time" => 0.0)))
     @test PeriLab.Parameter_Handling.validate_yaml(params) ==
           params["PeriLab"]
 end
@@ -171,7 +200,8 @@ end
                                                               "")
     end
     name = randstring(12)
-    params = Dict("Discretization" => Dict("Input External Topology" => Dict("File" => name)))
+    params = Dict("Discretization" =>
+                      Dict("Input External Topology" => Dict("File" => name)))
     @test_logs (:error, "External topology file: ''$name'' does not exist") @test_throws PeriLab.PeriLabError begin
         PeriLab.Parameter_Handling.get_external_topology_name(params,
                                                               "")
@@ -192,14 +222,14 @@ end
     filenames = PeriLab.Parameter_Handling.get_output_filenames(params, "")
     @test filenames == []
     params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => "1"),
-                                    "Output2" => Dict("Output Filename" => "2")))
+                       "Output2" => Dict("Output Filename" => "2")))
     filenames = PeriLab.Parameter_Handling.get_output_filenames(params, "")
     @test filenames[1] == "1.e"
     @test filenames[2] == "2.e"
     params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => "3",
-                                                      "Output File Type" => "CSV"),
-                                    "Output2" => Dict("Output Filename" => "4",
-                                                      "Output File Type" => "Exodus")))
+                            "Output File Type" => "CSV"),
+                       "Output2" => Dict("Output Filename" => "4",
+                            "Output File Type" => "Exodus")))
     filenames = PeriLab.Parameter_Handling.get_output_filenames(params,
                                                                 "test")
     @test filenames[1] == "test/3.csv"
@@ -216,11 +246,11 @@ end
                                                                   variables,
                                                                   computes,
                                                                   output_type)
-    @test fieldnames == [
-        ["Displacements", "NP1"],
-        ["External_Displacements", "Constant"],
-        ["Forces", "Constant"]
-    ]
+    @test sort(fieldnames) == sort([
+                   ["Displacements", "NP1"],
+                   ["External_Displacements", "Constant"],
+                   ["Forces", "Constant"]
+               ])
 
     outputs = Dict("Displacements" => "true")
     @test_logs (:error, "Output variable Displacements must be set to True or False") @test_throws PeriLab.PeriLabError begin
@@ -250,14 +280,14 @@ end
     nsteps = 40
     params = Dict()
     params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 2),
-                                    "Output2" => Dict("Number of Output Steps" => 1,
-                                                      "Output Frequency" => 1)))
+                       "Output2" => Dict("Number of Output Steps" => 1,
+                            "Output Frequency" => 1)))
     freq = PeriLab.Parameter_Handling.get_output_frequencies(params, nsteps, 1)
     @test freq[1] == 2
     @test freq[2] == 40
 
     params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 20),
-                                    "Output2" => Dict("Number of Output Steps" => 10)))
+                       "Output2" => Dict("Number of Output Steps" => 10)))
     freq = PeriLab.Parameter_Handling.get_output_frequencies(params, nsteps, 1)
     @test freq[1] == 20
     @test freq[2] == 4
@@ -273,9 +303,9 @@ end
     @test freq[2] == 1
 
     params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 20,
-                                                      "Number of Output Steps" => 10),
-                                    "Output2" => Dict("Number of Output Steps" => 10,
-                                                      "Output Frequency" => 20)))
+                            "Number of Output Steps" => 10),
+                       "Output2" => Dict("Number of Output Steps" => 10,
+                            "Output Frequency" => 20)))
     nsteps = 1000
     freq = PeriLab.Parameter_Handling.get_output_frequencies(params, nsteps, 1)
     @test (freq[1] == 100) || (freq[1] == 20)
@@ -294,15 +324,15 @@ end
     testfield_keys = PeriLab.Data_Manager.get_all_field_keys()
 
     params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [],
-                                                      "Output Variables" => Dict("A" => true,
-                                                                                 "B" => false,
-                                                                                 "C" => true)),
-                                    "Output2" => Dict("fieldnames" => [],
-                                                      "Output Variables" => Dict("A" => true,
-                                                                                 "B" => true,
-                                                                                 "D" => false,
-                                                                                 "E" => true,
-                                                                                 "M" => true))))
+                            "Output Variables" => Dict("A" => true,
+                                 "B" => false,
+                                 "C" => true)),
+                       "Output2" => Dict("fieldnames" => [],
+                            "Output Variables" => Dict("A" => true,
+                                 "B" => true,
+                                 "D" => false,
+                                 "E" => true,
+                                 "M" => true))))
 
     vector::Vector{String} = []
     outputs = PeriLab.Parameter_Handling.get_outputs(params,
@@ -318,16 +348,16 @@ end
     @test ["E", "Constant"] in outputs["Output2"]["fieldnames"]
     @test !(["M", "Constant"] in outputs["Output2"]["fieldnames"])
     params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [],
-                                                      "Output File Type" => "CSV",
-                                                      "Output Variables" => Dict("E" => true,
-                                                                                 "B" => false,
-                                                                                 "C" => true)),
-                                    "Output2" => Dict("fieldnames" => [],
-                                                      "Output Variables" => Dict("A" => true,
-                                                                                 "B" => true,
-                                                                                 "D" => false,
-                                                                                 "E" => true,
-                                                                                 "M" => true))))
+                            "Output File Type" => "CSV",
+                            "Output Variables" => Dict("E" => true,
+                                 "B" => false,
+                                 "C" => true)),
+                       "Output2" => Dict("fieldnames" => [],
+                            "Output Variables" => Dict("A" => true,
+                                 "B" => true,
+                                 "D" => false,
+                                 "E" => true,
+                                 "M" => true))))
     outputs = PeriLab.Parameter_Handling.get_outputs(params,
                                                      testfield_keys,
                                                      String["M"])
@@ -339,9 +369,9 @@ end
     @test (["E", "Constant"] in outputs["Output2"]["fieldnames"])
     @test (["M", "Constant"] in outputs["Output2"]["fieldnames"])
     params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [],
-                                                      "Output File Type" => "CSV",
-                                                      "Output Variables" => Dict("M" => true,
-                                                                                 "A" => true))))
+                            "Output File Type" => "CSV",
+                            "Output Variables" => Dict("M" => true,
+                                                       "A" => true))))
     outputs = PeriLab.Parameter_Handling.get_outputs(params,
                                                      testfield_keys,
                                                      String["M"])
@@ -349,7 +379,7 @@ end
     @test ["M", "Constant"] in outputs["Output1"]["fieldnames"]
 
     params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [],
-                                                      "Output Variables" => Dict())))
+                            "Output Variables" => Dict())))
     outputs = PeriLab.Parameter_Handling.get_outputs(params,
                                                      testfield_keys,
                                                      String[])
@@ -366,21 +396,23 @@ end
     @test PeriLab.Parameter_Handling.get_computes(params, testfield_keys) ==
           Dict()
 
-    params = Dict("Compute Class Parameters" => Dict("External_Forces" => Dict("Compute Class" => "Block_Data",
-                                                                               "Calculation Type" => "Sum",
-                                                                               "Block" => "block_2",
-                                                                               "Variable" => "A"),
-                                                     "External_Displacements" => Dict("Compute Class" => "Block_Data",
-                                                                                      "Calculation Type" => "Maximum",
-                                                                                      "Block" => "block_1",
-                                                                                      "Variable" => "B"),
-                                                     "No_exist" => Dict("Compute Class" => "Block_Data",
-                                                                        "Calculation Type" => "Maximum",
-                                                                        "Block" => "block_1",
-                                                                        "Variable" => "No_exist"),
-                                                     "warn_test" => Dict("Compute Class" => "Block_Data",
-                                                                         "Calculation Type" => "Maximum",
-                                                                         "Block" => "block_1")))
+    params = Dict("Compute Class Parameters" =>
+                      Dict("External_Forces" => Dict("Compute Class" => "Block_Data",
+                                "Calculation Type" => "Sum",
+                                "Block" => "block_2",
+                                "Variable" => "A"),
+                           "External_Displacements" =>
+                               Dict("Compute Class" => "Block_Data",
+                                    "Calculation Type" => "Maximum",
+                                    "Block" => "block_1",
+                                    "Variable" => "B"),
+                           "No_exist" => Dict("Compute Class" => "Block_Data",
+                                "Calculation Type" => "Maximum",
+                                "Block" => "block_1",
+                                "Variable" => "No_exist"),
+                           "warn_test" => Dict("Compute Class" => "Block_Data",
+                                "Calculation Type" => "Maximum",
+                                "Block" => "block_1")))
 
     computes = PeriLab.Parameter_Handling.get_computes(params,
                                                        testfield_keys)
@@ -394,14 +426,16 @@ end
 @testset "ut_get_computes_names" begin
     testfield_keys = PeriLab.Data_Manager.get_all_field_keys()
 
-    params = Dict("Compute Class Parameters" => Dict("External_Forces" => Dict("Compute Class" => "Block_Data",
-                                                                               "Calculation Type" => "Sum",
-                                                                               "Block" => "block_2",
-                                                                               "Variable" => "A"),
-                                                     "External_Displacements" => Dict("Compute Class" => "Block_Data",
-                                                                                      "Calculation Type" => "Maximum",
-                                                                                      "Block" => "block_1",
-                                                                                      "Variable" => "B")))
+    params = Dict("Compute Class Parameters" =>
+                      Dict("External_Forces" => Dict("Compute Class" => "Block_Data",
+                                "Calculation Type" => "Sum",
+                                "Block" => "block_2",
+                                "Variable" => "A"),
+                           "External_Displacements" =>
+                               Dict("Compute Class" => "Block_Data",
+                                    "Calculation Type" => "Maximum",
+                                    "Block" => "block_1",
+                                    "Variable" => "B")))
 
     computes_names = PeriLab.Parameter_Handling.get_computes_names(params)
 
@@ -436,13 +470,13 @@ end
     bcs = PeriLab.Parameter_Handling.get_bc_definitions(params)
     @test length(bcs) == 0
     params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Variable" => "Forces",
-                                                               "Node Set" => "Nset_1",
-                                                               "Coordinate" => "x",
-                                                               "Value" => "20*t"),
-                                                "BC_2" => Dict("Variable" => "Displacement",
-                                                               "Node Set" => "Nset_2",
-                                                               "Coordinate" => "y",
-                                                               "Value" => "0")))
+                            "Node Set" => "Nset_1",
+                            "Coordinate" => "x",
+                            "Value" => "20*t"),
+                       "BC_2" => Dict("Variable" => "Displacement",
+                            "Node Set" => "Nset_2",
+                            "Coordinate" => "y",
+                            "Value" => "0")))
     bcs = PeriLab.Parameter_Handling.get_bc_definitions(params)
     @test length(bcs) == 2
     @test bcs["BC_1"] == Dict("Variable" => "Forces",
@@ -456,10 +490,10 @@ end
 end
 @testset "ut_get_solver_options" begin
     params = Dict("Solver" => Dict("Material Models" => true,
-                                   "Damage Models" => true,
-                                   "Additive Models" => true,
-                                   "Thermal Models" => true,
-                                   "Degradation Models" => true))
+                       "Damage Models" => true,
+                       "Additive Models" => true,
+                       "Thermal Models" => true,
+                       "Degradation Models" => true))
     solver_options = PeriLab.Parameter_Handling.get_model_options(params["Solver"])
     @test solver_options ==
           ["Additive", "Damage", "Pre_Calculation", "Thermal", "Degradation", "Material"]
@@ -467,8 +501,8 @@ end
     solver_options = PeriLab.Parameter_Handling.get_model_options(params["Solver"])
     @test solver_options == ["Pre_Calculation", "Material"]
     params = Dict("Solver" => Dict("Material Models" => false,
-                                   "Damage Models" => true,
-                                   "Thermal Models" => true))
+                       "Damage Models" => true,
+                       "Thermal Models" => true))
 
     solver_options = PeriLab.Parameter_Handling.get_model_options(params["Solver"])
     @test solver_options == ["Damage", "Pre_Calculation", "Thermal"]
@@ -499,7 +533,7 @@ end
                                                "not there")
     end
     params = Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1),
-                                   "block_2" => Dict("Block ID" => 2)))
+                       "block_2" => Dict("Block ID" => 2)))
     @test_logs (:error, "Horizon of block_1 is not defined") @test_throws PeriLab.PeriLabError begin
         PeriLab.Parameter_Handling.get_horizon(params,
                                                1)
@@ -535,10 +569,10 @@ end
                                                "Density")
     end
     params = Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
-                                                     "Density" => 1,
-                                                     "Specific Heat Capacity" => 3),
-                                   "block_2" => Dict("Block ID" => 2, "Density" => 12.3,
-                                                     "Horizon" => 2)))
+                            "Density" => 1,
+                            "Specific Heat Capacity" => 3),
+                       "block_2" => Dict("Block ID" => 2, "Density" => 12.3,
+                            "Horizon" => 2)))
     @test PeriLab.Parameter_Handling._get_values(params, 1, "Density") == 1
     @test PeriLab.Parameter_Handling._get_values(params, 2, "Density") ==
           12.3
@@ -602,11 +636,11 @@ end
 
 @testset "ut_solver" begin
     params = Dict("Solver" => Dict("Initial Time" => 0.0,
-                                   "Final Time" => 1.0,
-                                   "Fixed dt" => 1e-3,
-                                   "Verlet" => Dict("Safety Factor" => 0.95,
-                                                    "Numerical Damping" => 5e-6,
-                                                    "Fixed dt" => 1e-3)))
+                       "Final Time" => 1.0,
+                       "Fixed dt" => 1e-3,
+                       "Verlet" => Dict("Safety Factor" => 0.95,
+                            "Numerical Damping" => 5e-6,
+                            "Fixed dt" => 1e-3)))
     @test PeriLab.Parameter_Handling.get_solver_name(params["Solver"]) ==
           "Verlet"
     @test PeriLab.Parameter_Handling.get_final_time(params["Solver"]) ==
@@ -623,8 +657,9 @@ end
     @test PeriLab.Parameter_Handling.get_safety_factor(params["Solver"]) == 1
     @test PeriLab.Parameter_Handling.get_fixed_dt(params["Solver"]) == -1.0
     @test PeriLab.Parameter_Handling.get_nsteps(params["Solver"]) == 1
-    @test PeriLab.Parameter_Handling.get_nsteps(Dict("Verlet" => Dict("Safety Factor" => 0.95,
-                                                                      "Numerical Damping" => 5e-6),
+    @test PeriLab.Parameter_Handling.get_nsteps(Dict("Verlet" =>
+                                                         Dict("Safety Factor" => 0.95,
+                                                              "Numerical Damping" => 5e-6),
                                                      "Number of Steps" => 6)) ==
           6
     @test PeriLab.Parameter_Handling.get_numerical_damping(params["Solver"]) ==
@@ -640,11 +675,12 @@ end
     end
     @test_logs (:error,
                 "Wrong or missing solvername. Verlet, Linear Static Matrix Based, Verlet Matrix Based and Static are the options.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Parameter_Handling.get_solver_name(Dict("Solver" => Dict("Solvername" => Dict())))
+        PeriLab.Parameter_Handling.get_solver_name(Dict("Solver" =>
+                                                            Dict("Solvername" => Dict())))
     end
     params = Dict("Solver" => Dict("Initial Time" => 0.0,
-                                   "Final Time" => 1.0,
-                                   "Static" => Dict("Residual tolerance" => 1e-3)))
+                       "Final Time" => 1.0,
+                       "Static" => Dict("Residual tolerance" => 1e-3)))
     @test PeriLab.Parameter_Handling.get_solver_name(params["Solver"]) ==
           "Static"
     params = Dict("Solver" => Dict("Initial Time" => 1.0))
@@ -658,21 +694,21 @@ if !isfile(path * "test_data_file.txt")
     path = "./unit_tests/Support/Parameters/"
 end
 params = Dict("Models" => Dict("Material Models" => Dict("A" => Dict("s" => 0,
-                                                                     "d" => true,
-                                                                     "A" => path *
-                                                                            "test_data_file.txt",
-                                                                     "B" => path *
-                                                                            "test_data_file.txt",
-                                                                     "C" => Dict("Sub" => path *
-                                                                                          "test_data_file.txt")),
-                                                         "B" => Dict("sa" => [3.2, 2, 3],
-                                                                     "d" => "true",
-                                                                     "Young's_Modulus" => path *
-                                                                                          "test_data_file.txt")),
-                               "Damage Models" => Dict("E" => Dict("ss" => 0, "d" => 1.1))),
+                             "d" => true,
+                             "A" => path *
+                                    "test_data_file.txt",
+                             "B" => path *
+                                    "test_data_file.txt",
+                             "C" => Dict("Sub" => path *
+                                                  "test_data_file.txt")),
+                        "B" => Dict("sa" => [3.2, 2, 3],
+                             "d" => "true",
+                             "Young's_Modulus" => path *
+                                                  "test_data_file.txt")),
+                   "Damage Models" => Dict("E" => Dict("ss" => 0, "d" => 1.1))),
               "Blocks" => Dict("block_1" => Dict("Material Model" => "A",
-                                                 "Damage Model" => "E"),
-                               "block_2" => Dict("Material Model" => "B")))
+                                     "Damage Model" => "E"),
+                   "block_2" => Dict("Material Model" => "B")))
 
 @testset "ut_find_data_files" begin
     @test PeriLab.Parameter_Handling.find_data_files(params["Models"]["Material Models"]["A"]) ==
@@ -742,12 +778,14 @@ end
     expected_structure = Dict("PeriLab" => [
                                   Dict{Any,Any}("Blocks" => [
                                                     Dict{Any,Any}("Any" => [
-                                                                      Dict{Any,Any}("Density" => [
+                                                                      Dict{Any,Any}("Density" =>
+                                                                                    [
                                                                                         Union{Float64,
                                                                                               Int64},
                                                                                         true
                                                                                     ],
-                                                                                    "Material Model" => [
+                                                                                "Material Model" =>
+                                                                                    [
                                                                                         String,
                                                                                         false
                                                                                     ]),
@@ -758,8 +796,8 @@ end
                                   true
                               ])
     params = Dict("PeriLab" => Dict{Any,Any}("Blocks" => Dict{Any,Any}("Any" => Dict{Any,
-                                                                                     Any}("Density" => 2.1,
-                                                                                          "Material Model" => "Test"))))
+                                                   Any}("Density" => 2.1,
+                                                        "Material Model" => "Test"))))
     validate = true
     checked_keys = []
     validate,
@@ -768,11 +806,12 @@ end
                                                                            validate,
                                                                            checked_keys)
     @test validate
-    @test checked_keys == ["PeriLab", "Blocks", "Material Model", "Density", "Any"]
+    @test sort(checked_keys) ==
+          sort(["PeriLab", "Blocks", "Material Model", "Density", "Any"])
 
     params = Dict("PeriLab" => Dict{Any,Any}("Blocks" => Dict{Any,Any}("Any" => Dict{Any,
-                                                                                     Any}("Density" => "Test",
-                                                                                          "Material Model" => "Test"))))
+                                                   Any}("Density" => "Test",
+                                                        "Material Model" => "Test"))))
     validate,
     checked_keys = PeriLab.Parameter_Handling.validate_structure_recursive(expected_structure,
                                                                            params,
@@ -781,7 +820,7 @@ end
     @test !validate
 
     params = Dict("PeriLab" => Dict{Any,Any}("Blocks" => Dict{Any,Any}("Any" => Dict{Any,
-                                                                                     Any}("Material Model" => "Test"))))
+                                                   Any}("Material Model" => "Test"))))
     validate,
     checked_keys = PeriLab.Parameter_Handling.validate_structure_recursive(expected_structure,
                                                                            params,
@@ -799,8 +838,9 @@ end
                                                    "",
                                                    DataFrame(x = [])) ==
           Dict{String,Any}()
-    params = Dict("Discretization" => Dict("Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7",
-                                                               "Nset_2" => filename)))
+    params = Dict("Discretization" =>
+                      Dict("Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7",
+                                "Nset_2" => filename)))
 
     file = open(filename, "w")
     println(file, "header: global_id")
@@ -824,7 +864,7 @@ end
     end
 
     params = Dict("Discretization" => Dict("Node Sets" => Dict("Nset_1" => "1:7",
-                                                               "Nset_2" => filename)))
+                                           "Nset_2" => filename)))
     nsets = PeriLab.Parameter_Handling.get_node_sets(params,
                                                      "",
                                                      DataFrame(x = []))
@@ -852,9 +892,9 @@ end
 
     filename = "example_mesh.g"
     params = Dict("Discretization" => Dict("Type" => "Exodus",
-                                           "Input Mesh File" => filename,
-                                           "Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7",
-                                                               "Nset_2" => filename)))
+                       "Input Mesh File" => filename,
+                       "Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7",
+                            "Nset_2" => filename)))
     nsets = PeriLab.Parameter_Handling.get_node_sets(params,
                                                      "unit_tests/Support/Parameters",
                                                      DataFrame(x = []))

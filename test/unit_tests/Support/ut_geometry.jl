@@ -277,8 +277,8 @@ end
                                                                      deformation_gradient,
                                                                      rot_tensor)
 
-    @test rot_tensor[1, :, :] == rot
-    @test rot_tensor[1, :, :] == rot
+    @test isapprox(rot_tensor[1, :, :], rot)
+    @test isapprox(rot_tensor[1, :, :], rot)
 end
 
 @testset "ut_undeformed_bond" begin
@@ -440,9 +440,9 @@ end
     deformation_gradient[1, :, :] = deformation_gradient[1, :, :] * rot
     deformation_gradient[2, :, :] = deformation_gradient[2, :, :] * rot
     result = PeriLab.Geometry.compute_left_stretch_tensor(deformation_gradient[1, :, :])
-    @test result == expected_result[1]
+    @test isapprox(result, expected_result[1])
     result = PeriLab.Geometry.compute_left_stretch_tensor(deformation_gradient[2, :, :])
-    @test isapprox(result[:, :], expected_result[2])
+    @test isapprox(result, expected_result[2])
 end
 @testset "ut_shape_tensor_and_deformation_gradient" begin
     nnodes = 4

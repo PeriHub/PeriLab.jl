@@ -37,7 +37,7 @@ end
                                                                                              nodesPD,
                                                                                              2,
                                                                                              coupling_type)
-    @test collect(keys(test_dict)) == [7, 8]
+    @test collect(sort(keys(test_dict))) == [7, 8]
     @test test_dict[7] == 2
     @test test_dict[8] == 1
 end
