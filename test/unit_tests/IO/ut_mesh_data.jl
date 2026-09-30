@@ -10,14 +10,14 @@ using DataFrames
 @testset "ut_read_mesh" begin
     path = "./unit_tests/IO/"
     params = Dict("Discretization" => Dict("Type" => "not supported",
-                                           "Input Mesh File" => "example_mesh.txt"))
+                       "Input Mesh File" => "example_mesh.txt"))
     @test_logs (:error,
                 "No mesh importer for type 'not supported' exists.") @test_throws PeriLab.PeriLabError begin
         PeriLab.IO.read_mesh(params, path)
     end
 
     params = Dict("Discretization" => Dict("Type" => "Text File",
-                                           "Input Mesh File" => "example_mesh.txt"))
+                       "Input Mesh File" => "example_mesh.txt"))
     @test_logs (:error, "Mesh file ./example_mesh.txt does not exist") @test_throws PeriLab.PeriLabError begin
         PeriLab.IO.read_mesh(params, "./")
     end
@@ -42,7 +42,7 @@ using DataFrames
     @test collect(skipmissing(data[4, :])) == [5, 6, 7, 8]
 
     params = Dict("Discretization" => Dict("Type" => "Exodus",
-                                           "Input Mesh File" => "example_mesh.g"))
+                       "Input Mesh File" => "example_mesh.g"))
     data = PeriLab.IO.read_mesh(params, path)
     @test length(data[:, 1]) == 324
     @test data[!, "block_id"][1] == 1
@@ -52,7 +52,7 @@ end
 @testset "ut_check_dataframe" begin
     path = "./unit_tests/IO/"
     params = Dict("Discretization" => Dict("Type" => "Text File",
-                                           "Input Mesh File" => "example_mesh.txt"))
+                       "Input Mesh File" => "example_mesh.txt"))
     data = PeriLab.IO.read_mesh(params, path)
     params["Discretization"]["Input Mesh File"] = "example_wrong_mesh.txt"
     data_wrong = PeriLab.IO.read_mesh(params, path)
@@ -675,10 +675,10 @@ end
     @test isnothing(node_sets)
 
     params = Dict("Discretization" => Dict("Surface Extrusion" => Dict("Direction" => "X",
-                                                                       "Step_X" => 1.0,
-                                                                       "Step_Y" => 1.0,
-                                                                       "Step_Z" => 1.0,
-                                                                       "Number" => 2)))
+                            "Step_X" => 1.0,
+                            "Step_Y" => 1.0,
+                            "Step_Z" => 1.0,
+                            "Number" => 2)))
 
     mesh_expected = DataFrame(x = [
                                   0.0,
@@ -743,17 +743,17 @@ end
           Dict("Extruded_2" => [6, 7, 8, 9, 10, 11], "Extruded_1" => [0, 1, 2, 3, 4, 5])
 
     params = Dict("Discretization" => Dict("Surface Extrusion" => Dict("Direction" => "Y",
-                                                                       "Step_X" => 1.0,
-                                                                       "Step_Y" => 1.0,
-                                                                       "Step_Z" => 1.0,
-                                                                       "Number" => 2)))
+                            "Step_X" => 1.0,
+                            "Step_Y" => 1.0,
+                            "Step_Z" => 1.0,
+                            "Number" => 2)))
     mesh_return, node_sets = PeriLab.IO.extrude_surface_mesh(mesh, params)
 
     params = Dict("Discretization" => Dict("Surface Extrusion" => Dict("Direction" => "X",
-                                                                       "Step_X" => 1.0,
-                                                                       "Step_Y" => 1.0,
-                                                                       "Step_Z" => 1.0,
-                                                                       "Number" => 2)))
+                            "Step_X" => 1.0,
+                            "Step_Y" => 1.0,
+                            "Step_Z" => 1.0,
+                            "Number" => 2)))
 
     mesh = DataFrame(x = [0.0, 1.0, 0.0, 1.0],
                      y = [0.0, 0.0, 1.0, 1.0],
@@ -848,10 +848,10 @@ end
                      block_id = [1, 1, 1, 1])
 
     params = Dict("Discretization" => Dict("Surface Extrusion" => Dict("Direction" => "Y",
-                                                                       "Step_X" => 1.0,
-                                                                       "Step_Y" => 1.0,
-                                                                       "Step_Z" => 1.0,
-                                                                       "Number" => 2)))
+                            "Step_X" => 1.0,
+                            "Step_Y" => 1.0,
+                            "Step_Z" => 1.0,
+                            "Number" => 2)))
 
     mesh_expected = DataFrame(x = [
                                   0.0,

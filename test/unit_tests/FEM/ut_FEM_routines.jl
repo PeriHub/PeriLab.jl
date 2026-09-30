@@ -17,13 +17,14 @@
     coordinates = PeriLab.Data_Manager.create_constant_node_vector_field("Coordinates",
                                                                          Float64, dof)
     params = Dict{String,Any}("FEM" => Dict("FE_1" => Dict("Degree" => 1,
-                                                           "Element Type" => "Lagrange",
-                                                           "Material Model" => "Elastic Model")),
-                              "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
-                                                                                "Symmetry" => "isotropic plane strain",
-                                                                                "Young's Modulus" => 2.5e+3,
-                                                                                "Poisson's Ratio" => 0.33,
-                                                                                "Shear Modulus" => 2.0e3)))
+                                        "Element Type" => "Lagrange",
+                                        "Material Model" => "Elastic Model")),
+                              "Material Models" => Dict("Elastic Model" =>
+                                       Dict("Material Model" => "Correspondence Elastic",
+                                            "Symmetry" => "isotropic plane strain",
+                                            "Young's Modulus" => 2.5e+3,
+                                            "Poisson's Ratio" => 0.33,
+                                            "Shear Modulus" => 2.0e3)))
 
     topology = PeriLab.Data_Manager.create_constant_free_size_field("FE Topology", Int64,
                                                                     (2, 4))
@@ -177,13 +178,14 @@ end
     coordinates = PeriLab.Data_Manager.create_constant_node_vector_field("Coordinates",
                                                                          Float64, dof)
     params = Dict{String,Any}("FEM" => Dict("FE_1" => Dict("Degree" => 1,
-                                                           "Element Type" => "Lagrange",
-                                                           "Material Model" => "Elastic Model")),
-                              "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
-                                                                                "Symmetry" => "isotropic plane strain",
-                                                                                "Young's Modulus" => 2.5e+3,
-                                                                                "Poisson's Ratio" => 0.33,
-                                                                                "Shear Modulus" => 2.0e3)))
+                                        "Element Type" => "Lagrange",
+                                        "Material Model" => "Elastic Model")),
+                              "Material Models" => Dict("Elastic Model" =>
+                                       Dict("Material Model" => "Correspondence Elastic",
+                                            "Symmetry" => "isotropic plane strain",
+                                            "Young's Modulus" => 2.5e+3,
+                                            "Poisson's Ratio" => 0.33,
+                                            "Shear Modulus" => 2.0e3)))
 
     topology = PeriLab.Data_Manager.create_constant_free_size_field("FE Topology", Int64,
                                                                     (2, 4))
@@ -237,7 +239,7 @@ end
     Ktest = zeros(8, 8)
     # checked with separate code; without jacobian
     Ktest[1,
-    :] = [
+          :] = [
         494.50549450549454,
         178.57142857142853,
         -302.1978021978022,
@@ -248,7 +250,7 @@ end
         -178.57142857142853
     ]
     Ktest[2,
-    :] = [
+          :] = [
         178.57142857142853,
         494.5054945054945,
         13.736263736263746,
@@ -259,7 +261,7 @@ end
         -247.2527472527472
     ]
     Ktest[3,
-    :] = [
+          :] = [
         -302.1978021978022,
         13.73626373626374,
         494.50549450549454,
@@ -270,7 +272,7 @@ end
         -13.736263736263744
     ]
     Ktest[4,
-    :] = [
+          :] = [
         -13.736263736263746,
         54.94505494505495,
         -178.57142857142853,
@@ -281,7 +283,7 @@ end
         -302.1978021978022
     ]
     Ktest[5,
-    :] = [
+          :] = [
         54.94505494505495,
         -13.736263736263746,
         -247.2527472527472,
@@ -292,7 +294,7 @@ end
         13.736263736263737
     ]
     Ktest[6,
-    :] = [
+          :] = [
         13.73626373626374,
         -302.1978021978023,
         178.57142857142853,
@@ -303,7 +305,7 @@ end
         54.94505494505495
     ]
     Ktest[7,
-    :] = [
+          :] = [
         -247.2527472527472,
         -178.57142857142853,
         54.94505494505495,
@@ -314,7 +316,7 @@ end
         178.57142857142853
     ]
     Ktest[8,
-    :] = [
+          :] = [
         -178.57142857142853,
         -247.2527472527472,
         -13.736263736263744,
@@ -388,12 +390,13 @@ end
 
 @testset "ut_get_FE_material_model" begin
     params = Dict{String,Any}("FEM" => Dict("FE_1" => Dict("Degree" => 1,
-                                                           "Element Type" => "Lagrange",
-                                                           "Material Model" => "Elastic Model")),
-                              "Material Models" => Dict("Elastic Model 2" => Dict("Material Model" => "Correspondence Elastic",
-                                                                                  "Symmetry" => "isotropic plane strain",
-                                                                                  "Bulk Modulus" => 2.5e+3,
-                                                                                  "Shear Modulus" => 1.15e3)))
+                                        "Element Type" => "Lagrange",
+                                        "Material Model" => "Elastic Model")),
+                              "Material Models" => Dict("Elastic Model 2" =>
+                                       Dict("Material Model" => "Correspondence Elastic",
+                                            "Symmetry" => "isotropic plane strain",
+                                            "Bulk Modulus" => 2.5e+3,
+                                            "Shear Modulus" => 1.15e3)))
 
     @test_logs (:error,
                 "Material model Elastic Model defined in FEM are not defined as material") @test_throws PeriLab.PeriLabError begin
@@ -402,12 +405,13 @@ end
     end
 
     params = Dict{String,Any}("FEM" => Dict("FE_1" => Dict("Degree" => 1,
-                                                           "Element Type" => "Lagrange",
-                                                           "Material Model" => "Elastic Model")),
-                              "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
-                                                                                "Symmetry" => "isotropic plane strain",
-                                                                                "Bulk Modulus" => 2.5e+3,
-                                                                                "Shear Modulus" => 1.15e3)))
+                                        "Element Type" => "Lagrange",
+                                        "Material Model" => "Elastic Model")),
+                              "Material Models" => Dict("Elastic Model" =>
+                                       Dict("Material Model" => "Correspondence Elastic",
+                                            "Symmetry" => "isotropic plane strain",
+                                            "Bulk Modulus" => 2.5e+3,
+                                            "Shear Modulus" => 1.15e3)))
 
     @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_FE_material_model(params, "FE_1") ==
           Dict("Material Model" => "Correspondence Elastic",

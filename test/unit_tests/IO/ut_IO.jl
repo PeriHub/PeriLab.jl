@@ -33,19 +33,20 @@ PeriLab.Data_Manager.set_block_name_list(block_list)
 PeriLab.Data_Manager.set_block_id_list([1, 2])
 
 params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => filename1,
-                                                  "Flush File" => false,
-                                                  "Output Variables" => Dict("Forces" => true)),
-                                "Output2" => Dict("Output Filename" => filename2,
-                                                  "Flush File" => false,
-                                                  "Output Variables" => Dict("Displacements" => true,
-                                                                             "Forces" => true)),
-                                "Output3" => Dict("Output Filename" => filename3,
-                                                  "Output File Type" => "CSV",
-                                                  "Output Variables" => Dict("External_Displacement" => true))),
-              "Compute Class Parameters" => Dict("External_Displacement" => Dict("Block" => "block_1",
-                                                                                 "Calculation Type" => "Maximum",
-                                                                                 "Compute Class" => "Block_Data",
-                                                                                 "Variable" => "Displacements")))
+                        "Flush File" => false,
+                        "Output Variables" => Dict("Forces" => true)),
+                   "Output2" => Dict("Output Filename" => filename2,
+                        "Flush File" => false,
+                        "Output Variables" => Dict("Displacements" => true,
+                             "Forces" => true)),
+                   "Output3" => Dict("Output Filename" => filename3,
+                        "Output File Type" => "CSV",
+                        "Output Variables" => Dict("External_Displacement" => true))),
+              "Compute Class Parameters" =>
+                  Dict("External_Displacement" => Dict("Block" => "block_1",
+                            "Calculation Type" => "Maximum",
+                            "Compute Class" => "Block_Data",
+                            "Variable" => "Displacements")))
 coordinates[1, 1] = 0
 coordinates[1, 2] = 0
 coordinates[2, 1] = 1
@@ -191,7 +192,7 @@ end
     PeriLab.Data_Manager.create_constant_node_scalar_field("Block_Id", Int64;
                                                            default_value = 1)
     PeriLab.IO.init_orientations(Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1),
-                                                       "block_2" => Dict("Block ID" => 2))))
+                                           "block_2" => Dict("Block ID" => 2))))
     orientations = PeriLab.Data_Manager.get_field("Orientations")
     @test isapprox(orientations[1, 1], 0; atol = 0.00001)
     @test isapprox(orientations[1, 2], 1; atol = 0.00001)
@@ -270,15 +271,15 @@ end
                               "Thermal",
                               "Degradation"])
     params = Dict("Blocks" => Dict("block_1" => Dict("Material Models" => true,
-                                                     "Damage Models" => true,
-                                                     "Additive Models" => true,
-                                                     "Thermal Models" => true,
-                                                     "Degradation Models" => true),
-                                   "block_2" => Dict("Material Models" => true,
-                                                     "Damage Models" => false,
-                                                     "Additive Models" => false,
-                                                     "Thermal Models" => false,
-                                                     "Degradation Models" => false)))
+                            "Damage Models" => true,
+                            "Additive Models" => true,
+                            "Thermal Models" => true,
+                            "Degradation Models" => true),
+                       "block_2" => Dict("Material Models" => true,
+                            "Damage Models" => false,
+                            "Additive Models" => false,
+                            "Thermal Models" => false,
+                            "Degradation Models" => false)))
     PeriLab.IO.show_block_summary(solver_options,
                                   params,
                                   "",

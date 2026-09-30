@@ -36,8 +36,10 @@ end
     @test_logs (:error,
                 "The FEM material model b is not defined") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,
-                                                 Any}("Models" => Dict("Material Models" => Dict("a" => "a")),
-                                                      "FEM" => Dict("Material Model" => "b")))
+                                                 Any}("Models" => Dict("Material Models" =>
+                                                               Dict("a" => "a")),
+                                                      "FEM" =>
+                                                          Dict("Material Model" => "b")))
     end
 
     PeriLab.Data_Manager.create_node_vector_field("Displacements", Float64, dof)
@@ -70,26 +72,36 @@ end
     PeriLab.Data_Manager.init_properties()
 
     params = Dict{String,Any}("FEM" => Dict("Degree" => 1,
-                                            "Element Type" => "Lagrange",
-                                            "Material Model" => "Elastic Model"),
-                              "Models" => Dict{String,Any}("Material Models" => Dict("No FEM Model" => Dict("Material Model" => "Correspondence Elastic",
-                                                                                                            "Symmetry" => "isotropic plane strain",
-                                                                                                            "Young's Modulus" => 2.5e+3,
-                                                                                                            "Poisson's Ratio" => 0.33,
-                                                                                                            "Shear Modulus" => 2.0e3))))
+                                   "Element Type" => "Lagrange",
+                                   "Material Model" => "Elastic Model"),
+                              "Models" => Dict{String,Any}("Material Models" =>
+                                                   Dict("No FEM Model" =>
+                                                            Dict("Material Model" => "Correspondence Elastic",
+                                                                 "Symmetry" => "isotropic plane strain",
+                                                                 "Young's Modulus" =>
+                                                                     2.5e+3,
+                                                                 "Poisson's Ratio" =>
+                                                                     0.33,
+                                                                 "Shear Modulus" =>
+                                                                     2.0e3))))
     @test_logs (:error,
                 "The FEM material model Elastic Model is not defined") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.FEM.init_FEM(params)
     end
 
     params = Dict{String,Any}("FEM" => Dict("Degree" => 1,
-                                            "Element Type" => "Lagrange",
-                                            "Material Model" => "Elastic Model"),
-                              "Models" => Dict{String,Any}("Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
-                                                                                                             "Symmetry" => "isotropic plane strain",
-                                                                                                             "Young's Modulus" => 2.5e+3,
-                                                                                                             "Poisson's Ratio" => 0.33,
-                                                                                                             "Shear Modulus" => 2.0e3))))
+                                   "Element Type" => "Lagrange",
+                                   "Material Model" => "Elastic Model"),
+                              "Models" => Dict{String,Any}("Material Models" =>
+                                                   Dict("Elastic Model" =>
+                                                            Dict("Material Model" => "Correspondence Elastic",
+                                                                 "Symmetry" => "isotropic plane strain",
+                                                                 "Young's Modulus" =>
+                                                                     2.5e+3,
+                                                                 "Poisson's Ratio" =>
+                                                                     0.33,
+                                                                 "Shear Modulus" =>
+                                                                     2.0e3))))
     @test_logs (:error,
                 "FEM Material must have the field Material Gradient. This is the Hooke matrix for linear elasticity. Please use elastic correspondence or the UMAT interace.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.FEM.init_FEM(params)
@@ -176,13 +188,14 @@ end
     PeriLab.Data_Manager.init_properties()
 
     params = Dict{String,Any}("FEM" => Dict("Degree" => 1,
-                                            "Element Type" => "Lagrange",
-                                            "Material Model" => "Elastic Model"),
-                              "Models" => Dict("Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
-                                                                                                 "Symmetry" => "isotropic plane strain",
-                                                                                                 "Young's Modulus" => 1.5,
-                                                                                                 "Poisson's Ratio" => 0.33,
-                                                                                                 "Shear Modulus" => 0.5639))))
+                                   "Element Type" => "Lagrange",
+                                   "Material Model" => "Elastic Model"),
+                              "Models" => Dict("Material Models" => Dict("Elastic Model" =>
+                                            Dict("Material Model" => "Correspondence Elastic",
+                                                 "Symmetry" => "isotropic plane strain",
+                                                 "Young's Modulus" => 1.5,
+                                                 "Poisson's Ratio" => 0.33,
+                                                 "Shear Modulus" => 0.5639))))
 
     PeriLab.Solver_Manager.FEM.init_FEM(params)
     elements = Vector{Int64}([1, 2])

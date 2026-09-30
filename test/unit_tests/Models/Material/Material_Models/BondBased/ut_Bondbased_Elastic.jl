@@ -45,11 +45,15 @@ end
         dbdNP1[iID] .= 1 + (-1)^iID * 0.1
     end
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(Vector{Int64}(1:nodes),
-                                                                               Dict("Bulk Modulus" => 1.0,
-                                                                                    "Young's Modulus" => 1.0))
+                                                                               Dict("Bulk Modulus" =>
+                                                                                        1.0,
+                                                                                    "Young's Modulus" =>
+                                                                                        1.0))
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(Vector{Int64}(1:nodes),
-                                                                                  Dict("Bulk Modulus" => 1.0,
-                                                                                       "Young's Modulus" => 1.0),
+                                                                                  Dict("Bulk Modulus" =>
+                                                                                           1.0,
+                                                                                       "Young's Modulus" =>
+                                                                                           1.0),
                                                                                   1,
                                                                                   0.0,
                                                                                   0.0)
@@ -73,12 +77,16 @@ end
     bf[2][2] .= 0
     bf[2][3] .= 0
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(Vector{Int64}(1:nodes),
-                                                                               Dict("Bulk Modulus" => 1.0,
-                                                                                    "Young's Modulus" => 1.0,
+                                                                               Dict("Bulk Modulus" =>
+                                                                                        1.0,
+                                                                                    "Young's Modulus" =>
+                                                                                        1.0,
                                                                                     "Symmetry" => "here is something"))
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(Vector{Int64}(1:nodes),
-                                                                                  Dict("Bulk Modulus" => 1.0,
-                                                                                       "Young's Modulus" => 1.0,
+                                                                                  Dict("Bulk Modulus" =>
+                                                                                           1.0,
+                                                                                       "Young's Modulus" =>
+                                                                                           1.0,
                                                                                        "Symmetry" => "here is something"),
                                                                                   1,
                                                                                   0.0,
@@ -104,13 +112,17 @@ end
     bf[2][2] .= 0
     bf[2][3] .= 0
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(Vector{Int64}(1:nodes),
-                                                                               Dict("Bulk Modulus" => 1.0,
-                                                                                    "Young's Modulus" => 1.0,
+                                                                               Dict("Bulk Modulus" =>
+                                                                                        1.0,
+                                                                                    "Young's Modulus" =>
+                                                                                        1.0,
                                                                                     "Symmetry" => "plane strain"))
 
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(Vector{Int64}(1:nodes),
-                                                                                  Dict("Bulk Modulus" => 1.0,
-                                                                                       "Young's Modulus" => 1.0,
+                                                                                  Dict("Bulk Modulus" =>
+                                                                                           1.0,
+                                                                                       "Young's Modulus" =>
+                                                                                           1.0,
                                                                                        "Symmetry" => "plane strain"),
                                                                                   1,
                                                                                   0.0,
@@ -136,12 +148,16 @@ end
     bf[2][2] .= 0
     bf[2][3] .= 0
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(Vector{Int64}(1:nodes),
-                                                                               Dict("Bulk Modulus" => 1.0,
-                                                                                    "Young's Modulus" => 1.0,
+                                                                               Dict("Bulk Modulus" =>
+                                                                                        1.0,
+                                                                                    "Young's Modulus" =>
+                                                                                        1.0,
                                                                                     "Symmetry" => "plane stress"))
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(Vector{Int64}(1:nodes),
-                                                                                  Dict("Bulk Modulus" => 1.0,
-                                                                                       "Young's Modulus" => 1.0,
+                                                                                  Dict("Bulk Modulus" =>
+                                                                                           1.0,
+                                                                                       "Young's Modulus" =>
+                                                                                           1.0,
                                                                                        "Symmetry" => "plane stress"),
                                                                                   1,
                                                                                   0.0,

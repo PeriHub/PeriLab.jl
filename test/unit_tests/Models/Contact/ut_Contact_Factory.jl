@@ -12,29 +12,34 @@
     block_id .= 1
     # contact_params = Dict("cm" => Dict("Contact Groups" => Dict()))
     # @test !PeriLab.Solver_Manager.check_valid_contact_model(contact_params, block_id)
-    contact_params = Dict("cm" => Dict("Contact Groups" => Dict("cg" => Dict("Master Block ID" => 1))))
+    contact_params = Dict("cm" => Dict("Contact Groups" =>
+                                   Dict("cg" => Dict("Master Block ID" => 1))))
     @test_logs (:error, "Contact model needs a ''Slave''") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.Model_Factory.Contact.check_valid_contact_model(contact_params,
                                                                                block_id)
     end
-    contact_params = Dict("cm" => Dict("Contact Groups" => Dict("cg" => Dict("Master Block ID" => 1,
-                                                                             "Slave Block ID" => 1))))
+    contact_params = Dict("cm" => Dict("Contact Groups" =>
+                                   Dict("cg" => Dict("Master Block ID" => 1,
+                                             "Slave Block ID" => 1))))
     @test_logs (:error,
                 "Contact master and slave are equal. Self contact is not implemented yet.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.Model_Factory.Contact.check_valid_contact_model(contact_params,
                                                                                block_id)
     end
-    contact_params = Dict("cm" => Dict("Contact Groups" => Dict("cg" => Dict("Master Block ID" => 1,
-                                                                             "Slave Block ID" => 2))))
+    contact_params = Dict("cm" => Dict("Contact Groups" =>
+                                   Dict("cg" => Dict("Master Block ID" => 1,
+                                             "Slave Block ID" => 2))))
     @test_logs (:error,
                 "Block defintion in slave does not exist.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.Model_Factory.Contact.check_valid_contact_model(contact_params,
                                                                                block_id)
     end
-    contact_params = Dict("cm" => Dict("Contact Groups" => Dict("cg" => Dict("Master Block ID" => 1,
-                                                                             "Slave Block ID" => 2))),
-                          "cm2" => Dict("Contact Groups" => Dict("cg" => Dict("Master Block ID" => 2,
-                                                                              "Slave Block ID" => 1))))
+    contact_params = Dict("cm" => Dict("Contact Groups" =>
+                                   Dict("cg" => Dict("Master Block ID" => 1,
+                                             "Slave Block ID" => 2))),
+                          "cm2" => Dict("Contact Groups" =>
+                                   Dict("cg" => Dict("Master Block ID" => 2,
+                                             "Slave Block ID" => 1))))
     @test_logs (:error,
                 "Block defintion in slave does not exist.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.Model_Factory.Contact.check_valid_contact_model(contact_params,
@@ -46,17 +51,19 @@
         PeriLab.Solver_Manager.Model_Factory.Contact.check_valid_contact_model(contact_params,
                                                                                block_id)
     end
-    contact_params = Dict("cm" => Dict("Contact Groups" => Dict("cg" => Dict("Master Block ID" => 1,
-                                                                             "Slave Block ID" => 2,
-                                                                             "Search Radius" => 0.0))))
+    contact_params = Dict("cm" => Dict("Contact Groups" =>
+                                   Dict("cg" => Dict("Master Block ID" => 1,
+                                             "Slave Block ID" => 2,
+                                             "Search Radius" => 0.0))))
     @test_logs (:error,
                 "''Search Radius'' must be greater than zero.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.Model_Factory.Contact.check_valid_contact_model(contact_params,
                                                                                block_id)
     end
-    contact_params = Dict("cm" => Dict("Contact Groups" => Dict("cg" => Dict("Master Block ID" => 1,
-                                                                             "Slave Block ID" => 2,
-                                                                             "Search Radius" => -20.0))))
+    contact_params = Dict("cm" => Dict("Contact Groups" =>
+                                   Dict("cg" => Dict("Master Block ID" => 1,
+                                             "Slave Block ID" => 2,
+                                             "Search Radius" => -20.0))))
     @test_logs (:error,
                 "''Search Radius'' must be greater than zero.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.Model_Factory.Contact.check_valid_contact_model(contact_params,
@@ -65,14 +72,15 @@
 end
 
 @testset "ut_get_all_contact_blocks" begin
-    params = Dict("cm" => Dict("Contact Groups" => Dict("a" => Dict("Master Block ID" => 1,
-                                                                    "Slave Block ID" => 2),
-                                                        "ba" => Dict("Master Block ID" => 2,
-                                                                     "Slave Block ID" => 1),
-                                                        "c" => Dict("Master Block ID" => 3,
-                                                                    "Slave Block ID" => 5),
-                                                        "q" => Dict("Master Block ID" => 8,
-                                                                    "Slave Block ID" => 5))))
+    params = Dict("cm" =>
+                      Dict("Contact Groups" => Dict("a" => Dict("Master Block ID" => 1,
+                                     "Slave Block ID" => 2),
+                                "ba" => Dict("Master Block ID" => 2,
+                                     "Slave Block ID" => 1),
+                                "c" => Dict("Master Block ID" => 3,
+                                     "Slave Block ID" => 5),
+                                "q" => Dict("Master Block ID" => 8,
+                                     "Slave Block ID" => 5))))
     @test PeriLab.Solver_Manager.Model_Factory.Contact.get_all_contact_blocks(params) ==
           [1, 2, 3, 5, 8]
 end

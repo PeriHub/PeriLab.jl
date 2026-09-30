@@ -72,8 +72,8 @@ end
             for i in 1:3
                 for j in 1:3
                     testval[iID, i,
-                    j] += bond_forces[iID][jID][i] *
-                                          bond_geometry[iID][jID][j] * volume[iID]
+                            j] += bond_forces[iID][jID][i] *
+                                  bond_geometry[iID][jID][j] * volume[iID]
                 end
             end
         end

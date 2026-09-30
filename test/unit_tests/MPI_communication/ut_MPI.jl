@@ -382,11 +382,15 @@ if ncores == 3
     end
 
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(Vector{Int64}(1:nodes),
-                                                                               Dict("Bulk Modulus" => 1.0,
-                                                                                    "Young's Modulus" => 1.0))
+                                                                               Dict("Bulk Modulus" =>
+                                                                                        1.0,
+                                                                                    "Young's Modulus" =>
+                                                                                        1.0))
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(Vector{Int64}(1:nodes),
-                                                                                  Dict("Bulk Modulus" => 1.0,
-                                                                                       "Young's Modulus" => 1.0),
+                                                                                  Dict("Bulk Modulus" =>
+                                                                                           1.0,
+                                                                                       "Young's Modulus" =>
+                                                                                           1.0),
                                                                                   1,
                                                                                   0.0,
                                                                                   0.0)
@@ -406,16 +410,18 @@ if ncores == 3
                                                                             overlap_map, bf,
                                                                             dof)
     if rank == 0
-        test = test_dict["synch_controller_bonds_to_responder_flattened_rank_0"] = Dict("tests" => [],
-                                                                                        "line" => [])
+        test = test_dict["synch_controller_bonds_to_responder_flattened_rank_0"] = Dict("tests" =>
+                                                                                            [],
+                                                                                        "line" =>
+                                                                                            [])
         # push_test!(test, (bf[1] == Float64(-0.9)), @__FILE__, @__LINE__)
     end
 
     solver_options = Dict("Models" => ["Material"])
     params = Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
-                                                     "Material Model" => "Test 1"),
-                                   "block_2" => Dict("Block ID" => 2,
-                                                     "Material Model" => "Test 2")))
+                                         "Material Model" => "Test 1"),
+                       "block_2" => Dict("Block ID" => 2,
+                                         "Material Model" => "Test 2")))
     PeriLab.IO.show_block_summary(solver_options, params, "", false, comm)
     PeriLab.IO.show_block_summary(solver_options, params, "", true, comm)
     PeriLab.Logging_Module.init_logging("test", false, false, 0, 2)

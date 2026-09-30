@@ -7,4 +7,5 @@ using MPI
 using TimerOutputs
 using SparseArrays
 
-@testset "ut_guyan_reduction" begin end
+@testset "ut_guyan_reduction" begin
+end

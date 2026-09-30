@@ -334,7 +334,7 @@ function run(filename::String;
              verbose::Bool = false,
              debug::Bool = false,
              silent::Bool = false,
-             reload::Bool = false,)
+             reload::Bool = false)
     reset_timer!()
     t0 = time()
     @timeit "PeriLab" begin

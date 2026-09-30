@@ -35,14 +35,16 @@ end
     end
 
     PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(Vector{Int64}(1:nodes),
-                                                                              Dict("Yield Stress" => 5.3))
+                                                                              Dict("Yield Stress" =>
+                                                                                       5.3))
     yield = PeriLab.Data_Manager.get_field("Yield Value")
 
     @test isapprox(yield[1], 25 * 5.3 * 5.3 / (8 * pi * 3^5))
     @test isapprox(yield[2], 25 * 5.3 * 5.3 / (8 * pi * 2^5))
 
     PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(Vector{Int64}(1:nodes),
-                                                                              Dict("Yield Stress" => 2.2,
+                                                                              Dict("Yield Stress" =>
+                                                                                       2.2,
                                                                                    "Symmetry" => "plane stress"))
     yield = PeriLab.Data_Manager.get_field("Yield Value")
 

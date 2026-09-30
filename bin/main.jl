@@ -36,7 +36,7 @@ PeriLab.run(filename;
             verbose = verbose,
             debug = debug,
             silent = silent,
-            reload = reload,)
+            reload = reload)
 
 zip_filename = "results.zip"
 zip_folder(output_dir, zip_filename)

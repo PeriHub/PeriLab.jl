@@ -94,9 +94,12 @@ end
     PeriLab.Data_Manager.create_constant_node_scalar_field("Surface_Nodes", Bool)
     PeriLab.Data_Manager.create_bond_scalar_state("Bond Damage", Float64)
     PeriLab.Solver_Manager.Model_Factory.Thermal.Heat_Transfer.compute_model(Vector{Int64}(1:10),
-                                                                             Dict("Heat Transfer Coefficient" => 1,
-                                                                                  "Environmental Temperature" => 1.2,
-                                                                                  "Allow Surface Change" => false),
+                                                                             Dict("Heat Transfer Coefficient" =>
+                                                                                      1,
+                                                                                  "Environmental Temperature" =>
+                                                                                      1.2,
+                                                                                  "Allow Surface Change" =>
+                                                                                      false),
                                                                              1,
                                                                              1.0,
                                                                              1.0)
@@ -105,9 +108,12 @@ end
     PeriLab.Data_Manager.set_dof(dof)
 
     PeriLab.Solver_Manager.Model_Factory.Thermal.Heat_Transfer.compute_model(Vector{Int64}(1:10),
-                                                                             Dict("Heat Transfer Coefficient" => 1,
-                                                                                  "Environmental Temperature" => 1.2,
-                                                                                  "Allow Surface Change" => false),
+                                                                             Dict("Heat Transfer Coefficient" =>
+                                                                                      1,
+                                                                                  "Environmental Temperature" =>
+                                                                                      1.2,
+                                                                                  "Allow Surface Change" =>
+                                                                                      false),
                                                                              1,
                                                                              1.0,
                                                                              1.0)

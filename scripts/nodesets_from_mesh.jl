@@ -27,7 +27,7 @@ function main(file, nodesets, blocks = [])
                            ignorerepeated = true,
                            header = header,
                            skipto = header_line + 1,
-                           comment = "#",)
+                           comment = "#")
     for nodeset in nodesets
         node_set_file = open(nodeset["file"], "w")
         println(node_set_file, "header: global_id")

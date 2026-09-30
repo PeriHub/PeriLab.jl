@@ -45,8 +45,10 @@ end
         dbdNP1[iID] .= 1 + (-1)^iID * 0.1
     end
     PeriLab.Solver_Manager.Model_Factory.Material.OneD_Bond_Based_Elastic.init_model(Vector{Int64}(1:nodes),
-                                                                                     Dict("Bulk Modulus" => 1.0,
-                                                                                          "Young's Modulus" => 1.0))
+                                                                                     Dict("Bulk Modulus" =>
+                                                                                              1.0,
+                                                                                          "Young's Modulus" =>
+                                                                                              1.0))
     # PeriLab.Solver_Manager.Model_Factory.Material.OneD_Bond_Based_Elastic.compute_model(Vector{Int64}(1:nodes),
     #                                                                                     Dict("Bulk Modulus" => 1.0,
     #                                                                                          "Young's Modulus" => 1.0,

@@ -49,7 +49,6 @@ function extrude_surface_mesh(mesh::DataFrame, direction, step, number)
     for i in (coord_max + step):step:(coord_max + step * number),
         j in row_min:step:(row_max + step),
         k in min_z:step:(max_z + step)
-
         if direction == "X"
             push!(mesh, (x = i, y = j, z = k, volume = volume, block_id = block_id))
         elseif direction == "Y"
@@ -64,7 +63,6 @@ function extrude_surface_mesh(mesh::DataFrame, direction, step, number)
     for i in (coord_min - step):(-step):(coord_min - step * number),
         j in row_min:step:(row_max + step),
         k in min_z:step:(max_z + step)
-
         if direction == "X"
             push!(mesh, (x = i, y = j, z = k, volume = volume, block_id = block_id))
         elseif direction == "Y"

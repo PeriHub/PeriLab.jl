@@ -136,11 +136,12 @@ function write_mesh(event_file, dx, dt, scale, width, plot, plot_all = false)
                 point[2] = grid_y[j]
                 sub_in_place!(point_diff, point, start_point)
                 if used_ids[j] == 0
-                    distance_along_line, distance_to_closest_point = closest_point_to_vector(start_point,
-                                                                                             dir,
-                                                                                             point,
-                                                                                             closest_point,
-                                                                                             point_diff)
+                    distance_along_line,
+                    distance_to_closest_point = closest_point_to_vector(start_point,
+                                                                        dir,
+                                                                        point,
+                                                                        closest_point,
+                                                                        point_diff)
                     if distance_to_closest_point <= width / 2 &&
                        distance_along_line <= distance &&
                        distance_along_line >= 0

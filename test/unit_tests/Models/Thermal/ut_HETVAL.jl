@@ -26,8 +26,9 @@ end
                 "File $(joinpath(pwd(), directory, file * "_not_there")) does not exist, please check name and directory.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.init_model(Vector{Int64}(1:nodes),
                                                                        Dict{String,
-                                                                            Any}("File" => file *
-                                                                                           "_not_there"))
+                                                                            Any}("File" =>
+                                                                                     file *
+                                                                                     "_not_there"))
     end
 
     @test_logs (:error, "HETVAL file is not defined.") @test_throws PeriLab.PeriLabError begin
@@ -40,7 +41,8 @@ end
                 "Predefined field ''test_field_2'' is not defined in the mesh file.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.init_model(Vector{Int64}(1:nodes),
                                                                        Dict{String,
-                                                                            Any}("File" => file,
+                                                                            Any}("File" =>
+                                                                                     file,
                                                                                  "Predefined Field Names" => "test_field_2 test_field_3"))
     end
 

@@ -39,7 +39,7 @@ function run_perilab(filename, cores, compare, folder_name = ""; silent = true,
         if cores == 1
             same = exodiff(filename * ".e",
                            "./Reference/" * filename * ".e";
-                           command_file = folder_name * ".cmd",)
+                           command_file = folder_name * ".cmd")
         else
             same = exodiff(filename * ".e",
                            "./Reference/" * filename * ".e",
