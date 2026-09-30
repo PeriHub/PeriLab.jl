@@ -68,7 +68,7 @@ function compute_model(nodes::AbstractVector{Int64},
                        time::Float64,
                        dt::Float64)
     mod = Data_Manager.get_model_module(model_param["Additive Model"])
-    return mod.compute_model(nodes, model_param, block, time, dt)
+    return Base.@invokelatest mod.compute_model(nodes, model_param, block, time, dt)
 end
 
 """
@@ -101,7 +101,7 @@ function init_model(nodes::AbstractVector{Int64},
         return
     end
     Data_Manager.set_model_module(model_param["Additive Model"], mod)
-    Base.invokelatest(mod.init_model, nodes, model_param, block)
+    Base.@invokelatest mod.init_model(nodes, model_param, block)
 end
 
 """
@@ -117,7 +117,7 @@ function fields_for_local_synchronization(model, block)
     model_param = Data_Manager.get_properties(block, "Additive Model")
     mod = Data_Manager.get_model_module(model_param["Additive Model"])
 
-    return mod.fields_for_local_synchronization(model)
+    return Base.@invokelatest mod.fields_for_local_synchronization(model)
 end
 
 end
