@@ -45,7 +45,7 @@ end
 function init_solver(solver_options::Dict{Any,Any},
                      params::AbstractDict,
                      bcs::Dict{Any,Any},
-                     block_nodes::Dict{Int64,Vector{Int64}})
+                     block_nodes::AbstractDict{Int64,Vector{Int64}})
     horizon = Data_Manager.get_field("Horizon")
     if Data_Manager.get_rank() > 1
         @warn "Implementation might not work for MPI. Especially for coupling. It has to be tested."
@@ -154,7 +154,7 @@ function init_solver(solver_options::Dict{Any,Any},
 end
 
 function run_solver(solver_options::Dict{Any,Any},
-                    block_nodes::Dict{Int64,Vector{Int64}},
+                    block_nodes::AbstractDict{Int64,Vector{Int64}},
                     bcs::Dict{Any,Any},
                     outputs::Dict{Int64,Dict{}},
                     result_files::Vector{Dict},

@@ -57,7 +57,7 @@ Initialize the solver
 # Arguments
 - `params::AbstractDict`: The parameters
 # Returns
-- `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
+- `block_nodes::AbstractDict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `bcs::Dict{Any,Any}`: A dictionary containing boundary conditions.
 - `solver_options::AbstractDict{String,Any}`: A dictionary containing solver options.
 """
@@ -275,13 +275,13 @@ function set_horizon(params::AbstractDict, block_nodes::AbstractDict,
 end
 
 """
-	solver(solver_options::AbstractDict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, silent::Bool)
+	solver(solver_options::AbstractDict{String,Any}, block_nodes::AbstractDict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, silent::Bool)
 
 Runs the solver.
 
 # Arguments
 - `solver_options::AbstractDict{String,Any}`: The solver options
-- `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes
+- `block_nodes::AbstractDict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes
 - `bcs::Dict{Any,Any}`: The boundary conditions
 - `outputs::Dict{Int64,Dict{}}`: A dictionary for output settings
 - `result_files::Vector{Any}`: A vector of result files
@@ -291,7 +291,7 @@ Runs the solver.
 - `result_files`: A vector of updated result files
 """
 function solver(solver_options::Dict{Any,Any},
-                block_nodes::Dict{Int64,Vector{Int64}},
+                block_nodes::AbstractDict{Int64,Vector{Int64}},
                 bcs::Dict{Any,Any},
                 outputs::Dict{Int64,Dict{}},
                 result_files::Vector{Dict},

@@ -118,14 +118,14 @@ function fields_for_local_synchronization(model, block)
 end
 
 """
-    check_dependencies(block_nodes::Dict{Int64,Vector{Int64}}
+    check_dependencies(block_nodes::AbstractDict{Int64,Vector{Int64}}
 
 Check if materials are used which needs a form of pre calculation. If so, the option will be set.
 
 # Arguments
-- `block_nodes::Dict{Int64,Vector{Int64}}`: block nodes.
+- `block_nodes::AbstractDict{Int64,Vector{Int64}}`: block nodes.
 """
-function check_dependencies(block_nodes::Dict{Int64,Vector{Int64}})
+function check_dependencies(block_nodes::AbstractDict{Int64,Vector{Int64}})
     for block_id in eachindex(block_nodes)
         if !Data_Manager.check_property(block_id, "Material Model")
             continue

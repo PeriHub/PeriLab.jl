@@ -9,6 +9,7 @@ using Meshes: Ring, Point, centroid, Hexahedron
 #using Tensors
 using Dierckx: Spline1D, evaluate
 using ProgressBars: ProgressBar
+using DataStructures: OrderedDict
 using LinearAlgebra: Adjoint, dot, det, norm, pinv, eigvals, inv, normalize, cross, diagm,
                      cholesky
 using StaticArrays: MMatrix, MVector, SMatrix, @SMatrix, SVector, @SVector
@@ -194,11 +195,11 @@ Returns a dictionary mapping block IDs to collections of nodes.
 - `block_ids::Vector{Int64}`: A vector of block IDs
 - `nnodes::Int64`: The number of nodes
 # Returns
-- `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes
+- `block_nodes::AbstractDict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes
 """
 function get_block_nodes(block_ids, nnodes)
-    block_nodes = Dict{Int64,Vector{Int64}}()
-    for i in unique(block_ids[1:nnodes])
+    block_nodes = OrderedDict{Int64,Vector{Int64}}()
+    for i in sort(unique(block_ids[1:nnodes]))
         block_nodes[i] = find_indices(block_ids[1:nnodes], i)
     end
     return block_nodes

@@ -34,17 +34,17 @@ export init_models
 export read_properties
 
 """
-	init_models(params::AbstractDict, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::AbstractDict)
+	init_models(params::AbstractDict, block_nodes::AbstractDict{Int64,Vector{Int64}}, solver_options::AbstractDict)
 
 Initialize models
 
 # Arguments
 - `params::AbstractDict`: Parameters.
-- `block_nodes::Dict{Int64,Vector{Int64}}`: block nodes.
+- `block_nodes::AbstractDict{Int64,Vector{Int64}}`: block nodes.
 - `solver_options::AbstractDict`: Solver options.
 """
 function init_models(params::AbstractDict,
-                     block_nodes::Dict{Int64,Vector{Int64}},
+                     block_nodes::AbstractDict{Int64,Vector{Int64}},
                      solver_options::AbstractDict,
                      synchronise_field)
     if "Pre_Calculation" in solver_options["Models"]
@@ -138,18 +138,18 @@ function check_contact(params::AbstractDict, time::Float64, dt::Float64)
 end
 
 """
-	compute_models(block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field)
+	compute_models(block_nodes::AbstractDict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field)
 
 Computes the material point models
 
 # Arguments
-- `block_nodes::Dict{Int64,Vector{Int64}}`: The block nodes
+- `block_nodes::AbstractDict{Int64,Vector{Int64}}`: The block nodes
 - `dt::Float64`: The time step
 - `time::Float64`: The current time of the solver
 - `options::Vector{String}`: The options
 - `synchronise_field`: The synchronise field
 """
-function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
+function compute_models(block_nodes::AbstractDict{Int64,Vector{Int64}},
                         dt::Float64,
                         time::Float64,
                         options::Vector{String},
@@ -323,18 +323,19 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
 end
 
 """
-	compute_stiff_matrix_compatible_models(block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field)
+	compute_stiff_matrix_compatible_models(block_nodes::AbstractDict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field)
 
 Computes the models models that are compatible with the stiffness matrix calculation.
 
 # Arguments
-- `block_nodes::Dict{Int64,Vector{Int64}}`: The block nodes
+- `block_nodes::AbstractDict{Int64,Vector{Int64}}`: The block nodes
 - `dt::Float64`: The time step
 - `time::Float64`: The current time of the solver
 - `options::Vector{String}`: The options
 - `synchronise_field`: The synchronise field
 """
-function compute_stiff_matrix_compatible_models(block_nodes::Dict{Int64,Vector{Int64}},
+function compute_stiff_matrix_compatible_models(block_nodes::AbstractDict{Int64,
+                                                                          Vector{Int64}},
                                                 dt::Float64,
                                                 time::Float64,
                                                 options::Vector{String},
@@ -387,7 +388,7 @@ function compute_stiff_matrix_compatible_models(block_nodes::Dict{Int64,Vector{I
     end
 end
 
-function compute_matrix_based_bond_forces(block_nodes::Dict{Int64,Vector{Int64}},
+function compute_matrix_based_bond_forces(block_nodes::AbstractDict{Int64,Vector{Int64}},
                                           time::Float64,
                                           dt::Float64)
     active_list = Data_Manager.get_field("Active")
@@ -677,14 +678,14 @@ function test_timestep(t::Float64, critical_time_step::Float64)
 end
 
 """
-	compute_crititical_time_step(block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+	compute_crititical_time_step(block_nodes::AbstractDict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
 Calculate the critical time step for a simulation considering both mechanical and thermodynamic aspects.
 
 This function computes the critical time step by considering mechanical and thermodynamic properties of different blocks. The resulting critical time step is based on the smallest critical time step found among the blocks.
 
 # Arguments
-- `block_nodes::Dict{Int64, Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
+- `block_nodes::AbstractDict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `mechanical::Bool`: If `true`, mechanical properties are considered in the calculation.
 - `thermo::Bool`: If `true`, thermodynamic properties are considered in the calculation.
 
@@ -700,7 +701,7 @@ This function may depend on the following functions:
 # Errors
 - If required properties are not available in the data manager, it may raise an error message.
 """
-function compute_crititical_time_step(block_nodes::Dict{Int64,Vector{Int64}},
+function compute_crititical_time_step(block_nodes::AbstractDict{Int64,Vector{Int64}},
                                       mechanical::Bool,
                                       thermal::Bool)
     critical_time_step::Float64 = 1.0e50

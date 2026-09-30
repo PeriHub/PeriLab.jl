@@ -68,7 +68,7 @@ With numerical damping alpha: beta >= 0.5 ,alpha >= 0.25*(0.5+beta)^2
 function init_solver(solver_options::Dict{Any,Any},
                      params::AbstractDict,
                      bcs::Dict{Any,Any},
-                     block_nodes::Dict{Int64,Vector{Int64}})
+                     block_nodes::AbstractDict{Int64,Vector{Int64}})
     find_bc_free_dof(bcs)
 
     Data_Manager.create_constant_node_vector_field("Delta Displacements", Float64,
@@ -161,7 +161,7 @@ Lumped diagonal mass: ``M_i = \\rho_i\\, V_i``.
 
 # Arguments
 - `solver_options::Dict{Any,Any}`:  solver configuration (dt, nsteps, beta,gamma, …)
-- `block_nodes::Dict{Int64,Vector{Int64}}`:  block → node mapping
+- `block_nodes::AbstractDict{Int64,Vector{Int64}}`:  block → node mapping
 - `bcs::Dict{Any,Any}`:  boundary conditions (Dirichlet / Neumann)
 - `outputs::Dict{Int64,Dict{}}`:  output configuration per block
 - `result_files::Vector{Dict}`:  file handles for result output
@@ -181,7 +181,7 @@ Lumped diagonal mass: ``M_i = \\rho_i\\, V_i``.
 """
 
 function run_solver(solver_options::Dict{Any,Any},
-                    block_nodes::Dict{Int64,Vector{Int64}},
+                    block_nodes::AbstractDict{Int64,Vector{Int64}},
                     bcs::Dict{Any,Any},
                     outputs::Dict{Int64,Dict{}},
                     result_files::Vector{Dict},

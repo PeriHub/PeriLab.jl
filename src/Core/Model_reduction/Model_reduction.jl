@@ -293,14 +293,14 @@ computation of their own, relying entirely on the reduced operator.
 node into the coupling layer instead.
 
 # Arguments
-- `block_nodes::Dict{Int64,Vector{Int64}}`: Nodes per block
+- `block_nodes::AbstractDict{Int64,Vector{Int64}}`: Nodes per block
 - `reduction_blocks::Vector{Int64}`: Block IDs to condense away
 - `material_point_region::Bool`: Whether the non-reduction blocks keep their own force computation
 # Returns
 - `retained_nodes::Vector{Int64}`, `condensed_nodes::Vector{Int64}`,
   `pd_nodes::Vector{Int64}`, `coupling_nodes::Vector{Int64}`, all sorted
 """
-function partition_nodes(block_nodes::Dict{Int64,Vector{Int64}},
+function partition_nodes(block_nodes::AbstractDict{Int64,Vector{Int64}},
                          reduction_blocks::Vector{Int64}, material_point_region::Bool)
     nlist = Data_Manager.get_nlist()
     nnodes = Data_Manager.get_nnodes()
@@ -359,7 +359,7 @@ function expand_density_per_dof(density, dof::Int64)
 end
 
 function init_reduce_model(model_param::AbstractDict,
-                           block_nodes::Dict{Int64,Vector{Int64}},
+                           block_nodes::AbstractDict{Int64,Vector{Int64}},
                            density)
     reduction_blocks = parse_reduction_blocks(model_param)
     isnothing(reduction_blocks) && return

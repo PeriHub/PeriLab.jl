@@ -30,7 +30,7 @@ function solver_name()
     return "Static"
 end
 """
-    init_solver(params::AbstractDict, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+    init_solver(params::AbstractDict, bcs::Dict{Any,Any}, block_nodes::AbstractDict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
 Initialize the Static solver for a simulation.
 
@@ -39,7 +39,7 @@ This function sets up the Static solver for a simulation by initializing various
 # Arguments
 - `params::AbstractDict`: A dictionary containing simulation parameters.
 - `bcs::Dict{Any,Any}`: Boundary conditions
-- `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
+- `block_nodes::AbstractDict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `mechanical::Bool`: If `true`, mechanical properties are considered in the calculation.
 - `thermo::Bool`: If `true`, thermodynamic properties are considered in the calculation.
 
@@ -64,7 +64,7 @@ This function may depend on the following functions:
 function init_solver(solver_options::Dict{Any,Any},
                      params::AbstractDict,
                      bcs::Dict{Any,Any},
-                     block_nodes::Dict{Int64,Vector{Int64}})
+                     block_nodes::AbstractDict{Int64,Vector{Int64}})
     # @info "==============================="
     # @info "==== NLsolve Static Solver ===="
     # @info "==============================="
@@ -181,7 +181,7 @@ function init_solver(solver_options::Dict{Any,Any},
 end
 
 function run_solver(solver_options::Dict{Any,Any},
-                    block_nodes::Dict{Int64,Vector{Int64}},
+                    block_nodes::AbstractDict{Int64,Vector{Int64}},
                     bcs::Dict{Any,Any},
                     outputs::Dict{Int64,Dict{}},
                     result_files::Vector{Dict},
