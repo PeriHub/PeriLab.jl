@@ -8,18 +8,18 @@ using DataFrames
 export get_bc_definitions
 
 """
-    get_bc_definitions(params::Dict)
+    get_bc_definitions(params::AbstractDict)
 
 Get the boundary condition definitions
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 # Returns
-- `bcs::Dict{String,Any}`: The boundary conditions
+- `bcs::AbstractDict{String,Any}`: The boundary conditions
 """
-function get_bc_definitions(params::Dict)
+function get_bc_definitions(params::AbstractDict)
     bcs = Dict{String,Any}()
-    if haskey(params::Dict, "Boundary Conditions") == false
+    if haskey(params::AbstractDict, "Boundary Conditions") == false
         return bcs
     end
     for entry in keys(params["Boundary Conditions"])

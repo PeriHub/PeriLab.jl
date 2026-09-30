@@ -6,6 +6,7 @@ module Model_reduction
 using TimerOutputs: @timeit
 using ...Data_Manager
 using SparseArrays
+using Serialization
 using ....ModuleLoader: find_module_files, create_module_specifics
 using ...Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
                                       rebuild_matrix!
@@ -259,11 +260,11 @@ two forms the YAML parser can hand back. Logs and returns `nothing` if the entry
 absent or of an unsupported type, so the caller only has to check for that.
 
 # Arguments
-- `model_param::Dict`: The `"Model Reduction"` solver parameters
+- `model_param::AbstractDict`: The `"Model Reduction"` solver parameters
 # Returns
 - `Union{Nothing,Vector{Int64}}`: The block IDs, or `nothing` if none were usable
 """
-function parse_reduction_blocks(model_param::Dict)
+function parse_reduction_blocks(model_param::AbstractDict)
     reduction_blocks = get(model_param, "Reduction Blocks", nothing)
     if isnothing(reduction_blocks)
         @warn "No reduction blocks defined for model reduction. If you want to use a reduced model please define 'Reduction Blocks' in the yaml input deck."
@@ -357,7 +358,8 @@ function expand_density_per_dof(density, dof::Int64)
     return density_mass
 end
 
-function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int64}},
+function init_reduce_model(model_param::AbstractDict,
+                           block_nodes::Dict{Int64,Vector{Int64}},
                            density)
     reduction_blocks = parse_reduction_blocks(model_param)
     isnothing(reduction_blocks) && return
@@ -368,9 +370,28 @@ function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int
                                   "model_reduction_name")
     nmodes = get(model_param, "Number of Modes", 1)
     material_point_region = get(model_param, "Material Point Region", true)
+    # Max Memory MiB: an OS/scheduler OOM kill is a SIGKILL, never catchable from inside
+    # this process (see reduce_matrices' docstring); this lets the cascade stop itself
+    # deliberately, with an ordinary Julia error naming the level, before that happens.
+    # Defaults to 8192 (8 GiB), matching reduce_matrices' own default; an explicit
+    # `Max Memory MiB: null` in the deck disables it.
+    max_rss_mib = get(model_param, "Max Memory MiB", 8192.0)
+    # Dense Shell Limit: above this many physical degrees of freedom, a cascade level's
+    # own local system is built and factorized sparse instead of dense (see
+    # reduce_matrices' docstring) -- matters only once a shell gets wide, so it has no
+    # effect on the single-level schemes.
+    dense_shell_limit = get(model_param, "Dense Shell Limit", 1500)
+    extra_kwargs = model_param["Type"] == "Craig Bampton Cascade" ?
+                   (;
+                    max_rss_mib = isnothing(max_rss_mib) ? nothing :
+                                  Float64(max_rss_mib),
+                    dense_shell_limit = Int64(dense_shell_limit)) : (;)
 
     retained_nodes, condensed_nodes, pd_nodes,
     coupling_nodes = partition_nodes(block_nodes, reduction_blocks, material_point_region)
+    @info "Model Reduction: $(length(retained_nodes)) retained, " *
+          "$(length(condensed_nodes)) condensed, $(length(pd_nodes)) material point, " *
+          "$(length(coupling_nodes)) coupling nodes"
 
     if pd_nodes != []
         # init_matrix already assembled every node, PD included, since it runs before
@@ -381,6 +402,7 @@ function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int
         # leave their init_matrix contribution in place instead of removing it.
         nodes = setdiff(collect(1:Data_Manager.get_nnodes()), pd_nodes)
         @timeit "update_material_point_part" rebuild_matrix!(nodes)
+        @info "Model Reduction: rebuilt stiffness matrix excluding material point nodes"
     end
     K = Data_Manager.get_stiffness_matrix()
 
@@ -400,11 +422,49 @@ function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int
     perm_retained = create_permutation(retained_nodes, dof, nnodes)
     perm_condensed = create_permutation(condensed_nodes, dof, nnodes)
     density_mass = expand_density_per_dof(density, dof)
+    @info "Model Reduction: entering $(model_param["Type"]) with " *
+          "$(length(perm_retained)) retained and $(length(perm_condensed)) condensed " *
+          "degrees of freedom (dof=$dof)"
 
-    @timeit "Condensation" K_reduced,
-                           mass_reduced=mod.reduce_matrices(K, density_mass,
-                                                            perm_retained,
-                                                            perm_condensed, nmodes)
+    # Reduced Matrix Cache: the cascade -- factorizing the condensed region's fixed-
+    # interface eigenproblem, stage by stage -- is the part of setup this whole model
+    # reduction feature exists to make affordable at all, but it still has to run once
+    # per solver setup regardless. A parameter study that only ever changes the *free*
+    # (non-reduced) region, never the reduced block's own material/geometry/reduction
+    # settings, reruns the identical cascade for no reason; the paper this cascade
+    # implements notes explicitly that its superelements "can be stored and reused...
+    # when only the free region is changed". `retained_nodes`/`dof` are compared against
+    # the cache on load as a minimal sanity check, not a full guarantee the deck is
+    # otherwise unchanged -- an incompatible cache for the same path is the caller's own
+    # responsibility to remove.
+    cache_file = get(model_param, "Reduced Matrix Cache", nothing)
+    loaded_from_cache = false
+    if !isnothing(cache_file) && isfile(cache_file)
+        @info "Model Reduction: loading cached reduced matrices from $cache_file"
+        cached = Serialization.deserialize(cache_file)
+        if cached.retained_nodes == retained_nodes && cached.dof == dof
+            K_reduced = cached.K_reduced
+            mass_reduced = cached.mass_reduced
+            loaded_from_cache = true
+        else
+            @warn "Model Reduction: cached reduced matrices at $cache_file do not " *
+                  "match this run's retained nodes/dof -- ignoring the cache and " *
+                  "recomputing."
+        end
+    end
+    if !loaded_from_cache
+        @timeit "Condensation" K_reduced,
+                               mass_reduced=mod.reduce_matrices(K, density_mass,
+                                                                perm_retained,
+                                                                perm_condensed, nmodes;
+                                                                extra_kwargs...)
+        if !isnothing(cache_file)
+            @info "Model Reduction: saving reduced matrices to $cache_file"
+            Serialization.serialize(cache_file,
+                                    (K_reduced = K_reduced, mass_reduced = mass_reduced,
+                                     retained_nodes = retained_nodes, dof = dof))
+        end
+    end
 
     dropzeros!(mass_reduced)
     dropzeros!(K_reduced)

@@ -37,7 +37,7 @@ Calculates the degradation model. This template has to be copied, the file renam
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `degradation parameter::Dict(String, Any)`: Dictionary with degradation parameter.
+- `degradation parameter::AbstractDict(String, Any)`: Dictionary with degradation parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
@@ -45,7 +45,7 @@ Example:
   ```
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       degradation_parameter::Dict,
+                       degradation_parameter::AbstractDict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
@@ -63,12 +63,12 @@ Inits the degradation model. This template has to be copied, the file renamed an
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `degradation parameter::Dict(String, Any)`: Dictionary with degradation parameter.
+- `degradation parameter::AbstractDict(String, Any)`: Dictionary with degradation parameter.
 - `block::Int64`: The current block.
 
 """
 function init_model(nodes::AbstractVector{Int64},
-                    degradation_parameter::Dict,
+                    degradation_parameter::AbstractDict,
                     block::Int64)
     @info "Please write a degradation name in degradation_name()."
     @info "You can call your routine within the yaml file."

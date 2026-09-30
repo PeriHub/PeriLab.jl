@@ -32,7 +32,7 @@ end
 export read_mesh
 
 """
-    read_mesh(params::Dict, path::String, size::Int64, silent::Bool)
+    read_mesh(params::AbstractDict, path::String, size::Int64, silent::Bool)
 
 Reads the mesh file of the configured discretization type and returns the mesh
 data as a DataFrame (and, for some importers, additional node sets).
@@ -41,15 +41,15 @@ Dispatches to the importer whose `mesh_import_name()` matches
 `params["Discretization"]["Type"]`.
 
 # Arguments
-- `params::Dict`: The parameters.
+- `params::AbstractDict`: The parameters.
 - `path::String`: The path to the mesh file.
 - `size::Int64`: The number of ranks.
 - `silent::Bool`: Whether to run in silent mode.
 # Returns
 - `mesh::DataFrame`: The mesh data as a DataFrame.
-- `nsets::Dict`: The node sets (if any).
+- `nsets::AbstractDict`: The node sets (if any).
 """
-function read_mesh(params::Dict, path::String)
+function read_mesh(params::AbstractDict, path::String)
     mesh_name = get_mesh_name(params)
     mesh_path = joinpath(path, mesh_name)
     if !isfile(mesh_path)

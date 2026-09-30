@@ -766,19 +766,19 @@ function tait_bryant_angles(orientation_vector, up_vector = [0, 0, 1])
 end
 
 """
-    read_mesh(params::Dict, filename::String)
+    read_mesh(params::AbstractDict, filename::String)
 
 Reads a Gcode file and builds the peridynamic mesh by simulating the additive
 printing process. The result is cached to a text file so subsequent runs do not
 have to re-parse the gcode unless the user asks for it.
 
 # Arguments
-- `params::Dict`: The parameters.
+- `params::AbstractDict`: The parameters.
 - `filename::String`: The path to the gcode file.
 # Returns
 - `mesh::DataFrame`: The mesh data as a DataFrame.
 """
-function read_mesh(params::Dict, filename::String)
+function read_mesh(params::AbstractDict, filename::String)
     sampling = params["Discretization"]["Gcode"]["Sampling"]
     scale = get(params["Discretization"]["Gcode"], "Scale", 1)
     width = params["Discretization"]["Gcode"]["Width"]

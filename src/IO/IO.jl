@@ -74,14 +74,14 @@ function merge_exodus_files(result_files::Vector{Dict}, output_dir::String)
 end
 
 """
-    open_result_file(result_file::Dict)
+    open_result_file(result_file::AbstractDict)
 
 Opens the result file
 
 # Arguments
-- `result_file::Dict`: The result file
+- `result_file::AbstractDict`: The result file
 """
-function open_result_file(result_file::Dict)
+function open_result_file(result_file::AbstractDict)
     if result_file["type"] == "Exodus"
         result_file["file"] = ExodusDatabase(result_file["filename"], "rw")
     elseif result_file["type"] == "CSV"
@@ -90,14 +90,14 @@ function open_result_file(result_file::Dict)
 end
 
 """
-    close_result_file(result_file::Dict)
+    close_result_file(result_file::AbstractDict)
 
 Closes the result file
 
 # Arguments
-- `result_file::Dict`: The result file
+- `result_file::AbstractDict`: The result file
 """
-function close_result_file(result_file::Dict)
+function close_result_file(result_file::AbstractDict)
     if !isnothing(result_file["file"])
         close(result_file["file"])
     end
@@ -249,16 +249,16 @@ function bond_component_size(datafield)
 end
 
 """
-    split_output_fields(fields::Dict)
+    split_output_fields(fields::AbstractDict)
 
 Splits an output field definition into its nodal, bond and global parts.
 
 # Arguments
-- `fields::Dict`: The `"Fields"` entry of an output definition
+- `fields::AbstractDict`: The `"Fields"` entry of an output definition
 # Returns
-- `nodal::Dict`, `bond::Dict`, `global_::Dict`
+- `nodal::AbstractDict`, `bond::AbstractDict`, `global_::AbstractDict`
 """
-function split_output_fields(fields::Dict)
+function split_output_fields(fields::AbstractDict)
     nodal = Dict(key => value
                  for (key, value) in fields
                  if !value["global_var"] && !get(value, "bond_var", false))
@@ -329,17 +329,17 @@ function bond_element_id_offset(element_ids::AbstractVector, n_bond_elements::In
 end
 
 """
-    get_results_mapping(params::Dict, path::String)
+    get_results_mapping(params::AbstractDict, path::String)
 
 Gets the results mapping
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 - `path::String`: The path
 # Returns
 - `output_mapping::Dict{Int64,Dict{}}`: The results mapping
 """
-function get_results_mapping(params::Dict, path::String)
+function get_results_mapping(params::AbstractDict, path::String)
     compute_names = get_computes_names(params)
     outputs = get_outputs(params, Data_Manager.get_all_field_keys(), compute_names)
     computes = get_computes(params, Data_Manager.get_all_field_keys())
@@ -529,7 +529,7 @@ Initialize data.
 - `filedirectory::String`: The directory of the input file.
 - `comm::MPI.Comm`: The MPI communicator
 # Returns
-- `data::Dict`: The data
+- `data::AbstractDict`: The data
 """
 function initialize_data(filename::String,
                          filedirectory::String,
@@ -551,7 +551,7 @@ end
 
 Initialize orientations.
 """
-function init_orientations(params::Dict)
+function init_orientations(params::AbstractDict)
     set_angles(params)
     rotation::Bool = Data_Manager.get_rotation()
     element_rotation::Bool = Data_Manager.get_element_rotation()
@@ -580,21 +580,21 @@ function init_orientations(params::Dict)
 end
 
 """
-    init_write_results(params::Dict, output_dir::String, path::String, PERILAB_VERSION::String, qa_vector::Vector{String})
+    init_write_results(params::AbstractDict, output_dir::String, path::String, PERILAB_VERSION::String, qa_vector::Vector{String})
 
 Initialize write results.
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 - `output_dir::String`: The output directory.
 - `path::String`: The path
 - `PERILAB_VERSION::String`: The PeriLab version
 - `qa_vector::Vector{String}`: Additional QA records
 # Returns
 - `result_files::Array`: The result files
-- `outputs::Dict`: The outputs
+- `outputs::AbstractDict`: The outputs
 """
-function init_write_results(params::Dict,
+function init_write_results(params::AbstractDict,
                             output_dir::String,
                             path::String,
                             PERILAB_VERSION::String,
@@ -813,16 +813,16 @@ function init_write_results(params::Dict,
 end
 
 """
-    set_output_frequency(params::Dict, nsteps::Int64, step_id::Int64)
+    set_output_frequency(params::AbstractDict, nsteps::Int64, step_id::Int64)
 
 Sets the output frequency.
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 - `nsteps::Int64`: The number of steps
 - `step_id::Int64`: The step id
 """
-function set_output_frequency(params::Dict,
+function set_output_frequency(params::AbstractDict,
                               nsteps::Int64,
                               step_id::Int64,
                               reuse::Bool)
@@ -846,7 +846,7 @@ function set_output_frequency(params::Dict,
 end
 
 """
-    write_results(result_files::Vector{Any}, time::Float64, max_damage::Float64, outputs::Dict)
+    write_results(result_files::Vector{Any}, time::Float64, max_damage::Float64, outputs::AbstractDict)
 
 Write results.
 
@@ -854,14 +854,14 @@ Write results.
 - `result_files::Vector{Any}`: The result files
 - `time::Float64`: The time
 - `max_damage::Float64`: The maximum damage
-- `outputs::Dict`: The outputs
+- `outputs::AbstractDict`: The outputs
 # Returns
 - `result_files::Vector{Any}`: The result files
 """
 function write_results(result_files::Vector{Dict},
                        time::Float64,
                        max_damage::Float64,
-                       outputs::Dict)
+                       outputs::AbstractDict)
     for id in eachindex(result_files)
         output_type = outputs[id]["Output File Type"]
         # step 1 ist the zero step?!
@@ -948,16 +948,16 @@ function write_results(result_files::Vector{Dict},
 end
 
 """
-    get_global_values(output::Dict,)
+    get_global_values(output::AbstractDict,)
 
 Get global values.
 
 # Arguments
-- `output::Dict`: The output
+- `output::AbstractDict`: The output
 # Returns
 - `global_values::Vector`: The global values
 """
-function get_global_values(output::Dict)
+function get_global_values(output::AbstractDict)
     global_values = []
     block_ids = Data_Manager.get_block_id_list()
     block_name_list = Data_Manager.get_block_name_list()
@@ -1071,19 +1071,19 @@ function get_mpi_rank_string(rank::Int64, max_rank::Int64)
 end
 
 """
-    show_block_summary(solver_options::Dict, params::Dict, log_file::String, silent::Bool, comm::MPI.Comm)
+    show_block_summary(solver_options::AbstractDict, params::AbstractDict, log_file::String, silent::Bool, comm::MPI.Comm)
 
 Show block summary.
 
 # Arguments
-- `solver_options::Dict`: The solver options
-- `params::Dict`: The params
+- `solver_options::AbstractDict`: The solver options
+- `params::AbstractDict`: The params
 - `log_file::String`: The log file
 - `silent::Bool`: The silent flag
 - `comm::MPI.Comm`: The Comm_rank
 """
-function show_block_summary(solver_options::Dict,
-                            params::Dict,
+function show_block_summary(solver_options::AbstractDict,
+                            params::AbstractDict,
                             log_file::String,
                             silent::Bool,
                             comm::MPI.Comm)

@@ -50,18 +50,18 @@ export init
 export solver
 
 """
-	init(params::Dict)
+	init(params::AbstractDict)
 
 Initialize the solver
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 # Returns
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `bcs::Dict{Any,Any}`: A dictionary containing boundary conditions.
-- `solver_options::Dict{String,Any}`: A dictionary containing solver options.
+- `solver_options::AbstractDict{String,Any}`: A dictionary containing solver options.
 """
-function init(params::Dict,
+function init(params::AbstractDict,
               step_id::Int64)
     solver_options = Dict()
     dof = Data_Manager.get_dof()
@@ -169,18 +169,19 @@ function init(params::Dict,
 end
 
 """
-	set_density(params::Dict, block_nodes::Dict, density::NodeScalarField{Float64})
+	set_density(params::AbstractDict, block_nodes::AbstractDict, density::NodeScalarField{Float64})
 
 Sets the density of the nodes in the dictionary.
 
 # Arguments
-- `params::Dict`: The parameters
-- `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
+- `params::AbstractDict`: The parameters
+- `block_nodes::AbstractDict`: A dictionary mapping block IDs to collections of nodes
 - `density::NodeScalarField{Float64}`: The density
 # Returns
 - `density::NodeScalarField{Float64}`: The density
 """
-function set_density(params::Dict, block_nodes::Dict, density::NodeScalarField{Float64})
+function set_density(params::AbstractDict, block_nodes::AbstractDict,
+                     density::NodeScalarField{Float64})
     for block in eachindex(block_nodes)
         density[block_nodes[block]] .= get_density(params, block)
     end
@@ -188,15 +189,15 @@ function set_density(params::Dict, block_nodes::Dict, density::NodeScalarField{F
 end
 
 """
-	set_angles(params::Dict, block_nodes::Dict)
+	set_angles(params::AbstractDict, block_nodes::AbstractDict)
 
 Sets the density of the nodes in the dictionary.
 
 # Arguments
-- `params::Dict`: The parameters
-- `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
+- `params::AbstractDict`: The parameters
+- `block_nodes::AbstractDict`: A dictionary mapping block IDs to collections of nodes
 """
-function set_angles(params::Dict, block_nodes::Dict)
+function set_angles(params::AbstractDict, block_nodes::AbstractDict)
     mesh_angles = false
     if "Angles" in Data_Manager.get_all_field_keys()
         Data_Manager.set_rotation(true)
@@ -234,18 +235,19 @@ function set_angles(params::Dict, block_nodes::Dict)
 end
 
 """
-	set_fem_block(params::Dict, block_nodes::Dict, fem_block::Vector{Bool})
+	set_fem_block(params::AbstractDict, block_nodes::AbstractDict, fem_block::Vector{Bool})
 
 Sets the fem_block of the nodes in the dictionary.
 
 # Arguments
-- `params::Dict`: The parameters
-- `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
+- `params::AbstractDict`: The parameters
+- `block_nodes::AbstractDict`: A dictionary mapping block IDs to collections of nodes
 - `fem_block::Vector{Bool}`: The fem_block
 # Returns
 - `fem_block::Vector{Bool}`: The fem_block
 """
-function set_fem_block(params::Dict, block_nodes::Dict, fem_block::Vector{Bool})
+function set_fem_block(params::AbstractDict, block_nodes::AbstractDict,
+                       fem_block::Vector{Bool})
     for block in eachindex(block_nodes)
         fem_block[block_nodes[block]] .= get_fem_block(params, block)
     end
@@ -253,18 +255,19 @@ function set_fem_block(params::Dict, block_nodes::Dict, fem_block::Vector{Bool})
 end
 
 """
-	set_horizon(params::Dict, block_nodes::Dict, horizon::NodeScalarField{Float64})
+	set_horizon(params::AbstractDict, block_nodes::AbstractDict, horizon::NodeScalarField{Float64})
 
 Sets the horizon of the nodes in the dictionary.
 
 # Arguments
-- `params::Dict`: The parameters
-- `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
+- `params::AbstractDict`: The parameters
+- `block_nodes::AbstractDict`: A dictionary mapping block IDs to collections of nodes
 - `horizon::NodeScalarField{Float64}`: The horizon
 # Returns
 - `horizon::NodeScalarField{Float64}`: The horizon
 """
-function set_horizon(params::Dict, block_nodes::Dict, horizon::NodeScalarField{Float64})
+function set_horizon(params::AbstractDict, block_nodes::AbstractDict,
+                     horizon::NodeScalarField{Float64})
     for block in eachindex(block_nodes)
         horizon[block_nodes[block]] .= get_horizon(params, block)
     end
@@ -272,12 +275,12 @@ function set_horizon(params::Dict, block_nodes::Dict, horizon::NodeScalarField{F
 end
 
 """
-	solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, silent::Bool)
+	solver(solver_options::AbstractDict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, silent::Bool)
 
 Runs the solver.
 
 # Arguments
-- `solver_options::Dict{String,Any}`: The solver options
+- `solver_options::AbstractDict{String,Any}`: The solver options
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes
 - `bcs::Dict{Any,Any}`: The boundary conditions
 - `outputs::Dict{Int64,Dict{}}`: A dictionary for output settings
@@ -309,13 +312,13 @@ function solver(solver_options::Dict{Any,Any},
 end
 
 """
-	synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, synch_field::String, direction::String)
+	synchronise_field(comm, synch_fields::AbstractDict, overlap_map, get_field, synch_field::String, direction::String)
 
 Synchronises field.
 
 # Arguments
 - `comm`: The MPI communicator
-- `synch_fields::Dict`: A dictionary of fields
+- `synch_fields::AbstractDict`: A dictionary of fields
 - `overlap_map`: The overlap map
 - `get_field`: The function to get the field
 - `synch_field::String`: The field
@@ -324,7 +327,7 @@ Synchronises field.
 - `nothing`
 """
 function synchronise_field(comm,
-                           synch_fields::Dict,
+                           synch_fields::AbstractDict,
                            overlap_map,
                            get_field,
                            synch_field::String,

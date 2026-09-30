@@ -102,14 +102,14 @@ end
 # end
 
 """
-	init_solver(params::Dict, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+	init_solver(params::AbstractDict, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
 Initialize the Verlet solver for a simulation.
 
 This function sets up the Verlet solver for a simulation by initializing various parameters and calculating the time step based on provided parameters or critical time step calculations.
 
 # Arguments
-- `params::Dict`: A dictionary containing simulation parameters.
+- `params::AbstractDict`: A dictionary containing simulation parameters.
 - `bcs::Dict{Any,Any}`: Boundary conditions
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `mechanical::Bool`: If `true`, mechanical properties are considered in the calculation.
@@ -130,7 +130,7 @@ This function may depend on the following functions:
 - `find_and_set_core_value_min` and `find_and_set_core_value_max`: Used to set core values in a distributed computing environment.
 """
 function init_solver(solver_options::Dict{Any,Any},
-                     params::Dict,
+                     params::AbstractDict,
                      bcs::Dict{Any,Any},
                      block_nodes::Dict{Int64,Vector{Int64}})
     find_bc_free_dof(bcs)

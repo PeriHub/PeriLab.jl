@@ -37,7 +37,7 @@ Calculates the damage criterion of each bond. This template has to be copied, th
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `damage_parameter::AbstractDict(String, Any)`: Dictionary with material parameter.
 - `block::Int64`: Block number
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
@@ -46,7 +46,7 @@ Example:
 ```
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       damage_parameter::Dict,
+                       damage_parameter::AbstractDict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
@@ -73,21 +73,21 @@ function fields_for_local_synchronization(model::String)
     #Data_Manager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
 end
 """
-    init_model(nodes::AbstractVector{Int64}, damage_parameter::Dict, block::Int64)
+    init_model(nodes::AbstractVector{Int64}, damage_parameter::AbstractDict, block::Int64)
 
 Inits the damage model. Should be used to init damage specific fields, etc.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `block::Int64`: Block number
-- `damage_parameter::Dict`: Damage parameter.
+- `damage_parameter::AbstractDict`: Damage parameter.
 - `block::Float64`: The current block.
 Example:
 ```julia
 ```
 """
 function init_model(nodes::AbstractVector{Int64},
-                    damage_parameter::Dict,
+                    damage_parameter::AbstractDict,
                     block::Int64)
 end
 end

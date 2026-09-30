@@ -7,7 +7,6 @@ using DataStructures: OrderedDict
 
 using .......Data_Manager
 using .......Geometry: compute_weighted_deformation_gradient
-using LoopVectorization
 using StaticArrays: @MVector
 export fields_for_local_synchronization
 export pre_calculation_name
@@ -43,7 +42,7 @@ Inits the bond deformation gradient calculation.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `parameter::Dict(String, Any)`: Dictionary with parameter.
+- `parameter::AbstractDict(String, Any)`: Dictionary with parameter.
 
 """
 function init_model(nodes::AbstractVector{Int64},

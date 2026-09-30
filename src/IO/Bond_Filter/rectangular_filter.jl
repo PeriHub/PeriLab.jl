@@ -87,14 +87,14 @@ function bond_intersect_rectangle_plane(x::Union{Vector{Float64},Vector{Int64}},
 end
 
 """
-    run_bond_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::BondScalarState{Int64}, dof::Int64)
+    run_bond_filter(nnodes::Int64, data::Matrix{Float64}, filter::AbstractDict, nlist::BondScalarState{Int64}, dof::Int64)
 
 Apply the rectangular plane filter to the neighborhood list.
 
 # Arguments
 - `nnodes::Int64`: The number of nodes.
 - `data::Matrix{Float64}`: The data.
-- `filter::Dict`: The filter.
+- `filter::AbstractDict`: The filter.
 - `nlist::BondScalarState{Int64}`: The neighborhood list.
 - `dof::Int64`: The degrees of freedom.
 # Returns
@@ -103,7 +103,7 @@ Apply the rectangular plane filter to the neighborhood list.
 """
 function run_bond_filter(nnodes::Int64,
                          data::Matrix{Float64},
-                         filter::Dict,
+                         filter::AbstractDict,
                          nlist::BondScalarState{Int64},
                          dof::Int64)
     normal = [filter["Normal X"], filter["Normal Y"]]

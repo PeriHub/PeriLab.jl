@@ -5,7 +5,6 @@
 module Global_Zero_Energy_Control
 
 using StaticArrays: MMatrix, MVector
-using LoopVectorization
 using ....Data_Manager
 using ....Helpers: get_fourth_order
 using ...Material_Basis: get_Hooke_matrix
@@ -26,7 +25,7 @@ function control_name()
     return "Global"
 end
 
-function init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
+function init_model(nodes::AbstractVector{Int64}, material_parameter::AbstractDict)
     dof::Int64 = Data_Manager.get_dof()
     Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",
                                                    Float64,
@@ -52,13 +51,13 @@ function init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
 end
 
 """
-	compute_control( nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
+	compute_control( nodes::AbstractVector{Int64}, material_parameter::AbstractDict, time::Float64, dt::Float64)
 
 Computes the zero energy control
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes
-- `material_parameter::Dict`: The material parameter
+- `material_parameter::AbstractDict`: The material parameter
 - `time::Float64`: The current time
 - `dt::Float64`: The current time step
 
@@ -68,7 +67,7 @@ Global - J. Wan et al., "Improved method for zero-energy mode suppression in per
 """
 
 function compute_control(nodes::AbstractVector{Int64},
-                         material_parameter::Dict{String,Any},
+                         material_parameter::AbstractDict{String,Any},
                          time::Float64,
                          dt::Float64)
     dof::Int64 = Data_Manager.get_dof()

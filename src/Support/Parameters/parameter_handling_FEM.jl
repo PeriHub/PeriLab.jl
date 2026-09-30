@@ -5,7 +5,7 @@
 export get_element_degree
 export get_element_type
 
-function get_element_type(params::Dict)
+function get_element_type(params::AbstractDict)
     if !haskey(params, "Element Type")
         @abort "Element Type is not defined."
         return
@@ -16,7 +16,7 @@ function get_element_type(params::Dict)
     return string(params["Element Type"])
 end
 
-function get_element_degree(params::Dict)
+function get_element_degree(params::AbstractDict)
     if !haskey(params, "Degree")
         @abort "Element degree is not defined."
         return

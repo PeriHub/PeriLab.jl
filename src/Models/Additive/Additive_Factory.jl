@@ -54,19 +54,19 @@ function init_fields()
 end
 
 """
-    compute_model(nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
+    compute_model(nodes::AbstractVector{Int64}, model_param::AbstractDict, block::Int64, time::Float64, dt::Float64)
 
 Computes the addtive models
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes
-- `model_param::Dict`: The model parameters
+- `model_param::AbstractDict`: The model parameters
 - `block::Int64`: The block
 - `time::Float64`: The current time
 - `dt::Float64`: The time step
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       model_param::Dict,
+                       model_param::AbstractDict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)

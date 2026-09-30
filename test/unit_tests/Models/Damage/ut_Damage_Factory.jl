@@ -86,7 +86,9 @@ end
     @test damageNP1_test[3] == 1
 end
 @testset "ut_Damage_factory_exceptions" begin
-    PeriLab.Data_Manager.data["properties"][1] = Dict("Damage Model" => Dict("Damage Model" => "not there"))
+    PeriLab.Data_Manager.data["properties"][1] = PeriLab.Data_Manager.OrderedDict("Damage Model" =>
+                                                                                      PeriLab.Data_Manager.OrderedDict{String,
+                                                                                                                       Any}("Damage Model" => "not there"))
     @test_logs (:error,
                 "No damage model of name not there exists.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.Model_Factory.Damage.init_model(Vector{Int64}(1:3),
@@ -99,9 +101,10 @@ end
     crit_values_matrix::Array{Float64,3} = fill(-1, (1, 1, 1))
     PeriLab.Data_Manager.set_crit_values_matrix(crit_values_matrix)
     damage_parameter = Dict("Critical Value" => 1.0,
-                            "Interblock Damage" => Dict("Interblock Critical Value 1_2" => 0.2,
-                                                        "Interblock Critical Value 2_3" => 0.3,
-                                                        "Interblock Critical Value 2_1" => 0.4))
+                            "Interblock Damage" =>
+                                Dict("Interblock Critical Value 1_2" => 0.2,
+                                     "Interblock Critical Value 2_3" => 0.3,
+                                     "Interblock Critical Value 2_1" => 0.4))
     PeriLab.Solver_Manager.Model_Factory.Damage.init_interface_crit_values(damage_parameter,
                                                                            1)
     @test PeriLab.Data_Manager.get_crit_values_matrix()[1, 2, 1] == 0.2

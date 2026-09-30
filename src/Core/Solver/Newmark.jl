@@ -66,7 +66,7 @@ Default: average acceleration (beta=0.5,alpha=0.25, unconditionally stable) take
 With numerical damping alpha: beta >= 0.5 ,alpha >= 0.25*(0.5+beta)^2
 """
 function init_solver(solver_options::Dict{Any,Any},
-                     params::Dict,
+                     params::AbstractDict,
                      bcs::Dict{Any,Any},
                      block_nodes::Dict{Int64,Vector{Int64}})
     find_bc_free_dof(bcs)

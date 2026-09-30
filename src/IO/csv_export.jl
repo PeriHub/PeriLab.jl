@@ -7,17 +7,17 @@ export create_result_file
 export write_global_results_in_csv
 
 """
-    create_result_file(filename::String, outputs::Dict)
+    create_result_file(filename::String, outputs::AbstractDict)
 
 Creates a csv file for the results
 
 # Arguments
 - `filename::String`: The name of the file to create
-- `outputs::Dict`: The outputs dictionary
+- `outputs::AbstractDict`: The outputs dictionary
 # Returns
 - `Dict`: The result file
 """
-function create_result_file(filename::String, outputs::Dict)
+function create_result_file(filename::String, outputs::AbstractDict)
     if isfile(filename)
         rm(filename)
     end

@@ -12,7 +12,8 @@ for mod in module_list
     include(mod["File"])
 end
 
-function init_model(nodes::AbstractVector{Int64}, material_parameter::Dict, block::Int64)
+function init_model(nodes::AbstractVector{Int64}, material_parameter::AbstractDict,
+                    block::Int64)
     if haskey(material_parameter, "Zero Energy Control")
         zero_energy_model = material_parameter["Zero Energy Control"]
         @debug "Init zero energy control model ''$zero_energy_model'' at block $block."
@@ -32,7 +33,7 @@ function init_model(nodes::AbstractVector{Int64}, material_parameter::Dict, bloc
 end
 
 function compute_zero_energy_control(nodes::AbstractVector{Int64},
-                                     material_parameter::Dict{String,Any},
+                                     material_parameter::AbstractDict{String,Any},
                                      block::Int64,
                                      time::Float64,
                                      dt::Float64)

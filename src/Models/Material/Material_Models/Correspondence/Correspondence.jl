@@ -16,7 +16,6 @@ for mod in module_list
 end
 
 using LinearAlgebra
-a = using LoopVectorization
 using Rotations
 include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
@@ -29,18 +28,18 @@ export material_name
 export compute_model
 export fields_for_local_synchronization
 """
-  init_model( nodes::AbstractVector{Int64}, block::Int64, material_parameter::Dict{String,Any})
+  init_model( nodes::AbstractVector{Int64}, block::Int64, material_parameter::AbstractDict{String,Any})
 
 Initializes the correspondence material model.
 
 # Arguments
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `block::Int64`: Block id of the current block.
-  - `material_parameter::Dict{String,Any}`: Dictionary with material parameter.
+  - `material_parameter::AbstractDict{String,Any}`: Dictionary with material parameter.
 """
 function init_model(nodes::AbstractVector{Int64},
                     block::Int64,
-                    material_parameter::Dict{String,Any})
+                    material_parameter::AbstractDict{String,Any})
     # global dof
     # global rotation
     # global angles
@@ -113,7 +112,7 @@ Returns a user developer defined local synchronization. This happens before each
 """
 function fields_for_local_synchronization(model::String,
                                           block::Int64,
-                                          model_param::Dict)
+                                          model_param::AbstractDict)
     for material_model in Data_Manager.get_analysis_model("Correspondence Model", block)
         mod = Data_Manager.get_model_module(material_model)
 
@@ -131,7 +130,7 @@ Calculates the force densities of the material. This template has to be copied, 
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `material_parameter::Dict{String,Any}`: Dictionary with material parameter.
+- `material_parameter::AbstractDict{String,Any}`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
@@ -139,7 +138,7 @@ Example:
 ```
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict{String,Any},
+                       material_parameter::AbstractDict{String,Any},
                        block::Int64,
                        time::Float64,
                        dt::Float64)
@@ -158,7 +157,7 @@ function compute_model(nodes::AbstractVector{Int64},
 end
 
 function compute_correspondence_model(nodes::AbstractVector{Int64},
-                                      material_parameter::Dict{String,Any},
+                                      material_parameter::AbstractDict{String,Any},
                                       block::Int64,
                                       time::Float64,
                                       dt::Float64)

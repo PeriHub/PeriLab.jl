@@ -33,26 +33,26 @@ end
 """
    init_contact_model(
     nodes::AbstractVector{Int64},
-    contact_parameter::Dict,
+    contact_parameter::AbstractDict,
     block::Int64,
 
 Inits the contact model. This template has to be copied, the file renamed and edited by the user to create a new contact. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `contact_parameter::Dict(String, Any)`: Dictionary with contact parameter.
+- `contact_parameter::AbstractDict(String, Any)`: Dictionary with contact parameter.
 - `block::Int64`: The current block.
 
 """
 function init_contact_model(nodes::AbstractVector{Int64},
-                            contact_parameter::Dict,
+                            contact_parameter::AbstractDict,
                             block::Int64)
 end
 
 """
     compute_model(
     nodes::AbstractVector{Int64},
-    contact_parameter::Dict,
+    contact_parameter::AbstractDict,
     block::Int64,
     time::Float64,
     dt::Float64,
@@ -62,7 +62,7 @@ Calculates the contact behavior of the material. This template has to be copied,
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
+- `flow parameter::AbstractDict(String, Any)`: Dictionary with flow parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
@@ -70,7 +70,7 @@ Example:
 ```
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       contact_parameter::Dict,
+                       contact_parameter::AbstractDict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)

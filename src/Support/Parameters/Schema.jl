@@ -121,7 +121,7 @@ Each constraint is a NamedTuple with:
   - `check::Function`     -- (dict, path) -> Vector{ValidationError}
   - `dependent_required::Dict{String,Vector{String}}` (optional, for JSON
     Schema's native `dependentRequired`) OR
-  - `if_then::Dict`        (optional, for JSON Schema's native `if`/`then`)
+  - `if_then::AbstractDict`        (optional, for JSON Schema's native `if`/`then`)
 
 Use `requires_together(...)` / `required_if(...)` below to build these
 instead of writing the NamedTuple by hand.
@@ -184,7 +184,8 @@ function required_if(discriminant_key::String, discriminant_value,
         end
         return errs
     end
-    if_then = Dict("if" => Dict("properties" => Dict(discriminant_key => Dict("const" => discriminant_value))),
+    if_then = Dict("if" => Dict("properties" => Dict(discriminant_key =>
+                                 Dict("const" => discriminant_value))),
                    "then" => Dict("required" => required_keys))
     return (; check, if_then)
 end

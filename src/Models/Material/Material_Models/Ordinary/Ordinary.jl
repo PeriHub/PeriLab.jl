@@ -5,7 +5,6 @@
 module Ordinary
 
 using LinearAlgebra
-using LoopVectorization
 
 using .....Data_Manager
 using .....Helpers: div_in_place!, mul_in_place!

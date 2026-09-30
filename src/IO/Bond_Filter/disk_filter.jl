@@ -62,14 +62,14 @@ function bond_intersects_disc(p0::Vector{Float64},
 end
 
 """
-    run_bond_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::BondScalarState{Int64}, dof::Int64)
+    run_bond_filter(nnodes::Int64, data::Matrix{Float64}, filter::AbstractDict, nlist::BondScalarState{Int64}, dof::Int64)
 
 Apply the disk filter to the neighborhood list.
 
 # Arguments
 - `nnodes::Int64`: The number of nodes.
 - `data::Matrix{Float64}`: The data.
-- `filter::Dict`: The filter.
+- `filter::AbstractDict`: The filter.
 - `nlist::BondScalarState{Int64}`: The neighborhood list.
 - `dof::Int64`: The degrees of freedom.
 # Returns
@@ -78,7 +78,7 @@ Apply the disk filter to the neighborhood list.
 """
 function run_bond_filter(nnodes::Int64,
                          data::Matrix{Float64},
-                         filter::Dict,
+                         filter::AbstractDict,
                          nlist::BondScalarState{Int64},
                          dof::Int64)
     if dof == 3

@@ -33,7 +33,7 @@ end
 """
   init_contact_model(
     nodes::AbstractVector{Int64},
-    contact_parameter::Dict,
+    contact_parameter::AbstractDict,
     block::Int64,
 )
 
@@ -41,12 +41,12 @@ Inits the contact model. This template has to be copied, the file renamed and ed
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `contact_parameter::Dict(String, Any)`: Dictionary with contact parameter.
+- `contact_parameter::AbstractDict(String, Any)`: Dictionary with contact parameter.
 - `block::Int64`: The current block.
 
 """
 function init_contact_model(nodes::AbstractVector{Int64},
-                            contact_parameter::Dict,
+                            contact_parameter::AbstractDict,
                             block::Int64)
 end
 
@@ -57,7 +57,7 @@ Not yet implemented short range contact model.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `contact_parameter::Dict(String, Any)`: Dictionary with flow parameter.
+- `contact_parameter::AbstractDict(String, Any)`: Dictionary with flow parameter.
 - `block::Int64`: The current block.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
@@ -66,7 +66,7 @@ Example:
 ```
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       contact_parameter::Dict,
+                       contact_parameter::AbstractDict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)

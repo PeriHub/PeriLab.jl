@@ -11,7 +11,6 @@ It is simplified. Rigid body motion is not considered )omega_{ij} = 0 as well as
 """
 
 #
-using LoopVectorization
 
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
@@ -43,16 +42,16 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(nodes::AbstractVector{Int64}, material_parameter::AbstractDict)
 
 Initializes the material model.
 
 # Arguments
   - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `material_parameter::AbstractDict(String, Any)`: Dictionary with material parameter.
 """
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
+                    material_parameter::AbstractDict)
     dof = Data_Manager.get_dof()
     nlist = Data_Manager.get_nlist()
     constant = Data_Manager.create_constant_bond_vector_state("Unified Bond Based Constant",
@@ -114,18 +113,18 @@ function material_name()
 end
 
 """
-    compute_model(nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
+    compute_model(nodes::AbstractVector{Int64}, material_parameter::AbstractDict, time::Float64, dt::Float64)
 
 Calculate the elastic bond force for each node.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `material_parameter::AbstractDict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict,
+                       material_parameter::AbstractDict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
@@ -210,10 +209,10 @@ function compute_bond_based_strain(bb_strain,
                 end
 
                 bb_strain[k,
-                l] += bond_damage[j] *
-                                   (deformed_bond[j][k] - undeformed_bond[j][k]) *
-                                   volume[nlist[j]] /
-                                   (undeformed_bond[j][l] * reference_volume)
+                          l] += bond_damage[j] *
+                                (deformed_bond[j][k] - undeformed_bond[j][k]) *
+                                volume[nlist[j]] /
+                                (undeformed_bond[j][l] * reference_volume)
             end
         end
     end

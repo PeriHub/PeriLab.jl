@@ -36,7 +36,9 @@
 end
 
 @testset "init_additive" begin
-    PeriLab.Data_Manager.data["properties"][23] = Dict("Additive Model" => Dict("Additive Model" => "does not exist"))
+    PeriLab.Data_Manager.data["properties"][23] = PeriLab.Data_Manager.OrderedDict("Additive Model" =>
+                                                                                       PeriLab.Data_Manager.OrderedDict{String,
+                                                                                                                        Any}("Additive Model" => "does not exist"))
     @test_logs (:error,
                 "No additive model of name does not exist exists.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.Model_Factory.Additive.init_model(Vector{Int64}([

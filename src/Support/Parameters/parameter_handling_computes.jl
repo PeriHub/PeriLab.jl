@@ -9,17 +9,17 @@ export get_output_variables
 export get_computes
 
 """
-    get_computes_names(params::Dict)
+    get_computes_names(params::AbstractDict)
 
 Get the names of the computes.
 
 # Arguments
-- `params::Dict`: The parameters dictionary.
+- `params::AbstractDict`: The parameters dictionary.
 # Returns
 - `computes_names::Vector{String}`: The names of the computes.
 """
-function get_computes_names(params::Dict)
-    if haskey(params::Dict, "Compute Class Parameters")
+function get_computes_names(params::AbstractDict)
+    if haskey(params::AbstractDict, "Compute Class Parameters")
         computes = params["Compute Class Parameters"]
         return string.(collect(keys(sort!(OrderedDict(computes)))))
     end
@@ -46,17 +46,17 @@ function get_output_variables(output::String, variables::Vector{String})
 end
 
 """
-    get_computes(params::Dict, variables::Vector{String})
+    get_computes(params::AbstractDict, variables::Vector{String})
 
 Get the computes.
 
 # Arguments
-- `params::Dict`: The parameters dictionary.
+- `params::AbstractDict`: The parameters dictionary.
 - `variables::Vector{String}`: The variables.
 # Returns
 - `computes::Dict{String,Dict{Any,Any}}`: The computes.
 """
-function get_computes(params::Dict, variables::Vector{String})
+function get_computes(params::AbstractDict, variables::Vector{String})
     computes = Dict{String,Dict{Any,Any}}()
     if !haskey(params, "Compute Class Parameters")
         return computes

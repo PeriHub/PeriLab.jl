@@ -571,11 +571,11 @@ color_value = get_properties(1, "color")  # Returns "red"
 non_existent_value = get_properties(2, "width")  # Returns an empty dictionary
 ```
 """
-function get_properties(block_id::Int64, property::String)::Dict{String,Any}
+function get_properties(block_id::Int64, property::String)::OrderedDict{String,Any}
     if check_property(block_id, property)
-        return convert(Dict{String,Any}, data["properties"][block_id][property]) # TODO check why it is needed!
+        return data["properties"][block_id][property]
     end
-    return Dict{String,Any}()::Dict{String,Any}
+    return OrderedDict{String,Any}()
 end
 
 """
@@ -742,11 +742,11 @@ This function initializes the properties dictionary. Order of dictionary defines
 function init_properties()
     block_id_list = get_block_id_list()
     for iblock in block_id_list
-        data["properties"][iblock] = OrderedDict{String,Dict{String,Any}}()
+        data["properties"][iblock] = OrderedDict{String,OrderedDict{String,Any}}()
 
         for prop_name in ["Additive Model", "Damage Model", "Pre Calculation Model",
                 "Thermal Model", "Degradation Model", "Material Model"]
-            data["properties"][iblock][prop_name] = Dict{String,Any}()
+            data["properties"][iblock][prop_name] = OrderedDict{String,Any}()
         end
     end
     return collect(keys(data["properties"][block_id_list[1]]))
@@ -969,7 +969,7 @@ Sets the value of a specified `property` for a given `block_id`.
 """
 function set_property(block_id::Int64, property::String, value_name::String,
                       value::T) where {T}
-    prop_dict = get!(data["properties"][block_id], property, Dict{String,Any}())
+    prop_dict = get!(data["properties"][block_id], property, OrderedDict{String,Any}())
     prop_dict[value_name] = value
 end
 
@@ -990,11 +990,8 @@ Sets the values of a specified `property` for a given `block_id`.
 - `values`::Any: The values to set for the specified `property`.
 """
 function set_properties(block_id::Int64, property::String, values::T) where {T}
-    if values isa Dict{String,Any}
-        data["properties"][block_id][property] = values
-    else
-        data["properties"][block_id][property] = convert(Dict{String,Any}, values)
-    end
+    data["properties"][block_id][property] = values isa OrderedDict{String,Any} ? values :
+                                             OrderedDict{String,Any}(values)
 end
 
 """
@@ -1008,12 +1005,8 @@ Sets the values of a specified `property` for a all `blocks`. E.g. for FEM, beca
 """
 function set_properties(property::String, values::T) where {T}
     for id in eachindex(data["properties"])
-        # Typ-sichere Zuweisung
-        if values isa Dict{String,Any}
-            data["properties"][id][property] = values
-        else
-            data["properties"][id][property] = convert(Dict{String,Any}, values)
-        end
+        data["properties"][id][property] = values isa OrderedDict{String,Any} ? values :
+                                           OrderedDict{String,Any}(values)
     end
 end
 

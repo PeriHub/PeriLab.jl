@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module OneD_Bond_Based_Elastic
-using LoopVectorization
 
 using .......Data_Manager
 using .......PeriLabExceptions: @abort
@@ -34,16 +33,16 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict{String, Any})
+  init_model(nodes::AbstractVector{Int64}, material_parameter::AbstractDict{String,Any})
 
 Initializes the material model.
 
 # Arguments
   - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `material_parameter::AbstractDict(String, Any)`: Dictionary with material parameter.
 """
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
+                    material_parameter::AbstractDict)
     constant = Data_Manager.create_constant_bond_scalar_state("Visual", Float64)
 end
 
@@ -57,18 +56,18 @@ function material_name()
 end
 
 """
-    compute_model(nodes::AbstractVector{Int64}, material_parameter::Dict{String, Any}, time::Float64, dt::Float64)
+    compute_model(nodes::AbstractVector{Int64}, material_parameter::AbstractDict{String,Any}, time::Float64, dt::Float64)
 
 Calculate the elastic bond force for each node.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `material_parameter::AbstractDict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict,
+                       material_parameter::AbstractDict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)

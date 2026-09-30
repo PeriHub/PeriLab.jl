@@ -36,18 +36,18 @@ function check_for_duplicates(filenames::Vector{String})
 end
 
 """
-    get_output_filenames(params::Dict, output_dir::String)
+    get_output_filenames(params::AbstractDict, output_dir::String)
 
 Gets the output filenames.
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 - `output_dir::String`: The file directory
 # Returns
 - `filenames::Vector{String}`: The filenames
 """
-function get_output_filenames(params::Dict, output_dir::String)
-    if haskey(params::Dict, "Outputs")
+function get_output_filenames(params::AbstractDict, output_dir::String)
+    if haskey(params::AbstractDict, "Outputs")
         filenames::Vector{String} = []
         outputs = params["Outputs"]
         for output in keys(outputs)
@@ -70,17 +70,17 @@ function get_output_filenames(params::Dict, output_dir::String)
 end
 
 """
-    get_output_type(outputs::Dict, output::String)
+    get_output_type(outputs::AbstractDict, output::String)
 
 Gets the output type.
 
 # Arguments
-- `outputs::Dict`: The outputs
+- `outputs::AbstractDict`: The outputs
 - `output::String`: The output
 # Returns
 - `output_type::String`: The output type
 """
-function get_output_type(outputs::Dict, output::String)
+function get_output_type(outputs::AbstractDict, output::String)
     if haskey(outputs[output], "Output File Type")
         return outputs[output]["Output File Type"]
     else
@@ -90,79 +90,79 @@ function get_output_type(outputs::Dict, output::String)
 end
 
 """
-    get_flush_file(outputs::Dict, output::String)
+    get_flush_file(outputs::AbstractDict, output::String)
 
 Gets the flush file.
 
 # Arguments
-- `outputs::Dict`: The outputs
+- `outputs::AbstractDict`: The outputs
 - `output::String`: The output
 # Returns
 - `flush_file::Bool`: The flush file
 """
-function get_flush_file(outputs::Dict, output::String)
+function get_flush_file(outputs::AbstractDict, output::String)
     get(outputs[output], "Flush File", true)
 end
 
 """
-    get_write_after_damage(outputs::Dict, output::String)
+    get_write_after_damage(outputs::AbstractDict, output::String)
 
 Get the write after damage.
 
 # Arguments
-- `outputs::Dict`: The outputs
+- `outputs::AbstractDict`: The outputs
 - `output::String`: The output
 # Returns
 - `write_after_damage::Bool`: The value
 """
-function get_write_after_damage(outputs::Dict, output::String)
+function get_write_after_damage(outputs::AbstractDict, output::String)
     get(outputs[output], "Write After Damage", false)
 end
 
 """
-    get_start_time(outputs::Dict, output::String)
+    get_start_time(outputs::AbstractDict, output::String)
 
 Get the start_time.
 
 # Arguments
-- `outputs::Dict`: The outputs
+- `outputs::AbstractDict`: The outputs
 - `output::String`: The output
 # Returns
 - `start_time::Float64`: The value
 """
-function get_start_time(outputs::Dict, output::String)
+function get_start_time(outputs::AbstractDict, output::String)
     get(outputs[output], "Start Time", 0.0)
 end
 
 """
-    get_end_time(outputs::Dict, output::String)
+    get_end_time(outputs::AbstractDict, output::String)
 
 Get the end_time.
 
 # Arguments
-- `outputs::Dict`: The outputs
+- `outputs::AbstractDict`: The outputs
 - `output::String`: The output
 # Returns
 - `end_time::Float64`: The value
 """
-function get_end_time(outputs::Dict, output::String)
+function get_end_time(outputs::AbstractDict, output::String)
     get(outputs[output], "End Time", Inf64)
 end
 
 """
-    get_output_fieldnames(outputs::Dict, variables::Vector{String}, computes::Vector{String}, output_type::String)
+    get_output_fieldnames(outputs::AbstractDict, variables::Vector{String}, computes::Vector{String}, output_type::String)
 
 Gets the output fieldnames.
 
 # Arguments
-- `outputs::Dict`: The outputs
+- `outputs::AbstractDict`: The outputs
 - `variables::Vector{String}`: The variables
 - `computes::Vector{String}`: The computes
 - `output_type::String`: The output type
 # Returns
 - `output_fieldnames::Vector{String}`: The output fieldnames
 """
-function get_output_fieldnames(outputs::Dict,
+function get_output_fieldnames(outputs::AbstractDict,
                                variables::Vector{String},
                                computes::Vector{String},
                                output_type::String)
@@ -194,18 +194,19 @@ function get_output_fieldnames(outputs::Dict,
 end
 
 """
-    get_outputs(params::Dict, variables::Vector{String}, compute_names::Vector{String})
+    get_outputs(params::AbstractDict, variables::Vector{String}, compute_names::Vector{String})
 
 Gets the outputs.
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 - `variables::Vector{String}`: The variables
 - `compute_names::Vector{String}`: The compute names
 # Returns
-- `outputs::Dict`: The outputs
+- `outputs::AbstractDict`: The outputs
 """
-function get_outputs(params::Dict, variables::Vector{String}, compute_names::Vector{String})
+function get_outputs(params::AbstractDict, variables::Vector{String},
+                     compute_names::Vector{String})
     num = 0
     outputs = Dict()
     if haskey(params, "Outputs")
@@ -227,20 +228,20 @@ function get_outputs(params::Dict, variables::Vector{String}, compute_names::Vec
 end
 
 """
-    get_output_frequencies(params::Dict, nsteps::Int64)
+    get_output_frequencies(params::AbstractDict, nsteps::Int64)
 
 Gets the output frequencies.
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 - `nsteps::Int64`: The number of steps
 # Returns
 - `freq::Vector{Int64}`: The output frequencies
 """
-function get_output_frequencies(params::Dict, nsteps::Int64,
+function get_output_frequencies(params::AbstractDict, nsteps::Int64,
                                 step_id::Int64)
     freq = zeros(1)
-    if haskey(params::Dict, "Outputs")
+    if haskey(params::AbstractDict, "Outputs")
         outputs = params["Outputs"]
         freq = zeros(Int64, length(keys(outputs)))
         for (id, output) in enumerate(keys(outputs))

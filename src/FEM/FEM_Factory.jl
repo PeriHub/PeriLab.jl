@@ -28,7 +28,7 @@ using .Coupling
 export init_FEM
 export eval_FEM
 
-function init_FEM(complete_params::Dict)
+function init_FEM(complete_params::AbstractDict)
     if !haskey(complete_params, "FEM")
         @abort "Invalid FEM parameters"
         return
@@ -147,7 +147,7 @@ function init_FEM(complete_params::Dict)
     @info "End FEM init"
 end
 
-function valid_models(params::Dict)
+function valid_models(params::AbstractDict)
     if haskey(params, "Additive Model")
         @warn "Additive models are not supported for FEM yet"
     end
@@ -180,7 +180,7 @@ function compute_stresses!(dof::Int64,
 end
 
 function eval_FEM(elements::AbstractVector{Int64},
-                  params::Dict{String,Any},
+                  params::AbstractDict{String,Any},
                   time::Float64,
                   dt::Float64)
     return compute_FEM(elements,

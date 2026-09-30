@@ -9,7 +9,7 @@ RuntimeGeneratedFunctions.init(@__MODULE__)
 export init_influence_function
 
 """
-    init_influence_function(nodes::AbstractVector{Int64}, params::Dict)
+    init_influence_function(nodes::AbstractVector{Int64}, params::AbstractDict)
 
 Initializes the influence function field based on the user-specified
 parameter "Influence Function". Supports:
@@ -18,7 +18,7 @@ parameter "Influence Function". Supports:
     e.g. "1/xi^2", "exp(-xi/3)", "xiX^2 + xiY^2"
 """
 function init_influence_function(nodes::AbstractVector{Int64},
-                                 params::Dict)
+                                 params::AbstractDict)
     if !haskey(params, "Influence Function")
         return
     end

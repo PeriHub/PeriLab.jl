@@ -68,12 +68,12 @@ end
 Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `thermal parameter::Dict(String, Any)`: Dictionary with thermal parameter.
+- `thermal parameter::AbstractDict(String, Any)`: Dictionary with thermal parameter.
 - `block::Int64`: The current block.
 
 """
 function init_model(nodes::AbstractVector{Int64},
-                    thermal_parameter::Dict)
+                    thermal_parameter::AbstractDict)
     if !haskey(thermal_parameter, "Reference Temperature")
         @warn "No reference temperature defined. Assuming 0"
     end
@@ -86,7 +86,7 @@ Calculates the thermal expansion of the material.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
+- `flow parameter::AbstractDict(String, Any)`: Dictionary with flow parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
@@ -94,7 +94,7 @@ Example:
 ```
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       thermal_parameter::Dict,
+                       thermal_parameter::AbstractDict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)

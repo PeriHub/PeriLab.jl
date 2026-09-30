@@ -31,17 +31,17 @@ function mesh_import_name()
 end
 
 """
-    read_mesh(params::Dict, filename::String)
+    read_mesh(params::AbstractDict, filename::String)
 
 Reads a text mesh file and returns the mesh data as a DataFrame.
 
 # Arguments
-- `params::Dict`: The parameters.
+- `params::AbstractDict`: The parameters.
 - `filename::String`: The path to the text mesh file.
 # Returns
 - `mesh::DataFrame`: The mesh data as a DataFrame.
 """
-function read_mesh(params::Dict, filename::String)
+function read_mesh(params::AbstractDict, filename::String)
     return csv_reader(filename)
 end
 

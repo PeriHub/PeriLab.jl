@@ -109,7 +109,7 @@ Synch the responder to the controller
 
 # Arguments
 - `comm::MPI.Comm`: The MPI communicator
-- `overlapnodes::Dict`: The overlap nodes
+- `overlapnodes::AbstractDict`: The overlap nodes
 - `vector::Vector`: The vector
 - `dof::Int`: The degree of freedom
 # Returns
@@ -180,7 +180,7 @@ Synch the controller to the responder
 
 # Arguments
 - `comm::MPI.Comm`: The MPI communicator
-- `overlapnodes::Dict`: The overlap nodes
+- `overlapnodes::AbstractDict`: The overlap nodes
 - `vector::Vector`: The vector
 - `dof::Int`: The degree of freedom
 # Returns
@@ -217,8 +217,8 @@ function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof
                                                tag = 0)
             else
                 vector[recv_index,
-                :] = MPI.Recv!(vector[recv_index, :], comm;
-                                                  source = jcore - 1, tag = 0)
+                       :] = MPI.Recv!(vector[recv_index, :], comm;
+                                      source = jcore - 1, tag = 0)
             end
 
             # if dof == 1
@@ -249,7 +249,7 @@ Synch the controller bonds to the responder
 
 # Arguments
 - `comm::MPI.Comm`: The MPI communicator
-- `overlapnodes::Dict`: The overlap nodes
+- `overlapnodes::AbstractDict`: The overlap nodes
 - `array::Array`: The array
 - `dof::Int`: The degree of freedom
 # Returns
@@ -333,7 +333,7 @@ Synch the controller bonds to the responder
 
 # Arguments
 - `comm::MPI.Comm`: The MPI communicator
-- `overlapnodes::Dict`: The overlap nodes
+- `overlapnodes::AbstractDict`: The overlap nodes
 - `array::Array`: The array
 - `dof::Int`: The degree of freedom
 # Returns

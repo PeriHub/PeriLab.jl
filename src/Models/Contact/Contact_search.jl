@@ -40,7 +40,7 @@ function global_contact_search(contact_params)
     return no_pairs, global_master, global_slave
 end
 
-function compute_contact_pairs(cg::String, contact_params::Dict)
+function compute_contact_pairs(cg::String, contact_params::AbstractDict)
     if Data_Manager.get_search_step(cg) == 0
         Data_Manager.set_global_search_master_nodes(cg, Vector{Int64}([]))
         Data_Manager.set_global_search_slave_nodes(cg, Vector{Int64}([]))
@@ -115,16 +115,16 @@ function local_contact_search(contact_params, master_nodes, slave_nodes)
 end
 
 """
-    find_potential_contact_pairs(contact_params::Dict)
+    find_potential_contact_pairs(contact_params::AbstractDict)
 
 Finds a list of potential master slave pairs which are next to each other. Only the free surface nodes of the contact blocks are tested. The process is done equally at each computational core.
 
 # Arguments
-- `contact_params::Dict`: dictionary with contact relevant information.
+- `contact_params::AbstractDict`: dictionary with contact relevant information.
 
 # Returns
 - pairs of potential contact partner in exchange vector ids.
-"""## TODO test
+"""
 function find_potential_contact_pairs(dof, points_1, points_2, search_radius)
     nmaster = size(points_1)[1]
     near_points = fill(Vector{Int64}([]), nmaster)

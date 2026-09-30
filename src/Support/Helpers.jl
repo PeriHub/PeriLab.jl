@@ -12,7 +12,6 @@ using ProgressBars: ProgressBar
 using LinearAlgebra: Adjoint, dot, det, norm, pinv, eigvals, inv, normalize, cross, diagm,
                      cholesky
 using StaticArrays: MMatrix, MVector, SMatrix, @SMatrix, SVector, @SVector
-using LoopVectorization
 using Unitful: ustrip
 using CDDLib
 using Polyhedra: MixedMatHRep, polyhedron, vrep, hrep
@@ -889,12 +888,12 @@ function find_inverse_bond_id(nlist::BondScalarState{Int64})
 end
 
 function get_dependent_value_with_ID(field_name::String,
-                                     parameter::Dict,
+                                     parameter::AbstractDict,
                                      iID::Int64 = 1)
     return get_dependent_value(field_name, parameter)(iID)
 end
 
-function is_dependent(field_name::String, damage_parameter::Dict)
+function is_dependent(field_name::String, damage_parameter::AbstractDict)
     if haskey(damage_parameter, field_name) && damage_parameter[field_name] isa Dict
         if !Data_Manager.has_key(damage_parameter[field_name]["Field"] * "NP1")
             @abort "$(damage_parameter[field_name]["Field"]) does not exist for value interpolation."
@@ -916,7 +915,7 @@ function interpolation(x::Union{Vector{Float64},Vector{Int64}},
 end
 
 function interpol_data(x::Union{Vector{Float64},Vector{Int64},Float64,Int64},
-                       values::Dict{String,Any},
+                       values::AbstractDict{String,Any},
                        warning_flag::Bool = true)
     if warning_flag
         if values["min"] > minimum(x)
@@ -956,7 +955,7 @@ end
 Call once per field before a loop. Returns a callable `f(iID)` that
 gives either the constant value or the interpolated field value.
 """
-function get_dependent_value(field_name::String, parameter::Dict)
+function get_dependent_value(field_name::String, parameter::AbstractDict)
     dependent_value, dependent_field = is_dependent(field_name, parameter)
     if dependent_value
         return InterpolatedValue(dependent_field,

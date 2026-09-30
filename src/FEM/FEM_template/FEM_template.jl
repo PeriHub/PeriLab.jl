@@ -30,7 +30,7 @@ function element_name()
 end
 
 function init_element(elements::AbstractVector{Int64},
-                      element_params::Dict,
+                      element_params::AbstractDict,
                       p::Vector{Int64})
 end
 """
@@ -40,7 +40,7 @@ Calculates element model of the material. This template has to be copied, the fi
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `element parameter::Dict(String, Any)`: Dictionary with element parameter.
+- `element parameter::AbstractDict(String, Any)`: Dictionary with element parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
@@ -48,7 +48,7 @@ Example:
   ```
 """
 function compute_element(nodes::AbstractVector{Int64},
-                         element_parameter::Dict,
+                         element_parameter::AbstractDict,
                          time::Float64,
                          dt::Float64)
     @info "Please write a element name in element_name()."

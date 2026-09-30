@@ -39,16 +39,16 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(nodes::AbstractVector{Int64}, material_parameter::AbstractDict)
 
 Initializes the material model.
 
 # Arguments
   - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `material_parameter::AbstractDict(String, Any)`: Dictionary with material parameter.
 """
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
+                    material_parameter::AbstractDict)
     horizon = Data_Manager.get_field("Horizon")
 
     if !haskey(material_parameter, "Yield Stress")
@@ -123,7 +123,7 @@ Calculates the force densities of the material. This template has to be copied, 
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `material_parameter::AbstractDict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
@@ -131,7 +131,7 @@ Example:
 ```
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict,
+                       material_parameter::AbstractDict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)

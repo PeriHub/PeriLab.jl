@@ -18,16 +18,16 @@ export get_nsteps
 export get_calculation_options
 
 """
-	get_solver_steps(params::Dict)
+	get_solver_steps(params::AbstractDict)
 
 Get the solver steps
 
 # Arguments
-- `params::Dict`: The parameters dictionary.
+- `params::AbstractDict`: The parameters dictionary.
 # Returns
 - `solver_steps::List`: The solver steps
 """
-function get_solver_steps(params::Dict)
+function get_solver_steps(params::AbstractDict)
     if !haskey(params, "Multistep Solver")
         return [-1]
     end
@@ -46,16 +46,16 @@ function get_solver_steps(params::Dict)
 end
 
 """
-	get_solver_params(params::Dict)
+	get_solver_params(params::AbstractDict)
 
 Get the solver parameters
 
 # Arguments
-- `params::Dict`: The parameters dictionary.
+- `params::AbstractDict`: The parameters dictionary.
 # Returns
-- `solver_params::Dict`: The solver parameters
+- `solver_params::AbstractDict`: The solver parameters
 """
-function get_solver_params(params::Dict, step_id)
+function get_solver_params(params::AbstractDict, step_id)
     for step_name in keys(params["Multistep Solver"])
         if params["Multistep Solver"][step_name]["Step ID"] == step_id
             return params["Multistep Solver"][step_name]
@@ -66,16 +66,16 @@ function get_solver_params(params::Dict, step_id)
 end
 
 """
-	get_solver_name(params::Dict)
+	get_solver_name(params::AbstractDict)
 
 Get the name of the solver
 
 # Arguments
-- `params::Dict`: The parameters dictionary.
+- `params::AbstractDict`: The parameters dictionary.
 # Returns
 - `solver_name::String`: The name of the solver
 """
-function get_solver_name(params::Dict)
+function get_solver_name(params::AbstractDict)
     if haskey(params, "Verlet")
         return "Verlet"
     elseif haskey(params, "Static")
@@ -92,16 +92,16 @@ function get_solver_name(params::Dict)
 end
 
 """
-	get_initial_time(params::Dict)
+	get_initial_time(params::AbstractDict)
 
 Get the initial time
 
 # Arguments
-- `params::Dict`: The parameters dictionary.
+- `params::AbstractDict`: The parameters dictionary.
 # Returns
 - `initial_time::Float64`: The initial time
 """
-function get_initial_time(params::Dict)
+function get_initial_time(params::AbstractDict)
     current_time = Data_Manager.get_current_time()
     if haskey(params, "Initial Time")
         if Float64(params["Initial Time"]) <= current_time
@@ -116,16 +116,16 @@ function get_initial_time(params::Dict)
 end
 
 """
-	get_final_time(params::Dict)
+	get_final_time(params::AbstractDict)
 
 Get the final time
 
 # Arguments
-- `params::Dict`: The parameters dictionary.
+- `params::AbstractDict`: The parameters dictionary.
 # Returns
 - `final_time::Float64`: The final time
 """
-function get_final_time(params::Dict)
+function get_final_time(params::AbstractDict)
     if haskey(params, "Final Time")
         return Float64(params["Final Time"])
     end
@@ -136,86 +136,86 @@ function get_final_time(params::Dict)
 end
 
 """
-	get_safety_factor(params::Dict)
+	get_safety_factor(params::AbstractDict)
 
 Get the safety factor
 
 # Arguments
-- `params::Dict`: The parameters dictionary.
+- `params::AbstractDict`: The parameters dictionary.
 # Returns
 - `safety_factor::Float64`: The safety factor
 """
-function get_safety_factor(params::Dict)
+function get_safety_factor(params::AbstractDict)
     return Float64(get(params[get_solver_name(params)], "Safety Factor", 1.0))
 end
 
 """
-	get_fixed_dt(params::Dict)
+	get_fixed_dt(params::AbstractDict)
 
 Get the fixed time step
 
 # Arguments
-- `params::Dict`: The parameters dictionary.
+- `params::AbstractDict`: The parameters dictionary.
 # Returns
 - `fixed_dt::Float64`: The fixed time step
 """
-function get_fixed_dt(params::Dict)
+function get_fixed_dt(params::AbstractDict)
     return Float64(get(params[get_solver_name(params)], "Fixed dt", -1.0))
 end
 
 """
-	get_nsteps(params::Dict)
+	get_nsteps(params::AbstractDict)
 
 Get the fixed time step
 
 # Arguments
-- `params::Dict`: The parameters dictionary.
+- `params::AbstractDict`: The parameters dictionary.
 # Returns
 - `nsteps::Int64`: The fixed time step
 """
-function get_nsteps(params::Dict)
+function get_nsteps(params::AbstractDict)
     return get(params, "Number of Steps", 1)
 end
 
 """
-	get_numerical_damping(params::Dict)
+	get_numerical_damping(params::AbstractDict)
 
 Get the numerical damping
 
 # Arguments
-- `params::Dict`: The parameters dictionary.
+- `params::AbstractDict`: The parameters dictionary.
 # Returns
 - `numerical_damping::Float64`: The numerical damping
 """
-function get_numerical_damping(params::Dict)
+function get_numerical_damping(params::AbstractDict)
     return Float64(get(params[get_solver_name(params)], "Numerical Damping", 0.0))
 end
 
 """
-get_max_damage(params::Dict)
+get_max_damage(params::AbstractDict)
 
 Get the maximum damage.
 
 # Arguments
-- `params::Dict`: The parameters dictionary.
+- `params::AbstractDict`: The parameters dictionary.
 # Returns
 - `max_damage::Float64`: The value
 """
-function get_max_damage(params::Dict)
+function get_max_damage(params::AbstractDict)
     return Float64(get(params, "Maximum Damage", Inf64))
 end
 
 """
-	get_model_options(params::Dict)
+	get_model_options(params::AbstractDict)
 
 Get the solver options
 
 # Arguments
-- `params::Dict`: The parameters dictionary.
+- `params::AbstractDict`: The parameters dictionary.
 # Returns
-- `solver_options::Dict`: The solver options
+- `solver_options::AbstractDict`: The solver options
 """
-function get_model_options(params::Dict)
+function get_model_options(params::AbstractDict)
     additive::Bool = get(params, "Additive Models", false)
     degradation::Bool = get(params, "Degradation Models", false)
     damage::Bool = get(params, "Damage Models", false)
@@ -247,16 +247,16 @@ function get_model_options(params::Dict)
 end
 
 """
-	get_calculation_options(params::Dict)
+	get_calculation_options(params::AbstractDict)
 
 Get the calculation options
 
 # Arguments
-- `params::Dict`: The parameters dictionary.
+- `params::AbstractDict`: The parameters dictionary.
 # Returns
-- `solver_options::Dict`: The solver options
+- `solver_options::AbstractDict`: The solver options
 """
-function get_calculation_options(params::Dict)
+function get_calculation_options(params::AbstractDict)
     cauchy::Bool = get(params, "Calculate Cauchy", false)
     von_mises::Bool = get(params, "Calculate von Mises stress", false)
     strain::Bool = get(params, "Calculate Strain", false)

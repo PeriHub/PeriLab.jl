@@ -53,7 +53,7 @@ This template has to be copied, the file renamed and edited by the user to creat
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `Pre_calculation_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `Pre_calculation_parameter::AbstractDict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
@@ -61,7 +61,7 @@ Example:
   ```
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       Pre_calculation_parameter::Dict,
+                       Pre_calculation_parameter::AbstractDict,
                        block::Int64)
     @info "Please write a possible precalculation routines in pre_calculation_name()."
     @info "You can call your routine within the yaml file."
@@ -77,7 +77,7 @@ Inits the calculation.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `parameter::Dict(String, Any)`: Dictionary with parameter.
+- `parameter::AbstractDict(String, Any)`: Dictionary with parameter.
 
 """
 function init_model(nodes::AbstractVector{Int64},

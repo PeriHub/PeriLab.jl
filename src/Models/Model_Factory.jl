@@ -34,18 +34,18 @@ export init_models
 export read_properties
 
 """
-	init_models(params::Dict, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
+	init_models(params::AbstractDict, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::AbstractDict)
 
 Initialize models
 
 # Arguments
-- `params::Dict`: Parameters.
+- `params::AbstractDict`: Parameters.
 - `block_nodes::Dict{Int64,Vector{Int64}}`: block nodes.
-- `solver_options::Dict`: Solver options.
+- `solver_options::AbstractDict`: Solver options.
 """
-function init_models(params::Dict,
+function init_models(params::AbstractDict,
                      block_nodes::Dict{Int64,Vector{Int64}},
-                     solver_options::Dict,
+                     solver_options::AbstractDict,
                      synchronise_field)
     if "Pre_Calculation" in solver_options["Models"]
         @info "Check pre calculation models are initialized for material models"
@@ -73,7 +73,7 @@ function init_models(params::Dict,
 
     if Data_Manager.get_step() <= 1
         for (active_model_name,
-             active_model) in pairs(Data_Manager.get_active_models(true))
+            active_model) in pairs(Data_Manager.get_active_models(true))
             @debug "Init $active_model_name fields"
             @timeit "$active_model_name model fields" active_model.init_fields()
         end
@@ -125,12 +125,12 @@ function init_models(params::Dict,
     @info "Finalize Init Models"
 end
 
-function check_contact(params::Dict)
+function check_contact(params::AbstractDict)
     if haskey(params, "Contact")
         return Contact.init_contact_model(params["Contact"])
     end
 end
-function check_contact(params::Dict, time::Float64, dt::Float64)
+function check_contact(params::AbstractDict, time::Float64, dt::Float64)
     if length(params) != 0
         return Contact.compute_contact_model(params, time,
                                              dt)
@@ -420,21 +420,21 @@ function compute_matrix_based_bond_forces(block_nodes::Dict{Int64,Vector{Int64}}
 end
 
 """
-	get_block_model_definition(params::Dict, block_id_list::Int64, prop_keys::Vector{String}, properties)
+	get_block_model_definition(params::AbstractDict, block_id_list::Int64, prop_keys::Vector{String}, properties)
 
 Get block model definition.
 
 Special case for pre calculation. It is set to all blocks, if no block definition is defined, but pre calculation is.
 
 # Arguments
-- `params::Dict`: Parameters.
+- `params::AbstractDict`: Parameters.
 - `block_id_list::Vector{Int64}`: List of block id's.
 - `prop_keys::Vector{String}`: Property keys.
 - `properties`: Properties function.
 # Returns
 - `properties`: Properties function.
 """
-function get_block_model_definition(params::Dict,
+function get_block_model_definition(params::AbstractDict,
                                     block_name_list::Vector{String},
                                     block_id_list::Vector{Int64},
                                     prop_keys::Vector{String},
@@ -471,15 +471,15 @@ function get_block_model_definition(params::Dict,
 end
 
 """
-	read_properties(params::Dict, material_model::Bool)
+	read_properties(params::AbstractDict, material_model::Bool)
 
 Read properties of material.
 
 # Arguments
-- `params::Dict`: Parameters.
+- `params::AbstractDict`: Parameters.
 - `material_model::Bool`: Material model.
 """
-function read_properties(params::Dict, material_model::Bool)
+function read_properties(params::AbstractDict, material_model::Bool)
     Data_Manager.init_properties()
     block_name_list = Data_Manager.get_block_name_list()
     block_id_list = Data_Manager.get_block_id_list()
@@ -503,18 +503,18 @@ function read_properties(params::Dict, material_model::Bool)
 end
 
 """
-	set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::NodeScalarField{Float64})
+	set_heat_capacity(params::AbstractDict, block_nodes::AbstractDict, heat_capacity::NodeScalarField{Float64})
 
 Sets the heat capacity of the nodes in the dictionary.
 
 # Arguments
-- `params::Dict`: The parameters
-- `block_nodes::Dict`: The block nodes
+- `params::AbstractDict`: The parameters
+- `block_nodes::AbstractDict`: The block nodes
 - `heat_capacity::NodeScalarField{Float64}`: The heat capacity array
 # Returns
 - `heat_capacity::SubArray`: The heat capacity array
 """
-function set_heat_capacity(params::Dict, block_nodes::Dict,
+function set_heat_capacity(params::AbstractDict, block_nodes::AbstractDict,
                            heat_capacity::NodeScalarField{Float64})
     for block in eachindex(block_nodes)
         heat_capacity[block_nodes[block]] .= get_heat_capacity(params, block)

@@ -13,11 +13,11 @@ using ...Parameter_Handling: get_bc_definitions
 using ...PeriLabExceptions: @abort
 
 """
-    find_bc_free_dof(bcs::Dict{String,Any})
+    find_bc_free_dof(bcs::AbstractDict{String,Any})
 Finds all dof without a displacement boundary condition. This tuple vector is stored in the Data_Manager.
 
 # Arguments
-- `bcs::Dict{String,Any}`: The boundary conditions
+- `bcs::AbstractDict{String,Any}`: The boundary conditions
 # Returns
 
 """
@@ -38,16 +38,16 @@ function find_bc_free_dof(bcs::Dict{Any,Any})
 end
 
 """
-    check_valid_bcs(bcs::Dict{String,Any})
+    check_valid_bcs(bcs::AbstractDict{String,Any})
 
 Check if the boundary conditions are valid
 
 # Arguments
-- `bcs::Dict{String,Any}`: The boundary conditions
+- `bcs::AbstractDict{String,Any}`: The boundary conditions
 # Returns
-- `working_bcs::Dict{String,Any}`: The valid boundary conditions
+- `working_bcs::AbstractDict{String,Any}`: The valid boundary conditions
 """
-function check_valid_bcs(bcs::Dict{String,Any})
+function check_valid_bcs(bcs::AbstractDict{String,Any})
     # check bc
     working_bcs = Dict()
     for bc in keys(bcs)
@@ -96,32 +96,32 @@ function check_valid_bcs(bcs::Dict{String,Any})
 end
 
 """
-    init_BCs(params::Dict)
+    init_BCs(params::AbstractDict)
 
 Initialize the boundary conditions
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 # Returns
 - `bcs::Dict{Any,Any}`: The boundary conditions
 """
-function init_BCs(params::Dict)
+function init_BCs(params::AbstractDict)
     bcs = boundary_condition(params)
     valid_bcs = check_valid_bcs(bcs)
     return valid_bcs
 end
 
 """
-    boundary_condition(params::Dict)
+    boundary_condition(params::AbstractDict)
 
 Initialize the boundary condition
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 # Returns
 - `bcs_out::Dict{Any,Any}`: The boundary conditions
 """
-function boundary_condition(params::Dict)
+function boundary_condition(params::AbstractDict)
     bcs_in = get_bc_definitions(params)
     bcs_out = Dict{String,Any}()
     nsets = Data_Manager.get_nsets()
@@ -149,7 +149,7 @@ function boundary_condition(params::Dict)
 end
 
 """
-    apply_bc_dirichlet(bcs::Dict, time::Float64)
+    apply_bc_dirichlet(bcs::AbstractDict, time::Float64)
 
 Apply the boundary conditions
 
@@ -158,7 +158,7 @@ Apply the boundary conditions
 - `time::Float64`: The current time
 """
 function apply_bc_dirichlet(allowed_variables::Vector{String},
-                            bcs::Dict,
+                            bcs::AbstractDict,
                             time::Float64,
                             step_time::Float64)
     dof = Data_Manager.get_dof()
@@ -182,7 +182,7 @@ function apply_bc_dirichlet(allowed_variables::Vector{String},
         if ndims(field) > 1
             if haskey(dof_mapping, bc["Coordinate"])
                 @views field_to_apply_bc = field[bc["Node Set"],
-                dof_mapping[bc["Coordinate"]]]
+                                                 dof_mapping[bc["Coordinate"]]]
                 bc["Value"] = eval_bc!(field_to_apply_bc,
                                        bc["Value"],
                                        coordinates[bc["Node Set"], :],
@@ -209,7 +209,7 @@ function apply_bc_dirichlet(allowed_variables::Vector{String},
 end
 
 """
-    apply_bc_neumann(bcs::Dict, time::Float64)
+    apply_bc_neumann(bcs::AbstractDict, time::Float64)
 
 Apply the boundary conditions
 
@@ -217,7 +217,7 @@ Apply the boundary conditions
 - `bcs::Dict{Any,Any}`: The boundary conditions
 - `time::Float64`: The current time
 """
-function apply_bc_neumann(bcs::Dict, time::Float64, step_time::Float64)
+function apply_bc_neumann(bcs::AbstractDict, time::Float64, step_time::Float64)
     # Currently not supported
     dof = Data_Manager.get_dof()
     dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
@@ -232,7 +232,7 @@ function apply_bc_neumann(bcs::Dict, time::Float64, step_time::Float64)
         if ndims(field) > 1
             if haskey(dof_mapping, bc["Coordinate"])
                 @views field_to_apply_bc = field[bc["Node Set"],
-                dof_mapping[bc["Coordinate"]]]
+                                                 dof_mapping[bc["Coordinate"]]]
                 bc["Value"] = eval_bc!(field_to_apply_bc,
                                        bc["Value"],
                                        coordinates[bc["Node Set"], :],

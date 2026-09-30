@@ -188,18 +188,18 @@ function get_all_contact_blocks(params)
 end
 
 """
-    compute_model( nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
+    compute_model( nodes::AbstractVector{Int64}, model_param::AbstractDict, block::Int64, time::Float64, dt::Float64)
 
 Compute the forces of the contact model.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes.
-- `model_param::Dict`: The contact parameter.
+- `model_param::AbstractDict`: The contact parameter.
 - `block::Int64`: The current block.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 """
-function compute_contact_model(contact_params::Dict,
+function compute_contact_model(contact_params::AbstractDict,
                                time::Float64,
                                dt::Float64)
     # computes and synchronizes the relevant positions

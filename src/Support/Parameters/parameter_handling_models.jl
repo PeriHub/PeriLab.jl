@@ -14,7 +14,7 @@ This function retrieves a specific model parameter from a dictionary of paramete
 
 ## Arguments
 
-- `params::Dict`: A dictionary containing various parameters.
+- `params::AbstractDict`: A dictionary containing various parameters.
 
 - `model::String`: The model type for which the parameter is sought.
 
@@ -53,7 +53,7 @@ else
 end
 ```
 """
-function get_model_parameter(params::Dict,
+function get_model_parameter(params::AbstractDict,
                              model::String,
                              id::String,
                              directory::String = "")
@@ -85,9 +85,9 @@ function get_model_parameter(params::Dict,
                 params["Models"][model * "s"][id][key_name] = Dict()
                 params["Models"][model * "s"][id][key_name]["Field"] = header[1]
                 params["Models"][model * "s"][id][key_name]["Data"] = interpolation(data[!,
-                                                                                    1],
+                                                                                         1],
                                                                                     data[!,
-                                                                                    i])
+                                                                                         i])
             end
         end
         return params["Models"][model * "s"][id]
@@ -108,11 +108,11 @@ function csv_reader_temporary(filename::String)
                     ignorerepeated = true,
                     header = header,
                     skipto = header_line + 1,
-                    comment = "#",),
+                    comment = "#"),
            header
 end
 
-function find_data_files(params::Dict)
+function find_data_files(params::AbstractDict)
     file_keys = []
     for (key, value) in params
         if value isa Dict

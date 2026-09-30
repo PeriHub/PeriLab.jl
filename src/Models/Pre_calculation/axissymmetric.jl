@@ -37,7 +37,7 @@ Inits the bond-based degradation model. This template has to be copied, the file
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `parameter::Dict(String, Any)`: Dictionary with parameter.
+- `parameter::AbstractDict(String, Any)`: Dictionary with parameter.
 - `block::Int64`: The current block.
 
 """
@@ -53,7 +53,7 @@ This template has to be copied, the file renamed and edited by the user to creat
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `Pre_calculation_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `Pre_calculation_parameter::AbstractDict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
@@ -71,7 +71,7 @@ function compute(nodes::AbstractVector{Int64},
 end
 
 function init(nodes::AbstractVector{Int64},
-              Pre_calculation_parameter::Dict)
+              Pre_calculation_parameter::AbstractDict)
     symmetry_axis = Data_Manager.get_symmetry_axis()
     volume = Data_Manager.get_field("Volume")
     coordinates = Data_Manager.get_field("Coordinates")

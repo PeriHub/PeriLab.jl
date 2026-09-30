@@ -4,7 +4,6 @@
 module Material_Basis
 
 using LinearAlgebra
-using LoopVectorization
 using StaticArrays
 using ......Helpers: get_MMatrix, determinant, invert, smat, interpol_data,
                      get_dependent_value_with_ID,
@@ -94,7 +93,7 @@ function compute_bond_based_constants(nodes::AbstractVector{Int64}, symmetry, co
     end
 end
 
-function get_value(parameter::Union{Dict{Any,Any},Dict{String,Any}},
+function get_value(parameter::AbstractDict,
                    any_field_allocated::Bool,
                    key::String,
                    field_allocated::Bool)
@@ -118,14 +117,14 @@ function get_value(parameter::Union{Dict{Any,Any},Dict{String,Any}},
 end
 
 """
-	get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}})
+	get_all_elastic_moduli(parameter::AbstractDict)
 
 Returns the elastic moduli of the material.
 
 # Arguments
-- `parameter::Union{Dict{Any,Any},Dict{String,Any}}`: The material parameter.
+- `parameter::AbstractDict`: The material parameter.
 """
-function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}})
+function get_all_elastic_moduli(parameter::AbstractDict)
     state_factor_defined = haskey(parameter, "State Factor ID")
 
     if haskey(parameter, "Computed") &&
@@ -281,19 +280,19 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
 end
 
 """
-	get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int64=1)
+	get_Hooke_matrix(parameter::AbstractDict, symmetry::String, dof::Int64, ID::Int64=1)
 
 Returns the Hooke matrix of the material.
 
 # Arguments
-- `parameter::Union{Dict{Any,Any},Dict{String,Any}}`: The material parameter.
+- `parameter::AbstractDict`: The material parameter.
 - `symmetry::String`: The symmetry of the material.
 - `dof::Int64`: The degree of freedom.
 - `ID::Int64=1`: ID of the point. Needed for point wise defined material properties.
 # Returns
 - `matrix::Matrix{Float64}`: The Hooke matrix.
 """
-function get_Hooke_matrix(parameter::Dict,
+function get_Hooke_matrix(parameter::AbstractDict,
                           symmetry::String,
                           dof::Int64,
                           ID::Int64 = 1)
@@ -656,19 +655,19 @@ function check_symmetry(block::Int64)
 end
 
 """
-	flaw_function(params::Dict, coor::Union{Vector{Int64},Vector{Float64}}, stress::Float64)
+	flaw_function(params::AbstractDict, coor::Union{Vector{Int64},Vector{Float64}}, stress::Float64)
 
 Allows the modification of the yield stress at a specific position. This is typically used as starting point for plastic deformation.
 
 # Arguments
-- `params::Dict`: A dictionary containing material information.
+- `params::AbstractDict`: A dictionary containing material information.
 - `coor::Union{Vector{Int64},Vector{Float64}, SubArray}`: Coordinate of the current point.
 - `stress::Float64`: stresses to be modified.
 
 # Returns
 - `stress`::Float64: the modified stresses.
 """
-function flaw_function(params::Dict,
+function flaw_function(params::AbstractDict,
                        coor::AbstractVector{<:Real},
                        stress::T)::Float64 where {T<:Union{Int64,Float64}}
     flaw = get(params, "Flaw Function", nothing)
@@ -713,12 +712,12 @@ function flaw_function(params::Dict,
            (1 - flaw_magnitude * exp(-distance_squared / (flaw_size * flaw_size)))
 end
 """
-	get_symmetry(material::Dict)
+	get_symmetry(material::AbstractDict)
 
 Return the symmetry information from the given material dictionary.
 
 # Arguments
-- `material::Dict`: A dictionary containing material information.
+- `material::AbstractDict`: A dictionary containing material information.
 
 # Returns
 - If the key "Symmetry" is present in the dictionary, the corresponding value is returned.
@@ -730,7 +729,7 @@ material_dict = Dict("Symmetry" => "Cubic", "Color" => "Red")
 symmetry = get_sym(material_dict)
 ```
 """
-function get_symmetry(material::Dict)
+function get_symmetry(material::AbstractDict)
     if !haskey(material, "Symmetry")
         return "3D"
     end

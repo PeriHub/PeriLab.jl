@@ -39,16 +39,16 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(nodes::AbstractVector{Int64}, material_parameter::AbstractDict)
 
 Initializes the material model.
 
 # Arguments
   - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `material_parameter::AbstractDict(String, Any)`: Dictionary with material parameter.
 """
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
+                    material_parameter::AbstractDict)
     Data_Manager.create_constant_node_scalar_field("Weighted Volume", Float64)
     Data_Manager.create_constant_node_scalar_field("Dilatation", Float64)
 
@@ -84,18 +84,18 @@ function fields_for_local_synchronization(model::String)
 end
 
 """
-    compute_model(nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
+    compute_model(nodes::AbstractVector{Int64}, material_parameter::AbstractDict, time::Float64, dt::Float64)
 
 Computes the forces.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes.
-- `material_parameter::Dict`: The material parameter.
+- `material_parameter::AbstractDict`: The material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict,
+                       material_parameter::AbstractDict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)

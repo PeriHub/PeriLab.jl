@@ -15,18 +15,18 @@ function element_name()
 end
 
 """
-    init_element(elements::AbstractVector{Int64}, element_params::Dict, p::Vector{Int64})
+    init_element(elements::AbstractVector{Int64}, element_params::AbstractDict, p::Vector{Int64})
 
 Init the Lagrange element of a given polynomial degree. This degree can be different for each direction
 
 # Arguments
 - `elements::AbstractVector{Int64}`: listed element numbers
-- `element_params::Dict`: Element specific data.
+- `element_params::AbstractDict`: Element specific data.
 - `p::Vector{Int64}`: A vector containing the polynomial degrees for each degree of freedom.
 """
 
 function init_element(elements::AbstractVector{Int64},
-                      element_params::Dict,
+                      element_params::AbstractDict,
                       p::Vector{Int64})
 end
 """
@@ -139,7 +139,7 @@ function get_2D_matrices(p::Vector{Int64},
     Beta::Vector{Float64} = zeros(p[2] + 1)
 
     for (point_id, (ip_coordinate, ip_weight)) in enumerate(zip(eachrow(ip_coordinates),
-                      eachrow(ip_weights)))
+                                                                eachrow(ip_weights)))
         for jID in 1:(p[2] + 1)
             Neta[jID] = get_recursive_lagrange_shape_functions(xi[2, :], ip_coordinate[2],
                                                                p[2])[jID] *
@@ -184,7 +184,7 @@ function get_3D_matrices(p::Vector{Int64},
     Beta::Vector{Float64} = zeros(p[2] + 1)
     Bpsi::Vector{Float64} = zeros(p[3] + 1)
     for (point_id, (ip_coordinate, ip_weight)) in enumerate(zip(eachrow(ip_coordinates),
-                      eachrow(ip_weights)))
+                                                                eachrow(ip_weights)))
         for kID in 1:(p[3] + 1)
             Npsi[kID] = get_recursive_lagrange_shape_functions(xi[3, :], ip_coordinate[3],
                                                                p[3])[kID] *

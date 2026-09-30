@@ -33,7 +33,7 @@ end
 """
     compute_model(
     nodes::AbstractVector{Int64},
-    additive_parameter::Dict,
+    additive_parameter::AbstractDict,
     block::Int64,
     time::Float64,
     dt::Float64,
@@ -43,7 +43,7 @@ Calculates the force densities of the additive. This template has to be copied, 
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `additive parameter::Dict(String, Any)`: Dictionary with additive parameter.
+- `additive parameter::AbstractDict(String, Any)`: Dictionary with additive parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
@@ -51,7 +51,7 @@ Example:
 ```
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       additive_parameter::Dict,
+                       additive_parameter::AbstractDict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
@@ -69,12 +69,12 @@ Inits the additive model. This template has to be copied, the file renamed and e
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `additive parameter::Dict(String, Any)`: Dictionary with additive parameter.
+- `additive parameter::AbstractDict(String, Any)`: Dictionary with additive parameter.
 - `block::Int64`: The current block.
 
 """
 function init_model(nodes::AbstractVector{Int64},
-                    additive_parameter::Dict,
+                    additive_parameter::AbstractDict,
                     block::Int64)
     @info "Please write a additive name in additive_name()."
     @info "You can call your routine within the yaml file."

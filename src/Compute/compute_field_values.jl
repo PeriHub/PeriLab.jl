@@ -115,16 +115,16 @@ function calculate_strain(nodes::AbstractVector{Int64},
 end
 
 """
-    calculate_stresses(block_nodes::Dict{Int64,Vector{Int64}}, options::Dict{String, Any})
+    calculate_stresses(block_nodes::Dict{Int64,Vector{Int64}}, options::AbstractDict{String,Any})
 
 Computes the stresses.
 
 # Arguments
 - `block_nodes::Dict{Int64,Vector{Int64}}`: List of block nodes.
-- `options::Dict{String, Any}`: List of options.
+- `options::AbstractDict{String,Any}`: List of options.
 """
 function calculate_stresses(block_nodes::Dict{Int64,Vector{Int64}},
-                            options::Dict{String,Any})
+                            options::AbstractDict{String,Any})
     active_list = Data_Manager.get_field("Active")
     for block in eachindex(block_nodes)
         correspondence = occursin("Correspondence",

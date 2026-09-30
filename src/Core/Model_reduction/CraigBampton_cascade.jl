@@ -10,7 +10,7 @@ using Arpack: eigs
 export model_reduction_name
 export reduce_matrices
 export reduce_stage
-export order_condensed_by_distance
+export group_condensed_by_level
 
 """
     model_reduction_name()
@@ -30,7 +30,7 @@ end
 Indices of the rows of a matrix that hold at least one entry.
 
 A condensed degree of freedom whose row is empty carries no stiffness at all — an
-isolated node, or one whose bonds were all cut by a bond filter. Such a row makes `Kll`
+isolated node, or one whose bonds were all cut by a bond filter. Such a row makes `Kcc`
 singular, and the eigenvalue problem cannot separate its rigid body mode from the modes
 being looked for. They are removed before the factorization and the eigenvalue problem,
 and the corresponding entries of the modes stay zero.
@@ -61,11 +61,11 @@ nonzero_rows(A::AbstractMatrix) = findall(!iszero, vec(sum(abs, A; dims = 2)))
 
 Indices of the columns of a matrix that hold at least one entry.
 
-For `Klr` these are the retained degrees of freedom with a bond into the condensed
+For `Kcr` these are the retained degrees of freedom with a bond into the condensed
 region — the coupling layer. Every other column is empty, so its recovery mode is zero
 and never has to be solved for. That is the difference between one triangular solve per
 retained degree of freedom and one per coupling degree of freedom, and it also bounds
-where the reduced matrices can fill in: `Krl * B` has entries only in the rows and
+where the reduced matrices can fill in: `Krc * B` has entries only in the rows and
 columns of the coupling layer, everything else keeps the sparsity of `Krr`.
 
 # Arguments
@@ -96,80 +96,80 @@ Warns that the condensed stiffness failed to factorize as positive definite, sha
 between the dense in-place path and the sparse fallback below.
 """
 function _warn_not_pd(err = nothing)
-    @warn "Cholesky of the condensed stiffness failed, falling back to LU. Kll is not " *
+    @warn "Cholesky of the condensed stiffness failed, falling back to LU. Kcc is not " *
           "positive definite: check whether every condensed node is tied to the " *
           "retained region -- an isolated node or a detached cluster has a rigid body " *
           "mode." exception=err
 end
 
 """
-    factorize_condensed!(Kll)
+    factorize_condensed!(Kcc)
 
 Factorization of the condensed stiffness, Cholesky where possible.
 
-With the interface held fixed `Kll` is symmetric positive definite. A sparse Cholesky is
+With the interface held fixed `Kcc` is symmetric positive definite. A sparse Cholesky is
 faster to build than an LU and considerably faster to apply to a dense block of right
 hand sides, because CHOLMOD goes through supernodal BLAS3 kernels while UMFPACK works
 column by column. With one right hand side per coupling degree of freedom that
 difference dominates the whole reduction.
 
-A failure is informative in itself: `Kll` is then not positive definite, which for a
+A failure is informative in itself: `Kcc` is then not positive definite, which for a
 fixed interface points at a condensed region falling apart into pieces not tied to any
 retained degree of freedom — or, in peridynamics, simply at a stiffness that is not
 symmetric.
 
-Dense `Kll` (a `StridedMatrix` of a BLAS float type -- what a single, small condensed
+Dense `Kcc` (a `StridedMatrix` of a BLAS float type -- what a single, small condensed
 region typically comes down to) factorizes in place: LAPACK's `potrf` touches only the
 upper triangle it is asked for, so on failure the lower triangle plus the saved diagonal
 is enough to rebuild the original matrix for the LU fallback, without a second copy of
-`Kll`. Anything else -- in particular a `SparseMatrixCSC`, which `cholesky!`/`lu!` do not
+`Kcc`. Anything else -- in particular a `SparseMatrixCSC`, which `cholesky!`/`lu!` do not
 support in place -- goes through the ordinary, allocating `cholesky`/`lu`.
 
 # Arguments
-- `Kll::AbstractMatrix`: Stiffness of the condensed part
+- `Kcc::AbstractMatrix`: Stiffness of the condensed part
 # Returns
 - A factorization object supporting `ldiv!`
 """
-function factorize_condensed!(Kll::StridedMatrix{<:LinearAlgebra.BlasFloat})
-    n = LinearAlgebra.checksquare(Kll)
-    d = diag(Kll)                                   # nur die Diagonale sichern
-    F = cholesky!(Symmetric(Kll, :U); check = false)
+function factorize_condensed!(Kcc::StridedMatrix{<:LinearAlgebra.BlasFloat})
+    n = LinearAlgebra.checksquare(Kcc)
+    d = diag(Kcc)                                   # nur die Diagonale sichern
+    F = cholesky!(Symmetric(Kcc, :U); check = false)
     issuccess(F) && return F
 
     _warn_not_pd()
     # potrf hat nur das obere Dreieck inkl. Diagonale verändert; das untere ist intakt
     @inbounds for j in 1:n
-        Kll[j, j] = d[j]
+        Kcc[j, j] = d[j]
         for i in 1:(j - 1)
-            Kll[i, j] = Kll[j, i]
+            Kcc[i, j] = Kcc[j, i]
         end
     end
-    return lu!(Kll)
+    return lu!(Kcc)
 end
 
-function factorize_condensed!(Kll::AbstractMatrix)
+function factorize_condensed!(Kcc::AbstractMatrix)
     try
-        return cholesky(Symmetric(Kll))
+        return cholesky(Symmetric(Kcc))
     catch err
         _warn_not_pd(err)
-        return lu(Kll)
+        return lu(Kcc)
     end
 end
 
 """
     ShiftInvertOperator
 
-Applies `D Kll^-1 D` with `D = sqrt(Mll)`, as a matrix free operator for Arpack.
+Applies `D Kcc^-1 D` with `D = sqrt(Mcc)`, as a matrix free operator for Arpack.
 
-The generalised problem `Kll X = Mll X W` becomes the standard symmetric one
-`A u = w u` with `A = D^-1 Kll D^-1` and `u = D x`. Its smallest eigenvalues are the
-largest of `A^-1 = D Kll^-1 D`, which is what this operator applies. Two things follow:
+The generalised problem `Kcc X = Mcc X W` becomes the standard symmetric one
+`A u = w u` with `A = D^-1 Kcc D^-1` and `u = D x`. Its smallest eigenvalues are the
+largest of `A^-1 = D Kcc^-1 D`, which is what this operator applies. Two things follow:
 shift-invert without asking Arpack for it, so an existing factorization is reused
 instead of a second one being built, and eigenvectors orthonormal in the standard sense,
 so `x = D^-1 u` is mass normalised without a further pass.
 
 # Fields
-- `factorization`: Factorization of `Kll`
+- `factorization`: Factorization of `Kcc`
 - `scale::Vector{Float64}`: Diagonal of `D`, the square root of the lumped mass
 - `buffer::Vector{Float64}`: Work space
 """
@@ -200,47 +200,163 @@ end
 Base.:*(op::ShiftInvertOperator, x::AbstractVector{Float64}) = mul!(similar(x), op, x)
 
 """
-    fixed_interface_modes(Kll, Mll, n_modes; tol, maxiter)
+    GeneralizedShiftInvertOperator
 
-The `n_modes` lowest eigenpairs of `Kll X = Mll X W`, mass normalised.
+Applies `Kcc^-1 Mcc`, as a matrix free operator for Arpack, for a `Mcc` that need not be
+diagonal.
 
-Rows of `Kll` without any entry are excluded from the eigenvalue problem and their
-entries in the modes stay zero, so that an isolated condensed degree of freedom does not
-make the problem singular.
+Unlike [`ShiftInvertOperator`](@ref), there is no `D = sqrt(Mcc)` scaling that turns the
+generalised problem `Kcc X = Mcc X W` into a standard symmetric one -- that scaling only
+works for a diagonal `Mcc`, true only for a cascade's very first level (see
+[`reduce_matrices`](@ref)). The generalised problem still reduces to shift-invert: its
+smallest eigenvalues `w` are the largest of `A = Kcc^-1 Mcc`, `A x = (1/w) x`, reusing
+whatever factorization of `Kcc` the caller already holds instead of a second one being
+built. `A` is not symmetric even though `Kcc` and `Mcc` both are, so Arpack runs its
+general (Arnoldi) iteration here, not the symmetric Lanczos one -- slower per iteration
+than [`ShiftInvertOperator`](@ref), and the eigenvectors come out `Mcc`-orthogonal only up
+to Arnoldi's own tolerance, not exactly, so mass normalisation is a separate pass
+afterwards rather than automatic.
 
-The eigenpairs come from shift-invert Lanczos through [`ShiftInvertOperator`](@ref), so
-`Kll` is never densified. A dense `eigen` would cost `O(nl^2)` memory and `O(nl^3)` time
-for all `nl` eigenpairs, of which `n_modes` are wanted. Below a few hundred degrees of
-freedom the dense route is the cheaper one and is taken instead.
+# Fields
+- `factorization`: Factorization of `Kcc`
+- `Mcc::AbstractMatrix`: Mass of the condensed part, possibly non-diagonal
+- `buffer::Vector{Float64}`: Work space, `Mcc * x` before the solve
+"""
+struct GeneralizedShiftInvertOperator{F,M<:AbstractMatrix}
+    factorization::F
+    Mcc::M
+    buffer::Vector{Float64}
+end
 
-The eigenvectors are mass normalised, `X' Mll X = I`. Without that the modal blocks of
-the reduced matrices have no defined scaling.
+Base.size(op::GeneralizedShiftInvertOperator) = (length(op.buffer), length(op.buffer))
+Base.size(op::GeneralizedShiftInvertOperator, ::Integer) = length(op.buffer)
+Base.eltype(::GeneralizedShiftInvertOperator) = Float64
+LinearAlgebra.issymmetric(::GeneralizedShiftInvertOperator) = false
+LinearAlgebra.ishermitian(::GeneralizedShiftInvertOperator) = false
 
-Both routes treat `Kll` as symmetric. For an unsymmetric `Kll` the modes are those of
-its symmetric part, which is an approximation — the coupling blocks formed in
-[`reduce_matrices`](@ref) no longer cancel then, which is why they are formed
-explicitly.
+function LinearAlgebra.mul!(y::AbstractVector{Float64}, op::GeneralizedShiftInvertOperator,
+                            x::AbstractVector{Float64})
+    mul!(op.buffer, op.Mcc, x)
+    ldiv!(y, op.factorization, op.buffer)
+    return y
+end
+
+function Base.:*(op::GeneralizedShiftInvertOperator, x::AbstractVector{Float64})
+    mul!(similar(x),
+         op, x)
+end
+
+"""
+    fixed_interface_modes_general(factorization, Kcc, Mcc, n_modes; tol, maxiter)
+
+The `n_modes` lowest eigenpairs of `Kcc X = Mcc X W`, mass normalised, for a general (not
+necessarily diagonal) `Mcc`, reusing a factorization of `Kcc` the caller already computed.
+
+Below a few hundred degrees of freedom, or for a dense `Kcc`, the plain dense
+`eigen(Symmetric(Kcc), Symmetric(Mcc))` from [`fixed_interface_modes_dense`](@ref) is
+cheaper and simpler and is used instead. Above that,
+[`GeneralizedShiftInvertOperator`](@ref) avoids ever densifying `Kcc`/`Mcc` or solving for
+more than `n_modes` eigenpairs -- what made a cascade level with an outlier-sized shell
+(see `dense_shell_limit` in [`reduce_matrices`](@ref)) and `n_modes > 0` cost `O(nc^3)`
+time and `O(nc^2)` memory before, dense or not.
 
 # Arguments
-- `Kll::AbstractMatrix`: Stiffness of the condensed part
-- `Mll::Diagonal`: Lumped mass of the condensed part
+- `factorization`: Factorization of `Kcc`, as already computed by
+  [`factorize_condensed!`](@ref)
+- `Kcc::AbstractMatrix`: Stiffness of the condensed part
+- `Mcc::AbstractMatrix`: Mass of the condensed part, possibly non-diagonal
 - `n_modes::Int64`: Number of modes
 # Keywords
 - `tol::Float64`: Relative tolerance handed to Arpack
 - `maxiter::Int64`: Iteration limit per attempt
 # Returns
-- `X::Matrix{Float64}`: Modes, `nl x n_modes`
+- `X::Matrix{Float64}`: Modes, `nc x n_modes`, mass normalised (`X' Mcc X = I`)
 - `w::Vector{Float64}`: Eigenvalues, ascending
 """
-function fixed_interface_modes(Kll::AbstractMatrix, Mll::Diagonal, n_modes::Int64;
+function fixed_interface_modes_general(factorization, Kcc::AbstractMatrix,
+                                       Mcc::AbstractMatrix, n_modes::Int64;
+                                       tol::Float64 = 1e-10, maxiter::Int64 = 1000)
+    nc = size(Kcc, 1)
+    n_modes == 0 && return zeros(nc, 0), Float64[]
+    if !issparse(Kcc) || nc <= 500
+        return fixed_interface_modes_dense(Kcc, Mcc, n_modes)
+    end
+
+    operator = GeneralizedShiftInvertOperator(factorization, Mcc,
+                                              Vector{Float64}(undef, nc))
+    last_error = nothing
+    for ncv in (min(nc, max(20, 4 * n_modes + 1)),
+        min(nc, max(60, 10 * n_modes + 1)),
+        min(nc, max(150, 20 * n_modes + 1)))
+        try
+            theta,
+            U = eigs(operator; nev = n_modes, which = :LM, ncv = ncv,
+                     tol = tol, maxiter = maxiter)
+            w = 1.0 ./ real.(theta)
+            order = sortperm(w)
+            X = real.(U)[:, order]
+            # Arnoldi's Mcc-orthogonality only holds up to its own tolerance, not
+            # exactly like the symmetric Lanczos path in fixed_interface_modes -- each
+            # mode is normalised on its own rather than jointly orthogonalised, which is
+            # enough since distinct eigenvalues already make X Mcc-orthogonal in exact
+            # arithmetic.
+            for k in 1:n_modes
+                @views nrm = sqrt(dot(X[:, k], Mcc * X[:, k]))
+                X[:, k] ./= nrm
+            end
+            return X, w[order]
+        catch err
+            last_error = err
+            @debug "Arpack did not converge, retrying with a larger subspace" ncv
+        end
+    end
+
+    @warn "Arpack did not converge for $n_modes modes." exception=last_error
+    throw(ErrorException("Could not compute $n_modes fixed-interface modes."))
+end
+
+"""
+    fixed_interface_modes(Kcc, Mcc, n_modes; tol, maxiter)
+
+The `n_modes` lowest eigenpairs of `Kcc X = Mcc X W`, mass normalised.
+
+Rows of `Kcc` without any entry are excluded from the eigenvalue problem and their
+entries in the modes stay zero, so that an isolated condensed degree of freedom does not
+make the problem singular.
+
+The eigenpairs come from shift-invert Lanczos through [`ShiftInvertOperator`](@ref), so
+`Kcc` is never densified. A dense `eigen` would cost `O(nc^2)` memory and `O(nc^3)` time
+for all `nc` eigenpairs, of which `n_modes` are wanted. Below a few hundred degrees of
+freedom the dense route is the cheaper one and is taken instead.
+
+The eigenvectors are mass normalised, `X' Mcc X = I`. Without that the modal blocks of
+the reduced matrices have no defined scaling.
+
+Both routes treat `Kcc` as symmetric. For an unsymmetric `Kcc` the modes are those of
+its symmetric part, which is an approximation — the coupling blocks formed in
+[`reduce_matrices`](@ref) no longer cancel then, which is why they are formed
+explicitly.
+
+# Arguments
+- `Kcc::AbstractMatrix`: Stiffness of the condensed part
+- `Mcc::Diagonal`: Lumped mass of the condensed part
+- `n_modes::Int64`: Number of modes
+# Keywords
+- `tol::Float64`: Relative tolerance handed to Arpack
+- `maxiter::Int64`: Iteration limit per attempt
+# Returns
+- `X::Matrix{Float64}`: Modes, `nc x n_modes`
+- `w::Vector{Float64}`: Eigenvalues, ascending
+"""
+function fixed_interface_modes(Kcc::AbstractMatrix, Mcc::Diagonal, n_modes::Int64;
                                tol::Float64 = 1e-10, maxiter::Int64 = 1000)
-    nl = size(Kll, 1)
-    X = zeros(nl, n_modes)
+    nc = size(Kcc, 1)
+    X = zeros(nc, n_modes)
     n_modes == 0 && return X, Float64[]
 
-    active = nonzero_rows(Kll)
-    if length(active) < nl
-        @warn "$(nl - length(active)) of $nl condensed degrees of freedom carry no " *
+    active = nonzero_rows(Kcc)
+    if length(active) < nc
+        @warn "$(nc - length(active)) of $nc condensed degrees of freedom carry no " *
               "stiffness and are excluded from the eigenvalue problem. Check whether " *
               "every condensed node is still tied to the retained region."
     end
@@ -249,11 +365,11 @@ function fixed_interface_modes(Kll::AbstractMatrix, Mll::Diagonal, n_modes::Int6
                             "degrees of freedom carry stiffness."))
     end
 
-    K_active = Kll[active, active]
-    mass_active = diag(Mll)[active]
+    K_active = Kcc[active, active]
+    mass_active = diag(Mcc)[active]
     scale = sqrt.(mass_active)
 
-    if !issparse(Kll) || length(active) <= 500
+    if !issparse(Kcc) || length(active) <= 500
         # The scaling by sqrt(M) turns the generalised problem into a standard symmetric
         # one, whose eigenvectors come out orthonormal — which is the mass
         # normalisation, for free.
@@ -294,42 +410,42 @@ function fixed_interface_modes(Kll::AbstractMatrix, Mll::Diagonal, n_modes::Int6
 end
 
 """
-    recovery_modes(factorization, Klr, coupling; block_size = 512)
+    recovery_modes(factorization, Kcr, coupling; block_size = 512)
 
-Recovery modes `B = Kll^-1 Klr` for the coupling degrees of freedom only.
+Recovery modes `B = Kcc^-1 Kcr` for the coupling degrees of freedom only.
 
-Columns of `Klr` outside `coupling` are empty, so their recovery modes are zero and are
-neither solved for nor stored. The result is `nl x length(coupling)` instead of
-`nl x nr`.
+Columns of `Kcr` outside `coupling` are empty, so their recovery modes are zero and are
+neither solved for nor stored. The result is `nc x length(coupling)` instead of
+`nc x nr`.
 
 Solved in column blocks so that the dense right hand side buffer stays at
-`nl x block_size` rather than being a second matrix of the full size.
+`nc x block_size` rather than being a second matrix of the full size.
 
 # Arguments
-- `factorization`: Factorization of `Kll`
-- `Klr::AbstractMatrix`: Coupling block, condensed to retained
+- `factorization`: Factorization of `Kcc`
+- `Kcr::AbstractMatrix`: Coupling block, condensed to retained
 - `coupling::Vector{Int64}`: Columns to solve for
 # Keywords
 - `block_size::Int64`: Right hand sides solved at once
 # Returns
-- `::Matrix{Float64}`: The recovery modes, `nl x length(coupling)`
+- `::Matrix{Float64}`: The recovery modes, `nc x length(coupling)`
 """
-function recovery_modes(factorization, Klr::AbstractMatrix, coupling::Vector{Int64};
+function recovery_modes(factorization, Kcr::AbstractMatrix, coupling::Vector{Int64};
                         block_size::Int64 = 512)
-    nl = size(Klr, 1)
-    nc = length(coupling)
-    B = Matrix{Float64}(undef, nl, nc)
-    nc == 0 && return B
+    nc = size(Kcr, 1)
+    nrc = length(coupling)
+    B = Matrix{Float64}(undef, nc, nrc)
+    nrc == 0 && return B
 
-    width = min(block_size, nc)
-    rhs = Matrix{Float64}(undef, nl, width)
+    width = min(block_size, nrc)
+    rhs = Matrix{Float64}(undef, nc, width)
 
-    for first in 1:width:nc
-        last = min(first + width - 1, nc)
+    for first in 1:width:nrc
+        last = min(first + width - 1, nrc)
         local_columns = first:last
         buffer = view(rhs, :, 1:length(local_columns))
         fill!(buffer, 0.0)
-        copy_sparse_columns!(buffer, Klr, view(coupling, local_columns))
+        copy_sparse_columns!(buffer, Kcr, view(coupling, local_columns))
         ldiv!(view(B, :, local_columns), factorization, buffer)
     end
 
@@ -366,8 +482,8 @@ end
 Measures how far the stiffness is from symmetric, sampling stored entries.
 
 Craig-Bampton is built on symmetry: the fixed-interface modes use the symmetric solver,
-and the classical derivation drops the stiffness coupling blocks because `Kll B = Klr`
-makes them cancel — which needs `Krl = Klr'`. In peridynamics the stiffness is not
+and the classical derivation drops the stiffness coupling blocks because `Kcc B = Kcr`
+makes them cancel — which needs `Krc = Kcr'`. In peridynamics the stiffness is not
 symmetric in general, two points with different horizons do not contribute equally to
 each other, so the deviation is measured rather than assumed away. The coupling blocks
 are formed explicitly either way; this only reports how much they will carry.
@@ -478,8 +594,8 @@ mass and shifts the eigenfrequencies, but never responds, which makes the result
 than the static condensation it was meant to improve on — and, characteristically,
 independent of the number of modes.
 
-There are two paths. `Mbm` drives the modes through the acceleration of the retained
-degrees of freedom and is always present. `Kbm` drives them through the displacement and
+There are two paths. `Mrcm` drives the modes through the acceleration of the retained
+degrees of freedom and is always present. `Krcm` drives them through the displacement and
 vanishes exactly for a symmetric stiffness, so an empty one is only expected there.
 
 # Arguments
@@ -521,7 +637,7 @@ function report_modal_coupling(K_reduced::SparseMatrixCSC, M_reduced::SparseMatr
 end
 
 """
-    reduce_stage(K, M_diag, r, l, n_modes = 1; block_size = 512,
+    reduce_stage(K, M_diag, r, c, n_modes = 1; block_size = 512,
                 check_symmetry_sample = 2000)
 
 Craig-Bampton reduction of a stiffness and a lumped mass matrix -- one stage.
@@ -531,23 +647,23 @@ The single-region reduction, unchanged from `CraigBampton.reduce_matrices`; the 
 previous stage's reduced boundary forward into the next slice instead of ever factorizing
 the full condensed region at once.
 
-The degrees of freedom are split into the retained ones `r` and the condensed ones `l`.
+The degrees of freedom are split into the retained ones `r` and the condensed ones `c`.
 The retained ones stay physical coordinates, the condensed ones are represented by the
-`n_modes` lowest fixed-interface modes `X` of `Kll X = Mll X W`:
+`n_modes` lowest fixed-interface modes `X` of `Kcc X = Mcc X W`:
 
     | u_r |   | I   0 | | u_r |
-    | u_l | = | -B  X | | eta |
+    | u_c | = | -B  X | | eta |
 
-with the recovery modes `B = Kll^-1 Klr`, the same static relation Guyan uses. The
+with the recovery modes `B = Kcc^-1 Kcr`, the same static relation Guyan uses. The
 reduced blocks are
 
-    Kbb = Krr - Krl B          Kmm = X' Kll X
-    Kbm = Krl X - B' Kll X     Kmb = X' Klr - X' Kll B
-    Mbb = Mrr + B' Mll B       Mmm = I
-    Mbm = -B' Mll X
+    Krcrc = Krr - Krc B         Kmm = X' Kcc X
+    Krcm = Krc X - B' Kcc X     Kmrc = X' Kcr - X' Kcc B
+    Mrcrc = Mrr + B' Mcc B      Mmm = I
+    Mrcm = -B' Mcc X
 
-The textbook derivation drops `Kbm` and `Kmb`: with `Kll B = Klr` the two contributions
-to `Kbm` become `Krl X - Klr' X`, which is zero for `Krl = Klr'`. That holds for a
+The textbook derivation drops `Krcm` and `Kmrc`: with `Kcc B = Kcr` the two contributions
+to `Krcm` become `Krc X - Kcr' X`, which is zero for `Krc = Kcr'`. That holds for a
 symmetric stiffness only. Peridynamic stiffness matrices are not symmetric in general —
 two points with different horizons do not contribute equally to each other — and
 dropping the blocks then removes the path through which a displacement of the retained
@@ -556,14 +672,14 @@ underexcited, and adding modes no longer changes the answer. The blocks are ther
 formed explicitly; for a symmetric `K` they come out at rounding level and are dropped
 by the threshold, leaving the classical result unchanged.
 
-`Kmm` is formed as `X' Kll X` for the same reason, rather than being set to the
-eigenvalues, which are the right answer only for a symmetric `Kll`.
+`Kmm` is formed as `X' Kcc X` for the same reason, rather than being set to the
+eigenvalues, which are the right answer only for a symmetric `Kcc`.
 
-The mass coupling terms `Mrl X` vanish for a genuine reason and are not formed: the mass
+The mass coupling terms `Mrc X` vanish for a genuine reason and are not formed: the mass
 matrix is diagonal and the two index sets are disjoint.
 
 The reduced matrices stay sparse. Only retained degrees of freedom with a bond into the
-condensed region appear in `Klr`; the reduction fills in exactly their rows and columns,
+condensed region appear in `Kcr`; the reduction fills in exactly their rows and columns,
 and everything else keeps the sparsity of `Krr`. Both the solves for `B` and the dense
 blocks therefore scale with the size of the coupling layer, not with the number of
 retained degrees of freedom.
@@ -576,7 +692,7 @@ retained degrees of freedom.
   `K*u` delivers force densities (see `Guyan.reduce_matrices`), so this is a mass
   density, not a physical mass; it is used as-is, with no volume weighting.
 - `r::AbstractVector{<:Integer}`: Indices of the retained degrees of freedom
-- `l::AbstractVector{<:Integer}`: Indices of the condensed degrees of freedom
+- `c::AbstractVector{<:Integer}`: Indices of the condensed degrees of freedom
 - `n_modes::Integer`: Number of fixed-interface modes to keep
 # Keywords
 - `block_size::Int64`: Right hand sides solved at once for the recovery modes
@@ -588,22 +704,22 @@ retained degrees of freedom.
 function reduce_stage(K::AbstractMatrix,
                       M_diag::AbstractVector,
                       r::AbstractVector{<:Integer},
-                      l::AbstractVector{<:Integer},
+                      c::AbstractVector{<:Integer},
                       n_modes::Integer = 1;
                       block_size::Int64 = 512,
                       check_symmetry_sample::Int64 = 2000)
     r = collect(Int64, r)
-    l = collect(Int64, l)
+    c = collect(Int64, c)
     n_modes = Int64(n_modes)
 
     nr = length(r)
-    nl = length(l)
+    nc = length(c)
 
-    if !isempty(intersect(r, l))
+    if !isempty(intersect(r, c))
         throw(ArgumentError("Retained and condensed index sets overlap."))
     end
-    if n_modes < 0 || n_modes > nl
-        throw(ArgumentError("n_modes = $n_modes, but only $nl condensed degrees of " *
+    if n_modes < 0 || n_modes > nc
+        throw(ArgumentError("n_modes = $n_modes, but only $nc condensed degrees of " *
                             "freedom are available."))
     end
 
@@ -613,33 +729,33 @@ function reduce_stage(K::AbstractMatrix,
 
     @timeit "CB extract submatrices" begin
         Krr = K[r, r]
-        Krl = K[r, l]
-        Klr = K[l, r]
-        Kll = K[l, l]
+        Krc = K[r, c]
+        Kcr = K[c, r]
+        Kcc = K[c, c]
         # M_diag is a mass density, matching the force densities K*u delivers; see
         # Guyan.reduce_matrices for why no volume weighting belongs here.
-        mass_l = M_diag[l]
+        mass_c = M_diag[c]
         mass_r = M_diag[r]
-        Mll = Diagonal(mass_l)
+        Mcc = Diagonal(mass_c)
     end
 
-    # A retained dof with a nonzero Krl row but (for an unsymmetric K) a zero Klr
+    # A retained dof with a nonzero Krc row but (for an unsymmetric K) a zero Kcr
     # column would otherwise be silently dropped from the coupling correction; see
     # Guyan.reduce_matrices for the same fix on the same asymmetry.
-    coupling = union(nonzero_rows(Krl), nonzero_columns(Klr))
-    nc = length(coupling)
+    coupling = union(nonzero_rows(Krc), nonzero_columns(Kcr))
+    nrc = length(coupling)
 
-    @info "Craig-Bampton: $nr retained, $nl condensed, $nc coupling, $n_modes modes; " *
+    @info "Craig-Bampton: $nr retained, $nc condensed, $nrc coupling, $n_modes modes; " *
           "reduced size $(nr + n_modes), dense blocks of " *
-          "$(round(nc^2 * 8 / 2^20; digits = 1)) MiB"
+          "$(round(nrc^2 * 8 / 2^20; digits = 1)) MiB"
 
-    @timeit "CB factorize Kll" factorization=factorize_condensed!(Kll)
+    @timeit "CB factorize Kcc" factorization=factorize_condensed!(Kcc)
 
-    @timeit "CB recovery modes" B=recovery_modes(factorization, Klr, coupling;
+    @timeit "CB recovery modes" B=recovery_modes(factorization, Kcr, coupling;
                                                  block_size = block_size)
 
-    # The modes are normalised against Mll, so X' Mll X = I.
-    @timeit "CB fixed interface modes" X, w=fixed_interface_modes(Kll, Mll, n_modes)
+    # The modes are normalised against Mcc, so X' Mcc X = I.
+    @timeit "CB fixed interface modes" X, w=fixed_interface_modes(Kcc, Mcc, n_modes)
 
     if n_modes > 0
         f_lo = sqrt(w[1]) / (2 * pi)
@@ -654,46 +770,46 @@ function reduce_stage(K::AbstractMatrix,
     @timeit "CB reduced stiffness" begin
         rows, columns, values = findnz(sparse(Krr))
 
-        if nc > 0
-            # Only the coupling rows of Krl carry entries, so the product is nc x nc.
-            Kbb_fill = Matrix{Float64}(undef, nc, nc)
-            mul!(Kbb_fill, Krl[coupling, :], B, -1.0, 0.0)
-            add_dense_block!(rows, columns, values, Kbb_fill, coupling)
+        if nrc > 0
+            # Only the coupling rows of Krc carry entries, so the product is nrc x nrc.
+            Krcrc_fill = Matrix{Float64}(undef, nrc, nrc)
+            mul!(Krcrc_fill, Krc[coupling, :], B, -1.0, 0.0)
+            add_dense_block!(rows, columns, values, Krcrc_fill, coupling)
         end
 
         if n_modes > 0
-            Kll_X = Kll * X                                  # nl x n_modes
+            Kcc_X = Kcc * X                                  # nc x n_modes
 
-            if nc > 0
-                # Kbm = Krl X - B' Kll X
-                Kbm = Matrix{Float64}(undef, nc, n_modes)
-                mul!(Kbm, Krl[coupling, :], X)
-                mul!(Kbm, transpose(B), Kll_X, -1.0, 1.0)
+            if nrc > 0
+                # Krcm = Krc X - B' Kcc X
+                Krcm = Matrix{Float64}(undef, nrc, n_modes)
+                mul!(Krcm, Krc[coupling, :], X)
+                mul!(Krcm, transpose(B), Kcc_X, -1.0, 1.0)
 
-                # For an unsymmetric K the transposed block is not Kbm', so it is
-                # formed separately: Kmb = X' Klr - (Kll' X)' B
-                Kmb = Matrix{Float64}(undef, n_modes, nc)
-                mul!(Kmb, transpose(X), Klr[:, coupling])
-                mul!(Kmb, transpose(transpose(Kll) * X), B, -1.0, 1.0)
+                # For an unsymmetric K the transposed block is not Krcm', so it is
+                # formed separately: Kmrc = X' Kcr - (Kcc' X)' B
+                Kmrc = Matrix{Float64}(undef, n_modes, nrc)
+                mul!(Kmrc, transpose(X), Kcr[:, coupling])
+                mul!(Kmrc, transpose(transpose(Kcc) * X), B, -1.0, 1.0)
 
                 threshold = 1.0e-12 *
-                            max(maximum(abs, Kbm; init = 0.0),
-                                maximum(abs, Kmb; init = 0.0), eps())
-                add_dense_block!(rows, columns, values, Kbm, coupling, modal_positions;
+                            max(maximum(abs, Krcm; init = 0.0),
+                                maximum(abs, Kmrc; init = 0.0), eps())
+                add_dense_block!(rows, columns, values, Krcm, coupling, modal_positions;
                                  threshold = threshold)
-                add_dense_block!(rows, columns, values, Kmb, modal_positions, coupling;
+                add_dense_block!(rows, columns, values, Kmrc, modal_positions, coupling;
                                  threshold = threshold)
 
                 reference = maximum(abs, nonzeros(Krr); init = eps())
-                @info "Craig-Bampton modal stiffness coupling: largest |Kbm| = " *
-                      "$(round(maximum(abs, Kbm; init = 0.0); sigdigits = 3)), " *
-                      "|Kmb| = $(round(maximum(abs, Kmb; init = 0.0); sigdigits = 3)), " *
+                @info "Craig-Bampton modal stiffness coupling: largest |Krcm| = " *
+                      "$(round(maximum(abs, Krcm; init = 0.0); sigdigits = 3)), " *
+                      "|Kmrc| = $(round(maximum(abs, Kmrc; init = 0.0); sigdigits = 3)), " *
                       "against $(round(reference; sigdigits = 3)) in Krr"
             end
 
-            # Kmm = X' Kll X. Equal to diagm(w) for a symmetric Kll; formed explicitly
+            # Kmm = X' Kcc X. Equal to diagm(w) for a symmetric Kcc; formed explicitly
             # so that an unsymmetric one does not silently fall back to the eigenvalues.
-            Kmm = transpose(X) * Kll_X
+            Kmm = transpose(X) * Kcc_X
             add_dense_block!(rows, columns, values, Kmm, modal_positions,
                              modal_positions)
         end
@@ -702,11 +818,11 @@ function reduce_stage(K::AbstractMatrix,
     end
 
     @timeit "CB reduced mass" begin
-        # Both mass blocks have the form Y' Mll Z with a diagonal Mll, so scaling the
-        # factors by sqrt(Mll) turns them into plain products. B and X are scaled in
+        # Both mass blocks have the form Y' Mcc Z with a diagonal Mcc, so scaling the
+        # factors by sqrt(Mcc) turns them into plain products. B and X are scaled in
         # place, which is why the stiffness block above had to be formed first.
-        root_mass = sqrt.(mass_l)
-        @inbounds for j in 1:nc, i in 1:nl
+        root_mass = sqrt.(mass_c)
+        @inbounds for j in 1:nrc, i in 1:nc
             B[i, j] *= root_mass[i]
         end
 
@@ -714,10 +830,10 @@ function reduce_stage(K::AbstractMatrix,
         columns = Int64[]
         values = Float64[]
 
-        if nc > 0
-            Mbb_fill = Matrix{Float64}(undef, nc, nc)
-            mul!(Mbb_fill, transpose(B), B)
-            add_dense_block!(rows, columns, values, Mbb_fill, coupling)
+        if nrc > 0
+            Mrcrc_fill = Matrix{Float64}(undef, nrc, nrc)
+            mul!(Mrcrc_fill, transpose(B), B)
+            add_dense_block!(rows, columns, values, Mrcrc_fill, coupling)
         end
 
         for local_index in eachindex(r)
@@ -726,18 +842,18 @@ function reduce_stage(K::AbstractMatrix,
             push!(values, mass_r[local_index])
         end
 
-        if n_modes > 0 && nc > 0
-            @inbounds for k in 1:n_modes, i in 1:nl
+        if n_modes > 0 && nrc > 0
+            @inbounds for k in 1:n_modes, i in 1:nc
                 X[i, k] *= root_mass[i]
             end
-            # Mbm = -B' Mll X, the minus coming from u_l = -B u_r + X eta.
-            Mbm = Matrix{Float64}(undef, nc, n_modes)
-            mul!(Mbm, transpose(B), X, -1.0, 0.0)
+            # Mrcm = -B' Mcc X, the minus coming from u_c = -B u_r + X eta.
+            Mrcm = Matrix{Float64}(undef, nrc, n_modes)
+            mul!(Mrcm, transpose(B), X, -1.0, 0.0)
 
-            threshold = 1.0e-12 * max(maximum(abs, Mbm; init = 0.0), eps())
-            add_dense_block!(rows, columns, values, Mbm, coupling, modal_positions;
+            threshold = 1.0e-12 * max(maximum(abs, Mrcm; init = 0.0), eps())
+            add_dense_block!(rows, columns, values, Mrcm, coupling, modal_positions;
                              threshold = threshold)
-            add_dense_block!(rows, columns, values, transpose(Mbm), modal_positions,
+            add_dense_block!(rows, columns, values, transpose(Mrcm), modal_positions,
                              coupling; threshold = threshold)
         end
 
@@ -759,51 +875,53 @@ function reduce_stage(K::AbstractMatrix,
 end
 
 """
-    fixed_interface_modes_dense(Kll, Mll, n_modes)
+    fixed_interface_modes_dense(Kcc, Mcc, n_modes)
 
-The `n_modes` lowest eigenpairs of `Kll X = Mll X W`, mass normalised, for a general
-(not necessarily diagonal) symmetric positive definite `Mll`.
+The `n_modes` lowest eigenpairs of `Kcc X = Mcc X W`, mass normalised, for a general
+(not necessarily diagonal) symmetric positive definite `Mcc`.
 
-Used instead of [`fixed_interface_modes`](@ref) for a cascade stage's own local modes:
-`Mll` there is a cascade stage's own group, small by construction (bounded by
-`stage_size`), so the dense generalised eigenproblem -- `LinearAlgebra.eigen` on the
-matrix pencil, `B`-orthonormal eigenvectors by construction (`X' Mll X = I`) -- is both
+Used instead of [`fixed_interface_modes`](@ref) for a cascade level's own local modes:
+`Mcc` there is a cascade level's own shell plus whatever it absorbs from the previous
+level, small by construction (bounded by the shell width transverse to `r`, not by the
+condensed region's total size -- see [`reduce_matrices`](@ref)), so the dense
+generalised eigenproblem -- `LinearAlgebra.eigen` on the
+matrix pencil, `B`-orthonormal eigenvectors by construction (`X' Mcc X = I`) -- is both
 simpler and cheap enough, unlike [`fixed_interface_modes`](@ref)'s sparse Arpack path
-built for a single, potentially large, whole condensed region. `Mll` needs the general
+built for a single, potentially large, whole condensed region. `Mcc` needs the general
 form here specifically because a cascade stage's own group can itself contain a degree
 of freedom carried forward from an earlier stage (see [`reduce_matrices`](@ref)), whose
-mass there is a full `Mbb` block, not part of the original lumped diagonal.
+mass there is a full `Mrcrc` block, not part of the original lumped diagonal.
 
 # Arguments
-- `Kll::AbstractMatrix`: Stiffness of the condensed part
-- `Mll::AbstractMatrix`: Mass of the condensed part, possibly non-diagonal
+- `Kcc::AbstractMatrix`: Stiffness of the condensed part
+- `Mcc::AbstractMatrix`: Mass of the condensed part, possibly non-diagonal
 - `n_modes::Int64`: Number of modes
 # Returns
-- `X::Matrix{Float64}`: Modes, `nl x n_modes`
+- `X::Matrix{Float64}`: Modes, `nc x n_modes`
 - `w::Vector{Float64}`: Eigenvalues, ascending
 """
-function fixed_interface_modes_dense(Kll::AbstractMatrix, Mll::AbstractMatrix,
+function fixed_interface_modes_dense(Kcc::AbstractMatrix, Mcc::AbstractMatrix,
                                      n_modes::Int64)
-    nl = size(Kll, 1)
-    n_modes == 0 && return zeros(nl, 0), Float64[]
-    if n_modes > nl
-        throw(ArgumentError("n_modes = $n_modes, but this stage's group only has $nl " *
+    nc = size(Kcc, 1)
+    n_modes == 0 && return zeros(nc, 0), Float64[]
+    if n_modes > nc
+        throw(ArgumentError("n_modes = $n_modes, but this stage's group only has $nc " *
                             "degrees of freedom."))
     end
-    factorization = eigen(Symmetric(Matrix(Kll)), Symmetric(Matrix(Mll)))
+    factorization = eigen(Symmetric(Matrix(Kcc)), Symmetric(Matrix(Mcc)))
     return factorization.vectors[:, 1:n_modes], factorization.values[1:n_modes]
 end
 
 """
-    reduce_stage_dense(K, Mll_source, r, l, n_modes = 0; block_size = 512)
+    reduce_stage_dense(K, Mcc_source, r, c, n_modes = 0; block_size = 512)
 
-Condensation of one cascade stage where the condensed block's mass, `Mll`, is not
+Condensation of one cascade stage where the condensed block's mass, `Mcc`, is not
 necessarily diagonal, optionally retaining that stage's own fixed-interface normal
 modes.
 
 Used instead of [`reduce_stage`](@ref) exactly when a cascade stage's own group contains
 a degree of freedom that was carried forward, retained, from an earlier stage: its mass
-there is `Mbb = Mrr + B' Mll B` from that earlier stage, generally full, not the lumped
+there is `Mrcrc = Mrr + B' Mcc B` from that earlier stage, generally full, not the lumped
 diagonal `reduce_stage` assumes. Retaining modes here is what makes a cascade a
 Craig-Bampton one and not a purely static (Guyan) one: since a stage's own condensed
 group is discarded once eliminated, its internal dynamics can only be captured *during*
@@ -814,18 +932,18 @@ rows/columns of the boundary block handed to the next stage, and are never elimi
 again.
 
 The same congruence transform as [`reduce_stage`](@ref) applies, generalised for a
-possibly non-diagonal `Mrl`/`Mlr`: `Mbm = Mrl X - B' Mll X` (`reduce_stage`'s `-B' Mll X`
-alone assumes `Mrl = 0`, true only for the original lumped mass, not for a carried-in
-block). `M` stays symmetric throughout the cascade, so `Mmb = Mbm'` is used directly
+possibly non-diagonal `Mrc`/`Mcr`: `Mrcm = Mrc X - B' Mcc X` (`reduce_stage`'s `-B' Mcc X`
+alone assumes `Mrc = 0`, true only for the original lumped mass, not for a carried-in
+block). `M` stays symmetric throughout the cascade, so `Mmrc = Mrcm'` is used directly
 rather than formed separately, unlike the stiffness coupling blocks, which need both
-`Kbm` and `Kmb` explicitly since `K` need not be symmetric.
+`Krcm` and `Kmrc` explicitly since `K` need not be symmetric.
 
 # Arguments
 - `K::AbstractMatrix`: Stiffness matrix, this stage's local slice
-- `Mll_source::AbstractMatrix{Float64}`: Mass matrix, this stage's local slice, `l` block
+- `Mcc_source::AbstractMatrix{Float64}`: Mass matrix, this stage's local slice, `c` block
   possibly non-diagonal
 - `r::AbstractVector{<:Integer}`: Indices of the retained degrees of freedom
-- `l::AbstractVector{<:Integer}`: Indices of the condensed degrees of freedom
+- `c::AbstractVector{<:Integer}`: Indices of the condensed degrees of freedom
 - `n_modes::Integer`: Number of this stage's own fixed-interface modes to retain
 # Keywords
 - `block_size::Int64`: Right hand sides solved at once for the recovery modes
@@ -833,31 +951,48 @@ rather than formed separately, unlike the stiffness coupling blocks, which need 
 - `K_reduced::SparseMatrixCSC`, `M_reduced::SparseMatrixCSC`: Reduced stiffness and mass,
   size `length(r) + n_modes`
 """
-function reduce_stage_dense(K::AbstractMatrix, Mll_source::AbstractMatrix{Float64},
-                            r::AbstractVector{<:Integer}, l::AbstractVector{<:Integer},
+function reduce_stage_dense(K::AbstractMatrix, Mcc_source::AbstractMatrix{Float64},
+                            r::AbstractVector{<:Integer}, c::AbstractVector{<:Integer},
                             n_modes::Integer = 0; block_size::Int64 = 512)
     r = collect(Int64, r)
-    l = collect(Int64, l)
+    c = collect(Int64, c)
     n_modes = Int64(n_modes)
     nr = length(r)
-    nl = length(l)
+    nc = length(c)
 
     Krr = K[r, r]
-    Krl = K[r, l]
-    Klr = K[l, r]
-    Kll = K[l, l]
-    Mrr = Mll_source[r, r]
-    Mrl = Mll_source[r, l]
-    Mlr = Mll_source[l, r]
-    Mll = Mll_source[l, l]
+    Krc = K[r, c]
+    Kcr = K[c, r]
+    Kcc = K[c, c]
+    Mrr = Mcc_source[r, r]
+    Mrc = Mcc_source[r, c]
+    Mcr = Mcc_source[c, r]
+    Mcc = Mcc_source[c, c]
 
-    coupling = union(nonzero_rows(Krl), nonzero_columns(Klr))
-    nc = length(coupling)
+    coupling = union(nonzero_rows(Krc), nonzero_columns(Kcr))
+    nrc = length(coupling)
+    # Printed before any of the expensive dense work below (the Cholesky of Kcc, the
+    # eigenvalue solve for modes, the Krcrc/Mrcrc fill-in) so the sizes that actually
+    # drove a crash mid-stage are on record even if nothing after this line ever gets to
+    # run.
+    @info "Craig-Bampton Cascade stage: nr=$nr (this stage's boundary), nc=$nc " *
+          "(eliminated now), nrc=$nrc (of nr actually coupled to nc)"
 
-    factorization = factorize_condensed!(Matrix(Kll))
-    B = recovery_modes(factorization, Klr, coupling; block_size = block_size)
+    # Kcc is read again below (Kcc_X, fixed_interface_modes_dense), so factorizing it
+    # needs a defensive copy only on the dense path: factorize_condensed! mutates a
+    # dense StridedMatrix in place (cholesky!/lu!), but its sparse fallback
+    # (cholesky/lu, no `!`) never touches Kcc itself -- forcing Matrix(Kcc)
+    # unconditionally would both discard a genuinely sparse Kcc's sparsity (see
+    # dense_shell_limit in reduce_matrices) and pay for a copy that a sparse Kcc does
+    # not need in the first place.
+    factorization = Kcc isa AbstractSparseMatrix ? factorize_condensed!(Kcc) :
+                    factorize_condensed!(Matrix(Kcc))
+    B = recovery_modes(factorization, Kcr, coupling; block_size = block_size)
 
-    X, w = fixed_interface_modes_dense(Kll, Mll, n_modes)
+    # Reuses `factorization` (already built above for B) rather than densifying Kcc a
+    # second time here -- see fixed_interface_modes_general for why that matters once
+    # nc is large (an outlier-sized shell, see dense_shell_limit in reduce_matrices).
+    X, w = fixed_interface_modes_general(factorization, Kcc, Mcc, n_modes)
     if n_modes > 0
         f_lo = sqrt(abs(w[1])) / (2 * pi)
         f_hi = sqrt(abs(w[end])) / (2 * pi)
@@ -870,60 +1005,76 @@ function reduce_stage_dense(K::AbstractMatrix, Mll_source::AbstractMatrix{Float6
     modal_positions = collect((nr + 1):(nr + n_modes))
 
     rows, columns, values = findnz(sparse(Krr))
-    if nc > 0
-        Kbb_fill = Matrix{Float64}(undef, nc, nc)
-        mul!(Kbb_fill, Krl[coupling, :], B, -1.0, 0.0)
-        add_dense_block!(rows, columns, values, Kbb_fill, coupling)
+    if nrc > 0
+        Krcrc_fill = Matrix{Float64}(undef, nrc, nrc)
+        mul!(Krcrc_fill, Krc[coupling, :], B, -1.0, 0.0)
+        add_dense_block!(rows, columns, values, Krcrc_fill, coupling)
     end
     if n_modes > 0
-        Kll_X = Kll * X
-        if nc > 0
-            Kbm = Matrix{Float64}(undef, nc, n_modes)
-            mul!(Kbm, Krl[coupling, :], X)
-            mul!(Kbm, transpose(B), Kll_X, -1.0, 1.0)
+        Kcc_X = Kcc * X
+        if nrc > 0
+            Krcm = Matrix{Float64}(undef, nrc, n_modes)
+            mul!(Krcm, Krc[coupling, :], X)
+            mul!(Krcm, transpose(B), Kcc_X, -1.0, 1.0)
 
-            Kmb = Matrix{Float64}(undef, n_modes, nc)
-            mul!(Kmb, transpose(X), Klr[:, coupling])
-            mul!(Kmb, transpose(transpose(Kll) * X), B, -1.0, 1.0)
+            Kmrc = Matrix{Float64}(undef, n_modes, nrc)
+            mul!(Kmrc, transpose(X), Kcr[:, coupling])
+            mul!(Kmrc, transpose(transpose(Kcc) * X), B, -1.0, 1.0)
 
             threshold = 1.0e-12 *
-                        max(maximum(abs, Kbm; init = 0.0), maximum(abs, Kmb; init = 0.0),
-                            eps())
-            add_dense_block!(rows, columns, values, Kbm, coupling, modal_positions;
+                        max(maximum(abs, Krcm; init = 0.0),
+                            maximum(abs, Kmrc; init = 0.0), eps())
+            add_dense_block!(rows, columns, values, Krcm, coupling, modal_positions;
                              threshold = threshold)
-            add_dense_block!(rows, columns, values, Kmb, modal_positions, coupling;
+            add_dense_block!(rows, columns, values, Kmrc, modal_positions, coupling;
                              threshold = threshold)
         end
-        Kmm = transpose(X) * Kll_X
+        Kmm = transpose(X) * Kcc_X
         add_dense_block!(rows, columns, values, Kmm, modal_positions, modal_positions)
     end
     K_reduced = sparse(rows, columns, values, n_total, n_total)
 
     mrows, mcolumns, mvalues = findnz(sparse(Mrr))
-    if nc > 0
-        # Mll_source can carry a non-diagonal Mrl/Mlr coupling here (unlike the raw
-        # lumped mass): this block comes from a previous cascade stage's Mbb, which is
-        # Mrr + B'MllB in general position, not block-diagonal. The full congruence
-        # transform is therefore needed, not just the Bbb'MllB term.
-        Mbb_fill = Matrix{Float64}(undef, nc, nc)
-        mul!(Mbb_fill, transpose(B), Mll * B)
-        mul!(Mbb_fill, Mrl[coupling, :], B, -1.0, 1.0)
-        mul!(Mbb_fill, transpose(B), Mlr[:, coupling], -1.0, 1.0)
-        add_dense_block!(mrows, mcolumns, mvalues, Mbb_fill, coupling)
-    end
-    if n_modes > 0 && nc > 0
-        # General form: Mbm = Mrl X - B' Mll X. reduce_stage's "-B' Mll X" alone assumes
-        # Mrl = 0, true only for the original lumped mass, never guaranteed once a
-        # carried-in Mrl/Mlr block is present.
-        Mbm = Matrix{Float64}(undef, nc, n_modes)
-        mul!(Mbm, Mrl[coupling, :], X)
-        mul!(Mbm, transpose(B), Mll * X, -1.0, 1.0)
+    if nrc > 0
+        # Mcc_source can carry a non-diagonal Mrc/Mcr coupling here (unlike the raw
+        # lumped mass): this block comes from a previous cascade stage's Mrcrc, which is
+        # Mrr + B'MccB in general position, not block-diagonal. The full congruence
+        # transform is therefore needed, not just the B'MccB term -- and, unlike Krc
+        # and Kcr, Mrc and Mcr are *not* guaranteed to vanish outside `coupling`: that
+        # exclusion is only valid for a quantity B itself annihilates there (Krc/Kcr,
+        # zero outside `coupling` by definition of `coupling`), and B being zero outside
+        # `coupling` says nothing about Mrc/Mcr's own support, which comes from whatever
+        # a previous stage's Mrcrc carried, unrelated to this stage's own K sparsity. The
+        # `Mrc B` / `B' Mcr` terms therefore use every retained row/column; only the
+        # `B' Mcc B` term, where both factors are B, stays restricted to `coupling`.
+        Mrcrc_rc = Matrix{Float64}(undef, nr, nrc)
+        mul!(Mrcrc_rc, Mrc, B, -1.0, 0.0)
+        add_dense_block!(mrows, mcolumns, mvalues, Mrcrc_rc, collect(1:nr), coupling)
 
-        threshold = 1.0e-12 * max(maximum(abs, Mbm; init = 0.0), eps())
-        add_dense_block!(mrows, mcolumns, mvalues, Mbm, coupling, modal_positions;
+        Mrcrc_cr = Matrix{Float64}(undef, nrc, nr)
+        mul!(Mrcrc_cr, transpose(B), Mcr, -1.0, 0.0)
+        add_dense_block!(mrows, mcolumns, mvalues, Mrcrc_cr, coupling, collect(1:nr))
+
+        Mrcrc_cc = Matrix{Float64}(undef, nrc, nrc)
+        mul!(Mrcrc_cc, transpose(B), Mcc * B)
+        add_dense_block!(mrows, mcolumns, mvalues, Mrcrc_cc, coupling)
+    end
+    if n_modes > 0
+        # General form: Mrcm = Mrc X - B' Mcc X. Same reasoning as Mrcrc above: Mrc X
+        # uses every retained row, the B' Mcc X correction only the coupling ones.
+        Mrcm = Matrix{Float64}(undef, nr, n_modes)
+        mul!(Mrcm, Mrc, X)
+        if nrc > 0
+            Mrcm_corr = Matrix{Float64}(undef, nrc, n_modes)
+            mul!(Mrcm_corr, transpose(B), Mcc * X, -1.0, 0.0)
+            @views Mrcm[coupling, :] .+= Mrcm_corr
+        end
+
+        threshold = 1.0e-12 * max(maximum(abs, Mrcm; init = 0.0), eps())
+        add_dense_block!(mrows, mcolumns, mvalues, Mrcm, collect(1:nr), modal_positions;
                          threshold = threshold)
-        add_dense_block!(mrows, mcolumns, mvalues, transpose(Mbm), modal_positions,
-                         coupling; threshold = threshold)
+        add_dense_block!(mrows, mcolumns, mvalues, transpose(Mrcm), modal_positions,
+                         collect(1:nr); threshold = threshold)
     end
     if n_modes > 0
         for k in 1:n_modes
@@ -940,262 +1091,541 @@ function reduce_stage_dense(K::AbstractMatrix, Mll_source::AbstractMatrix{Float6
 end
 
 """
-    order_condensed_by_distance(K, r, l)
+    group_condensed_by_level(K, r, c)
 
-Orders the condensed degrees of freedom `l` by graph distance (in bonds) from the
-retained set `r`, farthest first.
+Partitions the condensed degrees of freedom `c` into shells of constant graph distance
+(in bonds) from the retained set `r`, farthest first -- the levels the multi-level scheme
+[`reduce_matrices`](@ref) implements processes one at a time.
 
-Grouping consecutive entries of this order into stages (as [`reduce_matrices`](@ref)
-does) turns the cascade into a wavefront: each stage eliminates a shell of `l` that lies
-a roughly constant number of bonds away from `r`, so the coupling layer it touches (into
-`r`, into the not-yet-eliminated rest of `l`, and into whatever a previous stage carried
-forward) stays local instead of depending on whatever order `l` happened to be given in.
-Farthest-first is the efficient direction: the boundary carried forward only starts
-including (a growing part of) `r` once the front reaches the shell adjacent to it, rather
-than from the very first stage onward.
-
-The cascade's result does not depend on this order -- `reduce_matrices` is exact for any
-grouping of `l`, see its docstring -- this function only affects how large the local
-system at each stage stays.
+Two condensed degrees of freedom at different distances from `r` can only be directly
+coupled if those distances differ by exactly one -- a basic property of breadth-first
+distance layers, not an assumption about the geometry: a node's own distance is the
+length of its *shortest* path to `r`, so a neighbour one hop closer or farther is
+possible, but a neighbour two or more hops away in either direction never is (that would
+mean a shorter path than the one that set that neighbour's own distance). Consequently a
+shell can only be coupled to its two immediate neighbouring shells and, for the shell
+adjacent to `r` itself, to `r`. Eliminating a whole shell together with the *entire*
+previous interface is therefore always exact: nothing outside the current shell and the
+interface it replaces can be reachable from what is being eliminated, however wide or
+narrow the region is transverse to `r` -- unlike slicing by a fixed size, which has no
+such guarantee and so cannot safely eliminate more than the one group it was handed.
 
 # Arguments
 - `K::AbstractMatrix`: Stiffness matrix, used only for its sparsity pattern
 - `r::AbstractVector{<:Integer}`: Indices of the retained degrees of freedom
-- `l::AbstractVector{<:Integer}`: Indices of the condensed degrees of freedom
+- `c::AbstractVector{<:Integer}`: Indices of the condensed degrees of freedom
 # Returns
-- `::Vector{Int64}`: `l`, reordered farthest-from-`r` first
+- `::Vector{Vector{Int64}}`: `c`, partitioned into shells, farthest first. Degrees of
+  freedom with no path to `r` through `c` at all (an isolated cluster) form their own
+  leading group, processed before the wavefront proper -- safe for the same reason any
+  order is (see [`reduce_matrices`](@ref)), since they have no coupling to anything this
+  ever eliminates alongside them either.
 """
-function order_condensed_by_distance(K::AbstractMatrix, r::AbstractVector{<:Integer},
-                                     l::AbstractVector{<:Integer})
-    l_set = Set(l)
+function group_condensed_by_level(K::AbstractMatrix, r::AbstractVector{<:Integer},
+                                  c::AbstractVector{<:Integer})
+    c_set = Set(c)
     level = Dict{Int64,Int64}()
 
-    frontier = collect(Int64,
-                       intersect(union(nonzero_columns(K[r, :]), nonzero_rows(K[:, r])),
-                                 l_set))
+    # Neighbours of a single node come from one CSC column via nzrange -- O(its own
+    # bond count), not from slicing K[frontier, :] / K[:, frontier] into a fresh
+    # submatrix every BFS round, which for a wide frontier (thousands of degrees of
+    # freedom at the same distance from r, exactly the domains this function exists
+    # for) copies a large chunk of K's sparsity on every single level.
+    Ksp = K isa SparseMatrixCSC ? K : sparse(K)
+    rows = rowvals(Ksp)
+    vals = nonzeros(Ksp)
+
+    r_neighbors = Set{Int64}()
+    for node in r
+        for idx in nzrange(Ksp, node)
+            vals[idx] != 0.0 && push!(r_neighbors, rows[idx])
+        end
+    end
+    frontier = collect(Int64, intersect(r_neighbors, c_set))
     depth = 1
     for node in frontier
         level[node] = depth
     end
-
     while !isempty(frontier)
-        touched = union(nonzero_columns(K[frontier, :]), nonzero_rows(K[:, frontier]))
         depth += 1
         next_frontier = Int64[]
-        for node in touched
-            if (node in l_set) && !haskey(level, node)
-                level[node] = depth
-                push!(next_frontier, node)
+        for parent in frontier
+            for idx in nzrange(Ksp, parent)
+                vals[idx] == 0.0 && continue
+                node = rows[idx]
+                if (node in c_set) && !haskey(level, node)
+                    level[node] = depth
+                    push!(next_frontier, node)
+                end
             end
         end
         frontier = next_frontier
     end
-
     @info "Craig-Bampton Cascade: condensed region spans $depth bond-hops from the " *
-          "retained set"
+          "retained set, $(length(c)) condensed degrees of freedom to process"
 
-    # A condensed node with no path to r through l at all (a fully isolated cluster)
-    # never gets a level; placing it beyond the farthest reached level still processes
-    # it first, which is safe -- the cascade is exact for any order, see above -- this
-    # only keeps it out of the way of the actual wavefront.
-    unreached = depth + 1
-    return sort(l; by = node -> (-get(level, node, unreached), node))
+    groups = Vector{Int64}[]
+    unreached = [node for node in c if !haskey(level, node)]
+    isempty(unreached) || push!(groups, unreached)
+    for d in depth:-1:1
+        shell = [node for node in c if get(level, node, -1) == d]
+        isempty(shell) || push!(groups, shell)
+    end
+    return groups
 end
 
 """
-    reduce_matrices(K, M_diag, r, l, n_modes = 1; block_size = 512,
-                    check_symmetry_sample = 2000, stage_size = 200)
+    transpose_structure(A)
 
-Craig-Bampton reduction done as a cascade of small local eliminations instead of one
+The sparsity *pattern* of `transpose(A)`, as `(colptr, rowval)`, without ever allocating
+a values array.
+
+[`reduce_matrices`](@ref)'s level bookkeeping needs, for a node `A` stores by column,
+which other nodes have an entry in its *row* -- the one direction a `SparseMatrixCSC`
+cannot answer without either scanning every column or transposing. It never needs the
+transposed values themselves: whether such an entry is actually a nonzero coupling (as
+opposed to an explicitly stored zero) is instead checked with a direct lookup back into
+`A`, once a candidate column is known (see the call site). Building the transpose the
+usual way, `SparseMatrixCSC(transpose(A))`, allocates a second `nnz(A)`-length value
+array purely to be discarded again right after -- half of what that step needs to
+allocate, for nothing. Built from scratch here rather than reusing `A`'s own index type,
+the result is `Int32` whenever `A`'s size and `nnz` fit -- ample range for any cascade
+level in practice -- halving this step's own allocation again, and only ever `A`'s own
+(usually `Int64`) index type for a problem actually too large for that.
+
+# Arguments
+- `A::SparseMatrixCSC`: The matrix
+# Returns
+- `colptr::Vector`, `rowval::Vector`: `transpose(A)`'s column pointers and row indices,
+  in the same layout `SparseMatrixCSC` itself uses
+"""
+function transpose_structure(A::SparseMatrixCSC{Tv,Ti}) where {Tv,Ti}
+    m, n = size(A)
+    rows = rowvals(A)
+    nz = length(rows)
+    # Built from scratch here, so the index type is ours to choose, independent of A's
+    # own Ti (usually Int64): Int32 halves this step's own allocation again on top of
+    # dropping the values array, and is plenty of range for any cascade level this ever
+    # sees in practice -- falls back to Ti only if the problem is actually that large.
+    IdxT = (nz <= typemax(Int32) && m <= typemax(Int32) && n <= typemax(Int32)) ?
+           Int32 : Ti
+
+    row_counts = zeros(IdxT, m)
+    for row in rows
+        row_counts[row] += 1
+    end
+    colptr = Vector{IdxT}(undef, m + 1)
+    colptr[1] = 1
+    for row in 1:m
+        colptr[row+1] = colptr[row] + row_counts[row]
+    end
+    rowval = Vector{IdxT}(undef, nz)
+    next = copy(colptr)
+    for col in 1:n
+        for idx in nzrange(A, col)
+            row = rows[idx]
+            rowval[next[row]] = col
+            next[row] += 1
+        end
+    end
+    return colptr, rowval
+end
+
+"""
+    reduce_matrices(K, M_diag, r, c, n_modes = 0; block_size = 512,
+                    check_symmetry_sample = 2000)
+
+Craig-Bampton reduction done as a cascade of local eliminations instead of one
 factorization of the whole condensed region -- the same math as [`reduce_stage`](@ref),
-called once per stage on a local slice of `K`.
+called once per level on a local slice of `K`. This implements the accompanying paper's
+multi-level scheme (its multi-level section): the condensed region is grown shell by
+shell from the side farthest from `r` inward, and at every level the *entire*
+superelement built so far is re-condensed together with the next shell, rather than
+merely carried alongside it.
 
-`l` is first reordered by [`order_condensed_by_distance`](@ref) (farthest from `r`
-first), then chunked into groups of `stage_size`. Each stage finds what its group
-actually couples to (in the retained set `r`, in the not-yet-eliminated rest of `l`, and
-in the boundary carried over from the previous stage), builds a small local matrix for
-exactly that union, substitutes the carried-forward reduced boundary block into it in
-place of the raw values there, and calls `reduce_stage` on it. `Kll` for every stage is
-therefore only ever the size of one group plus its own coupling layer, never the whole
-condensed region -- the memory and factorization cost that motivated this scales with
-the stage size and the wavefront's shell width, not with the number of condensed degrees
-of freedom.
+`c` is first partitioned by [`group_condensed_by_level`](@ref) into shells of constant
+bond-distance from `r`, farthest first -- see its docstring for why a whole shell, not an
+arbitrary chunk of it, is the unit this cascade can safely eliminate all at once. At each
+level, the shell being eliminated is joined by the *entire* interface and modal state
+carried in from the previous level (see below), a small local matrix is built for exactly
+that union, and [`reduce_stage_dense`](@ref) is called on it. `Kcc` for every level is
+therefore only ever the size of one shell plus whatever interface preceded it, never the
+whole condensed region -- the memory and factorization cost this avoids scales with the
+shell width transverse to `r`, not with the number of condensed degrees of freedom, and
+does not accumulate from one level to the next.
 
-Substituting the previous stage's reduced block rather than adding it matters: that block
-already is the complete effective stiffness/mass at the boundary (own value plus
-everything eliminated so far), so adding it to the freshly sliced raw value would count
-the boundary's own stiffness twice. A boundary degree of freedom that survives more than
-one stage without being eliminated is carried forward this way unchanged until it finally
-appears in some group's `l`.
-
-`n_modes` here means something different from the single-shot [`reduce_stage`](@ref)'s
-argument of the same name: fixed-interface modes of the *whole* condensed region require
-its whole `Kll`/`Mll` at once, exactly what the cascade exists to avoid factorizing. A
-cascade stage's own group is discarded once eliminated, so its internal dynamics can only
-be captured *during* that elimination -- as that stage's own local fixed-interface modes,
-fixed at whatever boundary the wavefront has reached so far -- never retrieved afterwards
-from the boundary-only matrices later stages see. `n_modes` is therefore the number of
-such *local* modes retained at *every* stage, not a total: the final reduced system carries
-`n_modes` modes from each of the `ceil(length(l) / stage_size)` stages, so its total modal
-count is `n_modes` times the number of stages, and grows with the size of the condensed
-region -- unlike the single-shot API, where `n_modes` is a fixed, caller-chosen total.
-Local, per-stage modes are a different reduction basis from a fixed number of global
-modes of the whole region; the two are not expected to produce identical reduced systems
-for the same total mode count, only comparably accurate ones (both exact in the
-`n_modes = 0` / static limit, and as `n_modes` grows).
-
-A carried-forward mode is handled exactly like a carried-forward physical degree of
-freedom: it is never itself eliminated, and gets substituted -- as an extra row/column
-beyond the physical ones -- into every later stage's local system in place of raw values,
-via [`reduce_stage_dense`](@ref)'s general (non-diagonal-mass, `n_modes`-aware) formulas.
+Both the physical interface and the modal coordinates are *replaced*, not accumulated, at
+every level -- this is what bounds the local system size regardless of how many levels
+run. [`group_condensed_by_level`](@ref)'s docstring gives the reason this is exact for
+the physical interface: a shell can only be coupled to its two neighbouring shells, so
+the entire previous interface has no remaining coupling to anything outside the current
+shell and can be eliminated alongside it without loss. For the modal coordinates, this is
+the same tradeoff the paper states explicitly for its own levels: fixed-interface modes
+of the *whole* condensed region would require its whole `Kcc`/`Mcc` at once, exactly what
+this cascade avoids factorizing, so `n_modes` is instead the number of *local* modes
+computed at every level, re-absorbed into the *next* level's condensation together with
+the shell it eliminates, and replaced there by a fresh set of that level's own modes.
+Truncation error therefore still accumulates across levels (the same cutoff/mode count
+should be used throughout, well above whatever frequency band actually matters), even
+though the state carried forward does not. `n_modes = 0` remains the exact, static
+(Guyan) limit, unaffected by any of this.
 
 # Arguments
 - `K::AbstractMatrix`: Stiffness matrix
 - `M_diag::AbstractVector`: Lumped mass matrix as a vector, one entry per degree of freedom
 - `r::AbstractVector{<:Integer}`: Indices of the retained degrees of freedom
-- `l::AbstractVector{<:Integer}`: Indices of the condensed degrees of freedom
-- `n_modes::Integer`: Fixed-interface modes retained at *every* stage; 0 is pure Guyan
+- `c::AbstractVector{<:Integer}`: Indices of the condensed degrees of freedom
+- `n_modes::Integer`: Fixed-interface modes computed at *every* level; 0 is pure Guyan
 # Keywords
-- `block_size::Int64`: Right hand sides solved at once for the recovery modes, per stage
+- `block_size::Int64`: Right hand sides solved at once for the recovery modes, per level
 - `check_symmetry_sample::Int64`: Entries drawn for the symmetry check on the full `K`,
   once, before the cascade starts; 0 disables it
-- `stage_size::Int64`: Condensed degrees of freedom eliminated per stage
+- `max_rss_mib::Union{Nothing,Float64}`: Abort with an informative error once this
+  process' peak resident memory exceeds this many MiB, checked once per level. A SIGKILL
+  from the OS (or a job scheduler's own memory limit) cannot be caught by any Julia code
+  -- the process is gone before anything, including a `try`/`catch`, gets to run -- so a
+  run that is actually going to be killed only ever produces a level number and an
+  interface size to debug from if something inside the process chooses to stop first, on
+  its own terms. Defaults to 8192.0 (8 GiB); `nothing` disables this.
+- `dense_shell_limit::Int64`: Above this many physical degrees of freedom in a single
+  shell, that level's local system is built and factorized sparse instead of dense (see
+  the loop body below) -- `Kcc`'s own physical part is exactly as sparse as `K` itself
+  (peridynamic bonds are local), so a dense `zeros(n_full, n_full)` is `O(n_full^2)`
+  memory spent on what is overwhelmingly zero once a shell gets wide. Below the limit,
+  dense stays faster for the same reason [`fixed_interface_modes_dense`](@ref) prefers it
+  for a typical, small shell. Defaults to 1500.
 # Returns
-- `K_reduced::SparseMatrixCSC`: Reduced stiffness, size `length(r)` plus the total modes
-  retained across every stage
+- `K_reduced::SparseMatrixCSC`: Reduced stiffness, size `length(r)` plus `n_modes` -- the
+  last level's own modes; earlier levels' modes were re-absorbed along the way, not
+  accumulated (see above)
 - `M_reduced::SparseMatrixCSC`: Reduced mass, same size
 """
 function reduce_matrices(K::AbstractMatrix,
                          M_diag::AbstractVector,
                          r::AbstractVector{<:Integer},
-                         l::AbstractVector{<:Integer},
+                         c::AbstractVector{<:Integer},
                          n_modes::Integer = 0;
                          block_size::Int64 = 512,
                          check_symmetry_sample::Int64 = 2000,
-                         stage_size::Int64 = 200)
-    n_modes = Int64(n_modes)
-    if n_modes < 0
-        throw(ArgumentError("n_modes = $n_modes, must be >= 0."))
-    end
+                         max_rss_mib::Union{Nothing,Float64} = 8192.0,
+                         dense_shell_limit::Int64 = 1500)
+    @timeit "cascade setup" begin
+        n_modes = Int64(n_modes)
+        if n_modes < 0
+            throw(ArgumentError("n_modes = $n_modes, must be >= 0."))
+        end
 
-    r = collect(Int64, r)
-    l = collect(Int64, l)
+        r = collect(Int64, r)
+        c = collect(Int64, c)
+        k_nnz = K isa AbstractSparseMatrix ? nnz(K) : length(K)
+        @info "Craig-Bampton Cascade: entering reduce_matrices with $(length(r)) retained, " *
+              "$(length(c)) condensed degrees of freedom, n_modes=$n_modes, nnz(K)=$k_nnz"
+    end
 
     if check_symmetry_sample > 0
         @timeit "cascade symmetry check" check_symmetry(K; samples = check_symmetry_sample)
     end
 
-    @timeit "cascade wavefront ordering" l=order_condensed_by_distance(K, r, l)
+    @timeit "cascade level grouping" begin
+        groups = group_condensed_by_level(K, r, c)
+        group_sizes = length.(groups)
+        @info "Craig-Bampton Cascade: $(length(groups)) levels, shell size " *
+              "min=$(minimum(group_sizes)) max=$(maximum(group_sizes)) " *
+              "mean=$(round(sum(group_sizes) / length(group_sizes); digits = 1))"
+    end
 
-    r_set = Set(r)
-    remaining_l = l
-    incoming_pos = Int64[]        # physical dof indices carried forward
-    incoming_modal = 0            # count of modal coordinates carried forward
-    incoming_Kbb = zeros(0, 0)
-    incoming_Mbb = zeros(0, 0)
+    # A shell many times the median, or simply large in absolute terms, is exactly what
+    # drives the local system built for it in the loop below past dense_shell_limit --
+    # checked here, before any of that memory is actually allocated, so an outlier shows
+    # up in the log even on a run that goes on to complete.
+    @timeit "cascade outlier check" begin
+        sorted_sizes = sort(group_sizes)
+        median_size = sorted_sizes[(length(sorted_sizes)+1)÷2]
 
-    stage = 0
-    while !isempty(remaining_l)
-        stage += 1
-        stage_end = min(stage_size, length(remaining_l))
-        group = remaining_l[1:stage_end]
-        remaining_l = remaining_l[(stage_end + 1):end]
-        group_set = Set(group)
+        outlier_levels = findall(n -> n > max(4 * median_size, dense_shell_limit),
+                                 group_sizes)
+        if !isempty(outlier_levels)
+            @warn "Craig-Bampton Cascade: $(length(outlier_levels)) of $(length(groups)) " *
+                  "levels have an outlier-sized shell (median $median_size): levels " *
+                  "$outlier_levels, sizes $(group_sizes[outlier_levels]). Their local " *
+                  "system is built and factorized sparse instead of dense (see " *
+                  "dense_shell_limit) to bound memory."
+        end
+    end
 
-        # What this group actually couples to, outside itself: into the retained set,
-        # and into whatever of l has not been eliminated yet.
-        touched = union(nonzero_columns(K[group, :]), nonzero_rows(K[:, group]))
-        setdiff!(touched, group_set)
-        stage_r = sort(union(intersect(touched, r_set), intersect(touched, remaining_l),
-                             incoming_pos))
-        # A node carried in from a previous stage can itself fall inside this stage's
-        # group (it is finally being eliminated now); it must not also remain listed as
-        # this stage's boundary, or it would appear twice in full_nodes and never leave
-        # incoming_pos.
-        setdiff!(stage_r, group_set)
+    # Every level needs, for its own shell, exactly which other degrees of freedom it
+    # couples to in *either* direction (K need not be numerically symmetric, see
+    # check_symmetry above) -- unlike group_condensed_by_level's ordering, this
+    # determines the next interface itself and so must stay exact, not merely a good
+    # heuristic. K[shell, :] is the expensive direction on a column-major
+    # SparseMatrixCSC (it has to scan every stored entry of the whole matrix, not just
+    # the shell's own), and doing that once per level made it effectively
+    # O(levels * nnz(K)).
+    #
+    # K itself is the *whole system's* stiffness matrix, not just this reduction's part
+    # of it -- Model_reduction.jl passes it in straight from Data_Manager, before it
+    # knows anything about which blocks this particular reduction even touches (other
+    # PD/FEM regions the reduction has nothing to do with, a contact pair, whatever else
+    # the deck has, all still show up in K's sparsity). Restricting to r union c -- the
+    # only degrees of freedom `touched` can ever keep, everything else is discarded by
+    # the intersect with r_set/remaining_c right below regardless -- before transposing
+    # bounds that one-time cost by this reduction's own size instead of the whole
+    # system's.
+    restricted = vcat(r, c)
+    # Slicing to r union c only helps when it actually shrinks anything: once other
+    # code (update_material_point_part rebuilding K without the material point nodes,
+    # say) has already zeroed out everything K would otherwise have outside this
+    # reduction's own degrees of freedom, restricted's own entry count comes out equal
+    # to K's, and slicing it out is then a second full copy paid for nothing -- on top
+    # of the transpose, which is needed regardless. Below half of K's own dimension is
+    # a cheap, correctness-irrelevant proxy for "worth doing": it only ever affects how
+    # this one-time cost is paid, never the result (both branches build exactly the same
+    # sparsity information, just addressed differently).
+    n_total = size(K, 1)
+    restrict_worthwhile = length(restricted) < n_total ÷ 2
+    local to_local, to_global
+    if restrict_worthwhile
+        id_map = Dict{Int64,Int64}(g => i for (i, g) in enumerate(restricted))
+        to_local = node -> id_map[node]
+        to_global = idx -> restricted[idx]
+        @timeit "cascade restrict" Ksp=sparse(K[restricted, restricted])
+    else
+        to_local = identity
+        to_global = identity
+        @timeit "cascade restrict" Ksp=(K isa SparseMatrixCSC ? K : sparse(K))
+    end
+    @timeit "cascade transpose" begin
+        (Kt_colptr, Kt_rowval) = transpose_structure(Ksp)
+        Krows = rowvals(Ksp)
+        Kvals = nonzeros(Ksp)
+    end
 
-        full_nodes = vcat(group, stage_r)
-        n_full_physical = length(full_nodes)
-        n_full = n_full_physical + incoming_modal
-        K_local = zeros(n_full, n_full)
-        M_local = zeros(n_full, n_full)
-        K_local[1:n_full_physical, 1:n_full_physical] = K[full_nodes, full_nodes]
-        M_local[1:n_full_physical, 1:n_full_physical] = Diagonal(M_diag[full_nodes])
+    @timeit "cascade loop setup" begin
+        r_set = Set(r)
+        r_index = Dict(node => k for (k, node) in enumerate(r))
+        nr = length(r)
+        remaining_c = Set(c)
+        incoming_pos = Int64[]        # physical dof indices carried forward (⊆ current shell)
+        incoming_modal = 0            # count of modal coordinates carried forward
+        incoming_K = zeros(0, 0)
+        incoming_M = zeros(0, 0)
+    end
 
-        # A degree of freedom carried in from a previous stage -- physical or modal --
-        # is substituted as a block, replacing (not adding to) whatever raw value sits
-        # there: that block already is the complete effective stiffness/mass (own value
-        # plus everything eliminated so far), so adding it would count the boundary's own
-        # stiffness twice. Modal coordinates have no dof index of their own and so no
-        # position in full_nodes; they always occupy the last incoming_modal local
-        # positions, appended beyond the physical ones.
-        if !isempty(incoming_pos) || incoming_modal > 0
-            local_idx_physical = [findfirst(==(p), full_nodes) for p in incoming_pos]
-            local_idx_modal = (n_full_physical + 1):(n_full_physical + incoming_modal)
-            combined_idx = vcat(local_idx_physical, local_idx_modal)
-            K_local[combined_idx, combined_idx] .= incoming_Kbb
-            M_local[combined_idx, combined_idx] .= incoming_Mbb
+    level_num = 0
+    for shell in groups
+        @timeit "cascade level bookkeeping" begin
+            level_num += 1
+            setdiff!(remaining_c, shell)
+            shell_set = Set(shell)
+
+            # What this shell actually couples to, outside itself: into the retained
+            # set, and into whatever of c has not been eliminated yet. incoming_pos --
+            # the entire previous interface -- is *not* unioned in here: by
+            # group_condensed_by_level's BFS-layering guarantee it is already a subset
+            # of this shell (the previous, deeper shell could only reach this one or
+            # its own), so it is eliminated below together with the shell, not carried
+            # past it.
+            touched = Set{Int64}()
+            for node in shell
+                lnode = to_local(node)
+                for idx in nzrange(Ksp, lnode)
+                    Kvals[idx] != 0.0 && push!(touched, to_global(Krows[idx]))
+                end
+                # Kt_rowval holds, for row lnode, the columns Ksp stores an entry at --
+                # transpose_structure never kept their values, so whether one is an
+                # actual nonzero coupling (as opposed to an explicitly stored zero) is
+                # checked directly against Ksp itself instead.
+                for idx in Kt_colptr[lnode]:(Kt_colptr[lnode + 1] - 1)
+                    col = Kt_rowval[idx]
+                    Ksp[lnode, col] != 0.0 && push!(touched, to_global(col))
+                end
+            end
+            setdiff!(touched, shell_set)
+            new_interface = sort(collect(Int64,
+                                         union(intersect(touched, r_set),
+                                               intersect(touched, remaining_c))))
         end
 
-        r_local = collect((length(group) + 1):n_full)
-        l_local = collect(1:length(group))
+        @timeit "cascade level local assembly" begin
+            full_nodes = vcat(shell, new_interface)
+            n_full_physical = length(full_nodes)
+            n_full = n_full_physical + incoming_modal
 
-        # Any degree of freedom carried in from a previous stage brings a non-diagonal
-        # mass with it (Mbb = Mrr + B'MllB from the stage that produced it), whether it
-        # is finally being eliminated now (inside this stage's group) or is still just
-        # passing through as boundary -- either way it sits in M_local as a non-diagonal
-        # block. reduce_stage only ever accepts a mass *vector* and so can only place a
-        # diagonal Mrr; it would silently drop that carried coupling. reduce_stage_dense
-        # takes the full mass matrix and is required once anything has been carried in,
-        # and always once modes are requested (a stage's own group can itself carry a
-        # non-diagonal mass in, see reduce_stage_dense).
-        has_incoming = !isempty(incoming_pos) || incoming_modal > 0
+            # incoming_pos/incoming_modal from the previous level are substituted as a
+            # block, replacing (not adding to) whatever raw value sits there: that block
+            # already is the complete effective stiffness/mass (own value plus
+            # everything eliminated so far), so adding it would count the interface's
+            # own stiffness twice. incoming_pos sits within `shell` itself (see above);
+            # modal coordinates have no dof index of their own and so no position in
+            # full_nodes, always occupying the last incoming_modal local positions.
+            has_incoming = !isempty(incoming_pos) || incoming_modal > 0
+            combined_idx = Int64[]
+            if has_incoming
+                local_idx_physical = [findfirst(==(p), full_nodes) for p in incoming_pos]
+                local_idx_modal = (n_full_physical + 1):(n_full_physical + incoming_modal)
+                combined_idx = vcat(local_idx_physical, local_idx_modal)
+            end
+
+            # Dense here costs O(n_full^2); fine for a typical shell, wasteful for an
+            # outlier one (see the level-grouping check above), since the shell's own
+            # physical part is exactly as sparse as K itself. Above dense_shell_limit,
+            # both matrices are instead assembled once from triplets, exactly like the
+            # final assembly at the end of this function: setindex! with a range or
+            # vector index into an *existing* SparseMatrixCSC is one of the slowest
+            # operations SparseArrays has -- every inserted structural nonzero can shift
+            # every following column's storage -- so writing the (near-fully dense, see
+            # incoming_K/incoming_M above) incoming block in that way, one entry at a
+            # time, costs orders of magnitude more than building the whole sparse
+            # matrix once from its final triplets.
+            @timeit "cascade matrix alloc" begin
+                if n_full_physical > dense_shell_limit
+                    Kf_rows, Kf_cols, Kf_vals = findnz(sparse(K[full_nodes, full_nodes]))
+                    Mf_diag = M_diag[full_nodes]
+                    if has_incoming
+                        covered = Set(combined_idx)
+                        keep = [!(Kf_rows[k] in covered && Kf_cols[k] in covered)
+                                for k in eachindex(Kf_rows)]
+                        Ki_rows, Ki_cols, Ki_vals = findnz(sparse(incoming_K))
+                        k_rows = vcat(Kf_rows[keep], combined_idx[Ki_rows])
+                        k_cols = vcat(Kf_cols[keep], combined_idx[Ki_cols])
+                        k_vals = vcat(Kf_vals[keep], Ki_vals)
+
+                        m_uncovered = [i for i in 1:n_full_physical if !(i in covered)]
+                        Mi_rows, Mi_cols, Mi_vals = findnz(sparse(incoming_M))
+                        m_rows = vcat(m_uncovered, combined_idx[Mi_rows])
+                        m_cols = vcat(m_uncovered, combined_idx[Mi_cols])
+                        m_vals = vcat(Mf_diag[m_uncovered], Mi_vals)
+                    else
+                        k_rows, k_cols, k_vals = Kf_rows, Kf_cols, Kf_vals
+                        m_rows = m_cols = collect(1:n_full_physical)
+                        m_vals = Mf_diag
+                    end
+                    K_local = sparse(k_rows, k_cols, k_vals, n_full, n_full)
+                    M_local = sparse(m_rows, m_cols, m_vals, n_full, n_full)
+                else
+                    K_local = zeros(n_full, n_full)
+                    M_local = zeros(n_full, n_full)
+                    K_local[1:n_full_physical, 1:n_full_physical] = K[full_nodes,
+                                                                      full_nodes]
+                    M_local[1:n_full_physical,
+                            1:n_full_physical] = Diagonal(M_diag[full_nodes])
+                    if has_incoming
+                        K_local[combined_idx, combined_idx] .= incoming_K
+                        M_local[combined_idx, combined_idx] .= incoming_M
+                    end
+                end
+            end
+        end
+        @timeit "cascade level partition" begin
+            # The entire shell -- including wherever incoming_pos sits within it -- plus
+            # the previous level's modal coordinates are eliminated together; only the
+            # fresh new_interface stays retained into the next level. See
+            # group_condensed_by_level and this function's own docstring for why this is
+            # exact.
+            c_local = vcat(collect(1:length(shell)), (n_full_physical + 1):n_full)
+            r_local = collect((length(shell) + 1):n_full_physical)
+        end
 
         K_stage,
-        M_stage=if n_modes > 0
-            reduce_stage_dense(K_local, M_local, r_local, l_local, n_modes;
+        M_stage=@timeit "cascade level reduction" if n_modes > 0
+            reduce_stage_dense(K_local, M_local, r_local, c_local, n_modes;
                                block_size = block_size)
         elseif has_incoming
-            reduce_stage_dense(K_local, M_local, r_local, l_local; block_size = block_size)
+            reduce_stage_dense(K_local, M_local, r_local, c_local; block_size = block_size)
         else
-            reduce_stage(K_local, diag(M_local), r_local, l_local, 0;
+            reduce_stage(K_local, diag(M_local), r_local, c_local, 0;
                          block_size = block_size, check_symmetry_sample = 0)
         end
 
-        incoming_pos = stage_r
-        incoming_modal += n_modes
-        incoming_Kbb = Matrix(K_stage)
-        incoming_Mbb = Matrix(M_stage)
+        @timeit "cascade level carry update" begin
+            incoming_pos = new_interface
+            incoming_modal = n_modes
+            incoming_K = Matrix(K_stage)
+            incoming_M = Matrix(M_stage)
+        end
 
-        @info "Craig-Bampton Cascade: stage $stage, $(length(group)) eliminated, " *
-              "$(length(stage_r)) carried forward, $(length(remaining_l)) left, " *
-              "$incoming_modal modes accumulated"
+        @timeit "cascade level memory check" begin
+            # Peak resident memory, not just what this process itself allocated: an
+            # external OOM kill depends on the whole machine's memory state at that
+            # instant, so which level it happens to land on is not reproducible run to run
+            # even for the exact same deck -- Sys.maxrss() is this process' own high-water
+            # mark and gives a deterministic figure to correlate against interface size
+            # instead.
+            rss_mib = Sys.maxrss() / 2^20
+            @info "Craig-Bampton Cascade: level $level_num, $(length(shell)) eliminated, " *
+                  "$(length(new_interface)) carried forward, $(length(remaining_c)) left, " *
+                  "$incoming_modal modes, peak RSS $(round(rss_mib; digits = 1)) MiB"
+
+            # An OS (or job scheduler) OOM kill is a SIGKILL: no Julia code, including a
+            # try/catch around this whole call, ever gets to run once it happens, so it
+            # cannot be caught after the fact -- only avoided by stopping deliberately,
+            # before the real limit is hit, with an ordinary catchable Julia exception that
+            # at least says which level and how large the interface was.
+            readline()
+            #if !isnothing(max_rss_mib) && rss_mib > max_rss_mib
+            #    throw(ErrorException("Craig-Bampton Cascade: peak resident memory " *
+            #        "$(round(rss_mib; digits = 1)) MiB exceeded the " *
+            #        "$(max_rss_mib) MiB limit at level $level_num " *
+            #        "($(length(new_interface)) carried forward, " *
+            #        "$(length(remaining_c)) left). Raise max_rss_mib."))
+            #end
+        end
     end
-
-    # A retained degree of freedom with no bond into l at all (an isolated PD node, say)
-    # never appears in any stage's coupling and so never enters incoming_pos; its row and
-    # column are simply the raw, untouched K[r,r]/M[r,r] -- exactly like reduce_stage,
-    # where such a row of Krl is all zero and Kbb reduces to Krr there. Starting from the
-    # raw values and overwriting only what the cascade actually touched covers both
-    # cases without a lookup that could miss an untouched degree of freedom.
-    nr = length(r)
-    K_reduced = zeros(nr + incoming_modal, nr + incoming_modal)
-    M_reduced = zeros(nr + incoming_modal, nr + incoming_modal)
-    K_reduced[1:nr, 1:nr] = K[r, r]
-    M_reduced[1:nr, 1:nr] = Diagonal(M_diag[r])
-    if !isempty(incoming_pos) || incoming_modal > 0
-        r_index = Dict(node => k for (k, node) in enumerate(r))
+    @timeit "assemble final reduced matrices" begin
+        # A retained degree of freedom with no bond into c at all (an isolated PD node, say)
+        # never appears in any level's coupling and so never enters incoming_pos; its row and
+        # column are simply the raw, untouched K[r,r]/M[r,r] -- exactly like reduce_stage,
+        # where such a row of Krc is all zero and Krcrc reduces to Krr there. Starting from
+        # the raw values and overwriting only what the cascade actually touched covers both
+        # cases without a lookup that could miss an untouched degree of freedom.
+        readline()
+        # The result is sparse, and for a large retained set nr is itself large -- a
+        # dense (nr+modes)x(nr+modes) intermediate (as a naive "start from raw, overwrite
+        # what changed" would build) costs O(nr^2) memory for a matrix that is
+        # overwhelmingly zero. Every piece below is already available as triplets or as
+        # a block small enough to densify on its own (incoming_K/incoming_M, bounded
+        # by the very last level's own interface, not by nr), so the result is
+        # assembled directly as one.
         touched_order = [r_index[node] for node in incoming_pos]
         modal_order = (nr + 1):(nr + incoming_modal)
         combined_order = vcat(touched_order, modal_order)
-        K_reduced[combined_order, combined_order] .= incoming_Kbb
-        M_reduced[combined_order, combined_order] .= incoming_Mbb
-    end
-    K_reduced = sparse(K_reduced)
-    M_reduced = sparse(M_reduced)
-    dropzeros!(K_reduced)
-    dropzeros!(M_reduced)
 
+        # A raw K[r,r]/M[r,r] entry is stale wherever the last level's own carried-forward
+        # block replaced it -- that substitution is a correction, never an addition (see
+        # above), so any raw entry with both its row and column covered by it must be
+        # dropped, not summed alongside its replacement.
+        covered = Set(touched_order)
+
+        Kr_rows, Kr_cols, Kr_vals = findnz(sparse(K[r, r]))
+        keep = [!(Kr_rows[k] in covered && Kr_cols[k] in covered)
+                for k in eachindex(Kr_rows)]
+        rows = Kr_rows[keep]
+        cols = Kr_cols[keep]
+        vals = Float64.(Kr_vals[keep])
+
+        m_uncovered = [i for i in 1:nr if !(i in covered)]
+        mrows = copy(m_uncovered)
+        mcols = copy(m_uncovered)
+        mvals = M_diag[r][m_uncovered]
+
+        if !isempty(combined_order)
+            Ki_rows, Ki_cols, Ki_vals = findnz(sparse(incoming_K))
+            append!(rows, combined_order[Ki_rows])
+            append!(cols, combined_order[Ki_cols])
+            append!(vals, Ki_vals)
+
+            Mi_rows, Mi_cols, Mi_vals = findnz(sparse(incoming_M))
+            append!(mrows, combined_order[Mi_rows])
+            append!(mcols, combined_order[Mi_cols])
+            append!(mvals, Mi_vals)
+        end
+
+        n_total_reduced = nr + incoming_modal
+        K_reduced = sparse(rows, cols, vals, n_total_reduced, n_total_reduced)
+        M_reduced = sparse(mrows, mcols, mvals, n_total_reduced, n_total_reduced)
+        dropzeros!(K_reduced)
+        dropzeros!(M_reduced)
+    end
     return K_reduced, M_reduced
 end
 

@@ -4,7 +4,6 @@
 
 module Correspondence_matrix_based
 using LinearAlgebra
-using LoopVectorization: @turbo
 using SparseArrays
 using TimerOutputs: @timeit
 using ...Data_Manager
@@ -46,14 +45,14 @@ function contraction!(C::Array{Float64,4}, B::Array{Float64,3}, dof::Int64,
                       CB::AbstractArray{Float64,3})
     fill!(CB, 0.0)
     if dof == 2
-        @turbo for q in 1:2, p in 1:2, o in 1:2
+        @inbounds for q in 1:2, p in 1:2, o in 1:2
             B_opq = B[o, p, q]
             for n in 1:2, m in 1:2
                 CB[m, n, q] += C[m, n, o, p] * B_opq
             end
         end
     elseif dof == 3
-        @turbo for q in 1:3, p in 1:3, o in 1:3
+        @inbounds for q in 1:3, p in 1:3, o in 1:3
             B_opq = B[o, p, q]
             for n in 1:3, m in 1:3
                 CB[m, n, q] += C[m, n, o, p] * B_opq
@@ -573,7 +572,7 @@ end
 # =============================================================================
 
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict, block_id::Int64)
+                    material_parameter::AbstractDict, block_id::Int64)
     Zero_Energy_Control.init_model(nodes, material_parameter, block_id)
 
     update_list = Data_Manager.get_field("Update")

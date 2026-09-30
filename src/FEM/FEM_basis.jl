@@ -13,7 +13,7 @@ using ....Data_Manager
 using ....PeriLabExceptions: @abort
 using ....Helpers: invert, determinant, voigt_to_matrix!
 
-function get_FE_material_model(params::Dict{String,Any}, name::String)
+function get_FE_material_model(params::AbstractDict{String,Any}, name::String)
     if !haskey(params["Material Models"], params["FEM"][name]["Material Model"])
         @abort "Material model " *
                params["FEM"][name]["Material Model"] *
@@ -26,7 +26,7 @@ function get_FE_material_model(params::Dict{String,Any}, name::String)
 end
 
 function compute_FEM(elements::AbstractVector{Int64},
-                     params::Dict{String,Any},
+                     params::AbstractDict{String,Any},
                      compute_stresses!::Function,
                      time::Float64,
                      dt::Float64)
@@ -300,12 +300,12 @@ function get_Jacobian(elements::Vector{Int64},
             for idof in 1:dof
                 for jdof in 1:dof
                     jacobian[id_el, id_int, idof,
-                    jdof] = dot(coordinates[topology[id_el,
+                             jdof] = dot(coordinates[topology[id_el,
                                                               :],
-                                                              idof],
-                                                              B[id_int,
-                                                              mapping .+ (jdof - 1),
-                                                              jdof])
+                                                     idof],
+                                         B[id_int,
+                                           mapping .+ (jdof - 1),
+                                           jdof])
                 end
             end
 
@@ -317,14 +317,14 @@ function get_Jacobian(elements::Vector{Int64},
                 return
             end
             jacobian[id_el, id_int, :,
-            :] = invert(jacobian[id_el, id_int, :, :],
-                                                   "Jacobian in FEM Module is singular.")
+                     :] = invert(jacobian[id_el, id_int, :, :],
+                                 "Jacobian in FEM Module is singular.")
         end
     end
     return jacobian, determinant_jacobian
 end
 
-function get_polynomial_degree(params::Dict{String,Any}, dof::Int64)
+function get_polynomial_degree(params::AbstractDict{String,Any}, dof::Int64)
     if !haskey(params, "Degree")
         @abort "No element degree defined"
         return
@@ -408,13 +408,13 @@ function create_B_matrix(elements::Vector{Int64},
         for id_int in eachindex(B[1, :, 1, 1])
             for id_nodes in 1:nnodes
                 B[id_el, id_int, ((id_nodes - 1) * dof + 1):((id_nodes) * dof),
-                :] = jacobian[id_el,
-                                                                                              id_int,
-                                                                                              :,
-                                                                                              :] *
-                                                                                     B_elem[id_int,
-                                                                                            ((id_nodes - 1) * dof + 1):(id_nodes * dof),
-                                                                                            :]
+                  :] = jacobian[id_el,
+                                id_int,
+                                :,
+                                :] *
+                       B_elem[id_int,
+                              ((id_nodes - 1) * dof + 1):(id_nodes * dof),
+                              :]
             end
         end
     end

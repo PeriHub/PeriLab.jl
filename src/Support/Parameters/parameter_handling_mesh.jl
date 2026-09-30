@@ -10,17 +10,17 @@ export get_mesh_scaling
 using AbaqusReader
 using Exodus
 """
-    get_external_topology_name(params::Dict, path)
+    get_external_topology_name(params::AbstractDict, path)
 
 Returns the name of the mesh file from the parameters
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 - `path::String`: Path of the working folder
 # Returns
 - `String`: The name of the finite element topology file
 """
-function get_external_topology_name(params::Dict, path)
+function get_external_topology_name(params::AbstractDict, path)
     check = haskey(params["Discretization"], "Input External Topology")
     if !check
         return nothing
@@ -39,16 +39,16 @@ function get_external_topology_name(params::Dict, path)
 end
 
 """
-    get_mesh_name(params::Dict)
+    get_mesh_name(params::AbstractDict)
 
 Returns the name of the mesh file from the parameters
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 # Returns
 - `String`: The name of the mesh file
 """
-function get_mesh_name(params::Dict)
+function get_mesh_name(params::AbstractDict)
     check = haskey(params["Discretization"], "Input Mesh File")
     if !check
         @abort "No mesh file is defined."
@@ -58,17 +58,17 @@ function get_mesh_name(params::Dict)
 end
 
 """
-    get_bond_filters(params::Dict)
+    get_bond_filters(params::AbstractDict)
 
 Returns the bond filters from the parameters
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 # Returns
 - `check::Bool`: Whether the bond filters are defined
 - `bfList::Dict{String,Dict{String,Any}}`: The bond filters
 """
-function get_bond_filters(params::Dict)
+function get_bond_filters(params::AbstractDict)
     check = haskey(params["Discretization"], "Bond Filters")
     bfList = Dict{String,Dict{String,Any}}()
     if check
@@ -101,17 +101,17 @@ function get_header(filename::Union{String,AbstractString})
     @warn "No header exists in $filename. Please insert 'header: global_id' above the first node"
 end
 """
-    get_node_sets(params::Dict, path::String)
+    get_node_sets(params::AbstractDict, path::String)
 
 Returns the node sets from the parameters
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 - `path::String`: The path to the mesh file
 # Returns
-- `nsets::Dict{String,Any}`: The node sets
+- `nsets::AbstractDict{String,Any}`: The node sets
 """
-function get_node_sets(params::Dict, path::String, mesh_df::DataFrame)
+function get_node_sets(params::AbstractDict, path::String, mesh_df::DataFrame)
     nsets = Dict{String,Vector{Int64}}()
     type = get(params["Discretization"], "Type", "Text File")
     if type == "Exodus"
@@ -158,7 +158,7 @@ function get_node_sets(params::Dict, path::String, mesh_df::DataFrame)
                              DataFrame;
                              delim = " ",
                              header = false,
-                             skipto = header_line + 1,)
+                             skipto = header_line + 1)
             if size(nodes) == (0, 0)
                 @abort "Node set file is empty " *
                        nodesets[entry] *
@@ -198,7 +198,7 @@ function get_node_sets(params::Dict, path::String, mesh_df::DataFrame)
     return nsets
 end
 
-function get_mesh_scaling(params::Dict)
+function get_mesh_scaling(params::AbstractDict)
     mesh_scaling = [1.0, 1.0, 1.0]
     if haskey(params["Discretization"], "Horizon Mesh Scaling X")
         mesh_scaling[1] = params["Discretization"]["Horizon Mesh Scaling X"]

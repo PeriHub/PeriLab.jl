@@ -16,7 +16,7 @@ end
 export init_coupling
 export compute_coupling
 
-function init_coupling(nodes, complete_params::Dict)
+function init_coupling(nodes, complete_params::AbstractDict)
     Data_Manager.create_constant_node_scalar_field("PD Nodes", Int64)
     if !haskey(complete_params["FEM"], "Coupling")
         return
@@ -40,7 +40,7 @@ function init_coupling(nodes, complete_params::Dict)
                             convert(Dict{String,Any}, complete_params["FEM"]))
 end
 
-function compute_coupling(fem_params::Dict)
+function compute_coupling(fem_params::AbstractDict)
     if !haskey(fem_params, "Coupling")
         return
     end

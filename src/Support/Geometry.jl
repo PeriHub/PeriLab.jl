@@ -7,7 +7,7 @@ using LinearAlgebra: mul!
 using Combinatorics: levicivita
 using StaticArrays
 using Rotations
-using LoopVectorization: @avx, @fastmath, @simd
+
 using ...Data_Manager
 using ...PeriLabExceptions: @abort
 using ...Helpers: invert, smat, sub_in_place!, div_in_place!

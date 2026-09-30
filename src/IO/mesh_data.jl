@@ -44,25 +44,25 @@ function csv_reader(filename::String)
                     ignorerepeated = true,
                     header = header,
                     skipto = header_line + 1,
-                    comment = "#",)
+                    comment = "#")
 end
 
 include("Mesh_Import/Mesh_Import.jl")
 using .Mesh_Import: read_mesh
 
 """
-    init_data(params::Dict, path::String, comm::MPI.Comm)
+    init_data(params::AbstractDict, path::String, comm::MPI.Comm)
 
 Initializes the data for the mesh.
 
 # Arguments
-- `params::Dict`: The parameters for the simulation.
+- `params::AbstractDict`: The parameters for the simulation.
 - `path::String`: The path to the mesh file.
 - `comm::MPI.Comm`: The MPI communicator.
 # Returns
-- `params::Dict`: The parameters for the simulation.
+- `params::AbstractDict`: The parameters for the simulation.
 """
-function init_data(params::Dict,
+function init_data(params::AbstractDict,
                    path::String,
                    comm::MPI.Comm)
     @timeit "init_data - mesh_data.jl" begin
@@ -176,15 +176,15 @@ function init_data(params::Dict,
 end
 
 """
-	set_angles(params::Dict, block_nodes::Dict)
+	set_angles(params::AbstractDict, block_nodes::AbstractDict)
 
 Sets the density of the nodes in the dictionary.
 
 # Arguments
-- `params::Dict`: The parameters
-- `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
+- `params::AbstractDict`: The parameters
+- `block_nodes::AbstractDict`: A dictionary mapping block IDs to collections of nodes
 """
-function set_angles(params::Dict)
+function set_angles(params::AbstractDict)
     block_ids = Data_Manager.get_field("Block_Id")
     blocks = unique(block_ids)
     mesh_angles = false
@@ -248,7 +248,7 @@ function create_and_distribute_bond_norm(comm::MPI.Comm,
     copyto!.(bond_norm_field, bond_norm)
 end
 
-function contact_basis(params::Dict, mesh::DataFrame, comm,
+function contact_basis(params::AbstractDict, mesh::DataFrame, comm,
                        rank::Int64)
     if !haskey(params, "Contact")
         return
@@ -499,11 +499,11 @@ function distribution_to_cores(comm::MPI.Comm,
                                                              distribution)
             else
                 datafield[:,
-                localDof] = send_vector_from_root_to_core_i(comm,
-                                                                         send_msg,
-                                                                         datafield[:,
-                                                                         localDof],
-                                                                         distribution)
+                          localDof] = send_vector_from_root_to_core_i(comm,
+                                                                      send_msg,
+                                                                      datafield[:,
+                                                                                localDof],
+                                                                      distribution)
             end
         end
     end
@@ -663,26 +663,26 @@ function check_types_in_dataframe(mesh::DataFrame)
 end
 
 """
-    load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
+    load_and_evaluate_mesh(params::AbstractDict, path::String, ranksize::Int64)
 
 Load and evaluate the mesh data.
 
 # Arguments
-- `params::Dict`: The input parameters.
+- `params::AbstractDict`: The input parameters.
 - `path::String`: The path to the mesh file.
 - `ranksize::Int64`: The number of ranks.
 # Returns
 - `distribution::Array{Int64,1}`: The distribution of the mesh elements.
 - `mesh::DataFrame`: The mesh data as a DataFrame.
-- `ntype::Dict`: The type of the mesh elements.
+- `ntype::AbstractDict`: The type of the mesh elements.
 - `overlap_map::Array{Array{Int64,1},1}`: The overlap map of the mesh elements.
 - `nlist::Array{Array{Int64,1},1}`: The neighborhood list of the mesh elements.
 - `dof::Int64`: The degrees of freedom (DOF) for the mesh elements.
-- `nsets::Dict`: The node sets
+- `nsets::AbstractDict`: The node sets
 - `topology::Int64`::Array{Int64,nelement:nodes}`: The topology of elements.
 - `el_distribution::Array{Int64,1}`: The distribution of the finite elements.
 """
-function load_and_evaluate_mesh(params::Dict,
+function load_and_evaluate_mesh(params::AbstractDict,
                                 path::String,
                                 ranksize::Int64)
     if params["Discretization"]["Type"] == "Abaqus"
@@ -774,7 +774,7 @@ function load_and_evaluate_mesh(params::Dict,
 end
 
 function create_consistent_neighborhoodlist(external_topology::DataFrame,
-                                            params::Dict,
+                                            params::AbstractDict,
                                             nlist::BondScalarState{Int64},
                                             dof::Int64)
     pd_neighbors::Bool = false
@@ -816,18 +816,18 @@ function create_consistent_neighborhoodlist(external_topology::DataFrame,
 end
 
 """
-    create_neighborhoodlist(mesh::DataFrame, params::Dict, dof::Int64)
+    create_neighborhoodlist(mesh::DataFrame, params::AbstractDict, dof::Int64)
 
 Create the neighborhood list of the mesh elements.
 
 # Arguments
 - `mesh::DataFrame`: The input mesh data represented as a DataFrame.
-- `params::Dict`: The input parameters.
+- `params::AbstractDict`: The input parameters.
 - `dof::Int64`: The degrees of freedom (DOF) for the mesh elements.
 # Returns
 - `nlist::Array{Array{Int64,1},1}`: The neighborhood list of the mesh elements.
 """
-function create_neighborhoodlist(mesh::DataFrame, params::Dict, dof::Int64)
+function create_neighborhoodlist(mesh::DataFrame, params::AbstractDict, dof::Int64)
     coor = names(mesh)
     return neighbors(mesh, params, coor[1:dof])
 end
@@ -919,7 +919,7 @@ Create the distribution of the nodes.
 # Returns
 - `distribution::Vector{Vector{Int64}}`: The distribution of the nodes.
 - `ptc::Vector{Int64}`: Defines at which core / rank each node lies.
-- `ntype::Dict`: The type of the nodes.
+- `ntype::AbstractDict`: The type of the nodes.
 """
 function node_distribution(nlist::BondScalarState{Int64},
                            size::Int64,
@@ -1197,7 +1197,7 @@ function create_distribution(nnodes::Int64, size::Int64)
 end
 
 """
-    neighbors(mesh, params::Dict, coor)
+    neighbors(mesh, params::AbstractDict, coor)
 
 Compute the neighbor list for each node in a mesh based on their proximity using a BallTree data structure.
 
@@ -1209,7 +1209,7 @@ Compute the neighbor list for each node in a mesh based on their proximity using
 # Returns
 An array of neighbor lists, where each element represents the neighbors of a node in the mesh.
 """
-function neighbors(mesh::DataFrame, params::Dict,
+function neighbors(mesh::DataFrame, params::AbstractDict,
                    coor::Union{Vector{Int64},Vector{String}})
     @info "Init Neighborhoodlist"
     nnodes = length(mesh[!, coor[1]])
@@ -1257,9 +1257,9 @@ extrude the mesh at the surface of the block
 
 # Arguments
 - `mesh::DataFrame`: The input mesh data represented as a DataFrame.
-- `params::Dict`: The input parameters.
+- `params::AbstractDict`: The input parameters.
 """
-function extrude_surface_mesh(mesh::DataFrame, params::Dict)
+function extrude_surface_mesh(mesh::DataFrame, params::AbstractDict)
     if !("Surface Extrusion" in keys(params["Discretization"]))
         return mesh, nothing
     end

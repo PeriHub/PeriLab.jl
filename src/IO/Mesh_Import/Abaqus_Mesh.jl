@@ -31,19 +31,19 @@ function mesh_import_name()
 end
 
 """
-    read_mesh(params::Dict, filename::String)
+    read_mesh(params::AbstractDict, filename::String)
 
 Reads an Abaqus mesh file and returns the mesh data as a DataFrame along with
 the node sets found in the boundary conditions.
 
 # Arguments
-- `params::Dict`: The parameters.
+- `params::AbstractDict`: The parameters.
 - `filename::String`: The path to the Abaqus INP file.
 # Returns
 - `mesh::DataFrame`: The mesh data as a DataFrame.
 - `nsets::Dict{String,Vector{Int64}}`: The node sets.
 """
-function read_mesh(params::Dict, filename::String)
+function read_mesh(params::AbstractDict, filename::String)
     mesh = abaqus_read_mesh(filename; verbose = false)
 
     nodes = mesh["nodes"]
@@ -78,7 +78,8 @@ function read_mesh(params::Dict, filename::String)
 
     nset_names = []
 
-    for boundary_condtion in keys(params["Boundary Conditions"])
+    # sorted, since Dict order changes between Julia versions and defines the node order
+    for boundary_condtion in sort(collect(keys(params["Boundary Conditions"])))
         if haskey(params["Boundary Conditions"][boundary_condtion], "Node Set")
             push!(nset_names,
                   params["Boundary Conditions"][boundary_condtion]["Node Set"])

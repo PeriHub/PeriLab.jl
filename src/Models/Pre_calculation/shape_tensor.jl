@@ -40,7 +40,7 @@ Inits the shape tensor calculation.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `parameter::Dict(String, Any)`: Dictionary with parameter.
+- `parameter::AbstractDict(String, Any)`: Dictionary with parameter.
 
 """
 function init_model(nodes::AbstractVector{Int64},

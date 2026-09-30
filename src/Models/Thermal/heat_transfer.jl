@@ -42,12 +42,12 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `thermal parameter::Dict(String, Any)`: Dictionary with thermal parameter.
+- `thermal parameter::AbstractDict(String, Any)`: Dictionary with thermal parameter.
 - `block::Int64`: The current block.
 
 """
 function init_model(nodes::AbstractVector{Int64},
-                    thermal_parameter::Dict)
+                    thermal_parameter::AbstractDict)
     nlist = Data_Manager.get_nlist()
     dof = Data_Manager.get_dof()
 
@@ -71,7 +71,7 @@ Calculates the heat transfer to the environment. [BrighentiR2021](@cite)
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
+- `flow parameter::AbstractDict(String, Any)`: Dictionary with flow parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
@@ -79,7 +79,7 @@ Example:
 ```
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       thermal_parameter::Dict,
+                       thermal_parameter::AbstractDict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)

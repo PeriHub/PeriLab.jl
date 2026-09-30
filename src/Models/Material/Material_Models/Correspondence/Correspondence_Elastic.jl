@@ -34,16 +34,16 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(nodes::AbstractVector{Int64}, material_parameter::AbstractDict)
 
 Initializes the material model.
 
 # Arguments
   - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `material_parameter::AbstractDict(String, Any)`: Dictionary with material parameter.
 """
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
+                    material_parameter::AbstractDict)
     dof::Int64 = Data_Manager.get_dof()
 
     hooke_matrix::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Material Gradient",
@@ -56,10 +56,10 @@ function init_model(nodes::AbstractVector{Int64},
 
     for iID in nodes
         @views hooke_matrix[iID, :,
-        :] = get_Hooke_matrix(material_parameter,
-                                                          symmetry,
-                                                          dof,
-                                                          iID)
+                            :] = get_Hooke_matrix(material_parameter,
+                                                  symmetry,
+                                                  dof,
+                                                  iID)
     end
 end
 """
@@ -83,14 +83,14 @@ function correspondence_name()
 end
 
 """
-	compute_stresses(iID:Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
+	compute_stresses(iID:Int64, dof::Int64, material_parameter::AbstractDict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
 
 Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
 - `iID::Int64`: Node ID.
 - `dof::Int64`: Degrees of freedom
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `material_parameter::AbstractDict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 - `strainInc::Union{NodeTensorField{Float64},Array{Float64,6}}`: Strain increment.
@@ -106,7 +106,7 @@ Example:
 
 function compute_stresses(nodes::AbstractVector{Int64},
                           dof::Int64,
-                          material_parameter::Dict,
+                          material_parameter::AbstractDict,
                           time::Float64,
                           dt::Float64,
                           strain_increment::NodeTensorField{Float64},
@@ -150,7 +150,7 @@ end
 function compute_stresses_ba(nodes,
                              nlist,
                              dof::Int64,
-                             material_parameter::Dict,
+                             material_parameter::AbstractDict,
                              time::Float64,
                              dt::Float64,
                              strain_increment,
@@ -172,12 +172,12 @@ function compute_stresses_ba(nodes,
 end
 
 """
-	compute_stresses(dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
+	compute_stresses(dof::Int64, material_parameter::AbstractDict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
 
 Calculates the stresses of a single node. Needed for FEM. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 # Arguments
 - `dof::Int64`: Degrees of freedom
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `material_parameter::AbstractDict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 - `strainInc::Union{NodeTensorField{Float64},Array{Float64,6}}`: Strain increment.
@@ -190,7 +190,7 @@ Example:
 ```
 """
 function compute_stresses(dof::Int64,
-                          material_parameter::Dict,
+                          material_parameter::AbstractDict,
                           time::Float64,
                           dt::Float64,
                           strain_increment::NodeScalarField{Float64},

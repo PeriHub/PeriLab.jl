@@ -38,7 +38,7 @@ function compute_surface_volume_correction(nodes)
     end
 end
 
-function init_surface_correction(params::Dict,
+function init_surface_correction(params::AbstractDict,
                                  local_synch,
                                  synchronise_field)
     # check if surface correction exists

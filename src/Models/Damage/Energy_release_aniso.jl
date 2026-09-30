@@ -48,7 +48,7 @@ Calculates the elastic energy of each bond and compares it to a critical one. If
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `damage_parameter::AbstractDict(String, Any)`: Dictionary with material parameter.
 - `block::Int64`: Block number.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
@@ -57,7 +57,7 @@ Example:
 ```
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       damage_parameter::Dict,
+                       damage_parameter::AbstractDict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
@@ -121,7 +121,7 @@ function compute_model(nodes::AbstractVector{Int64},
         bond_displacement = bond_displacements[iID]
         bond_force_vec = bond_forces[iID]
         quad_horizon = quad_horizons[iID]
-        rotation_temp = view(rotation_tensor,iID,:,:)
+        rotation_temp = view(rotation_tensor, iID, :, :)
         crit_vals = aniso_crit_values[block_ids[iID]]
 
         @timeit "jID loop" begin
@@ -161,8 +161,8 @@ function compute_model(nodes::AbstractVector{Int64},
                         critical_energy_value = critical_energy[iID]
                     elseif inter_block_damage
                         critical_energy_value = inter_critical_energy[block_ids[iID],
-                        block_ids[neighborID],
-                        block]
+                                                                      block_ids[neighborID],
+                                                                      block]
                         param_name = "Interblock Critical Value " *
                                      string(block_ids[iID]) * "_" *
                                      string(block_ids[neighborID])
@@ -260,7 +260,7 @@ function get_quad_horizon(horizon::Float64, dof::Int64, thickness::Float64)
 end
 
 function init_model(nodes::AbstractVector{Int64},
-                    damage_parameter::Dict,
+                    damage_parameter::AbstractDict,
                     block::Int64)
     dof = Data_Manager.get_dof()
     quad_horizon = Data_Manager.create_constant_node_scalar_field("Quad Horizon", Float64)

@@ -8,7 +8,6 @@ using .......Data_Manager
 using .......PeriLabExceptions: @abort
 using ....Material_Basis: get_symmetry, apply_pointwise_E, compute_bond_based_constants
 using .......Helpers: is_dependent
-using LoopVectorization
 using TimerOutputs: @timeit
 export init_model
 export fe_support
@@ -36,16 +35,16 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(nodes::AbstractVector{Int64}, material_parameter::AbstractDict)
 
 Initializes the material model.
 
 # Arguments
   - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `material_parameter::AbstractDict(String, Any)`: Dictionary with material parameter.
 """
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
+                    material_parameter::AbstractDict)
     constant = Data_Manager.create_constant_node_scalar_field("Bond Based Constant",
                                                               Float64)
     horizon = Data_Manager.get_field("Horizon")
@@ -63,18 +62,18 @@ function material_name()
 end
 
 """
-	compute_model(nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
+	compute_model(nodes::AbstractVector{Int64}, material_parameter::AbstractDict, time::Float64, dt::Float64)
 
 Calculate the elastic bond force for each node.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `material_parameter::AbstractDict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict,
+                       material_parameter::AbstractDict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)

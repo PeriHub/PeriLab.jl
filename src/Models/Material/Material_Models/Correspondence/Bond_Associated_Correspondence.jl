@@ -22,7 +22,7 @@ export init_model
 export compute_model
 
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
+                    material_parameter::AbstractDict)
     if !haskey(material_parameter, "Symmetry")
         @abort "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
     end
@@ -80,7 +80,7 @@ end
 """
 
 function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict,
+                       material_parameter::AbstractDict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
@@ -254,7 +254,7 @@ function compute_stress_integral(nodes::AbstractVector{Int64},
                                                                              :,
                                                                              :])
             @views stress_integral[iID, :,
-            :] += factor .* pk_stress * temp
+                                   :] += factor .* pk_stress * temp
         end
     end
     return stress_integral
@@ -286,16 +286,16 @@ function update_Green_Langrange_nodal_strain_increment(nodes::Union{SubArray,
                                                        strain_increment::SubArray)
     for iID in nodes
         @views strain_increment[iID, :,
-        :] = update_Green_Langrange_strain(dt,
-                                                                           deformation_gradient[iID,
-                                                                           :,
-                                                                           :],
-                                                                           deformation_gradient_dot[iID,
-                                                                           :,
-                                                                           :],
-                                                                           strain_increment[iID,
-                                                                           :,
-                                                                           :])
+                                :] = update_Green_Langrange_strain(dt,
+                                                                   deformation_gradient[iID,
+                                                                                        :,
+                                                                                        :],
+                                                                   deformation_gradient_dot[iID,
+                                                                                            :,
+                                                                                            :],
+                                                                   strain_increment[iID,
+                                                                                    :,
+                                                                                    :])
     end
 end
 

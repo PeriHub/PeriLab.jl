@@ -9,17 +9,17 @@ export get_horizon
 export get_angles
 
 """
-    get_block_names_and_ids(params::Dict, block_ids::Vector{Int64})
+    get_block_names_and_ids(params::AbstractDict, block_ids::Vector{Int64})
 
 Get the names of the blocks.
 
 # Arguments
-- `params::Dict`: The parameters dictionary.
+- `params::AbstractDict`: The parameters dictionary.
 - `block_ids::Vector{Int64}`: The IDs of the blocks
 # Returns
 - `block_names::Vector{String}`: The names of the blocks.
 """
-function get_block_names_and_ids(params::Dict, block_ids::Vector{Int64}, mpi::Bool)
+function get_block_names_and_ids(params::AbstractDict, block_ids::Vector{Int64}, mpi::Bool)
     param_block_ids = [v["Block ID"] for v in values(params["Blocks"])]
     block_name_list = Vector{String}()
     block_id_list = Vector{Int64}()
@@ -41,78 +41,78 @@ function get_block_names_and_ids(params::Dict, block_ids::Vector{Int64}, mpi::Bo
 end
 
 """
-    get_density(params::Dict, block_id::Int64)
+    get_density(params::AbstractDict, block_id::Int64)
 
 Get the density of a block.
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 - `block_id::Int64`: The ID of the block
 # Returns
 - `density::Float64`: The density of the block
 """
-function get_density(params::Dict, block_id::Int64)
+function get_density(params::AbstractDict, block_id::Int64)
     return _get_values(params, block_id, "Density")
 end
 
 """
-    get_fem_block(params::Dict, block_id::Int64)
+    get_fem_block(params::AbstractDict, block_id::Int64)
 
 Get the fem_block of a block.
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 - `block_id::Int64`: The ID of the block
 # Returns
 - `fem_block::Float64`: The fem_block of the block
 """
-function get_fem_block(params::Dict, block_id::Int64)
+function get_fem_block(params::AbstractDict, block_id::Int64)
     return _get_values(params, block_id, "FEM", false)
 end
 
 """
-    get_heat_capacity(params::Dict, block_id::Int64)
+    get_heat_capacity(params::AbstractDict, block_id::Int64)
 
 Get the heat capacity of a block.
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 - `block_id::Int64`: The ID of the block
 # Returns
 - `heat_capacity::Float64`: The heat capacity of the block
 """
-function get_heat_capacity(params::Dict, block_id::Int64)
+function get_heat_capacity(params::AbstractDict, block_id::Int64)
     return _get_values(params, block_id, "Specific Heat Capacity")
 end
 
 """
-    get_horizon(params::Dict, block_id::Int64)
+    get_horizon(params::AbstractDict, block_id::Int64)
 
 Get the horizon of a block.
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 - `block_id::Int64`: The ID of the block
 # Returns
 - `horizon::Float64`: The horizon of the block
 """
-function get_horizon(params::Dict, block_id::Int64)
+function get_horizon(params::AbstractDict, block_id::Int64)
     return _get_values(params, block_id, "Horizon")
 end
 
 """
-    get_angles(params::Dict, block_id::Int64, dof::Int64)
+    get_angles(params::AbstractDict, block_id::Int64, dof::Int64)
 
 Get the horizon of a block.
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 - `block_id::Int64`: The ID of the block
 - `dof::Int64`: The dof
 # Returns
 - `angles::Float64`: The angles of the block
 """
-function get_angles(params::Dict, block_id::Int64, dof::Int64)
+function get_angles(params::AbstractDict, block_id::Int64, dof::Int64)
     for block_name in keys(params["Blocks"])
         if params["Blocks"][block_name]["Block ID"] == block_id
             if !haskey(params["Blocks"][block_name], "Angle X")
@@ -133,19 +133,19 @@ function get_angles(params::Dict, block_id::Int64, dof::Int64)
 end
 
 """
-    _get_values(params::Dict, block_id::Int64, valueName::String, defaultValue::Union{Float64,Bool,Nothing})
+    _get_values(params::AbstractDict, block_id::Int64, valueName::String, defaultValue::Union{Float64,Bool,Nothing})
 
 Get the value of a block.
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::AbstractDict`: The parameters
 - `block_id::Int64`: The ID of the block
 - `valueName::String`: The name of the value
 - `defaultValue::Union{Float64,Bool,Nothing`: The default value
 # Returns
 - `value::Float64`: The value of the block
 """
-function _get_values(params::Dict,
+function _get_values(params::AbstractDict,
                      block_id::Int64,
                      valueName::String,
                      defaultValue::Union{Float64,Bool,Nothing} = nothing)

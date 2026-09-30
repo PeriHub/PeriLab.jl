@@ -7,7 +7,6 @@ using LinearAlgebra
 using NLsolve
 using ProgressBars: set_multiline_postfix, set_postfix
 using Printf
-using LoopVectorization
 using Logging
 using TimerOutputs: @timeit
 
@@ -31,14 +30,14 @@ function solver_name()
     return "Static"
 end
 """
-    init_solver(params::Dict, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+    init_solver(params::AbstractDict, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
 Initialize the Static solver for a simulation.
 
 This function sets up the Static solver for a simulation by initializing various parameters.
 
 # Arguments
-- `params::Dict`: A dictionary containing simulation parameters.
+- `params::AbstractDict`: A dictionary containing simulation parameters.
 - `bcs::Dict{Any,Any}`: Boundary conditions
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `mechanical::Bool`: If `true`, mechanical properties are considered in the calculation.
@@ -63,7 +62,7 @@ This function may depend on the following functions:
 - `get_integration_steps`: Used to determine the number of integration steps and adjust the time step.
 """
 function init_solver(solver_options::Dict{Any,Any},
-                     params::Dict,
+                     params::AbstractDict,
                      bcs::Dict{Any,Any},
                      block_nodes::Dict{Int64,Vector{Int64}})
     # @info "==============================="
@@ -261,7 +260,7 @@ function run_solver(solver_options::Dict{Any,Any},
                       show_trace = show_trace & !silent,
                       extended_trace = false,
                       method = :anderson,
-                      m = m,)
+                      m = m)
 
         compute_parabolic_problems_after_model_evaluation(active_nodes, solver_options, dt)
 
@@ -295,8 +294,8 @@ function run_solver(solver_options::Dict{Any,Any},
         force_densities = Data_Manager.get_field("Force Densities", "NP1")
 
         @. @views forces[active_nodes,
-        :] = force_densities[active_nodes, :] .*
-                                            volume[active_nodes]
+                         :] = force_densities[active_nodes, :] .*
+                              volume[active_nodes]
 
         @timeit "write_results" result_files=write_results(result_files, time,
                                                            max_damage, outputs)
@@ -350,8 +349,8 @@ function residual!(residual,
     # bc_dof = setdiff(1:length(uNP1), bc_free_dof)
 
     @views deformed_coorNP1[active_nodes,
-    :] = coor[active_nodes, :] .+
-                                               uNP1[active_nodes, :]
+                            :] = coor[active_nodes, :] .+
+                                 uNP1[active_nodes, :]
 
     force_densities[:, :] .= 0 # TODO check where to put it for iterative solver
     forces = Data_Manager.get_field("Forces", "NP1")

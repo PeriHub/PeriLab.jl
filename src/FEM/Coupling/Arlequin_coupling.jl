@@ -31,7 +31,7 @@ function coupling_name()
     return "Arlequin"
 end
 
-function init_coupling_model(nodes, fe_params::Dict{String,Any})
+function init_coupling_model(nodes, fe_params::AbstractDict{String,Any})
     @info "Coupling $(coupling_name()) is active."
     dof = Data_Manager.get_dof()
     p = get_polynomial_degree(fe_params, dof)
@@ -83,13 +83,13 @@ function init_coupling_model(nodes, fe_params::Dict{String,Any})
     @info "Create Coupling Matrix"
     for (coupling_node, coupling_element) in pairs(coupling_dict)
         @timeit "compute_coupling_matrix" coupling_matrix[coupling_node, :,
-        :] = compute_coupling_matrix(coordinates,
-                                                                                                         el_topology,
-                                                                                                         coupling_node,
-                                                                                                         coupling_element,
-                                                                                                         kappa,
-                                                                                                         p,
-                                                                                                         dof)
+                                                          :] = compute_coupling_matrix(coordinates,
+                                                                                       el_topology,
+                                                                                       coupling_node,
+                                                                                       coupling_element,
+                                                                                       kappa,
+                                                                                       p,
+                                                                                       dof)
         rho[coupling_node] *= (1 - weight_coefficient)
     end
     Data_Manager.set_coupling_dict(coupling_dict)
@@ -130,7 +130,7 @@ end
 # 0.25 shape function check # TODO 0.25  -> not in FEM
 ##
 
-function compute_coupling(fem_params::Dict)
+function compute_coupling(fem_params::AbstractDict)
     dof = Data_Manager.get_dof()
     el_topology = Data_Manager.get_field("FE Topology")
     force_densities = Data_Manager.get_field("Force Densities", "NP1")
@@ -151,8 +151,8 @@ function compute_coupling(fem_params::Dict)
         vol = vcat(volume[coupling_node], volume[el_topology[coupling_element, :]])
 
         force_densities[topo,
-        :] -= coupling_matrix[coupling_node, :, :] *
-                                    displacements[topo, :] ./ vol
+                        :] -= coupling_matrix[coupling_node, :, :] *
+                              displacements[topo, :] ./ vol
 
         #force_densities[topo, :] +=
 
@@ -293,7 +293,7 @@ function find_point_in_elements(coordinates, el_topology, points_to_check, dof,
                                                                      dof,
                                                                      el_centroid,
                                                                      coordinates[points_to_check,
-                                                                     :],
+                                                                                 :],
                                                                      search_radius,
                                                                      near_points,
                                                                      true)

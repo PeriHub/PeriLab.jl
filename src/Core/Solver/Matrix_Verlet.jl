@@ -8,10 +8,10 @@ using SparseArrays
 using TimerOutputs
 using ProgressBars: set_multiline_postfix, set_postfix
 using Printf
-using LoopVectorization
 using PrettyTables
 using Logging
 using LinearAlgebra: lu
+using Serialization
 using ...Data_Manager
 using ...PeriLabExceptions: @abort
 
@@ -43,7 +43,7 @@ function solver_name()
 end
 
 function init_solver(solver_options::Dict{Any,Any},
-                     params::Dict,
+                     params::AbstractDict,
                      bcs::Dict{Any,Any},
                      block_nodes::Dict{Int64,Vector{Int64}})
     horizon = Data_Manager.get_field("Horizon")
@@ -101,7 +101,33 @@ function init_solver(solver_options::Dict{Any,Any},
         model_param = Data_Manager.get_properties(block, "Material Model")
         init_model(nodes, model_param, block)
     end
-    @timeit "init_matrix" init_matrix()
+
+    # Stiffness Matrix Cache: assembling K from scratch (build sparsity pattern +
+    # scatter every bond's contribution in) is the single most expensive step of
+    # setup for a large mesh, and it produces exactly the same K every time nothing
+    # about the mesh, material models, or blocks changes -- exactly the case when
+    # iterating on model reduction itself (Model_reduction.jl's own "Reduced Matrix
+    # Cache" caches the *reduced* result; this caches the *input* to it, so changes to
+    # the reduction algorithm can be tested without re-paying for assembly at all).
+    stiffness_cache_file = get(params["Verlet Matrix Based"], "Stiffness Matrix Cache",
+                               nothing)
+    if !isnothing(stiffness_cache_file) && isfile(stiffness_cache_file)
+        @info "Matrix Verlet: loading cached stiffness matrix from $stiffness_cache_file"
+        cached = Serialization.deserialize(stiffness_cache_file)
+        Data_Manager.set_stiffness_matrix(cached.K)
+        Data_Manager.set_nzval_map(cached.col_ptr, cached.row_ptr)
+        Data_Manager.set_cb_tensors(cached.cb_tensors)
+    else
+        @timeit "init_matrix" init_matrix()
+        if !isnothing(stiffness_cache_file)
+            @info "Matrix Verlet: saving stiffness matrix to $stiffness_cache_file"
+            col_ptr, row_ptr = Data_Manager.get_nzval_map()
+            Serialization.serialize(stiffness_cache_file,
+                                    (K = Data_Manager.get_stiffness_matrix(),
+                                     col_ptr = col_ptr, row_ptr = row_ptr,
+                                     cb_tensors = Data_Manager.get_cb_tensors()))
+        end
+    end
     K = Data_Manager.get_stiffness_matrix()
 
     density_mass = zeros(length(density) * Data_Manager.get_dof())

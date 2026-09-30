@@ -80,7 +80,8 @@ Initializes the material model.
 - `block::Int64`: Block.
 """
 function init_model(nodes::AbstractVector{Int64}, block::Int64)
-    model_param = Data_Manager.get_properties(block, "Material Model")::Dict{String,Any}
+    model_param = Data_Manager.get_properties(block,
+                                              "Material Model")::AbstractDict{String,Any}
     if !haskey(model_param, "Material Model")
         @abort "Block " * string(block) * " has no material model defined."
         return
@@ -147,19 +148,19 @@ function fields_for_local_synchronization(model, block)
 end
 
 """
-    compute_model(nodes::AbstractVector{Int64}, model_param::Dict{String,Any}, block::Int64, time::Float64, dt::Float64)
+    compute_model(nodes::AbstractVector{Int64}, model_param::AbstractDict{String,Any}, block::Int64, time::Float64, dt::Float64)
 
 Computes the material models
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes
-- `model_param::Dict{String,Any}`: The model parameters
+- `model_param::AbstractDict{String,Any}`: The model parameters
 - `block::Int64`: The block
 - `time::Float64`: The current time
 - `dt::Float64`: The time step
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       model_param::Dict{String,Any},
+                       model_param::AbstractDict{String,Any},
                        block::Int64,
                        time::Float64,
                        dt::Float64)
@@ -185,16 +186,16 @@ function compute_model(nodes::AbstractVector{Int64},
 end
 
 """
-    determine_isotropic_parameter(prop::Dict)
+    determine_isotropic_parameter(prop::AbstractDict)
 
 Determine the isotropic parameter.
 
 # Arguments
-- `prop::Dict`: The material property.
+- `prop::AbstractDict`: The material property.
 # Returns
-- `prop::Dict`: The material property.
+- `prop::AbstractDict`: The material property.
 """
-function determine_isotropic_parameter(prop::Dict)
+function determine_isotropic_parameter(prop::AbstractDict)
     get_all_elastic_moduli(prop)
 end
 
@@ -246,7 +247,7 @@ function distribute_force_densities(nodes::AbstractVector{Int64})
 end
 
 function compute_correspondence_bond_forces(nodes::AbstractVector{Int64},
-                                            material_parameter::Dict{String,Any},
+                                            material_parameter::AbstractDict{String,Any},
                                             block::Int64,
                                             time::Float64,
                                             dt::Float64)

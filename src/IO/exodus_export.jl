@@ -74,7 +74,7 @@ Creates an exodus file for the results.
 - `num_owned_nodes::Int64`: Master nodes of this rank, one SPHERE element each.
   Defaults to `num_nodes`, which is right whenever the file holds no responder nodes.
 # Returns
-- `result_file::Dict{String,Any}`: A dictionary containing the filename and the exodus file
+- `result_file::AbstractDict{String,Any}`: A dictionary containing the filename and the exodus file
 """
 function create_result_file(filename::AbstractString,
                             num_nodes::Int64,
@@ -355,7 +355,7 @@ blocks together with the sizes required at initialisation.
 - `block_Id::AbstractVector{Int64}`: Block id per node
 - `n_blocks::Int64`: Number of material blocks
 - `nlist::AbstractVector`: Neighbourhood list
-- `parameter::Dict`: Output parameter block, may contain `"Bond Export"` and
+- `parameter::AbstractDict`: Output parameter block, may contain `"Bond Export"` and
   `"Bond Blocks"` (whitespace separated indices, e.g. `1 3`). Without `"Bond Blocks"`
   every block is exported.
 # Returns
@@ -366,7 +366,7 @@ blocks together with the sizes required at initialisation.
 function init_bond_information_export(block_Id::AbstractVector{Int64},
                                       n_blocks::Int64,
                                       nlist::AbstractVector,
-                                      parameter::Dict)
+                                      parameter::AbstractDict)
     if !get(parameter, "Bond Export", false)
         return OrderedDict{Int64,BondBlock}(), 0, 0
     end
@@ -486,7 +486,7 @@ old positional places.
 # Arguments
 - `exo::ExodusDatabase`: The exodus database
 - `dof`: Degrees of freedom
-- `output::Dict`: The output definition
+- `output::AbstractDict`: The output definition
 - `coords::Union{Matrix{Int64},Matrix{Float64}}`: The coordinates
 - `block_Id::Vector{Int64}`: The block Id per node
 - `all_block_name_list::Vector{String}`: The block names
@@ -507,7 +507,7 @@ old positional places.
 """
 function init_results_in_exodus(exo::ExodusDatabase,
                                 dof,
-                                output::Dict,
+                                output::AbstractDict,
                                 coords::Union{Matrix{Int64},Matrix{Float64}},
                                 block_Id::Vector{Int64},
                                 all_block_name_list::Vector{String},
@@ -712,20 +712,20 @@ function write_step_and_time(exo::ExodusDatabase, step::Int64, time::Float64)
 end
 
 """
-    write_nodal_results_in_exodus(exo::ExodusDatabase, step::Int64, output::Dict)
+    write_nodal_results_in_exodus(exo::ExodusDatabase, step::Int64, output::AbstractDict)
 
 Writes the nodal results in the exodus file
 
 # Arguments
 - `exo::ExodusDatabase`: The exodus file
 - `step::Int64`: The step
-- `output::Dict`: The output
+- `output::AbstractDict`: The output
 # Returns
 - `exo::ExodusDatabase`: The exodus file
 """
 function write_nodal_results_in_exodus(exo::ExodusDatabase,
                                        step::Int64,
-                                       output::Dict)
+                                       output::AbstractDict)
     # exodus expects exactly one value per node of the file, and the count comes from the
     # file itself so it cannot disagree with what it was initialised with. The field has
     # a row for every node the rank knows, master and responder, which is not necessarily
@@ -748,7 +748,7 @@ function write_nodal_results_in_exodus(exo::ExodusDatabase,
             var[1:n_write] .= field[1:n_write, output[varname]["dof"]]
         else
             var[1:n_write] .= field[1:n_write, output[varname]["i_dof"],
-            output[varname]["j_dof"]]
+                                    output[varname]["j_dof"]]
         end
         # interface does not work with Int yet 28//08//2023
         write_values(exo, NodalVariable, step, varname, var)
@@ -773,7 +773,7 @@ material blocks — as zeros.
 # Arguments
 - `exo::ExodusDatabase`: The exodus file
 - `step::Int64`: The step
-- `output::Dict`: The bond output definitions
+- `output::AbstractDict`: The bond output definitions
 - `bond_blocks::AbstractDict{Int64,BondBlock}`: The bond blocks
 - `block_Id::AbstractVector{Int64}`: Block id per node
 - `n_blocks::Int64`: Number of material blocks
@@ -782,7 +782,7 @@ material blocks — as zeros.
 """
 function write_bond_results_in_exodus(exo::ExodusDatabase,
                                       step::Int64,
-                                      output::Dict,
+                                      output::AbstractDict,
                                       bond_blocks::AbstractDict{Int64,BondBlock},
                                       block_Id::AbstractVector{Int64},
                                       n_blocks::Int64)

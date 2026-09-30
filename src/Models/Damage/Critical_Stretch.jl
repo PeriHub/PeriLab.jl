@@ -37,7 +37,7 @@ Calculates the stretch of each bond and compares it to a critical one. If it is 
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `damage_parameter::AbstractDict(String, Any)`: Dictionary with material parameter.
 - `block::Int64`: Block number.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
@@ -46,7 +46,7 @@ Example:
 ```
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       damage_parameter::Dict,
+                       damage_parameter::AbstractDict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
@@ -113,7 +113,7 @@ function fields_for_local_synchronization(model::String)
 end
 
 function init_model(odes::AbstractVector{Int64},
-                    damage_parameter::Dict,
+                    damage_parameter::AbstractDict,
                     block::Int64)
     stretch::BondScalarState{Float64} = Data_Manager.create_constant_bond_scalar_state("Bond Stretch",
                                                                                        Float64)

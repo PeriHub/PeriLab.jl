@@ -38,7 +38,7 @@ Inits the bond deformation calculation.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `parameter::Dict(String, Any)`: Dictionary with parameter.
+- `parameter::AbstractDict(String, Any)`: Dictionary with parameter.
 
 """
 function init_model(nodes::AbstractVector{Int64},
@@ -51,13 +51,13 @@ function init_model(nodes::AbstractVector{Int64},
 end
 
 """
-    compute(nodes::AbstractVector{Int64}), parameter::Dict
+    compute(nodes::AbstractVector{Int64}), parameter::AbstractDict
 
 Compute the bond deformation.
 
 # Arguments
 - `nodes`: List of nodes.
-- `parameter::Dict(String, Any)`: Dictionary with parameter.
+- `parameter::AbstractDict(String, Any)`: Dictionary with parameter.
 """
 function compute(nodes::AbstractVector{Int64},
                  parameter::Union{Dict,OrderedDict},

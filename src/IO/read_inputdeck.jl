@@ -15,7 +15,7 @@ Reads the input deck from a yaml file
 # Arguments
 - `filename::String`: The name of the yaml file
 # Returns
-- `params::Dict{String,Any}`: The parameters read from the yaml file
+- `params::AbstractDict{String,Any}`: The parameters read from the yaml file
 """
 function read_input(filename::String)
     try

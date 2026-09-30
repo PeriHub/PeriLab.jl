@@ -38,7 +38,7 @@ Calculates the bond-based degradation model. This template has to be copied, the
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `degradation parameter::Dict(String, Any)`: Dictionary with degradation parameter.
+- `degradation parameter::AbstractDict(String, Any)`: Dictionary with degradation parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
@@ -46,7 +46,7 @@ Example:
   ```
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       degradation_parameter::Dict,
+                       degradation_parameter::AbstractDict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
@@ -86,12 +86,12 @@ Inits the bond-based degradation model. This template has to be copied, the file
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `degradation parameter::Dict(String, Any)`: Dictionary with degradation parameter.
+- `degradation parameter::AbstractDict(String, Any)`: Dictionary with degradation parameter.
 - `block::Int64`: The current block.
 
 """
 function init_model(nodes::AbstractVector{Int64},
-                    degradation_parameter::Dict,
+                    degradation_parameter::AbstractDict,
                     block::Int64)
 end
 
