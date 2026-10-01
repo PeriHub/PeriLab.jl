@@ -519,8 +519,34 @@ function report_modal_coupling(K_reduced::SparseMatrixCSC, M_reduced::SparseMatr
 end
 
 """
+    limit_frequency(X, w, max_frequency)
+
+Keeps the modes whose frequency `sqrt(w) / 2 pi` does not exceed `max_frequency`.
+
+The eigenvalues come sorted in ascending order, so the kept modes are the first ones. If
+every computed mode lies below the limit, further modes below it may exist that were
+never computed; `Number of Modes` bounds how many are, and a warning says so.
+
+# Arguments
+- `X::Matrix{Float64}`: Modes, one per column
+- `w::Vector{Float64}`: Eigenvalues, ascending
+- `max_frequency::Float64`: Highest frequency to keep in Hz
+# Returns
+- `X::Matrix{Float64}`, `w::Vector{Float64}`: The kept modes and eigenvalues
+"""
+function limit_frequency(X::Matrix{Float64}, w::Vector{Float64}, max_frequency::Float64)
+    n_kept = count(<=(max_frequency), sqrt.(w) ./ (2 * pi))
+    if n_kept == length(w) && !isempty(w)
+        @warn "Craig-Bampton: all $(length(w)) computed modes lie below the maximum " *
+              "frequency of $(max_frequency) Hz; raise 'Number of Modes' to find more."
+    end
+    @info "Craig-Bampton: $n_kept of $(length(w)) modes up to $(max_frequency) Hz kept"
+    return X[:, 1:n_kept], w[1:n_kept]
+end
+
+"""
     reduce_matrices(K, M_diag, r, l, n_modes = 1; block_size = 512,
-                    check_symmetry_sample = 2000)
+                    check_symmetry_sample = 2000, max_frequency = nothing)
 
 Craig-Bampton reduction of a stiffness and a lumped mass matrix.
 
@@ -563,6 +589,9 @@ retained degrees of freedom.
 
 `n_modes = 0` drops the modal part and leaves Guyan condensation.
 
+With `max_frequency` set, `n_modes` becomes an upper bound: the `n_modes` lowest modes
+are computed and only those with a frequency up to `max_frequency` are kept.
+
 # Arguments
 - `K::AbstractMatrix`: Stiffness matrix
 - `M_diag::AbstractVector`: Lumped mass matrix as a vector, one entry per degree of freedom.
@@ -570,9 +599,11 @@ retained degrees of freedom.
   density, not a physical mass; it is used as-is, with no volume weighting.
 - `r::AbstractVector{<:Integer}`: Indices of the retained degrees of freedom
 - `l::AbstractVector{<:Integer}`: Indices of the condensed degrees of freedom
-- `n_modes::Integer`: Number of fixed-interface modes to keep
+- `n_modes::Integer`: Number of fixed-interface modes to keep; the upper bound if
+  `max_frequency` is set
 # Keywords
 - `block_size::Int64`: Right hand sides solved at once for the recovery modes
+- `max_frequency::Union{Nothing,Float64}`: Highest fixed-interface frequency in Hz to keep
 - `check_symmetry_sample::Int64`: Entries drawn for the symmetry check, 0 disables it
 # Returns
 - `K_reduced::SparseMatrixCSC`: Reduced stiffness, size `length(r) + n_modes`
@@ -584,7 +615,8 @@ function reduce_matrices(K::AbstractMatrix,
                          l::AbstractVector{<:Integer},
                          n_modes::Integer = 1;
                          block_size::Int64 = 512,
-                         check_symmetry_sample::Int64 = 2000)
+                         check_symmetry_sample::Int64 = 2000,
+                         max_frequency::Union{Nothing,Float64} = nothing)
     r = collect(Int64, r)
     l = collect(Int64, l)
     n_modes = Int64(n_modes)
@@ -633,12 +665,18 @@ function reduce_matrices(K::AbstractMatrix,
 
     # The modes are normalised against Mll, so X' Mll X = I.
     @timeit "CB fixed interface modes" X, w=fixed_interface_modes(Kll, Mll, n_modes)
+    if !isnothing(max_frequency)
+        X, w = limit_frequency(X, w, max_frequency)
+        n_modes = length(w)
+    end
 
     if n_modes > 0
-        f_lo = sqrt(w[1]) / (2 * pi)
-        f_hi = sqrt(w[end]) / (2 * pi)
-        @info "Craig-Bampton fixed-interface frequencies: $(round(f_lo; sigdigits = 4)) Hz " *
-              "(mode 1) to $(round(f_hi; sigdigits = 4)) Hz (mode $n_modes)"
+        frequencies = sqrt.(w) ./ (2 * pi)
+        @info "Craig-Bampton fixed-interface frequencies: " *
+              "$(round(frequencies[1]; sigdigits = 4)) Hz (mode 1) to " *
+              "$(round(frequencies[end]; sigdigits = 4)) Hz (mode $n_modes)"
+        @info "Craig-Bampton fixed-interface frequency list [Hz]: " *
+              join(round.(frequencies; sigdigits = 6), ", ")
     end
 
     n_total = nr + n_modes

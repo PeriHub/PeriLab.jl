@@ -5,6 +5,7 @@
 module Model_reduction
 using TimerOutputs: @timeit
 using ...Data_Manager
+using ....PeriLabExceptions: @abort
 using SparseArrays
 using Serialization
 using ....ModuleLoader: find_module_files, create_module_specifics
@@ -381,11 +382,22 @@ function init_reduce_model(model_param::AbstractDict,
     # reduce_matrices' docstring) -- matters only once a shell gets wide, so it has no
     # effect on the single-level schemes.
     dense_shell_limit = get(model_param, "Dense Shell Limit", 1500)
-    extra_kwargs = model_param["Type"] == "Craig Bampton Cascade" ?
-                   (;
-                    max_rss_mib = isnothing(max_rss_mib) ? nothing :
-                                  Float64(max_rss_mib),
-                    dense_shell_limit = Int64(dense_shell_limit)) : (;)
+    # Maximum Frequency: keeps the fixed-interface modes up to this frequency in Hz,
+    # with Number of Modes as the upper bound on how many are computed.
+    max_frequency = get(model_param, "Maximum Frequency", nothing)
+    if !isnothing(max_frequency) && model_param["Type"] != "Craig Bampton"
+        @abort "'Maximum Frequency' is only supported for model reduction type " *
+               "'Craig Bampton', not '$(model_param["Type"])'."
+    end
+    extra_kwargs = if model_param["Type"] == "Craig Bampton Cascade"
+        (;
+         max_rss_mib = isnothing(max_rss_mib) ? nothing : Float64(max_rss_mib),
+         dense_shell_limit = Int64(dense_shell_limit))
+    elseif !isnothing(max_frequency)
+        (; max_frequency = Float64(max_frequency))
+    else
+        (;)
+    end
 
     retained_nodes, condensed_nodes, pd_nodes,
     coupling_nodes = partition_nodes(block_nodes, reduction_blocks, material_point_region)
