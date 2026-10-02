@@ -371,32 +371,24 @@ function init_reduce_model(model_param::AbstractDict,
                                   "model_reduction_name")
     nmodes = get(model_param, "Number of Modes", 1)
     material_point_region = get(model_param, "Material Point Region", true)
-    # Max Memory MiB: an OS/scheduler OOM kill is a SIGKILL, never catchable from inside
-    # this process (see reduce_matrices' docstring); this lets the cascade stop itself
-    # deliberately, with an ordinary Julia error naming the level, before that happens.
-    # Defaults to 8192 (8 GiB), matching reduce_matrices' own default; an explicit
-    # `Max Memory MiB: null` in the deck disables it.
-    max_rss_mib = get(model_param, "Max Memory MiB", 8192.0)
-    # Dense Shell Limit: above this many physical degrees of freedom, a cascade level's
-    # own local system is built and factorized sparse instead of dense (see
-    # reduce_matrices' docstring) -- matters only once a shell gets wide, so it has no
-    # effect on the single-level schemes.
-    dense_shell_limit = get(model_param, "Dense Shell Limit", 1500)
     # Maximum Frequency: keeps the fixed-interface modes up to this frequency in Hz,
-    # with Number of Modes as the upper bound on how many are computed.
+    # with Number of Modes as the upper bound on how many are kept.
     max_frequency = get(model_param, "Maximum Frequency", nothing)
-    if !isnothing(max_frequency) && model_param["Type"] != "Craig Bampton"
-        @abort "'Maximum Frequency' is only supported for model reduction type " *
-               "'Craig Bampton', not '$(model_param["Type"])'."
+    if !isnothing(max_frequency) &&
+       !(model_param["Type"] in ("Craig Bampton", "Craig Bampton Cascade"))
+        @abort "'Maximum Frequency' is only supported for the model reduction types " *
+               "'Craig Bampton' and 'Craig Bampton Cascade', not '$(model_param["Type"])'."
     end
+    frequency_kwargs = isnothing(max_frequency) ? (;) :
+                       (; max_frequency = Float64(max_frequency))
     extra_kwargs = if model_param["Type"] == "Craig Bampton Cascade"
-        (;
-         max_rss_mib = isnothing(max_rss_mib) ? nothing : Float64(max_rss_mib),
-         dense_shell_limit = Int64(dense_shell_limit))
-    elseif !isnothing(max_frequency)
-        (; max_frequency = Float64(max_frequency))
+        # Number of Subregions: chunks of consecutive node ids the condensed region is
+        # condensed in, one after the other.
+        (; dof = Data_Manager.get_dof(),
+         n_subregions = Int64(get(model_param, "Number of Subregions", 20)),
+         frequency_kwargs...)
     else
-        (;)
+        frequency_kwargs
     end
 
     retained_nodes, condensed_nodes, pd_nodes,
