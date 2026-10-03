@@ -22,5 +22,8 @@ include("solver.jl")
 include("outputs.jl")
 include("conditions.jl")
 include("contact.jl")
+include("input.jl")
+
+export read_input, PeriLabInput
 
 end
