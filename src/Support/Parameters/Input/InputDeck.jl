@@ -11,6 +11,7 @@ Model parameters (`Models`) are declared by the model modules (phase 3).
 """
 module InputDeck
 
+using ..ParameterSpec
 using ..ParameterSpec: @params, req, opt, ParseContext, add_error!, join_path,
                        parse_section
 import ..ParameterSpec: check!
@@ -18,5 +19,8 @@ import ..ParameterSpec: check!
 include("discretization.jl")
 include("blocks.jl")
 include("solver.jl")
+include("outputs.jl")
+include("conditions.jl")
+include("contact.jl")
 
 end
