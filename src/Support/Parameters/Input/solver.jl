@@ -110,6 +110,10 @@ function check!(p::SolverParams, path::String, ctx::ParseContext)
     if p.final_time === nothing && p.additional_time === nothing
         add_error!(ctx, path, "\"Final Time\" or \"Additional Time\" is required")
     end
+    if p.newmark !== nothing && p.newmark.model_reduction
+        add_error!(ctx, join_path(path, "Newmark"),
+                   "\"Model Reduction\" is not supported by the Newmark solver; use \"Verlet Matrix Based\" with a \"Model Reduction\" section")
+    end
     return nothing
 end
 

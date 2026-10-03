@@ -5,6 +5,7 @@
 module Model_reduction
 using TimerOutputs: @timeit
 using ...Data_Manager
+using ....InputDeck: ModelReductionParams
 using SparseArrays
 using ....ModuleLoader: find_module_files, create_module_specifics
 using ...Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
@@ -259,12 +260,12 @@ two forms the YAML parser can hand back. Logs and returns `nothing` if the entry
 absent or of an unsupported type, so the caller only has to check for that.
 
 # Arguments
-- `model_param::Dict`: The `"Model Reduction"` solver parameters
+- `model_param::ModelReductionParams`: The `"Model Reduction"` solver parameters
 # Returns
 - `Union{Nothing,Vector{Int64}}`: The block IDs, or `nothing` if none were usable
 """
-function parse_reduction_blocks(model_param::Dict)
-    reduction_blocks = get(model_param, "Reduction Blocks", nothing)
+function parse_reduction_blocks(model_param::ModelReductionParams)
+    reduction_blocks = model_param.reduction_blocks
     if isnothing(reduction_blocks)
         @warn "No reduction blocks defined for model reduction. If you want to use a reduced model please define 'Reduction Blocks' in the yaml input deck."
         return nothing
@@ -356,17 +357,18 @@ function expand_density_per_dof(density, dof::Int64)
     return density_mass
 end
 
-function init_reduce_model(model_param::Dict, block_nodes::Dict{Int64,Vector{Int64}},
+function init_reduce_model(model_param::ModelReductionParams,
+                           block_nodes::Dict{Int64,Vector{Int64}},
                            density)
     reduction_blocks = parse_reduction_blocks(model_param)
     isnothing(reduction_blocks) && return
 
-    @info "Model Reduction Type: $(model_param["Type"])"
+    @info "Model Reduction Type: $(model_param.type)"
     @info "Reduction blocks: $reduction_blocks"
-    mod = create_module_specifics(model_param["Type"], module_list, @__MODULE__,
+    mod = create_module_specifics(model_param.type, module_list, @__MODULE__,
                                   "model_reduction_name")
-    nmodes = get(model_param, "Number of Modes", 1)
-    material_point_region = get(model_param, "Material Point Region", true)
+    nmodes = model_param.number_of_modes
+    material_point_region = model_param.material_point_region
 
     master_nodes, slave_nodes, pd_nodes,
     coupling_nodes = partition_nodes(block_nodes, reduction_blocks, material_point_region)

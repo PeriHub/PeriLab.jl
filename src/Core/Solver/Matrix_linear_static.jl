@@ -15,14 +15,7 @@ using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_styl
                   create_permutation
 # using ...MPI_Communication: barrier
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
-using ...Parameter_Handling:
-                             get_initial_time,
-                             get_fixed_dt,
-                             get_final_time,
-                             get_numerical_damping,
-                             get_safety_factor,
-                             get_max_damage,
-                             get_nsteps
+using ...InputDeck: SolverParams, start_time, end_time
 
 using ..Model_Factory: compute_stiff_matrix_compatible_models,
                        compute_matrix_based_bond_forces
@@ -60,14 +53,14 @@ mutable struct DisplacementSolverCache
 end
 
 """
-	init_solver(params::Dict, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+	init_solver(params::SolverParams, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
 Initialize the Verlet solver for a simulation.
 
 This function sets up the Verlet solver for a simulation by initializing various parameters and calculating the time step based on provided parameters or critical time step calculations.
 
 # Arguments
-- `params::Dict`: A dictionary containing simulation parameters.
+- `params::SolverParams`: The solver parameters of the current step.
 - `bcs::Dict{Any,Any}`: Boundary conditions
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `mechanical::Bool`: If `true`, mechanical properties are considered in the calculation.
@@ -88,16 +81,16 @@ This function may depend on the following functions:
 - `find_and_set_core_value_min` and `find_and_set_core_value_max`: Used to set core values in a distributed computing environment.
 """
 function init_solver(solver_options::Dict{Any,Any},
-                     params::Dict,
+                     params::SolverParams,
                      bcs::Dict{Any,Any},
                      block_nodes::Dict{Int64,Vector{Int64}})
     find_bc_free_dof(bcs)
     delta_u = Data_Manager.create_constant_node_vector_field("Delta Displacements", Float64,
                                                              Data_Manager.get_dof())
-    solver_options["Initial Time"] = get_initial_time(params)
-    solver_options["Final Time"] = get_final_time(params)
+    solver_options["Initial Time"] = start_time(params, Data_Manager.get_current_time())
+    solver_options["Final Time"] = end_time(params, Data_Manager.get_current_time())
 
-    solver_options["Number of Steps"] = get_nsteps(params)
+    solver_options["Number of Steps"] = something(params.number_of_steps, 1)
     ## Remark: For static analysis, the number of steps is mandatory
     # dt cannot be defined here; Number of steps define the value,
     # because for static analysis it is a virtual case
@@ -115,8 +108,7 @@ function init_solver(solver_options::Dict{Any,Any},
 
     @timeit "init matrix" init_matrix()
     Data_Manager.create_node_scalar_field("Damage", Float64)
-    solver_options["Matrix Update"] = get(params["Linear Static Matrix Based"],
-                                          "Matrix Update", false)
+    solver_options["Matrix Update"] = params.linear_static_matrix_based.matrix_update
     deformed_coorN = Data_Manager.get_field("Deformed Coordinates", "N")
     deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
     coor = Data_Manager.get_field("Coordinates")

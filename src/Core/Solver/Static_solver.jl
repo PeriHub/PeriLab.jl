@@ -13,13 +13,7 @@ using TimerOutputs: @timeit
 
 using ...Data_Manager
 using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
-using ...Parameter_Handling:
-                             get_initial_time,
-                             get_fixed_dt,
-                             get_final_time,
-                             get_numerical_damping,
-                             get_safety_factor,
-                             get_max_damage
+using ...InputDeck: SolverParams, start_time, end_time
 # using ...MPI_Communication: barrier
 using ..Model_Factory
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
@@ -31,14 +25,14 @@ function solver_name()
     return "Static"
 end
 """
-    init_solver(params::Dict, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+    init_solver(params::SolverParams, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
 Initialize the Static solver for a simulation.
 
 This function sets up the Static solver for a simulation by initializing various parameters.
 
 # Arguments
-- `params::Dict`: A dictionary containing simulation parameters.
+- `params::SolverParams`: The solver parameters of the current step.
 - `bcs::Dict{Any,Any}`: Boundary conditions
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `mechanical::Bool`: If `true`, mechanical properties are considered in the calculation.
@@ -63,7 +57,7 @@ This function may depend on the following functions:
 - `get_integration_steps`: Used to determine the number of integration steps and adjust the time step.
 """
 function init_solver(solver_options::Dict{Any,Any},
-                     params::Dict,
+                     params::SolverParams,
                      bcs::Dict{Any,Any},
                      block_nodes::Dict{Int64,Vector{Int64}})
     # @info "==============================="
@@ -72,20 +66,20 @@ function init_solver(solver_options::Dict{Any,Any},
 
     mechanical = "Material" in solver_options["Models"]
     thermal = "Thermal" in solver_options["Models"]
-    initial_time = get_initial_time(params)
-    final_time = get_final_time(params)
-    fixed_dt = get_fixed_dt(params)
+    initial_time = start_time(params, Data_Manager.get_current_time())
+    final_time = end_time(params, Data_Manager.get_current_time())
+    fixed_dt = params.static.fixed_dt
     dof = Data_Manager.get_dof()
     if fixed_dt == -1.0
-        if haskey(params, "Number of Steps")
-            nsteps = params["Number of Steps"]
+        if params.number_of_steps !== nothing
+            nsteps = params.number_of_steps
             dt = (final_time - initial_time) / nsteps
         else
             nsteps = Int64(1)
             dt = final_time - initial_time
         end
     else
-        if haskey(params, "Number of Steps")
+        if params.number_of_steps !== nothing
             @warn "''Number of Steps'' and ''Fixed dt'' are defined. ''Fixed dt'' is used and ''Number of Steps'' from yaml is ignored."
         end
         nsteps = Int64(round((final_time - initial_time) / fixed_dt))
@@ -94,38 +88,19 @@ function init_solver(solver_options::Dict{Any,Any},
     comm = Data_Manager.get_comm()
 
     # not needed here
-    numerical_damping = get_numerical_damping(params)
-    max_damage = get_max_damage(params)
-    solver_specifics = Dict("Solution tolerance" => 1e-7,
-                            "Residual tolerance" => 1e-7,
-                            "Maximum number of iterations" => 100,
-                            "Show solver iteration" => false,
-                            "Residual scaling" => 1e6,
-                            "m" => 15,
-                            "Linear Start Value" => zeros(2 * dof))
-    if haskey(params["Static"], "Residual scaling")
-        volume = Data_Manager.get_field("Volume")
-        solver_specifics["Residual scaling"] = params["Static"]["Residual scaling"]# / minimum(volume) / minimum(volume)
-    end
-    if haskey(params["Static"], "Solution tolerance")
-        solver_specifics["Solution tolerance"] = params["Static"]["Solution tolerance"]
-    end
-    if haskey(params["Static"], "Residual tolerance")
-        solver_specifics["Residual tolerance"] = params["Static"]["Residual tolerance"]
-    end
-    if haskey(params["Static"], "Maximum number of iterations")
-        solver_specifics["Maximum number of iterations"] = params["Static"]["Maximum number of iterations"]
-    end
-    if haskey(params["Static"], "Show solver iteration")
-        solver_specifics["Show solver iteration"] = params["Static"]["Show solver iteration"]
-    end
-    if haskey(params["Static"], "m")
-        solver_specifics["m"] = params["Static"]["m"]
-    end
-    if haskey(params["Static"], "Linear Start Value")
-        solver_specifics["Linear Start Value"] = parse.(Float64,
-                                                        split(params["Static"]["Linear Start Value"]))
-    end
+    numerical_damping = params.static.numerical_damping
+    max_damage = params.maximum_damage
+    static = params.static
+    solver_specifics = Dict("Solution tolerance" => static.solution_tolerance,
+                            "Residual tolerance" => static.residual_tolerance,
+                            "Maximum number of iterations" => static.maximum_number_of_iterations,
+                            "Show solver iteration" => static.show_solver_iteration,
+                            "Residual scaling" => static.residual_scaling,
+                            "m" => static.m,
+                            "Linear Start Value" => static.linear_start_value === nothing ?
+                                                    zeros(2 * dof) :
+                                                    parse.(Float64,
+                                                           split(static.linear_start_value)))
 
     residual = Data_Manager.create_constant_node_vector_field("Residual", Float64, dof)
 

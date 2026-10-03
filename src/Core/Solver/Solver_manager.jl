@@ -9,13 +9,12 @@ using ..PeriLabExceptions: @abort
 using ..Parameter_Handling:
                             get_density,
                             get_horizon,
-                            get_solver_name,
-                            get_model_options,
                             get_fem_block,
-                            get_calculation_options,
                             get_angles,
                             get_block_names_and_ids,
                             get_solver_params
+using ..InputDeck: SolverParams, solver_name, model_options
+using ..ParameterSpec: ParseContext, parse_section, report!
 using ..Helpers
 using ..ModuleLoader: find_module_files, create_module_specifics
 include("../../Models/Material/Material_Basis.jl")
@@ -61,6 +60,21 @@ Initialize the solver
 - `bcs::Dict{Any,Any}`: A dictionary containing boundary conditions.
 - `solver_options::Dict{String,Any}`: A dictionary containing solver options.
 """
+# Temporary until the typed input is passed in (phase 2b-1, Task 3).
+function _typed_solver(solver_params::Dict)
+    ctx = ParseContext()
+    solver = parse_section(SolverParams, solver_params, "Solver", ctx)
+    report!(ctx)
+    return solver
+end
+
+# Runtime format read by the models
+function _calculation_options(s::SolverParams)
+    return Dict{String,Any}("Calculate Cauchy" => s.calculate_cauchy,
+                            "Calculate von Mises stress" => s.calculate_von_mises_stress,
+                            "Calculate Strain" => s.calculate_strain)
+end
+
 function init(params::Dict,
               step_id::Int64)
     solver_options = Dict()
@@ -93,17 +107,16 @@ function init(params::Dict,
     density = set_density(params, block_nodes_with_neighbors, density) # includes the neighbors
     horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
     set_angles(params, block_nodes_with_neighbors) # includes the Neighbors
-    solver_params = step_id == -1 ? params["Solver"] :
-                    get_solver_params(params, step_id)
-    solver_options["Models"] = get_model_options(solver_params)
-    solver_options["All Models"] = get_model_options(solver_params)
-    solver_options["Calculation"] = get_calculation_options(solver_params)
+    solver_params = _typed_solver(step_id == -1 ? params["Solver"] : get_solver_params(params, step_id))
+    solver_options["Models"] = model_options(solver_params)
+    solver_options["All Models"] = model_options(solver_params)
+    solver_options["Calculation"] = _calculation_options(solver_params)
     if step_id != -1
         for step in 1:Data_Manager.get_max_step()
-            step_solver_params = get_solver_params(params, step)
+            step_solver_params = _typed_solver(get_solver_params(params, step))
             append!(solver_options["All Models"],
-                    get_model_options(step_solver_params))
-            calc_options = get_calculation_options(step_solver_params)
+                    model_options(step_solver_params))
+            calc_options = _calculation_options(step_solver_params)
             for key in keys(calc_options)
                 if calc_options[key]
                     solver_options["Calculation"][key] = true
@@ -130,17 +143,17 @@ function init(params::Dict,
 
     @timeit "init_BCs" bcs=init_BCs(params)
     # get name and checks if it is there
-    solver_options["Solver"] = get_solver_name(solver_params)
+    solver_options["Solver"] = solver_name(solver_params)
 
-    @info "Init " * get_solver_name(solver_params)
-    mod = create_module_specifics(get_solver_name(solver_params),
+    @info "Init " * solver_name(solver_params)
+    mod = create_module_specifics(solver_name(solver_params),
                                   module_list,
                                   @__MODULE__,
                                   "solver_name")
 
     if isnothing(mod)
         @info "Module list: " * string(module_list)
-        @abort "Solver module for solver " * get_solver_name(solver_params) *
+        @abort "Solver module for solver " * solver_name(solver_params) *
                " not found. Check if the solver name is correct and if the module file is in the Solver folder."
         return nothing
     end
@@ -152,7 +165,7 @@ function init(params::Dict,
                     solver_params,
                     bcs,
                     block_nodes)
-    Data_Manager.set_model_module(get_solver_name(solver_params), mod)
+    Data_Manager.set_model_module(solver_name(solver_params), mod)
 
     if Data_Manager.fem_active()
         @timeit "init_FEM" FEM.init_FEM(params)

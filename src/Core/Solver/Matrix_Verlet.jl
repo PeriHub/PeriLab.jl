@@ -17,14 +17,7 @@ using ...PeriLabExceptions: @abort
 
 using ...Helpers: check_inf_or_nan, progress_bar, matrix_style
 
-using ...Parameter_Handling:
-                             get_initial_time,
-                             get_fixed_dt,
-                             get_final_time,
-                             get_numerical_damping,
-                             get_safety_factor,
-                             get_max_damage,
-                             get_nsteps
+using ...InputDeck: SolverParams, start_time, end_time
 using ...MPI_Communication: find_and_set_core_value_min, find_and_set_core_value_max
 using ..Model_Factory: compute_models, compute_crititical_time_step
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
@@ -43,7 +36,7 @@ function solver_name()
 end
 
 function init_solver(solver_options::Dict{Any,Any},
-                     params::Dict,
+                     params::SolverParams,
                      bcs::Dict{Any,Any},
                      block_nodes::Dict{Int64,Vector{Int64}})
     horizon = Data_Manager.get_field("Horizon")
@@ -51,17 +44,17 @@ function init_solver(solver_options::Dict{Any,Any},
         @warn "Implementation might not work for MPI. Especially for coupling. It has to be tested."
     end
     find_bc_free_dof(bcs)
-    initial_time = get_initial_time(params)
-    final_time = get_final_time(params)
-    nsteps = get_nsteps(params)
+    initial_time = start_time(params, Data_Manager.get_current_time())
+    final_time = end_time(params, Data_Manager.get_current_time())
+    nsteps = something(params.number_of_steps, 1)
 
     mechanical = "Material" in solver_options["Models"]
     thermal = "Thermal" in solver_options["Models"]
 
     solver_options["dt"] = compute_crititical_time_step(block_nodes, mechanical, thermal)
     #solver_options["dt"] = 1e-8
-    safety_factor = get_safety_factor(params)
-    fixed_dt = get_fixed_dt(params)
+    safety_factor = params.verlet_matrix_based.safety_factor
+    fixed_dt = params.verlet_matrix_based.fixed_dt
     min_dt = compute_crititical_time_step(block_nodes, mechanical, thermal)
     if fixed_dt == -1.0
         nsteps_temp,
@@ -77,13 +70,10 @@ function init_solver(solver_options::Dict{Any,Any},
     dof = Data_Manager.get_dof()
     density = Data_Manager.get_field("Density")
 
-    model_reduction = get(params["Verlet Matrix Based"], "Model Reduction", false)
-    reduce = true
-    if model_reduction == false
-        reduce = false
-    end
+    model_reduction = something(params.verlet_matrix_based.model_reduction, false)
+    reduce = model_reduction !== false
     solver_options["Model Reduction"] = model_reduction
-    solver_options["Numerical Damping"] = get_numerical_damping(params)
+    solver_options["Numerical Damping"] = params.verlet_matrix_based.numerical_damping
     solver_options["dt"] = dt
     solver_options["Initial Time"] = initial_time
     solver_options["Final Time"] = final_time

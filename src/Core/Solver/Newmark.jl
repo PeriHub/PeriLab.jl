@@ -12,13 +12,7 @@ using ProgressBars: set_multiline_postfix, set_postfix
 using ...Data_Manager
 using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
-using ...Parameter_Handling: get_initial_time,
-                             get_fixed_dt,
-                             get_final_time,
-                             get_numerical_damping,
-                             get_safety_factor,
-                             get_max_damage,
-                             get_nsteps
+using ...InputDeck: SolverParams, start_time, end_time
 using ..Model_Factory: compute_stiff_matrix_compatible_models,
                        compute_matrix_based_bond_forces
 
@@ -66,7 +60,7 @@ Default: average acceleration (beta=0.5,alpha=0.25, unconditionally stable) take
 With numerical damping alpha: beta >= 0.5 ,alpha >= 0.25*(0.5+beta)^2
 """
 function init_solver(solver_options::Dict{Any,Any},
-                     params::Dict,
+                     params::SolverParams,
                      bcs::Dict{Any,Any},
                      block_nodes::Dict{Int64,Vector{Int64}})
     find_bc_free_dof(bcs)
@@ -74,16 +68,16 @@ function init_solver(solver_options::Dict{Any,Any},
     Data_Manager.create_constant_node_vector_field("Delta Displacements", Float64,
                                                    Data_Manager.get_dof())
 
-    solver_options["Initial Time"] = get_initial_time(params)
-    solver_options["Final Time"] = get_final_time(params)
-    solver_options["Number of Steps"] = get_nsteps(params)
+    solver_options["Initial Time"] = start_time(params, Data_Manager.get_current_time())
+    solver_options["Final Time"] = end_time(params, Data_Manager.get_current_time())
+    solver_options["Number of Steps"] = something(params.number_of_steps, 1)
     solver_options["dt"] = (solver_options["Final Time"] - solver_options["Initial Time"]) /
                            solver_options["Number of Steps"]
 
-    solver_options["Newmark Beta"] = get(params["Newmark"], "Newmark Delta", 0.5) # name is delta because of beta. Internally it is beta.
-    solver_options["Newmark Alpha"] = get(params["Newmark"], "Newmark Alpha",
-                                          0.25 * (0.5 + solver_options["Newmark Beta"])^2)
-    solver_options["Matrix Update"] = get(params["Newmark"], "Matrix Update", false)
+    solver_options["Newmark Beta"] = params.newmark.newmark_delta # name is delta because of beta. Internally it is beta.
+    solver_options["Newmark Alpha"] = something(params.newmark.newmark_alpha,
+                                                0.25 * (0.5 + solver_options["Newmark Beta"])^2)
+    solver_options["Matrix Update"] = params.newmark.matrix_update
 
     for (block, nodes) in pairs(block_nodes)
         model_param = Data_Manager.get_properties(block, "Material Model")
@@ -99,11 +93,6 @@ function init_solver(solver_options::Dict{Any,Any},
     Data_Manager.get_field("Deformed Coordinates", "N") .= coor
     Data_Manager.get_field("Deformed Coordinates", "NP1") .= coor
 
-    model_reduction = get(params["Newmark"], "Model Reduction", false)
-    if model_reduction
-        init_reduce_model(solver_options, block_nodes, density)
-        return
-    end
 end
 
 # ────────────────────────────────────────────────────────────
