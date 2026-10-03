@@ -64,3 +64,14 @@ end
     @test ctx.errors[1].path == "Solver.External"
     @test startswith(ctx.errors[1].message, "unknown key")
 end
+
+@testset "Model Reduction: false" begin
+    s, ctx = ut_solver(Dict{String,Any}("Initial Time" => 0.0, "Final Time" => 1.0,
+                                        "Verlet Matrix Based" => Dict{String,Any}("Model Reduction" => false)))
+    @test isempty(ctx.errors)
+    @test s.verlet_matrix_based.model_reduction === nothing
+    s, ctx = ut_solver(Dict{String,Any}("Initial Time" => 0.0, "Final Time" => 1.0,
+                                        "Newmark" => Dict{String,Any}("Model Reduction" => false)))
+    @test isempty(ctx.errors)
+    @test s.newmark.model_reduction === false
+end

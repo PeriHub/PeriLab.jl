@@ -66,16 +66,20 @@ end
 """
     parse_section(T, dict, path, ctx)
 
-Builds `T` from `dict`, reports unknown keys, and runs `derive`.
+Builds `T` from `dict`, reports unknown keys, and runs `derive`. Keys in
+`known_extra` are read by the caller itself: they are not reported as unknown
+and are offered as suggestions for misspelled keys.
 """
-function parse_section(T, dict::AbstractDict, path::String, ctx::ParseContext)
+function parse_section(T, dict::AbstractDict, path::String, ctx::ParseContext;
+                       known_extra = ())
     # invokelatest: `T` may come from a module loaded at runtime (licensed modules)
-    return Base.invokelatest(_parse_section, T, dict, path, ctx)
+    return Base.invokelatest(_parse_section, T, dict, path, ctx, known_extra)
 end
 
-function _parse_section(T, dict::AbstractDict, path::String, ctx::ParseContext)
+function _parse_section(T, dict::AbstractDict, path::String, ctx::ParseContext,
+                        known_extra = ())
     p = build(T, dict, path, ctx)
-    check_unknown!(dict, aliases(T), path, ctx)
+    check_unknown!(dict, union(aliases(T), known_extra), path, ctx)
     p === nothing && return nothing
     check!(p, path, ctx)
     return derive(p)

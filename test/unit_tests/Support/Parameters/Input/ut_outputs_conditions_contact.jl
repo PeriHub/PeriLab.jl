@@ -105,3 +105,12 @@ const UT_CONTACT_MODEL = Dict{String,Any}("Type" => "Penalty Contact",
           "unknown key — did you mean \"Global Search Frequency\"?"
     @test msgs["Contact.Contact_1"] == "expected a section of `key: value` entries, got 5"
 end
+
+@testset "Bond Blocks accepts a block list" begin
+    o, ctx = ut_occ(ID.OutputParams,
+                    Dict{String,Any}("Output Filename" => "out", "Output Frequency" => 1,
+                                     "Output Variables" => UT_VARS, "Bond Export" => true,
+                                     "Bond Blocks" => "1 3"))
+    @test isempty(ctx.errors)
+    @test o.bond_blocks == "1 3"
+end

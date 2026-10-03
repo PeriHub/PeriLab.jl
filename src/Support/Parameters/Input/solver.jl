@@ -56,6 +56,7 @@ end
     matrix_update::Bool = opt("Matrix Update"; default = false)
     newmark_delta::Float64 = opt("Newmark Delta"; default = 0.5)
     newmark_alpha::Union{Nothing,Float64} = opt("Newmark Alpha"; default = nothing)
+    model_reduction::Bool = opt("Model Reduction"; default = false)
 end
 
 "Used for `Solver` and for every step of `Multistep Solver`."

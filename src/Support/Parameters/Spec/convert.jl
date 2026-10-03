@@ -44,6 +44,8 @@ function convert_value(T, raw, path::String, ctx::ParseContext; alias::String = 
     if _is_scalar_union(T)
         return _convert_scalar_union(T, raw, path, ctx)
     elseif T isa Union
+        # `Section: false` switches an optional section off
+        raw === false && is_params(_nonnothing(T)) && return nothing
         return convert_value(_nonnothing(T), raw, path, ctx; alias = alias)
     elseif T === Float64
         raw isa Real && !(raw isa Bool) && return Float64(raw)

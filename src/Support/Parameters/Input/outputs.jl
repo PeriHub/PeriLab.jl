@@ -16,7 +16,8 @@
     start_time::Float64 = opt("Start Time"; default = 0.0, quantity = :time)
     end_time::Float64 = opt("End Time"; default = Inf, quantity = :time)
     bond_export::Bool = opt("Bond Export"; default = false)
-    bond_blocks::Union{Nothing,Int64} = opt("Bond Blocks"; default = nothing)
+    bond_blocks::Union{Nothing,Int64,String} = opt("Bond Blocks"; default = nothing,
+                                                   description = "Block id or list, e.g. \"1 3\"")
 end
 
 function check!(p::OutputParams, path::String, ctx::ParseContext)

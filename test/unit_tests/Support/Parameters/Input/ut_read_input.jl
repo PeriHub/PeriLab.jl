@@ -81,3 +81,16 @@ end
     @test !input.sections.strict_validation
     @test input.contact.models["C"].type == "Penalty Contact"
 end
+
+@testset "case variants of Contact and Models are caught" begin
+    deck = ut_deck()
+    deck["contact"] = Dict{String,Any}()
+    input, ctx = ID.read_input(deck; strict = false)
+    @test PS.has_errors(ctx)
+    @test ctx.errors[1].path == "contact"
+    @test ctx.errors[1].message == "unknown key — did you mean \"Contact\"?"
+    deck = ut_deck()
+    deck["Contacts"] = Dict{String,Any}()
+    input, ctx = ID.read_input(deck)
+    @test ctx.errors[1].message == "unknown key — did you mean \"Contact\"?"
+end

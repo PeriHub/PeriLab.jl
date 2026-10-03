@@ -59,3 +59,11 @@ end
     e = PS.ParamsDefinitionError("X.y: bad")
     @test sprint(showerror, e) == "ParamsDefinitionError: X.y: bad"
 end
+
+@testset "unknown-key errors mention how to downgrade them" begin
+    errors = [PS.InputError("Solver.Foo", "unknown key", :error),
+              PS.InputError("x", "missing", :error)]
+    @test PS.format_errors(errors) ==
+          "Input errors (2):\n  Solver.Foo: unknown key\n  x: missing\n" *
+          "Unknown keys can be reported as warnings instead: run with --no_strict or set \"Strict Validation: false\"."
+end

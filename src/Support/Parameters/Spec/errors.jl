@@ -107,6 +107,10 @@ function format_errors(errors::Vector{InputError})
     for e in errors
         print(io, "\n  ", e.path, ": ", e.message)
     end
+    if any(e -> startswith(e.message, "unknown key"), errors)
+        print(io,
+              "\nUnknown keys can be reported as warnings instead: run with --no_strict or set \"Strict Validation: false\".")
+    end
     return String(take!(io))
 end
 

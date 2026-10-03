@@ -72,9 +72,10 @@ call `ParameterSpec.report!(ctx)` for that.
 """
 function read_input(deck::AbstractDict, directory::AbstractString = ""; strict::Bool = true)
     ctx = ParseContext(directory = directory, strict = strict)
-    plain = Dict{String,Any}(string(k) => v for (k, v) in deck
-                             if !(string(k) in _SPECIAL_KEYS))
-    sections = parse_section(PeriLabSections, plain, "", ctx)
+    # the special keys are read below; passing them as known keys makes
+    # misspellings of them ("contact", "Contacts") errors with suggestions
+    sections = parse_section(PeriLabSections, Dict{String,Any}(string(k) => v for (k, v) in deck),
+                             "", ctx; known_extra = _SPECIAL_KEYS)
     contact = haskey(deck, "Contact") ? parse_contact(deck["Contact"], "Contact", ctx) :
               nothing
     models = get(deck, "Models", nothing)
