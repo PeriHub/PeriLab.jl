@@ -37,6 +37,7 @@ main("examples/Dogbone/Dogbone.yaml"; output_dir="", dry_run=false, verbose=fals
 
 module PeriLab
 include("./IO/exceptions.jl")
+include("./Support/Parameters/Spec/ParameterSpec.jl")
 include("./Core/Data_manager.jl")
 include("./Support/Helpers.jl")
 include("./Support/Geometry.jl")
