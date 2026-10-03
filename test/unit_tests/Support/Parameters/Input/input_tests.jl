@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-for file in ["ut_mesh_blocks.jl"]
+for file in ["ut_mesh_blocks.jl", "ut_solver.jl"]
     @testset "$file" begin
         include(joinpath(@__DIR__, file))
     end

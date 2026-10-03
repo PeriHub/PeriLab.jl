@@ -17,5 +17,6 @@ import ..ParameterSpec: check!
 
 include("discretization.jl")
 include("blocks.jl")
+include("solver.jl")
 
 end
