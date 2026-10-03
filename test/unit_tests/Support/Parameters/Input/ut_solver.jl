@@ -15,7 +15,7 @@ end
     s, ctx = ut_solver(Dict{String,Any}("Initial Time" => 0.0, "Final Time" => 1,
                                         "Verlet" => Dict{String,Any}("Safety Factor" => 0.9)))
     @test isempty(ctx.errors)
-    @test s.final_time === 1.0 && s.number_of_steps === 1 && s.maximum_damage === Inf
+    @test s.final_time === 1.0 && s.number_of_steps === nothing && s.maximum_damage === Inf
     @test s.material_models && s.pre_calculation_models && !s.damage_models
     @test s.verlet.safety_factor === 0.9 && s.verlet.fixed_dt === -1.0
     @test s.verlet.numerical_damping === 0.0

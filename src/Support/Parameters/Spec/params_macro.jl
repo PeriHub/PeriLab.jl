@@ -142,8 +142,12 @@ macro params(structdef)
         return _definition_error("@params structs must be immutable: use `struct`, not `mutable struct`")
     end
     name = structdef.args[2]
+    supertype = nothing
+    if name isa Expr && name.head === :<: && name.args[1] isa Symbol
+        name, supertype = name.args[1], name.args[2]
+    end
     if !(name isa Symbol)
-        return _definition_error("@params struct $(name): write a plain name without type parameters or supertype")
+        return _definition_error("@params struct $(name): write a plain name without type parameters")
     end
     fields = Any[]
     typeparams = Any[]
@@ -176,6 +180,7 @@ macro params(structdef)
         end
     end
     head = isempty(typeparams) ? name : Expr(:curly, name, typeparams...)
+    supertype === nothing || (head = Expr(:<:, head, supertype))
     specname = Symbol("__params_spec_", name)
     structexpr = Expr(:struct, false, head, Expr(:block, fields...))
     return esc(quote

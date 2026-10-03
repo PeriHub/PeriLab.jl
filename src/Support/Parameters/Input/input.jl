@@ -95,3 +95,18 @@ function read_input(deck::AbstractDict, directory::AbstractString = ""; strict::
                          Dict{String,Any}())
     return input, ctx
 end
+
+"Step IDs to run, sorted; `[-1]` for a single `Solver`."
+function solver_steps(input::PeriLabInput)
+    isempty(input.sections.multistep_solver) && return [-1]
+    return sort!([step.step_id for step in values(input.sections.multistep_solver)])
+end
+
+"Solver parameters of step `step_id` (`-1`: the single `Solver`)."
+function solver_step(input::PeriLabInput, step_id::Int64)
+    step_id == -1 && return input.sections.solver
+    for step in values(input.sections.multistep_solver)
+        step.step_id == step_id && return step
+    end
+    @abort "Step ID $step_id not found"
+end

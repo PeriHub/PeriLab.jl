@@ -15,6 +15,7 @@ using ..ParameterSpec
 using ..ParameterSpec: @params, req, opt, ParseContext, add_error!, join_path,
                        parse_section
 import ..ParameterSpec: check!
+using ..PeriLabExceptions: @abort
 
 include("discretization.jl")
 include("blocks.jl")
@@ -24,6 +25,8 @@ include("conditions.jl")
 include("contact.jl")
 include("input.jl")
 
-export read_input, PeriLabInput
+export read_input, PeriLabInput, SolverParams, SolverOptions, ModelReductionParams,
+       active_options, solver_name, start_time, end_time, model_options, solver_steps,
+       solver_step
 
 end

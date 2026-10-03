@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 for file in ["ut_mesh_blocks.jl", "ut_solver.jl", "ut_outputs_conditions_contact.jl",
-             "ut_read_input.jl", "ut_golden_decks.jl", "ut_validate_yaml.jl"]
+             "ut_read_input.jl", "ut_golden_decks.jl", "ut_validate_yaml.jl",
+             "ut_solver_typed.jl"]
     @testset "$file" begin
         include(joinpath(@__DIR__, file))
     end

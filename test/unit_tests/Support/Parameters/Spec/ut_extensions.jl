@@ -92,3 +92,21 @@ end
     PS.parse_section(UTChecked, Dict{String,Any}("Low" => 1.0), "C", ctx)
     @test length(ctx.errors) == 1           # check! is not run on a struct that failed to build
 end
+
+abstract type UTAbstractOptions end
+
+PS.@params struct UTConcreteOptions <: UTAbstractOptions
+    factor::Float64 = opt("Factor"; default = 1.0)
+end
+
+PS.@params struct UTDependentOptions <: UTAbstractOptions
+    value::Dependent = req("Value")
+end
+
+@testset "@params accepts a supertype" begin
+    @test UTConcreteOptions <: UTAbstractOptions
+    @test UTDependentOptions{PS.Constant} <: UTAbstractOptions
+    ctx = PS.ParseContext()
+    p = PS.parse_section(UTConcreteOptions, Dict{String,Any}("Factor" => 2), "O", ctx)
+    @test isempty(ctx.errors) && p.factor === 2.0
+end
