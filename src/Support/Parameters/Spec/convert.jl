@@ -41,7 +41,9 @@ find the column in a `Dependent` data file.
 """
 function convert_value(T, raw, path::String, ctx::ParseContext; alias::String = "")
     raw isa T && return _fresh(raw)
-    if T isa Union
+    if _is_scalar_union(T)
+        return _convert_scalar_union(T, raw, path, ctx)
+    elseif T isa Union
         return convert_value(_nonnothing(T), raw, path, ctx; alias = alias)
     elseif T === Float64
         raw isa Real && !(raw isa Bool) && return Float64(raw)
@@ -71,7 +73,7 @@ function convert_value(T, raw, path::String, ctx::ParseContext; alias::String = 
     elseif T isa DataType && T <: Vector
         return _convert_vector(T, raw, path, ctx)
     elseif T isa DataType && T <: Dict && T.parameters[1] === String &&
-           is_params(T.parameters[2])
+           supported_type(T)
         return _convert_named_sections(T, raw, path, ctx)
     elseif is_params(T)
         raw isa AbstractDict ||
@@ -90,6 +92,7 @@ function _convert_named_sections(::Type{Dict{String,V}}, raw, path::String,
     out = Dict{String,V}()
     ok = true
     for (k, item) in raw
+        string(k) == "Globals" && continue
         v = convert_value(V, item, join_path(path, string(k)), ctx)
         if v === FAILED
             ok = false
@@ -158,4 +161,26 @@ function check_constraints!(fs::FieldSpec, v, path::String, ctx::ParseContext)
         return false
     end
     return true
+end
+
+const _SCALAR_KIND_NAMES = Dict{Any,String}(Int64 => "an integer", Float64 => "a number",
+                                            String => "text", Bool => "true or false")
+
+function _convert_scalar_union(T, raw, path::String, ctx::ParseContext)
+    members = Base.uniontypes(T)
+    if raw isa Bool
+        Bool in members && return raw
+    elseif raw isa Integer
+        Int64 in members && return Int64(raw)
+        Float64 in members && return Float64(raw)
+    elseif raw isa AbstractFloat
+        Float64 in members && return Float64(raw)
+        Int64 in members && isinteger(raw) && return Int64(raw)
+    elseif raw isa AbstractString
+        String in members && return String(raw)
+    end
+    # fixed order, independent of how Julia orders union members
+    expected = join([_SCALAR_KIND_NAMES[m] for m in (Int64, Float64, String, Bool)
+                     if m in members], " or ")
+    return _fail(ctx, path, "expected $expected, got $(_describe(raw))")
 end

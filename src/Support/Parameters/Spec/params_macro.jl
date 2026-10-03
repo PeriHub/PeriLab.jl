@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-export @params, derive
+export @params, derive, check!
 
 const _SELF = @__MODULE__
 
@@ -25,12 +25,33 @@ normalized values filled in. The default returns `p` unchanged.
 """
 derive(p) = p
 
+"""
+    check!(p, path, ctx)
+
+Hook for cross-field rules of an `@params` struct (e.g. "exactly one solver",
+"Low must not exceed High"). Runs once after `p` was built successfully and
+before `derive`; add problems with `add_error!(ctx, path, msg)`. The default
+does nothing.
+"""
+check!(p, path::String, ctx::ParseContext) = nothing
+
+const _SCALAR_UNION_MEMBERS = (Nothing, Int64, Float64, String, Bool)
+
+function _is_scalar_union(T)
+    T isa Union || return false
+    members = Base.uniontypes(T)
+    return all(m -> m in _SCALAR_UNION_MEMBERS, members) &&
+           !(Int64 in members && Float64 in members) &&
+           any(m -> m !== Nothing, members)
+end
+
 _typename(T) = replace(string(T), r"(\w+\.)+" => "")
 
 const _SCALAR_TYPES = (Float64, Int64, Bool, String)
 const _VECTOR_TYPES = (Vector{Float64}, Vector{Int64}, Vector{String})
 
 function supported_type(T)
+    _is_scalar_union(T) && return true
     if T isa Union
         S = _nonnothing(T)
         return Nothing <: T && !(S isa Union) && S !== Dependent && supported_type(S)
@@ -40,7 +61,7 @@ function supported_type(T)
     T <: Enum && return true
     if T <: Dict && T.parameters[1] === String
         V = T.parameters[2]
-        return V isa DataType && is_params(V)
+        return V in _SCALAR_TYPES || _is_scalar_union(V) || (V isa DataType && is_params(V))
     end
     return is_params(T)
 end
@@ -65,7 +86,7 @@ function build_spec(T, display::String, entries::Vector{Any})
             throw(ParamsDefinitionError("$location: nested section type $(_typename(ftype)) contains Dependent fields; this is not supported"))
         end
         supported_type(ftype) ||
-            throw(ParamsDefinitionError("$location: unsupported field type $(_typename(ftype)). Supported: Float64, Int64, Bool, String, an @enum, Vector{Float64}, Vector{Int64}, Vector{String}, Dependent, Union{Nothing,T}, a nested @params struct, or Dict{String,<nested @params struct>}"))
+            throw(ParamsDefinitionError("$location: unsupported field type $(_typename(ftype)). Supported: Float64, Int64, Bool, String, an @enum, Vector{Float64}, Vector{Int64}, Vector{String}, Dependent, Union{Nothing,T}, a union of Int64/Float64/String/Bool/Nothing (not Int64 and Float64 together), a nested @params struct, or Dict{String,V} of a nested @params struct or a scalar type"))
         if haskey(used, decl.alias)
             throw(ParamsDefinitionError("$location: YAML key \"$(decl.alias)\" is already used by field `$(used[decl.alias])`"))
         end

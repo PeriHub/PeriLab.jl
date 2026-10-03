@@ -81,6 +81,7 @@ function _parse_model(category::Symbol, dict::Union{Nothing,AbstractDict}, path:
     parts = Any[]
     for (name, T) in zip(names, types)
         part = build(T, dict, path, ctx; owner = name)
+        part === nothing || check!(part, path, ctx)
         push!(parts, part === nothing ? nothing : derive(part))
     end
     known = Set{String}([name_key])

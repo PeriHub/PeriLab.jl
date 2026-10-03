@@ -76,5 +76,7 @@ end
 function _parse_section(T, dict::AbstractDict, path::String, ctx::ParseContext)
     p = build(T, dict, path, ctx)
     check_unknown!(dict, aliases(T), path, ctx)
-    return p === nothing ? nothing : derive(p)
+    p === nothing && return nothing
+    check!(p, path, ctx)
+    return derive(p)
 end
