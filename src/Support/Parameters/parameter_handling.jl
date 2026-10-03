@@ -15,7 +15,7 @@ include("./parameter_handling_computes.jl")
 include("./parameter_handling_solver.jl")
 include("./parameter_handling_FEM.jl")
 
-export validate_yaml
+export validate_yaml, validate_input
 
 global expected_structure = Dict("PeriLab" => [
                                      Dict{Any,Any}("Blocks" => [
@@ -1413,24 +1413,34 @@ function validate_models(deck::AbstractDict)
 end
 
 """
-    validate_yaml(params; directory = "", no_strict = false)
+    validate_input(params; directory = "", no_strict = false) -> (deck, input)
 
 Validates a loaded input deck against the typed input declarations
 (`InputDeck.read_input`) and, for `Models`, the legacy structure. Reports
-every problem at once and aborts if there is an error; otherwise returns
-`params["PeriLab"]` unchanged.
+every problem at once and aborts if there is an error. Returns the unchanged
+`params["PeriLab"]` dict and the typed `PeriLabInput`.
 """
-function validate_yaml(params::Dict; directory::AbstractString = "", no_strict::Bool = false)
+function validate_input(params::Dict; directory::AbstractString = "", no_strict::Bool = false)
     if !haskey(params, "PeriLab") || !(params["PeriLab"] isa AbstractDict) ||
        length(params["PeriLab"]) < 2
         @abort "Yaml file is not valid."
         return
     end
     deck = params["PeriLab"]
-    _, ctx = read_input(deck, directory; strict = strict_mode(deck; no_strict_flag = no_strict))
+    input, ctx = read_input(deck, directory;
+                            strict = strict_mode(deck; no_strict_flag = no_strict))
     validate_models(deck) ||
         add_error!(ctx, "Models", "invalid model parameters (see the warnings above)")
     report!(ctx)
-    return deck
+    return deck, input
+end
+
+"""
+    validate_yaml(params; directory = "", no_strict = false)
+
+Like `validate_input`, returning only the deck dict.
+"""
+function validate_yaml(params::Dict; directory::AbstractString = "", no_strict::Bool = false)
+    return first(validate_input(params; directory = directory, no_strict = no_strict))
 end
 end

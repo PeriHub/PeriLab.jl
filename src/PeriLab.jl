@@ -405,7 +405,7 @@ function run(filename::String;
 
             Data_Manager.set_silent(silent)
             Data_Manager.set_verbose(verbose)
-            @timeit "IO.initialize_data" params,
+            @timeit "IO.initialize_data" params, input,
                                          steps=IO.initialize_data(filename,
                                                                   filedirectory,
                                                                   comm;
@@ -426,6 +426,7 @@ function run(filename::String;
                 @timeit "Solver_Manager.init" block_nodes,
                                               bcs,
                                               solver_options=Solver_Manager.init(params,
+                                                                                 input,
                                                                                  step_id)
                 if Data_Manager.get_current_time() >= solver_options["Final Time"]
                     @info "Step " * string(step_id) * " skipped."

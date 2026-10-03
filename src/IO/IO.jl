@@ -29,7 +29,8 @@ using ..MPI_Communication: send_single_value_from_vector, synch_responder_to_con
 
 using ..Helpers: progress_bar
 using ..Logging_Module: get_log_stream
-using ..Parameter_Handling: get_solver_steps, get_flush_file, get_write_after_damage,
+using ..InputDeck: solver_steps
+using ..Parameter_Handling: get_flush_file, get_write_after_damage,
                             get_start_time, get_end_time, get_outputs,
                             get_output_frequencies,
                             get_output_filenames, get_computes_names, get_computes,
@@ -528,8 +529,11 @@ Initialize data.
 - `filename::String`: The name of the input file.
 - `filedirectory::String`: The directory of the input file.
 - `comm::MPI.Comm`: The MPI communicator
+- `no_strict::Bool`: Report unknown input keys as warnings instead of errors.
 # Returns
-- `data::Dict`: The data
+- `params::Dict`: The deck parameters (for consumers not yet using typed input)
+- `input::PeriLabInput`: The typed input
+- `steps::Vector{Int64}`: The solver steps
 """
 function initialize_data(filename::String,
                          filedirectory::String,
@@ -541,12 +545,10 @@ function initialize_data(filename::String,
         Data_Manager.set_max_rank(MPI.Comm_size(comm))
         Data_Manager.set_comm(comm)
     end
-    @timeit "init_data" params=init_data(read_input_file(filename;
-                                                         directory = filedirectory,
-                                                         no_strict = no_strict),
-                                         filedirectory, comm)
-    steps = get_solver_steps(params)
-    return params, steps
+    deck, input = read_input_deck(filename; directory = filedirectory, no_strict = no_strict)
+    @timeit "init_data" params=init_data(deck, filedirectory, comm)
+    steps = solver_steps(input)
+    return params, input, steps
 end
 
 """

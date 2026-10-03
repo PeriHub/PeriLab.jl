@@ -46,3 +46,42 @@ end
     params["PeriLab"]["Models"]["Material Models"]["mat_1"]["Material Model"] = 5
     @test_throws PeriLab.PeriLabError PeriLab.Parameter_Handling.validate_yaml(params)
 end
+
+@testset "validate_input returns the typed input" begin
+    params = ut_valid_params()
+    deck, input = PeriLab.Parameter_Handling.validate_input(params)
+    @test deck === params["PeriLab"]
+    @test input isa PeriLab.InputDeck.PeriLabInput
+    @test input.sections.solver.verlet !== nothing
+end
+
+@testset "read_input_deck" begin
+    dir = mktempdir()
+    file = joinpath(dir, "deck.yaml")
+    write(file,
+          """
+          PeriLab:
+            Discretization:
+              Type: Text File
+              Input Mesh File: m.txt
+            Blocks:
+              block_1:
+                Block ID: 1
+                Density: 1.0
+                Horizon: 1.0
+            Models:
+              Material Models:
+                mat_1:
+                  Material Model: a
+            Solver:
+              Initial Time: 0.0
+              Final Time: 1.0
+              Number of Steps: 4
+              Verlet:
+                Safety Factor: 0.5
+          """)
+    deck, input = PeriLab.IO.read_input_deck(file)
+    @test deck["Solver"]["Number of Steps"] == 4
+    @test input.sections.solver.number_of_steps === 4
+    @test PeriLab.InputDeck.solver_steps(input) == [-1]
+end

@@ -11,10 +11,8 @@ using ..Parameter_Handling:
                             get_horizon,
                             get_fem_block,
                             get_angles,
-                            get_block_names_and_ids,
-                            get_solver_params
-using ..InputDeck: SolverParams, solver_name, model_options
-using ..ParameterSpec: ParseContext, parse_section, report!
+                            get_block_names_and_ids
+using ..InputDeck: PeriLabInput, SolverParams, solver_name, model_options, solver_step
 using ..Helpers
 using ..ModuleLoader: find_module_files, create_module_specifics
 include("../../Models/Material/Material_Basis.jl")
@@ -49,25 +47,19 @@ export init
 export solver
 
 """
-	init(params::Dict)
+	init(params::Dict, input::PeriLabInput, step_id::Int64)
 
 Initialize the solver
 
 # Arguments
-- `params::Dict`: The parameters
+- `params::Dict`: The parameters (sections not yet using typed input)
+- `input::PeriLabInput`: The typed input
+- `step_id::Int64`: The solver step (`-1`: single `Solver`)
 # Returns
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `bcs::Dict{Any,Any}`: A dictionary containing boundary conditions.
 - `solver_options::Dict{String,Any}`: A dictionary containing solver options.
 """
-# Temporary until the typed input is passed in (phase 2b-1, Task 3).
-function _typed_solver(solver_params::Dict)
-    ctx = ParseContext()
-    solver = parse_section(SolverParams, solver_params, "Solver", ctx)
-    report!(ctx)
-    return solver
-end
-
 # Runtime format read by the models
 function _calculation_options(s::SolverParams)
     return Dict{String,Any}("Calculate Cauchy" => s.calculate_cauchy,
@@ -76,6 +68,7 @@ function _calculation_options(s::SolverParams)
 end
 
 function init(params::Dict,
+              input::PeriLabInput,
               step_id::Int64)
     solver_options = Dict()
     dof = Data_Manager.get_dof()
@@ -107,13 +100,13 @@ function init(params::Dict,
     density = set_density(params, block_nodes_with_neighbors, density) # includes the neighbors
     horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
     set_angles(params, block_nodes_with_neighbors) # includes the Neighbors
-    solver_params = _typed_solver(step_id == -1 ? params["Solver"] : get_solver_params(params, step_id))
+    solver_params = solver_step(input, step_id)
     solver_options["Models"] = model_options(solver_params)
     solver_options["All Models"] = model_options(solver_params)
     solver_options["Calculation"] = _calculation_options(solver_params)
     if step_id != -1
         for step in 1:Data_Manager.get_max_step()
-            step_solver_params = _typed_solver(get_solver_params(params, step))
+            step_solver_params = solver_step(input, step)
             append!(solver_options["All Models"],
                     model_options(step_solver_params))
             calc_options = _calculation_options(step_solver_params)
