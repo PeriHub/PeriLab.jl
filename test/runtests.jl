@@ -53,6 +53,9 @@ MPI.Init()
                 @testset "ParameterSpec" begin
                     include("unit_tests/Support/Parameters/Spec/spec_tests.jl")
                 end
+                @testset "InputDeck" begin
+                    include("unit_tests/Support/Parameters/Input/input_tests.jl")
+                end
             end
 
             @testset "ut_helpers" begin
