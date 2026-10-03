@@ -38,7 +38,8 @@ Reads the input deck from a yaml file
 # Returns
 - `Dict{String,Any}`: The validated parameters read from the yaml file.
 """
-function read_input_file(filename::String)
+function read_input_file(filename::String; directory::AbstractString = dirname(filename),
+                         no_strict::Bool = false)
     params = Dict{String,Any}()
     if !isfile(filename)
         @abort "$(filename) can not be found. Make sure the file exist and is readable."
@@ -49,5 +50,5 @@ function read_input_file(filename::String)
         return
     end
     @info "Read input file $filename"
-    return validate_yaml(read_input(filename))
+    return validate_yaml(read_input(filename); directory = directory, no_strict = no_strict)
 end

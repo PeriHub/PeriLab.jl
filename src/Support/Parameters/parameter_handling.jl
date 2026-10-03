@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 module Parameter_Handling
 using ...PeriLabExceptions: @abort
+using ..ParameterSpec: report!, strict_mode, add_error!
+using ..InputDeck: read_input
 
 include("./parameter_handling_bc.jl")
 include("./parameter_handling_blocks.jl")
@@ -1385,47 +1387,50 @@ function get_all_keys(params::Dict)
 end
 
 """
-    validate_yaml(params::Dict)
+    validate_models(deck)
 
-Validates the parameters against the expected structure
-
-# Arguments
-- `params::Dict`: The parameters dictionary.
-# Returns
-- `params::Dict`: The parameters dictionary.
+Legacy validation of the `Models` section (types and required keys from
+`expected_structure`; unknown keys are warnings). Replaced in phase 3, when
+model modules declare their parameters.
 """
-function validate_yaml(params::Dict)
-    all_keys = get_all_keys(params)
-    # Validate against the expected structure
-    validate = true
+function validate_models(deck::AbstractDict)
+    models = get(deck, "Models", nothing)
+    models isa Dict || return true            # missing / malformed: reported by read_input
     checked_keys = []
-    if !haskey(params, "PeriLab") || length(params["PeriLab"]) < 2
-        @abort "Yaml file is not valid."
-        return
-    end
-
-    try
-        validate,
-        checked_keys = validate_structure_recursive(expected_structure, params,
-                                                    validate, checked_keys)
+    valid = try
+        first(validate_structure_recursive(expected_structure["PeriLab"][1]["Models"][1],
+                                           models, true, checked_keys, "Models"))
     catch
-        @abort "Yaml file is not valid."
-        return
+        false
     end
-    #Check if all keys have been checked
-    for key in all_keys
-        if typeof(key) == Int64
-            continue
-        end
+    for key in get_all_keys(models)
+        key isa Int64 && continue
         if !(key in checked_keys) && !contains(key, "Property_")
             @warn "Key not known - $key, going to ignore it"
         end
     end
-    if !validate
+    return valid
+end
+
+"""
+    validate_yaml(params; directory = "", no_strict = false)
+
+Validates a loaded input deck against the typed input declarations
+(`InputDeck.read_input`) and, for `Models`, the legacy structure. Reports
+every problem at once and aborts if there is an error; otherwise returns
+`params["PeriLab"]` unchanged.
+"""
+function validate_yaml(params::Dict; directory::AbstractString = "", no_strict::Bool = false)
+    if !haskey(params, "PeriLab") || !(params["PeriLab"] isa AbstractDict) ||
+       length(params["PeriLab"]) < 2
         @abort "Yaml file is not valid."
         return
     end
-
-    return params["PeriLab"]
+    deck = params["PeriLab"]
+    _, ctx = read_input(deck, directory; strict = strict_mode(deck; no_strict_flag = no_strict))
+    validate_models(deck) ||
+        add_error!(ctx, "Models", "invalid model parameters (see the warnings above)")
+    report!(ctx)
+    return deck
 end
 end

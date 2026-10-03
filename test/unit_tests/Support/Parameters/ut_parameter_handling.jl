@@ -98,20 +98,20 @@ end
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
                                                                                                           Any}()),
                                                       "Discretization" => Dict{Any,Any}()))
-    @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
+    @test_logs (:error, r"^Input errors") match_mode=:any @test_throws PeriLab.PeriLabError begin
         PeriLab.Parameter_Handling.validate_yaml(params)
     end
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
                                                                                                           Any}()),
                                                       "Discretization" => Dict{Any,Any}(),
                                                       "Blocks" => Dict{Any,Any}()))
-    @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
+    @test_logs (:error, r"^Input errors") match_mode=:any @test_throws PeriLab.PeriLabError begin
         PeriLab.Parameter_Handling.validate_yaml(params)
     end
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
                                                                                                           Any}()),
                                                       "Blocks" => Dict{Any,Any}()))
-    @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
+    @test_logs (:error, r"^Input errors") match_mode=:any @test_throws PeriLab.PeriLabError begin
         PeriLab.Parameter_Handling.validate_yaml(params)
     end
 
@@ -120,7 +120,7 @@ end
                                                       "Blocks" => Dict{Any,Any}(),
                                                       "Solver" => Dict{Any,Any}()))
 
-    @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
+    @test_logs (:error, r"^Input errors") match_mode=:any @test_throws PeriLab.PeriLabError begin
         PeriLab.Parameter_Handling.validate_yaml(params)
     end
 
@@ -141,7 +141,7 @@ end
                                                                                                        "Horizon" => "1.0")),
                                                       "Solver" => Dict{Any,Any}("Final Time" => 1.0,
                                                                                 "Initial Time" => 0.0)))
-    @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
+    @test_logs (:error, r"^Input errors") match_mode=:any @test_throws PeriLab.PeriLabError begin
         PeriLab.Parameter_Handling.validate_yaml(params)
     end
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
@@ -151,11 +151,11 @@ end
                                                                                         "Type" => "test"),
                                                       "Blocks" => Dict{Any,Any}("Block_1" => Dict{Any,
                                                                                                   Any}("Block ID" => 1,
-                                                                                                       "Block Names" => "Block_1",
                                                                                                        "Density" => 1.0,
                                                                                                        "Horizon" => 1.0)),
                                                       "Solver" => Dict{Any,Any}("Final Time" => 1.0,
-                                                                                "Initial Time" => 0.0)))
+                                                                                "Initial Time" => 0.0,
+                                                                                "Verlet" => Dict{Any,Any}())))
     @test PeriLab.Parameter_Handling.validate_yaml(params) ==
           params["PeriLab"]
 end

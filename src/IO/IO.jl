@@ -533,14 +533,17 @@ Initialize data.
 """
 function initialize_data(filename::String,
                          filedirectory::String,
-                         comm::MPI.Comm)
+                         comm::MPI.Comm;
+                         no_strict::Bool = false)
     Data_Manager.set_directory(filedirectory)
     @timeit "MPI init data" begin
         Data_Manager.set_rank(MPI.Comm_rank(comm))
         Data_Manager.set_max_rank(MPI.Comm_size(comm))
         Data_Manager.set_comm(comm)
     end
-    @timeit "init_data" params=init_data(read_input_file(filename),
+    @timeit "init_data" params=init_data(read_input_file(filename;
+                                                         directory = filedirectory,
+                                                         no_strict = no_strict),
                                          filedirectory, comm)
     steps = get_solver_steps(params)
     return params, steps

@@ -166,6 +166,9 @@ function parse_commandline(ARGS)
         "--reload", "-r"
         help = "reload"
         action = :store_true
+        "--no_strict"
+        help = "report unknown input keys as warnings instead of errors"
+        action = :store_true
         "filenames"
         nargs = '*'
         help = "filenames"
@@ -206,7 +209,8 @@ function (@main)(ARGS)
                          verbose = parsed_args["verbose"],
                          debug = parsed_args["debug"],
                          silent = parsed_args["silent"],
-                         reload = parsed_args["reload"])
+                         reload = parsed_args["reload"],
+                         no_strict = parsed_args["no_strict"])
     end
     # MPI.Finalize()
     return exit_code
@@ -330,6 +334,7 @@ This function serves as the entry point for the PeriLab application. It calls th
 - `debug::Bool=false`: Whether to run in debug mode.
 - `silent::Bool=false`: Whether to run in silent mode.
 - `reload::Bool=false`: Whether to reload the input file.
+- `no_strict::Bool=false`: Report unknown input keys as warnings instead of errors.
 """
 function run(filename::String;
              output_dir::String = "",
@@ -337,7 +342,8 @@ function run(filename::String;
              verbose::Bool = false,
              debug::Bool = false,
              silent::Bool = false,
-             reload::Bool = false,)
+             reload::Bool = false,
+             no_strict::Bool = false)
     reset_timer!()
     t0 = time()
     exit_code = 0
@@ -402,7 +408,8 @@ function run(filename::String;
             @timeit "IO.initialize_data" params,
                                          steps=IO.initialize_data(filename,
                                                                   filedirectory,
-                                                                  comm)
+                                                                  comm;
+                                                                  no_strict = no_strict)
             Data_Manager.set_max_step(steps[end])
             for step_id in steps
                 # MPI.Barrier(comm)
