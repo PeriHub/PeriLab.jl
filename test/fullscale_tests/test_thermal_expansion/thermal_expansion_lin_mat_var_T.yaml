@@ -63,7 +63,7 @@ PeriLab:
     Material Models: true
     Thermal Models: true
     Linear Static Matrix Based:
-      Update Matrix: false
+      Matrix Update: false
   Outputs:
     Output1:
       Output Filename: "thermal_expansion_lin_mat_var_T"

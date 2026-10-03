@@ -105,7 +105,6 @@ PeriLab:
     Initial Time: 0.0
     Number of Steps: 50
     Static:
-      NLsolver: true
       Show solver iteration: true
       Residual tolerance: 1e-6
       Solution tolerance: 1e-6
