@@ -4,6 +4,7 @@
 
 module Correspondence_Elastic
 using .......Data_Manager
+using .......ParameterSpec: @params, register_material
 using .....Material_Basis: get_Hooke_matrix
 using .......Helpers: get_fourth_order, fast_mul!, get_mapping
 using StaticArrays: SMatrix
@@ -81,6 +82,11 @@ println(material_name())
 function correspondence_name()
     return "Correspondence Elastic"
 end
+
+"Parameters of Correspondence Elastic beyond the shared material keys (none)."
+@params struct CorrespondenceElasticParams
+end
+__init__() = register_material("Correspondence Elastic", CorrespondenceElasticParams)
 
 """
 	compute_stresses(iID:Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)

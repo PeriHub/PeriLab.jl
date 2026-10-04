@@ -6,6 +6,8 @@ module Correspondence_UMAT
 using StaticArrays
 
 using ......Data_Manager
+using .......ParameterSpec: @params, register_material
+import .......ParameterSpec: key_patterns
 using ......PeriLabExceptions: @abort
 using ......Helpers: voigt_to_matrix, matrix_to_voigt, matrix_to_engineering_voigt
 using .....Material_Basis: get_Hooke_matrix, get_all_elastic_moduli
@@ -196,6 +198,21 @@ println(correspondence_name())
 function correspondence_name()
     return "Correspondence UMAT"
 end
+
+@params struct CorrespondenceUMATParams
+    file::String = req("File"; description = "UMAT library, relative to the input deck")
+    number_of_properties::Int64 = req("Number of Properties"; min = 1,
+                                      description = "number of Property_N values passed to the UMAT")
+    number_of_state_variables::Union{Nothing,Int64} = opt("Number of State Variables";
+                                                          default = nothing, min = 0)
+    predefined_field_names::Union{Nothing,String} = opt("Predefined Field Names";
+                                                        default = nothing)
+    umat_material_name::Union{Nothing,String} = opt("UMAT Material Name"; default = nothing)
+    umat_name::Union{Nothing,String} = opt("UMAT name"; default = nothing,
+                                           description = "name of the UMAT routine, default UMAT")
+end
+key_patterns(::Type{CorrespondenceUMATParams}) = [r"^Property_\d+$" => Float64]
+__init__() = register_material("Correspondence UMAT", CorrespondenceUMATParams)
 
 """
     compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())

@@ -70,3 +70,40 @@ end
     @test msgs["$p.\"Shear Modulus\""] == "-1.0 is below minimum 0"
     @test msgs["$p.\"Flaw Function\".Function"] == "\"Gauss\" is not one of: \"Pre-defined\""
 end
+
+const CORR = MAT.Correspondence
+
+@testset "correspondence material names" begin
+    for (name, T) in [("Correspondence Elastic", CORR.Correspondence_Elastic.CorrespondenceElasticParams),
+                      ("Correspondence Plastic", CORR.Correspondence_Plastic.CorrespondencePlasticParams),
+                      ("Correspondence UMAT", CORR.Correspondence_UMAT.CorrespondenceUMATParams),
+                      ("Correspondence VUMAT", CORR.Correspondence_VUMAT.CorrespondenceVUMATParams)]
+        @test MPS.lookup_model(:material, name) === T
+    end
+    m, ctx = ut_material(Dict("Material Model" => "Correspondence Elastic + Correspondence Plastic",
+                              "Symmetry" => "isotropic plane strain", "Bulk Modulus" => 1.0,
+                              "Shear Modulus" => 1.0, "Yield Stress" => 2.0))
+    @test isempty(ctx.errors)
+    @test m.model.parts[2].yield_stress == MPS.Constant(2.0)
+end
+
+@testset "UMAT properties" begin
+    props = Dict("Property_$i" => Float64(i) for i in 1:27)
+    m, ctx = ut_material(merge(Dict{String,Any}("Material Model" => "Correspondence UMAT",
+                                                "File" => "libusertest.so",
+                                                "Number of Properties" => 27,
+                                                "Number of State Variables" => 0,
+                                                "UMAT Material Name" => "test"), props))
+    @test isempty(ctx.errors)
+    @test m.model.number_of_properties == 27 && m.model.umat_name === nothing
+    m, ctx = ut_material(Dict("Material Model" => "Correspondence VUMAT", "File" => "a.so",
+                              "Number of Properties" => 3, "Property_3" => "abc",
+                              "Propery_2" => 1.0))
+    @test length(ctx.errors) == 2
+    msgs = Dict(e.path => e.message for e in ctx.errors)
+    p = "Models.\"Material Models\".M"
+    @test msgs["$p.Property_3"] == "expected a number, got \"abc\""
+    @test startswith(msgs["$p.Propery_2"], "unknown key")
+    m, ctx = ut_material(Dict("Material Model" => "Correspondence UMAT", "File" => "a.so"))
+    @test only(ctx.errors).message == "missing (required by Correspondence UMAT)"
+end

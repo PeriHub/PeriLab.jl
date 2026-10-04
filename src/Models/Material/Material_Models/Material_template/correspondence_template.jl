@@ -68,6 +68,14 @@ function correspondence_name()
     return "Correspondence Template"
 end
 
+# Declare the YAML keys of your model beyond the shared material keys and register them:
+#
+#     using .......ParameterSpec: @params, register_material
+#     @params struct CorrespondenceTemplateParams
+#         my_parameter::Float64 = req("My Parameter"; min = 0)
+#     end
+#     __init__() = register_material("Correspondence Template", CorrespondenceTemplateParams)
+
 """
     compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
 

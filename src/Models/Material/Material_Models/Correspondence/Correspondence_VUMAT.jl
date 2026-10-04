@@ -6,6 +6,8 @@ module Correspondence_VUMAT
 using StaticArrays
 
 using ......Data_Manager
+using .......ParameterSpec: @params, register_material
+import .......ParameterSpec: key_patterns
 using ......PeriLabExceptions: @abort
 using ......Helpers: voigt_to_matrix, matrix_to_voigt, matrix_to_engineering_voigt,
                      matrix_to_vector, vector_to_matrix
@@ -134,6 +136,19 @@ println(correspondence_name())
 function correspondence_name()
     return "Correspondence VUMAT"
 end
+
+@params struct CorrespondenceVUMATParams
+    file::String = req("File"; description = "VUMAT library, relative to the input deck")
+    number_of_properties::Int64 = req("Number of Properties"; min = 1,
+                                      description = "number of Property_N values passed to the VUMAT")
+    number_of_state_variables::Union{Nothing,Int64} = opt("Number of State Variables";
+                                                          default = nothing, min = 0)
+    vumat_material_name::Union{Nothing,String} = opt("VUMAT Material Name"; default = nothing)
+    vumat_name::Union{Nothing,String} = opt("VUMAT name"; default = nothing,
+                                           description = "name of the VUMAT routine, default VUMAT")
+end
+key_patterns(::Type{CorrespondenceVUMATParams}) = [r"^Property_\d+$" => Float64]
+__init__() = register_material("Correspondence VUMAT", CorrespondenceVUMATParams)
 
 """
     compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())

@@ -4,6 +4,7 @@
 
 module Correspondence_Plastic
 using ......Data_Manager
+using .......ParameterSpec: @params, Dependent, register_material
 using ......PeriLabExceptions: @abort
 using TimerOutputs: @timeit
 using .....Material_Basis:
@@ -107,6 +108,11 @@ end
 function correspondence_name()
     return "Correspondence Plastic"
 end
+
+@params struct CorrespondencePlasticParams
+    yield_stress::Dependent = req("Yield Stress"; min = 0, quantity = :stress)
+end
+__init__() = register_material("Correspondence Plastic", CorrespondencePlasticParams)
 
 """
 	compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
