@@ -12,6 +12,7 @@ from the parameters via `get_node_sets`.
 module Exodus_Mesh
 
 using ....PeriLabExceptions: @abort
+using ....InputDeck: PeriLabInput
 using DataFrames
 using ..Mesh_Volume: tetrahedron_volume, hex8_volume
 using Exodus
@@ -32,17 +33,17 @@ function mesh_import_name()
 end
 
 """
-    read_mesh(params::Dict, filename::String)
+    read_mesh(input::PeriLabInput, filename::String)
 
 Reads an Exodus mesh file and returns the mesh data as a DataFrame.
 
 # Arguments
-- `params::Dict`: The parameters.
+- `input::PeriLabInput`: The typed input deck.
 - `filename::String`: The path to the Exodus mesh file.
 # Returns
 - `mesh::DataFrame`: The mesh data as a DataFrame.
 """
-function read_mesh(params::Dict, filename::String)
+function read_mesh(input::PeriLabInput, filename::String)
     exo = ExodusDatabase(filename, "r")
 
     coords = read_coordinates(exo)

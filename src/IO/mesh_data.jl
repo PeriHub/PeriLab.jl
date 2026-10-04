@@ -16,10 +16,9 @@ import .Bond_Filter: apply_bond_filters
 # include("gcode.jl")
 using ..Helpers: fastdot, get_nearest_neighbors, find_inverse_bond_id
 using ..Logging_Module: print_table
-using ..Parameter_Handling: get_mesh_name, get_header, get_node_sets,
-                            get_external_topology_name, get_horizon,
-                            get_mesh_scaling
-using ..InputDeck: BlockParams, block_by_id, block_angles
+using ..Parameter_Handling: get_header, read_node_sets, external_topology_file
+using ..InputDeck: BlockParams, block_by_id, block_angles, PeriLabInput,
+                   SurfaceExtrusionParams, mesh_scaling
 using ..Geometry: bond_geometry!
 
 #export load_mesh_and_distribute
@@ -52,18 +51,20 @@ include("Mesh_Import/Mesh_Import.jl")
 using .Mesh_Import: read_mesh
 
 """
-    init_data(params::Dict, path::String, comm::MPI.Comm)
+    init_data(params::Dict, input::PeriLabInput, path::String, comm::MPI.Comm)
 
 Initializes the data for the mesh.
 
 # Arguments
-- `params::Dict`: The parameters for the simulation.
+- `params::Dict`: The parameters for the simulation (sections not yet using typed input).
+- `input::PeriLabInput`: The typed input deck.
 - `path::String`: The path to the mesh file.
 - `comm::MPI.Comm`: The MPI communicator.
 # Returns
 - `params::Dict`: The parameters for the simulation.
 """
 function init_data(params::Dict,
+                   input::PeriLabInput,
                    path::String,
                    comm::MPI.Comm)
     @timeit "init_data - mesh_data.jl" begin
@@ -82,6 +83,7 @@ function init_data(params::Dict,
                                              nsets,
                                              topology,
                                              element_distribution=load_and_evaluate_mesh(params,
+                                                                                         input,
                                                                                          path,
                                                                                          size)
             if !isnothing(element_distribution)
@@ -125,7 +127,7 @@ function init_data(params::Dict,
         Data_Manager.set_overlap_map(overlap_map)
         Data_Manager.set_num_controller(num_controller)
         Data_Manager.set_num_responder(num_responder)
-        Data_Manager.set_horizon_mesh_scaling(get_mesh_scaling(params))
+        Data_Manager.set_horizon_mesh_scaling(mesh_scaling(input.sections.discretization))
         @debug "Get node sets"
         define_nsets(nsets)
         # defines the order of the global nodes to the local core nodes
@@ -663,12 +665,13 @@ function check_types_in_dataframe(mesh::DataFrame)
 end
 
 """
-    load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
+    load_and_evaluate_mesh(params::Dict, input::PeriLabInput, path::String, ranksize::Int64)
 
 Load and evaluate the mesh data.
 
 # Arguments
-- `params::Dict`: The input parameters.
+- `params::Dict`: The input parameters (bond filters, until they use typed input).
+- `input::PeriLabInput`: The typed input deck.
 - `path::String`: The path to the mesh file.
 - `ranksize::Int64`: The number of ranks.
 # Returns
@@ -683,28 +686,22 @@ Load and evaluate the mesh data.
 - `el_distribution::Array{Int64,1}`: The distribution of the finite elements.
 """
 function load_and_evaluate_mesh(params::Dict,
+                                input::PeriLabInput,
                                 path::String,
                                 ranksize::Int64)
-    if params["Discretization"]["Type"] == "Abaqus"
-        @timeit "read_mesh" mesh, nsets=read_mesh(params, path)
-    elseif params["Discretization"]["Type"] == "Gmsh"
-        @timeit "read_mesh" mesh=read_mesh(params, path)
-        nsets = get_node_sets(params, path, mesh)
-    elseif params["Discretization"]["Type"] == "Gcode"
-        filename = joinpath(path, get_mesh_name(params))
-        txt_file = replace(filename, ".gcode" => ".txt")
-        if !params["Discretization"]["Gcode"]["Overwrite Mesh"] && isfile(txt_file)
-            params["Discretization"]["Type"] == "Text File"
-        end
-        @timeit "read_mesh" mesh = read_mesh(params, path)
-        nsets = get_node_sets(params, path, mesh)
+    discretization = input.sections.discretization
+    if discretization.type == "Abaqus"
+        @timeit "read_mesh" mesh, nsets=read_mesh(input, path)
     else
+        # Gmsh, Gcode, Text File, Exodus. (For Gcode the old code compared
+        # Type == "Text File" instead of assigning it, so an existing .txt mesh
+        # is never reused; that behaviour is kept.)
         @debug "Read node sets"
-        @timeit "read_mesh" mesh=read_mesh(params, path)
-        nsets = get_node_sets(params, path, mesh)
+        @timeit "read_mesh" mesh=read_mesh(input, path)
+        nsets = read_node_sets(discretization, path, mesh)
     end
     nnodes = size(mesh, 1) + 1
-    mesh, surface_ns = extrude_surface_mesh(mesh, params)
+    mesh, surface_ns = extrude_surface_mesh(mesh, discretization.surface_extrusion)
     if !isnothing(surface_ns)
         for (key, values) in surface_ns
             nsets[key] = Vector{Int64}(values .+ nnodes)
@@ -714,16 +711,15 @@ function load_and_evaluate_mesh(params::Dict,
     check_types_in_dataframe(mesh)
 
     external_topology = nothing
-    if !isnothing(get_external_topology_name(params, path))
-        external_topology = read_external_topology(joinpath(path,
-                                                            get_external_topology_name(params,
-                                                                                       path)))
+    topology_file = external_topology_file(discretization, path)
+    if !isnothing(topology_file)
+        external_topology = read_external_topology(joinpath(path, topology_file))
     end
     if !isnothing(external_topology)
         @info "External topology files was read."
     end
     dof::Int64 = set_dof(mesh)
-    @timeit "neighborhoodlist" nlist, _=create_neighborhoodlist(mesh, params, dof)
+    @timeit "neighborhoodlist" nlist, _=create_neighborhoodlist(mesh, input.sections.blocks, mesh_scaling(discretization), dof)
     @debug "Finished init Neighborhoodlist"
     @timeit "apply_bond_filters" nlist, nlist_filtered_ids,
                                  bond_norm=apply_bond_filters(nlist,
@@ -735,16 +731,17 @@ function load_and_evaluate_mesh(params::Dict,
         @info "Create a consistent neighborhood list with external topology definition."
         nlist,
         topology = create_consistent_neighborhoodlist(external_topology,
-                                                      params["Discretization"]["Input External Topology"],
+                                                      something(discretization.input_external_topology.add_neighbor_search,
+                                                                false),
                                                       nlist,
                                                       dof)
     end
     @debug "Start distribution"
-    if haskey(params["Discretization"], "Distribution Type")
+    if discretization.distribution_type !== nothing
         @timeit "node_distribution" distribution, ptc,
                                     ntype=node_distribution(nlist,
                                                             ranksize,
-                                                            params["Discretization"]["Distribution Type"])
+                                                            discretization.distribution_type)
     else
         @timeit "node_distribution" distribution, ptc,
                                     ntype=node_distribution(nlist,
@@ -752,7 +749,7 @@ function load_and_evaluate_mesh(params::Dict,
     end
 
     el_distribution = nothing
-    if haskey(params, "FEM") && !isnothing(external_topology)
+    if input.sections.fem !== nothing && !isnothing(external_topology)
         @debug "Start element distribution"
         el_distribution = element_distribution(topology, ptc, ranksize)
     end
@@ -774,13 +771,10 @@ function load_and_evaluate_mesh(params::Dict,
 end
 
 function create_consistent_neighborhoodlist(external_topology::DataFrame,
-                                            params::Dict,
+                                            add_neighbor_search::Bool,
                                             nlist::BondScalarState{Int64},
                                             dof::Int64)
-    pd_neighbors::Bool = false
-    if haskey(params, "Add Neighbor Search")
-        pd_neighbors = params["Add Neighbor Search"]
-    end
+    pd_neighbors::Bool = add_neighbor_search
     number_of_elements = length(external_topology[:, 1])
     topology::Vector{Vector{Int64}} = []
     for i_el in 1:number_of_elements
@@ -816,20 +810,22 @@ function create_consistent_neighborhoodlist(external_topology::DataFrame,
 end
 
 """
-    create_neighborhoodlist(mesh::DataFrame, params::Dict, dof::Int64)
+    create_neighborhoodlist(mesh::DataFrame, blocks::Dict{String,BlockParams}, scaling::Vector{Float64}, dof::Int64)
 
 Create the neighborhood list of the mesh elements.
 
 # Arguments
 - `mesh::DataFrame`: The input mesh data represented as a DataFrame.
-- `params::Dict`: The input parameters.
+- `blocks::Dict{String,BlockParams}`: The blocks of the input deck (horizon per block).
+- `scaling::Vector{Float64}`: Horizon scaling per direction.
 - `dof::Int64`: The degrees of freedom (DOF) for the mesh elements.
 # Returns
 - `nlist::Array{Array{Int64,1},1}`: The neighborhood list of the mesh elements.
 """
-function create_neighborhoodlist(mesh::DataFrame, params::Dict, dof::Int64)
+function create_neighborhoodlist(mesh::DataFrame, blocks::Dict{String,BlockParams},
+                                 scaling::Vector{Float64}, dof::Int64)
     coor = names(mesh)
-    return neighbors(mesh, params, coor[1:dof])
+    return neighbors(mesh, blocks, scaling, coor[1:dof])
 end
 
 """
@@ -1197,20 +1193,21 @@ function create_distribution(nnodes::Int64, size::Int64)
 end
 
 """
-    neighbors(mesh, params::Dict, coor)
+    neighbors(mesh, blocks::Dict{String,BlockParams}, scaling::Vector{Float64}, coor)
 
 Compute the neighbor list for each node in a mesh based on their proximity using a BallTree data structure.
 
 # Arguments
 - `mesh`: A mesh data structure containing the coordinates and other information.
-- `params`: paramss needed for computing the neighbor list.
+- `blocks::Dict{String,BlockParams}`: The blocks of the input deck (horizon per block).
+- `scaling::Vector{Float64}`: Horizon scaling per direction.
 - `coor`: A vector of coordinate names along which to compute the neighbor list.
 
 # Returns
 An array of neighbor lists, where each element represents the neighbors of a node in the mesh.
 """
-function neighbors(mesh::DataFrame, params::Dict,
-                   coor::Union{Vector{Int64},Vector{String}})
+function neighbors(mesh::DataFrame, blocks::Dict{String,BlockParams},
+                   scaling::Vector{Float64}, coor::Union{Vector{Int64},Vector{String}})
     @info "Init Neighborhoodlist"
     nnodes = length(mesh[!, coor[1]])
     dof = length(coor)
@@ -1222,14 +1219,11 @@ function neighbors(mesh::DataFrame, params::Dict,
     end
     block_ids = unique(mesh[!, "block_id"])
     # TODO include mesh horizon
-    radius = zeros(Float64, nnodes)
-    for iID in 1:nnodes
-        radius[iID] = get_horizon(params, mesh[!, "block_id"][iID])
-    end
-    mesh_scaling = get_mesh_scaling(params)
+    horizon = Dict(id => block_by_id(blocks, id)[2].horizon for id in block_ids)
+    radius = [horizon[id] for id in mesh[!, "block_id"]]
 
     return get_nearest_neighbors(1:nnodes, dof, data, data, radius, neighborList;
-                                 mesh_scaling = mesh_scaling)
+                                 mesh_scaling = scaling)
 end
 
 """
@@ -1251,23 +1245,21 @@ function create_global_to_local_mapping(distribution)
 end
 
 """
-    extrude_surface_mesh(mesh::DataFrame)
+    extrude_surface_mesh(mesh::DataFrame, extrusion::Union{Nothing,SurfaceExtrusionParams})
 
 extrude the mesh at the surface of the block
 
 # Arguments
 - `mesh::DataFrame`: The input mesh data represented as a DataFrame.
-- `params::Dict`: The input parameters.
+- `extrusion::Union{Nothing,SurfaceExtrusionParams}`: The `Surface Extrusion` section, or `nothing`.
 """
-function extrude_surface_mesh(mesh::DataFrame, params::Dict)
-    if !("Surface Extrusion" in keys(params["Discretization"]))
-        return mesh, nothing
-    end
-    direction = params["Discretization"]["Surface Extrusion"]["Direction"]
-    step_x = params["Discretization"]["Surface Extrusion"]["Step_X"]
-    step_y = params["Discretization"]["Surface Extrusion"]["Step_Y"]
-    step_z = params["Discretization"]["Surface Extrusion"]["Step_Z"]
-    number = params["Discretization"]["Surface Extrusion"]["Number"]
+function extrude_surface_mesh(mesh::DataFrame, extrusion::Union{Nothing,SurfaceExtrusionParams})
+    extrusion === nothing && return mesh, nothing
+    direction = extrusion.direction
+    step_x = extrusion.step_x
+    step_y = extrusion.step_y
+    step_z = extrusion.step_z
+    number = extrusion.number
 
     # Finding min and max values for each dimension
     min_x, max_x = extrema(mesh.x)

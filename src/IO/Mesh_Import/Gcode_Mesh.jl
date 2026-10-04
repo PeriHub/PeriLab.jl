@@ -18,6 +18,7 @@ using NearestNeighbors
 using ....Helpers: sub_in_place!, normalize_in_place!, progress_bar
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
+using ....InputDeck: PeriLabInput, gcode_block_ids
 
 export mesh_import_name
 export read_mesh
@@ -766,30 +767,31 @@ function tait_bryant_angles(orientation_vector, up_vector = [0, 0, 1])
 end
 
 """
-    read_mesh(params::Dict, filename::String)
+    read_mesh(input::PeriLabInput, filename::String)
 
 Reads a Gcode file and builds the peridynamic mesh by simulating the additive
 printing process. The result is cached to a text file so subsequent runs do not
 have to re-parse the gcode unless the user asks for it.
 
 # Arguments
-- `params::Dict`: The parameters.
+- `input::PeriLabInput`: The typed input deck.
 - `filename::String`: The path to the gcode file.
 # Returns
 - `mesh::DataFrame`: The mesh data as a DataFrame.
 """
-function read_mesh(params::Dict, filename::String)
-    sampling = params["Discretization"]["Gcode"]["Sampling"]
-    scale = get(params["Discretization"]["Gcode"], "Scale", 1)
-    width = params["Discretization"]["Gcode"]["Width"]
-    height = params["Discretization"]["Gcode"]["Height"]
-    blocks = get(params["Discretization"]["Gcode"], "Blocks", nothing)
+function read_mesh(input::PeriLabInput, filename::String)
+    gcode = input.sections.discretization.gcode
+    gcode === nothing && @abort "Discretization type \"Gcode\" needs a \"Gcode\" section"
+    sampling = gcode.sampling
+    scale = gcode.scale
+    width = gcode.width
+    height = gcode.height
+    blocks = gcode_block_ids(gcode)
 
     commands_dict = Dict{String,Any}()
-    commands_dict["Start"] = get(params["Discretization"]["Gcode"], "Start Command",
-                                 nothing)
-    commands_dict["Stop"] = get(params["Discretization"]["Gcode"], "Stop Command", nothing)
-    commands_dict["End"] = get(params["Discretization"]["Gcode"], "End Command", nothing)
+    commands_dict["Start"] = gcode.start_command
+    commands_dict["Stop"] = gcode.stop_command
+    commands_dict["End"] = gcode.end_command
 
     if !isnothing(commands_dict["Start"])
         if isnothing(commands_dict["Stop"])

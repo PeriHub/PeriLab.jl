@@ -545,7 +545,7 @@ function initialize_data(filename::String,
         Data_Manager.set_comm(comm)
     end
     deck, input = read_input_deck(filename; directory = filedirectory, no_strict = no_strict)
-    @timeit "init_data" params=init_data(deck, filedirectory, comm)
+    @timeit "init_data" params=init_data(deck, input, filedirectory, comm)
     steps = solver_steps(input)
     return params, input, steps
 end

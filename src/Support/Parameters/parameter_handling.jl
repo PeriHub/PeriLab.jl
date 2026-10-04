@@ -4,7 +4,7 @@
 module Parameter_Handling
 using ...PeriLabExceptions: @abort
 using ..ParameterSpec: report!, strict_mode, add_error!
-using ..InputDeck: read_input
+using ..InputDeck: read_input, DiscretizationParams
 
 include("./parameter_handling_bc.jl")
 include("./parameter_handling_blocks.jl")

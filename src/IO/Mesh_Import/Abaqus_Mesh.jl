@@ -11,6 +11,7 @@ element as a node, element volume, block id).
 module Abaqus_Mesh
 
 using ....PeriLabExceptions: @abort
+using ....InputDeck: PeriLabInput
 using DataFrames
 using AbaqusReader
 using ..Mesh_Volume: calculate_volume
@@ -31,19 +32,19 @@ function mesh_import_name()
 end
 
 """
-    read_mesh(params::Dict, filename::String)
+    read_mesh(input::PeriLabInput, filename::String)
 
 Reads an Abaqus mesh file and returns the mesh data as a DataFrame along with
 the node sets found in the boundary conditions.
 
 # Arguments
-- `params::Dict`: The parameters.
+- `input::PeriLabInput`: The typed input deck.
 - `filename::String`: The path to the Abaqus INP file.
 # Returns
 - `mesh::DataFrame`: The mesh data as a DataFrame.
 - `nsets::Dict{String,Vector{Int64}}`: The node sets.
 """
-function read_mesh(params::Dict, filename::String)
+function read_mesh(input::PeriLabInput, filename::String)
     mesh = abaqus_read_mesh(filename; verbose = false)
 
     nodes = mesh["nodes"]
@@ -78,11 +79,8 @@ function read_mesh(params::Dict, filename::String)
 
     nset_names = ["All"]
 
-    for boundary_condtion in keys(params["Boundary Conditions"])
-        if haskey(params["Boundary Conditions"][boundary_condtion], "Node Set")
-            push!(nset_names,
-                  params["Boundary Conditions"][boundary_condtion]["Node Set"])
-        end
+    for bc in values(input.sections.boundary_conditions)
+        push!(nset_names, bc.node_set)
     end
     nset_names = unique(nset_names)
 
