@@ -190,8 +190,13 @@ end
     PeriLab.Data_Manager.set_rotation(true)
     PeriLab.Data_Manager.create_constant_node_scalar_field("Block_Id", Int64;
                                                            default_value = 1)
-    PeriLab.IO.init_orientations(Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1),
-                                                       "block_2" => Dict("Block ID" => 2))))
+    PeriLab.IO.init_orientations(typed_section(Dict{String,PeriLab.InputDeck.BlockParams},
+                                               Dict("block_1" => Dict("Block ID" => 1,
+                                                                      "Density" => 1.0,
+                                                                      "Horizon" => 1.0),
+                                                    "block_2" => Dict("Block ID" => 2,
+                                                                      "Density" => 1.0,
+                                                                      "Horizon" => 1.0))))
     orientations = PeriLab.Data_Manager.get_field("Orientations")
     @test isapprox(orientations[1, 1], 0; atol = 0.00001)
     @test isapprox(orientations[1, 2], 1; atol = 0.00001)
@@ -233,7 +238,10 @@ end
                                                            default_value = 1)
 
     PeriLab.Data_Manager.set_rotation(true)
-    PeriLab.IO.init_orientations(Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1))))
+    PeriLab.IO.init_orientations(typed_section(Dict{String,PeriLab.InputDeck.BlockParams},
+                                               Dict("block_1" => Dict("Block ID" => 1,
+                                                                      "Density" => 1.0,
+                                                                      "Horizon" => 1.0))))
     orientations = PeriLab.Data_Manager.get_field("Orientations")
     @test isapprox(orientations[1, 1], 0; atol = 0.00001)
     @test isapprox(orientations[1, 2], 0; atol = 0.00001)
@@ -269,16 +277,15 @@ end
                               "Additive",
                               "Thermal",
                               "Degradation"])
-    params = Dict("Blocks" => Dict("block_1" => Dict("Material Models" => true,
-                                                     "Damage Models" => true,
-                                                     "Additive Models" => true,
-                                                     "Thermal Models" => true,
-                                                     "Degradation Models" => true),
-                                   "block_2" => Dict("Material Models" => true,
-                                                     "Damage Models" => false,
-                                                     "Additive Models" => false,
-                                                     "Thermal Models" => false,
-                                                     "Degradation Models" => false)))
+    params = typed_section(Dict{String,PeriLab.InputDeck.BlockParams},
+                           Dict("block_1" => Dict("Block ID" => 1, "Density" => 1.0,
+                                                  "Horizon" => 1.0, "Material Model" => "m",
+                                                  "Damage Model" => "d",
+                                                  "Additive Model" => "a",
+                                                  "Thermal Model" => "t",
+                                                  "Degradation Model" => "g"),
+                                "block_2" => Dict("Block ID" => 2, "Density" => 1.0,
+                                                  "Horizon" => 1.0, "Material Model" => "m")))
     PeriLab.IO.show_block_summary(solver_options,
                                   params,
                                   "",

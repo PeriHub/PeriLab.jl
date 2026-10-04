@@ -17,8 +17,9 @@ import .Bond_Filter: apply_bond_filters
 using ..Helpers: fastdot, get_nearest_neighbors, find_inverse_bond_id
 using ..Logging_Module: print_table
 using ..Parameter_Handling: get_mesh_name, get_header, get_node_sets,
-                            get_external_topology_name, get_horizon, get_angles,
+                            get_external_topology_name, get_horizon,
                             get_mesh_scaling
+using ..InputDeck: BlockParams, block_by_id, block_angles
 using ..Geometry: bond_geometry!
 
 #export load_mesh_and_distribute
@@ -176,17 +177,16 @@ function init_data(params::Dict,
 end
 
 """
-	set_angles(params::Dict, block_nodes::Dict)
+	set_angles(blocks::Dict{String,BlockParams})
 
-Sets the density of the nodes in the dictionary.
+Sets the node angles from the block angles of the input deck.
 
 # Arguments
-- `params::Dict`: The parameters
-- `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
+- `blocks::Dict{String,BlockParams}`: The blocks of the input deck
 """
-function set_angles(params::Dict)
+function set_angles(blocks::Dict{String,BlockParams})
     block_ids = Data_Manager.get_field("Block_Id")
-    blocks = unique(block_ids)
+    mesh_block_ids = unique(block_ids)
     mesh_angles = false
     if "Angles" in Data_Manager.get_all_field_keys()
         Data_Manager.set_rotation(true)
@@ -198,8 +198,8 @@ function set_angles(params::Dict)
 
     block_rotation = false
     dof = Data_Manager.get_dof()
-    for block in blocks
-        if get_angles(params, block, dof) !== nothing
+    for block in mesh_block_ids
+        if block_angles(block_by_id(blocks, block)..., dof) !== nothing
             block_rotation = true
             break
         end
@@ -212,7 +212,7 @@ function set_angles(params::Dict)
         angles = Data_Manager.create_constant_node_vector_field("Angles", Float64, dof)
 
         for iID in 1:Data_Manager.get_nnodes()
-            angles_global = get_angles(params, block_ids[iID], dof)
+            angles_global = block_angles(block_by_id(blocks, block_ids[iID])..., dof)
             if isnothing(angles_global)
                 angles_global = 0.0
             end

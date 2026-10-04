@@ -422,7 +422,7 @@ function run(filename::String;
                 Data_Manager.set_cancel(false)
                 Data_Manager.set_step(step_id)
                 @info "Init Solver"
-                @timeit "IO.init orientations" IO.init_orientations(params)
+                @timeit "IO.init orientations" IO.init_orientations(input.sections.blocks)
                 @timeit "Solver_Manager.init" block_nodes,
                                               bcs,
                                               solver_options=Solver_Manager.init(params,
@@ -438,7 +438,7 @@ function run(filename::String;
                 end
 
                 IO.show_block_summary(solver_options,
-                                      params,
+                                      input.sections.blocks,
                                       Logging_Module.get_log_file(),
                                       silent,
                                       comm)

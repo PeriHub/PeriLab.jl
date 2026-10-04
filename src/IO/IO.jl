@@ -29,12 +29,11 @@ using ..MPI_Communication: send_single_value_from_vector, synch_responder_to_con
 
 using ..Helpers: progress_bar
 using ..Logging_Module: get_log_stream
-using ..InputDeck: solver_steps
+using ..InputDeck: solver_steps, BlockParams
 using ..Parameter_Handling: get_flush_file, get_write_after_damage,
                             get_start_time, get_end_time, get_outputs,
                             get_output_frequencies,
-                            get_output_filenames, get_computes_names, get_computes,
-                            get_fem_block
+                            get_output_filenames, get_computes_names, get_computes
 using ..Geometry: rotation_tensor
 
 using DataStructures
@@ -552,12 +551,12 @@ function initialize_data(filename::String,
 end
 
 """
-    init_orientations()
+    init_orientations(blocks::Dict{String,BlockParams})
 
 Initialize orientations.
 """
-function init_orientations(params::Dict)
-    set_angles(params)
+function init_orientations(blocks::Dict{String,BlockParams})
+    set_angles(blocks)
     rotation::Bool = Data_Manager.get_rotation()
     element_rotation::Bool = Data_Manager.get_element_rotation()
 
@@ -1075,20 +1074,33 @@ function get_mpi_rank_string(rank::Int64, max_rank::Int64)
     return "0"^(max_rank_length - rank_length) * string(rank)
 end
 
+# Block summary columns that name a model of the block
+const _BLOCK_MODEL_COLUMNS = Dict("Material" => :material_model, "Damage" => :damage_model,
+                                  "Thermal" => :thermal_model, "Additive" => :additive_model,
+                                  "Degradation" => :degradation_model)
+
+function _block_summary_cell(block::BlockParams, column::String)
+    column == "Density" && return @sprintf("%.3e", block.density)
+    column == "Horizon" && return @sprintf("%.3e", block.horizon)
+    field = get(_BLOCK_MODEL_COLUMNS, column, nothing)
+    field === nothing && return ""
+    return something(getfield(block, field), "")
+end
+
 """
-    show_block_summary(solver_options::Dict, params::Dict, log_file::String, silent::Bool, comm::MPI.Comm)
+    show_block_summary(solver_options::Dict, blocks::Dict{String,BlockParams}, log_file::String, silent::Bool, comm::MPI.Comm)
 
 Show block summary.
 
 # Arguments
 - `solver_options::Dict`: The solver options
-- `params::Dict`: The params
+- `blocks::Dict{String,BlockParams}`: The blocks of the input deck
 - `log_file::String`: The log file
 - `silent::Bool`: The silent flag
 - `comm::MPI.Comm`: The Comm_rank
 """
 function show_block_summary(solver_options::Dict,
-                            params::Dict,
+                            blocks::Dict{String,BlockParams},
                             log_file::String,
                             silent::Bool,
                             comm::MPI.Comm)
@@ -1130,20 +1142,10 @@ function show_block_summary(solver_options::Dict,
                 num_nodes = string(length(findall(x -> x == id, block_Id)))
                 push!(row, num_nodes)
             elseif name == "PD/FEM"
-                fem_block = get_fem_block(params, id)
-                if fem_block
-                    push!(row, "FEM")
-                else
-                    push!(row, "PD")
-                end
-                # elseif !(name in solver_options["Models"])
-                #     push!(row, "")
-            elseif haskey(params["Blocks"][block_name_list[id]], name * " Model")
-                push!(row, params["Blocks"][block_name_list[id]][name*" Model"])
-            elseif haskey(params["Blocks"][block_name_list[id]], name)
-                push!(row, @sprintf("%.3e", (params["Blocks"][block_name_list[id]][name])))
+                fem = something(blocks[block_name_list[id]].fem, false)
+                push!(row, fem ? "FEM" : "PD")
             else
-                push!(row, "")
+                push!(row, _block_summary_cell(blocks[block_name_list[id]], name))
             end
         end
         push!(df, row)

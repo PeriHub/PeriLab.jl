@@ -6,13 +6,8 @@ module Solver_Manager
 using TimerOutputs: @timeit
 using ..Data_Manager
 using ..PeriLabExceptions: @abort
-using ..Parameter_Handling:
-                            get_density,
-                            get_horizon,
-                            get_fem_block,
-                            get_angles,
-                            get_block_names_and_ids
-using ..InputDeck: PeriLabInput, SolverParams, solver_name, model_options, solver_step
+using ..InputDeck: PeriLabInput, SolverParams, solver_name, model_options, solver_step,
+                   BlockParams, block_by_id, block_angles, block_names_and_ids
 using ..Helpers
 using ..ModuleLoader: find_module_files, create_module_specifics
 include("../../Models/Material/Material_Basis.jl")
@@ -77,9 +72,9 @@ function init(params::Dict,
     block_ids = Data_Manager.get_field("Block_Id")
     block_nodes_with_neighbors = get_block_nodes(block_ids, nnodes + num_responder)
     block_nodes = get_block_nodes(block_ids, nnodes)
+    blocks = input.sections.blocks
     block_name_list,
-    block_id_list = get_block_names_and_ids(params, block_ids,
-                                            Data_Manager.get_mpi_active())
+    block_id_list = block_names_and_ids(blocks, block_ids, Data_Manager.get_mpi_active())
     Data_Manager.set_block_name_list(block_name_list)
     Data_Manager.set_block_id_list(block_id_list)
     density = Data_Manager.create_constant_node_scalar_field("Density", Float64)
@@ -92,14 +87,14 @@ function init(params::Dict,
     if Data_Manager.fem_active()
         fem_block = Data_Manager.create_constant_node_scalar_field("FEM Block", Bool;
                                                                    default_value = false)
-        fem_block = set_fem_block(params, block_nodes_with_neighbors, fem_block) # includes the neighbors
+        fem_block = set_fem_block(blocks, block_nodes_with_neighbors, fem_block) # includes the neighbors
     end
     Data_Manager.create_constant_node_scalar_field("Active Nodes", Int64)
     Data_Manager.create_constant_node_scalar_field("Update Nodes", Int64)
     Data_Manager.create_constant_node_scalar_field("Update", Bool; default_value = true)
-    density = set_density(params, block_nodes_with_neighbors, density) # includes the neighbors
-    horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
-    set_angles(params, block_nodes_with_neighbors) # includes the Neighbors
+    density = set_density(blocks, block_nodes_with_neighbors, density) # includes the neighbors
+    horizon = set_horizon(blocks, block_nodes_with_neighbors, horizon) # includes the neighbors
+    set_angles(blocks, block_nodes_with_neighbors) # includes the Neighbors
     solver_params = solver_step(input, step_id)
     solver_options["Models"] = model_options(solver_params)
     solver_options["All Models"] = model_options(solver_params)
@@ -122,7 +117,7 @@ function init(params::Dict,
                                                    default_value = 1)
     for iblock in eachindex(block_nodes)
         Influence_Function.init_influence_function(block_nodes[iblock],
-                                                   params["Discretization"])
+                                                   input.sections.discretization.influence_function)
     end
     Data_Manager.create_bond_scalar_state("Bond Damage", Float64; default_value = 1)
     @debug "Read properties"
@@ -175,34 +170,35 @@ function init(params::Dict,
 end
 
 """
-	set_density(params::Dict, block_nodes::Dict, density::NodeScalarField{Float64})
+	set_density(blocks::Dict{String,BlockParams}, block_nodes::Dict, density::NodeScalarField{Float64})
 
 Sets the density of the nodes in the dictionary.
 
 # Arguments
-- `params::Dict`: The parameters
+- `blocks::Dict{String,BlockParams}`: The blocks of the input deck
 - `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
 - `density::NodeScalarField{Float64}`: The density
 # Returns
 - `density::NodeScalarField{Float64}`: The density
 """
-function set_density(params::Dict, block_nodes::Dict, density::NodeScalarField{Float64})
+function set_density(blocks::Dict{String,BlockParams}, block_nodes::Dict,
+                     density::NodeScalarField{Float64})
     for block in eachindex(block_nodes)
-        density[block_nodes[block]] .= get_density(params, block)
+        density[block_nodes[block]] .= block_by_id(blocks, block)[2].density
     end
     return density
 end
 
 """
-	set_angles(params::Dict, block_nodes::Dict)
+	set_angles(blocks::Dict{String,BlockParams}, block_nodes::Dict)
 
 Sets the density of the nodes in the dictionary.
 
 # Arguments
-- `params::Dict`: The parameters
+- `blocks::Dict{String,BlockParams}`: The blocks of the input deck
 - `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
 """
-function set_angles(params::Dict, block_nodes::Dict)
+function set_angles(blocks::Dict{String,BlockParams}, block_nodes::Dict)
     mesh_angles = false
     if "Angles" in Data_Manager.get_all_field_keys()
         Data_Manager.set_rotation(true)
@@ -215,7 +211,7 @@ function set_angles(params::Dict, block_nodes::Dict)
     block_rotation = false
     dof = Data_Manager.get_dof()
     for block in eachindex(block_nodes)
-        if get_angles(params, block, dof) !== nothing
+        if block_angles(block_by_id(blocks, block)..., dof) !== nothing
             block_rotation = true
             break
         end
@@ -228,7 +224,7 @@ function set_angles(params::Dict, block_nodes::Dict)
         angles = Data_Manager.create_constant_node_vector_field("Angles", Float64, dof)
 
         for block in eachindex(block_nodes)
-            angles_global = get_angles(params, block, dof)
+            angles_global = block_angles(block_by_id(blocks, block)..., dof)
             if isnothing(angles_global)
                 angles_global = 0.0
             end
@@ -240,39 +236,41 @@ function set_angles(params::Dict, block_nodes::Dict)
 end
 
 """
-	set_fem_block(params::Dict, block_nodes::Dict, fem_block::Vector{Bool})
+	set_fem_block(blocks::Dict{String,BlockParams}, block_nodes::Dict, fem_block::Vector{Bool})
 
 Sets the fem_block of the nodes in the dictionary.
 
 # Arguments
-- `params::Dict`: The parameters
+- `blocks::Dict{String,BlockParams}`: The blocks of the input deck
 - `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
 - `fem_block::Vector{Bool}`: The fem_block
 # Returns
 - `fem_block::Vector{Bool}`: The fem_block
 """
-function set_fem_block(params::Dict, block_nodes::Dict, fem_block::Vector{Bool})
+function set_fem_block(blocks::Dict{String,BlockParams}, block_nodes::Dict,
+                       fem_block::Vector{Bool})
     for block in eachindex(block_nodes)
-        fem_block[block_nodes[block]] .= get_fem_block(params, block)
+        fem_block[block_nodes[block]] .= something(block_by_id(blocks, block)[2].fem, false)
     end
     return fem_block
 end
 
 """
-	set_horizon(params::Dict, block_nodes::Dict, horizon::NodeScalarField{Float64})
+	set_horizon(blocks::Dict{String,BlockParams}, block_nodes::Dict, horizon::NodeScalarField{Float64})
 
 Sets the horizon of the nodes in the dictionary.
 
 # Arguments
-- `params::Dict`: The parameters
+- `blocks::Dict{String,BlockParams}`: The blocks of the input deck
 - `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
 - `horizon::NodeScalarField{Float64}`: The horizon
 # Returns
 - `horizon::NodeScalarField{Float64}`: The horizon
 """
-function set_horizon(params::Dict, block_nodes::Dict, horizon::NodeScalarField{Float64})
+function set_horizon(blocks::Dict{String,BlockParams}, block_nodes::Dict,
+                     horizon::NodeScalarField{Float64})
     for block in eachindex(block_nodes)
-        horizon[block_nodes[block]] .= get_horizon(params, block)
+        horizon[block_nodes[block]] .= block_by_id(blocks, block)[2].horizon
     end
     return horizon
 end

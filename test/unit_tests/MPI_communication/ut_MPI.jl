@@ -412,10 +412,13 @@ if ncores == 3
     end
 
     solver_options = Dict("Models" => ["Material"])
-    params = Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
-                                                     "Material Model" => "Test 1"),
-                                   "block_2" => Dict("Block ID" => 2,
-                                                     "Material Model" => "Test 2")))
+    params = typed_section(Dict{String,PeriLab.InputDeck.BlockParams},
+                           Dict("block_1" => Dict("Block ID" => 1, "Density" => 1.0,
+                                                  "Horizon" => 1.0,
+                                                  "Material Model" => "Test 1"),
+                                "block_2" => Dict("Block ID" => 2, "Density" => 1.0,
+                                                  "Horizon" => 1.0,
+                                                  "Material Model" => "Test 2")))
     PeriLab.IO.show_block_summary(solver_options, params, "", false, comm)
     PeriLab.IO.show_block_summary(solver_options, params, "", true, comm)
     PeriLab.Logging_Module.init_logging("test", false, false, 0, 2)
