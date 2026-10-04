@@ -449,14 +449,14 @@ function run(filename::String;
                 reuse = solver_options["Initial Time"] != 0.0
                 if step_id <= 1
                     @timeit "IO.init_write_results" result_files,
-                                                    outputs=IO.init_write_results(params,
+                                                    outputs=IO.init_write_results(input,
                                                                                   output_dir,
                                                                                   filedirectory,
                                                                                   PERILAB_VERSION,
                                                                                   qa_vector,
                                                                                   reuse)
                 end
-                IO.set_output_frequency(params,
+                IO.set_output_frequency(input,
                                         solver_options["Number of Steps"],
                                         step_id, reuse)
                 if verbose

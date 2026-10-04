@@ -32,20 +32,23 @@ block_list = ["block_1", "block_2"]
 PeriLab.Data_Manager.set_block_name_list(block_list)
 PeriLab.Data_Manager.set_block_id_list([1, 2])
 
-params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => filename1,
-                                                  "Flush File" => false,
-                                                  "Output Variables" => Dict("Forces" => true)),
-                                "Output2" => Dict("Output Filename" => filename2,
-                                                  "Flush File" => false,
-                                                  "Output Variables" => Dict("Displacements" => true,
-                                                                             "Forces" => true)),
-                                "Output3" => Dict("Output Filename" => filename3,
-                                                  "Output File Type" => "CSV",
-                                                  "Output Variables" => Dict("External_Displacement" => true))),
-              "Compute Class Parameters" => Dict("External_Displacement" => Dict("Block" => "block_1",
-                                                                                 "Calculation Type" => "Maximum",
-                                                                                 "Compute Class" => "Block_Data",
-                                                                                 "Variable" => "Displacements")))
+params = typed_input(Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 1,
+                                                              "Output Filename" => filename1,
+                                                              "Flush File" => false,
+                                                              "Output Variables" => Dict("Forces" => true)),
+                                            "Output2" => Dict("Output Frequency" => 1,
+                                                              "Output Filename" => filename2,
+                                                              "Flush File" => false,
+                                                              "Output Variables" => Dict("Displacements" => true,
+                                                                                         "Forces" => true)),
+                                            "Output3" => Dict("Output Frequency" => 1,
+                                                              "Output Filename" => filename3,
+                                                              "Output File Type" => "CSV",
+                                                              "Output Variables" => Dict("External_Displacement" => true))),
+                          "Compute Class Parameters" => Dict("External_Displacement" => Dict("Block" => "block_1",
+                                                                                             "Calculation Type" => "Maximum",
+                                                                                             "Compute Class" => "Block_Data",
+                                                                                             "Variable" => "Displacements"))))
 coordinates[1, 1] = 0
 coordinates[1, 2] = 0
 coordinates[2, 1] = 1
