@@ -11,6 +11,7 @@ export get_output_frequencies
 export get_output_filenames
 export get_output_type
 export check_for_duplicates
+export output_filenames, output_frequencies, output_fieldnames
 
 """
     check_for_duplicates(filenames)
@@ -274,4 +275,75 @@ function get_output_frequencies(params::Dict, nsteps::Int64,
     end
 
     return freq
+end
+
+# Typed functions (phase 2b). The Dict getters above stay until phase 4.
+
+"""
+    output_filenames(outputs, output_dir)
+
+Result file names in `values(outputs)` order (`.csv` for CSV outputs, `.e`
+otherwise). Aborts if a name is used twice.
+"""
+function output_filenames(outputs::Dict{String,OutputParams}, output_dir::String)
+    filenames = String[]
+    for output in values(outputs)
+        extension = output.output_file_type == "CSV" ? ".csv" : ".e"
+        push!(filenames, joinpath(output_dir, output.output_filename * extension))
+    end
+    check_for_duplicates(filenames)
+    return filenames
+end
+
+"""
+    output_frequencies(outputs, nsteps, step_id)
+
+Output frequency (write every n-th step) per output, in `values(outputs)`
+order. `Number of Output Steps` wins over `Output Frequency`; a value given as
+a string holds one entry per solver step; the result is clamped to `nsteps`.
+"""
+function output_frequencies(outputs::Dict{String,OutputParams}, nsteps::Int64,
+                            step_id::Int64)
+    frequencies = zeros(Int64, length(outputs))
+    for (id, output) in enumerate(values(outputs))
+        use_frequency = output.number_of_output_steps === nothing
+        if !use_frequency && output.output_frequency !== nothing
+            @warn "Double output step / frequency definition. First option is used. ''Output Frequency'' is ignored."
+        end
+        value = use_frequency ? output.output_frequency : output.number_of_output_steps
+        if value isa String
+            value = parse(Int, split(value)[step_id])
+        end
+        frequencies[id] = use_frequency ? value : Int64(ceil(nsteps / value))
+        frequencies[id] = min(frequencies[id], nsteps)
+    end
+    return frequencies
+end
+
+"""
+    output_fieldnames(variables, field_keys, compute_names, output_type)
+
+The selected output variables as `[name, "Constant"]` or `[name, "NP1"]`.
+CSV outputs only take compute classes.
+"""
+function output_fieldnames(variables::Dict{String,Bool}, field_keys::Vector{String},
+                           compute_names::Vector{String}, output_type::String)
+    fieldnames = Vector{Vector{String}}()
+    for (name, selected) in variables
+        selected || continue
+        if output_type == "CSV"
+            if name in compute_names
+                push!(fieldnames, [name, "Constant"])
+            else
+                @warn '"' * name * '"' * " is not defined as global variable"
+            end
+        elseif name in field_keys || name in compute_names
+            push!(fieldnames, [name, "Constant"])
+        elseif name * "NP1" in field_keys
+            push!(fieldnames, [name, "NP1"])
+        else
+            @warn '"' * name * '"' * " is not defined as variable"
+        end
+    end
+    return fieldnames
 end
