@@ -79,7 +79,6 @@ PeriLab:
   Models:
     Material Models:
       Aluminium:
-        Density: 2.81e-09
         # Material Model: Correspondence Elastic + Correspondence Plastic
         Material Model: PD Solid Elastic
         Symmetry: isotropic plane stress

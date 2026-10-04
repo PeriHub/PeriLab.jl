@@ -27,6 +27,7 @@ end
     @test input.sections.solver.verlet.safety_factor === 1.0
     @test input.contact === nothing
     @test haskey(input.models, "Material Models")     # models stay raw until phase 3
+    @test input.materials["Mat"] isa PS.WithBase
     @test isempty(input.globals)
     @test input.sections.strict_validation
 end

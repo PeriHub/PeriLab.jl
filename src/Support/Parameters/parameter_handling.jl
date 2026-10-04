@@ -1389,13 +1389,16 @@ end
 """
     validate_models(deck)
 
-Legacy validation of the `Models` section (types and required keys from
+Legacy validation of the `Models` section, except `Material Models` (typed since
+phase 3a; types and required keys from
 `expected_structure`; unknown keys are warnings). Replaced in phase 3, when
 model modules declare their parameters.
 """
 function validate_models(deck::AbstractDict)
     models = get(deck, "Models", nothing)
     models isa Dict || return true            # missing / malformed: reported by read_input
+    # Material Models are validated by the typed declarations (InputDeck.parse_materials)
+    models = Dict{Any,Any}(k => v for (k, v) in models if k != "Material Models")
     checked_keys = []
     valid = try
         first(validate_structure_recursive(expected_structure["PeriLab"][1]["Models"][1],

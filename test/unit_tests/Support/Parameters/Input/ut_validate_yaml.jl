@@ -10,7 +10,7 @@ function ut_valid_params()
                                                     "Blocks" => Dict{Any,Any}("block_1" => Dict{Any,Any}("Block ID" => 1,
                                                                                                          "Density" => 1.0,
                                                                                                          "Horizon" => 1.0)),
-                                                    "Models" => Dict{Any,Any}("Material Models" => Dict{Any,Any}("mat_1" => Dict{Any,Any}("Material Model" => "a"))),
+                                                    "Models" => Dict{Any,Any}("Material Models" => Dict{Any,Any}("mat_1" => Dict{Any,Any}("Material Model" => "Bond-based Elastic"))),
                                                     "Solver" => Dict{Any,Any}("Initial Time" => 0.0,
                                                                               "Final Time" => 1.0,
                                                                               "Verlet" => Dict{Any,Any}())))
@@ -41,7 +41,7 @@ end
     @test PeriLab.parse_commandline(["a.yaml"])["no_strict"] == false
 end
 
-@testset "legacy model validation still applies" begin
+@testset "material model names are validated" begin
     params = ut_valid_params()
     params["PeriLab"]["Models"]["Material Models"]["mat_1"]["Material Model"] = 5
     @test_throws PeriLab.PeriLabError PeriLab.Parameter_Handling.validate_yaml(params)
@@ -72,7 +72,7 @@ end
             Models:
               Material Models:
                 mat_1:
-                  Material Model: a
+                  Material Model: Bond-based Elastic
             Solver:
               Initial Time: 0.0
               Final Time: 1.0
@@ -84,4 +84,12 @@ end
     @test deck["Solver"]["Number of Steps"] == 4
     @test input.sections.solver.number_of_steps === 4
     @test PeriLab.InputDeck.solver_steps(input) == [-1]
+end
+
+@testset "an unknown material key aborts with the typed error" begin
+    params = ut_valid_params()
+    params["PeriLab"]["Models"]["Material Models"]["mat_1"]["Youngs Modulus"] = 1.0
+    @test_logs (:error, r"did you mean \"Young's Modulus\"") match_mode=:any @test_throws PeriLab.PeriLabError begin
+        PeriLab.Parameter_Handling.validate_yaml(params)
+    end
 end

@@ -49,18 +49,46 @@ end
 """
     PeriLabInput
 
-A validated input deck. `models` stays the raw `Models` dict until the model
-modules declare their parameters (phase 3); `globals` is the unvalidated
-`Globals` escape hatch.
+A validated input deck. `materials` holds the typed material models
+(`ParameterSpec.WithBase`), keyed by name; `models` stays the raw `Models` dict
+for the categories not yet migrated and for the runtime until phase 3b;
+`globals` is the unvalidated `Globals` escape hatch.
 """
 struct PeriLabInput
     sections::PeriLabSections
     contact::Union{Nothing,ContactInput}
+    materials::Dict{String,Any}
     models::Dict{String,Any}
     globals::Dict{String,Any}
 end
 
 const _SPECIAL_KEYS = ("Models", "Contact", "Globals")
+
+"Typed `Material Models`, keyed by name; errors go to `ctx`."
+function parse_materials(models::AbstractDict, ctx::ParseContext)
+    materials = Dict{String,Any}()
+    raw = get(models, "Material Models", nothing)
+    raw === nothing && return materials
+    path = join_path("Models", "Material Models")
+    if !(raw isa AbstractDict)
+        add_error!(ctx, path,
+                   "expected a section of `key: value` entries, got $(ParameterSpec._describe(raw))")
+        return materials
+    end
+    for (name, entry) in raw
+        entry_path = join_path(path, string(name))
+        if !(entry isa AbstractDict)
+            add_error!(ctx, entry_path,
+                       "expected a section of `key: value` entries, got $(ParameterSpec._describe(entry))")
+            continue
+        end
+        model = ParameterSpec.parse_model(:material,
+                                          Dict{String,Any}(string(k) => v for (k, v) in entry),
+                                          entry_path, ctx; name_key = "Material Model")
+        model === nothing || (materials[string(name)] = model)
+    end
+    return materials
+end
 
 """
     read_input(deck, directory = ""; strict = true) -> (input, ctx)
@@ -85,11 +113,13 @@ function read_input(deck::AbstractDict, directory::AbstractString = ""; strict::
         add_error!(ctx, "Models",
                    "expected a section of `key: value` entries, got $(ParameterSpec._describe(models))")
     end
+    materials = models isa AbstractDict ? parse_materials(models, ctx) : Dict{String,Any}()
     globals = get(deck, "Globals", Dict{String,Any}())
     if ParameterSpec.has_errors(ctx) || sections === nothing
         return nothing, ctx
     end
-    input = PeriLabInput(sections, contact, Dict{String,Any}(string(k) => v for (k, v) in models),
+    input = PeriLabInput(sections, contact, materials,
+                         Dict{String,Any}(string(k) => v for (k, v) in models),
                          globals isa AbstractDict ?
                          Dict{String,Any}(string(k) => v for (k, v) in globals) :
                          Dict{String,Any}())

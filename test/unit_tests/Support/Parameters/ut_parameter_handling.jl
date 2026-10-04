@@ -146,7 +146,7 @@ end
     end
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
                                                                                                           Any}("mat_1" => Dict{Any,
-                                                                                                                               Any}("Material Model" => "a"))),
+                                                                                                                               Any}("Material Model" => "Bond-based Elastic"))),
                                                       "Discretization" => Dict{Any,Any}("Input Mesh File" => "test",
                                                                                         "Type" => "test"),
                                                       "Blocks" => Dict{Any,Any}("Block_1" => Dict{Any,
