@@ -5,6 +5,7 @@
 module Disk_Filter
 using LinearAlgebra
 using .....Data_Manager
+using .....InputDeck: BondFilterParams
 using .....PeriLabExceptions: @abort
 export run_bond_filter, bond_filter_name
 const TOLERANCE = 1.0e-14
@@ -62,14 +63,14 @@ function bond_intersects_disc(p0::Vector{Float64},
 end
 
 """
-    run_bond_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::BondScalarState{Int64}, dof::Int64)
+    run_bond_filter(nnodes::Int64, data::Matrix{Float64}, filter::BondFilterParams, nlist::BondScalarState{Int64}, dof::Int64)
 
 Apply the disk filter to the neighborhood list.
 
 # Arguments
 - `nnodes::Int64`: The number of nodes.
 - `data::Matrix{Float64}`: The data.
-- `filter::Dict`: The filter.
+- `filter::BondFilterParams`: The filter.
 - `nlist::BondScalarState{Int64}`: The neighborhood list.
 - `dof::Int64`: The degrees of freedom.
 # Returns
@@ -78,12 +79,12 @@ Apply the disk filter to the neighborhood list.
 """
 function run_bond_filter(nnodes::Int64,
                          data::Matrix{Float64},
-                         filter::Dict,
+                         filter::BondFilterParams,
                          nlist::BondScalarState{Int64},
                          dof::Int64)
     if dof == 3
-        center = [filter["Center X"], filter["Center Y"], filter["Center Z"]]
-        normal = [filter["Normal X"], filter["Normal Y"], filter["Normal Z"]]
+        center = [filter.center_x, filter.center_y, filter.center_z]
+        normal = [filter.normal_x, filter.normal_y, filter.normal_z]
     else
         @abort "Disk filter only implemented for 3D, use rectangular plane filter instead"
         return nothing
@@ -97,7 +98,7 @@ function run_bond_filter(nnodes::Int64,
                                                           data[:, neighbor],
                                                           center,
                                                           normal,
-                                                          filter["Radius"])
+                                                          filter.radius)
         end
     end
     return filter_flag, normal

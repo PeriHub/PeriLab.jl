@@ -4,6 +4,7 @@
 
 module Filter_template
 using .....Data_Manager
+using .....InputDeck: BondFilterParams
 export run_bond_filter, bond_filter_name
 const TOLERANCE = 1.0e-14
 """
@@ -19,14 +20,14 @@ function bond_filter_name()
 end
 
 """
-    run_bond_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::BondScalarState{Int64}, dof::Int64)
+    run_bond_filter(nnodes::Int64, data::Matrix{Float64}, filter::BondFilterParams, nlist::BondScalarState{Int64}, dof::Int64)
 
 Apply the disk filter to the neighborhood list.
 
 # Arguments
 - `nnodes::Int64`: The number of nodes.
 - `data::Matrix{Float64}`: The data.
-- `filter::Dict`: The filter.
+- `filter::BondFilterParams`: The filter.
 - `nlist::BondScalarState{Int64}`: The neighborhood list.
 - `dof::Int64`: The degrees of freedom.
 # Returns
@@ -35,7 +36,7 @@ Apply the disk filter to the neighborhood list.
 """
 function run_bond_filter(nnodes::Int64,
                          data::Matrix{Float64},
-                         filter::Dict,
+                         filter::BondFilterParams,
                          nlist::BondScalarState{Int64},
                          dof::Int64)
     @info "please add your filter here"

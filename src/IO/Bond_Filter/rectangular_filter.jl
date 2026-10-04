@@ -5,6 +5,7 @@
 module Rectangular_Plane_Filter
 using LinearAlgebra
 using .....Data_Manager
+using .....InputDeck: BondFilterParams
 export run_bond_filter, bond_filter_name
 const TOLERANCE = 1.0e-14
 """
@@ -87,14 +88,14 @@ function bond_intersect_rectangle_plane(x::Union{Vector{Float64},Vector{Int64}},
 end
 
 """
-    run_bond_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::BondScalarState{Int64}, dof::Int64)
+    run_bond_filter(nnodes::Int64, data::Matrix{Float64}, filter::BondFilterParams, nlist::BondScalarState{Int64}, dof::Int64)
 
 Apply the rectangular plane filter to the neighborhood list.
 
 # Arguments
 - `nnodes::Int64`: The number of nodes.
 - `data::Matrix{Float64}`: The data.
-- `filter::Dict`: The filter.
+- `filter::BondFilterParams`: The filter.
 - `nlist::BondScalarState{Int64}`: The neighborhood list.
 - `dof::Int64`: The degrees of freedom.
 # Returns
@@ -103,24 +104,24 @@ Apply the rectangular plane filter to the neighborhood list.
 """
 function run_bond_filter(nnodes::Int64,
                          data::Matrix{Float64},
-                         filter::Dict,
+                         filter::BondFilterParams,
                          nlist::BondScalarState{Int64},
                          dof::Int64)
-    normal = [filter["Normal X"], filter["Normal Y"]]
-    lower_left_corner = [filter["Lower Left Corner X"], filter["Lower Left Corner Y"]]
+    normal = [filter.normal_x, filter.normal_y]
+    lower_left_corner = [filter.lower_left_corner_x, filter.lower_left_corner_y]
     bottom_unit_vector = [
-        filter["Bottom Unit Vector X"],
-        filter["Bottom Unit Vector Y"]
+        filter.bottom_unit_vector_x,
+        filter.bottom_unit_vector_y
     ]
     if dof == 3
-        push!(normal, filter["Normal Z"])
-        push!(lower_left_corner, filter["Lower Left Corner Z"])
-        push!(bottom_unit_vector, filter["Bottom Unit Vector Z"])
+        push!(normal, filter.normal_z)
+        push!(lower_left_corner, filter.lower_left_corner_z)
+        push!(bottom_unit_vector, filter.bottom_unit_vector_z)
     end
     normal = normal ./ norm(normal)
     bottom_unit_vector = bottom_unit_vector ./ norm(bottom_unit_vector)
-    bottom_length = filter["Bottom Length"]
-    side_length = filter["Side Length"]
+    bottom_length = filter.bottom_length
+    side_length = filter.side_length
     filter_flag::Vector{Vector{Bool}} = fill([], nnodes)
     for iID in 1:nnodes
         filter_flag[iID] = fill(true, length(nlist[iID]))

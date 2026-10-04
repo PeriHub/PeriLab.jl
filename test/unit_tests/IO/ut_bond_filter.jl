@@ -247,13 +247,14 @@ end
     data[2, 8] = -0.5
     data[3, 8] = 1.0
 
-    filter = Dict("Center X" => 0.0,
+    filter = typed_section(PeriLab.InputDeck.BondFilterParams,
+                           Dict("Type" => "Disk", "Center X" => 0.0,
                   "Center Y" => 0.0,
                   "Center Z" => 0.0,
                   "Normal X" => 0.0,
                   "Normal Y" => 0.0,
                   "Normal Z" => 1.0,
-                  "Radius" => 1.0)
+                  "Radius" => 1.0))
 
     nlist = [
         [2, 3, 4, 5, 6, 7, 8],
@@ -324,7 +325,8 @@ end
     data[2, 6] = 1.5
     data[3, 6] = 1.0
 
-    filter = Dict("Lower Left Corner X" => -0.5,
+    filter = typed_section(PeriLab.InputDeck.BondFilterParams,
+                           Dict("Type" => "Rectangular_Plane", "Lower Left Corner X" => -0.5,
                   "Lower Left Corner Y" => -0.5,
                   "Lower Left Corner Z" => 0.0,
                   "Bottom Unit Vector X" => 1.0,
@@ -334,7 +336,7 @@ end
                   "Normal Y" => 0.0,
                   "Normal Z" => 1.0,
                   "Bottom Length" => 1.0,
-                  "Side Length" => 1.0)
+                  "Side Length" => 1.0))
 
     nlist = [
         [2, 3, 4, 5, 6],

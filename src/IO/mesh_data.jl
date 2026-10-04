@@ -82,8 +82,7 @@ function init_data(params::Dict,
                                              dof,
                                              nsets,
                                              topology,
-                                             element_distribution=load_and_evaluate_mesh(params,
-                                                                                         input,
+                                             element_distribution=load_and_evaluate_mesh(input,
                                                                                          path,
                                                                                          size)
             if !isnothing(element_distribution)
@@ -665,12 +664,11 @@ function check_types_in_dataframe(mesh::DataFrame)
 end
 
 """
-    load_and_evaluate_mesh(params::Dict, input::PeriLabInput, path::String, ranksize::Int64)
+    load_and_evaluate_mesh(input::PeriLabInput, path::String, ranksize::Int64)
 
 Load and evaluate the mesh data.
 
 # Arguments
-- `params::Dict`: The input parameters (bond filters, until they use typed input).
 - `input::PeriLabInput`: The typed input deck.
 - `path::String`: The path to the mesh file.
 - `ranksize::Int64`: The number of ranks.
@@ -685,8 +683,7 @@ Load and evaluate the mesh data.
 - `topology::Int64`::Array{Int64,nelement:nodes}`: The topology of elements.
 - `el_distribution::Array{Int64,1}`: The distribution of the finite elements.
 """
-function load_and_evaluate_mesh(params::Dict,
-                                input::PeriLabInput,
+function load_and_evaluate_mesh(input::PeriLabInput,
                                 path::String,
                                 ranksize::Int64)
     discretization = input.sections.discretization
@@ -724,7 +721,7 @@ function load_and_evaluate_mesh(params::Dict,
     @timeit "apply_bond_filters" nlist, nlist_filtered_ids,
                                  bond_norm=apply_bond_filters(nlist,
                                                               mesh,
-                                                              params,
+                                                              discretization.bond_filters,
                                                               dof)
     topology = nothing
     if !isnothing(external_topology)
