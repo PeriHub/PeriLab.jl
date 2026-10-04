@@ -137,3 +137,37 @@ function check_test_json(cores)
         end
     end
 end
+
+"""
+    typed_section(T, raw)
+
+Converts and validates `raw` as `T` (an `@params` struct or `Dict{String,<@params>}`)
+the way the input reader does; aborts on input errors.
+"""
+function typed_section(T, raw)
+    ctx = PeriLab.ParameterSpec.ParseContext()
+    value = PeriLab.ParameterSpec.convert_value(T, raw, "test", ctx)
+    PeriLab.ParameterSpec.report!(ctx)
+    return value
+end
+
+"""
+    typed_input(sections)
+
+A typed `PeriLabInput` from a minimal valid deck with `sections` merged in.
+"""
+function typed_input(sections::AbstractDict)
+    deck = Dict{String,Any}("Discretization" => Dict{String,Any}("Type" => "Text File",
+                                                                 "Input Mesh File" => "mesh.txt"),
+                            "Blocks" => Dict{String,Any}("block_1" => Dict{String,Any}("Block ID" => 1,
+                                                                                       "Density" => 1.0,
+                                                                                       "Horizon" => 1.0)),
+                            "Models" => Dict{String,Any}(),
+                            "Solver" => Dict{String,Any}("Initial Time" => 0.0,
+                                                         "Final Time" => 1.0,
+                                                         "Verlet" => Dict{String,Any}()))
+    merge!(deck, Dict{String,Any}(string(k) => v for (k, v) in sections))
+    input, ctx = PeriLab.InputDeck.read_input(deck)
+    PeriLab.ParameterSpec.report!(ctx)
+    return input
+end

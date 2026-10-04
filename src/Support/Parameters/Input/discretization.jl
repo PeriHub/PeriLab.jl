@@ -70,3 +70,48 @@ end
                                                          default = nothing)
     gcode::Union{Nothing,GcodeParams} = opt("Gcode"; default = nothing)
 end
+
+"Horizon scaling per direction, 1.0 where not given."
+function mesh_scaling(d::DiscretizationParams)
+    return [something(d.horizon_mesh_scaling_x, 1.0), something(d.horizon_mesh_scaling_y, 1.0),
+            something(d.horizon_mesh_scaling_z, 1.0)]
+end
+
+function check!(g::GcodeParams, path::String, ctx::ParseContext)
+    g.blocks === nothing && return nothing
+    for key in keys(g.blocks)
+        tryparse(Int64, key) === nothing &&
+            add_error!(ctx, join_path(join_path(path, "Blocks"), key),
+                       "expected a block id (integer) as key")
+    end
+    return nothing
+end
+
+"Gcode block assignment: block id => condition, or `nothing`."
+function gcode_block_ids(g::GcodeParams)
+    g.blocks === nothing && return nothing
+    return Dict{Int64,String}(parse(Int64, key) => condition for (key, condition) in g.blocks)
+end
+
+# Fields each built-in bond filter needs (Z components only in 3D, not checked here).
+const _BOND_FILTER_REQUIRED = Dict("Disk" => (("Center X", :center_x), ("Center Y", :center_y),
+                                              ("Center Z", :center_z), ("Normal Z", :normal_z),
+                                              ("Radius", :radius)),
+                                   "Rectangular_Plane" => (("Lower Left Corner X",
+                                                            :lower_left_corner_x),
+                                                           ("Lower Left Corner Y",
+                                                            :lower_left_corner_y),
+                                                           ("Bottom Unit Vector X",
+                                                            :bottom_unit_vector_x),
+                                                           ("Bottom Unit Vector Y",
+                                                            :bottom_unit_vector_y),
+                                                           ("Bottom Length", :bottom_length),
+                                                           ("Side Length", :side_length)))
+
+function check!(f::BondFilterParams, path::String, ctx::ParseContext)
+    required = get(_BOND_FILTER_REQUIRED, f.type, ())
+    missing = [key for (key, field) in required if getfield(f, field) === nothing]
+    isempty(missing) ||
+        add_error!(ctx, path, "\"$(f.type)\" bond filter requires: $(join(missing, ", "))")
+    return nothing
+end

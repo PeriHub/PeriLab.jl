@@ -40,3 +40,57 @@ end
     type::String = req("Type")
     update::Bool = opt("Update"; default = false)
 end
+
+"""
+    block_by_id(blocks, block_id) -> (name, block)
+
+The block with `Block ID` `block_id`.
+"""
+function block_by_id(blocks::Dict{String,BlockParams}, block_id::Integer)
+    for (name, block) in blocks
+        block.block_id == block_id && return name, block
+    end
+    @abort "Block with ID $block_id is not defined"
+end
+
+"""
+    block_angles(name, block, dof)
+
+Block rotation: `nothing` if `Angle X` is not given, `Angle X` in 2D, and
+`[Angle X, Angle Y, Angle Z]` in 3D (all three are required then).
+"""
+function block_angles(name::AbstractString, block::BlockParams, dof::Int64)
+    block.angle_x === nothing && return nothing
+    dof == 2 && return block.angle_x
+    dof == 3 || return nothing
+    for (key, value) in (("Angle Y", block.angle_y), ("Angle Z", block.angle_z))
+        value === nothing && @abort "$key of $name is not defined"
+    end
+    return [block.angle_x, block.angle_y, block.angle_z]
+end
+
+"""
+    block_names_and_ids(blocks, mesh_block_ids, mpi) -> (names, ids)
+
+Names and IDs of the blocks present in the mesh, ordered by ID. Blocks of the
+input deck that are missing in the mesh are skipped (with a warning unless
+running under MPI).
+"""
+function block_names_and_ids(blocks::Dict{String,BlockParams},
+                             mesh_block_ids::AbstractVector{<:Integer}, mpi::Bool)
+    names = String[]
+    ids = Int64[]
+    for id in 1:maximum(block.block_id for block in values(blocks))
+        if !(id in mesh_block_ids)
+            mpi || @warn "Block with ID $id is not defined in the provided mesh"
+            continue
+        end
+        for (name, block) in blocks
+            if block.block_id == id
+                push!(names, name)
+                push!(ids, id)
+            end
+        end
+    end
+    return names, ids
+end

@@ -27,6 +27,9 @@ include("input.jl")
 
 export read_input, PeriLabInput, SolverParams, SolverOptions, ModelReductionParams,
        active_options, solver_name, start_time, end_time, model_options, solver_steps,
-       solver_step
+       solver_step,
+       BlockParams, DiscretizationParams, GcodeParams, BondFilterParams,
+       SurfaceExtrusionParams, ExternalTopologyParams, block_by_id, block_angles,
+       block_names_and_ids, mesh_scaling, gcode_block_ids
 
 end
