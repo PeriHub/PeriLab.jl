@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-export NoModel, Composite
+export NoModel, Composite, WithBase
 
 "Placeholder for a block that has no model of a category."
 struct NoModel end
@@ -10,6 +10,28 @@ struct NoModel end
 "Models combined with `+` in the input deck; each part keeps its own struct."
 struct Composite{P<:Tuple}
     parts::P
+end
+
+"A model together with the base part of its category (see `register_base!`)."
+struct WithBase{B,M}
+    base::B
+    model::M
+end
+
+function _check_key_patterns!(dict::AbstractDict, known::Set{String}, types, path::String,
+                              ctx::ParseContext)
+    for k in keys(dict)
+        key = string(k)
+        key in known && continue
+        for T in types
+            pattern = findfirst(p -> occursin(first(p), key), key_patterns(T))
+            pattern === nothing && continue
+            convert_value(last(key_patterns(T)[pattern]), dict[k], join_path(path, key), ctx)
+            push!(known, key)
+            break
+        end
+    end
+    return nothing
 end
 
 function _check_alias_conflicts!(names, types, path::String, ctx::ParseContext)
@@ -77,7 +99,16 @@ function _parse_model(category::Symbol, dict::Union{Nothing,AbstractDict}, path:
         end
     end
     length(types) == length(names) || return nothing
-    _check_alias_conflicts!(names, types, path, ctx) || return nothing
+    base = base_model(category)
+    all_names = base === nothing ? names : ["base parameters"; names]
+    all_types = base === nothing ? types : Any[base; types]
+    _check_alias_conflicts!(all_names, all_types, path, ctx) || return nothing
+    base_part = nothing
+    if base !== nothing
+        base_part = build(base, dict, path, ctx; owner = "every $category model")
+        base_part === nothing || check!(base_part, path, ctx)
+        base_part = base_part === nothing ? nothing : derive(base_part)
+    end
     parts = Any[]
     for (name, T) in zip(names, types)
         part = build(T, dict, path, ctx; owner = name)
@@ -85,10 +116,13 @@ function _parse_model(category::Symbol, dict::Union{Nothing,AbstractDict}, path:
         push!(parts, part === nothing ? nothing : derive(part))
     end
     known = Set{String}([name_key])
-    for T in types
+    for T in all_types
         union!(known, aliases(T))
     end
+    _check_key_patterns!(dict, known, all_types, path, ctx)
     check_unknown!(dict, known, path, ctx)
     any(isnothing, parts) && return nothing
-    return length(parts) == 1 ? parts[1] : Composite(Tuple(parts))
+    base !== nothing && base_part === nothing && return nothing
+    model = length(parts) == 1 ? parts[1] : Composite(Tuple(parts))
+    return base === nothing ? model : WithBase(base_part, model)
 end

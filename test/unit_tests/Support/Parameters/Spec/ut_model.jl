@@ -119,3 +119,87 @@ end
     @test ctx.errors[1].message ==
           "declared as Dependent by \"UT Elastic\" but as Float64 by \"UT Conflicting\"; models combined with + must agree"
 end
+
+PS.@params struct UTBase
+    symmetry::Union{Nothing,String} = opt("Symmetry"; default = nothing)
+    youngs_modulus::Union{Nothing,Float64} = opt("Young's Modulus"; default = nothing, min = 0)
+end
+
+PS.@params struct UTEmpty
+end
+
+PS.@params struct UTPatterned
+    file::String = req("File")
+end
+PS.key_patterns(::Type{UTPatterned}) = [r"^Property_\d+$" => Float64]
+
+PS.@params struct UTBaseConflict
+    symmetry::Float64 = req("Symmetry")
+end
+
+PS.register_base!(:ut_based, UTBase)
+PS.register_model!(:ut_based, "UT Empty", UTEmpty)
+PS.register_model!(:ut_based, "UT Patterned", UTPatterned)
+PS.register_model!(:ut_based, "UT Base Conflict", UTBaseConflict)
+
+function ut_parse_based(dict; strict = true)
+    ctx = PS.ParseContext(strict = strict)
+    return PS.parse_model(:ut_based, dict, UT_PATH, ctx; name_key = UT_KEY), ctx
+end
+
+@testset "base part registration" begin
+    @test PS.base_model(:ut_based) === UTBase
+    @test PS.base_model(:ut_material) === nothing
+    PS.register_base!(:ut_based, UTBase)                       # same type again: fine
+    e = try
+        PS.register_base!(:ut_based, UTPatterned)
+    catch err
+        err
+    end
+    @test e isa PS.ParamsDefinitionError
+    @test e.msg == "ut_based base parameters are already registered by UTBase"
+    @test_throws PS.ParamsDefinitionError PS.register_base!(:ut_other, Float64)
+end
+
+@testset "base part is read from the same block" begin
+    m, ctx = ut_parse_based(Dict{String,Any}(UT_KEY => "UT Empty", "Symmetry" => "isotropic",
+                                             "Young's Modulus" => 210.0))
+    @test isempty(ctx.errors)
+    @test m isa PS.WithBase{UTBase,UTEmpty}
+    @test m.base.symmetry == "isotropic" && m.base.youngs_modulus == 210.0
+    m, ctx = ut_parse_based(Dict{String,Any}(UT_KEY => "UT Empty + UT Patterned",
+                                             "File" => "a.so"))
+    @test isempty(ctx.errors)
+    @test m isa PS.WithBase{UTBase,PS.Composite{Tuple{UTEmpty,UTPatterned}}}
+    @test m.base.symmetry === nothing
+end
+
+@testset "base keys: errors, unknown keys and conflicts" begin
+    m, ctx = ut_parse_based(Dict{String,Any}(UT_KEY => "UT Empty", "Young's Modulus" => -1.0,
+                                             "Youngs Modulus" => 1.0))
+    @test m === nothing
+    msgs = Dict(e.path => e.message for e in ctx.errors)
+    @test msgs["$UT_PATH.\"Young's Modulus\""] == "-1.0 is below minimum 0"
+    @test msgs["$UT_PATH.\"Youngs Modulus\""] == "unknown key — did you mean \"Young's Modulus\"?"
+    m, ctx = ut_parse_based(Dict{String,Any}(UT_KEY => "UT Base Conflict", "Symmetry" => 1.0))
+    @test m === nothing
+    @test ctx.errors[1].message ==
+          "declared as Union{Nothing, String} by \"base parameters\" but as Float64 by \"UT Base Conflict\"; models combined with + must agree"
+end
+
+@testset "key patterns" begin
+    m, ctx = ut_parse_based(Dict{String,Any}(UT_KEY => "UT Patterned", "File" => "a.so",
+                                             "Property_1" => 1, "Property_27" => 2.5))
+    @test isempty(ctx.errors)
+    @test m isa PS.WithBase{UTBase,UTPatterned}
+    m, ctx = ut_parse_based(Dict{String,Any}(UT_KEY => "UT Patterned", "File" => "a.so",
+                                             "Property_3" => "abc", "Propery_4" => 1.0))
+    @test length(ctx.errors) == 2
+    msgs = Dict(e.path => e.message for e in ctx.errors)
+    @test msgs["$UT_PATH.Property_3"] == "expected a number, got \"abc\""
+    @test startswith(msgs["$UT_PATH.Propery_4"], "unknown key")
+    # a pattern of one model does not make the key known for another
+    m, ctx = ut_parse_based(Dict{String,Any}(UT_KEY => "UT Empty", "Property_1" => 1.0))
+    @test length(ctx.errors) == 1
+    @test startswith(ctx.errors[1].message, "unknown key")
+end

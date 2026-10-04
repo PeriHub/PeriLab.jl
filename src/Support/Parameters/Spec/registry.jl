@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 export register_model!, register_unavailable!, register_material, register_damage,
-       register_thermal, register_additive, register_degradation, register_pre_calculation
+       register_thermal, register_additive, register_degradation, register_pre_calculation,
+       register_base!, base_model
 
 "A model name that is known (e.g. from a license manifest) but not loaded."
 struct UnavailableModel
@@ -64,3 +65,26 @@ register_degradation(name::AbstractString, T::Type) = register_model!(:degradati
 function register_pre_calculation(name::AbstractString, T::Type)
     register_model!(:pre_calculation, name, T)
 end
+
+# category => @params struct read by every model of the category
+const BASES = Dict{Symbol,Any}()
+
+"""
+    register_base!(category, T)
+
+Declares `T` as the base part of `category`: every model of the category reads
+`T`'s keys from its YAML block in addition to its own (e.g. the shared material
+moduli). Call it from the factory's `__init__()`.
+"""
+function register_base!(category::Symbol, T::Type)
+    is_params(T) ||
+        throw(ParamsDefinitionError("register_base!: $(_typename(T)) is not an @params struct"))
+    existing = get(BASES, category, nothing)
+    if existing !== nothing && existing !== T
+        throw(ParamsDefinitionError("$category base parameters are already registered by $(_typename(existing))"))
+    end
+    BASES[category] = T
+    return nothing
+end
+
+base_model(category::Symbol) = get(BASES, category, nothing)

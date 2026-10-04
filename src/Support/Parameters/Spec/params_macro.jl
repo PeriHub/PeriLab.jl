@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-export @params, derive, check!
+export @params, derive, check!, key_patterns
 
 const _SELF = @__MODULE__
 
@@ -34,6 +34,15 @@ before `derive`; add problems with `add_error!(ctx, path, msg)`. The default
 does nothing.
 """
 check!(p, path::String, ctx::ParseContext) = nothing
+
+"""
+    key_patterns(::Type{T})
+
+Indexed YAML keys of the `@params` struct `T`, e.g. `Property_1 … Property_N`,
+as `regex => type` pairs. Matching keys in a model block are type-checked and
+are not reported as unknown; their values are not stored in the struct.
+"""
+key_patterns(::Type) = Pair{Regex,Any}[]
 
 const _SCALAR_UNION_MEMBERS = (Nothing, Int64, Float64, String, Bool)
 
