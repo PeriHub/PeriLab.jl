@@ -14,6 +14,7 @@ It is simplified. Rigid body motion is not considered )omega_{ij} = 0 as well as
 using LoopVectorization
 
 using .....Data_Manager
+using ......ParameterSpec: @params, register_material
 using .....PeriLabExceptions: @abort
 using ....Material_Basis: get_symmetry, apply_pointwise_E
 
@@ -112,6 +113,11 @@ Returns the name of the material model.
 function material_name()
     return "Unified Bond-based Elastic"
 end
+
+"Parameters of Unified Bond-based Elastic beyond the shared material keys (none)."
+@params struct UnifiedBondbasedElasticParams
+end
+__init__() = register_material("Unified Bond-based Elastic", UnifiedBondbasedElasticParams)
 
 """
     compute_model(nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)

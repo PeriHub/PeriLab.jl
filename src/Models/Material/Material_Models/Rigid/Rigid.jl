@@ -5,6 +5,7 @@
 module Rigid
 
 using .......Data_Manager
+using ......ParameterSpec: @params, register_material
 
 export init_model
 export fe_support
@@ -53,6 +54,11 @@ Returns the name of the material model.
 function material_name()
     return "Rigid"
 end
+
+"Parameters of Rigid beyond the shared material keys (none)."
+@params struct RigidParams
+end
+__init__() = register_material("Rigid", RigidParams)
 
 """
     compute_model(nodes::AbstractVector{Int64}, material_parameter::Dict{String, Any}, time::Float64, dt::Float64)

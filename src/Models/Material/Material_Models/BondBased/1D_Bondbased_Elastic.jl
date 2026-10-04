@@ -6,6 +6,7 @@ module OneD_Bond_Based_Elastic
 using LoopVectorization
 
 using .......Data_Manager
+using ......ParameterSpec: @params, register_material
 using .......PeriLabExceptions: @abort
 
 export init_model
@@ -55,6 +56,12 @@ Returns the name of the material model.
 function material_name()
     return "1D Bond-based Elastic"
 end
+
+@params struct OneDBondbasedElasticParams
+    id1::Int64 = req("Id1"; min = 1)
+    id2::Int64 = req("Id2"; min = 1)
+end
+__init__() = register_material("1D Bond-based Elastic", OneDBondbasedElasticParams)
 
 """
     compute_model(nodes::AbstractVector{Int64}, material_parameter::Dict{String, Any}, time::Float64, dt::Float64)

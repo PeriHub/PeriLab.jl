@@ -10,6 +10,89 @@ using TimerOutputs: @timeit
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
 using ....ModuleLoader: find_module_files, create_module_specifics
+using .....ParameterSpec: @params, Dependent, register_base!
+
+@params struct FlawFunctionParams
+    active::Bool = req("Active")
+    function_name::String = req("Function"; allowed = ["Pre-defined"])
+    flaw_size::Union{Nothing,Float64} = opt("Flaw Size"; default = nothing, min = 0,
+                                            quantity = :length)
+    flaw_magnitude::Union{Nothing,Float64} = opt("Flaw Magnitude"; default = nothing, min = 0,
+                                                 max = 1)
+    flaw_location_x::Union{Nothing,Float64} = opt("Flaw Location X"; default = nothing)
+    flaw_location_y::Union{Nothing,Float64} = opt("Flaw Location Y"; default = nothing)
+    flaw_location_z::Union{Nothing,Float64} = opt("Flaw Location Z"; default = nothing)
+end
+
+"""
+    MaterialBaseParams
+
+Keys every material model may use (read from the same YAML block as the model's
+own keys): symmetry, elastic constants, and options shared by the material
+framework. Which elastic constants are needed depends on the model and the
+symmetry; they are completed at initialisation.
+"""
+@params struct MaterialBaseParams
+    symmetry::Union{Nothing,String} = opt("Symmetry"; default = nothing,
+                                          description = "e.g. isotropic, isotropic plane strain, isotropic plane stress, orthotropic, anisotropic")
+    youngs_modulus::Union{Nothing,Float64} = opt("Young's Modulus"; default = nothing, min = 0,
+                                                 quantity = :stress)
+    poissons_ratio::Union{Nothing,Float64} = opt("Poisson's Ratio"; default = nothing,
+                                                 min = -1, max = 0.5)
+    bulk_modulus::Union{Nothing,Float64} = opt("Bulk Modulus"; default = nothing, min = 0,
+                                               quantity = :stress)
+    shear_modulus::Union{Nothing,Float64} = opt("Shear Modulus"; default = nothing, min = 0,
+                                                quantity = :stress)
+    youngs_modulus_x::Union{Nothing,Dependent} = opt("Young's Modulus X"; default = nothing,
+                                                     min = 0, quantity = :stress)
+    youngs_modulus_y::Union{Nothing,Dependent} = opt("Young's Modulus Y"; default = nothing,
+                                                     min = 0, quantity = :stress)
+    youngs_modulus_z::Union{Nothing,Dependent} = opt("Young's Modulus Z"; default = nothing,
+                                                     min = 0, quantity = :stress)
+    poissons_ratio_xy::Union{Nothing,Dependent} = opt("Poisson's Ratio XY"; default = nothing)
+    poissons_ratio_yz::Union{Nothing,Dependent} = opt("Poisson's Ratio YZ"; default = nothing)
+    poissons_ratio_xz::Union{Nothing,Dependent} = opt("Poisson's Ratio XZ"; default = nothing)
+    shear_modulus_xy::Union{Nothing,Dependent} = opt("Shear Modulus XY"; default = nothing,
+                                                     min = 0, quantity = :stress)
+    shear_modulus_yz::Union{Nothing,Dependent} = opt("Shear Modulus YZ"; default = nothing,
+                                                     min = 0, quantity = :stress)
+    shear_modulus_xz::Union{Nothing,Dependent} = opt("Shear Modulus XZ"; default = nothing,
+                                                     min = 0, quantity = :stress)
+    c11::Union{Nothing,Float64} = opt("C11"; default = nothing, quantity = :stress)
+    c12::Union{Nothing,Float64} = opt("C12"; default = nothing, quantity = :stress)
+    c13::Union{Nothing,Float64} = opt("C13"; default = nothing, quantity = :stress)
+    c14::Union{Nothing,Float64} = opt("C14"; default = nothing, quantity = :stress)
+    c15::Union{Nothing,Float64} = opt("C15"; default = nothing, quantity = :stress)
+    c16::Union{Nothing,Float64} = opt("C16"; default = nothing, quantity = :stress)
+    c22::Union{Nothing,Float64} = opt("C22"; default = nothing, quantity = :stress)
+    c23::Union{Nothing,Float64} = opt("C23"; default = nothing, quantity = :stress)
+    c24::Union{Nothing,Float64} = opt("C24"; default = nothing, quantity = :stress)
+    c25::Union{Nothing,Float64} = opt("C25"; default = nothing, quantity = :stress)
+    c26::Union{Nothing,Float64} = opt("C26"; default = nothing, quantity = :stress)
+    c33::Union{Nothing,Float64} = opt("C33"; default = nothing, quantity = :stress)
+    c34::Union{Nothing,Float64} = opt("C34"; default = nothing, quantity = :stress)
+    c35::Union{Nothing,Float64} = opt("C35"; default = nothing, quantity = :stress)
+    c36::Union{Nothing,Float64} = opt("C36"; default = nothing, quantity = :stress)
+    c44::Union{Nothing,Float64} = opt("C44"; default = nothing, quantity = :stress)
+    c45::Union{Nothing,Float64} = opt("C45"; default = nothing, quantity = :stress)
+    c46::Union{Nothing,Float64} = opt("C46"; default = nothing, quantity = :stress)
+    c55::Union{Nothing,Float64} = opt("C55"; default = nothing, quantity = :stress)
+    c56::Union{Nothing,Float64} = opt("C56"; default = nothing, quantity = :stress)
+    c66::Union{Nothing,Float64} = opt("C66"; default = nothing, quantity = :stress)
+    state_factor_id::Union{Nothing,Int64} = opt("State Factor ID"; default = nothing, min = 1,
+                                                description = "index of the state variable that scales the elastic constants")
+    accuracy_order::Union{Nothing,Int64} = opt("Accuracy Order"; default = nothing, min = 1)
+    zero_energy_control::Union{Nothing,String} = opt("Zero Energy Control";
+                                                     default = nothing,
+                                                     description = "zero energy control model, e.g. Global")
+    bond_associated::Bool = opt("Bond Associated"; default = false)
+    linear_strain::Bool = opt("Linear Strain"; default = false)
+    flaw_function::Union{Nothing,FlawFunctionParams} = opt("Flaw Function"; default = nothing)
+end
+
+# registration runs at load time, never during precompilation
+__init__() = register_base!(:material, MaterialBaseParams)
+
 global module_list = find_module_files(@__DIR__, "material_name")
 for mod in module_list
     include(mod["File"])

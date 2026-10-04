@@ -5,6 +5,7 @@
 module Bondbased_Elastic
 
 using .......Data_Manager
+using ......ParameterSpec: @params, register_material
 using .......PeriLabExceptions: @abort
 using ....Material_Basis: get_symmetry, apply_pointwise_E, compute_bond_based_constants
 using .......Helpers: is_dependent
@@ -61,6 +62,11 @@ Returns the name of the material model.
 function material_name()
     return "Bond-based Elastic"
 end
+
+"Parameters of Bond-based Elastic beyond the shared material keys (none)."
+@params struct BondbasedElasticParams
+end
+__init__() = register_material("Bond-based Elastic", BondbasedElasticParams)
 
 """
 	compute_model(nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)

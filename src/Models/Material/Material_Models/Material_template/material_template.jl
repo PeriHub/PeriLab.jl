@@ -5,6 +5,8 @@
 module Material_template
 
 using ......Data_Manager
+using ......ParameterSpec: @params, register_material
+# Declare your parameters with @params (see MaterialTemplateParams) and register them in __init__.
 export fe_support
 export init_model
 export material_name
@@ -63,6 +65,18 @@ println(material_name())
 function material_name()
     return "Material Template"
 end
+
+"""
+    MaterialTemplateParams
+
+Declare the YAML keys your material needs beyond the shared material keys
+(Symmetry, Young's Modulus, … are already available). Example:
+
+    my_parameter::Float64 = req("My Parameter"; min = 0, description = "...")
+"""
+@params struct MaterialTemplateParams
+end
+__init__() = register_material("Material Template", MaterialTemplateParams)
 
 """
     fields_for_local_synchronization(model::String)

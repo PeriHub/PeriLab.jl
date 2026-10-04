@@ -7,6 +7,7 @@ module PD_Solid_Plastic
 using TimerOutputs: @timeit
 
 using ......Data_Manager
+using ......ParameterSpec: @params, Dependent, register_material
 using ......PeriLabExceptions: @abort
 using ....Material_Basis: get_symmetry
 using ......Helpers: add_in_place!, mul_in_place!, sub_in_place!, is_dependent,
@@ -99,6 +100,11 @@ println(material_name())
 function material_name()
     return "PD Solid Plastic"
 end
+
+@params struct PDSolidPlasticParams
+    yield_stress::Dependent = req("Yield Stress"; min = 0, quantity = :stress)
+end
+__init__() = register_material("PD Solid Plastic", PDSolidPlasticParams)
 
 """
     fields_for_local_synchronization( model::String)

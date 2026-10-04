@@ -6,6 +6,7 @@ module PD_Solid_Elastic
 
 using TimerOutputs: @timeit
 using ......Data_Manager
+using ......ParameterSpec: @params, register_material
 using ....Material_Basis: get_symmetry
 using ......Helpers: add_in_place!
 using StaticArrays
@@ -66,6 +67,11 @@ Returns the name of the material model.
 function material_name()
     return "PD Solid Elastic"
 end
+
+"Parameters of PD Solid Elastic beyond the shared material keys (none)."
+@params struct PDSolidElasticParams
+end
+__init__() = register_material("PD Solid Elastic", PDSolidElasticParams)
 
 """
     fields_for_local_synchronization(model::String)
