@@ -54,7 +54,7 @@ function supported_type(T)
     _is_scalar_union(T) && return true
     if T isa Union
         S = _nonnothing(T)
-        return Nothing <: T && !(S isa Union) && S !== Dependent && supported_type(S)
+        return Nothing <: T && !(S isa Union) && supported_type(S)
     end
     (T in _SCALAR_TYPES || T in _VECTOR_TYPES || T === Dependent) && return true
     T isa DataType || return false
@@ -117,6 +117,14 @@ function _is_dependent_type(t)
            (t isa Expr && t.head === :. && t.args[end] == QuoteNode(:Dependent))
 end
 
+"`Union{Nothing,Dependent}` in a field declaration (either order)."
+function _is_optional_dependent_type(t)
+    (t isa Expr && t.head === :curly && t.args[1] === :Union && length(t.args) == 3) ||
+        return false
+    members = t.args[2:3]
+    return any(==(:Nothing), members) && any(_is_dependent_type, members)
+end
+
 _definition_error(msg) = :(throw($ParamsDefinitionError($msg)))
 
 function _field_usage(name, fname)
@@ -169,11 +177,12 @@ macro params(structdef)
             return _definition_error(_field_usage(name, fname))
         end
         call = Expr(:call, GlobalRef(_SELF, decl.args[1]), decl.args[2:end]...)
-        if _is_dependent_type(ftype)
+        if _is_dependent_type(ftype) || _is_optional_dependent_type(ftype)
+            bound = _is_dependent_type(ftype) ? Dependent : Union{Nothing,Dependent}
             typeparam = Symbol("T_", fname)
-            push!(typeparams, Expr(:<:, typeparam, Dependent))
+            push!(typeparams, Expr(:<:, typeparam, bound))
             push!(fields, Expr(:(::), fname, typeparam))
-            push!(entries, Expr(:tuple, QuoteNode(fname), Dependent, call))
+            push!(entries, Expr(:tuple, QuoteNode(fname), bound, call))
         else
             push!(fields, Expr(:(::), fname, ftype))
             push!(entries, Expr(:tuple, QuoteNode(fname), ftype, call))

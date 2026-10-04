@@ -234,3 +234,40 @@ end
     PS.parse_section(UTOptionalRadius, Dict{String,Any}("Colour" => 5.0), "F", ctx2)
     @test !PS.has_errors(ctx2)            # genuinely unknown keys stay warnings
 end
+
+@testset "optional Dependent fields" begin
+    ex = :(PS.@params struct UTOptionalDependent
+               youngs_modulus_x::Union{Nothing,Dependent} = opt("Young's Modulus X";
+                                                                default = nothing, min = 0)
+               poissons_ratio::Float64 = req("Poisson's Ratio")
+           end)
+    @test ut_definition_error(ex) === nothing
+    T = getfield(@__MODULE__, :UTOptionalDependent)
+    @test PS.parameter_spec(T)[1].type === Union{Nothing,PS.Dependent}
+    dir = mktempdir()
+    write(joinpath(dir, "Ex.txt"), "header: Temperature Young's_Modulus_X\n0 200\n100 180\n")
+    ctx = PS.ParseContext(directory = dir)
+    absent = PS.parse_section(T, Dict{String,Any}("Poisson's Ratio" => 0.3), "M", ctx)
+    constant = PS.parse_section(T, Dict{String,Any}("Young's Modulus X" => 210.0,
+                                                    "Poisson's Ratio" => 0.3), "M", ctx)
+    table = PS.parse_section(T, Dict{String,Any}("Young's Modulus X" => "Ex.txt",
+                                                 "Poisson's Ratio" => 0.3), "M", ctx)
+    @test isempty(ctx.errors)
+    @test absent.youngs_modulus_x === nothing && isconcretetype(typeof(absent))
+    @test constant.youngs_modulus_x isa PS.Constant && isconcretetype(typeof(constant))
+    @test table.youngs_modulus_x isa PS.Table1D && isconcretetype(typeof(table))
+end
+
+@testset "optional Dependent from a file: missing column and min" begin
+    T = getfield(@__MODULE__, :UTOptionalDependent)
+    dir = mktempdir()
+    write(joinpath(dir, "bad.txt"), "header: Temperature Other\n0 1\n1 2\n")
+    write(joinpath(dir, "neg.txt"), "header: Temperature Young's_Modulus_X\n0 -1\n1 2\n")
+    ctx = PS.ParseContext(directory = dir)
+    PS.parse_section(T, Dict{String,Any}("Young's Modulus X" => "bad.txt",
+                                         "Poisson's Ratio" => 0.3), "M", ctx)
+    @test occursin("has no column \"Young's_Modulus_X\"", ctx.errors[end].message)
+    PS.parse_section(T, Dict{String,Any}("Young's Modulus X" => "neg.txt",
+                                         "Poisson's Ratio" => 0.3), "M", ctx)
+    @test ctx.errors[end].message == "-1.0 is below minimum 0"
+end
