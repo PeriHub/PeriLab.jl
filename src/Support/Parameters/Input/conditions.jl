@@ -23,3 +23,22 @@ end
     y::Union{Nothing,Float64} = opt("Y"; default = nothing)
     z::Union{Nothing,Float64} = opt("Z"; default = nothing)
 end
+
+function check!(bc::BoundaryConditionParams, path::String, ctx::ParseContext)
+    if bc.step_id isa String &&
+       any(part -> tryparse(Int64, strip(part)) === nothing, split(bc.step_id, ","))
+        add_error!(ctx, join_path(path, "Step ID"),
+                   "expected an integer or a comma-separated list of integers, got \"$(bc.step_id)\"")
+    end
+    return nothing
+end
+
+"Names of the node sets of a boundary condition (`Node Set` joined with `+`)."
+bc_node_set_names(bc::BoundaryConditionParams) = String.(strip.(split(bc.node_set, "+")))
+
+"Solver steps a boundary condition applies to, or `nothing` (all steps)."
+function bc_step_ids(bc::BoundaryConditionParams)
+    bc.step_id === nothing && return nothing
+    bc.step_id isa Int64 && return [bc.step_id]
+    return parse.(Int64, strip.(split(bc.step_id, ",")))
+end
