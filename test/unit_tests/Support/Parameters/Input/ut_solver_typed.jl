@@ -149,3 +149,7 @@ end
         dm.set_current_time(previous)
     end
 end
+
+@testset "Solver_Manager.init keeps its docstring" begin
+    @test occursin("Initialize the solver", string(@doc PeriLab.Solver_Manager.init))
+end

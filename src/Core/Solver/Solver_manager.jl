@@ -46,6 +46,13 @@ using .Influence_Function
 export init
 export solver
 
+# Runtime format read by the models
+function _calculation_options(s::SolverParams)
+    return Dict{String,Any}("Calculate Cauchy" => s.calculate_cauchy,
+                            "Calculate von Mises stress" => s.calculate_von_mises_stress,
+                            "Calculate Strain" => s.calculate_strain)
+end
+
 """
 	init(params::Dict, input::PeriLabInput, step_id::Int64)
 
@@ -60,13 +67,6 @@ Initialize the solver
 - `bcs::Dict{Any,Any}`: A dictionary containing boundary conditions.
 - `solver_options::Dict{String,Any}`: A dictionary containing solver options.
 """
-# Runtime format read by the models
-function _calculation_options(s::SolverParams)
-    return Dict{String,Any}("Calculate Cauchy" => s.calculate_cauchy,
-                            "Calculate von Mises stress" => s.calculate_von_mises_stress,
-                            "Calculate Strain" => s.calculate_strain)
-end
-
 function init(params::Dict,
               input::PeriLabInput,
               step_id::Int64)
