@@ -191,7 +191,7 @@ function initialize_data()
     data["Contact Dictionary"] = Dict()
     data["Global Contact IDs"] = Vector{Int64}([])
     data["Local Contact IDs"] = Dict{Int64,Int64}()
-    data["Contact Properties"] = Dict()
+    data["Contact Properties"] = nothing
     data["Contact block IDs"] = Dict()
     data["Exchange id to local id"] = Dict{Int64,Int64}()
     data["Contact Search Step"] = Dict{Any,Int64}()

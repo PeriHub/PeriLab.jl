@@ -10,6 +10,7 @@ using ...PeriLabExceptions: @abort
 using ...Helpers:
                   check_inf_or_nan, find_active_nodes, invert,
                   determinant, matrix_style, eigvals, get_update_nodes
+using ...InputDeck: PeriLabInput, ContactInput
 include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("./Surface_correction/Surface_correction.jl")
 include("./Contact/Contact_Factory.jl")
@@ -34,16 +35,18 @@ export init_models
 export read_properties
 
 """
-	init_models(params::Dict, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
+	init_models(params::Dict, input::PeriLabInput, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict, synchronise_field)
 
 Initialize models
 
 # Arguments
 - `params::Dict`: Parameters.
+- `input::PeriLabInput`: The typed input deck.
 - `block_nodes::Dict{Int64,Vector{Int64}}`: block nodes.
 - `solver_options::Dict`: Solver options.
 """
 function init_models(params::Dict,
+                     input::PeriLabInput,
                      block_nodes::Dict{Int64,Vector{Int64}},
                      solver_options::Dict,
                      synchronise_field)
@@ -121,21 +124,16 @@ function init_models(params::Dict,
         Data_Manager.create_node_scalar_field("von Mises Stress", Float64)
     end
 
-    check_contact(params)
+    check_contact(input.contact)
     @info "Finalize Init Models"
 end
 
-function check_contact(params::Dict)
-    if haskey(params, "Contact")
-        return Contact.init_contact_model(params["Contact"])
-    end
-end
-function check_contact(params::Dict, time::Float64, dt::Float64)
-    if length(params) != 0
-        return Contact.compute_contact_model(params, time,
-                                             dt)
-    end
-end
+check_contact(::Nothing) = nothing
+check_contact(contact::ContactInput) = Contact.init_contact_model(contact)
+check_contact(::Nothing, time::Float64, dt::Float64) = nothing
+check_contact(contact::ContactInput, time::Float64, dt::Float64) = Contact.compute_contact_model(contact,
+                                                                                                time,
+                                                                                                dt)
 
 """
 	compute_models(block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field)
@@ -428,6 +426,7 @@ Special case for pre calculation. It is set to all blocks, if no block definitio
 
 # Arguments
 - `params::Dict`: Parameters.
+- `input::PeriLabInput`: The typed input deck.
 - `block_id_list::Vector{Int64}`: List of block id's.
 - `prop_keys::Vector{String}`: Property keys.
 - `properties`: Properties function.
@@ -477,6 +476,7 @@ Read properties of material.
 
 # Arguments
 - `params::Dict`: Parameters.
+- `input::PeriLabInput`: The typed input deck.
 - `material_model::Bool`: Material model.
 """
 function read_properties(params::Dict, material_model::Bool)

@@ -7,29 +7,30 @@ module Contact_Search
 using ....Data_Manager
 using ....Helpers: get_nearest_neighbors, get_block_nodes,
                    compute_geometry, get_surface_information, compute_distance_and_normals
+using .....InputDeck: ContactGroupParams
 
 export init_contact_search
 export compute_contact_pairs
 
 ## for one contact pair
 
-function init_contact_search(contact_params, cm)
+function init_contact_search(cm::String)
     Data_Manager.set_search_step(cm, 0)
 end
 
-function global_contact_search(contact_params)
+function global_contact_search(group::ContactGroupParams)
     all_positions = Data_Manager.get_all_positions()
     #-------------
     dof = Data_Manager.get_dof()
     # ids are exchange vector ids (''all position'' ids)
-    master_nodes = Data_Manager.get_free_contact_nodes(contact_params["Master Block ID"])
-    slave_nodes = Data_Manager.get_free_contact_nodes(contact_params["Slave Block ID"])
+    master_nodes = Data_Manager.get_free_contact_nodes(group.master_block_id)
+    slave_nodes = Data_Manager.get_free_contact_nodes(group.slave_block_id)
 
     near_points,
     no_pairs = find_potential_contact_pairs(dof,
                                             all_positions[master_nodes, :],
                                             all_positions[slave_nodes, :],
-                                            contact_params["Search Radius"])
+                                            group.search_radius)
     if no_pairs
         return no_pairs, Int64[], Int64[]
     end
@@ -40,12 +41,12 @@ function global_contact_search(contact_params)
     return no_pairs, global_master, global_slave
 end
 
-function compute_contact_pairs(cg::String, contact_params::Dict)
+function compute_contact_pairs(cg::String, group::ContactGroupParams, contact_radius::Float64)
     if Data_Manager.get_search_step(cg) == 0
         Data_Manager.set_global_search_master_nodes(cg, Vector{Int64}([]))
         Data_Manager.set_global_search_slave_nodes(cg, Vector{Int64}([]))
         no_pairs, global_master,
-        global_slave = global_contact_search(contact_params)
+        global_slave = global_contact_search(group)
 
         Data_Manager.set_global_search_master_nodes(cg, global_master)
         Data_Manager.set_global_search_slave_nodes(cg, global_slave)
@@ -58,13 +59,13 @@ function compute_contact_pairs(cg::String, contact_params::Dict)
         return
     end
 
-    contact_dict = local_contact_search(contact_params,
+    contact_dict = local_contact_search(contact_radius,
                                         Data_Manager.get_global_search_master_nodes(cg),
                                         Data_Manager.get_global_search_slave_nodes(cg))
     Data_Manager.set_contact_dict(cg, contact_dict)
 end
 
-function local_contact_search(contact_params, master_nodes, slave_nodes)
+function local_contact_search(contact_radius::Float64, master_nodes, slave_nodes)
     all_positions = Data_Manager.get_all_positions()
     #-------------
     dof = Data_Manager.get_dof()
@@ -74,7 +75,7 @@ function local_contact_search(contact_params, master_nodes, slave_nodes)
     no_pairs = find_potential_contact_pairs(dof,
                                             all_positions[master_nodes, :],
                                             all_positions[slave_nodes, :],
-                                            contact_params["Contact Radius"])
+                                            contact_radius)
     if no_pairs
         return contact_dict
     end

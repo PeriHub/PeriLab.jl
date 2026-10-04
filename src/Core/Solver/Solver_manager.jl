@@ -124,6 +124,7 @@ function init(params::Dict,
     read_properties(params, "Material" in solver_options["Models"])
     @debug "Init models"
     @timeit "init_models" init_models(params,
+                                      input,
                                       block_nodes,
                                       solver_options,
                                       synchronise_field)
