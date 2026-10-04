@@ -21,10 +21,10 @@ end
 @params struct ContactModelParams
     type::String = req("Type")
     contact_radius::Float64 = req("Contact Radius"; min = 0, quantity = :length)
-    contact_stiffness::Float64 = req("Contact Stiffness"; min = 0)
-    friction_coefficient::Union{Nothing,Float64} = opt("Friction Coefficient";
-                                                       default = nothing, min = 0)
-    symmetry::Union{Nothing,String} = opt("Symmetry"; default = nothing)
+    contact_stiffness::Float64 = opt("Contact Stiffness"; default = 1e8, min = 0)
+    friction_coefficient::Float64 = opt("Friction Coefficient"; default = 0.0, min = 0)
+    symmetry::String = opt("Symmetry"; default = "3D",
+                           description = "\"plane stress\", \"plane strain\" or 3D (anything else)")
     contact_groups::Dict{String,ContactGroupParams} = req("Contact Groups")
 end
 
@@ -71,3 +71,26 @@ function parse_contact(raw, path::String, ctx::ParseContext)
     end
     return ok ? ContactInput(globals, models) : nothing
 end
+
+function check!(g::ContactGroupParams, path::String, ctx::ParseContext)
+    if g.master_block_id == g.slave_block_id
+        add_error!(ctx, path,
+                   "Master Block ID and Slave Block ID are equal; self contact is not implemented")
+    end
+    g.search_radius > 0 ||
+        add_error!(ctx, join_path(path, "Search Radius"), "must be greater than zero")
+    return nothing
+end
+
+"Sorted ids of all blocks that take part in a contact group."
+function contact_blocks(contact::ContactInput)
+    ids = Int64[]
+    for model in values(contact.models), group in values(model.contact_groups)
+        push!(ids, group.master_block_id, group.slave_block_id)
+    end
+    return sort!(unique!(ids))
+end
+
+"Global search frequency of a contact group; falls back to `Globals`."
+contact_search_frequency(group::ContactGroupParams, globals::ContactGlobalsParams) = something(group.global_search_frequency,
+                                                                                               globals.global_search_frequency)

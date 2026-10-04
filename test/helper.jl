@@ -171,3 +171,16 @@ function typed_input(sections::AbstractDict)
     PeriLab.ParameterSpec.report!(ctx)
     return input
 end
+
+"""
+    typed_contact(raw)
+
+The typed `Contact` section from its raw dict; aborts on input errors.
+"""
+function typed_contact(raw::AbstractDict)
+    ctx = PeriLab.ParameterSpec.ParseContext()
+    value = PeriLab.InputDeck.parse_contact(Dict{String,Any}(string(k) => v for (k, v) in raw),
+                                            "Contact", ctx)
+    PeriLab.ParameterSpec.report!(ctx)
+    return value
+end

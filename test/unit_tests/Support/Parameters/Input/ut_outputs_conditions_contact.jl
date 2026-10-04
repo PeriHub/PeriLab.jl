@@ -89,7 +89,7 @@ const UT_CONTACT_MODEL = Dict{String,Any}("Type" => "Penalty Contact",
     @test isempty(ctx.errors)
     @test c.globals.global_search_frequency === 1 && c.globals.only_surface_contact_nodes
     m = c.models["Contact_1"]
-    @test m.contact_stiffness === 1e8 && m.friction_coefficient === nothing
+    @test m.contact_stiffness === 1e8 && m.friction_coefficient === 0.0
     @test m.contact_groups["Group 1"].master_block_id === 2
     c, ctx = ut_contact(Dict{String,Any}("Globals" => Dict{String,Any}("Global Search Frequency" => 2,
                                                                         "Only Surface Contact Nodes" => false),

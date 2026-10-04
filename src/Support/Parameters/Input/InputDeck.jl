@@ -31,6 +31,9 @@ export read_input, PeriLabInput, SolverParams, SolverOptions, ModelReductionPara
        BlockParams, DiscretizationParams, GcodeParams, BondFilterParams,
        SurfaceExtrusionParams, ExternalTopologyParams, block_by_id, block_angles,
        block_names_and_ids, mesh_scaling, gcode_block_ids, OutputParams, ComputeClassParams,
-       BoundaryConditionParams, bc_node_set_names, bc_step_ids
+       BoundaryConditionParams, bc_node_set_names, bc_step_ids,
+       ContactInput, ContactModelParams, ContactGroupParams, ContactGlobalsParams,
+       contact_blocks, contact_search_frequency, FEMParams, FEMCouplingParams, fem_degree,
+       SurfaceCorrectionParams
 
 end

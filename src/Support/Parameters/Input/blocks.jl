@@ -24,8 +24,8 @@ end
 
 @params struct FEMCouplingParams
     coupling_type::String = req("Coupling Type")
-    pd_weight::Union{Nothing,Float64} = opt("PD Weight"; default = nothing)
-    kappa::Union{Nothing,Float64} = opt("Kappa"; default = nothing)
+    pd_weight::Float64 = opt("PD Weight"; default = 0.5)
+    kappa::Float64 = opt("Kappa"; default = 1.0)
     coupling_block::Union{Nothing,Int64} = opt("Coupling Block"; default = nothing)
 end
 
@@ -36,8 +36,21 @@ end
     coupling::Union{Nothing,FEMCouplingParams} = opt("Coupling"; default = nothing)
 end
 
+function check!(f::FEMParams, path::String, ctx::ParseContext)
+    degrees = f.degree isa Int64 ? [f.degree] :
+              [tryparse(Int64, part) for part in split(f.degree)]
+    if isempty(degrees) || any(d -> d === nothing || d < 1, degrees)
+        add_error!(ctx, join_path(path, "Degree"),
+                   "expected a positive integer or positive integers separated by spaces, got \"$(f.degree)\"")
+    end
+    return nothing
+end
+
+"Polynomial degrees of the FEM elements as written: one value, or one per direction."
+fem_degree(f::FEMParams) = f.degree isa Int64 ? [f.degree] : parse.(Int64, split(f.degree))
+
 @params struct SurfaceCorrectionParams
-    type::String = req("Type")
+    type::String = req("Type"; allowed = ["Volume Correction"])
     update::Bool = opt("Update"; default = false)
 end
 
