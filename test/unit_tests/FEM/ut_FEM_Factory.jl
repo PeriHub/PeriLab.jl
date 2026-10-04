@@ -5,21 +5,10 @@
 #using Test
 # using PeriLab
 PeriLab.Data_Manager.initialize_data()
+ut_fem(material) = typed_section(PeriLab.InputDeck.FEMParams,
+                                 Dict{String,Any}("Degree" => 1, "Element Type" => "Lagrange",
+                                                  "Material Model" => material))
 
-@testset "ut_valid_models" begin
-    @test_logs (:error,
-                "No material model has been defined for FEM in the block.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.FEM.valid_models(Dict{String,
-                                                     Any}())
-    end
-    # @test_logs (:warn, "Additive models are not supported for FEM yet") @test_throws PeriLab.PeriLabError begin PeriLab.Solver_Manager.FEM.valid_models(Dict{String, Any}("Additive Model" => "a")) end
-    # @test_logs (:warn, "Damage models are not supported for FEM") @test_throws PeriLab.PeriLabError begin PeriLab.Solver_Manager.FEM.valid_models(Dict{String, Any}("Damage Model" => "a")) end
-    @test_nowarn PeriLab.Solver_Manager.FEM.valid_models(Dict{String,Any}("Damage Model" => "a",
-                                                                          "Additive Model" => "a",
-                                                                          "Material Model" => "a Correspondence"))
-    # @test_logs (:warn, "Thermal models are not supported for FEM yet") @test_throws PeriLab.PeriLabError begin PeriLab.Solver_Manager.FEM.valid_models(Dict{String, Any}("Thermal Model" => "a"))
-    @test_nowarn PeriLab.Solver_Manager.FEM.valid_models(Dict{String,Any}("Material Model" => "a"))
-end
 @testset "ut_init_FEM" begin
     nelements = 2
     dof = 2
@@ -30,14 +19,11 @@ end
     rho .= 2
     block_nodes = Dict(1=>[1, 2, 3, 4])
     @test_logs (:error, "Invalid FEM parameters") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,
-                                                 Any}())
+        PeriLab.Solver_Manager.FEM.init_FEM(nothing, Dict{String,Any}())
     end
     @test_logs (:error,
                 "The FEM material model b is not defined") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.FEM.init_FEM(Dict{String,
-                                                 Any}("Models" => Dict("Material Models" => Dict("a" => "a")),
-                                                      "FEM" => Dict("Material Model" => "b")))
+        PeriLab.Solver_Manager.FEM.init_FEM(ut_fem("b"), Dict{String,Any}("a" => "a"))
     end
 
     PeriLab.Data_Manager.create_node_vector_field("Displacements", Float64, dof)
@@ -69,33 +55,28 @@ end
     PeriLab.Data_Manager.data["block_id_list"] = [1, 2]
     PeriLab.Data_Manager.init_properties()
 
-    params = Dict{String,Any}("FEM" => Dict("Degree" => 1,
-                                            "Element Type" => "Lagrange",
-                                            "Material Model" => "Elastic Model"),
-                              "Models" => Dict{String,Any}("Material Models" => Dict("No FEM Model" => Dict("Material Model" => "Correspondence Elastic",
+    material_models = Dict("No FEM Model" => Dict("Material Model" => "Correspondence Elastic",
                                                                                                             "Symmetry" => "isotropic plane strain",
                                                                                                             "Young's Modulus" => 2.5e+3,
                                                                                                             "Poisson's Ratio" => 0.33,
-                                                                                                            "Shear Modulus" => 2.0e3))))
+                                                                                                            "Shear Modulus" => 2.0e3))
     @test_logs (:error,
                 "The FEM material model Elastic Model is not defined") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.FEM.init_FEM(params)
+        PeriLab.Solver_Manager.FEM.init_FEM(ut_fem("Elastic Model"), material_models)
     end
 
-    params = Dict{String,Any}("FEM" => Dict("Degree" => 1,
-                                            "Element Type" => "Lagrange",
-                                            "Material Model" => "Elastic Model"),
-                              "Models" => Dict{String,Any}("Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
+    material_models = Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
                                                                                                              "Symmetry" => "isotropic plane strain",
                                                                                                              "Young's Modulus" => 2.5e+3,
                                                                                                              "Poisson's Ratio" => 0.33,
-                                                                                                             "Shear Modulus" => 2.0e3))))
+                                                                                                             "Shear Modulus" => 2.0e3))
     @test_logs (:error,
                 "FEM Material must have the field Material Gradient. This is the Hooke matrix for linear elasticity. Please use elastic correspondence or the UMAT interace.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.FEM.init_FEM(params)
+        PeriLab.Solver_Manager.FEM.init_FEM(ut_fem("Elastic Model"), material_models)
     end
     PeriLab.Data_Manager.create_constant_node_tensor_field("Material Gradient", Float64, 3)
-    PeriLab.Solver_Manager.FEM.init_FEM(params)
+    PeriLab.Solver_Manager.FEM.init_FEM(ut_fem("Elastic Model"), material_models)
+    @test PeriLab.Data_Manager.get_fem_params().element_type == "Lagrange"
 
     @test "N Matrix" in PeriLab.Data_Manager.get_all_field_keys()
     @test "B Matrix" in PeriLab.Data_Manager.get_all_field_keys()
@@ -175,22 +156,15 @@ end
     PeriLab.Data_Manager.data["block_id_list"] = [1, 2]
     PeriLab.Data_Manager.init_properties()
 
-    params = Dict{String,Any}("FEM" => Dict("Degree" => 1,
-                                            "Element Type" => "Lagrange",
-                                            "Material Model" => "Elastic Model"),
-                              "Models" => Dict("Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
+    material_models = Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
                                                                                                  "Symmetry" => "isotropic plane strain",
                                                                                                  "Young's Modulus" => 1.5,
                                                                                                  "Poisson's Ratio" => 0.33,
-                                                                                                 "Shear Modulus" => 0.5639))))
+                                                                                                 "Shear Modulus" => 0.5639))
 
-    PeriLab.Solver_Manager.FEM.init_FEM(params)
+    PeriLab.Solver_Manager.FEM.init_FEM(ut_fem("Elastic Model"), material_models)
     elements = Vector{Int64}([1, 2])
-    PeriLab.Solver_Manager.FEM.eval_FEM(elements,
-                                        PeriLab.Data_Manager.get_properties(1,
-                                                                            "FEM"),
-                                        0.0,
-                                        1.0e-6)
+    PeriLab.Solver_Manager.FEM.eval_FEM(elements, 0.0, 1.0e-6)
 
     stress = PeriLab.Data_Manager.get_field("Element Stress", "NP1")
     strain = PeriLab.Data_Manager.get_field("Element Strain", "NP1")
@@ -226,11 +200,7 @@ end
     displacements[5, 2] = 0.5
     displacements[6, 1] = 1
     displacements[6, 2] = 0.5
-    PeriLab.Solver_Manager.FEM.eval_FEM(elements,
-                                        PeriLab.Data_Manager.get_properties(1,
-                                                                            "FEM"),
-                                        0.0,
-                                        1.0e-6)
+    PeriLab.Solver_Manager.FEM.eval_FEM(elements, 0.0, 1.0e-6)
     stress = PeriLab.Data_Manager.get_field("Element Stress", "NP1")
     strain = PeriLab.Data_Manager.get_field("Element Strain", "NP1")
 

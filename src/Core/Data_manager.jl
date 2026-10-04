@@ -57,6 +57,8 @@ include("./Data_manager/data_manager_status_vars.jl")
 include("./Data_manager/data_manager_utilities.jl")
 export add_active_model
 export fem_active
+export set_fem_params
+export get_fem_params
 export initialize_data
 export get_active_models
 export get_all_field_keys
@@ -167,6 +169,7 @@ function initialize_data()
         "Bond Associated Correspondence"
     ]
     data["coupling_dict"] = Dict{Int64,Int64}()
+    data["FEM Parameters"] = nothing
     data["output_frequency"] = []
     data["accuracy_order"] = 1
     data["rank"] = 0
@@ -307,6 +310,24 @@ Returns if FEM is active (true) or not (false).
 """
 function fem_active()
     return data["fem_option"]
+end
+
+"""
+	set_fem_params(fem)
+
+Stores the typed `FEM` section (`FEMParams`, or `nothing` without FEM).
+"""
+function set_fem_params(fem)
+    data["FEM Parameters"] = fem
+end
+
+"""
+	get_fem_params()
+
+The typed `FEM` section stored by `set_fem_params`.
+"""
+function get_fem_params()
+    return data["FEM Parameters"]
 end
 
 """

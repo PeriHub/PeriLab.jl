@@ -157,9 +157,11 @@ function init(params::Dict,
     Data_Manager.set_model_module(solver_name(solver_params), mod)
 
     if Data_Manager.fem_active()
-        @timeit "init_FEM" FEM.init_FEM(params)
+        @timeit "init_FEM" FEM.init_FEM(input.sections.fem,
+                                        get(input.models, "Material Models",
+                                            Dict{String,Any}()))
         @timeit "init_coupling" FEM.Coupling.init_coupling(1:Data_Manager.get_nnodes(),
-                                                           params)
+                                                           input.sections.fem)
     end
 
     #TODO: sync active with Data_Manager

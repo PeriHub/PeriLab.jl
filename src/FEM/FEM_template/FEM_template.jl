@@ -30,7 +30,7 @@ function element_name()
 end
 
 function init_element(elements::AbstractVector{Int64},
-                      element_params::Dict,
+                      element_params,
                       p::Vector{Int64})
 end
 """

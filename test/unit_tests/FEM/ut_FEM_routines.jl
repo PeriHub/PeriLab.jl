@@ -32,8 +32,7 @@
     topology[1, 3] = 3
     topology[1, 4] = 4
     elements = Vector{Int64}(1:nelements)
-    p = PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params["FEM"]["FE_1"],
-                                                                   dof)
+    p = PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree([1], dof)
     num_int = PeriLab.Solver_Manager.FEM.FEM_Basis.get_number_of_integration_points(p, dof)
 
     N = PeriLab.Data_Manager.create_constant_free_size_field("N Matrix",
@@ -192,8 +191,7 @@ end
     topology[1, 3] = 3
     topology[1, 4] = 4
     elements = Vector{Int64}(1:nelements)
-    p = PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params["FEM"]["FE_1"],
-                                                                   dof)
+    p = PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree([1], dof)
     num_int = PeriLab.Solver_Manager.FEM.FEM_Basis.get_number_of_integration_points(p, dof)
 
     N = PeriLab.Data_Manager.create_constant_free_size_field("N Matrix",
@@ -417,57 +415,15 @@ end
 end
 
 @testset "ut_get_polynomial_degree" begin
-    @test_logs (:error, "No element degree defined") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(Dict{String,
-                                                                        Any}(),
-                                                                   1)
-    end
-    @test_logs (:error, "No element degree defined") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(Dict{String,
-                                                                        Any}(),
-                                                                   2)
-    end
-    @test_logs (:error, "No element degree defined") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(Dict{String,
-                                                                        Any}(),
-                                                                   3)
-    end
-
-    params = Dict{String,Any}("Degree" => 1)
-
-    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 2) == [1, 1]
-    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 3) == [1, 1, 1]
-
-    params = Dict{String,Any}("Degree" => 2)
-    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 2) == [2, 2]
-    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 3) == [2, 2, 2]
-
-    params = Dict{String,Any}("Degree" => 2.1)
-
-    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 2) == [2, 2]
-    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 3) == [2, 2, 2]
-
-    params = Dict{String,Any}("Degree" => [2 3 1])
+    gpd = PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree
+    @test gpd([1], 2) == [1, 1]
+    @test gpd([1], 3) == [1, 1, 1]
+    @test gpd([2], 2) == [2, 2]
+    @test gpd([2, 1, 1], 3) == [2, 1, 1]
     @test_logs (:error,
                 "Degree must be defined with length one or number of dof.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params,
-                                                                   2)
+        gpd([2, 3, 1], 2)
     end
-    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 3) == [2, 3, 1]
-
-    params = Dict{String,Any}("Degree" => [2.1 2])
-    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 2) == [2, 2]
-    @test_logs (:error,
-                "Degree must be defined with length one or number of dof.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params,
-                                                                   3)
-    end
-    params = Dict{String,Any}("Degree" => "2")
-    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 3) == [2, 2, 2]
-    params = Dict{String,Any}("Degree" => "2 2")
-    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 2) == [2, 2]
-    params = Dict{String,Any}("Degree" => "2 1")
-    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 2) == [2, 1]
 end
 @testset "ut_get_number_of_integration_points" begin
     @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_number_of_integration_points(Vector{Int64}([

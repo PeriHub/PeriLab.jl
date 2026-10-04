@@ -262,7 +262,6 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
             nelements = Data_Manager.get_num_elements()
 
             @timeit "eval" FEM.eval_FEM(Vector{Int64}(1:nelements),
-                                        Data_Manager.get_properties(1, "FEM"),
                                         time,
                                         dt)
             active_nodes = Data_Manager.get_field("Active Nodes")
@@ -306,8 +305,7 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
     end
 
     if fem_option
-        @timeit "coupling" FEM.Coupling.compute_coupling(Data_Manager.get_properties(1,
-                                                                                     "FEM"))
+        @timeit "coupling" FEM.Coupling.compute_coupling(Data_Manager.get_fem_params())
     end
     check_contact(Data_Manager.get_contact_properties(), time, dt)
     #=

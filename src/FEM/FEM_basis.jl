@@ -26,7 +26,6 @@ function get_FE_material_model(params::Dict{String,Any}, name::String)
 end
 
 function compute_FEM(elements::AbstractVector{Int64},
-                     params::Dict{String,Any},
                      compute_stresses!::Function,
                      time::Float64,
                      dt::Float64)
@@ -324,27 +323,13 @@ function get_Jacobian(elements::Vector{Int64},
     return jacobian, determinant_jacobian
 end
 
-function get_polynomial_degree(params::Dict{String,Any}, dof::Int64)
-    if !haskey(params, "Degree")
-        @abort "No element degree defined"
-        return
+function get_polynomial_degree(degree::Vector{Int64}, dof::Int64)
+    if length(degree) == 1
+        return fill(degree[1], dof)
+    elseif length(degree) == dof
+        return copy(degree)
     end
-    value = params["Degree"]
-    if typeof(value) == String
-        value = parse.(Float64, split(value))
-    end
-    if sum(typeof.(value) .!= Int64) != 0
-        value = Int64.(round.(value))
-    end
-    if length(value) == 1
-        return_value::Vector{Int64} = zeros(dof)
-        return_value[1:dof] .= value[1]
-        return return_value
-    elseif length(value) == dof
-        return value[1:dof]
-    else
-        @abort "Degree must be defined with length one or number of dof."
-    end
+    @abort "Degree must be defined with length one or number of dof."
 end
 
 """

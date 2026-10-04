@@ -95,3 +95,17 @@ end
            -0.25 0.0625 0.0625 0.0625 0.0625
            -0.25 0.0625 0.0625 0.0625 0.0625]
 end
+
+@testset "coupling defaults reach compute" begin
+    fem = typed_section(PeriLab.InputDeck.FEMParams,
+                        Dict{String,Any}("Degree" => 1, "Element Type" => "Lagrange",
+                                         "Material Model" => "m",
+                                         "Coupling" => Dict{String,Any}("Coupling Type" => "Arlequin")))
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_fem_params(fem)
+    # compute reads the same immutable struct init saw; no init-time mutation needed
+    @test PeriLab.Data_Manager.get_fem_params().coupling.pd_weight === 0.5
+    @test PeriLab.Data_Manager.get_fem_params().coupling.kappa === 1.0
+    @test hasmethod(PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.compute_coupling,
+                    Tuple{PeriLab.InputDeck.FEMCouplingParams})
+end
