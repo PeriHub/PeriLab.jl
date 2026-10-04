@@ -20,7 +20,7 @@ using ...Helpers: check_inf_or_nan, progress_bar, matrix_style
 using ...InputDeck: SolverParams, start_time, end_time
 using ...MPI_Communication: find_and_set_core_value_min, find_and_set_core_value_max
 using ..Model_Factory: compute_models, compute_crititical_time_step
-using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
+using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof, BoundaryCondition
 using ...Logging_Module: print_table
 include("../Model_reduction/Model_reduction.jl")
 using .Model_reduction: init_reduce_model, ReducedState, setup_reduced_state,
@@ -37,7 +37,7 @@ end
 
 function init_solver(solver_options::Dict{Any,Any},
                      params::SolverParams,
-                     bcs::Dict{Any,Any},
+                     bcs::Dict{String,BoundaryCondition},
                      block_nodes::Dict{Int64,Vector{Int64}})
     horizon = Data_Manager.get_field("Horizon")
     if Data_Manager.get_rank() > 1
@@ -119,7 +119,7 @@ end
 
 function run_solver(solver_options::Dict{Any,Any},
                     block_nodes::Dict{Int64,Vector{Int64}},
-                    bcs::Dict{Any,Any},
+                    bcs::Dict{String,BoundaryCondition},
                     outputs::Dict{Int64,Dict{}},
                     result_files::Vector{Dict},
                     synchronise_field::Function,

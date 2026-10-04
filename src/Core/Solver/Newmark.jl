@@ -11,7 +11,7 @@ using ProgressBars: set_multiline_postfix, set_postfix
 
 using ...Data_Manager
 using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar
-using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
+using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof, BoundaryCondition
 using ...InputDeck: SolverParams, start_time, end_time
 using ..Model_Factory: compute_stiff_matrix_compatible_models,
                        compute_matrix_based_bond_forces
@@ -61,7 +61,7 @@ With numerical damping alpha: beta >= 0.5 ,alpha >= 0.25*(0.5+beta)^2
 """
 function init_solver(solver_options::Dict{Any,Any},
                      params::SolverParams,
-                     bcs::Dict{Any,Any},
+                     bcs::Dict{String,BoundaryCondition},
                      block_nodes::Dict{Int64,Vector{Int64}})
     find_bc_free_dof(bcs)
 
@@ -154,7 +154,7 @@ Lumped diagonal mass: ``M_i = \\rho_i\\, V_i``.
 # Arguments
 - `solver_options::Dict{Any,Any}`:  solver configuration (dt, nsteps, beta,gamma, …)
 - `block_nodes::Dict{Int64,Vector{Int64}}`:  block → node mapping
-- `bcs::Dict{Any,Any}`:  boundary conditions (Dirichlet / Neumann)
+- `bcs::Dict{String,BoundaryCondition}`:  boundary conditions (Dirichlet / Neumann)
 - `outputs::Dict{Int64,Dict{}}`:  output configuration per block
 - `result_files::Vector{Dict}`:  file handles for result output
 - `synchronise_field::Function`:  MPI field synchronisation callback
@@ -174,7 +174,7 @@ Lumped diagonal mass: ``M_i = \\rho_i\\, V_i``.
 
 function run_solver(solver_options::Dict{Any,Any},
                     block_nodes::Dict{Int64,Vector{Int64}},
-                    bcs::Dict{Any,Any},
+                    bcs::Dict{String,BoundaryCondition},
                     outputs::Dict{Int64,Dict{}},
                     result_files::Vector{Dict},
                     synchronise_field::Function,

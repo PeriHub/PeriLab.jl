@@ -30,7 +30,7 @@ using ..MPI_Communication: synch_responder_to_controller,
 include("../Influence_function.jl")
 
 using .Model_Factory: init_models, read_properties
-using .Boundary_Conditions: init_BCs
+using .Boundary_Conditions: init_BCs, BoundaryCondition
 using .Verlet_Solver
 using .Linear_static_matrix_based
 using .Newmark
@@ -59,7 +59,7 @@ Initialize the solver
 - `step_id::Int64`: The solver step (`-1`: single `Solver`)
 # Returns
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
-- `bcs::Dict{Any,Any}`: A dictionary containing boundary conditions.
+- `bcs::Dict{String,BoundaryCondition}`: A dictionary containing boundary conditions.
 - `solver_options::Dict{String,Any}`: A dictionary containing solver options.
 """
 function init(params::Dict,
@@ -129,7 +129,7 @@ function init(params::Dict,
                                       synchronise_field)
     @debug "Init Boundary Conditions"
 
-    @timeit "init_BCs" bcs=init_BCs(params)
+    @timeit "init_BCs" bcs=init_BCs(input.sections.boundary_conditions)
     # get name and checks if it is there
     solver_options["Solver"] = solver_name(solver_params)
 
@@ -276,14 +276,14 @@ function set_horizon(blocks::Dict{String,BlockParams}, block_nodes::Dict,
 end
 
 """
-	solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, silent::Bool)
+	solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{String,BoundaryCondition}, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, silent::Bool)
 
 Runs the solver.
 
 # Arguments
 - `solver_options::Dict{String,Any}`: The solver options
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes
-- `bcs::Dict{Any,Any}`: The boundary conditions
+- `bcs::Dict{String,BoundaryCondition}`: The boundary conditions
 - `outputs::Dict{Int64,Dict{}}`: A dictionary for output settings
 - `result_files::Vector{Any}`: A vector of result files
 - `write_results`: A function to write simulation results
@@ -293,7 +293,7 @@ Runs the solver.
 """
 function solver(solver_options::Dict{Any,Any},
                 block_nodes::Dict{Int64,Vector{Int64}},
-                bcs::Dict{Any,Any},
+                bcs::Dict{String,BoundaryCondition},
                 outputs::Dict{Int64,Dict{}},
                 result_files::Vector{Dict},
                 write_results,

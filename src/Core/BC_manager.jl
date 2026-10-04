@@ -7,30 +7,45 @@ export init_BCs
 export apply_bc_dirichlet
 export apply_bc_neumann
 export find_bc_free_dof
+export BoundaryCondition
 
 using ...Data_Manager
-using ...Parameter_Handling: get_bc_definitions
+using ...InputDeck: BoundaryConditionParams, bc_node_set_names, bc_step_ids
 using ...PeriLabExceptions: @abort
 
 """
-    find_bc_free_dof(bcs::Dict{String,Any})
-Finds all dof without a displacement boundary condition. This tuple vector is stored in the Data_Manager.
+    BoundaryCondition
 
-# Arguments
-- `bcs::Dict{String,Any}`: The boundary conditions
-# Returns
+A boundary condition prepared for one solver step: the resolved field
+(`variable`, `time` = `"NP1"` or `"Constant"`), its `type`, the local nodes it
+acts on, and its `value` — a number or an expression string from the input
+deck, replaced by the compiled expression after the first evaluation.
+"""
+mutable struct BoundaryCondition
+    variable::String
+    time::String
+    type::String
+    initial::Bool
+    coordinate::Union{Nothing,String}
+    node_set::Vector{Int64}
+    value::Any
+end
 
 """
-function find_bc_free_dof(bcs::Dict{Any,Any})
+    find_bc_free_dof(bcs)
+
+Finds all dof without a displacement boundary condition and stores them in the
+Data_Manager.
+"""
+function find_bc_free_dof(bcs::Dict{String,BoundaryCondition})
     nnodes = Data_Manager.get_nnodes()
     dof = Data_Manager.get_dof()
     bc_free_dof = vec([(i, j) for i in 1:nnodes, j in 1:dof])
     dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
     for bc in values(bcs)
-        if bc["Variable"] == "Displacements" && bc["Type"] == "Dirichlet"
-            act = Vector{Tuple{Int64,Int64}}([(node, dof_mapping[bc["Coordinate"]])
-                                              for node in bc["Node Set"]])
-
+        if bc.variable == "Displacements" && bc.type == "Dirichlet"
+            act = Vector{Tuple{Int64,Int64}}([(node, dof_mapping[bc.coordinate])
+                                              for node in bc.node_set])
             bc_free_dof = setdiff(bc_free_dof, act)
         end
     end
@@ -38,208 +53,174 @@ function find_bc_free_dof(bcs::Dict{Any,Any})
 end
 
 """
-    check_valid_bcs(bcs::Dict{String,Any})
+    boundary_condition(bcs_in)
 
-Check if the boundary conditions are valid
-
-# Arguments
-- `bcs::Dict{String,Any}`: The boundary conditions
-# Returns
-- `working_bcs::Dict{String,Any}`: The valid boundary conditions
+Local node ids of every boundary condition (all node sets of its `Node Set`
+list, in order). Aborts if a node set does not exist.
 """
-function check_valid_bcs(bcs::Dict{String,Any})
-    # check bc
-    working_bcs = Dict()
-    for bc in keys(bcs)
-        if haskey(bcs[bc], "Step ID")
-            if Data_Manager.get_step() != -1 &&
-               !(string(Data_Manager.get_step()) in split(string(bcs[bc]["Step ID"]), ","))
-                continue
+function boundary_condition(bcs_in::Dict{String,BoundaryConditionParams})
+    nsets = Data_Manager.get_nsets()
+    node_sets = Dict{String,Vector{Int64}}()
+    for (name, bc) in bcs_in
+        nodes = Int64[]
+        for node_set_name in bc_node_set_names(bc)
+            if !haskey(nsets, node_set_name)
+                @abort "Node Set '$node_set_name' is missing"
+                return
             end
+            append!(nodes, Data_Manager.get_local_nodes(nsets[node_set_name]))
         end
+        node_sets[name] = nodes
+    end
+    return node_sets
+end
 
-        if haskey(bcs[bc], "Coordinate")
-            dof = Data_Manager.get_dof()
-            if bcs[bc]["Coordinate"] == "z" && dof < 3
-                @warn "Boundary condition $bc is not possible with $dof DOF"
-                break
-            end
-        end
-        valid = false
+"""
+    check_valid_bcs(bcs_in, node_sets)
 
-        if !haskey(bcs[bc], "Type") ||
-           !(bcs[bc]["Type"] in ["Initial", "Dirichlet", "Neumann"])
-            bcs[bc]["Type"] = "Dirichlet"
-            @warn "Missing boundary condition type for $bc. Assuming Dirichlet."
+The boundary conditions active in the current solver step, with their field
+resolved. A `z` condition in a 2D run is skipped with a warning; a missing
+`Type` means Dirichlet. Aborts if the field does not exist.
+"""
+function check_valid_bcs(bcs_in::Dict{String,BoundaryConditionParams},
+                         node_sets::Dict{String,Vector{Int64}})
+    working_bcs = Dict{String,BoundaryCondition}()
+    step = Data_Manager.get_step()
+    dof = Data_Manager.get_dof()
+    for (name, bc) in bcs_in
+        steps = bc_step_ids(bc)
+        if steps !== nothing && step != -1 && !(step in steps)
+            continue
         end
+        if bc.coordinate == "z" && dof < 3
+            @warn "Boundary condition $name is not possible with $dof DOF"
+            continue
+        end
+        type = bc.type
+        if type === nothing
+            type = "Dirichlet"
+            @warn "Missing boundary condition type for $name. Assuming Dirichlet."
+        end
+        time = nothing
         for data_entry in Data_Manager.get_all_field_keys()
-            if bcs[bc]["Variable"] * "NP1" == data_entry
-                bcs[bc]["Time"] = "NP1"
-                valid = true
-            elseif bcs[bc]["Variable"] == data_entry
-                bcs[bc]["Variable"] = data_entry
-                bcs[bc]["Time"] = "Constant"
-                valid = true
-            end
-            if valid
-                bcs[bc]["Initial"] = bcs[bc]["Type"] == "Initial"
-                working_bcs[bc] = bcs[bc]
+            if bc.variable * "NP1" == data_entry
+                time = "NP1"
+                break
+            elseif bc.variable == data_entry
+                time = "Constant"
                 break
             end
         end
-        if !valid
-            @abort "Boundary condition $bc is not valid: Variable $(bcs[bc]["Variable"]) not found. Please check if the physical model is activated."
+        if time === nothing
+            @abort "Boundary condition $name is not valid: Variable $(bc.variable) not found. Please check if the physical model is activated."
             return
         end
+        working_bcs[name] = BoundaryCondition(bc.variable, time, type, type == "Initial",
+                                              bc.coordinate, node_sets[name], bc.value)
     end
     return working_bcs
 end
 
 """
-    init_BCs(params::Dict)
+    init_BCs(bcs_in)
 
-Initialize the boundary conditions
-
-# Arguments
-- `params::Dict`: The parameters
-# Returns
-- `bcs::Dict{Any,Any}`: The boundary conditions
+The boundary conditions of the current solver step.
 """
-function init_BCs(params::Dict)
-    bcs = boundary_condition(params)
-    valid_bcs = check_valid_bcs(bcs)
-    return valid_bcs
+function init_BCs(bcs_in::Dict{String,BoundaryConditionParams})
+    return check_valid_bcs(bcs_in, boundary_condition(bcs_in))
 end
 
 """
-    boundary_condition(params::Dict)
-
-Initialize the boundary condition
-
-# Arguments
-- `params::Dict`: The parameters
-# Returns
-- `bcs_out::Dict{Any,Any}`: The boundary conditions
-"""
-function boundary_condition(params::Dict)
-    bcs_in = get_bc_definitions(params)
-    bcs_out = Dict{String,Any}()
-    nsets = Data_Manager.get_nsets()
-
-    for bc in keys(bcs_in)
-        node_set_names = split(bcs_in[bc]["Node Set"], "+")
-        node_set_names = map(r -> strip(r), node_set_names)
-        bcs_out[bc] = Dict{String,Any}("Node Set" => [])
-        for node_set_name in node_set_names
-            if haskey(nsets, node_set_name)
-                append!(bcs_out[bc]["Node Set"],
-                        Data_Manager.get_local_nodes(nsets[node_set_name]))
-                for entry in keys(bcs_in[bc])
-                    if entry != "Node Set"
-                        bcs_out[bc][entry] = bcs_in[bc][entry]
-                    end
-                end
-            else
-                @abort "Node Set '$node_set_name' is missing"
-                return
-            end
-        end
-    end
-    return bcs_out
-end
-
-"""
-    apply_bc_dirichlet(bcs::Dict, time::Float64)
+    apply_bc_dirichlet(allowed_variables::Vector{String}, bcs::Dict{String,BoundaryCondition}, time::Float64, step_time::Float64)
 
 Apply the boundary conditions
 
 # Arguments
-- `bcs::Dict{Any,Any}`: The boundary conditions
+- `bcs::Dict{String,BoundaryCondition}`: The boundary conditions
 - `time::Float64`: The current time
 """
 function apply_bc_dirichlet(allowed_variables::Vector{String},
-                            bcs::Dict,
+                            bcs::Dict{String,BoundaryCondition},
                             time::Float64,
                             step_time::Float64)
     dof = Data_Manager.get_dof()
     dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
     coordinates = Data_Manager.get_field("Coordinates")
-    for name in keys(bcs)
-        bc = bcs[name]
-        if !(bc["Type"] in ["Initial", "Dirichlet"])
+    for (name, bc) in bcs
+        if !(bc.type in ["Initial", "Dirichlet"])
             continue
         end
-        if !(bc["Variable"] in allowed_variables)
+        if !(bc.variable in allowed_variables)
             continue
         end
-        if bc["Variable"] == "Forces"
+        if bc.variable == "Forces"
             field = Data_Manager.get_field("External Forces")
-        elseif bc["Variable"] == "Force Densities"
+        elseif bc.variable == "Force Densities"
             field = Data_Manager.get_field("External Force Densities")
         else
-            field = Data_Manager.get_field(bc["Variable"], bc["Time"])
+            field = Data_Manager.get_field(bc.variable, bc.time)
         end
         if ndims(field) > 1
-            if haskey(dof_mapping, bc["Coordinate"])
-                @views field_to_apply_bc = field[bc["Node Set"],
-                dof_mapping[bc["Coordinate"]]]
-                bc["Value"] = eval_bc!(field_to_apply_bc,
-                                       bc["Value"],
-                                       coordinates[bc["Node Set"], :],
+            if haskey(dof_mapping, bc.coordinate)
+                @views field_to_apply_bc = field[bc.node_set,
+                dof_mapping[bc.coordinate]]
+                bc.value = eval_bc!(field_to_apply_bc,
+                                       bc.value,
+                                       coordinates[bc.node_set, :],
                                        time,
                                        step_time,
                                        dof,
-                                       bc["Initial"],
+                                       bc.initial,
                                        name)
             else
                 @abort "Coordinate in boundary condition must be x,y or z."
             end
         else
-            @views field_to_apply_bc = field[bc["Node Set"]]
-            bc["Value"] = eval_bc!(field_to_apply_bc,
-                                   bc["Value"],
-                                   coordinates[bc["Node Set"], :],
+            @views field_to_apply_bc = field[bc.node_set]
+            bc.value = eval_bc!(field_to_apply_bc,
+                                   bc.value,
+                                   coordinates[bc.node_set, :],
                                    time,
                                    step_time,
                                    dof,
-                                   bc["Initial"],
+                                   bc.initial,
                                    name)
         end
     end
 end
 
 """
-    apply_bc_neumann(bcs::Dict, time::Float64)
+    apply_bc_neumann(bcs::Dict{String,BoundaryCondition}, time::Float64, step_time::Float64)
 
 Apply the boundary conditions
 
 # Arguments
-- `bcs::Dict{Any,Any}`: The boundary conditions
+- `bcs::Dict{String,BoundaryCondition}`: The boundary conditions
 - `time::Float64`: The current time
 """
-function apply_bc_neumann(bcs::Dict, time::Float64, step_time::Float64)
+function apply_bc_neumann(bcs::Dict{String,BoundaryCondition}, time::Float64,
+                          step_time::Float64)
     # Currently not supported
     dof = Data_Manager.get_dof()
     dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
     coordinates = Data_Manager.get_field("Coordinates")
-    for name in keys(bcs)
-        bc = bcs[name]
-        if bc["Type"] != "Neumann"
+    for (name, bc) in bcs
+        if bc.type != "Neumann"
             continue
         end
-        field = Data_Manager.get_field(bc["Variable"])
+        field = Data_Manager.get_field(bc.variable)
 
         if ndims(field) > 1
-            if haskey(dof_mapping, bc["Coordinate"])
-                @views field_to_apply_bc = field[bc["Node Set"],
-                dof_mapping[bc["Coordinate"]]]
-                bc["Value"] = eval_bc!(field_to_apply_bc,
-                                       bc["Value"],
-                                       coordinates[bc["Node Set"], :],
+            if haskey(dof_mapping, bc.coordinate)
+                @views field_to_apply_bc = field[bc.node_set,
+                dof_mapping[bc.coordinate]]
+                bc.value = eval_bc!(field_to_apply_bc,
+                                       bc.value,
+                                       coordinates[bc.node_set, :],
                                        time,
                                        step_time,
                                        dof,
-                                       bc["Initial"],
+                                       bc.initial,
                                        name,
                                        true)
             else
@@ -247,14 +228,14 @@ function apply_bc_neumann(bcs::Dict, time::Float64, step_time::Float64)
                 return nothing
             end
         else
-            @views field_to_apply_bc = field[bc["Node Set"]]
-            bc["Value"] = eval_bc!(field_to_apply_bc,
-                                   bc["Value"],
-                                   coordinates[bc["Node Set"], :],
+            @views field_to_apply_bc = field[bc.node_set]
+            bc.value = eval_bc!(field_to_apply_bc,
+                                   bc.value,
+                                   coordinates[bc.node_set, :],
                                    time,
                                    step_time,
                                    dof,
-                                   bc["Initial"],
+                                   bc.initial,
                                    name,
                                    true)
         end

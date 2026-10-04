@@ -16,7 +16,7 @@ using ...Helpers#: check_inf_or_nan, find_active_nodes, progress_bar, matrix_sty
 using ...InputDeck: SolverParams, start_time, end_time
 using ...MPI_Communication: find_and_set_core_value_min, find_and_set_core_value_max
 using ..Model_Factory: compute_models, compute_crititical_time_step
-using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann
+using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, BoundaryCondition
 using ...Logging_Module: print_table
 include("../../Compute/compute_field_values.jl")
 export init_solver
@@ -27,7 +27,7 @@ function solver_name()
 end
 
 """
-	init_solver(params::SolverParams, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+	init_solver(params::SolverParams, bcs::Dict{String,BoundaryCondition}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
 Initialize the Verlet solver for a simulation.
 
@@ -35,7 +35,7 @@ This function sets up the Verlet solver for a simulation by initializing various
 
 # Arguments
 - `params::SolverParams`: The solver parameters of the current step.
-- `bcs::Dict{Any,Any}`: Boundary conditions
+- `bcs::Dict{String,BoundaryCondition}`: Boundary conditions
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `mechanical::Bool`: If `true`, mechanical properties are considered in the calculation.
 - `thermo::Bool`: If `true`, thermodynamic properties are considered in the calculation.
@@ -57,7 +57,7 @@ This function may depend on the following functions:
 """
 function init_solver(solver_options::Dict{Any,Any},
                      params::SolverParams,
-                     bcs::Dict{Any,Any},
+                     bcs::Dict{String,BoundaryCondition},
                      block_nodes::Dict{Int64,Vector{Int64}})
     # @info "======================="
     # @info "==== Verlet Solver ===="
@@ -146,7 +146,7 @@ end
 	run_solver(
 		solver_options::Dict{Any,Any},
 		block_nodes::Dict{Int64,Vector{Int64}},
-		bcs::Dict{Any,Any},
+		bcs::Dict{String,BoundaryCondition},
 		outputs::Dict{Int64,Dict{}},
 		result_files::Vector{Any},
 		synchronise_field,
@@ -161,7 +161,7 @@ This function performs the Verlet solver simulation, updating various data field
 # Arguments
 - `solver_options::Dict{String,Any}`: A dictionary containing solver options and parameters.
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
-- `bcs::Dict{Any,Any}`: A dictionary containing boundary conditions.
+- `bcs::Dict{String,BoundaryCondition}`: A dictionary containing boundary conditions.
 - `outputs::Dict{Int64,Dict{}}`: A dictionary for output settings.
 - `result_files::Vector{Any}`: A vector of result files.
 - `synchronise_field`: A function for synchronization.
@@ -182,7 +182,7 @@ This function depends on various data fields and properties from the `Data_Manag
 """
 function run_solver(solver_options::Dict{Any,Any},
                     block_nodes::Dict{Int64,Vector{Int64}},
-                    bcs::Dict{Any,Any},
+                    bcs::Dict{String,BoundaryCondition},
                     outputs::Dict{Int64,Dict{}},
                     result_files::Vector{Dict},
                     synchronise_field::Function,

@@ -14,7 +14,7 @@ using ...PeriLabExceptions: @abort
 using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style,
                   create_permutation
 # using ...MPI_Communication: barrier
-using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
+using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof, BoundaryCondition
 using ...InputDeck: SolverParams, start_time, end_time
 
 using ..Model_Factory: compute_stiff_matrix_compatible_models,
@@ -53,7 +53,7 @@ mutable struct DisplacementSolverCache
 end
 
 """
-	init_solver(params::SolverParams, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+	init_solver(params::SolverParams, bcs::Dict{String,BoundaryCondition}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
 Initialize the Verlet solver for a simulation.
 
@@ -61,7 +61,7 @@ This function sets up the Verlet solver for a simulation by initializing various
 
 # Arguments
 - `params::SolverParams`: The solver parameters of the current step.
-- `bcs::Dict{Any,Any}`: Boundary conditions
+- `bcs::Dict{String,BoundaryCondition}`: Boundary conditions
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `mechanical::Bool`: If `true`, mechanical properties are considered in the calculation.
 - `thermo::Bool`: If `true`, thermodynamic properties are considered in the calculation.
@@ -82,7 +82,7 @@ This function may depend on the following functions:
 """
 function init_solver(solver_options::Dict{Any,Any},
                      params::SolverParams,
-                     bcs::Dict{Any,Any},
+                     bcs::Dict{String,BoundaryCondition},
                      block_nodes::Dict{Int64,Vector{Int64}})
     find_bc_free_dof(bcs)
     delta_u = Data_Manager.create_constant_node_vector_field("Delta Displacements", Float64,
@@ -155,7 +155,7 @@ end
 # end
 function run_solver(solver_options::Dict{Any,Any},
                     block_nodes::Dict{Int64,Vector{Int64}},
-                    bcs::Dict{Any,Any},
+                    bcs::Dict{String,BoundaryCondition},
                     outputs::Dict{Int64,Dict{}},
                     result_files::Vector{Dict},
                     synchronise_field::Function,
