@@ -309,7 +309,7 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
     bc_out = bc
     bc = string(bc)
     bc = clean_up(bc)
-    if dof < 2 && "z" in bc
+    if dof < 3 && occursin(r"\bz\b", bc)
         @abort "z is not valid in a 2D problem."
         return nothing
     end
@@ -344,7 +344,7 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
     end
 
     if isnothing(value) || (initial && time != 0.0)
-        return bc
+        return bc_out
     end
 
     if value isa Number
