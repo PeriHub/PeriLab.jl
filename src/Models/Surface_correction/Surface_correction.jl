@@ -6,25 +6,20 @@ module Surface_Correction
 
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
+using .....InputDeck: SurfaceCorrectionParams
 export init_surface_correction
 export compute_surface_correction
 
 function compute_surface_correction(nodes,
                                     local_synch,
                                     synchronise_field)
-    # get a random block, because surface correction is applied to all blocks
-    params = Data_Manager.get_properties(Data_Manager.get_block_id_list()[1],
-                                         "Surface Correction")
-    if !haskey(params, "Type")
-        return
+    sc = Data_Manager.get_surface_correction()
+    sc === nothing && return
+    # SurfaceCorrectionParams allows only "Volume Correction"
+    if sc.update
+        volumen_correction(nodes, local_synch, synchronise_field)
     end
-
-    if params["Type"] == "Volume Correction"
-        if haskey(params, "Update") && params["Update"]
-            volumen_correction(nodes, local_synch, synchronise_field)
-        end
-        return compute_surface_volume_correction(nodes)
-    end
+    return compute_surface_volume_correction(nodes)
 end
 
 function compute_surface_volume_correction(nodes)
@@ -38,33 +33,12 @@ function compute_surface_volume_correction(nodes)
     end
 end
 
-function init_surface_correction(params::Dict,
+function init_surface_correction(sc::Union{Nothing,SurfaceCorrectionParams},
                                  local_synch,
                                  synchronise_field)
-    # check if surface correction exists
-    if !haskey(params, "Surface Correction")
-        # if not set it to false
-        params["Surface Correction"] = Dict("Type" => nothing)
-        Data_Manager.set_properties("Surface Correction", params["Surface Correction"])
-    end
-    # check if type exists; if not its an error
-    if !haskey(params["Surface Correction"], "Type")
-        @abort "Surface Correction needs a Type definition"
-        return
-    end
-    # needed for multi-step, because if type is false its not a valid model
-    Data_Manager.set_properties("Surface Correction", params["Surface Correction"])
-    if isnothing(params["Surface Correction"]["Type"])
-        return
-    end
-    if !haskey(params["Surface Correction"], "Update")
-        params["Surface Correction"]["Update"] = false
-    end
-    if params["Surface Correction"]["Type"] == "Volume Correction"
-        return init_volumen_correction(local_synch, synchronise_field)
-    else
-        @abort "Type $(params["Surface Correction"]["Type"]) not defined for surface correction."
-    end
+    Data_Manager.set_surface_correction(sc)
+    sc === nothing && return
+    return init_volumen_correction(local_synch, synchronise_field)
 end
 
 function init_volumen_correction(local_synch, synchronise_field)

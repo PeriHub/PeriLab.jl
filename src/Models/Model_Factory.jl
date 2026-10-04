@@ -109,7 +109,7 @@ function init_models(params::Dict,
         end
     end
 
-    init_surface_correction(params, local_synch,
+    init_surface_correction(input.sections.surface_correction, local_synch,
                             synchronise_field)
 
     if solver_options["Calculation"]["Calculate Cauchy"] |

@@ -17,13 +17,15 @@
     block_iD .= 1
     mod_struct = PeriLab.Solver_Manager.Model_Factory
 
-    mod_struct.init_surface_correction(Dict(),
-                                       "local_synch",
-                                       "synchronise_field")
-    @test_logs (:error,
-                "Surface Correction needs a Type definition") @test_throws PeriLab.PeriLabError begin
-        mod_struct.init_surface_correction(Dict("Surface Correction" => Dict("a" => 0)),
-                                           "local_synch",
-                                           "synchronise_field")
-    end
+    # no section: nothing is stored and the compute step is a no-op
+    @test isnothing(mod_struct.init_surface_correction(nothing, "local_synch",
+                                                       "synchronise_field"))
+    @test isnothing(PeriLab.Data_Manager.get_surface_correction())
+    @test isnothing(mod_struct.compute_surface_correction([1, 2], "local_synch",
+                                                          "synchronise_field"))
+
+    sc = typed_section(PeriLab.InputDeck.SurfaceCorrectionParams,
+                       Dict{String,Any}("Type" => "Volume Correction", "Update" => true))
+    PeriLab.Data_Manager.set_surface_correction(sc)
+    @test PeriLab.Data_Manager.get_surface_correction().update
 end

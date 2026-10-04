@@ -59,6 +59,8 @@ export add_active_model
 export fem_active
 export set_fem_params
 export get_fem_params
+export set_surface_correction
+export get_surface_correction
 export initialize_data
 export get_active_models
 export get_all_field_keys
@@ -170,6 +172,7 @@ function initialize_data()
     ]
     data["coupling_dict"] = Dict{Int64,Int64}()
     data["FEM Parameters"] = nothing
+    data["Surface Correction"] = nothing
     data["output_frequency"] = []
     data["accuracy_order"] = 1
     data["rank"] = 0
@@ -328,6 +331,24 @@ The typed `FEM` section stored by `set_fem_params`.
 """
 function get_fem_params()
     return data["FEM Parameters"]
+end
+
+"""
+	set_surface_correction(sc)
+
+Stores the typed `Surface Correction` section (or `nothing`).
+"""
+function set_surface_correction(sc)
+    data["Surface Correction"] = sc
+end
+
+"""
+	get_surface_correction()
+
+The typed `Surface Correction` section stored by `set_surface_correction`.
+"""
+function get_surface_correction()
+    return data["Surface Correction"]
 end
 
 """
