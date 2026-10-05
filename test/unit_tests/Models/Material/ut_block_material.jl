@@ -596,3 +596,13 @@ end
           Matrix(BBASIS.get_Hooke_matrix(legacy, legacy["Symmetry"], 2))
 end
 
+
+@testset "matrix-based correspondence init takes the block material" begin
+    MB = PeriLab.Solver_Manager.Correspondence_matrix_based
+    ut_reset(3; nnodes = 2)
+    m = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
+                                  "Symmetry" => "isotropic", "Bulk Modulus" => 1.0,
+                                  "Shear Modulus" => 1.0, "Zero Energy Control" => "Global"))
+    @test hasmethod(MB.init_model, Tuple{Vector{Int64},typeof(m),Int64})
+    @test length(methods(MB.init_model)) == 1   # the Dict method is gone
+end

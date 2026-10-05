@@ -158,8 +158,7 @@ function init(params::Dict,
 
     if Data_Manager.fem_active()
         @timeit "init_FEM" FEM.init_FEM(input.sections.fem,
-                                        get(input.models, "Material Models",
-                                            Dict{String,Any}()))
+                                        input.materials)
         @timeit "init_coupling" FEM.Coupling.init_coupling(1:Data_Manager.get_nnodes(),
                                                            input.sections.fem)
     end

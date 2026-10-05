@@ -80,8 +80,7 @@ function init_solver(solver_options::Dict{Any,Any},
     solver_options["Matrix Update"] = params.newmark.matrix_update
 
     for (block, nodes) in pairs(block_nodes)
-        model_param = Data_Manager.get_properties(block, "Material Model")
-        init_model(nodes, model_param, block)
+        init_model(nodes, Data_Manager.get_block_material(block), block)
     end
     @timeit "init matrix" init_matrix()
     density = Data_Manager.get_field("Density")

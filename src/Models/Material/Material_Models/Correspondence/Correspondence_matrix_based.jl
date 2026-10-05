@@ -617,9 +617,8 @@ end
 # Public interface
 # =============================================================================
 
-function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict, block_id::Int64)
-    Zero_Energy_Control.init_model(nodes, Data_Manager.get_block_material(block_id), block_id)
+function init_model(nodes::AbstractVector{Int64}, material, block_id::Int64)
+    Zero_Energy_Control.init_model(nodes, material, block_id)
 
     update_list = Data_Manager.get_field("Update")
     update_list .= true
@@ -859,9 +858,9 @@ function _setup_zero_energy(nodes, dof, C_voigt_trafo, inverse_shape_tensor,
                             include_zero_energy)
     use_zero_energy = false
     zStiff = nothing
-    if haskey(Data_Manager.get_properties(1, "Material Model"), "Zero Energy Control")
-        if Data_Manager.get_properties(1, "Material Model")["Zero Energy Control"] ==
-           "Global"
+    material = Data_Manager.get_block_material(1)
+    if material !== nothing && material.base.zero_energy_control !== nothing
+        if material.base.zero_energy_control == "Global"
             use_zero_energy = include_zero_energy
             if use_zero_energy
                 zStiff = Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",

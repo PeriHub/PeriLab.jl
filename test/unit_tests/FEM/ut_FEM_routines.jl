@@ -384,36 +384,6 @@ end
     @test lumped_mass == [1.2; 1.2; 1.2; 1.2]
 end
 
-@testset "ut_get_FE_material_model" begin
-    params = Dict{String,Any}("FEM" => Dict("FE_1" => Dict("Degree" => 1,
-                                                           "Element Type" => "Lagrange",
-                                                           "Material Model" => "Elastic Model")),
-                              "Material Models" => Dict("Elastic Model 2" => Dict("Material Model" => "Correspondence Elastic",
-                                                                                  "Symmetry" => "isotropic plane strain",
-                                                                                  "Bulk Modulus" => 2.5e+3,
-                                                                                  "Shear Modulus" => 1.15e3)))
-
-    @test_logs (:error,
-                "Material model Elastic Model defined in FEM are not defined as material") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.FEM.FEM_Basis.get_FE_material_model(params,
-                                                                   "FE_1")
-    end
-
-    params = Dict{String,Any}("FEM" => Dict("FE_1" => Dict("Degree" => 1,
-                                                           "Element Type" => "Lagrange",
-                                                           "Material Model" => "Elastic Model")),
-                              "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
-                                                                                "Symmetry" => "isotropic plane strain",
-                                                                                "Bulk Modulus" => 2.5e+3,
-                                                                                "Shear Modulus" => 1.15e3)))
-
-    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_FE_material_model(params, "FE_1") ==
-          Dict("Material Model" => "Correspondence Elastic",
-               "Symmetry" => "isotropic plane strain",
-               "Bulk Modulus" => 2.5e+3,
-               "Shear Modulus" => 1.15e3)
-end
-
 @testset "ut_get_polynomial_degree" begin
     gpd = PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree
     @test gpd([1], 2) == [1, 1]

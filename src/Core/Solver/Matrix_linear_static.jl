@@ -99,11 +99,11 @@ function init_solver(solver_options::Dict{Any,Any},
                            solver_options["Number of Steps"]
 
     for (block, nodes) in pairs(block_nodes)
-        model_param = Data_Manager.get_properties(block, "Material Model")
-        if !occursin("Correspondence", model_param["Material Model"])
+        material = Data_Manager.get_block_material(block)
+        if !material.correspondence
             @abort "Only Correspondence Models are supported with the Linear Static Matrix based solver"
         end
-        init_model(nodes, model_param, block)
+        init_model(nodes, material, block)
     end
 
     @timeit "init matrix" init_matrix()

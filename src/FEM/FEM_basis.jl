@@ -13,18 +13,6 @@ using ....Data_Manager
 using ....PeriLabExceptions: @abort
 using ....Helpers: invert, determinant, voigt_to_matrix!
 
-function get_FE_material_model(params::Dict{String,Any}, name::String)
-    if !haskey(params["Material Models"], params["FEM"][name]["Material Model"])
-        @abort "Material model " *
-               params["FEM"][name]["Material Model"] *
-               " defined in FEM are not defined as material"
-        return
-    end
-    parameter = params["Material Models"][params["FEM"][name]["Material Model"]]
-
-    return parameter
-end
-
 function compute_FEM(elements::AbstractVector{Int64},
                      compute_stresses!::Function,
                      time::Float64,

@@ -88,8 +88,7 @@ function init_solver(solver_options::Dict{Any,Any},
     K = Data_Manager.get_stiffness_matrix()
 
     for (block, nodes) in pairs(block_nodes)
-        model_param = Data_Manager.get_properties(block, "Material Model")
-        init_model(nodes, model_param, block)
+        init_model(nodes, Data_Manager.get_block_material(block), block)
     end
     @timeit "init_matrix" init_matrix()
     K = Data_Manager.get_stiffness_matrix()

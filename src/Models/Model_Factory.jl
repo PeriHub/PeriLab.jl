@@ -394,9 +394,9 @@ function compute_matrix_based_bond_forces(block_nodes::Dict{Int64,Vector{Int64}}
                                          active_nodes,
                                          nodes,
                                          true)
-        material_parameter = Data_Manager.get_properties(block, "Material Model")
+        material = Data_Manager.get_block_material(block)
 
-        if occursin("Correspondence", material_parameter["Material Model"])
+        if material.correspondence
             Pre_Calculation.compute_model(active_nodes,
                                           Data_Manager.get_properties(block,
                                                                       "Pre Calculation Model"),
@@ -404,7 +404,7 @@ function compute_matrix_based_bond_forces(block_nodes::Dict{Int64,Vector{Int64}}
                                           time,
                                           dt)
             @timeit "compute bond forces" Material.compute_correspondence_bond_forces(active_nodes,
-                                                                                      Data_Manager.get_block_material(block),
+                                                                                      material,
                                                                                       block,
                                                                                       time,
                                                                                       dt)
