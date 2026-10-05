@@ -232,10 +232,11 @@ function init_model(nodes::AbstractVector{Int64}, p::CorrespondenceUMATParams, m
         @abort "Due to old Fortran standards only a name length of 80 is supported"
     end
     _init_umat_fields!(nodes, p.predefined_field_names)
+    scaled = _state_scaled(material)
+    DDSDDE = Data_Manager.get_field("Material Gradient")
+    dof = Data_Manager.get_dof()
     for iID in nodes
-        @views Data_Manager.get_field("Material Gradient")[iID, :, :] = hooke_matrix(_state_scaled(material),
-                                                                                    Data_Manager.get_dof(),
-                                                                                    iID)
+        @views DDSDDE[iID, :, :] = hooke_matrix(scaled, dof, iID)
     end
 end
 

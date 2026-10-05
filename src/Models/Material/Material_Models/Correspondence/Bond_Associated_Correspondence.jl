@@ -50,7 +50,6 @@ end
 
 function init_model(nodes::AbstractVector{Int64},
                     material)
-    material.base.symmetry === nothing && @abort "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
     material.base.accuracy_order === nothing ||
         Data_Manager.set_accuracy_order(material.base.accuracy_order)
 

@@ -160,10 +160,8 @@ end
 _model_parts(model) = hasfield(typeof(model), :parts) ? model.parts : (model,)
 
 function init_model(nodes::AbstractVector{Int64}, block::Int64, material)
-    if material.base.symmetry === nothing
-        @abort "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
-        return
-    end
+    # a missing Symmetry means isotropic (the Hooke matrix uses material.hooke_symmetry);
+    # in 2D the Hooke matrix aborts without plane strain / plane stress
     dof = Data_Manager.get_dof()
     Data_Manager.create_node_tensor_field("Strain", Float64, dof)
     Data_Manager.create_constant_node_tensor_field("Strain Increment", Float64, dof)

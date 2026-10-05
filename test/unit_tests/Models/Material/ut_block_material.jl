@@ -482,9 +482,42 @@ end
     ut_reset(3; nnodes = 2)
     nosym = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
                                       "Bulk Modulus" => 10.0, "Shear Modulus" => 4.0))
-    @test_throws PeriLab.PeriLabError BCORR.init_model([1, 2], 1, nosym)
+    # as before (the dict got "isotropic" when Symmetry was missing): 3D runs isotropic
+    BCORR.init_model([1, 2], 1, nosym)
+    @test PeriLab.Data_Manager.get_field("Material Gradient")[1, :, :] ≈
+          Matrix(BBASIS.hooke_matrix(nosym, 3, 1))
+    @test nosym.hooke_symmetry == "isotropic"
     @test hasmethod(BCORR.compute_model, Tuple{Vector{Int64},typeof(m),Int64,Float64,Float64})
     @test hasmethod(BCORR.Bond_Associated_Correspondence.compute_model,
                     Tuple{Vector{Int64},typeof(m),Int64,Float64,Float64})
 end
 
+
+@testset "UMAT state factor scales the moduli once" begin
+    ut_reset(3; nnodes = 3)
+    sv = PeriLab.Data_Manager.create_constant_node_scalar_field("State Variables", Float64)
+    sv .= 2.0
+    m = typed_block_material(Dict("Material Model" => "Correspondence UMAT",
+                                  "File" => ut_umat_file(), "Number of Properties" => 1,
+                                  "State Factor ID" => 1, "Young's Modulus" => 10.0,
+                                  "Poisson's Ratio" => 0.25))
+    E = copy(m.moduli.youngs_modulus)
+    BCORR.Correspondence_UMAT.init_model([1, 2, 3], m.model, m)
+    @test PeriLab.Data_Manager.get_field("Young's_Modulus") ≈ 2 .* E
+end
+
+@testset "UMAT init with a state factor grows linearly with the node count" begin
+    function umat_init_allocations(nnodes)
+        ut_reset(3; nnodes = nnodes)
+        m = typed_block_material(Dict("Material Model" => "Correspondence UMAT",
+                                      "File" => ut_umat_file(), "Number of Properties" => 1,
+                                      "State Factor ID" => 1, "Young's Modulus" => 10.0,
+                                      "Poisson's Ratio" => 0.25))
+        nodes = collect(1:nnodes)
+        return @allocated BCORR.Correspondence_UMAT.init_model(nodes, m.model, m)
+    end
+    umat_init_allocations(50)
+    a1 = umat_init_allocations(500)
+    a2 = umat_init_allocations(1000)
+    @test a2 < 3 * a1
+end
