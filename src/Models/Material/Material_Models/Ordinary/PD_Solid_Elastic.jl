@@ -7,7 +7,6 @@ module PD_Solid_Elastic
 using TimerOutputs: @timeit
 using ......Data_Manager
 using ......ParameterSpec: @params, register_material
-using ....Material_Basis: get_symmetry
 using ......Helpers: add_in_place!
 using StaticArrays
 using ..Ordinary:
@@ -19,6 +18,11 @@ export material_name
 export compute_model
 export init_model
 export fields_for_local_synchronization
+
+"Parameters of PD Solid Elastic beyond the shared material keys (none)."
+@params struct PDSolidElasticParams
+end
+__init__() = register_material("PD Solid Elastic", PDSolidElasticParams)
 """
   fe_support()
 
@@ -40,16 +44,17 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(nodes::AbstractVector{Int64}, p, material)
 
 Initializes the material model.
 
 # Arguments
   - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `p`: Model parameters; `material::BlockMaterial`: typed block material (`material.base`, `material.moduli`, `material.symmetry`).
 """
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
+                    p::PDSolidElasticParams,
+                    material)
     Data_Manager.create_constant_node_scalar_field("Weighted Volume", Float64)
     Data_Manager.create_constant_node_scalar_field("Dilatation", Float64)
 
@@ -68,11 +73,6 @@ function material_name()
     return "PD Solid Elastic"
 end
 
-"Parameters of PD Solid Elastic beyond the shared material keys (none)."
-@params struct PDSolidElasticParams
-end
-__init__() = register_material("PD Solid Elastic", PDSolidElasticParams)
-
 """
     fields_for_local_synchronization(model::String)
 
@@ -90,18 +90,19 @@ function fields_for_local_synchronization(model::String)
 end
 
 """
-    compute_model(nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
+    compute_model(nodes::AbstractVector{Int64}, p, material, time::Float64, dt::Float64)
 
 Computes the forces.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes.
-- `material_parameter::Dict`: The material parameter.
+- `p`: Model parameters; `material::BlockMaterial`: typed block material.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict,
+                       p::PDSolidElasticParams,
+                       material,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
@@ -146,10 +147,9 @@ function compute_model(nodes::AbstractVector{Int64},
                                              weighted_volume,
                                              omega,
                                              theta)
-    shear_modulus::Union{Float64,Vector{Float64}} = material_parameter["Shear Modulus"]
-    bulk_modulus::Union{Float64,Vector{Float64}} = material_parameter["Bulk Modulus"]
-
-    symmetry::String = get_symmetry(material_parameter)
+    shear_modulus = material.moduli.shear_modulus
+    bulk_modulus = material.moduli.bulk_modulus
+    symmetry::String = material.symmetry
     @timeit "elastic" elastic!(nodes,
                                undeformed_bond_length,
                                deformed_bond_length,

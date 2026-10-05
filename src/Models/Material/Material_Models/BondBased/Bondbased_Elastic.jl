@@ -7,14 +7,18 @@ module Bondbased_Elastic
 using .......Data_Manager
 using ......ParameterSpec: @params, register_material
 using .......PeriLabExceptions: @abort
-using ....Material_Basis: get_symmetry, apply_pointwise_E, compute_bond_based_constants
-using .......Helpers: is_dependent
+using ....Material_Basis: apply_pointwise_E, compute_bond_based_constants
 using LoopVectorization
 using TimerOutputs: @timeit
 export init_model
 export fe_support
 export material_name
 export compute_model
+
+"Parameters of Bond-based Elastic beyond the shared material keys (none)."
+@params struct BondbasedElasticParams
+end
+__init__() = register_material("Bond-based Elastic", BondbasedElasticParams)
 
 """
   fe_support()
@@ -37,20 +41,22 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(nodes::AbstractVector{Int64}, p::BondbasedElasticParams, material)
 
 Initializes the material model.
 
 # Arguments
   - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `p::BondbasedElasticParams`: Model parameters.
+  - `material::BlockMaterial`: Typed block material (symmetry, moduli).
 """
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
+                    p::BondbasedElasticParams,
+                    material)
     constant = Data_Manager.create_constant_node_scalar_field("Bond Based Constant",
                                                               Float64)
     horizon = Data_Manager.get_field("Horizon")
-    symmetry::String = get_symmetry(material_parameter)
+    symmetry::String = material.symmetry
     compute_bond_based_constants(nodes, symmetry, constant, horizon)
 end
 
@@ -63,24 +69,21 @@ function material_name()
     return "Bond-based Elastic"
 end
 
-"Parameters of Bond-based Elastic beyond the shared material keys (none)."
-@params struct BondbasedElasticParams
-end
-__init__() = register_material("Bond-based Elastic", BondbasedElasticParams)
-
 """
-	compute_model(nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
+	compute_model(nodes::AbstractVector{Int64}, p::BondbasedElasticParams, material, block::Int64, time::Float64, dt::Float64)
 
 Calculate the elastic bond force for each node.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `p::BondbasedElasticParams`: Model parameters.
+- `material::BlockMaterial`: Typed block material (symmetry, moduli).
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict,
+                       p::BondbasedElasticParams,
+                       material,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
@@ -94,10 +97,7 @@ function compute_model(nodes::AbstractVector{Int64},
     bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
     bond_force::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
 
-    E = material_parameter["Young's Modulus"]
-
-    dependend_value,
-    dependent_field = is_dependent("Young's Modulus", material_parameter)
+    E = material.moduli.youngs_modulus
 
     for iID in nodes
         @timeit "any zero" begin
@@ -117,11 +117,7 @@ function compute_model(nodes::AbstractVector{Int64},
                                                       deformed_bond[iID])
     end
     # might be put in constant
-    if dependend_value
-        @timeit "apply_pointwise_E" apply_pointwise_E(nodes, E, bond_force, dependent_field)
-    else
-        @timeit "apply_pointwise_E" apply_pointwise_E(nodes, E, bond_force)
-    end
+    @timeit "apply_pointwise_E" apply_pointwise_E(nodes, E, bond_force)
 end
 
 function compute_bb_force!(bond_force::BondScalarState{Float64},

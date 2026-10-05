@@ -9,9 +9,8 @@ using TimerOutputs: @timeit
 using ......Data_Manager
 using ......ParameterSpec: @params, Dependent, register_material
 using ......PeriLabExceptions: @abort
-using ....Material_Basis: get_symmetry
-using ......Helpers: add_in_place!, mul_in_place!, sub_in_place!, is_dependent,
-                     interpol_data, get_dependent_value
+using ......Helpers: add_in_place!, mul_in_place!, sub_in_place!
+using ......ParameterSpec: value, Table1D
 using ..Ordinary: calculate_symmetry_params, get_bond_forces!
 
 export fe_support
@@ -19,6 +18,11 @@ export init_model
 export material_name
 export compute_model
 export fields_for_local_synchronization
+
+@params struct PDSolidPlasticParams
+    yield_stress::Dependent = req("Yield Stress"; min = 0, quantity = :stress)
+end
+__init__() = register_material("PD Solid Plastic", PDSolidPlasticParams)
 """
   fe_support()
 
@@ -40,38 +44,18 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(nodes::AbstractVector{Int64}, p, material)
 
 Initializes the material model.
 
 # Arguments
   - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `p`: Model parameters; `material::BlockMaterial`: typed block material (`material.base`, `material.moduli`, `material.symmetry`).
 """
-function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
+function init_model(nodes::AbstractVector{Int64}, p::PDSolidPlasticParams, material)
     horizon = Data_Manager.get_field("Horizon")
-
-    if !haskey(material_parameter, "Yield Stress")
-        @abort "Yield Stress is not defined in input deck"
-        return
-    end
-
     yield = Data_Manager.create_constant_node_scalar_field("Yield Value", Float64)
-    yield_stress = get_dependent_value("Yield Stress", material_parameter)
-
-    if get_symmetry(material_parameter) == "3D"
-        for iID in nodes
-            yield[iID] = 25 * yield_stress(iID) * yield_stress(iID) /
-                         (8 * pi * horizon[iID] ^ 5)
-        end
-    else
-        thickness::Float64 = 1 # is a placeholder
-        for iID in nodes
-            yield[iID] = 225 * yield_stress(iID) * yield_stress(iID) /
-                         (24 * thickness * pi * horizon[iID] ^ 4)
-        end
-    end
+    set_yield_value!(yield, nodes, p.yield_stress, material.symmetry, horizon)
 
     Data_Manager.create_constant_bond_scalar_state("Deviatoric Plastic Extension State",
                                                    Float64)
@@ -79,6 +63,24 @@ function init_model(nodes::AbstractVector{Int64},
     Data_Manager.create_constant_node_scalar_field("TD Norm", Float64)
     Data_Manager.create_constant_bond_scalar_state("Bond Forces Deviatoric", Float64)
     Data_Manager.create_constant_bond_scalar_state("Bond Forces Isotropic", Float64)
+end
+
+"Yield value per node from the (possibly field dependent) yield stress."
+function set_yield_value!(yield, nodes::AbstractVector{Int64}, yield_stress, symmetry::String,
+                          horizon)
+    if symmetry == "3D"
+        for iID in nodes
+            ys = value(yield_stress, iID)
+            yield[iID] = 25 * ys * ys / (8 * pi * horizon[iID]^5)
+        end
+    else
+        thickness::Float64 = 1 # is a placeholder
+        for iID in nodes
+            ys = value(yield_stress, iID)
+            yield[iID] = 225 * ys * ys / (24 * thickness * pi * horizon[iID]^4)
+        end
+    end
+    return yield
 end
 
 """
@@ -101,11 +103,6 @@ function material_name()
     return "PD Solid Plastic"
 end
 
-@params struct PDSolidPlasticParams
-    yield_stress::Dependent = req("Yield Stress"; min = 0, quantity = :stress)
-end
-__init__() = register_material("PD Solid Plastic", PDSolidPlasticParams)
-
 """
     fields_for_local_synchronization( model::String)
 
@@ -123,13 +120,13 @@ function fields_for_local_synchronization(model::String)
 end
 
 """
-    compute_model(nodes, material_parameter, time, dt)
+    compute_model(nodes, p, material, block, time, dt)
 
 Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `p`: Model parameters; `material::BlockMaterial`: typed block material (`material.base`, `material.moduli`, `material.symmetry`).
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
@@ -137,21 +134,22 @@ Example:
 ```
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict,
+                       p::PDSolidPlasticParams,
+                       material,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
     volume = Data_Manager.get_field("Volume")
     nlist = Data_Manager.get_nlist()
-    symmetry::String = get_symmetry(material_parameter)
+    symmetry::String = material.symmetry
     deformed_bond = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
     deformed_bond_length = Data_Manager.get_field("Deformed Bond Length", "NP1")
     omega = Data_Manager.get_field("Influence Function")
     bond_damage = Data_Manager.get_bond_damage("NP1")
     bond_force = Data_Manager.get_field("Bond Forces")
     temp = Data_Manager.get_field("Temporary Bond Field")
-    shear_modulus = material_parameter["Shear Modulus"]
-    bulk_modulus = material_parameter["Bulk Modulus"]
+    shear_modulus = material.moduli.shear_modulus
+    bulk_modulus = material.moduli.bulk_modulus
     bond_force_deviatoric_part = Data_Manager.get_field("Bond Forces Deviatoric")
     bond_force_isotropic_part = Data_Manager.get_field("Bond Forces Isotropic")
     deviatoric_plastic_extension_state = Data_Manager.get_field("Deviatoric Plastic Extension State")
@@ -160,22 +158,9 @@ function compute_model(nodes::AbstractVector{Int64},
     lambdaN = Data_Manager.get_field("Lambda Plastic", "N")
     lambdaNP1 = Data_Manager.get_field("Lambda Plastic", "NP1")
 
-    dependend_value, dependent_field = is_dependent("Yield Stress", material_parameter)
-    warning_flag = true
-    if dependend_value
-        for iID in nodes
-            yield_stress = interpol_data(dependent_field[iID],
-                                         material_parameter["Yield Stress"]["Data"],
-                                         warning_flag)
-            if get_symmetry(material_parameter) == "3D"
-                yield_value[iID] = 25 * yield_stress * yield_stress ./
-                                   (8 * pi .* horizon[iID] .^ 5)
-            else
-                thickness::Float64 = 1 # is a placeholder
-                yield_value[iID] = 225 * yield_stress * yield_stress ./
-                                   (24 * thickness * pi .* horizon[iID] .^ 4)
-            end
-        end
+    if p.yield_stress isa Table1D
+        set_yield_value!(yield_value, nodes, p.yield_stress, symmetry,
+                         Data_Manager.get_field("Horizon"))
     end
 
     @timeit "calculate_symmetry_params" alpha, gamma,

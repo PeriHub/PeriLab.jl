@@ -11,7 +11,7 @@ using ....Data_Manager
 using ....PeriLabExceptions: @abort
 using ....ModuleLoader: find_module_files, create_module_specifics
 using .....ParameterSpec: @params, Dependent, register_base!, WithBase, Composite,
-                          ParseContext, add_error!, join_path
+                          ParseContext, add_error!, join_path, bind_dependents!, report!
 import .....ParameterSpec: check!
 
 
@@ -413,21 +413,17 @@ function init_model(nodes::AbstractVector{Int64}, block::Int64)
         return Correspondence.init_model(nodes, block, model_param)
     end
 
-    material_models = split(model_param["Material Model"], "+")
-    material_models = map(r -> strip(r), material_models)
-
-    for material_model in material_models
-        mod = create_module_specifics(material_model,
-                                      module_list,
-                                      @__MODULE__,
-                                      "material_name")
-        Data_Manager.set_analysis_model("Material Model", block, material_model)
-        if isnothing(mod)
-            @abort "No material of name " * material_model * " exists."
-            return
-        end
-        Data_Manager.set_model_module(material_model, mod)
-        mod.init_model(nodes, model_param)
+    material = Data_Manager.get_block_material(block)
+    if material === nothing
+        @abort "Block $block has no typed material parameters."
+        return
+    end
+    bind_material!(material)
+    for part in model_parts(material.model)
+        mod = parentmodule(typeof(part))
+        Data_Manager.set_analysis_model("Material Model", block, mod.material_name())
+        Data_Manager.set_model_module(mod.material_name(), mod)
+        mod.init_model(nodes, part, material)
     end
     #TODO in extra function
     # nlist = Data_Manager.get_nlist()
@@ -495,15 +491,41 @@ function compute_model(nodes::AbstractVector{Int64},
             end
         end
 
-        for material_model in Data_Manager.get_analysis_model("Material Model", block)
-            @timeit "material" begin
-                @timeit "material 1" mod::Module = Data_Manager.get_model_module(material_model)
-
-                @timeit "material 2" mod.compute_model(nodes, model_param, block, time,
-                                                       dt)
-            end
-        end
+        @timeit "material" compute_block_material(nodes,
+                                                  Data_Manager.get_block_material(block),
+                                                  block, time, dt)
     end
+end
+
+# node field a dependent table reads: the NP1 state if the field has states
+function _dependent_field(name::String)
+    Data_Manager.has_key(name * "NP1") && return Data_Manager.get_field(name, "NP1")
+    Data_Manager.has_key(name) && return Data_Manager.get_field(name)
+    return nothing
+end
+
+"""
+    bind_material!(material)
+
+Binds the dependent tables of a block material to the current node fields. Call
+it before every evaluation, because the N/NP1 field arrays are swapped every step.
+"""
+function bind_material!(material::BlockMaterial)
+    ctx = ParseContext()
+    bind_dependents!(material.base, _dependent_field, "Material", ctx)
+    bind_dependents!(material.model, _dependent_field, "Material", ctx)
+    report!(ctx)
+    return material
+end
+
+# function barrier: `material` has a concrete type here
+function compute_block_material(nodes::AbstractVector{Int64}, material::BlockMaterial,
+                                block::Int64, time::Float64, dt::Float64)
+    bind_material!(material)
+    for part in model_parts(material.model)
+        parentmodule(typeof(part)).compute_model(nodes, part, material, block, time, dt)
+    end
+    return nothing
 end
 
 """

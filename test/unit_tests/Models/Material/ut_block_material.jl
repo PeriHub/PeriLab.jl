@@ -125,3 +125,49 @@ end
     @test dict["Symmetry"] == "isotropic"
     @test BMAT.model_parts(m.model) == (m.model,)
 end
+
+@testset "factory dispatches typed parts to their modules" begin
+    ut_reset(3; nnodes = 2)
+    m = typed_block_material(Dict("Material Model" => "Bond-based Elastic",
+                                  "Young's Modulus" => 1.0))
+    @test parentmodule(typeof(m.model)) === BMAT.Bondbased_Elastic
+    @test hasmethod(BMAT.Bondbased_Elastic.compute_model,
+                    Tuple{Vector{Int64},typeof(m.model),typeof(m),Int64,Float64,Float64})
+    @test hasmethod(BMAT.Rigid.init_model,
+                    Tuple{Vector{Int64},BMAT.Rigid.RigidParams,Any})
+end
+
+@testset "table follows the NP1 switch" begin
+    ut_reset(3; nnodes = 2)
+    dir = mktempdir()
+    write(joinpath(dir, "ys.txt"), "header: Temperature Yield_Stress\n0 10\n100 20\n")
+    N, NP1 = PeriLab.Data_Manager.create_node_scalar_field("Temperature", Float64)
+    NP1 .= [0.0, 100.0]
+    ctx = PeriLab.ParameterSpec.ParseContext(directory = dir)
+    wb = PeriLab.ParameterSpec.parse_model(:material,
+                                           Dict{String,Any}("Material Model" => "PD Solid Plastic",
+                                                            "Bulk Modulus" => 1.0,
+                                                            "Shear Modulus" => 1.0,
+                                                            "Yield Stress" => "ys.txt"),
+                                           "M", ctx; name_key = "Material Model")
+    @test isempty(ctx.errors)
+    m = BMAT.block_material(wb, "PD Solid Plastic", 3)
+    BMAT.bind_material!(m)
+    @test PeriLab.ParameterSpec.value(m.model.yield_stress, 2) ≈ 20.0
+    PeriLab.Data_Manager.create_constant_node_scalar_field("Active", Bool; default_value = true)
+    PeriLab.Data_Manager.switch_NP1_to_N()
+    PeriLab.Data_Manager.get_field("Temperature", "NP1") .= [100.0, 0.0]
+    BMAT.bind_material!(m)
+    @test PeriLab.ParameterSpec.value(m.model.yield_stress, 1) ≈ 20.0
+    @test PeriLab.ParameterSpec.value(m.model.yield_stress, 2) ≈ 10.0
+end
+
+@testset "composite parts in order" begin
+    ut_reset(3; nnodes = 2)
+    m = typed_block_material(Dict("Material Model" => "PD Solid Elastic + PD Solid Plastic",
+                                  "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0,
+                                  "Yield Stress" => 2.0))
+    @test parentmodule.(typeof.(BMAT.model_parts(m.model))) ==
+          (BMAT.PD_Solid_Elastic, BMAT.PD_Solid_Plastic)
+end
+

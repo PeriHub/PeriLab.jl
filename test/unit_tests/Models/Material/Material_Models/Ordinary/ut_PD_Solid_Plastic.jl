@@ -28,22 +28,29 @@ end
                                                                 Int64)
 
     nn .= 1
-    @test_logs (:error,
-                "Yield Stress is not defined in input deck") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(Vector{Int64}(1:nodes),
-                                                                                  Dict())
-    end
+    @test_throws PeriLab.PeriLabError typed_block_material(Dict("Material Model" => "PD Solid Plastic",
+                                                                "Bulk Modulus" => 1.0,
+                                                                "Shear Modulus" => 1.0))
 
+    material = typed_block_material(Dict("Material Model" => "PD Solid Plastic",
+                                         "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0,
+                                         "Yield Stress" => 5.3))
     PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(Vector{Int64}(1:nodes),
-                                                                              Dict("Yield Stress" => 5.3))
+                                                                              material.model,
+                                                                              material)
     yield = PeriLab.Data_Manager.get_field("Yield Value")
 
     @test isapprox(yield[1], 25 * 5.3 * 5.3 / (8 * pi * 3^5))
     @test isapprox(yield[2], 25 * 5.3 * 5.3 / (8 * pi * 2^5))
 
+    PeriLab.Data_Manager.set_dof(2)
+    material = typed_block_material(Dict("Material Model" => "PD Solid Plastic",
+                                         "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0,
+                                         "Yield Stress" => 2.2,
+                                         "Symmetry" => "plane stress"))
     PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(Vector{Int64}(1:nodes),
-                                                                              Dict("Yield Stress" => 2.2,
-                                                                                   "Symmetry" => "plane stress"))
+                                                                              material.model,
+                                                                              material)
     yield = PeriLab.Data_Manager.get_field("Yield Value")
 
     @test isapprox(yield[1], 225 * 2.2 * 2.2 / (24 * pi * 3^4))

@@ -13,6 +13,20 @@ export material_name
 export compute_model
 export init_model
 export fields_for_local_synchronization
+
+"""
+    MaterialTemplateParams
+
+Declare the YAML keys your material needs beyond the shared material keys
+(Symmetry, Young's Modulus, … are already available). Example:
+
+    my_parameter::Float64 = req("My Parameter"; min = 0, description = "...")
+"""
+@params struct MaterialTemplateParams
+end
+# Register under your model name (the one material_name() returns) by uncommenting:
+# __init__() = register_material("Material Template", MaterialTemplateParams)
+# The template itself stays unregistered so that a copy never collides with it.
 """
   fe_support()
 
@@ -34,16 +48,17 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(nodes::AbstractVector{Int64}, p, material)
 
 Initializes the material model.
 
 # Arguments
   - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `p`: Model parameters; `material::BlockMaterial`: typed block material (`material.base`, `material.moduli`, `material.symmetry`).
 """
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
+                    p::MaterialTemplateParams,
+                    material)
 end
 
 """
@@ -67,20 +82,6 @@ function material_name()
 end
 
 """
-    MaterialTemplateParams
-
-Declare the YAML keys your material needs beyond the shared material keys
-(Symmetry, Young's Modulus, … are already available). Example:
-
-    my_parameter::Float64 = req("My Parameter"; min = 0, description = "...")
-"""
-@params struct MaterialTemplateParams
-end
-# Register under your model name (the one material_name() returns) by uncommenting:
-# __init__() = register_material("Material Template", MaterialTemplateParams)
-# The template itself stays unregistered so that a copy never collides with it.
-
-"""
     fields_for_local_synchronization(model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
@@ -97,13 +98,13 @@ function fields_for_local_synchronization(model::String)
 end
 
 """
-    compute_model(nodes, material_parameter, time, dt)
+    compute_model(nodes, p, material, block, time, dt)
 
 Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `p`: Model parameters; `material::BlockMaterial`: typed block material (`material.base`, `material.moduli`, `material.symmetry`).
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
@@ -111,14 +112,15 @@ Example:
 ```
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict,
+                       p::MaterialTemplateParams,
+                       material,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
     @info "Please write a material name in material_name()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_model() and init_model() function."
-    @info "The Data_Manager and material_parameter holds all you need to solve your problem on material level."
+    @info "The Data_Manager, p and material hold all you need to solve your problem on material level."
     @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
 end
 

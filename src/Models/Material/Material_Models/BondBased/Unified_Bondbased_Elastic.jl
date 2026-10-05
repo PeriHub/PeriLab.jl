@@ -16,12 +16,17 @@ using LoopVectorization
 using .....Data_Manager
 using ......ParameterSpec: @params, register_material
 using .....PeriLabExceptions: @abort
-using ....Material_Basis: get_symmetry, apply_pointwise_E
+using ....Material_Basis: apply_pointwise_E
 
 export init_model
 export fe_support
 export material_name
 export compute_model
+
+"Parameters of Unified Bond-based Elastic beyond the shared material keys (none)."
+@params struct UnifiedBondbasedElasticParams
+end
+__init__() = register_material("Unified Bond-based Elastic", UnifiedBondbasedElasticParams)
 
 """
   fe_support()
@@ -44,16 +49,17 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(nodes::AbstractVector{Int64}, p, material)
 
 Initializes the material model.
 
 # Arguments
   - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `p`: Model parameters; `material::BlockMaterial`: typed block material (`material.base`, `material.moduli`, `material.symmetry`).
 """
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
+                    p::UnifiedBondbasedElasticParams,
+                    material)
     dof = Data_Manager.get_dof()
     nlist = Data_Manager.get_nlist()
     constant = Data_Manager.create_constant_bond_vector_state("Unified Bond Based Constant",
@@ -63,9 +69,9 @@ function init_model(nodes::AbstractVector{Int64},
 
     bond_length = Data_Manager.get_field("Bond Length")
     horizon = Data_Manager.get_field("Horizon")
-    symmetry::String = get_symmetry(material_parameter)
-    nu = material_parameter["Poisson's Ratio"]
-    E = material_parameter["Young's Modulus"]
+    symmetry::String = material.symmetry
+    nu = material.moduli.poissons_ratio
+    E = material.moduli.youngs_modulus
 
     # a is not explained -> EQ(41)
     # might be dx
@@ -114,24 +120,20 @@ function material_name()
     return "Unified Bond-based Elastic"
 end
 
-"Parameters of Unified Bond-based Elastic beyond the shared material keys (none)."
-@params struct UnifiedBondbasedElasticParams
-end
-__init__() = register_material("Unified Bond-based Elastic", UnifiedBondbasedElasticParams)
-
 """
-    compute_model(nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
+    compute_model(nodes::AbstractVector{Int64}, p, material, time::Float64, dt::Float64)
 
 Calculate the elastic bond force for each node.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `p`: Model parameters; `material::BlockMaterial`: typed block material (`material.base`, `material.moduli`, `material.symmetry`).
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict,
+                       p::UnifiedBondbasedElasticParams,
+                       material,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
@@ -145,8 +147,8 @@ function compute_model(nodes::AbstractVector{Int64},
     nlist = Data_Manager.get_nlist()
     volume = Data_Manager.get_field("Volume")
     bb_strain = Data_Manager.get_field("Bond Based Strain")
-    E = material_parameter["Young's Modulus"]
-    symmetry::String = get_symmetry(material_parameter)
+    E = material.moduli.youngs_modulus
+    symmetry::String = material.symmetry
 
     for iID in nodes
         if any(deformed_bond_length[iID] .== 0)

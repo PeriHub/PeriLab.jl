@@ -381,12 +381,22 @@ if ncores == 3
         end
     end
 
+    # standalone under mpiexec (no helper.jl): build the typed block material inline
+    ctx = PeriLab.ParameterSpec.ParseContext()
+    parsed = PeriLab.ParameterSpec.parse_model(:material,
+                                               Dict{String,Any}("Material Model" => "Bond-based Elastic",
+                                                                "Young's Modulus" => 1.0),
+                                               "test", ctx; name_key = "Material Model")
+    PeriLab.ParameterSpec.report!(ctx)
+    material = PeriLab.Solver_Manager.Model_Factory.Material.block_material(parsed,
+                                                                            "Bond-based Elastic",
+                                                                            dof)
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(Vector{Int64}(1:nodes),
-                                                                               Dict("Bulk Modulus" => 1.0,
-                                                                                    "Young's Modulus" => 1.0))
+                                                                               material.model,
+                                                                               material)
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(Vector{Int64}(1:nodes),
-                                                                                  Dict("Bulk Modulus" => 1.0,
-                                                                                       "Young's Modulus" => 1.0),
+                                                                                  material.model,
+                                                                                  material,
                                                                                   1,
                                                                                   0.0,
                                                                                   0.0)
