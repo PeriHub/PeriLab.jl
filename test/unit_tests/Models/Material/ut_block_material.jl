@@ -401,3 +401,69 @@ end
     @test PeriLab.Data_Manager.get_analysis_model("Zero Energy Control Model", 1) == [""]
 end
 
+
+function ut_umat_file()
+    file = "./src/Models/Material/UMATs/libperuser.so"
+    isfile(file) || (file = "../src/Models/Material/UMATs/libperuser.so")
+    return file
+end
+
+@testset "UMAT properties from extras" begin
+    ut_reset(3; nnodes = 2)
+    UMAT = BCORR.Correspondence_UMAT
+    file = ut_umat_file()
+    m = typed_block_material(Dict("Material Model" => "Correspondence UMAT", "File" => file,
+                                  "Number of Properties" => 3, "Property_1" => 2,
+                                  "Property_3" => 2.4, "Young's Modulus" => 2.0,
+                                  "Poisson's Ratio" => 0.1))
+    UMAT.init_model([1, 2], m.model, m)
+    props = PeriLab.Data_Manager.get_field("Properties")
+    @test props[1] == 2.0 && props[2] == 0.0 && props[3] == 2.4
+    @test PeriLab.Data_Manager.get_field("Material Gradient")[1, :, :] ≈
+          Matrix(BBASIS.hooke_matrix(m, 3, 1))
+    @test UMAT.umat_file_path == joinpath(pwd(), PeriLab.Data_Manager.get_directory(), file)
+end
+
+@testset "UMAT and VUMAT typed init errors" begin
+    for (UM, name_key, model) in ((BCORR.Correspondence_UMAT, "UMAT Material Name",
+                                   "Correspondence UMAT"),
+                                  (BCORR.Correspondence_VUMAT, "VUMAT Material Name",
+                                   "Correspondence VUMAT"))
+        ut_reset(3; nnodes = 2)
+        file = ut_umat_file()
+        missing_file = typed_block_material(Dict("Material Model" => model,
+                                                 "File" => file * "_not_there",
+                                                 "Number of Properties" => 1,
+                                                 "Young's Modulus" => 2.0,
+                                                 "Poisson's Ratio" => 0.1))
+        @test_logs (:error,
+                    "File $(joinpath(pwd(), PeriLab.Data_Manager.get_directory(), file * "_not_there")) does not exist, please check name and directory.") @test_throws PeriLab.PeriLabError begin
+            UM.init_model([1, 2], missing_file.model, missing_file)
+        end
+        long_name = typed_block_material(Dict("Material Model" => model, "File" => file,
+                                              "Number of Properties" => 1,
+                                              name_key => "a"^81,
+                                              "Young's Modulus" => 2.0,
+                                              "Poisson's Ratio" => 0.1))
+        @test_logs (:error,
+                    "Due to old Fortran standards only a name length of 80 is supported") @test_throws PeriLab.PeriLabError begin
+            UM.init_model([1, 2], long_name.model, long_name)
+        end
+    end
+end
+
+@testset "UMAT predefined fields (typed)" begin
+    ut_reset(3; nnodes = 2)
+    t2 = PeriLab.Data_Manager.create_constant_node_scalar_field("test_field_2", Float64)
+    t2[1] = 7.3
+    t3 = PeriLab.Data_Manager.create_constant_node_scalar_field("test_field_3", Float64)
+    t3 .= 3
+    m = typed_block_material(Dict("Material Model" => "Correspondence UMAT",
+                                  "File" => ut_umat_file(), "Number of Properties" => 1,
+                                  "Predefined Field Names" => "test_field_2 test_field_3",
+                                  "Young's Modulus" => 2.0, "Poisson's Ratio" => 0.1))
+    BCORR.Correspondence_UMAT.init_model([1, 2], m.model, m)
+    fields = PeriLab.Data_Manager.get_field("Predefined Fields")
+    @test fields[1, 1] == 7.3 && fields[2, 2] == 3.0
+end
+

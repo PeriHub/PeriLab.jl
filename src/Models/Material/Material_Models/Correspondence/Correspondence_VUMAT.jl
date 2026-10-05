@@ -17,6 +17,19 @@ export init_model
 export correspondence_name
 export fields_for_local_synchronization
 
+@params struct CorrespondenceVUMATParams
+    file::String = req("File"; description = "VUMAT library, relative to the input deck")
+    number_of_properties::Int64 = req("Number of Properties"; min = 1,
+                                      description = "number of Property_N values passed to the VUMAT")
+    number_of_state_variables::Union{Nothing,Int64} = opt("Number of State Variables";
+                                                          default = nothing, min = 0)
+    vumat_material_name::Union{Nothing,String} = opt("VUMAT Material Name"; default = nothing)
+    vumat_name::Union{Nothing,String} = opt("VUMAT name"; default = nothing,
+                                           description = "name of the VUMAT routine, default VUMAT")
+end
+key_patterns(::Type{CorrespondenceVUMATParams}) = [r"^Property_\d+$" => Float64]
+__init__() = register_material("Correspondence VUMAT", CorrespondenceVUMATParams)
+
 global vumat_file_path = ""
 
 # export compute_model
@@ -106,6 +119,11 @@ function init_model(nodes::AbstractVector{Int64},
         material_parameter["VUMAT name"] = "VUMAT"
     end
 
+    _init_vumat_fields!()
+end
+
+# fields of a VUMAT material (shared by the dict and the typed init)
+function _init_vumat_fields!()
     dof = Data_Manager.get_dof()
     ndi = dof
     nshr = 2 * dof - 3
@@ -115,6 +133,38 @@ function init_model(nodes::AbstractVector{Int64},
     Data_Manager.create_node_vector_field("Stretch", Float64, ntens)
     Data_Manager.create_node_vector_field("defGrad", Float64, ndi + 2 * nshr)
     Data_Manager.create_node_scalar_field("Temperature", Float64)
+end
+
+function init_model(nodes::AbstractVector{Int64}, p::CorrespondenceVUMATParams, material)
+    num_state_vars::Int64 = something(p.number_of_state_variables, 1)
+    file = joinpath(pwd(), Data_Manager.get_directory(), p.file)
+    global vumat_file_path = file
+    if !isfile(file)
+        @abort "File $file does not exist, please check name and directory."
+        return
+    end
+    if num_state_vars == 1
+        Data_Manager.create_constant_node_scalar_field("State Variables", Float64)
+    else
+        Data_Manager.create_constant_node_vector_field("State Variables", Float64,
+                                                       num_state_vars)
+    end
+    properties = Data_Manager.create_constant_free_size_field("Properties", Float64,
+                                                              (p.number_of_properties, 1))
+    for iID in 1:p.number_of_properties
+        if !haskey(material.extras, "Property_$iID")
+            @warn "Property_$iID is missing. Make sure that all properties are defined."
+            properties[iID] = 0.0
+        else
+            properties[iID] = material.extras["Property_$iID"]
+        end
+    end
+    if p.vumat_material_name === nothing
+        @warn "No VUMAT Material Name is defined. Please check if you use it as method to check different material in your VUMAT."
+    elseif length(p.vumat_material_name) > 80
+        @abort "Due to old Fortran standards only a name length of 80 is supported"
+    end
+    _init_vumat_fields!()
 end
 
 """
@@ -136,19 +186,6 @@ println(correspondence_name())
 function correspondence_name()
     return "Correspondence VUMAT"
 end
-
-@params struct CorrespondenceVUMATParams
-    file::String = req("File"; description = "VUMAT library, relative to the input deck")
-    number_of_properties::Int64 = req("Number of Properties"; min = 1,
-                                      description = "number of Property_N values passed to the VUMAT")
-    number_of_state_variables::Union{Nothing,Int64} = opt("Number of State Variables";
-                                                          default = nothing, min = 0)
-    vumat_material_name::Union{Nothing,String} = opt("VUMAT Material Name"; default = nothing)
-    vumat_name::Union{Nothing,String} = opt("VUMAT name"; default = nothing,
-                                           description = "name of the VUMAT routine, default VUMAT")
-end
-key_patterns(::Type{CorrespondenceVUMATParams}) = [r"^Property_\d+$" => Float64]
-__init__() = register_material("Correspondence VUMAT", CorrespondenceVUMATParams)
 
 """
     compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
@@ -172,9 +209,11 @@ Example:
 ```julia
 ```
 """
-function compute_stresses(nodes::AbstractVector{Int64},
+function _vumat_stresses!(nodes::AbstractVector{Int64},
                           dof::Int64,
-                          material_parameter::Dict,
+                          nstatev::Int64,
+                          nprops::Int64,
+                          cmname_string::String,
                           time::Float64,
                           dt::Float64,
                           strain_increment::AbstractArray{Float64,3},
@@ -185,14 +224,12 @@ function compute_stresses(nodes::AbstractVector{Int64},
     ndi = dof
     # Number of engineering shear stress components
     nshr = 2 * dof - 3
-    nstatev = material_parameter["Number of State Variables"]
     # Size of the stress or strain component array
     ntens = ndi + nshr
     nfieldv = 1
-    nprops = material_parameter["Number of Properties"]
     lanneal = 1
     # only 80 charakters are supported
-    cmname::Cstring = malloc_cstring(material_parameter["VUMAT Material Name"])
+    cmname::Cstring = malloc_cstring(cmname_string)
     coordMp = zeros(Float64, nnodes, dof)
     charLength = zeros(Float64, nnodes)
     props = Data_Manager.get_field("Properties")
@@ -263,6 +300,37 @@ function compute_stresses(nodes::AbstractVector{Int64},
     end
     defGradOld = defGradNew
 end
+
+compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict,
+                 time::Float64, dt::Float64, strain_increment::AbstractArray{Float64,3},
+                 stress_N::AbstractArray{Float64,3}, stress_NP1::AbstractArray{Float64,3}) = _vumat_stresses!(nodes,
+                                                                                                             dof,
+                                                                                                             material_parameter["Number of State Variables"],
+                                                                                                             material_parameter["Number of Properties"],
+                                                                                                             material_parameter["VUMAT Material Name"],
+                                                                                                             time,
+                                                                                                             dt,
+                                                                                                             strain_increment,
+                                                                                                             stress_N,
+                                                                                                             stress_NP1)
+compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, p::CorrespondenceVUMATParams,
+                 material, time::Float64, dt::Float64,
+                 strain_increment::AbstractArray{Float64,3},
+                 stress_N::AbstractArray{Float64,3}, stress_NP1::AbstractArray{Float64,3}) = _vumat_stresses!(nodes,
+                                                                                                             dof,
+                                                                                                             something(p.number_of_state_variables,
+                                                                                                                       1),
+                                                                                                             p.number_of_properties,
+                                                                                                             something(p.vumat_material_name,
+                                                                                                                       ""),
+                                                                                                             time,
+                                                                                                             dt,
+                                                                                                             strain_increment,
+                                                                                                             stress_N,
+                                                                                                             stress_NP1)
+compute_stresses_ba(nodes, nlist, dof::Int64, p::CorrespondenceVUMATParams, material,
+                    time::Float64, dt::Float64, strain_increment, stress_N, stress_NP1) = @abort "$(correspondence_name()) not yet implemented for bond associated."
+
 
 """
     VUMAT_interface()
