@@ -10,7 +10,7 @@ using TimerOutputs: @timeit
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
 using ....ModuleLoader: find_module_files, create_module_specifics
-using .....ParameterSpec: @params, Dependent, register_base!
+using .....ParameterSpec: @params, Dependent, register_base!, WithBase, Composite
 
 @params struct FlawFunctionParams
     active::Bool = req("Active")
@@ -107,6 +107,201 @@ using ...Material_Basis:
                          local_damping_due_to_damage
 using LinearAlgebra: dot
 using StaticArrays
+"""
+    ElasticModuli
+
+Completed isotropic elastic constants of a block. Each entry is a `Float64`, or
+a node field (`Vector{Float64}`) when moduli are given per node (mesh columns
+`Bulk_Modulus`, …) or scaled by a state variable. Read one with `modulus(x, iID)`.
+"""
+struct ElasticModuli{K,E,G,N}
+    bulk_modulus::K
+    youngs_modulus::E
+    shear_modulus::G
+    poissons_ratio::N
+end
+
+@inline modulus(x::Real, ::Int64) = x
+@inline modulus(x::AbstractVector, iID::Int64) = x[iID]
+
+"""
+    BlockMaterial
+
+Typed material of one block: the shared base parameters, the model struct (or
+`Composite`), the symmetry used by the force models (`"plane strain"`,
+`"plane stress"` or `"3D"`), and the completed elastic moduli (`nothing` for
+materials defined by a stiffness matrix).
+"""
+struct BlockMaterial{B,M,E}
+    base::B
+    model::M
+    symmetry::String
+    moduli::E
+end
+
+model_parts(model::Composite) = model.parts
+model_parts(model) = (model,)
+
+"""
+    material_symmetry(symmetry, dof)
+
+The symmetry the force models use. Plane strain / plane stress are ignored in 3D
+(as `check_symmetry` does), and the rest follows `get_symmetry`.
+"""
+function material_symmetry(symmetry::Union{Nothing,String}, dof::Int64)
+    symmetry === nothing && return "3D"
+    s = symmetry
+    if dof == 3
+        s = replace(replace(s, r"plane strain$" => ""), r"plane stress$" => "")
+    end
+    s = lowercase(s)
+    occursin("plane strain", s) && return "plane strain"
+    occursin("plane stress", s) && return "plane stress"
+    return "3D"
+end
+
+const _MODULI = (("Bulk Modulus", :bulk_modulus), ("Young's Modulus", :youngs_modulus),
+                 ("Shear Modulus", :shear_modulus), ("Poisson's Ratio", :poissons_ratio))
+
+_modulus_field(key::String) = replace(key, " " => "_")
+
+# value of one modulus: the node field if it exists, a new node field if any
+# modulus is per node, otherwise the given constant (0.0 if not given)
+function _modulus_value(given, field_allocated::Bool, any_field_allocated::Bool,
+                        key::String)
+    field_allocated && return Data_Manager.get_field(_modulus_field(key))
+    if any_field_allocated
+        return given === nothing ?
+               Data_Manager.create_constant_node_scalar_field(_modulus_field(key), Float64) :
+               Data_Manager.create_constant_node_scalar_field(_modulus_field(key), Float64;
+                                                              default_value = given)
+    end
+    return given === nothing ? 0.0 : given
+end
+
+"""
+    elastic_moduli(base, bond_based, dof)
+
+Completes the isotropic elastic constants from any two of bulk modulus, Young's
+modulus, shear modulus and Poisson's ratio (bond-based models: Poisson's ratio
+is fixed). Moduli given per node (fields `Bulk_Modulus`, …) or a `State Factor
+ID` make the result per node, and the node fields are updated. Returns `nothing`
+for anisotropic, orthotropic and transverse isotropic materials (stiffness
+matrix; completeness is checked when the input is read).
+"""
+function elastic_moduli(base::MaterialBaseParams, bond_based::Bool, dof::Int64)
+    state_factor_defined = base.state_factor_id !== nothing
+    allocated = Dict(key => Data_Manager.has_key(_modulus_field(key)) for (key, _) in _MODULI)
+    any_field_allocated = any(values(allocated)) || state_factor_defined
+    given = Dict(key => getfield(base, name) for (key, name) in _MODULI)
+    has = Dict(key => given[key] !== nothing || allocated[key] for (key, _) in _MODULI)
+
+    K = _modulus_value(given["Bulk Modulus"], allocated["Bulk Modulus"],
+                       any_field_allocated, "Bulk Modulus")
+    E = _modulus_value(given["Young's Modulus"], allocated["Young's Modulus"],
+                       any_field_allocated, "Young's Modulus")
+    G = _modulus_value(given["Shear Modulus"], allocated["Shear Modulus"],
+                       any_field_allocated, "Shear Modulus")
+    nu = _modulus_value(given["Poisson's Ratio"], allocated["Poisson's Ratio"],
+                        any_field_allocated, "Poisson's Ratio")
+    bulk, youngs, shear, poissons = has["Bulk Modulus"], has["Young's Modulus"],
+                                    has["Shear Modulus"], has["Poisson's Ratio"]
+
+    if bond_based
+        nu_fixed = dof == 2 ? 1 / 3 : 1 / 4
+        if nu != 0.0 && nu != nu_fixed
+            @warn "Chosen Bond-based model only supports a fixed Poisson's ratio of " *
+                  string(nu_fixed)
+        end
+        nu = nu_fixed
+        poissons = true
+    end
+    if base.symmetry !== nothing
+        symmetry = lowercase(base.symmetry)
+        if occursin("anisotropic", symmetry) || occursin("transverse isotropic", symmetry) ||
+           occursin("orthotropic", symmetry)
+            return nothing
+        end
+    else
+        @warn "Material symmetry is not defined, assuming isotropic material"
+    end
+
+    if bulk + youngs + shear + poissons < 2
+        @abort "Minimum of two parameters are needed for isotropic material"
+    elseif bulk + youngs + shear + poissons > 2
+        @warn "Only two parameters are needed for isotropic material, ignoring additional parameters"
+    end
+
+    if bulk && poissons
+        E = 3 .* K .* (1 .- 2 .* nu)
+        G = 3 .* K .* (1 .- 2 .* nu) ./ (2 .+ 2 .* nu)
+    end
+    if shear && poissons
+        E = 2 .* G .* (1 .+ nu)
+        K = 2 .* G .* (1 .+ nu) ./ (3 .- 6 .* nu)
+    end
+    if bulk && shear
+        E = 9 .* K .* G ./ (3 .* K .+ G)
+        nu = (3 .* K .- 2 .* G) ./ (6 .* K .+ 2 .* G)
+    end
+    if youngs && shear
+        K = E .* G ./ (9 .* G .- 3 .* E)
+        nu = E ./ (2 .* G) .- 1
+    end
+    if youngs && bulk
+        G = 3 .* K .* E ./ (9 .* K .- E)
+        nu = (3 .* K .- E) ./ (6 .* K)
+    end
+    if youngs && poissons
+        K = E ./ (3 .- 6 .* nu)
+        G = E ./ (2 .+ 2 .* nu)
+    end
+
+    if state_factor_defined && Data_Manager.has_key("State Variables")
+        state_factor = Data_Manager.get_field("State Variables")[:, base.state_factor_id]
+        K = K .* state_factor
+        E = E .* state_factor
+        G = G .* state_factor
+    end
+    if any_field_allocated
+        Data_Manager.get_field("Bulk_Modulus") .= K
+        Data_Manager.get_field("Young's_Modulus") .= E
+        Data_Manager.get_field("Shear_Modulus") .= G
+        Data_Manager.get_field("Poisson's_Ratio") .= nu
+    end
+    return ElasticModuli(K, E, G, nu)
+end
+
+"""
+    block_material(wb, model_name, dof)
+
+The `BlockMaterial` of a parsed material block. `model_name` is the block's
+`Material Model` string (bond-based models fix Poisson's ratio).
+"""
+function block_material(wb::WithBase, model_name::String, dof::Int64)
+    bond_based = occursin("Bond-based", model_name) &&
+                 !occursin("Unified Bond-based", model_name)
+    return BlockMaterial(wb.base, wb.model, material_symmetry(wb.base.symmetry, dof),
+                         elastic_moduli(wb.base, bond_based, dof))
+end
+
+"""
+    write_moduli!(dict, material)
+
+Writes the completed moduli into a block's material dict, for the code that
+still reads the dict (correspondence, compute classes; phase 3c).
+"""
+function write_moduli!(dict::Dict{String,Any}, material::BlockMaterial)
+    material.moduli === nothing && return dict
+    dict["Bulk Modulus"] = material.moduli.bulk_modulus
+    dict["Young's Modulus"] = material.moduli.youngs_modulus
+    dict["Shear Modulus"] = material.moduli.shear_modulus
+    dict["Poisson's Ratio"] = material.moduli.poissons_ratio
+    dict["Computed"] = true
+    haskey(dict, "Symmetry") || (dict["Symmetry"] = "isotropic")
+    return dict
+end
+
 
 export init_model
 export compute_model

@@ -187,6 +187,9 @@ MPI.Init()
                 @testset "ut_material_basis" begin
                     include("unit_tests/Models/Material/ut_material_basis.jl")
                 end
+                @testset "ut_block_material" begin
+                    include("unit_tests/Models/Material/ut_block_material.jl")
+                end
                 @testset "ut_bond_based" begin
                     include("unit_tests/Models/Material/Material_Models/BondBased/ut_1D_Bondbased_Elastic.jl")
                     include("unit_tests/Models/Material/Material_Models/BondBased/ut_Bondbased_Elastic.jl")

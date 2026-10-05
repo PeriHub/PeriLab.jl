@@ -184,3 +184,21 @@ function typed_contact(raw::AbstractDict)
     PeriLab.ParameterSpec.report!(ctx)
     return value
 end
+
+"""
+    typed_block_material(raw; dof)
+
+A `BlockMaterial` from a raw material block (with `"Material Model"`), parsed the
+way the input reader does; aborts on input errors.
+"""
+function typed_block_material(raw::AbstractDict;
+                              dof::Int64 = PeriLab.Data_Manager.get_dof())
+    ctx = PeriLab.ParameterSpec.ParseContext()
+    dict = Dict{String,Any}(string(k) => v for (k, v) in raw)
+    wb = PeriLab.ParameterSpec.parse_model(:material, dict, "test", ctx;
+                                           name_key = "Material Model")
+    PeriLab.ParameterSpec.report!(ctx)
+    return PeriLab.Solver_Manager.Model_Factory.Material.block_material(wb,
+                                                                        String(dict["Material Model"]),
+                                                                        dof)
+end
