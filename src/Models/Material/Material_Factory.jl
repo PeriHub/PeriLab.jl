@@ -180,10 +180,13 @@ materials defined by a stiffness matrix).
 struct BlockMaterial{B,M,E}
     base::B
     model::M
-    symmetry::String
+    symmetry::String          # used by the force models: "plane strain", "plane stress" or "3D"
+    hooke_symmetry::String    # used by the Hooke matrix (see hooke_symmetry)
     moduli::E
     tables::Vector{Table1D}   # dependent tables of base and model, re-bound every step
+    extras::Dict{String,Any}  # values of indexed keys, e.g. Property_1
 end
+
 
 # the Table1D values of a parameter struct (or of the parts of a Composite)
 function _tables(x)
@@ -217,6 +220,19 @@ function material_symmetry(symmetry::Union{Nothing,String}, dof::Int64)
     occursin("plane stress", s) && return "plane stress"
     return "3D"
 end
+
+"""
+    hooke_symmetry(symmetry, dof)
+
+The symmetry string the Hooke matrix uses: as given, with a trailing plane strain /
+plane stress removed in 3D (as `check_symmetry` does), `"isotropic"` if missing.
+"""
+function hooke_symmetry(symmetry::Union{Nothing,String}, dof::Int64)
+    symmetry === nothing && return "isotropic"
+    dof == 3 || return symmetry
+    return replace(replace(symmetry, r"plane strain$" => ""), r"plane stress$" => "")
+end
+
 
 const _MODULI = (("Bulk Modulus", :bulk_modulus), ("Young's Modulus", :youngs_modulus),
                  ("Shear Modulus", :shear_modulus), ("Poisson's Ratio", :poissons_ratio))
@@ -340,8 +356,10 @@ function block_material(wb::WithBase, model_name::String, dof::Int64)
     bond_based = occursin("Bond-based", model_name) &&
                  !occursin("Unified Bond-based", model_name)
     return BlockMaterial(wb.base, wb.model, material_symmetry(wb.base.symmetry, dof),
+                         hooke_symmetry(wb.base.symmetry, dof),
                          elastic_moduli(wb.base, bond_based, dof),
-                         vcat(_tables(wb.base), _tables(wb.model)))
+                         vcat(_tables(wb.base), _tables(wb.model)), wb.extras)
+
 end
 
 """

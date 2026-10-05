@@ -192,3 +192,113 @@ end
     # rebuilt from the input by read_properties, never restored from a checkpoint
     @test PeriLab.Data_Manager.get_block_material(1) === nothing
 end
+
+function ut_legacy_dict(raw; dof)
+    ut_reset(dof)
+    legacy = Dict{String,Any}(raw)
+    BBASIS.get_all_elastic_moduli(legacy)
+    return legacy
+end
+
+@testset "typed Hooke matrix equals legacy" begin
+    ortho = Dict("Young's Modulus X" => 2.0, "Young's Modulus Y" => 1.5,
+                 "Young's Modulus Z" => 1.0, "Poisson's Ratio XY" => 0.3,
+                 "Poisson's Ratio YZ" => 0.25, "Poisson's Ratio XZ" => 0.2,
+                 "Shear Modulus XY" => 0.7, "Shear Modulus YZ" => 0.6,
+                 "Shear Modulus XZ" => 0.5)
+    aniso = Dict("C$i$j" => (i == j ? 100.0 * i : 1.0 * i + j) for i in 1:6 for j in i:6)
+    cases = [(3, Dict("Symmetry" => "isotropic", "Bulk Modulus" => 10.0, "Shear Modulus" => 4.0)),
+             (2, Dict("Symmetry" => "isotropic plane strain", "Bulk Modulus" => 10.0,
+                      "Shear Modulus" => 4.0)),
+             (2, Dict("Symmetry" => "isotropic plane stress", "Young's Modulus" => 10.0,
+                      "Poisson's Ratio" => 0.3)),
+             (2, Dict("Symmetry" => "something else", "Young's Modulus" => 10.0,
+                      "Poisson's Ratio" => 0.3)),
+             (3, merge(Dict("Symmetry" => "orthotropic"), ortho)),
+             (2, merge(Dict("Symmetry" => "orthotropic plane strain"), ortho)),
+             (3, merge(Dict("Symmetry" => "transverse isotropic"), ortho)),
+             (2, merge(Dict("Symmetry" => "transverse isotropic plane strain"), ortho)),
+             (2, merge(Dict("Symmetry" => "transverse isotropic plane stress"), ortho)),
+             (3, merge(Dict{String,Any}("Symmetry" => "anisotropic"), aniso)),
+             (2, merge(Dict{String,Any}("Symmetry" => "anisotropic plane strain"), aniso))]
+    for (dof, raw) in cases
+        raw = merge(Dict{String,Any}("Material Model" => "Correspondence Elastic"), raw)
+        legacy = ut_legacy_dict(raw; dof = dof)
+        ut_reset(dof)
+        m = typed_block_material(raw; dof = dof)
+        @test Matrix(BBASIS.hooke_matrix(m, dof, 2)) ≈
+              Matrix(BBASIS.get_Hooke_matrix(legacy, legacy["Symmetry"], dof, 2))
+    end
+end
+
+@testset "hooke_symmetry follows the dict the legacy path used" begin
+    @test BMAT.hooke_symmetry(nothing, 3) == "isotropic"
+    @test BMAT.hooke_symmetry("isotropic plane strain", 3) == "isotropic "
+    @test BMAT.hooke_symmetry("isotropic plane strain", 2) == "isotropic plane strain"
+    @test BMAT.hooke_symmetry("orthotropic", 3) == "orthotropic"
+end
+
+@testset "Hooke matrix from a table" begin
+    ut_reset(3; nnodes = 2)
+    dir = mktempdir()
+    write(joinpath(dir, "ex.txt"), "header: Temperature Young's_Modulus_X\n0 1000\n100 3000\n")
+    N, NP1 = PeriLab.Data_Manager.create_node_scalar_field("Temperature", Float64)
+    NP1 .= [0.0, 100.0]
+    raw = Dict{String,Any}("Material Model" => "Correspondence Elastic",
+                           "Symmetry" => "orthotropic", "Young's Modulus X" => "ex.txt",
+                           "Young's Modulus Y" => 1.5e3, "Young's Modulus Z" => 1.0e3,
+                           "Poisson's Ratio XY" => 0.3, "Poisson's Ratio YZ" => 0.25,
+                           "Poisson's Ratio XZ" => 0.2, "Shear Modulus XY" => 700.0,
+                           "Shear Modulus YZ" => 600.0, "Shear Modulus XZ" => 500.0)
+    ctx = PeriLab.ParameterSpec.ParseContext(directory = dir)
+    wb = PeriLab.ParameterSpec.parse_model(:material, raw, "M", ctx;
+                                           name_key = "Material Model")
+    @test isempty(ctx.errors)
+    m = BMAT.block_material(wb, "Correspondence Elastic", 3)
+    BMAT.bind_material!(m)
+    constant_x(E) = begin
+        r = copy(raw)
+        r["Young's Modulus X"] = E
+        ut_reset(3; nnodes = 2)
+        BBASIS.hooke_matrix(typed_block_material(r; dof = 3), 3, 1)
+    end
+    @test Matrix(BBASIS.hooke_matrix(m, 3, 1)) ≈ Matrix(constant_x(1000.0))
+    @test Matrix(BBASIS.hooke_matrix(m, 3, 2)) ≈ Matrix(constant_x(3000.0))
+end
+
+@testset "typed flaw function" begin
+    ut_reset(3)
+    flaw = Dict("Active" => true, "Function" => "Pre-defined", "Flaw Size" => 0.2,
+                "Flaw Magnitude" => 0.5, "Flaw Location X" => 1.0, "Flaw Location Y" => 0.5)
+    m = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
+                                  "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0,
+                                  "Flaw Function" => flaw))
+    for coor in ([1.0, 0.5], [1.1, 0.4, 0.2], [3.0, 3.0])
+        @test BBASIS.flaw_function(m.base.flaw_function, coor, 10.0) ≈
+              BBASIS.flaw_function(Dict("Flaw Function" => flaw), coor, 10.0)
+    end
+    @test BBASIS.flaw_function(nothing, [0.0, 0.0], 10.0) == 10.0
+    inactive = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
+                                         "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0,
+                                         "Flaw Function" => Dict("Active" => false,
+                                                                 "Function" => "Pre-defined")))
+    @test BBASIS.flaw_function(inactive.base.flaw_function, [0.0, 0.0], 10.0) == 10.0
+    incomplete = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
+                                           "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0,
+                                           "Flaw Function" => Dict("Active" => true,
+                                                                   "Function" => "Pre-defined")))
+    @test_logs (:error,
+                "An active Flaw Function needs Flaw Size, Flaw Magnitude, Flaw Location X and Flaw Location Y.") @test_throws PeriLab.PeriLabError begin
+        BBASIS.flaw_function(incomplete.base.flaw_function, [0.0, 0.0], 10.0)
+    end
+end
+
+@testset "extras reach the block material" begin
+    ut_reset(3)
+    m = typed_block_material(Dict("Material Model" => "Correspondence UMAT", "File" => "x.so",
+                                  "Number of Properties" => 2, "Property_1" => 3.0,
+                                  "Young's Modulus" => 1.0, "Poisson's Ratio" => 0.3))
+    @test m.extras == Dict{String,Any}("Property_1" => 3.0)
+    @test m.hooke_symmetry == "isotropic"
+end
+

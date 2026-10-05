@@ -10,10 +10,12 @@ using ......Helpers: get_MMatrix, determinant, invert, smat, interpol_data,
                      get_dependent_value_with_ID,
                      mat_mul!, matrix_to_voigt, voigt_to_matrix
 using ......Data_Manager
+using ......ParameterSpec: value
 using ......PeriLabExceptions: @abort
 export get_value
 export get_all_elastic_moduli
 export get_Hooke_matrix
+export hooke_matrix
 export distribute_forces!
 export local_damping_due_to_damage
 export flaw_function
@@ -280,23 +282,61 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
     end
 end
 
+# constant of a material dict at node `id` (the legacy reads of get_Hooke_matrix)
+function _dict_constant(parameter::Dict, key::String, id::Int64)
+    if key in ("Poisson's Ratio", "Young's Modulus", "Shear Modulus")
+        iID = parameter["Poisson's Ratio"] isa Float64 ? 1 : id
+        return parameter[key][iID]
+    end
+    return get_dependent_value_with_ID(key, parameter, id)
+end
+
 """
 	get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int64=1)
 
-Returns the Hooke matrix of the material.
-
-# Arguments
-- `parameter::Union{Dict{Any,Any},Dict{String,Any}}`: The material parameter.
-- `symmetry::String`: The symmetry of the material.
-- `dof::Int64`: The degree of freedom.
-- `ID::Int64=1`: ID of the point. Needed for point wise defined material properties.
-# Returns
-- `matrix::Matrix{Float64}`: The Hooke matrix.
+Returns the Hooke matrix of the material (material dict; see `hooke_matrix`
+for typed block materials).
 """
-function get_Hooke_matrix(parameter::Dict,
-                          symmetry::String,
-                          dof::Int64,
-                          ID::Int64 = 1)
+function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int64 = 1)
+    return _hooke_matrix((key, id) -> _dict_constant(parameter, key, id), symmetry, dof, ID)
+end
+
+const _HOOKE_BASE_FIELDS = Dict("Young's Modulus X" => :youngs_modulus_x,
+                                "Young's Modulus Y" => :youngs_modulus_y,
+                                "Young's Modulus Z" => :youngs_modulus_z,
+                                "Poisson's Ratio XY" => :poissons_ratio_xy,
+                                "Poisson's Ratio YZ" => :poissons_ratio_yz,
+                                "Poisson's Ratio XZ" => :poissons_ratio_xz,
+                                "Shear Modulus XY" => :shear_modulus_xy,
+                                "Shear Modulus YZ" => :shear_modulus_yz,
+                                "Shear Modulus XZ" => :shear_modulus_xz)
+
+@inline _at(x::Real, ::Int64) = x
+@inline _at(x::AbstractVector, id::Int64) = x[id]
+
+# constant of a typed block material at node `id`
+function _typed_constant(material, key::String, id::Int64)
+    key == "Poisson's Ratio" && return _at(material.moduli.poissons_ratio, id)
+    key == "Young's Modulus" && return _at(material.moduli.youngs_modulus, id)
+    key == "Shear Modulus" && return _at(material.moduli.shear_modulus, id)
+    startswith(key, "C") && return getfield(material.base, Symbol(lowercase(key)))
+    return value(getfield(material.base, _HOOKE_BASE_FIELDS[key]), id)
+end
+
+"""
+	hooke_matrix(material, dof, ID = 1)
+
+Hooke matrix of a typed block material (`BlockMaterial`) at node `ID`. Dependent
+constants must be bound (`Material.bind_material!`).
+"""
+function hooke_matrix(material, dof::Int64, ID::Int64 = 1)
+    return _hooke_matrix((key, id) -> _typed_constant(material, key, id),
+                         material.hooke_symmetry, dof, ID)
+end
+
+
+# formulas of the Hooke matrix; c(key, id) returns a constant at node id
+function _hooke_matrix(c, symmetry::String, dof::Int64, ID::Int64)
     """https://www.efunda.com/formulae/solid_mechanics/mat_mechanics/hooke_plane_stress.cfm
         https://de.wikipedia.org/wiki/Transversale_Isotropie"""
 
@@ -305,8 +345,7 @@ function get_Hooke_matrix(parameter::Dict,
         aniso_matrix = get_MMatrix(36)
         for iID in 1:6
             for jID in iID:6
-                value = get_dependent_value_with_ID("C" * string(iID) * string(jID),
-                                                    parameter)
+                value = c("C" * string(iID) * string(jID), 1)
                 aniso_matrix[iID, jID] = value
                 aniso_matrix[jID, iID] = value
             end
@@ -315,15 +354,15 @@ function get_Hooke_matrix(parameter::Dict,
     elseif occursin("orthotropic", symmetry)
         aniso_matrix = get_MMatrix(36)
 
-        E_x = get_dependent_value_with_ID("Young's Modulus X", parameter, ID)
-        E_y = get_dependent_value_with_ID("Young's Modulus Y", parameter, ID)
-        E_z = get_dependent_value_with_ID("Young's Modulus Z", parameter, ID)
-        nu_xy = get_dependent_value_with_ID("Poisson's Ratio XY", parameter, ID)
-        nu_yz = get_dependent_value_with_ID("Poisson's Ratio YZ", parameter, ID)
-        nu_xz = get_dependent_value_with_ID("Poisson's Ratio XZ", parameter, ID)
-        g_xy = get_dependent_value_with_ID("Shear Modulus XY", parameter, ID)
-        g_yz = get_dependent_value_with_ID("Shear Modulus YZ", parameter, ID)
-        g_xz = get_dependent_value_with_ID("Shear Modulus XZ", parameter, ID)
+        E_x = c("Young's Modulus X", ID)
+        E_y = c("Young's Modulus Y", ID)
+        E_z = c("Young's Modulus Z", ID)
+        nu_xy = c("Poisson's Ratio XY", ID)
+        nu_yz = c("Poisson's Ratio YZ", ID)
+        nu_xz = c("Poisson's Ratio XZ", ID)
+        g_xy = c("Shear Modulus XY", ID)
+        g_yz = c("Shear Modulus YZ", ID)
+        g_xz = c("Shear Modulus XZ", ID)
 
         nu_yx = nu_xy * E_y / E_x
         nu_zy = nu_yz * E_z / E_y
@@ -354,12 +393,12 @@ function get_Hooke_matrix(parameter::Dict,
         if dof == 3
             aniso_matrix = get_MMatrix(36)
 
-            E_x = get_dependent_value_with_ID("Young's Modulus X", parameter, ID)
-            E_y = get_dependent_value_with_ID("Young's Modulus Y", parameter, ID)
-            nu_xy = get_dependent_value_with_ID("Poisson's Ratio XY", parameter, ID)
-            nu_yz = get_dependent_value_with_ID("Poisson's Ratio YZ", parameter, ID)
-            g_xy = get_dependent_value_with_ID("Shear Modulus XY", parameter, ID)
-            g_yz = get_dependent_value_with_ID("Shear Modulus YZ", parameter, ID)
+            E_x = c("Young's Modulus X", ID)
+            E_y = c("Young's Modulus Y", ID)
+            nu_xy = c("Poisson's Ratio XY", ID)
+            nu_yz = c("Poisson's Ratio YZ", ID)
+            g_xy = c("Shear Modulus XY", ID)
+            g_yz = c("Shear Modulus YZ", ID)
 
             nu_yx = nu_xy * E_y / E_x
 
@@ -389,11 +428,11 @@ function get_Hooke_matrix(parameter::Dict,
         elseif occursin("plane strain", symmetry)
             aniso_matrix = get_MMatrix(9)
 
-            E_x = get_dependent_value_with_ID("Young's Modulus X", parameter, ID)
-            E_y = get_dependent_value_with_ID("Young's Modulus Y", parameter, ID)
-            nu_xy = get_dependent_value_with_ID("Poisson's Ratio XY", parameter, ID)
-            nu_yz = get_dependent_value_with_ID("Poisson's Ratio YZ", parameter, ID)
-            g_xy = get_dependent_value_with_ID("Shear Modulus XY", parameter, ID)
+            E_x = c("Young's Modulus X", ID)
+            E_y = c("Young's Modulus Y", ID)
+            nu_xy = c("Poisson's Ratio XY", ID)
+            nu_yz = c("Poisson's Ratio YZ", ID)
+            g_xy = c("Shear Modulus XY", ID)
 
             nu_yx = nu_xy * E_y / E_x
             D = (1 + nu_yz) * (1 - nu_yz - 2 * nu_xy * nu_yx)
@@ -410,10 +449,10 @@ function get_Hooke_matrix(parameter::Dict,
         elseif occursin("plane stress", symmetry)
             aniso_matrix = get_MMatrix(9)
 
-            E_x = get_dependent_value_with_ID("Young's Modulus X", parameter, ID)
-            E_y = get_dependent_value_with_ID("Young's Modulus Y", parameter, ID)
-            nu_xy = get_dependent_value_with_ID("Poisson's Ratio XY", parameter, ID)
-            g_xy = get_dependent_value_with_ID("Shear Modulus XY", parameter, ID)
+            E_x = c("Young's Modulus X", ID)
+            E_y = c("Young's Modulus Y", ID)
+            nu_xy = c("Poisson's Ratio XY", ID)
+            g_xy = c("Shear Modulus XY", ID)
 
             nu_yx = nu_xy * E_y / E_x
 
@@ -431,14 +470,10 @@ function get_Hooke_matrix(parameter::Dict,
         end
     end
 
-    iID = ID
-    if parameter["Poisson's Ratio"] isa Float64
-        iID = 1
-    end
     if occursin("isotropic", symmetry)
-        nu = parameter["Poisson's Ratio"][iID]
-        E = parameter["Young's Modulus"][iID]
-        G = parameter["Shear Modulus"][iID]
+        nu = c("Poisson's Ratio", ID)
+        E = c("Young's Modulus", ID)
+        G = c("Shear Modulus", ID)
         temp = E / ((1 + nu) * (1 - 2 * nu))
 
         if dof == 3
@@ -480,9 +515,9 @@ function get_Hooke_matrix(parameter::Dict,
         matrix = get_MMatrix(9)
 
         @warn "material model defintion is missing; assuming isotropic plane stress "
-        nu = parameter["Poisson's Ratio"][iID]
-        E = parameter["Young's Modulus"][iID]
-        G = parameter["Shear Modulus"][iID]
+        nu = c("Poisson's Ratio", ID)
+        E = c("Young's Modulus", ID)
+        G = c("Shear Modulus", ID)
         matrix[1, 1] = E / (1 - nu * nu)
         matrix[1, 2] = E * nu / (1 - nu * nu)
         matrix[2, 1] = E * nu / (1 - nu * nu)
@@ -712,6 +747,36 @@ function flaw_function(params::Dict,
     return stress *
            (1 - flaw_magnitude * exp(-distance_squared / (flaw_size * flaw_size)))
 end
+
+flaw_function(::Nothing, coor::AbstractVector{<:Real}, stress::Union{Int64,Float64}) = Float64(stress)
+
+# typed flaw function (`FlawFunctionParams`); same formula as the dict version
+function flaw_function(flaw, coor::AbstractVector{<:Real},
+                       stress::T)::Float64 where {T<:Union{Int64,Float64}}
+    flaw.active || return stress
+    if flaw.flaw_size === nothing || flaw.flaw_magnitude === nothing ||
+       flaw.flaw_location_x === nothing || flaw.flaw_location_y === nothing
+        @abort "An active Flaw Function needs Flaw Size, Flaw Magnitude, Flaw Location X and Flaw Location Y."
+    end
+    flaw_size::Float64 = flaw.flaw_size
+    flaw_magnitude::Float64 = flaw.flaw_magnitude
+    if !(0 < flaw_magnitude <= 1)
+        @abort "Flaw Magnitude should be between 0 and 1"
+    end
+    if flaw_size <= 0
+        @abort "Flaw Size must be positive."
+    end
+    dx = Float64(coor[1]) - flaw.flaw_location_x
+    dy = Float64(coor[2]) - flaw.flaw_location_y
+    distance_squared = dx * dx + dy * dy
+    if length(coor) == 3
+        dz = Float64(coor[3]) - something(flaw.flaw_location_z, 0.0)
+        distance_squared += dz * dz
+    end
+    return stress *
+           (1 - flaw_magnitude * exp(-distance_squared / (flaw_size * flaw_size)))
+end
+
 """
 	get_symmetry(material::Dict)
 
