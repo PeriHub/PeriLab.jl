@@ -468,7 +468,7 @@ function get_block_model_definition(params::Dict,
 end
 
 """
-	read_properties(params::Dict, material_model::Bool)
+	read_properties(params::Dict, input::PeriLabInput, material_model::Bool)
 
 Read properties of material.
 
@@ -477,7 +477,7 @@ Read properties of material.
 - `input::PeriLabInput`: The typed input deck.
 - `material_model::Bool`: Material model.
 """
-function read_properties(params::Dict, material_model::Bool)
+function read_properties(params::Dict, input::PeriLabInput, material_model::Bool)
     Data_Manager.init_properties()
     block_name_list = Data_Manager.get_block_name_list()
     block_id_list = Data_Manager.get_block_id_list()
@@ -492,13 +492,24 @@ function read_properties(params::Dict, material_model::Bool)
                                material_model)
     if material_model
         dof = Data_Manager.get_dof()
-        for block in block_id_list
+        for (block_name, block) in zip(block_name_list, block_id_list)
             Material.check_material_symmetry(block)
-            Material.determine_isotropic_parameter(Data_Manager.get_properties(block,
-                                                                               "Material Model"))
+            properties = Data_Manager.get_properties(block, "Material Model")
+            block_params = get(input.sections.blocks, block_name, nothing)
+            material_name = block_params === nothing ? nothing : block_params.material_model
+            if material_name !== nothing && haskey(input.materials, material_name)
+                material = Material.block_material(input.materials[material_name],
+                                                   String(properties["Material Model"]), dof)
+                Data_Manager.set_block_material(block, material)
+                Material.write_moduli!(properties, material)
+            else
+                # raw dicts without typed materials (unit tests)
+                Material.determine_isotropic_parameter(properties)
+            end
         end
     end
 end
+
 
 """
 	set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::NodeScalarField{Float64})

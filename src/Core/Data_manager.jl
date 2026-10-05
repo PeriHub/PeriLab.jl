@@ -59,6 +59,8 @@ export add_active_model
 export fem_active
 export set_fem_params
 export get_fem_params
+export set_block_material
+export get_block_material
 export set_surface_correction
 export get_surface_correction
 export initialize_data
@@ -172,6 +174,7 @@ function initialize_data()
     ]
     data["coupling_dict"] = Dict{Int64,Int64}()
     data["FEM Parameters"] = nothing
+    data["Block Materials"] = Dict{Int64,Any}()
     data["Surface Correction"] = nothing
     data["output_frequency"] = []
     data["accuracy_order"] = 1
@@ -332,6 +335,25 @@ The typed `FEM` section stored by `set_fem_params`.
 function get_fem_params()
     return data["FEM Parameters"]
 end
+
+"""
+	set_block_material(block, material)
+
+Stores the typed material (`BlockMaterial`) of a block.
+"""
+function set_block_material(block::Int64, material)
+    data["Block Materials"][block] = material
+end
+
+"""
+	get_block_material(block)
+
+The typed material of a block, or `nothing`.
+"""
+function get_block_material(block::Int64)
+    return get(data["Block Materials"], block, nothing)
+end
+
 
 """
 	set_surface_correction(sc)

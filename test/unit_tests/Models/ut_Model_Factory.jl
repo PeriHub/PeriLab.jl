@@ -159,7 +159,7 @@ end
                                    "Thermal Models" => Dict("therm" => Dict("value" => "hot",
                                                                             "bool" => true,
                                                                             "name" => "t3"))))
-    PeriLab.Solver_Manager.Model_Factory.read_properties(params, false)
+    PeriLab.Solver_Manager.Model_Factory.read_properties(params, typed_input(Dict()), false)
 
     @test isnothing(PeriLab.Data_Manager.get_property(1, "Material Model",
                                                       "value"))
@@ -170,7 +170,7 @@ end
     @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "bool") ==
           params["Models"]["Thermal Models"]["therm"]["bool"]
 
-    PeriLab.Solver_Manager.Model_Factory.read_properties(params, true)
+    PeriLab.Solver_Manager.Model_Factory.read_properties(params, typed_input(Dict()), true)
     @test PeriLab.Data_Manager.get_property(1, "Material Model", "value") ==
           params["Models"]["Material Models"]["a"]["value"]
     @test PeriLab.Data_Manager.get_property(2, "Material Model", "value") ==
@@ -213,3 +213,30 @@ end
     @test PeriLab.Solver_Manager.Model_Factory.get_cs_denominator(volume,
                                                                   undeformed_bond) == 6.5
 end
+
+@testset "read_properties builds typed block materials" begin
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(3)
+    PeriLab.Data_Manager.set_dof(2)
+    input = typed_input(Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
+                                                                 "Density" => 1.0,
+                                                                 "Horizon" => 1.0,
+                                                                 "Material Model" => "Mat")),
+                             "Models" => Dict("Material Models" => Dict("Mat" => Dict("Material Model" => "PD Solid Elastic",
+                                                                                       "Symmetry" => "isotropic plane strain",
+                                                                                       "Bulk Modulus" => 10.0,
+                                                                                       "Shear Modulus" => 10.0)))))
+    params = Dict{String,Any}("Blocks" => Dict{String,Any}("block_1" => Dict{String,Any}("Block ID" => 1,
+                                                                                         "Material Model" => "Mat")),
+                              "Models" => input.models)
+    PeriLab.Data_Manager.set_block_name_list(["block_1"])
+    PeriLab.Data_Manager.set_block_id_list([1])
+    PeriLab.Solver_Manager.Model_Factory.read_properties(params, input, true)
+    m = PeriLab.Data_Manager.get_block_material(1)
+    @test m isa PeriLab.Solver_Manager.Model_Factory.Material.BlockMaterial
+    @test m.symmetry == "plane strain"
+    @test m.moduli.youngs_modulus == 22.5
+    @test PeriLab.Data_Manager.get_property(1, "Material Model", "Young's Modulus") == 22.5
+    @test PeriLab.Data_Manager.get_property(1, "Material Model", "Computed") === true
+end
+
