@@ -470,29 +470,18 @@ Initializes the material model.
 - `block::Int64`: Block.
 """
 function init_model(nodes::AbstractVector{Int64}, block::Int64)
-    model_param = Data_Manager.get_properties(block, "Material Model")::Dict{String,Any}
-    if !haskey(model_param, "Material Model")
+    material = Data_Manager.get_block_material(block)
+    if material === nothing
         @abort "Block " * string(block) * " has no material model defined."
         return
     end
 
-    if occursin("Correspondence", model_param["Material Model"])
+    if material.correspondence
         Data_Manager.set_model_module("Correspondence", Correspondence)
-        material = Data_Manager.get_block_material(block)
-        if material === nothing
-            @abort "Block $block has no typed material parameters."
-            return
-        end
         bind_material!(material)
         return Correspondence.init_model(nodes, block, material)
     end
 
-
-    material = Data_Manager.get_block_material(block)
-    if material === nothing
-        @abort "Block $block has no typed material parameters."
-        return
-    end
     bind_material!(material)
     for part in model_parts(material.model)
         mod = parentmodule(typeof(part))
@@ -527,10 +516,9 @@ Defines all synchronization fields for local synchronization
 - `block::Int64`: block id
 """
 function fields_for_local_synchronization(model, block)
-    model_param = Data_Manager.get_properties(block, "Material Model")
-    if occursin("Correspondence", model_param["Material Model"])
-        return Correspondence.fields_for_local_synchronization(model, block,
-                                                               Data_Manager.get_block_material(block))
+    material = Data_Manager.get_block_material(block)
+    if material.correspondence
+        return Correspondence.fields_for_local_synchronization(model, block, material)
     end
 
     for material_model in Data_Manager.get_analysis_model("Material Model", block)
@@ -546,31 +534,27 @@ Computes the material models
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes
-- `model_param::Dict{String,Any}`: The model parameters
+- `material::BlockMaterial`: The typed block material
 - `block::Int64`: The block
 - `time::Float64`: The current time
 - `dt::Float64`: The time step
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       model_param::Dict{String,Any},
+                       material,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
     @timeit "all" begin
-        if occursin("Correspondence", model_param["Material Model"])
+        if material.correspondence
             @timeit "corresponcence" begin
-                Correspondence.compute_model(nodes,
-                                             bind_material!(Data_Manager.get_block_material(block)),
-                                             block, time, dt)
+                Correspondence.compute_model(nodes, bind_material!(material), block, time, dt)
                 return
             end
         end
-
-        @timeit "material" compute_block_material(nodes,
-                                                  Data_Manager.get_block_material(block),
-                                                  block, time, dt)
+        @timeit "material" compute_block_material(nodes, material, block, time, dt)
     end
 end
+
 
 # node field a dependent table reads: the NP1 state if the field has states
 function _dependent_field(name::String)
@@ -621,15 +605,25 @@ function determine_isotropic_parameter(prop::Dict)
 end
 
 """
-    check_material_symmetry(block::Int64)
+    check_material_symmetry(material, dof)
 
-Check the symmetry of the material.
-
-# Arguments
-- `block::Int64`: The block id.
+2D needs plane strain or plane stress in `Symmetry`; in 3D these are ignored
+(with a warning). A missing Symmetry is not checked here (isotropic).
 """
-function check_material_symmetry(block::Int64)
-    return check_symmetry(block)
+function check_material_symmetry(material::BlockMaterial, dof::Int64)
+    symmetry = material.base.symmetry
+    symmetry === nothing && return nothing
+    if dof == 2 && !occursin("plane strain", symmetry) && !occursin("plane stress", symmetry)
+        @abort "Model definition is missing; plane stress or plane strain has to be defined for 2D"
+        return
+    end
+    if dof == 3 && occursin("plane strain", symmetry)
+        @warn "Plane strain symmetry is not supported for 3D, going to ignore it"
+    end
+    if dof == 3 && occursin("plane stress", symmetry)
+        @warn "Plane stress symmetry is not supported for 3D, going to ignore it"
+    end
+    return nothing
 end
 
 """

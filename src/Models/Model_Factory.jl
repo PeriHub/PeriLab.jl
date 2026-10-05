@@ -34,6 +34,17 @@ export compute_models
 export init_models
 export read_properties
 
+# the material category is typed (Data_Manager.get_block_material); the other
+# categories still use the property dicts
+has_block_model(block::Int64, name::String) = name == "Material Model" ?
+                                              Data_Manager.get_block_material(block) !==
+                                              nothing :
+                                              Data_Manager.check_property(block, name)
+block_model_parameters(block::Int64, name::String) = name == "Material Model" ?
+                                                     Data_Manager.get_block_material(block) :
+                                                     Data_Manager.get_properties(block, name)
+
+
 """
 	init_models(params::Dict, input::PeriLabInput, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict, synchronise_field)
 
@@ -84,13 +95,13 @@ function init_models(params::Dict,
 
         model_used = false
         for block in eachindex(block_nodes)
-            if Data_Manager.check_property(block, active_model_name)
+            if has_block_model(block, active_model_name)
                 @timeit "init $active_model_name models" active_model.init_model(block_nodes[block],
                                                                                  block)
                 @timeit "init fields_for_local_synchronization $active_model_name models" active_model.fields_for_local_synchronization(active_model_name,
                                                                                                                                         block)
                 if active_model_name == "Damage Model" &&
-                   haskey(Data_Manager.get_properties(block, active_model_name),
+                   haskey(block_model_parameters(block, active_model_name),
                           "Local Damping")
                     Material.init_local_damping(block_nodes[block],
                                                 Data_Manager.get_block_material(block).symmetry,
@@ -190,11 +201,10 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
                     continue
                 end
             end
-            if Data_Manager.check_property(block, active_model_name)
+            if has_block_model(block, active_model_name)
                 # synch
                 @timeit "compute $active_model_name" active_model.compute_model(active_nodes,
-                                                                                Data_Manager.get_properties(block,
-                                                                                                            active_model_name),
+                                                                                block_model_parameters(block, active_model_name),
                                                                                 block,
                                                                                 time,
                                                                                 dt)
@@ -241,11 +251,10 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
 
             # active or all, or does it not matter?
 
-            if Data_Manager.check_property(block, active_model_name)
+            if has_block_model(block, active_model_name)
                 # TODO synch
                 @timeit "compute $active_model_name" active_model.compute_model(update_nodes,
-                                                                                Data_Manager.get_properties(block,
-                                                                                                            active_model_name),
+                                                                                block_model_parameters(block, active_model_name),
                                                                                 block,
                                                                                 time,
                                                                                 dt)
@@ -360,11 +369,10 @@ function compute_stiff_matrix_compatible_models(block_nodes::Dict{Int64,Vector{I
                                              nodes,
                                              active_model_name != "Additive Model")
 
-            if Data_Manager.check_property(block, active_model_name)
+            if has_block_model(block, active_model_name)
                 # synch
                 @timeit "compute $active_model_name" active_model.compute_model(active_nodes,
-                                                                                Data_Manager.get_properties(block,
-                                                                                                            active_model_name),
+                                                                                block_model_parameters(block, active_model_name),
                                                                                 block,
                                                                                 time,
                                                                                 dt)
@@ -433,8 +441,7 @@ function get_block_model_definition(params::Dict,
                                     block_id_list::Vector{Int64},
                                     prop_keys::Vector{String},
                                     properties,
-                                    directory::String = "",
-                                    material_model::Bool = true)
+                                    directory::String = "")
     # properties function from Data_Manager
 
     if haskey(params["Models"], "Pre Calculation Global")
@@ -451,9 +458,7 @@ function get_block_model_definition(params::Dict,
         end
         block = params["Blocks"][block_name]
         for model in prop_keys
-            if model == "Material Model" && !material_model
-                continue
-            end
+            model == "Material Model" && continue   # typed: input.materials
             if haskey(block, model)
                 properties(block_id,
                            model,
@@ -485,24 +490,17 @@ function read_properties(params::Dict, input::PeriLabInput, material_model::Bool
                                block_id_list,
                                prop_keys,
                                Data_Manager.set_properties,
-                               directory,
-                               material_model)
+                               directory)
     if material_model
         dof = Data_Manager.get_dof()
         for (block_name, block) in zip(block_name_list, block_id_list)
-            Material.check_material_symmetry(block)
-            properties = Data_Manager.get_properties(block, "Material Model")
             block_params = get(input.sections.blocks, block_name, nothing)
             material_name = block_params === nothing ? nothing : block_params.material_model
-            if material_name !== nothing && haskey(input.materials, material_name)
-                material = Material.block_material(input.materials[material_name],
-                                                   String(properties["Material Model"]), dof)
-                Data_Manager.set_block_material(block, material)
-                Material.write_moduli!(properties, material)
-            else
-                # raw dicts without typed materials (unit tests)
-                Material.determine_isotropic_parameter(properties)
-            end
+            (material_name === nothing || !haskey(input.materials, material_name)) && continue
+            model_name = String(input.models["Material Models"][material_name]["Material Model"])
+            material = Material.block_material(input.materials[material_name], model_name, dof)
+            Material.check_material_symmetry(material, dof)
+            Data_Manager.set_block_material(block, material)
         end
     end
 end

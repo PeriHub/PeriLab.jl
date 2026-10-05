@@ -606,3 +606,37 @@ end
     @test hasmethod(MB.init_model, Tuple{Vector{Int64},typeof(m),Int64})
     @test length(methods(MB.init_model)) == 1   # the Dict method is gone
 end
+
+@testset "dispatch without the material dict" begin
+    MF = PeriLab.Solver_Manager.Model_Factory
+    ut_reset(3; nnodes = 2)
+    PeriLab.Data_Manager.set_block_id_list([1, 2])
+    PeriLab.Data_Manager.init_properties()
+    m = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
+                                  "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0))
+    PeriLab.Data_Manager.set_block_material(1, m)
+    @test MF.has_block_model(1, "Material Model")
+    @test !MF.has_block_model(2, "Material Model")
+    @test MF.block_model_parameters(1, "Material Model") === m
+    @test !MF.has_block_model(1, "Damage Model")
+    @test_logs (:error, "Block 2 has no material model defined.") @test_throws PeriLab.PeriLabError begin
+        BMAT.init_model([1, 2], 2)
+    end
+    @test hasmethod(BMAT.compute_model, Tuple{Vector{Int64},typeof(m),Int64,Float64,Float64})
+end
+
+@testset "2D symmetry check" begin
+    ut_reset(2)
+    m = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
+                                  "Symmetry" => "isotropic", "Bulk Modulus" => 1.0,
+                                  "Shear Modulus" => 1.0); dof = 2)
+    @test_logs (:error,
+                "Model definition is missing; plane stress or plane strain has to be defined for 2D") @test_throws PeriLab.PeriLabError begin
+        BMAT.check_material_symmetry(m, 2)
+    end
+    ok = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
+                                   "Symmetry" => "isotropic plane strain",
+                                   "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0); dof = 2)
+    @test isnothing(BMAT.check_material_symmetry(ok, 2))
+end
+

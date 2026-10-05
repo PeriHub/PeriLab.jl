@@ -38,14 +38,9 @@
                                                                     prop_keys,
                                                                     PeriLab.Data_Manager.set_properties)
 
-    @test PeriLab.Data_Manager.get_property(1, "Material Model", "value") ==
-          params["Models"]["Material Models"]["a"]["value"]
-    @test PeriLab.Data_Manager.get_property(2, "Material Model", "value") ==
-          params["Models"]["Material Models"]["c"]["value"]
-    @test PeriLab.Data_Manager.get_property(2, "Material Model", "value2") ==
-          params["Models"]["Material Models"]["c"]["value2"]
-    @test PeriLab.Data_Manager.get_property(3, "Material Model", "value") ==
-          params["Models"]["Material Models"]["a"]["value"]
+    # materials are typed (input.materials), not stored as property dicts
+    @test isempty(PeriLab.Data_Manager.get_properties(1, "Material Model"))
+    @test isempty(PeriLab.Data_Manager.get_properties(3, "Material Model"))
     @test PeriLab.Data_Manager.get_property(3, "Damage Model", "value") ==
           params["Models"]["Damage Models"]["a"]["value"]
     @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "value") ==
@@ -171,16 +166,10 @@ end
           params["Models"]["Thermal Models"]["therm"]["bool"]
 
     PeriLab.Solver_Manager.Model_Factory.read_properties(params, typed_input(Dict()), true)
-    @test PeriLab.Data_Manager.get_property(1, "Material Model", "value") ==
-          params["Models"]["Material Models"]["a"]["value"]
-    @test PeriLab.Data_Manager.get_property(2, "Material Model", "value") ==
-          params["Models"]["Material Models"]["c"]["value"]
-    @test PeriLab.Data_Manager.get_property(2, "Material Model", "value2") ==
-          params["Models"]["Material Models"]["c"]["value2"]
-    @test PeriLab.Data_Manager.get_property(3, "Material Model", "value") ==
-          params["Models"]["Material Models"]["a"]["value"]
+    @test isempty(PeriLab.Data_Manager.get_properties(1, "Material Model"))
     @test PeriLab.Data_Manager.get_property(3, "Damage Model", "value") ==
           params["Models"]["Damage Models"]["a"]["value"]
+
     @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "value") ==
           params["Models"]["Thermal Models"]["therm"]["value"]
     @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "bool") ==
@@ -236,7 +225,7 @@ end
     @test m isa PeriLab.Solver_Manager.Model_Factory.Material.BlockMaterial
     @test m.symmetry == "plane strain"
     @test m.moduli.youngs_modulus == 22.5
-    @test PeriLab.Data_Manager.get_property(1, "Material Model", "Young's Modulus") == 22.5
-    @test PeriLab.Data_Manager.get_property(1, "Material Model", "Computed") === true
+    @test isempty(PeriLab.Data_Manager.get_properties(1, "Material Model"))
+
 end
 
