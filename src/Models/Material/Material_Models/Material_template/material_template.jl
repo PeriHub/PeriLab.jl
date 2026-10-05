@@ -6,7 +6,7 @@ module Material_template
 
 using ......Data_Manager
 using ......ParameterSpec: @params, register_material
-# Declare your parameters with @params (see MaterialTemplateParams) and register them in __init__.
+# Declare your parameters with @params (see MaterialTemplateParams) and register them in __init__ (see below).
 export fe_support
 export init_model
 export material_name
@@ -76,7 +76,9 @@ Declare the YAML keys your material needs beyond the shared material keys
 """
 @params struct MaterialTemplateParams
 end
-__init__() = register_material("Material Template", MaterialTemplateParams)
+# Register under your model name (the one material_name() returns) by uncommenting:
+# __init__() = register_material("Material Template", MaterialTemplateParams)
+# The template itself stays unregistered so that a copy never collides with it.
 
 """
     fields_for_local_synchronization(model::String)

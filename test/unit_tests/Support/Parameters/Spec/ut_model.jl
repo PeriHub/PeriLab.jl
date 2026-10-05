@@ -93,7 +93,7 @@ end
     name_path = "$UT_PATH.\"Material Model\""
     cases = [("UT Elastc", "model \"UT Elastc\" not found — did you mean \"UT Elastic\"?"),
              ("Completely Different",
-              "model \"Completely Different\" not found; it may require a licensed module"),
+              "model \"Completely Different\" not found; it may require a licensed module, or its module does not register its parameters"),
              ("UT Licensed",
               "model \"UT Licensed\" requires a license that is not available"),
              ("UT Elastic + ", "empty model name in \"UT Elastic + \""),

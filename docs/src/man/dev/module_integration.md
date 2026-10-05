@@ -14,6 +14,20 @@ Copy the template and put it in the folder. Change all the functions and give th
 ## Parameter
 In PeriLab a field called params exists. This field provides all the material information. The structure is given [here](@ref "Parameters")
 
+## Declare and register your parameters
+Every YAML key your model reads must be declared, otherwise the input deck is rejected (unknown key). Declare the keys in an `@params` struct and register it under the name your name function returns:
+
+```julia
+using ......ParameterSpec: @params, register_material
+
+@params struct MyMaterialParams
+    my_parameter::Float64 = req("My Parameter"; min = 0, description = "...")
+end
+__init__() = register_material("My Material", MyMaterialParams)
+```
+
+Material models do not repeat the shared material keys (Symmetry, Young's Modulus, Bulk Modulus, ...); they are declared once in the material factory. The material template contains the struct with the registration commented out: rename both and uncomment it. A model that is not registered is reported as "not found" when the input deck is read.
+
 ## Init function
 The init function is used to read and check the  properties provided by the yaml. It should be done there, because if the compute function is used, this check is done in every time step. Also specific fields can be defined here as well.
 

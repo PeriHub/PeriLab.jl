@@ -90,7 +90,7 @@ function _parse_model(category::Symbol, dict::Union{Nothing,AbstractDict}, path:
             suggestion = suggest(name, registered_names(category))
             add_error!(ctx, name_path,
                        suggestion === nothing ?
-                       "model \"$name\" not found; it may require a licensed module" :
+                       "model \"$name\" not found; it may require a licensed module, or its module does not register its parameters" :
                        "model \"$name\" not found — did you mean \"$suggestion\"?")
         elseif entry isa UnavailableModel
             add_error!(ctx, name_path, "model \"$name\" $(entry.reason)")

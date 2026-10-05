@@ -37,8 +37,7 @@ end
                        MAT.Unified_Bondbased_Elastic.UnifiedBondbasedElasticParams),
                       ("PD Solid Elastic", MAT.PD_Solid_Elastic.PDSolidElasticParams),
                       ("PD Solid Plastic", MAT.PD_Solid_Plastic.PDSolidPlasticParams),
-                      ("Rigid", MAT.Rigid.RigidParams),
-                      ("Material Template", MAT.Material_template.MaterialTemplateParams)]
+                      ("Rigid", MAT.Rigid.RigidParams)]
         @test MPS.lookup_model(:material, name) === T
     end
     m, ctx = ut_material(Dict("Material Model" => "1D Bond-based Elastic",
@@ -106,4 +105,9 @@ end
     @test startswith(msgs["$p.Propery_2"], "unknown key")
     m, ctx = ut_material(Dict("Material Model" => "Correspondence UMAT", "File" => "a.so"))
     @test only(ctx.errors).message == "missing (required by Correspondence UMAT)"
+end
+
+@testset "the material template does not register (copies must not collide)" begin
+    @test MPS.lookup_model(:material, "Material Template") === nothing
+    @test MPS.parameter_spec(MAT.Material_template.MaterialTemplateParams) isa Vector
 end

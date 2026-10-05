@@ -93,3 +93,10 @@ end
         PeriLab.Parameter_Handling.validate_yaml(params)
     end
 end
+
+@testset "legacy model validation still applies to the other categories" begin
+    params = ut_valid_params()
+    params["PeriLab"]["Models"]["Damage Models"] = Dict{Any,Any}("d" => Dict{Any,Any}("Damage Model" => 5,
+                                                                                     "Critical Value" => 1.0))
+    @test_throws PeriLab.PeriLabError PeriLab.Parameter_Handling.validate_yaml(params)
+end
