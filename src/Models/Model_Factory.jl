@@ -407,7 +407,7 @@ function compute_matrix_based_bond_forces(block_nodes::Dict{Int64,Vector{Int64}}
                                           time,
                                           dt)
             @timeit "compute bond forces" Material.compute_correspondence_bond_forces(active_nodes,
-                                                                                      material_parameter,
+                                                                                      Data_Manager.get_block_material(block),
                                                                                       block,
                                                                                       time,
                                                                                       dt)

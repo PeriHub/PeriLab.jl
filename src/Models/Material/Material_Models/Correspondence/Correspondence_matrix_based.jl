@@ -619,7 +619,7 @@ end
 
 function init_model(nodes::AbstractVector{Int64},
                     material_parameter::Dict, block_id::Int64)
-    Zero_Energy_Control.init_model(nodes, material_parameter, block_id)
+    Zero_Energy_Control.init_model(nodes, Data_Manager.get_block_material(block_id), block_id)
 
     update_list = Data_Manager.get_field("Update")
     update_list .= true

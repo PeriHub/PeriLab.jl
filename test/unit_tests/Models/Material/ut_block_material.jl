@@ -467,3 +467,24 @@ end
     @test fields[1, 1] == 7.3 && fields[2, 2] == 3.0
 end
 
+
+@testset "typed correspondence dispatcher" begin
+    ut_reset(3; nnodes = 2)
+    PeriLab.Data_Manager.set_rotation(false)
+    m = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
+                                  "Symmetry" => "isotropic", "Bulk Modulus" => 10.0,
+                                  "Shear Modulus" => 4.0))
+    BCORR.init_model([1, 2], 1, m)
+    @test PeriLab.Data_Manager.get_analysis_model("Correspondence Model", 1) ==
+          ["Correspondence Elastic"]
+    @test PeriLab.Data_Manager.get_field("Material Gradient")[1, :, :] ≈
+          Matrix(BBASIS.hooke_matrix(m, 3, 1))
+    ut_reset(3; nnodes = 2)
+    nosym = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
+                                      "Bulk Modulus" => 10.0, "Shear Modulus" => 4.0))
+    @test_throws PeriLab.PeriLabError BCORR.init_model([1, 2], 1, nosym)
+    @test hasmethod(BCORR.compute_model, Tuple{Vector{Int64},typeof(m),Int64,Float64,Float64})
+    @test hasmethod(BCORR.Bond_Associated_Correspondence.compute_model,
+                    Tuple{Vector{Int64},typeof(m),Int64,Float64,Float64})
+end
+

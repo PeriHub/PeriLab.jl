@@ -48,6 +48,30 @@ function init_model(nodes::AbstractVector{Int64},
     compute_weighted_volume!(weighted_volume, nodes, nlist, volume, bond_damage, omega)
 end
 
+function init_model(nodes::AbstractVector{Int64},
+                    material)
+    material.base.symmetry === nothing && @abort "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
+    material.base.accuracy_order === nothing ||
+        Data_Manager.set_accuracy_order(material.base.accuracy_order)
+
+    dof = Data_Manager.get_dof()
+    Data_Manager.create_bond_tensor_state("Bond Strain", Float64, dof)
+    Data_Manager.create_bond_tensor_state("Bond Cauchy Stress", Float64, dof)
+    Data_Manager.create_constant_bond_tensor_state("Bond Strain Increment", Float64, dof)
+    Data_Manager.create_constant_node_tensor_field("Integral Nodal Stress", Float64, dof)
+
+    Data_Manager.create_bond_tensor_state("Bond Rotation Tensor", Float64, dof)
+
+    nlist = Data_Manager.get_nlist()
+    volume = Data_Manager.get_field("Volume")
+    omega = Data_Manager.get_field("Influence Function")
+    bond_damage = Data_Manager.get_bond_damage("NP1")
+    weighted_volume = Data_Manager.create_constant_node_scalar_field("Weighted Volume",
+                                                                     Float64)
+
+    compute_weighted_volume!(weighted_volume, nodes, nlist, volume, bond_damage, omega)
+end
+
 """
     fields_for_local_synchronization(model::String)
 
@@ -178,6 +202,131 @@ function compute_model(nodes::AbstractVector{Int64},
                                 stress_N,
                                 stress_NP1)
     end
+    if rotation
+        for iID in nodes
+            stress_NP1[iID] = rotate(Vector{Int64}(1:nneighbors[iID]),
+                                     stress_NP1[iID],
+                                     ba_rotation_tensor[iID],
+                                     true)
+        end
+    end
+
+    stress_integral = compute_stress_integral(nodes,
+                                              dof,
+                                              nlist,
+                                              omega,
+                                              bond_damage,
+                                              volume,
+                                              weighted_volume,
+                                              bond_geometry,
+                                              bond_length,
+                                              stress_NP1,
+                                              ba_deformation_gradient,
+                                              stress_integral)
+
+    bond_force = compute_bond_forces(nodes,
+                                     nlist,
+                                     bond_geometry,
+                                     bond_length,
+                                     stress_NP1,
+                                     stress_integral,
+                                     weighted_volume,
+                                     gradient_weights,
+                                     omega,
+                                     bond_damage,
+                                     bond_force)
+end
+
+function compute_model(nodes::AbstractVector{Int64},
+                       material,
+                       block::Int64,
+                       time::Float64,
+                       dt::Float64)
+    rotation::Bool = Data_Manager.get_rotation()
+
+    dof = Data_Manager.get_dof()
+    nlist = Data_Manager.get_nlist()
+
+    bond_damage = Data_Manager.get_bond_damage("NP1")
+    horizon = Data_Manager.get_field("Horizon")
+    omega = Data_Manager.get_field("Influence Function")
+    volume = Data_Manager.get_field("Volume")
+
+    bond_length = Data_Manager.get_field("Bond Length")
+
+    bond_geometry = Data_Manager.get_field("Bond Geometry")
+    bond_length = Data_Manager.get_field("Bond Length")
+    bond_deformation = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
+
+    strain_N = Data_Manager.get_field("Bond Strain", "N")
+    strain_NP1 = Data_Manager.get_field("Bond Strain", "NP1")
+
+    stress_integral = Data_Manager.get_field("Integral Nodal Stress")
+    cauchy_stress_N = Data_Manager.get_field("Cauchy Stress", "N")
+    cauchy_stress_NP1 = Data_Manager.get_field("Cauchy Stress", "NP1")
+    stress_N = Data_Manager.get_field("Bond Cauchy Stress", "N")
+    stress_NP1 = Data_Manager.get_field("Bond Cauchy Stress", "NP1")
+    strain_increment_nodal = Data_Manager.get_field("Strain Increment")
+    strain_increment = Data_Manager.get_field("Bond Strain Increment")
+    bond_force = Data_Manager.get_field("Bond Forces")
+
+    # computed in pre calculation ----------------------------------
+    gradient_weights = Data_Manager.get_field("Lagrangian Gradient Weights")
+    weighted_volume = Data_Manager.get_field("Weighted Volume")
+    deformation_gradient = Data_Manager.get_field("Weighted Deformation Gradient")
+    #---------------------------------------------------------------
+    displacements = Data_Manager.get_field("Displacements", "NP1")
+    velocity = Data_Manager.get_field("Velocity", "NP1")
+
+    ba_deformation_gradient = Data_Manager.get_field("Bond Associated Deformation Gradient")
+
+    ba_deformation_gradient = compute_bond_level_deformation_gradient(nodes,
+                                                                      nlist,
+                                                                      dof,
+                                                                      bond_geometry,
+                                                                      bond_length,
+                                                                      bond_deformation,
+                                                                      deformation_gradient,
+                                                                      ba_deformation_gradient)
+
+    ba_rotation_tensor = Data_Manager.get_field("Bond Rotation Tensor", "NP1")
+
+    compute_bond_strain(nodes,
+                        nlist,
+                        ba_deformation_gradient,
+                        strain_NP1,
+                        strain_N,
+                        strain_increment)
+
+    #matrix_diff!(strain_increment, nodes, strain_NP1, strain_N)
+    # TODO decomposition to get the rotation and large deformation in
+    # TODO store not angles, but rotation matrices, because they are computed in decomposition
+    if rotation
+        rotation_tensor = Data_Manager.get_field("Rotation Tensor")
+        ba_rotation_tensor = compute_bond_level_rotation_tensor(nodes,
+                                                                nlist,
+                                                                ba_deformation_gradient,
+                                                                ba_rotation_tensor)
+        nneighbors = Data_Manager.get_field("Number of Neighbors")
+        for iID in nodes
+            rotate(Vector{Int64}(1:nneighbors[iID]),
+                   stress_N[iID],
+                   ba_rotation_tensor[iID],
+                   false)
+            rotate(Vector{Int64}(1:nneighbors[iID]),
+                   strain_increment[iID],
+                   ba_rotation_tensor[iID],
+                   false)
+        end
+    end
+
+    for part in (hasfield(typeof(material.model), :parts) ? material.model.parts :
+                 (material.model,))
+        parentmodule(typeof(part)).compute_stresses_ba(nodes, nlist, dof, part, material,
+                                                       time, dt, strain_increment, stress_N,
+                                                       stress_NP1)
+    end
+
     if rotation
         for iID in nodes
             stress_NP1[iID] = rotate(Vector{Int64}(1:nneighbors[iID]),

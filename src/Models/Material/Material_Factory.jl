@@ -443,8 +443,15 @@ function init_model(nodes::AbstractVector{Int64}, block::Int64)
 
     if occursin("Correspondence", model_param["Material Model"])
         Data_Manager.set_model_module("Correspondence", Correspondence)
-        return Correspondence.init_model(nodes, block, model_param)
+        material = Data_Manager.get_block_material(block)
+        if material === nothing
+            @abort "Block $block has no typed material parameters."
+            return
+        end
+        bind_material!(material)
+        return Correspondence.init_model(nodes, block, material)
     end
+
 
     material = Data_Manager.get_block_material(block)
     if material === nothing
@@ -488,7 +495,7 @@ function fields_for_local_synchronization(model, block)
     model_param = Data_Manager.get_properties(block, "Material Model")
     if occursin("Correspondence", model_param["Material Model"])
         return Correspondence.fields_for_local_synchronization(model, block,
-                                                               model_param)
+                                                               Data_Manager.get_block_material(block))
     end
 
     for material_model in Data_Manager.get_analysis_model("Material Model", block)
@@ -517,9 +524,9 @@ function compute_model(nodes::AbstractVector{Int64},
     @timeit "all" begin
         if occursin("Correspondence", model_param["Material Model"])
             @timeit "corresponcence" begin
-                Correspondence.compute_model(nodes, model_param,
-                                             block, time,
-                                             dt)
+                Correspondence.compute_model(nodes,
+                                             bind_material!(Data_Manager.get_block_material(block)),
+                                             block, time, dt)
                 return
             end
         end
@@ -625,16 +632,11 @@ function distribute_force_densities(nodes::AbstractVector{Int64})
     end
 end
 
-function compute_correspondence_bond_forces(nodes::AbstractVector{Int64},
-                                            material_parameter::Dict{String,Any},
-                                            block::Int64,
-                                            time::Float64,
-                                            dt::Float64)
-    Correspondence.compute_correspondence_model(nodes,
-                                                material_parameter,
-                                                block,
-                                                time,
-                                                dt)
+function compute_correspondence_bond_forces(nodes::AbstractVector{Int64}, material,
+                                            block::Int64, time::Float64, dt::Float64)
+    Correspondence.compute_correspondence_model(nodes, bind_material!(material), block,
+                                                time, dt)
 end
+
 
 end

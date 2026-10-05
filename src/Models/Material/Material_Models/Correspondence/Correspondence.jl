@@ -157,6 +157,50 @@ function compute_model(nodes::AbstractVector{Int64},
                                         dt)
 end
 
+_model_parts(model) = hasfield(typeof(model), :parts) ? model.parts : (model,)
+
+function init_model(nodes::AbstractVector{Int64}, block::Int64, material)
+    if material.base.symmetry === nothing
+        @abort "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
+        return
+    end
+    dof = Data_Manager.get_dof()
+    Data_Manager.create_node_tensor_field("Strain", Float64, dof)
+    Data_Manager.create_constant_node_tensor_field("Strain Increment", Float64, dof)
+    Data_Manager.create_node_tensor_field("Cauchy Stress", Float64, dof)
+    Data_Manager.create_node_scalar_field("von Mises Stress", Float64)
+    for part in _model_parts(material.model)
+        mod = parentmodule(typeof(part))
+        Data_Manager.set_analysis_model("Correspondence Model", block,
+                                        mod.correspondence_name())
+        Data_Manager.set_model_module(mod.correspondence_name(), mod)
+        mod.init_model(nodes, part, material)
+    end
+    if material.base.bond_associated
+        return Bond_Associated_Correspondence.init_model(nodes, material)
+    end
+    Zero_Energy_Control.init_model(nodes, material, block)
+end
+
+function fields_for_local_synchronization(model::String, block::Int64, material)
+    for material_model in Data_Manager.get_analysis_model("Correspondence Model", block)
+        mod = Data_Manager.get_model_module(material_model)
+        mod.fields_for_local_synchronization(model)
+        if material.base.bond_associated
+            Bond_Associated_Correspondence.fields_for_local_synchronization(model)
+        end
+    end
+end
+
+function compute_model(nodes::AbstractVector{Int64}, material, block::Int64, time::Float64,
+                       dt::Float64)
+    if material.base.bond_associated
+        return Bond_Associated_Correspondence.compute_model(nodes, material, block, time, dt)
+    end
+    return compute_correspondence_model(nodes, material, block, time, dt)
+end
+
+
 function compute_correspondence_model(nodes::AbstractVector{Int64},
                                       material_parameter::Dict{String,Any},
                                       block::Int64,
@@ -228,6 +272,74 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
 
     @timeit "zero energy" Zero_Energy_Control.compute_zero_energy_control(nodes,
                                                                           material_parameter,
+                                                                          block,
+                                                                          time,
+                                                                          dt)
+end
+
+function compute_correspondence_model(nodes::AbstractVector{Int64},
+                                      material,
+                                      block::Int64,
+                                      time::Float64,
+                                      dt::Float64)
+    rotation::Bool = Data_Manager.get_rotation()
+    dof::Int64 = Data_Manager.get_dof()
+    deformation_gradient::NodeTensorField{Float64} = Data_Manager.get_field("Deformation Gradient")
+    bond_force::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
+    bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
+    undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
+    inverse_shape_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Inverse Shape Tensor")
+    omega::BondScalarState{Float64} = Data_Manager.get_field("Influence Function")
+    strain_N::NodeTensorField{Float64} = Data_Manager.get_field("Strain", "N")
+    strain_NP1::NodeTensorField{Float64} = Data_Manager.get_field("Strain", "NP1")
+    stress_N::NodeTensorField{Float64} = Data_Manager.get_field("Cauchy Stress", "N")
+    stress_NP1::NodeTensorField{Float64} = Data_Manager.get_field("Cauchy Stress", "NP1")
+    strain_increment::NodeTensorField{Float64} = Data_Manager.get_field("Strain Increment")
+
+    if material.base.linear_strain
+        @timeit "compute linear strain" compute_linear_strain!(nodes, deformation_gradient,
+                                                               strain_NP1)
+    else
+        @timeit "compute strain" compute_strain!(nodes, deformation_gradient, strain_NP1)
+    end
+    @timeit "compute matrix diff" matrix_diff!(strain_increment, nodes, strain_NP1,
+                                               strain_N)
+    #@abort ""
+    if rotation
+        @timeit "rotate forward" begin
+            rotation_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Rotation Tensor")
+            rotate(nodes, stress_N, rotation_tensor, false)
+            rotate(nodes, strain_increment,
+                   rotation_tensor, false)
+        end
+    end
+
+    @timeit "compute material" begin
+        for part in _model_parts(material.model)
+            parentmodule(typeof(part)).compute_stresses(nodes, dof, part, material, time, dt,
+                                                        strain_increment, stress_N,
+                                                        stress_NP1)
+        end
+    end
+
+    if rotation
+        @timeit "rotate back" begin
+            rotate(nodes, stress_NP1, rotation_tensor, true)
+        end
+    end
+
+    @timeit "compute bond force" calculate_bond_force!(nodes,
+                                                       dof,
+                                                       deformation_gradient,
+                                                       undeformed_bond,
+                                                       bond_damage,
+                                                       omega,
+                                                       inverse_shape_tensor,
+                                                       stress_NP1,
+                                                       bond_force)
+
+    @timeit "zero energy" Zero_Energy_Control.compute_zero_energy_control(nodes,
+                                                                          material,
                                                                           block,
                                                                           time,
                                                                           dt)
