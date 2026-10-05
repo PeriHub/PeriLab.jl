@@ -15,13 +15,13 @@
     @test_logs (:error,
                 "Representative Young's modulus is missing.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.Material_Basis.init_local_damping_due_to_damage(collect(1:2),
-                                                                               Dict(),
+                                                                               "3D",
                                                                                Dict("Local Damping" =>
                                                                                         Dict()))
     end
     @test_logs (:error, "Damping coefficient is missing.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Solver_Manager.Material_Basis.init_local_damping_due_to_damage(collect(1:2),
-                                                                               Dict(),
+                                                                               "3D",
                                                                                Dict("Local Damping" =>
                                                                                         Dict("Representative Young's modulus" =>
                                                                                                  0)))

@@ -12,7 +12,7 @@ using ....PeriLabExceptions: @abort
 using ....ModuleLoader: find_module_files, create_module_specifics
 using .....ParameterSpec: @params, Dependent, register_base!, WithBase, Composite,
                           ParseContext, add_error!, join_path, Table1D, parameter_spec,
-                          bind_table!
+                          bind_table!, value
 import .....ParameterSpec: check!
 
 
@@ -185,6 +185,7 @@ struct BlockMaterial{B,M,E}
     moduli::E
     tables::Vector{Table1D}   # dependent tables of base and model, re-bound every step
     extras::Dict{String,Any}  # values of indexed keys, e.g. Property_1
+    correspondence::Bool      # model name contains "Correspondence" (as the legacy dict tests)
 end
 
 
@@ -358,9 +359,43 @@ function block_material(wb::WithBase, model_name::String, dof::Int64)
     return BlockMaterial(wb.base, wb.model, material_symmetry(wb.base.symmetry, dof),
                          hooke_symmetry(wb.base.symmetry, dof),
                          elastic_moduli(wb.base, bond_based, dof),
-                         vcat(_tables(wb.base), _tables(wb.model)), wb.extras)
+                         vcat(_tables(wb.base), _tables(wb.model)), wb.extras,
+                         occursin("Correspondence", model_name))
 
 end
+
+_constant(x) = x === nothing ? nothing : value(x, 1)
+
+"""
+    critical_bulk_modulus(material)
+
+Bulk modulus used for the critical time step (legacy rules): the isotropic bulk
+modulus; for orthotropic constants the compliance-based estimate; else C44/C55/C66
+or Shear Modulus XY as estimates; `nothing` if none is defined.
+"""
+function critical_bulk_modulus(material::BlockMaterial)
+    material.moduli === nothing || return material.moduli.bulk_modulus
+    base = material.base
+    nu_xy, nu_yz, nu_xz = _constant(base.poissons_ratio_xy), _constant(base.poissons_ratio_yz),
+                          _constant(base.poissons_ratio_xz)
+    if nu_xy !== nothing && nu_yz !== nothing && nu_xz !== nothing
+        E_x, E_y, E_z = _constant(base.youngs_modulus_x), _constant(base.youngs_modulus_y),
+                        _constant(base.youngs_modulus_z)
+        s11 = 1 / E_x
+        s22 = 1 / E_y
+        s33 = 1 / E_z
+        s12 = -nu_xy / E_x
+        s23 = -nu_yz / E_z
+        s13 = -nu_xz / E_z
+        return 1 / (s11 + s22 + s33 + 2 * (s12 + s23 + s13))
+    elseif base.c44 !== nothing && base.c55 !== nothing && base.c66 !== nothing
+        return maximum([base.c44 / 2, base.c55 / 2, base.c66 / 2])
+    elseif base.shear_modulus_xy !== nothing
+        return _constant(base.shear_modulus_xy) / 2
+    end
+    return nothing
+end
+
 
 """
     write_moduli!(dict, material)
@@ -392,9 +427,9 @@ export init_local_damping
 function compute_local_damping(nodes, params, dt)
     return local_damping_due_to_damage(nodes, params, dt)
 end
-function init_local_damping(nodes, material_parameter, damage_parameter)
+function init_local_damping(nodes, symmetry::String, damage_parameter)
     return init_local_damping_due_to_damage(nodes,
-                                            material_parameter,
+                                            symmetry,
                                             damage_parameter)
 end
 

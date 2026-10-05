@@ -53,13 +53,11 @@ function init_models(params::Dict,
     if "Pre_Calculation" in solver_options["Models"]
         @info "Check pre calculation models are initialized for material models"
         Pre_Calculation.check_dependencies(block_nodes)
-        if haskey(params["Models"], "Material Models")
-            for mat in keys(params["Models"]["Material Models"])
-                if haskey(params["Models"]["Material Models"][mat], "Accuracy Order")
-                    Data_Manager.set_accuracy_order(params["Models"]["Material Models"][mat]["Accuracy Order"])
-                end
-            end
+        for material in values(input.materials)
+            material.base.accuracy_order === nothing ||
+                Data_Manager.set_accuracy_order(material.base.accuracy_order)
         end
+
     end
     for model_name in solver_options["Models"]
         add_model(model_name)
@@ -95,8 +93,7 @@ function init_models(params::Dict,
                    haskey(Data_Manager.get_properties(block, active_model_name),
                           "Local Damping")
                     Material.init_local_damping(block_nodes[block],
-                                                Data_Manager.get_properties(block,
-                                                                            "Material Model"),
+                                                Data_Manager.get_block_material(block).symmetry,
                                                 Data_Manager.get_properties(block,
                                                                             "Damage Model"))
                 end
@@ -730,42 +727,14 @@ function compute_crititical_time_step(block_nodes::Dict{Int64,Vector{Int64}},
             end
         end
         if mechanical
-            bulk_modulus = Data_Manager.get_property(iblock, "Material Model",
-                                                     "Bulk Modulus")
-            nu_xy = Data_Manager.get_property(iblock, "Material Model",
-                                              "Poisson's Ratio XY")
-            nu_yz = Data_Manager.get_property(iblock, "Material Model",
-                                              "Poisson's Ratio YZ")
-            nu_xz = Data_Manager.get_property(iblock, "Material Model",
-                                              "Poisson's Ratio XZ")
-            E_x = Data_Manager.get_property(iblock, "Material Model", "Young's Modulus X")
-            E_y = Data_Manager.get_property(iblock, "Material Model", "Young's Modulus Y")
-            E_z = Data_Manager.get_property(iblock, "Material Model", "Young's Modulus Z")
-            g_xy = Data_Manager.get_property(iblock, "Material Model", "Shear Modulus XY")
-            g_yz = Data_Manager.get_property(iblock, "Material Model", "Shear Modulus YZ")
-            c_44 = Data_Manager.get_property(iblock, "Material Model", "C44")
-            c_55 = Data_Manager.get_property(iblock, "Material Model", "C55")
-            c_66 = Data_Manager.get_property(iblock, "Material Model", "C66")
-            if !isnothing(bulk_modulus)
-                bulk_modulus = bulk_modulus
-            elseif !isnothing(nu_xy) && !isnothing(nu_yz) && !isnothing(nu_xz)
-                s11 = 1 / E_x
-                s22 = 1 / E_y
-                s33 = 1 / E_z
-                s12 = -nu_xy / E_x
-                s23 = -nu_yz / E_z
-                s13 = -nu_xz / E_z
-                bulk_modulus = 1 / (s11 + s22 + s33 + 2 * (s12 + s23 + s13))
-            elseif !isnothing(c_44) && !isnothing(c_55) && !isnothing(c_66)
-                bulk_modulus = maximum([c_44 / 2, c_55 / 2, c_66 / 2])
-                #TODO: temporary solution!!!
-            elseif !isnothing(g_xy)
-                bulk_modulus = g_xy / 2
-                #TODO: temporary solution!!!
-            else
+            material = Data_Manager.get_block_material(iblock)
+            bulk_modulus = material === nothing ? nothing :
+                           Material.critical_bulk_modulus(material)
+            if isnothing(bulk_modulus)
                 @abort "No time step for material is determined because of missing properties."
                 return nothing
             end
+
             t = compute_mechanical_critical_time_step(block_nodes[iblock],
                                                       bulk_modulus)
             critical_time_step = test_timestep(t, critical_time_step)

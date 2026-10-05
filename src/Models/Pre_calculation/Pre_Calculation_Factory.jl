@@ -127,17 +127,16 @@ Check if materials are used which needs a form of pre calculation. If so, the op
 """
 function check_dependencies(block_nodes::Dict{Int64,Vector{Int64}})
     for block_id in eachindex(block_nodes)
-        if !Data_Manager.check_property(block_id, "Material Model")
-            continue
-        end
-        model_param = Data_Manager.get_properties(block_id, "Material Model")
+        material = Data_Manager.get_block_material(block_id)
+        material === nothing && continue
+
         params_dict = Data_Manager.get_properties(block_id, "Pre Calculation Model")
         Data_Manager.set_properties(block_id,
                                     "Pre Calculation Model",
                                     merge(params_dict,
                                           Dict("Deformed Bond Geometry" => true)))
-        if occursin("Correspondence", model_param["Material Model"])
-            if haskey(model_param, "Bond Associated") && model_param["Bond Associated"]
+        if material.correspondence
+            if material.base.bond_associated
                 params_dict = Data_Manager.get_properties(block_id, "Pre Calculation Model")
                 Data_Manager.set_properties(block_id,
                                             "Pre Calculation Model",

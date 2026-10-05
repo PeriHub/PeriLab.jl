@@ -521,3 +521,78 @@ end
     a2 = umat_init_allocations(1000)
     @test a2 < 3 * a1
 end
+
+@testset "correspondence flag" begin
+    ut_reset(3)
+    @test typed_block_material(Dict("Material Model" => "Correspondence Elastic",
+                                    "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0)).correspondence
+    @test !typed_block_material(Dict("Material Model" => "PD Solid Elastic",
+                                     "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0)).correspondence
+end
+
+@testset "critical bulk modulus" begin
+    ut_reset(3)
+    iso = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
+                                    "Bulk Modulus" => 7.0, "Shear Modulus" => 2.0))
+    @test BMAT.critical_bulk_modulus(iso) == 7.0
+    ortho = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
+                                      "Symmetry" => "orthotropic",
+                                      "Young's Modulus X" => 2.0, "Young's Modulus Y" => 1.5,
+                                      "Young's Modulus Z" => 1.0, "Poisson's Ratio XY" => 0.3,
+                                      "Poisson's Ratio YZ" => 0.25, "Poisson's Ratio XZ" => 0.2,
+                                      "Shear Modulus XY" => 0.7, "Shear Modulus YZ" => 0.6,
+                                      "Shear Modulus XZ" => 0.5))
+    s11, s22, s33 = 1 / 2.0, 1 / 1.5, 1 / 1.0
+    s12, s23, s13 = -0.3 / 2.0, -0.25 / 1.0, -0.2 / 1.0
+    @test BMAT.critical_bulk_modulus(ortho) ≈
+          1 / (s11 + s22 + s33 + 2 * (s12 + s23 + s13))
+    aniso = typed_block_material(merge(Dict{String,Any}("Material Model" => "Correspondence Elastic",
+                                                        "Symmetry" => "anisotropic"),
+                                       Dict("C$i$j" => (i == j ? 10.0 * i : 1.0)
+                                            for i in 1:6 for j in i:6)))
+    @test BMAT.critical_bulk_modulus(aniso) == maximum([40.0 / 2, 50.0 / 2, 60.0 / 2])
+    transverse = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
+                                           "Symmetry" => "transverse isotropic plane stress",
+                                           "Young's Modulus X" => 2.0,
+                                           "Young's Modulus Y" => 1.5,
+                                           "Poisson's Ratio XY" => 0.3,
+                                           "Shear Modulus XY" => 0.8))
+    @test BMAT.critical_bulk_modulus(transverse) == 0.4
+end
+
+@testset "pre-calculation dependencies" begin
+    function ut_dependencies(raw)
+        ut_reset(3; nnodes = 2)
+        PeriLab.Data_Manager.set_block_id_list([1])
+        PeriLab.Data_Manager.init_properties()
+        PeriLab.Data_Manager.set_block_material(1, typed_block_material(raw))
+        PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.check_dependencies(Dict(1 => [1,
+                                                                                            2]))
+        return PeriLab.Data_Manager.get_properties(1, "Pre Calculation Model")
+    end
+    corr = Dict{String,Any}("Material Model" => "Correspondence Elastic",
+                            "Symmetry" => "isotropic", "Bulk Modulus" => 1.0,
+                            "Shear Modulus" => 1.0)
+    p = ut_dependencies(merge(corr, Dict{String,Any}("Bond Associated" => true)))
+    @test p["Bond Associated Correspondence"] && p["Deformed Bond Geometry"]
+    @test !haskey(p, "Shape Tensor")
+    p = ut_dependencies(corr)
+    @test p["Shape Tensor"] && p["Deformation Gradient"]
+    p = ut_dependencies(Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                         "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0))
+    @test p["Deformed Bond Geometry"] && !haskey(p, "Shape Tensor")
+end
+
+@testset "strain Hooke matrix" begin
+    ut_reset(2)
+    m = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
+                                  "Symmetry" => "isotropic plane strain",
+                                  "Bulk Modulus" => 10.0, "Shear Modulus" => 4.0))
+    legacy = ut_legacy_dict(Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                             "Symmetry" => "isotropic plane strain",
+                                             "Bulk Modulus" => 10.0,
+                                             "Shear Modulus" => 4.0); dof = 2)
+    @test Matrix(BBASIS.hooke_matrix(m, 2)) ≈
+          Matrix(BBASIS.get_Hooke_matrix(legacy, legacy["Symmetry"], 2))
+end
+

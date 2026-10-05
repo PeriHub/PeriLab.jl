@@ -6,7 +6,7 @@ using ...Data_Manager
 using ...Helpers: find_active_nodes, add_in_place!, invert
 using StaticArrays: MMatrix, SMatrix
 using ..Material_Basis:
-                        get_strain, get_Hooke_matrix,
+                        get_strain, get_Hooke_matrix, hooke_matrix,
                         compute_deviatoric_and_spherical_stresses
 
 """
@@ -127,8 +127,9 @@ function calculate_stresses(block_nodes::Dict{Int64,Vector{Int64}},
                             options::Dict{String,Any})
     active_list = Data_Manager.get_field("Active")
     for block in eachindex(block_nodes)
-        correspondence = occursin("Correspondence",
-                                  Data_Manager.get_properties(block, "Material Model")["Material Model"])
+        material = Data_Manager.get_block_material(block)
+        correspondence = material.correspondence
+
         if options["Calculate Cauchy"] |
            options["Calculate von Mises stress"] |
            options["Calculate Strain"] | correspondence
@@ -142,10 +143,7 @@ function calculate_stresses(block_nodes::Dict{Int64,Vector{Int64}},
             calculate_von_mises_stress(active_nodes)
         end
         if options["Calculate Strain"] && !correspondence
-            material_parameter = Data_Manager.get_properties(block, "Material Model")
-            hookeMatrix = get_Hooke_matrix(material_parameter,
-                                           material_parameter["Symmetry"],
-                                           Data_Manager.get_dof())
+            hookeMatrix = hooke_matrix(material, Data_Manager.get_dof())
             calculate_strain(active_nodes,
                              invert(hookeMatrix))
         end

@@ -65,7 +65,7 @@ function local_damping_due_to_damage(nodes::AbstractVector{Int64},
 end
 
 function init_local_damping_due_to_damage(nodes::AbstractVector{Int64},
-                                          material_parameter,
+                                          symmetry::String,
                                           damage_parameter)
     if !haskey(damage_parameter["Local Damping"], "Representative Young's modulus")
         @abort "Representative Young's modulus is missing."
@@ -79,7 +79,6 @@ function init_local_damping_due_to_damage(nodes::AbstractVector{Int64},
     constant = Data_Manager.create_constant_node_scalar_field("Bond Based Constant",
                                                               Float64)
     horizon = Data_Manager.get_field("Horizon")
-    symmetry::String = get_symmetry(material_parameter)
     compute_bond_based_constants(nodes, symmetry, constant, horizon)
 end
 
