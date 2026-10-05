@@ -111,3 +111,35 @@ end
     @test MPS.lookup_model(:material, "Material Template") === nothing
     @test MPS.parameter_spec(MAT.Material_template.MaterialTemplateParams) isa Vector
 end
+
+@testset "orthotropic completeness" begin
+    full = Dict{String,Any}("Material Model" => "PD Solid Elastic", "Symmetry" => "Orthotropic",
+                            "Young's Modulus X" => 1.0, "Young's Modulus Y" => 1.0,
+                            "Young's Modulus Z" => 1.0, "Poisson's Ratio XY" => 0.3,
+                            "Poisson's Ratio YZ" => 0.3, "Poisson's Ratio XZ" => 0.3,
+                            "Shear Modulus XY" => 1.0, "Shear Modulus YZ" => 1.0,
+                            "Shear Modulus XZ" => 1.0)
+    m, ctx = ut_material(full)
+    @test isempty(ctx.errors)
+    delete!(full, "Shear Modulus XZ")
+    m, ctx = ut_material(full)
+    @test only(ctx.errors).path == "Models.\"Material Models\".M.Symmetry"
+    @test only(ctx.errors).message == "\"Orthotropic\" requires Shear Modulus XZ"
+end
+
+@testset "anisotropic and transverse isotropic completeness" begin
+    m, ctx = ut_material(Dict("Material Model" => "PD Solid Elastic",
+                              "Symmetry" => "anisotropic", "C11" => 1.0))
+    @test startswith(only(ctx.errors).message, "\"anisotropic\" requires C12, C13")
+    m, ctx = ut_material(Dict("Material Model" => "PD Solid Elastic",
+                              "Symmetry" => "transverse isotropic plane stress",
+                              "Young's Modulus X" => 1.0, "Young's Modulus Y" => 1.0,
+                              "Poisson's Ratio XY" => 0.3))
+    @test only(ctx.errors).message ==
+          "\"transverse isotropic plane stress\" requires Shear Modulus XY"
+    m, ctx = ut_material(Dict("Material Model" => "PD Solid Elastic",
+                              "Symmetry" => "isotropic plane strain",
+                              "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0))
+    @test isempty(ctx.errors)
+end
+

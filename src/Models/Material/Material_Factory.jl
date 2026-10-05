@@ -10,7 +10,10 @@ using TimerOutputs: @timeit
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
 using ....ModuleLoader: find_module_files, create_module_specifics
-using .....ParameterSpec: @params, Dependent, register_base!, WithBase, Composite
+using .....ParameterSpec: @params, Dependent, register_base!, WithBase, Composite,
+                          ParseContext, add_error!, join_path
+import .....ParameterSpec: check!
+
 
 @params struct FlawFunctionParams
     active::Bool = req("Active")
@@ -88,6 +91,47 @@ symmetry; they are completed at initialisation.
     bond_associated::Bool = opt("Bond Associated"; default = false)
     linear_strain::Bool = opt("Linear Strain"; default = false)
     flaw_function::Union{Nothing,FlawFunctionParams} = opt("Flaw Function"; default = nothing)
+end
+
+const _ORTHOTROPIC_KEYS = ((:youngs_modulus_x, "Young's Modulus X"),
+                           (:youngs_modulus_y, "Young's Modulus Y"),
+                           (:youngs_modulus_z, "Young's Modulus Z"),
+                           (:poissons_ratio_xy, "Poisson's Ratio XY"),
+                           (:poissons_ratio_yz, "Poisson's Ratio YZ"),
+                           (:poissons_ratio_xz, "Poisson's Ratio XZ"),
+                           (:shear_modulus_xy, "Shear Modulus XY"),
+                           (:shear_modulus_yz, "Shear Modulus YZ"),
+                           (:shear_modulus_xz, "Shear Modulus XZ"))
+
+function _transverse_keys(symmetry::String)
+    keys = [(:youngs_modulus_x, "Young's Modulus X"), (:youngs_modulus_y, "Young's Modulus Y"),
+            (:poissons_ratio_xy, "Poisson's Ratio XY")]
+    occursin("plane stress", symmetry) || push!(keys, (:poissons_ratio_yz, "Poisson's Ratio YZ"))
+    push!(keys, (:shear_modulus_xy, "Shear Modulus XY"))
+    if !occursin("plane strain", symmetry) && !occursin("plane stress", symmetry)
+        push!(keys, (:shear_modulus_yz, "Shear Modulus YZ"))
+    end
+    return keys
+end
+
+# stiffness-matrix materials must define all their constants
+function check!(p::MaterialBaseParams, path::String, ctx::ParseContext)
+    p.symmetry === nothing && return nothing
+    symmetry = lowercase(p.symmetry)
+    required = if occursin("anisotropic", symmetry)
+        [(Symbol("c$i$j"), "C$i$j") for i in 1:6 for j in i:6]
+    elseif occursin("transverse isotropic", symmetry)
+        _transverse_keys(symmetry)
+    elseif occursin("orthotropic", symmetry)
+        collect(_ORTHOTROPIC_KEYS)
+    else
+        Tuple{Symbol,String}[]
+    end
+    missing_keys = [alias for (field, alias) in required if getfield(p, field) === nothing]
+    isempty(missing_keys) ||
+        add_error!(ctx, join_path(path, "Symmetry"),
+                   "\"$(p.symmetry)\" requires $(join(missing_keys, ", "))")
+    return nothing
 end
 
 # registration runs at load time, never during precompilation
