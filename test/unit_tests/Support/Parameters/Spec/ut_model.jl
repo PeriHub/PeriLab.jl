@@ -203,3 +203,14 @@ end
     @test length(ctx.errors) == 1
     @test startswith(ctx.errors[1].message, "unknown key")
 end
+
+@testset "indexed key values are kept in extras" begin
+    m, ctx = ut_parse_based(Dict{String,Any}(UT_KEY => "UT Patterned", "File" => "a.so",
+                                             "Property_1" => 1, "Property_27" => 2.5))
+    @test isempty(ctx.errors)
+    @test m.extras == Dict{String,Any}("Property_1" => 1.0, "Property_27" => 2.5)
+    @test m.extras["Property_1"] isa Float64
+    m, ctx = ut_parse_based(Dict{String,Any}(UT_KEY => "UT Empty"))
+    @test isempty(m.extras)
+    @test PS.WithBase(1, 2).extras == Dict{String,Any}()
+end

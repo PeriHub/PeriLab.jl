@@ -16,22 +16,27 @@ end
 struct WithBase{B,M}
     base::B
     model::M
+    extras::Dict{String,Any}   # values of indexed keys (see `key_patterns`), e.g. Property_1
 end
+WithBase(base, model) = WithBase(base, model, Dict{String,Any}())
 
 function _check_key_patterns!(dict::AbstractDict, known::Set{String}, types, path::String,
                               ctx::ParseContext)
+    extras = Dict{String,Any}()
     for k in keys(dict)
         key = string(k)
         key in known && continue
         for T in types
             pattern = findfirst(p -> occursin(first(p), key), key_patterns(T))
             pattern === nothing && continue
-            convert_value(last(key_patterns(T)[pattern]), dict[k], join_path(path, key), ctx)
+            v = convert_value(last(key_patterns(T)[pattern]), dict[k], join_path(path, key),
+                              ctx)
+            v === FAILED || (extras[key] = v)
             push!(known, key)
             break
         end
     end
-    return nothing
+    return extras
 end
 
 function _check_alias_conflicts!(names, types, path::String, ctx::ParseContext)
@@ -119,10 +124,10 @@ function _parse_model(category::Symbol, dict::Union{Nothing,AbstractDict}, path:
     for T in all_types
         union!(known, aliases(T))
     end
-    _check_key_patterns!(dict, known, all_types, path, ctx)
+    extras = _check_key_patterns!(dict, known, all_types, path, ctx)
     check_unknown!(dict, known, path, ctx)
     any(isnothing, parts) && return nothing
     base !== nothing && base_part === nothing && return nothing
     model = length(parts) == 1 ? parts[1] : Composite(Tuple(parts))
-    return base === nothing ? model : WithBase(base_part, model)
+    return base === nothing ? model : WithBase(base_part, model, extras)
 end
