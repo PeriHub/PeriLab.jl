@@ -6,7 +6,7 @@ using ...Data_Manager
 using ...Helpers: find_active_nodes, add_in_place!, invert
 using StaticArrays: MMatrix, SMatrix
 using ..Material_Basis:
-                        get_strain, get_Hooke_matrix, hooke_matrix,
+                        get_strain, hooke_matrix,
                         compute_deviatoric_and_spherical_stresses
 
 """

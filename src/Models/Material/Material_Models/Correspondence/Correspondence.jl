@@ -9,7 +9,7 @@ using TimerOutputs: @timeit
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
 using ....Zero_Energy_Control
-using .....ModuleLoader: find_module_files, create_module_specifics
+using .....ModuleLoader: find_module_files
 global module_list = find_module_files(@__DIR__, "correspondence_name")
 for mod in module_list
     include(mod["File"])
@@ -28,59 +28,6 @@ export init_model
 export material_name
 export compute_model
 export fields_for_local_synchronization
-"""
-  init_model( nodes::AbstractVector{Int64}, block::Int64, material_parameter::Dict{String,Any})
-
-Initializes the correspondence material model.
-
-# Arguments
-  - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `block::Int64`: Block id of the current block.
-  - `material_parameter::Dict{String,Any}`: Dictionary with material parameter.
-"""
-function init_model(nodes::AbstractVector{Int64},
-                    block::Int64,
-                    material_parameter::Dict{String,Any})
-    # global dof
-    # global rotation
-    # global angles
-    if !haskey(material_parameter, "Symmetry")
-        @abort "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
-        return
-    end
-    dof = Data_Manager.get_dof()
-    Data_Manager.create_node_tensor_field("Strain", Float64, dof)
-
-    Data_Manager.create_constant_node_tensor_field("Strain Increment", Float64, dof)
-    Data_Manager.create_node_tensor_field("Cauchy Stress", Float64, dof)
-
-    Data_Manager.create_node_scalar_field("von Mises Stress", Float64)
-    rotation::Bool = Data_Manager.get_rotation()
-    material_models = split(material_parameter["Material Model"], "+")
-    material_models = map(r -> strip(r), material_models)
-    #occursin("Correspondence", material_name)
-    for material_model in material_models
-        Data_Manager.set_analysis_model("Correspondence Model", block, material_model)
-        mod = create_module_specifics(material_model,
-                                      module_list,
-                                      @__MODULE__,
-                                      "correspondence_name")
-        if isnothing(mod)
-            @abort "No correspondence material of name " * material_model * " exists."
-            return
-        end
-        Data_Manager.set_model_module(material_model, mod)
-        mod.init_model(nodes, material_parameter)
-    end
-    if haskey(material_parameter, "Bond Associated") &&
-       material_parameter["Bond Associated"]
-        return Bond_Associated_Correspondence.init_model(nodes,
-                                                         material_parameter)
-    end
-    Zero_Energy_Control.init_model(nodes, material_parameter, block)
-    material_parameter["Bond Associated"] = false
-end
-
 """
     material_name()
 
@@ -101,64 +48,18 @@ function material_name()
     return "Correspondence"
 end
 
-"""
-    fields_for_local_synchronization(model::String)
-
-Returns a user developer defined local synchronization. This happens before each model.
-
-
-
-# Arguments
-
-"""
-function fields_for_local_synchronization(model::String,
-                                          block::Int64,
-                                          model_param::Dict)
-    for material_model in Data_Manager.get_analysis_model("Correspondence Model", block)
-        mod = Data_Manager.get_model_module(material_model)
-
-        mod.fields_for_local_synchronization(model)
-        if model_param["Bond Associated"]
-            Bond_Associated_Correspondence.fields_for_local_synchronization(model)
-        end
-    end
-end
-
-"""
-    compute_model(nodes, material_parameter, time, dt)
-
-Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
-
-# Arguments
-- `nodes::AbstractVector{Int64}`: List of block nodes.
-- `material_parameter::Dict{String,Any}`: Dictionary with material parameter.
-- `time::Float64`: The current time.
-- `dt::Float64`: The current time step.
-Example:
-```julia
-```
-"""
-function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict{String,Any},
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
-    if material_parameter["Bond Associated"]
-        return Bond_Associated_Correspondence.compute_model(nodes,
-                                                            material_parameter,
-                                                            block,
-                                                            time,
-                                                            dt)
-    end
-    return compute_correspondence_model(nodes,
-                                        material_parameter,
-                                        block,
-                                        time,
-                                        dt)
-end
-
 _model_parts(model) = hasfield(typeof(model), :parts) ? model.parts : (model,)
 
+"""
+    init_model(nodes, block, material)
+
+Initializes the correspondence model and its parts for a block.
+
+# Arguments
+- `nodes::AbstractVector{Int64}`: The block nodes.
+- `block::Int64`: The block.
+- `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
+"""
 function init_model(nodes::AbstractVector{Int64}, block::Int64, material)
     # a missing Symmetry means isotropic (the Hooke matrix uses material.hooke_symmetry);
     # in 2D the Hooke matrix aborts without plane strain / plane stress
@@ -180,6 +81,11 @@ function init_model(nodes::AbstractVector{Int64}, block::Int64, material)
     Zero_Energy_Control.init_model(nodes, material, block)
 end
 
+"""
+    fields_for_local_synchronization(model, block, material)
+
+Registers the fields the correspondence parts synchronize locally.
+"""
 function fields_for_local_synchronization(model::String, block::Int64, material)
     for material_model in Data_Manager.get_analysis_model("Correspondence Model", block)
         mod = Data_Manager.get_model_module(material_model)
@@ -190,6 +96,18 @@ function fields_for_local_synchronization(model::String, block::Int64, material)
     end
 end
 
+"""
+    compute_model(nodes, material, block, time, dt)
+
+Computes the correspondence forces of a block.
+
+# Arguments
+- `nodes::AbstractVector{Int64}`: The block nodes.
+- `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
+- `block::Int64`: The block.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+"""
 function compute_model(nodes::AbstractVector{Int64}, material, block::Int64, time::Float64,
                        dt::Float64)
     if material.base.bond_associated
@@ -199,82 +117,18 @@ function compute_model(nodes::AbstractVector{Int64}, material, block::Int64, tim
 end
 
 
-function compute_correspondence_model(nodes::AbstractVector{Int64},
-                                      material_parameter::Dict{String,Any},
-                                      block::Int64,
-                                      time::Float64,
-                                      dt::Float64)
-    rotation::Bool = Data_Manager.get_rotation()
-    dof::Int64 = Data_Manager.get_dof()
-    deformation_gradient::NodeTensorField{Float64} = Data_Manager.get_field("Deformation Gradient")
-    bond_force::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
-    bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
-    undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
-    inverse_shape_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Inverse Shape Tensor")
-    omega::BondScalarState{Float64} = Data_Manager.get_field("Influence Function")
-    strain_N::NodeTensorField{Float64} = Data_Manager.get_field("Strain", "N")
-    strain_NP1::NodeTensorField{Float64} = Data_Manager.get_field("Strain", "NP1")
-    stress_N::NodeTensorField{Float64} = Data_Manager.get_field("Cauchy Stress", "N")
-    stress_NP1::NodeTensorField{Float64} = Data_Manager.get_field("Cauchy Stress", "NP1")
-    strain_increment::NodeTensorField{Float64} = Data_Manager.get_field("Strain Increment")
+"""
+    compute_correspondence_model(nodes, material, block, time, dt)
 
-    if haskey(material_parameter, "Linear Strain") && material_parameter["Linear Strain"]
-        @timeit "compute linear strain" compute_linear_strain!(nodes, deformation_gradient,
-                                                               strain_NP1)
-    else
-        @timeit "compute strain" compute_strain!(nodes, deformation_gradient, strain_NP1)
-    end
-    @timeit "compute matrix diff" matrix_diff!(strain_increment, nodes, strain_NP1,
-                                               strain_N)
-    #@abort ""
-    if rotation
-        @timeit "rotate forward" begin
-            rotation_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Rotation Tensor")
-            rotate(nodes, stress_N, rotation_tensor, false)
-            rotate(nodes, strain_increment,
-                   rotation_tensor, false)
-        end
-    end
+Computes deformation gradient, strain increment and stresses of the correspondence parts.
 
-    @timeit "compute material" begin
-        material_models::Vector{String} = Data_Manager.get_analysis_model("Correspondence Model",
-                                                                          block)
-        for material_model in material_models
-            mod::Module = Data_Manager.get_model_module(material_model)
-
-            mod.compute_stresses(nodes,
-                                 dof,
-                                 material_parameter,
-                                 time,
-                                 dt,
-                                 strain_increment,
-                                 stress_N,
-                                 stress_NP1)
-        end
-    end
-
-    if rotation
-        @timeit "rotate back" begin
-            rotate(nodes, stress_NP1, rotation_tensor, true)
-        end
-    end
-    @timeit "compute bond force" calculate_bond_force!(nodes,
-                                                       dof,
-                                                       deformation_gradient,
-                                                       undeformed_bond,
-                                                       bond_damage,
-                                                       omega,
-                                                       inverse_shape_tensor,
-                                                       stress_NP1,
-                                                       bond_force)
-
-    @timeit "zero energy" Zero_Energy_Control.compute_zero_energy_control(nodes,
-                                                                          material_parameter,
-                                                                          block,
-                                                                          time,
-                                                                          dt)
-end
-
+# Arguments
+- `nodes::AbstractVector{Int64}`: The block nodes.
+- `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
+- `block::Int64`: The block.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+"""
 function compute_correspondence_model(nodes::AbstractVector{Int64},
                                       material,
                                       block::Int64,

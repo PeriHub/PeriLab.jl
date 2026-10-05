@@ -5,7 +5,7 @@
 module Correspondence_Elastic
 using .......Data_Manager
 using .......ParameterSpec: @params, register_material
-using .....Material_Basis: get_Hooke_matrix, hooke_matrix
+using .....Material_Basis: hooke_matrix
 using .......Helpers: get_fourth_order, fast_mul!, get_mapping
 using StaticArrays: SMatrix
 export compute_stresses
@@ -40,35 +40,6 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
-
-Initializes the material model.
-
-# Arguments
-  - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-"""
-function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
-    dof::Int64 = Data_Manager.get_dof()
-
-    hooke_matrix::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Material Gradient",
-                                                                                            Float64,
-                                                                                            Int64((dof *
-                                                                                                   (dof +
-                                                                                                    1)) /
-                                                                                                  2))
-    symmetry::String = get(material_parameter, "Symmetry", "default")
-
-    for iID in nodes
-        @views hooke_matrix[iID, :,
-        :] = get_Hooke_matrix(material_parameter,
-                                                          symmetry,
-                                                          dof,
-                                                          iID)
-    end
-end
-"""
 	correspondence_name()
 
 Gives the material name. It is needed for comparison with the yaml input deck.
@@ -89,14 +60,15 @@ function correspondence_name()
 end
 
 """
-	compute_stresses(iID:Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
+	compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, p, material, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
 
 Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `iID::Int64`: Node ID.
+- `nodes::AbstractVector{Int64}`: The nodes.
 - `dof::Int64`: Degrees of freedom
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `p`: The model parameters.
+- `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 - `strainInc::Union{NodeTensorField{Float64},Array{Float64,6}}`: Strain increment.
@@ -151,14 +123,22 @@ function _elastic_stresses!(nodes::AbstractVector{Int64},
     end
 end
 
-function compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict,
-                          time::Float64, dt::Float64,
-                          strain_increment::NodeTensorField{Float64},
-                          stress_N::NodeTensorField{Float64},
-                          stress_NP1::NodeTensorField{Float64})
-    return _elastic_stresses!(nodes, dof, strain_increment, stress_N, stress_NP1)
-end
+"""
+    compute_stresses(nodes, dof, p, material, time, dt, strain_increment, stress_N, stress_NP1)
 
+Computes the stresses of `nodes`.
+
+# Arguments
+- `nodes::AbstractVector{Int64}`: The block nodes.
+- `dof::Int64`: Degrees of freedom.
+- `p`: The model parameters (the model's `@params` struct).
+- `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+- `strain_increment`: Strain increment.
+- `stress_N`: Stress of step N.
+- `stress_NP1`: Stress of step N+1, updated in place.
+"""
 function compute_stresses(nodes::AbstractVector{Int64}, dof::Int64,
                           p::CorrespondenceElasticParams, material,
                           time::Float64, dt::Float64,
@@ -168,6 +148,16 @@ function compute_stresses(nodes::AbstractVector{Int64}, dof::Int64,
     return _elastic_stresses!(nodes, dof, strain_increment, stress_N, stress_NP1)
 end
 
+"""
+    init_model(nodes, p, material)
+
+Initializes the model fields of `nodes`.
+
+# Arguments
+- `nodes::AbstractVector{Int64}`: The block nodes.
+- `p`: The model parameters (the model's `@params` struct).
+- `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
+"""
 function init_model(nodes::AbstractVector{Int64}, p::CorrespondenceElasticParams, material)
     dof::Int64 = Data_Manager.get_dof()
     hooke::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Material Gradient",
@@ -181,6 +171,23 @@ function init_model(nodes::AbstractVector{Int64}, p::CorrespondenceElasticParams
     end
 end
 
+"""
+    compute_stresses_ba(nodes, nlist, dof, p, material, time, dt, strain_increment, stress_N, stress_NP1)
+
+Computes the bond-associated stresses of `nodes`.
+
+# Arguments
+- `nodes::AbstractVector{Int64}`: The block nodes.
+- `nlist`: The neighborhood list.
+- `dof::Int64`: Degrees of freedom.
+- `p`: The model parameters (the model's `@params` struct).
+- `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+- `strain_increment`: Strain increment.
+- `stress_N`: Stress of step N.
+- `stress_NP1`: Stress of step N+1, updated in place.
+"""
 function compute_stresses_ba(nodes, nlist, dof::Int64, p::CorrespondenceElasticParams,
                              material, time::Float64, dt::Float64, strain_increment,
                              stress_N, stress_NP1)
@@ -196,62 +203,6 @@ function compute_stresses_ba(nodes, nlist, dof::Int64, p::CorrespondenceElasticP
     end
 end
 
-
-function compute_stresses_ba(nodes,
-                             nlist,
-                             dof::Int64,
-                             material_parameter::Dict,
-                             time::Float64,
-                             dt::Float64,
-                             strain_increment,
-                             stress_N,
-                             stress_NP1)
-    @views mapping = get_mapping(dof)
-    for iID in nodes
-        @views hookeMatrix = get_Hooke_matrix(material_parameter,
-                                              material_parameter["Symmetry"],
-                                              dof,
-                                              iID)
-        @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
-            @views sNP1 = stress_NP1[iID][jID, :, :]
-            @views sInc = strain_increment[iID][jID, :, :]
-            @views sN = stress_N[iID][jID, :, :]
-            fast_mul!(sNP1, hookeMatrix, sInc, sN, mapping)
-        end
-    end
-end
-
-"""
-	compute_stresses(dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
-
-Calculates the stresses of a single node. Needed for FEM. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
-# Arguments
-- `dof::Int64`: Degrees of freedom
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-- `time::Float64`: The current time.
-- `dt::Float64`: The current time step.
-- `strainInc::Union{NodeTensorField{Float64},Array{Float64,6}}`: Strain increment.
-- `stress_N::SubArray`: Stress of step N.
-- `stress_NP1::SubArray`: Stress of step N+1.
-# Returns
-- `stress_NP1::SubArray`: updated stresses
-Example:
-```julia
-```
-"""
-function compute_stresses(dof::Int64,
-                          material_parameter::Dict,
-                          time::Float64,
-                          dt::Float64,
-                          strain_increment::NodeScalarField{Float64},
-                          stress_N::NodeScalarField{Float64},
-                          stress_NP1::NodeScalarField{Float64})
-    hookeMatrix = get_Hooke_matrix(material_parameter,
-                                   material_parameter["Symmetry"],
-                                   dof)
-
-    return hookeMatrix * strain_increment + stress_N
-end
 
 """
 	fields_for_local_synchronization(model::String)

@@ -4,6 +4,8 @@
 
 const BMAT = PeriLab.Solver_Manager.Model_Factory.Material
 const BBASIS = PeriLab.Solver_Manager.Material_Basis
+const LEGACY = isdefined(@__MODULE__, :LegacyMaterialOracle) ? LegacyMaterialOracle :
+               (include(joinpath(@__DIR__, "legacy_material_oracle.jl")); LegacyMaterialOracle)
 
 function ut_reset(dof; nnodes = 3)
     PeriLab.Data_Manager.initialize_data()
@@ -16,7 +18,7 @@ function ut_both(raw; dof = 3, setup = () -> nothing)
     ut_reset(dof)
     setup()
     legacy = Dict{String,Any}(raw)
-    BBASIS.get_all_elastic_moduli(legacy)
+    LEGACY.get_all_elastic_moduli(legacy)
     legacy_values = Dict(k => copy(legacy[k])
                          for k in ("Bulk Modulus", "Young's Modulus", "Shear Modulus",
                                    "Poisson's Ratio"))
@@ -99,7 +101,7 @@ end
     end
 end
 
-@testset "material_symmetry follows check_symmetry and get_symmetry" begin
+@testset "material_symmetry follows the legacy symmetry rules" begin
     for (sym, dof) in (("isotropic plane strain", 2), ("isotropic plane stress", 2),
                        ("isotropic plane strain", 3), ("Isotropic Plane Stress", 2),
                        ("isotropic", 3), (nothing, 2), (nothing, 3),
@@ -109,20 +111,14 @@ end
             legacy["Symmetry"] = replace(replace(legacy["Symmetry"], r"plane strain$" => ""),
                                          r"plane stress$" => "")
         end
-        @test BMAT.material_symmetry(sym, dof) == BBASIS.get_symmetry(legacy)
+        @test BMAT.material_symmetry(sym, dof) == LEGACY.get_symmetry(legacy)
     end
 end
 
-@testset "write_moduli! fills the material dict" begin
+@testset "model_parts of a single model" begin
     ut_reset(3)
     m = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
                                   "Bulk Modulus" => 10.0, "Shear Modulus" => 10.0))
-    dict = Dict{String,Any}("Material Model" => "PD Solid Elastic", "Bulk Modulus" => 10.0,
-                            "Shear Modulus" => 10.0)
-    BMAT.write_moduli!(dict, m)
-    @test dict["Young's Modulus"] == 22.5 && dict["Poisson's Ratio"] == 0.125
-    @test dict["Computed"] === true
-    @test dict["Symmetry"] == "isotropic"
     @test BMAT.model_parts(m.model) == (m.model,)
 end
 
@@ -196,7 +192,7 @@ end
 function ut_legacy_dict(raw; dof)
     ut_reset(dof)
     legacy = Dict{String,Any}(raw)
-    BBASIS.get_all_elastic_moduli(legacy)
+    LEGACY.get_all_elastic_moduli(legacy)
     return legacy
 end
 
@@ -227,7 +223,7 @@ end
         ut_reset(dof)
         m = typed_block_material(raw; dof = dof)
         @test Matrix(BBASIS.hooke_matrix(m, dof, 2)) ≈
-              Matrix(BBASIS.get_Hooke_matrix(legacy, legacy["Symmetry"], dof, 2))
+              Matrix(LEGACY.get_Hooke_matrix(legacy, legacy["Symmetry"], dof, 2))
     end
 end
 
@@ -275,7 +271,7 @@ end
                                   "Flaw Function" => flaw))
     for coor in ([1.0, 0.5], [1.1, 0.4, 0.2], [3.0, 3.0])
         @test BBASIS.flaw_function(m.base.flaw_function, coor, 10.0) ≈
-              BBASIS.flaw_function(Dict("Flaw Function" => flaw), coor, 10.0)
+              LEGACY.flaw_function(Dict("Flaw Function" => flaw), coor, 10.0)
     end
     @test BBASIS.flaw_function(nothing, [0.0, 0.0], 10.0) == 10.0
     inactive = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
@@ -317,7 +313,7 @@ const BCORR = BMAT.Correspondence
         BCORR.Correspondence_Elastic.init_model([1, 2], m.model, m)
         C = PeriLab.Data_Manager.get_field("Material Gradient")
         for iID in 1:2
-            @test C[iID, :, :] ≈ Matrix(BBASIS.get_Hooke_matrix(legacy, legacy["Symmetry"],
+            @test C[iID, :, :] ≈ Matrix(LEGACY.get_Hooke_matrix(legacy, legacy["Symmetry"],
                                                                 dof, iID))
         end
         @test hasmethod(BCORR.Correspondence_Elastic.compute_stresses,
@@ -326,46 +322,34 @@ const BCORR = BMAT.Correspondence
     end
 end
 
+# Result of the legacy (material dict) Correspondence Plastic, recorded before its removal.
+const UT_PLASTIC_REFERENCE = [0.004444444444444446 0.0 0.0; 0.004444444444444446 0.0 0.0;;;
+                              0.0 -0.0022222222222222227 0.0; 0.0 -0.0022222222222222227 0.0;;;
+                              0.0 0.0 -0.0022222222222222227; 0.0 0.0 -0.0022222222222222227]
+
 @testset "Correspondence Plastic typed compute equals legacy" begin
     dof = 3
     nnodes = 2
     raw = Dict{String,Any}("Material Model" => "Correspondence Elastic + Correspondence Plastic",
                            "Symmetry" => "isotropic", "Bulk Modulus" => 10.0,
                            "Shear Modulus" => 4.0, "Yield Stress" => 0.01)
-    results = []
-    for typed in (false, true)
-        ut_reset(dof; nnodes = nnodes)
-        coor = PeriLab.Data_Manager.create_constant_node_vector_field("Coordinates", Float64,
-                                                                      dof)
-        coor .= [0.0 0.0 0.0; 1.0 0.0 0.0]
-        if typed
-            m = typed_block_material(raw; dof = dof)
-            p = m.model.parts[2]
-            BCORR.Correspondence_Plastic.init_model(collect(1:nnodes), p, m)
-        else
-            legacy = Dict{String,Any}(raw)
-            BBASIS.get_all_elastic_moduli(legacy)
-            BCORR.Correspondence_Plastic.init_model(collect(1:nnodes), legacy)
-        end
-        strain_inc = zeros(nnodes, dof, dof)
-        strain_inc[:, 1, 1] .= 0.02
-        strain_inc[:, 1, 2] .= 0.01
-        strain_inc[:, 2, 1] .= 0.01
-        stress_N = zeros(nnodes, dof, dof)
-        stress_NP1 = zeros(nnodes, dof, dof)
-        stress_NP1[:, 1, 1] .= 0.5
-        if typed
-            BCORR.Correspondence_Plastic.compute_stresses(collect(1:nnodes), dof, p, m, 0.0,
-                                                          1.0, strain_inc, stress_N,
-                                                          stress_NP1)
-        else
-            BCORR.Correspondence_Plastic.compute_stresses(collect(1:nnodes), dof, legacy,
-                                                          0.0, 1.0, strain_inc, stress_N,
-                                                          stress_NP1)
-        end
-        push!(results, copy(stress_NP1))
-    end
-    @test results[1] ≈ results[2]
+    ut_reset(dof; nnodes = nnodes)
+    coor = PeriLab.Data_Manager.create_constant_node_vector_field("Coordinates", Float64,
+                                                                  dof)
+    coor .= [0.0 0.0 0.0; 1.0 0.0 0.0]
+    m = typed_block_material(raw; dof = dof)
+    p = m.model.parts[2]
+    BCORR.Correspondence_Plastic.init_model(collect(1:nnodes), p, m)
+    strain_inc = zeros(nnodes, dof, dof)
+    strain_inc[:, 1, 1] .= 0.02
+    strain_inc[:, 1, 2] .= 0.01
+    strain_inc[:, 2, 1] .= 0.01
+    stress_N = zeros(nnodes, dof, dof)
+    stress_NP1 = zeros(nnodes, dof, dof)
+    stress_NP1[:, 1, 1] .= 0.5
+    BCORR.Correspondence_Plastic.compute_stresses(collect(1:nnodes), dof, p, m, 0.0, 1.0,
+                                                  strain_inc, stress_N, stress_NP1)
+    @test stress_NP1 ≈ UT_PLASTIC_REFERENCE
 end
 
 @testset "zero energy control skips UMAT" begin
@@ -593,7 +577,7 @@ end
                                              "Bulk Modulus" => 10.0,
                                              "Shear Modulus" => 4.0); dof = 2)
     @test Matrix(BBASIS.hooke_matrix(m, 2)) ≈
-          Matrix(BBASIS.get_Hooke_matrix(legacy, legacy["Symmetry"], 2))
+          Matrix(LEGACY.get_Hooke_matrix(legacy, legacy["Symmetry"], 2))
 end
 
 

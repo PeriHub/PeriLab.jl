@@ -6,11 +6,25 @@ module Correspondence_template
 
 using .......Data_Manager
 using .......PeriLabExceptions: @abort
+using .......ParameterSpec: @params, register_material
 export compute_stresses
 export correspondence_name
 export fe_support
 export init_model
 export fields_for_local_synchronization
+
+"""
+    CorrespondenceTemplateParams
+
+Declare the YAML keys your model needs beyond the shared material keys (Symmetry,
+moduli, … are in `material.base` / `material.moduli`). Register it under your model
+name by uncommenting `__init__` (the template stays unregistered so that a copy never
+collides with it).
+"""
+@params struct CorrespondenceTemplateParams
+end
+
+# __init__() = register_material("Correspondence Template", CorrespondenceTemplateParams)
 
 """
   fe_support()
@@ -33,19 +47,16 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict,
-    block::Int64)
+  init_model(nodes::AbstractVector{Int64}, p::CorrespondenceTemplateParams, material)
 
 Initializes the material model.
 
 # Arguments
   - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-  - `block::Int64`: Current block
+  - `p::CorrespondenceTemplateParams`: The model parameters.
+  - `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
 """
-function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict,
-                    block::Int64)
+function init_model(nodes::AbstractVector{Int64}, p::CorrespondenceTemplateParams, material)
 end
 
 """
@@ -68,94 +79,55 @@ function correspondence_name()
     return "Correspondence Template"
 end
 
-# Declare the YAML keys of your model beyond the shared material keys and register them:
-#
-#     using .......ParameterSpec: @params, register_material
-#     @params struct CorrespondenceTemplateParams
-#         my_parameter::Float64 = req("My Parameter"; min = 0)
-#     end
-#     __init__() = register_material("Correspondence Template", CorrespondenceTemplateParams)
-
 """
-    compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
+    compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, p::CorrespondenceTemplateParams, material, time::Float64, dt::Float64, strain_increment, stress_N, stress_NP1)
 
 Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `iID::Int64`: Node ID.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `dof::Int64`: Degrees of freedom
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `p::CorrespondenceTemplateParams`: The model parameters.
+- `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-- `strainInc::Union{NodeTensorField{Float64},Array{Float64,6}}`: Strain increment.
-- `stress_N::SubArray`: Stress of step N.
-- `stress_NP1::SubArray`: Stress of step N+1.
-- `iID_jID_nID::Tuple=(): (optional) are the index and node id information. The tuple is ordered iID as index of the point,  jID the index of the bond of iID and nID the neighborID.
+- `strain_increment`: Strain increment.
+- `stress_N`: Stress of step N.
+- `stress_NP1`: Stress of step N+1.
 # Returns
-- `stress_NP1::SubArray`: updated stresses
+- `stress_NP1`: updated stresses
 
 Example:
 ```julia
 ```
 """
-function compute_stresses(iID::Int64,
+function compute_stresses(nodes::AbstractVector{Int64},
                           dof::Int64,
-                          material_parameter::Dict,
+                          p::CorrespondenceTemplateParams,
+                          material,
                           time::Float64,
                           dt::Float64,
                           strain_increment::AbstractArray{Float64},
                           stress_N::AbstractArray{Float64},
-                          stress_NP1::AbstractArray{Float64},
-                          iID_jID_nID::Tuple = ())
+                          stress_NP1::AbstractArray{Float64})
     @info "Please write a material name in material_name()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_model() and init_model() function."
-    @info "The Data_Manager and material_parameter holds all you need to solve your problem on material level."
+    @info "The Data_Manager, p and material hold all you need to solve your problem on material level."
     @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
-    return stress_NP1
-end
-
-"""
-    compute_stresses(dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
-
-Calculates the stresses of a single node. Needed for FEM. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
-
-# Arguments
-- `dof::Int64`: Degrees of freedom
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-- `time::Float64`: The current time.
-- `dt::Float64`: The current time step.
-- `strainInc::Union{NodeTensorField{Float64},Array{Float64,6}}`: Strain increment.
-- `stress_N::SubArray`: Stress of step N.
-- `stress_NP1::SubArray`: Stress of step N+1.
-# Returns
-- `stress_NP1::SubArray`: updated stresses
-Example:
-```julia
-```
-"""
-function compute_stresses(dof::Int64,
-                          material_parameter::Dict,
-                          time::Float64,
-                          dt::Float64,
-                          strain_increment::Vector{Float64},
-                          stress_N::Vector{Float64},
-                          stress_NP1::Vector{Float64})
     return stress_NP1
 end
 
 function compute_stresses_ba(nodes,
                              nlist,
                              dof::Int64,
-                             material_parameter::Dict,
+                             p::CorrespondenceTemplateParams,
+                             material,
                              time::Float64,
                              dt::Float64,
-                             strain_increment::Union{SubArray,NodeTensorField{Float64},
-                                                     Vector{Float64}},
-                             stress_N::Union{SubArray,NodeTensorField{Float64},
-                                             Vector{Float64}},
-                             stress_NP1::Union{SubArray,NodeTensorField{Float64},
-                                               Vector{Float64}})
+                             strain_increment,
+                             stress_N,
+                             stress_NP1)
     @abort "$(correspondence_name()) not yet implemented for bond associated."
 end
 

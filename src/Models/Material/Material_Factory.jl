@@ -144,10 +144,7 @@ for mod in module_list
 end
 
 using ...Material_Basis:
-                         get_all_elastic_moduli,
                          distribute_forces!,
-                         check_symmetry,
-                         get_all_elastic_moduli,
                          init_local_damping_due_to_damage,
                          local_damping_due_to_damage
 using LinearAlgebra: dot
@@ -207,8 +204,8 @@ model_parts(model) = (model,)
 """
     material_symmetry(symmetry, dof)
 
-The symmetry the force models use. Plane strain / plane stress are ignored in 3D
-(as `check_symmetry` does), and the rest follows `get_symmetry`.
+The symmetry the force models use. Plane strain / plane stress are ignored in 3D;
+every other symmetry gives `"3D"`.
 """
 function material_symmetry(symmetry::Union{Nothing,String}, dof::Int64)
     symmetry === nothing && return "3D"
@@ -226,7 +223,7 @@ end
     hooke_symmetry(symmetry, dof)
 
 The symmetry string the Hooke matrix uses: as given, with a trailing plane strain /
-plane stress removed in 3D (as `check_symmetry` does), `"isotropic"` if missing.
+plane stress removed in 3D, `"isotropic"` if missing.
 """
 function hooke_symmetry(symmetry::Union{Nothing,String}, dof::Int64)
     symmetry === nothing && return "isotropic"
@@ -396,28 +393,8 @@ function critical_bulk_modulus(material::BlockMaterial)
     return nothing
 end
 
-
-"""
-    write_moduli!(dict, material)
-
-Writes the completed moduli into a block's material dict, for the code that
-still reads the dict (correspondence, compute classes; phase 3c).
-"""
-function write_moduli!(dict::Dict{String,Any}, material::BlockMaterial)
-    material.moduli === nothing && return dict
-    dict["Bulk Modulus"] = material.moduli.bulk_modulus
-    dict["Young's Modulus"] = material.moduli.youngs_modulus
-    dict["Shear Modulus"] = material.moduli.shear_modulus
-    dict["Poisson's Ratio"] = material.moduli.poissons_ratio
-    dict["Computed"] = true
-    haskey(dict, "Symmetry") || (dict["Symmetry"] = "isotropic")
-    return dict
-end
-
-
 export init_model
 export compute_model
-export determine_isotropic_parameter
 export distribute_force_densities
 export init_fields
 export fields_for_local_synchronization
@@ -528,7 +505,7 @@ function fields_for_local_synchronization(model, block)
 end
 
 """
-    compute_model(nodes::AbstractVector{Int64}, model_param::Dict{String,Any}, block::Int64, time::Float64, dt::Float64)
+    compute_model(nodes::AbstractVector{Int64}, material, block::Int64, time::Float64, dt::Float64)
 
 Computes the material models
 
@@ -588,20 +565,6 @@ function compute_block_material(nodes::AbstractVector{Int64}, material::BlockMat
         parentmodule(typeof(part)).compute_model(nodes, part, material, block, time, dt)
     end
     return nothing
-end
-
-"""
-    determine_isotropic_parameter(prop::Dict)
-
-Determine the isotropic parameter.
-
-# Arguments
-- `prop::Dict`: The material property.
-# Returns
-- `prop::Dict`: The material property.
-"""
-function determine_isotropic_parameter(prop::Dict)
-    get_all_elastic_moduli(prop)
 end
 
 """

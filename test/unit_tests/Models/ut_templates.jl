@@ -102,43 +102,25 @@ end
 @testset "ut_correspondence_template" begin
     @test !(Correspondence_template.fe_support())
     @test Correspondence_template.correspondence_name() == "Correspondence Template"
+    p = Correspondence_template.CorrespondenceTemplateParams()
+    material = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
+                                         "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0))
+    Correspondence_template.init_model(Vector{Int64}(1:3), p, material)
 
-    Correspondence_template.init_model(Vector{Int64}(1:3),
-                                       Dict(),
-                                       1)
-
-    vec = Correspondence_template.compute_stresses(1,
-                                                   2,
-                                                   Dict(),
-                                                   0.0,
-                                                   0.0,
-                                                   view([1.0, 2.0], :, :, :),
-                                                   view([1, 0.0], :, :, :),
-                                                   view([-1, 2.2], :, :, :))
-    @test vec[1] == -1
-    @test vec[2] == 2.2
-
-    vec = Correspondence_template.compute_stresses(1,
-                                                   2,
-                                                   Dict(),
-                                                   0.0,
-                                                   0.0,
-                                                   view([1.0, 2.0], :, :, :),
-                                                   view([1.0, 0.0], :, :, :),
-                                                   view([-1, 2.2], :, :, :),
-                                                   (1, 1))
-    @test vec[1] == -1
-    @test vec[2] == 2.2
-
-    vec = Correspondence_template.compute_stresses(2,
-                                                   Dict(),
-                                                   0.0,
-                                                   0.0,
-                                                   [1.0, 2.0],
-                                                   [1.0, 0.0],
-                                                   [-1.0, 2.2])
-    @test vec[1] == -1
-    @test vec[2] == 2.2
+    stress_NP1 = zeros(1, 2, 2)
+    stress_NP1[1, :, 1] = [-1, 2.2]
+    vec = Correspondence_template.compute_stresses(Vector{Int64}(1:1), 2, p, material, 0.0,
+                                                   0.0, ones(1, 2, 2), zeros(1, 2, 2),
+                                                   stress_NP1)
+    @test vec === stress_NP1
+    @test vec[1, :, 1] == [-1, 2.2]
+    @test_logs (:error,
+                "Correspondence Template not yet implemented for bond associated.") @test_throws PeriLab.PeriLabError Correspondence_template.compute_stresses_ba(Vector{Int64}(1:1),
+                                                                                 [[1]], 2, p,
+                                                                                 material, 0.0,
+                                                                                 0.0, nothing,
+                                                                                 nothing,
+                                                                                 nothing)
     Correspondence_template.fields_for_local_synchronization("")
 end
 

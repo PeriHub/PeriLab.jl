@@ -10,7 +10,6 @@ using TimerOutputs: @timeit
 using .....Material_Basis:
                            flaw_function, get_von_mises_yield_stress,
                            compute_deviatoric_and_spherical_stresses
-using .....Helpers: get_dependent_value
 using LinearAlgebra
 using StaticArrays
 export fe_support
@@ -66,34 +65,15 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
+    init_model(nodes, p, material)
 
-Initializes the material model.
+Initializes the model fields of `nodes`.
 
 # Arguments
-  - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `nodes::AbstractVector{Int64}`: The block nodes.
+- `p`: The model parameters (the model's `@params` struct).
+- `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
 """
-function init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
-    if !haskey(material_parameter, "Shear Modulus")
-        @abort "Shear Modulus must be defined to be able to run this plastic material"
-        return
-    end
-    if !haskey(material_parameter, "Yield Stress")
-        @abort "No ''Yield Stress'' is defined."
-        return
-    end
-
-    Data_Manager.create_node_scalar_field("von Mises Yield Stress", Float64)
-    Data_Manager.create_node_scalar_field("Plastic Strain", Float64)
-
-    if haskey(material_parameter, "Bond Associated") &&
-       material_parameter["Bond Associated"]
-        Data_Manager.create_bond_scalar_state("von Mises Bond Yield Stress", Float64)
-        Data_Manager.create_bond_scalar_state("Plastic Bond Strain", Float64)
-    end
-end
-
 function init_model(nodes::AbstractVector{Int64}, p::CorrespondencePlasticParams, material)
     if material.moduli === nothing
         @abort "Shear Modulus must be defined to be able to run this plastic material"
@@ -129,96 +109,21 @@ function correspondence_name()
 end
 
 """
-	compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
+    compute_stresses(nodes, dof, p, material, time, dt, strain_increment, stress_N, stress_NP1)
 
-Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
+Computes the stresses of `nodes`.
 
 # Arguments
-- `iID::Int64`: Node ID.
-- `dof::Int64`: Degrees of freedom
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `nodes::AbstractVector{Int64}`: The block nodes.
+- `dof::Int64`: Degrees of freedom.
+- `p`: The model parameters (the model's `@params` struct).
+- `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-- `strainInc::Union{NodeTensorField{Float64},Array{Float64,6}}`: Strain increment.
-- `stress_N::SubArray`: Stress of step N.
-- `stress_NP1::SubArray`: Stress of step N+1.
-- `iID_jID_nID::Tuple=(): (optional) are the index and node id information. The tuple is ordered iID as index of the point,  jID the index of the bond of iID and nID the neighborID.
-# Returns
-- `stress_NP1::SubArray`: updated stresses
-
-Example:
-```julia
-```
+- `strain_increment`: Strain increment.
+- `stress_N`: Stress of step N.
+- `stress_NP1`: Stress of step N+1, updated in place.
 """
-function compute_stresses(nodes,
-                          dof::Int64,
-                          material_parameter::Dict,
-                          time::Float64,
-                          dt::Float64,
-                          strain_increment::Union{SubArray,NodeTensorField{Float64}},
-                          stress_N::Union{SubArray,NodeTensorField{Float64}},
-                          stress_NP1::Union{SubArray,NodeTensorField{Float64}})
-    if dof == 2
-        deviatoric_stress_N = deviatoric_stress_N2D
-        deviatoric_stress_NP1 = deviatoric_stress_NP12D
-        temp_A = temp_A2D
-        temp_B = temp_B2D
-        dev_strain_inc=dev_strain_inc2D
-    else
-        deviatoric_stress_N = deviatoric_stress_N3D
-        deviatoric_stress_NP1 = deviatoric_stress_NP13D
-        temp_A = temp_A3D
-        temp_B = temp_B3D
-        dev_strain_inc=dev_strain_inc3D
-    end
-
-    von_Mises_stress_yield::NodeScalarField{Float64} = Data_Manager.get_field("von Mises Yield Stress",
-                                                                              "NP1")
-    plastic_strain_N::NodeScalarField{Float64} = Data_Manager.get_field("Plastic Strain",
-                                                                        "N")
-    plastic_strain_NP1::NodeScalarField{Float64} = Data_Manager.get_field("Plastic Strain",
-                                                                          "NP1")
-    coordinates::NodeVectorField{Float64} = Data_Manager.get_field("Coordinates")
-
-    yield_stress_fn = get_dependent_value("Yield Stress", material_parameter)
-
-    # sqrt23::Float64 = sqrt(2 / 3)
-    for iID in nodes
-        yield_stress = yield_stress_fn(iID)
-        # @views reduced_yield_stress = yield_stress
-        reduced_yield_stress = flaw_function(material_parameter, coordinates[iID, :],
-                                             yield_stress)
-
-        @timeit "compute_plastic_model" begin
-            stress_NP1[iID, :, :],
-            plastic_strain_NP1[iID],
-            von_Mises_stress_yield[iID] = compute_plastic_model(stress_NP1[iID,
-                                                                           :,
-                                                                           :],
-                                                                stress_N[iID,
-                                                                         :,
-                                                                         :],
-                                                                spherical_stress_NP1,
-                                                                spherical_stress_N,
-                                                                deviatoric_stress_NP1,
-                                                                deviatoric_stress_N,
-                                                                strain_increment[iID,
-                                                                                 :,
-                                                                                 :],
-                                                                von_Mises_stress_yield[iID],
-                                                                plastic_strain_NP1[iID],
-                                                                plastic_strain_N[iID],
-                                                                reduced_yield_stress,
-                                                                material_parameter["Shear Modulus"],
-                                                                dof,
-                                                                temp_A,
-                                                                temp_B,
-                                                                sqrt23,
-                                                                dev_strain_inc)
-        end
-    end
-end
-
 function compute_stresses(nodes,
                           dof::Int64,
                           p::CorrespondencePlasticParams,
@@ -288,75 +193,23 @@ function compute_stresses(nodes,
     end
 end
 
-function compute_stresses_ba(nodes,
-                             nlist,
-                             dof::Int64,
-                             material_parameter::Dict,
-                             time::Float64,
-                             dt::Float64,
-                             strain_increment::Vector{AbstractArray{Float64,3}},
-                             stress_N::Vector{AbstractArray{Float64,3}},
-                             stress_NP1::Vector{AbstractArray{Float64,3}})
-    if dof == 2
-        deviatoric_stress_N = deviatoric_stress_N2D
-        deviatoric_stress_NP1 = deviatoric_stress_NP12D
-        temp_A = temp_A2D
-        temp_B = temp_B2D
-        dev_strain_inc=dev_strain_inc2D
-    else
-        deviatoric_stress_N = deviatoric_stress_N3D
-        deviatoric_stress_NP1 = deviatoric_stress_NP13D
-        temp_A = temp_A3D
-        temp_B = temp_B3D
-        dev_strain_inc=dev_strain_inc3D
-    end
+"""
+    compute_stresses_ba(nodes, nlist, dof, p, material, time, dt, strain_increment, stress_N, stress_NP1)
 
-    sqrt23::Float64 = sqrt(2 / 3)
-    von_Mises_stress_yield = Data_Manager.get_field("von Mises Bond Yield Stress", "NP1")
-    plastic_strain_N = Data_Manager.get_field("Plastic Bond Strain", "N")
-    plastic_strain_NP1 = Data_Manager.get_field("Plastic Bond Strain", "NP1")
-    coordinates = Data_Manager.get_field("Coordinates")
-    spherical_stress_N::Float64 = 0
-    deviatoric_stress_N = @MMatrix zeros(dof, dof)
+Computes the bond-associated stresses of `nodes`.
 
-    spherical_stress_NP1::Float64 = 0
-    deviatoric_stress_NP1 = @MMatrix zeros(dof, dof)
-
-    yield_stress_fn = get_dependent_value("Yield Stress", material_parameter)
-
-    for iID in nodes
-        yield_stress = yield_stress_fn(iID)
-        @views reduced_yield_stress = yield_stress
-        @views reduced_yield_stress = flaw_function(material_parameter, coordinates[iID, :],
-                                                    yield_stress)
-        @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
-            stress_NP1[iID][jID, :, :],
-            plastic_strain_NP1[iID][jID],
-            von_Mises_stress_yield[iID][jID] = compute_plastic_model(stress_NP1[iID][jID, :,
-                                                                                     :],
-                                                                     stress_N[iID][jID, :,
-                                                                                   :],
-                                                                     spherical_stress_NP1,
-                                                                     spherical_stress_N,
-                                                                     deviatoric_stress_NP1,
-                                                                     deviatoric_stress_N,
-                                                                     strain_increment[iID][jID,
-                                                                                           :,
-                                                                                           :],
-                                                                     von_Mises_stress_yield[iID][jID],
-                                                                     plastic_strain_NP1[iID][jID],
-                                                                     plastic_strain_N[iID][jID],
-                                                                     reduced_yield_stress,
-                                                                     material_parameter["Shear Modulus"],
-                                                                     dof,
-                                                                     temp_A,
-                                                                     temp_B,
-                                                                     sqrt23,
-                                                                     dev_strain_inc)
-        end
-    end
-end
-
+# Arguments
+- `nodes::AbstractVector{Int64}`: The block nodes.
+- `nlist`: The neighborhood list.
+- `dof::Int64`: Degrees of freedom.
+- `p`: The model parameters (the model's `@params` struct).
+- `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+- `strain_increment`: Strain increment.
+- `stress_N`: Stress of step N.
+- `stress_NP1`: Stress of step N+1, updated in place.
+"""
 function compute_stresses_ba(nodes,
                              nlist,
                              dof::Int64,

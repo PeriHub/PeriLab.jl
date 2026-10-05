@@ -8,7 +8,7 @@ using StaticArrays: MMatrix, MVector
 using LoopVectorization
 using ....Data_Manager
 using ....Helpers: get_fourth_order
-using ...Material_Basis: get_Hooke_matrix, hooke_matrix
+using ...Material_Basis: hooke_matrix
 using ....Geometry: rotation_tensor
 
 export init_model
@@ -26,36 +26,20 @@ function control_name()
     return "Global"
 end
 
-function init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
-    dof::Int64 = Data_Manager.get_dof()
-    Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",
-                                                   Float64,
-                                                   dof)
-    if "Material Gradient" in Data_Manager.get_all_field_keys()
-        return
-    end
-    hooke_matrix::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Material Gradient",
-                                                                                            Float64,
-                                                                                            Int64((dof *
-                                                                                                   (dof +
-                                                                                                    1)) /
-                                                                                                  2))
-    symmetry::String = get(material_parameter, "Symmetry", "default")
-
-    for iID in nodes
-        @views hooke_matrix[iID, :,
-                            :] = get_Hooke_matrix(material_parameter,
-                                                  symmetry,
-                                                  dof,
-                                                  iID)
-    end
-end
-
 # the legacy dict marked UMAT materials by the key "UMAT Material Name"
 _model_parts(model) = hasfield(typeof(model), :parts) ? model.parts : (model,)
 is_umat(material) = any(part -> nameof(typeof(part)) === :CorrespondenceUMATParams,
                         _model_parts(material.model))
 
+"""
+    init_model(nodes, material)
+
+Initializes the global zero energy control fields.
+
+# Arguments
+- `nodes::AbstractVector{Int64}`: The block nodes.
+- `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
+"""
 function init_model(nodes::AbstractVector{Int64}, material)
     dof::Int64 = Data_Manager.get_dof()
     Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness", Float64, dof)
@@ -73,13 +57,13 @@ end
 
 
 """
-	compute_control( nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
+	compute_control(nodes::AbstractVector{Int64}, material, time::Float64, dt::Float64)
 
 Computes the zero energy control
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes
-- `material_parameter::Dict`: The material parameter
+- `material::BlockMaterial`: The typed block material
 - `time::Float64`: The current time
 - `dt::Float64`: The current time step
 
@@ -138,11 +122,6 @@ function _compute_control!(nodes::AbstractVector{Int64},
     end
 end
 
-compute_control(nodes::AbstractVector{Int64}, material_parameter::Dict{String,Any},
-                time::Float64, dt::Float64) = _compute_control!(nodes,
-                                                                !haskey(material_parameter,
-                                                                        "UMAT Material Name"),
-                                                                time, dt)
 compute_control(nodes::AbstractVector{Int64}, material, time::Float64, dt::Float64) = _compute_control!(nodes,
                                                                                                         !is_umat(material),
                                                                                                         time,

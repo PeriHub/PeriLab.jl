@@ -7,20 +7,14 @@ using LinearAlgebra
 using LoopVectorization
 using StaticArrays
 using ......Helpers: get_MMatrix, determinant, invert, smat, interpol_data,
-                     get_dependent_value_with_ID,
                      mat_mul!, matrix_to_voigt, voigt_to_matrix
 using ......Data_Manager
 using ......ParameterSpec: value
 using ......PeriLabExceptions: @abort
-export get_value
-export get_all_elastic_moduli
-export get_Hooke_matrix
 export hooke_matrix
 export distribute_forces!
 export local_damping_due_to_damage
 export flaw_function
-export check_symmetry
-export get_symmetry
 export get_von_mises_yield_stress
 export compute_deviatoric_and_spherical_stresses
 export get_strain
@@ -95,211 +89,6 @@ function compute_bond_based_constants(nodes::AbstractVector{Int64}, symmetry, co
     end
 end
 
-function get_value(parameter::Union{Dict{Any,Any},Dict{String,Any}},
-                   any_field_allocated::Bool,
-                   key::String,
-                   field_allocated::Bool)
-    if field_allocated
-        return Data_Manager.get_field(replace(key, " " => "_"))
-    end
-    if any_field_allocated
-        if haskey(parameter, key)
-            return Data_Manager.create_constant_node_scalar_field(replace(key, " " => "_"),
-                                                                  Float64;
-                                                                  default_value = parameter[key])
-        else
-            return Data_Manager.create_constant_node_scalar_field(replace(key, " " => "_"),
-                                                                  Float64)
-        end
-    elseif haskey(parameter, key)
-        return parameter[key]
-    end
-
-    return Float64(0.0)
-end
-
-"""
-	get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}})
-
-Returns the elastic moduli of the material.
-
-# Arguments
-- `parameter::Union{Dict{Any,Any},Dict{String,Any}}`: The material parameter.
-"""
-function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}})
-    state_factor_defined = haskey(parameter, "State Factor ID")
-
-    if haskey(parameter, "Computed") &&
-       !(state_factor_defined && Data_Manager.has_key("State Variables"))
-        if parameter["Computed"]
-            return
-        end
-    end
-
-    bond_based = occursin("Bond-based", parameter["Material Model"])
-    if bond_based
-        bond_based = !occursin("Unified Bond-based", parameter["Material Model"])
-    end
-    bulk_field = Data_Manager.has_key("Bulk_Modulus")
-    youngs_field = Data_Manager.has_key("Young's_Modulus")
-    poissons_field = Data_Manager.has_key("Poisson's_Ratio")
-    shear_field = Data_Manager.has_key("Shear_Modulus")
-
-    any_field_allocated = bulk_field | youngs_field | poissons_field | shear_field |
-                          state_factor_defined
-
-    bulk = haskey(parameter, "Bulk Modulus") | bulk_field
-    youngs = haskey(parameter, "Young's Modulus") | youngs_field
-    shear = haskey(parameter, "Shear Modulus") | shear_field
-    poissons = haskey(parameter, "Poisson's Ratio") | poissons_field
-
-    K = get_value(parameter, any_field_allocated, "Bulk Modulus", bulk_field)
-    E = get_value(parameter,
-                  any_field_allocated,
-                  "Young's Modulus",
-                  youngs_field)
-    G = get_value(parameter, any_field_allocated, "Shear Modulus", shear_field)
-
-    nu = get_value(parameter,
-                   any_field_allocated,
-                   "Poisson's Ratio",
-                   poissons_field)
-
-    if bond_based
-        nu_fixed = Data_Manager.get_dof() == 2 ? 1 / 3 : 1 / 4
-        if nu != 0.0 && nu != nu_fixed
-            @warn "Chosen Bond-based model only supports a fixed Poisson's ratio of " *
-                  string(nu_fixed)
-        end
-        nu = nu_fixed
-        poissons = true
-    end
-    if haskey(parameter, "Symmetry")
-        symmetry = lowercase(parameter["Symmetry"])
-        if occursin("anisotropic", symmetry)
-            for iID in 1:6
-                for jID in iID:6
-                    if !haskey(parameter, "C" * string(iID) * string(jID))
-                        @abort "C" * string(iID) * string(jID) * " not defined"
-                        return
-                    end
-                end
-            end
-            return
-        elseif occursin("transverse isotropic", symmetry)
-            E_x = haskey(parameter, "Young's Modulus X")
-            E_y = haskey(parameter, "Young's Modulus Y")
-            nu_xy = haskey(parameter, "Poisson's Ratio XY")
-            nu_yz = haskey(parameter, "Poisson's Ratio YZ")
-            g_xy = haskey(parameter, "Shear Modulus XY")
-            g_yz = haskey(parameter, "Shear Modulus YZ")
-            if occursin("plane strain", symmetry)
-                if !E_x || !E_y || !nu_xy || !nu_yz || !g_xy
-                    @abort "Transverse isotropic material requires Young's Modulus X, Y, Poisson's Ratio XY, YZ, Shear Modulus XY"
-                end
-            elseif occursin("plane stress", symmetry)
-                if !E_x || !E_y || !nu_xy || !g_xy
-                    @abort "Transverse isotropic material requires Young's Modulus X, Y, Poisson's Ratio XY, Shear Modulus XY"
-                end
-            else
-                if !E_x || !E_y || !nu_xy || !nu_yz || !g_xy || !g_yz
-                    @abort "Transverse isotropic material requires Young's Modulus X, Y, Poisson's Ratio XY, YZ, Shear Modulus XY, YZ"
-                end
-            end
-            return
-        elseif occursin("orthotropic", symmetry)
-            E_x = haskey(parameter, "Young's Modulus X")
-            E_y = haskey(parameter, "Young's Modulus Y")
-            E_z = haskey(parameter, "Young's Modulus Z")
-            nu_xy = haskey(parameter, "Poisson's Ratio XY")
-            nu_yz = haskey(parameter, "Poisson's Ratio YZ")
-            nu_xz = haskey(parameter, "Poisson's Ratio XZ")
-            g_xy = haskey(parameter, "Shear Modulus XY")
-            g_yz = haskey(parameter, "Shear Modulus YZ")
-            g_zx = haskey(parameter, "Shear Modulus XZ")
-            if !E_x || !E_y || !E_z || !nu_xy || !nu_yz || !nu_xz || !g_xy || !g_yz || !g_zx
-                @abort "Orthotropic material requires Young's Modulus X, Y, Z, Poisson's Ratio XY, YZ, XZ, Shear Modulus XY, YZ, XZ"
-            end
-            return
-        end
-    else
-        @warn "Material symmetry is not defined, assuming isotropic material"
-        parameter["Symmetry"] = "isotropic"
-    end
-
-    # tbd non isotropic material check
-    if bulk + youngs + shear + poissons < 2
-        @abort "Minimum of two parameters are needed for isotropic material"
-    elseif bulk + youngs + shear + poissons > 2
-        @warn "Only two parameters are needed for isotropic material, ignoring additional parameters"
-    end
-
-    if bulk && poissons
-        E = 3 .* K .* (1 .- 2 .* nu)
-        G = 3 .* K .* (1 .- 2 .* nu) ./ (2 .+ 2 .* nu)
-    end
-    if shear && poissons
-        E = 2 .* G .* (1 .+ nu)
-        K = 2 .* G .* (1 .+ nu) ./ (3 .- 6 .* nu)
-    end
-    if bulk && shear
-        E = 9 .* K .* G ./ (3 .* K .+ G)
-        nu = (3 .* K .- 2 .* G) ./ (6 .* K .+ 2 .* G)
-    end
-    if youngs && shear
-        K = E .* G ./ (9 .* G .- 3 .* E)
-        nu = E ./ (2 .* G) .- 1
-    end
-
-    if youngs && bulk
-        G = 3 .* K .* E ./ (9 .* K .- E)
-        nu = (3 .* K .- E) ./ (6 .* K)
-    end
-    if youngs && poissons
-        K = E ./ (3 .- 6 .* nu)
-        G = E ./ (2 .+ 2 .* nu)
-    end
-
-    if state_factor_defined && Data_Manager.has_key("State Variables")
-        state_factor = Data_Manager.get_field("State Variables")[:,
-                                                                 parameter["State Factor ID"]]
-        K .*= state_factor
-        E .*= state_factor
-        G .*= state_factor
-    end
-
-    parameter["Bulk Modulus"] = K
-    parameter["Young's Modulus"] = E
-    parameter["Shear Modulus"] = G
-    parameter["Poisson's Ratio"] = nu
-    parameter["Computed"] = true
-    if any_field_allocated
-        Data_Manager.get_field("Bulk_Modulus") .= K
-        Data_Manager.get_field("Young's_Modulus") .= E
-        Data_Manager.get_field("Shear_Modulus") .= G
-        Data_Manager.get_field("Poisson's_Ratio") .= nu
-    end
-end
-
-# constant of a material dict at node `id` (the legacy reads of get_Hooke_matrix)
-function _dict_constant(parameter::Dict, key::String, id::Int64)
-    if key in ("Poisson's Ratio", "Young's Modulus", "Shear Modulus")
-        iID = parameter["Poisson's Ratio"] isa Float64 ? 1 : id
-        return parameter[key][iID]
-    end
-    return get_dependent_value_with_ID(key, parameter, id)
-end
-
-"""
-	get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int64=1)
-
-Returns the Hooke matrix of the material (material dict; see `hooke_matrix`
-for typed block materials).
-"""
-function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int64 = 1)
-    return _hooke_matrix((key, id) -> _dict_constant(parameter, key, id), symmetry, dof, ID)
-end
-
 const _HOOKE_BASE_FIELDS = Dict("Young's Modulus X" => :youngs_modulus_x,
                                 "Young's Modulus Y" => :youngs_modulus_y,
                                 "Young's Modulus Z" => :youngs_modulus_z,
@@ -332,7 +121,6 @@ function hooke_matrix(material, dof::Int64, ID::Int64 = 1)
     return _hooke_matrix((key, id) -> _typed_constant(material, key, id),
                          material.hooke_symmetry, dof, ID)
 end
-
 
 # formulas of the Hooke matrix; c(key, id) returns a constant at node id
 function _hooke_matrix(c, symmetry::String, dof::Int64, ID::Int64)
@@ -653,103 +441,9 @@ function distribute_forces!(force_densities::Matrix{Float64},
     return nothing
 end
 
-"""
-	check_symmetry(block::Int64)
-
-Check if the symmetry information is present in the material dictionary.
-
-# Arguments
-- `block::Int64`: The block id.
-# Returns
-- `true`: If the symmetry information is present.
-"""
-function check_symmetry(block::Int64)
-    prop = Data_Manager.get_properties(block, "Material Model")
-    dof = Data_Manager.get_dof()
-    if haskey(prop, "Symmetry")
-        symmetry = prop["Symmetry"]
-        if dof == 2
-            if !occursin("plane strain", symmetry) && !occursin("plane stress", symmetry)
-                @abort "Model definition is missing; plane stress or plane strain has to be defined for 2D"
-                return
-            end
-        end
-        if dof == 3
-            if occursin("plane strain", symmetry)
-                @warn "Plane strain symmetry is not supported for 3D, going to ignore it"
-                Data_Manager.set_property(block, "Material Model", "Symmetry",
-                                          replace(symmetry, r"plane strain$" => ""))
-            end
-            if occursin("plane stress", symmetry)
-                @warn "Plane stress symmetry is not supported for 3D, going to ignore it"
-                Data_Manager.set_property(block, "Material Model", "Symmetry",
-                                          replace(symmetry, r"plane stress$" => ""))
-            end
-        end
-    end
-end
-
-"""
-	flaw_function(params::Dict, coor::Union{Vector{Int64},Vector{Float64}}, stress::Float64)
-
-Allows the modification of the yield stress at a specific position. This is typically used as starting point for plastic deformation.
-
-# Arguments
-- `params::Dict`: A dictionary containing material information.
-- `coor::Union{Vector{Int64},Vector{Float64}, SubArray}`: Coordinate of the current point.
-- `stress::Float64`: stresses to be modified.
-
-# Returns
-- `stress`::Float64: the modified stresses.
-"""
-function flaw_function(params::Dict,
-                       coor::AbstractVector{<:Real},
-                       stress::T)::Float64 where {T<:Union{Int64,Float64}}
-    flaw = get(params, "Flaw Function", nothing)
-    isnothing(flaw) && return stress
-
-    if !haskey(flaw, "Active")
-        @abort "Flaw Function needs an entry ''Active''."
-    end
-    if !haskey(flaw, "Function")
-        @abort "Flaw Function needs an entry ''Function''."
-    end
-
-    flaw["Active"]::Bool || return stress
-
-    if flaw["Function"] != "Pre-defined"
-        @abort "Flaw Function ''$(flaw["Function"])'' is not implemented, " *
-               "only ''Pre-defined'' is supported."
-    end
-
-    flaw_size::Float64 = flaw["Flaw Size"]
-    flaw_magnitude::Float64 = flaw["Flaw Magnitude"]
-
-    if !(0 < flaw_magnitude <= 1)
-        @abort "Flaw Magnitude should be between 0 and 1"
-    end
-    if flaw_size <= 0
-        @abort "Flaw Size must be positive."
-    end
-
-    # Squared distance without building a location vector: no allocation, no sqrt that
-    # would only be squared again.
-    dx = Float64(coor[1]) - Float64(flaw["Flaw Location X"])
-    dy = Float64(coor[2]) - Float64(flaw["Flaw Location Y"])
-    distance_squared = dx * dx + dy * dy
-
-    if length(coor) == 3
-        dz = Float64(coor[3]) - Float64(get(flaw, "Flaw Location Z", 0.0))
-        distance_squared += dz * dz
-    end
-
-    return stress *
-           (1 - flaw_magnitude * exp(-distance_squared / (flaw_size * flaw_size)))
-end
-
 flaw_function(::Nothing, coor::AbstractVector{<:Real}, stress::Union{Int64,Float64}) = Float64(stress)
 
-# typed flaw function (`FlawFunctionParams`); same formula as the dict version
+# flaw function of a block material (`FlawFunctionParams`)
 function flaw_function(flaw, coor::AbstractVector{<:Real},
                        stress::T)::Float64 where {T<:Union{Int64,Float64}}
     flaw.active || return stress
@@ -774,37 +468,6 @@ function flaw_function(flaw, coor::AbstractVector{<:Real},
     end
     return stress *
            (1 - flaw_magnitude * exp(-distance_squared / (flaw_size * flaw_size)))
-end
-
-"""
-	get_symmetry(material::Dict)
-
-Return the symmetry information from the given material dictionary.
-
-# Arguments
-- `material::Dict`: A dictionary containing material information.
-
-# Returns
-- If the key "Symmetry" is present in the dictionary, the corresponding value is returned.
-- If the key is not present, the default value "3D" is returned.
-
-# Example
-```julia
-material_dict = Dict("Symmetry" => "Cubic", "Color" => "Red")
-symmetry = get_sym(material_dict)
-```
-"""
-function get_symmetry(material::Dict)
-    if !haskey(material, "Symmetry")
-        return "3D"
-    end
-    if occursin("plane strain", lowercase(material["Symmetry"]))
-        return "plane strain"
-    end
-    if occursin("plane stress", lowercase(material["Symmetry"]))
-        return "plane stress"
-    end
-    return "3D"
 end
 
 """
