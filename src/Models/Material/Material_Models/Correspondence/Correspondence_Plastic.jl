@@ -4,7 +4,7 @@
 
 module Correspondence_Plastic
 using ......Data_Manager
-using .......ParameterSpec: @params, Dependent, register_material
+using .......ParameterSpec: @params, Dependent, register_material, value
 using ......PeriLabExceptions: @abort
 using TimerOutputs: @timeit
 using .....Material_Basis:
@@ -16,6 +16,11 @@ using StaticArrays
 export fe_support
 export init_model
 export fields_for_local_synchronization
+
+@params struct CorrespondencePlasticParams
+    yield_stress::Dependent = req("Yield Stress"; min = 0, quantity = :stress)
+end
+__init__() = register_material("Correspondence Plastic", CorrespondencePlasticParams)
 
 const yield_stress::Float64 = 1.0
 const reduced_yield_stress::Float64 = 0.0
@@ -89,6 +94,20 @@ function init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
     end
 end
 
+function init_model(nodes::AbstractVector{Int64}, p::CorrespondencePlasticParams, material)
+    if material.moduli === nothing
+        @abort "Shear Modulus must be defined to be able to run this plastic material"
+        return
+    end
+    Data_Manager.create_node_scalar_field("von Mises Yield Stress", Float64)
+    Data_Manager.create_node_scalar_field("Plastic Strain", Float64)
+    if material.base.bond_associated
+        Data_Manager.create_bond_scalar_state("von Mises Bond Yield Stress", Float64)
+        Data_Manager.create_bond_scalar_state("Plastic Bond Strain", Float64)
+    end
+end
+
+
 """
    correspondence_name()
 
@@ -108,11 +127,6 @@ end
 function correspondence_name()
     return "Correspondence Plastic"
 end
-
-@params struct CorrespondencePlasticParams
-    yield_stress::Dependent = req("Yield Stress"; min = 0, quantity = :stress)
-end
-__init__() = register_material("Correspondence Plastic", CorrespondencePlasticParams)
 
 """
 	compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
@@ -205,6 +219,75 @@ function compute_stresses(nodes,
     end
 end
 
+function compute_stresses(nodes,
+                          dof::Int64,
+                          p::CorrespondencePlasticParams,
+                          material,
+                          time::Float64,
+                          dt::Float64,
+                          strain_increment::Union{SubArray,NodeTensorField{Float64}},
+                          stress_N::Union{SubArray,NodeTensorField{Float64}},
+                          stress_NP1::Union{SubArray,NodeTensorField{Float64}})
+    if dof == 2
+        deviatoric_stress_N = deviatoric_stress_N2D
+        deviatoric_stress_NP1 = deviatoric_stress_NP12D
+        temp_A = temp_A2D
+        temp_B = temp_B2D
+        dev_strain_inc=dev_strain_inc2D
+    else
+        deviatoric_stress_N = deviatoric_stress_N3D
+        deviatoric_stress_NP1 = deviatoric_stress_NP13D
+        temp_A = temp_A3D
+        temp_B = temp_B3D
+        dev_strain_inc=dev_strain_inc3D
+    end
+
+    von_Mises_stress_yield::NodeScalarField{Float64} = Data_Manager.get_field("von Mises Yield Stress",
+                                                                              "NP1")
+    plastic_strain_N::NodeScalarField{Float64} = Data_Manager.get_field("Plastic Strain",
+                                                                        "N")
+    plastic_strain_NP1::NodeScalarField{Float64} = Data_Manager.get_field("Plastic Strain",
+                                                                          "NP1")
+    coordinates::NodeVectorField{Float64} = Data_Manager.get_field("Coordinates")
+
+
+    # sqrt23::Float64 = sqrt(2 / 3)
+    for iID in nodes
+        yield_stress = value(p.yield_stress, iID)
+        # @views reduced_yield_stress = yield_stress
+        reduced_yield_stress = flaw_function(material.base.flaw_function, coordinates[iID, :],
+                                             yield_stress)
+
+        @timeit "compute_plastic_model" begin
+            stress_NP1[iID, :, :],
+            plastic_strain_NP1[iID],
+            von_Mises_stress_yield[iID] = compute_plastic_model(stress_NP1[iID,
+                                                                           :,
+                                                                           :],
+                                                                stress_N[iID,
+                                                                         :,
+                                                                         :],
+                                                                spherical_stress_NP1,
+                                                                spherical_stress_N,
+                                                                deviatoric_stress_NP1,
+                                                                deviatoric_stress_N,
+                                                                strain_increment[iID,
+                                                                                 :,
+                                                                                 :],
+                                                                von_Mises_stress_yield[iID],
+                                                                plastic_strain_NP1[iID],
+                                                                plastic_strain_N[iID],
+                                                                reduced_yield_stress,
+                                                                material.moduli.shear_modulus,
+                                                                dof,
+                                                                temp_A,
+                                                                temp_B,
+                                                                sqrt23,
+                                                                dev_strain_inc)
+        end
+    end
+end
+
 function compute_stresses_ba(nodes,
                              nlist,
                              dof::Int64,
@@ -265,6 +348,75 @@ function compute_stresses_ba(nodes,
                                                                      plastic_strain_N[iID][jID],
                                                                      reduced_yield_stress,
                                                                      material_parameter["Shear Modulus"],
+                                                                     dof,
+                                                                     temp_A,
+                                                                     temp_B,
+                                                                     sqrt23,
+                                                                     dev_strain_inc)
+        end
+    end
+end
+
+function compute_stresses_ba(nodes,
+                             nlist,
+                             dof::Int64,
+                             p::CorrespondencePlasticParams,
+                          material,
+                             time::Float64,
+                             dt::Float64,
+                             strain_increment::Vector{AbstractArray{Float64,3}},
+                             stress_N::Vector{AbstractArray{Float64,3}},
+                             stress_NP1::Vector{AbstractArray{Float64,3}})
+    if dof == 2
+        deviatoric_stress_N = deviatoric_stress_N2D
+        deviatoric_stress_NP1 = deviatoric_stress_NP12D
+        temp_A = temp_A2D
+        temp_B = temp_B2D
+        dev_strain_inc=dev_strain_inc2D
+    else
+        deviatoric_stress_N = deviatoric_stress_N3D
+        deviatoric_stress_NP1 = deviatoric_stress_NP13D
+        temp_A = temp_A3D
+        temp_B = temp_B3D
+        dev_strain_inc=dev_strain_inc3D
+    end
+
+    sqrt23::Float64 = sqrt(2 / 3)
+    von_Mises_stress_yield = Data_Manager.get_field("von Mises Bond Yield Stress", "NP1")
+    plastic_strain_N = Data_Manager.get_field("Plastic Bond Strain", "N")
+    plastic_strain_NP1 = Data_Manager.get_field("Plastic Bond Strain", "NP1")
+    coordinates = Data_Manager.get_field("Coordinates")
+    spherical_stress_N::Float64 = 0
+    deviatoric_stress_N = @MMatrix zeros(dof, dof)
+
+    spherical_stress_NP1::Float64 = 0
+    deviatoric_stress_NP1 = @MMatrix zeros(dof, dof)
+
+
+    for iID in nodes
+        yield_stress = value(p.yield_stress, iID)
+        @views reduced_yield_stress = yield_stress
+        @views reduced_yield_stress = flaw_function(material.base.flaw_function, coordinates[iID, :],
+                                                    yield_stress)
+        @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
+            stress_NP1[iID][jID, :, :],
+            plastic_strain_NP1[iID][jID],
+            von_Mises_stress_yield[iID][jID] = compute_plastic_model(stress_NP1[iID][jID, :,
+                                                                                     :],
+                                                                     stress_N[iID][jID, :,
+                                                                                   :],
+                                                                     spherical_stress_NP1,
+                                                                     spherical_stress_N,
+                                                                     deviatoric_stress_NP1,
+                                                                     deviatoric_stress_N,
+                                                                     strain_increment[iID][jID,
+                                                                                           :,
+                                                                                           :],
+                                                                     von_Mises_stress_yield[iID][jID],
+                                                                     plastic_strain_NP1[iID][jID],
+                                                                     plastic_strain_N[iID][jID],
+                                                                     reduced_yield_stress,
+                                                                     material.moduli.shear_modulus,
                                                                      dof,
                                                                      temp_A,
                                                                      temp_B,

@@ -8,7 +8,7 @@ using StaticArrays: MMatrix, MVector
 using LoopVectorization
 using ....Data_Manager
 using ....Helpers: get_fourth_order
-using ...Material_Basis: get_Hooke_matrix
+using ...Material_Basis: get_Hooke_matrix, hooke_matrix
 using ....Geometry: rotation_tensor
 
 export init_model
@@ -51,6 +51,27 @@ function init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
     end
 end
 
+# the legacy dict marked UMAT materials by the key "UMAT Material Name"
+_model_parts(model) = hasfield(typeof(model), :parts) ? model.parts : (model,)
+is_umat(material) = any(part -> nameof(typeof(part)) === :CorrespondenceUMATParams,
+                        _model_parts(material.model))
+
+function init_model(nodes::AbstractVector{Int64}, material)
+    dof::Int64 = Data_Manager.get_dof()
+    Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness", Float64, dof)
+    "Material Gradient" in Data_Manager.get_all_field_keys() && return
+    hooke::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Material Gradient",
+                                                                                     Float64,
+                                                                                     Int64((dof *
+                                                                                            (dof +
+                                                                                             1)) /
+                                                                                           2))
+    for iID in nodes
+        @views hooke[iID, :, :] = hooke_matrix(material, dof, iID)
+    end
+end
+
+
 """
 	compute_control( nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
 
@@ -67,10 +88,10 @@ Global - J. Wan et al., "Improved method for zero-energy mode suppression in per
 
 """
 
-function compute_control(nodes::AbstractVector{Int64},
-                         material_parameter::Dict{String,Any},
-                         time::Float64,
-                         dt::Float64)
+function _compute_control!(nodes::AbstractVector{Int64},
+                           apply_zero_energy::Bool,
+                           time::Float64,
+                           dt::Float64)
     dof::Int64 = Data_Manager.get_dof()
     deformation_gradient::NodeTensorField{Float64} = Data_Manager.get_field("Deformation Gradient")
     bond_force::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
@@ -84,7 +105,7 @@ function compute_control(nodes::AbstractVector{Int64},
     zStiff::NodeTensorField{Float64} = Data_Manager.get_field("Zero Energy Stiffness")
     rotation::Bool = Data_Manager.get_rotation()
 
-    if !haskey(material_parameter, "UMAT Material Name")
+    if apply_zero_energy
         if rotation
             angles::NodeVectorField{Float64} = Data_Manager.get_field("Angles")
             create_zero_energy_mode_stiffness!(nodes, dof, hooke_matrix, angles, Kinv,
@@ -116,6 +137,17 @@ function compute_control(nodes::AbstractVector{Int64},
                                        bond_force)
     end
 end
+
+compute_control(nodes::AbstractVector{Int64}, material_parameter::Dict{String,Any},
+                time::Float64, dt::Float64) = _compute_control!(nodes,
+                                                                !haskey(material_parameter,
+                                                                        "UMAT Material Name"),
+                                                                time, dt)
+compute_control(nodes::AbstractVector{Int64}, material, time::Float64, dt::Float64) = _compute_control!(nodes,
+                                                                                                        !is_umat(material),
+                                                                                                        time,
+                                                                                                        dt)
+
 
 """
 	get_zero_energy_mode_force(nodes::AbstractVector{Int64}, zStiff::SubArray, deformation_gradient::SubArray, undeformed_bond::SubArray, deformed_bond::SubArray, bond_force::SubArray)

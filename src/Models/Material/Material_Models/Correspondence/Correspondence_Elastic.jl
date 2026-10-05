@@ -5,7 +5,7 @@
 module Correspondence_Elastic
 using .......Data_Manager
 using .......ParameterSpec: @params, register_material
-using .....Material_Basis: get_Hooke_matrix
+using .....Material_Basis: get_Hooke_matrix, hooke_matrix
 using .......Helpers: get_fourth_order, fast_mul!, get_mapping
 using StaticArrays: SMatrix
 export compute_stresses
@@ -13,6 +13,11 @@ export correspondence_name
 export fe_support
 export init_model
 export fields_for_local_synchronization
+
+"Parameters of Correspondence Elastic beyond the shared material keys (none)."
+@params struct CorrespondenceElasticParams
+end
+__init__() = register_material("Correspondence Elastic", CorrespondenceElasticParams)
 
 """
   fe_support()
@@ -83,11 +88,6 @@ function correspondence_name()
     return "Correspondence Elastic"
 end
 
-"Parameters of Correspondence Elastic beyond the shared material keys (none)."
-@params struct CorrespondenceElasticParams
-end
-__init__() = register_material("Correspondence Elastic", CorrespondenceElasticParams)
-
 """
 	compute_stresses(iID:Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
 
@@ -110,14 +110,12 @@ Example:
 ```
 """
 
-function compute_stresses(nodes::AbstractVector{Int64},
-                          dof::Int64,
-                          material_parameter::Dict,
-                          time::Float64,
-                          dt::Float64,
-                          strain_increment::NodeTensorField{Float64},
-                          stress_N::NodeTensorField{Float64},
-                          stress_NP1::NodeTensorField{Float64})
+function _elastic_stresses!(nodes::AbstractVector{Int64},
+                            dof::Int64,
+                            strain_increment::NodeTensorField{Float64},
+                            stress_N::NodeTensorField{Float64},
+                            stress_NP1::NodeTensorField{Float64})
+
     mapping = if dof == 2
         get_mapping(2)::SMatrix{3,2,Int64,6}
     elseif dof == 3
@@ -152,6 +150,52 @@ function compute_stresses(nodes::AbstractVector{Int64},
         end
     end
 end
+
+function compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict,
+                          time::Float64, dt::Float64,
+                          strain_increment::NodeTensorField{Float64},
+                          stress_N::NodeTensorField{Float64},
+                          stress_NP1::NodeTensorField{Float64})
+    return _elastic_stresses!(nodes, dof, strain_increment, stress_N, stress_NP1)
+end
+
+function compute_stresses(nodes::AbstractVector{Int64}, dof::Int64,
+                          p::CorrespondenceElasticParams, material,
+                          time::Float64, dt::Float64,
+                          strain_increment::NodeTensorField{Float64},
+                          stress_N::NodeTensorField{Float64},
+                          stress_NP1::NodeTensorField{Float64})
+    return _elastic_stresses!(nodes, dof, strain_increment, stress_N, stress_NP1)
+end
+
+function init_model(nodes::AbstractVector{Int64}, p::CorrespondenceElasticParams, material)
+    dof::Int64 = Data_Manager.get_dof()
+    hooke::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Material Gradient",
+                                                                                     Float64,
+                                                                                     Int64((dof *
+                                                                                            (dof +
+                                                                                             1)) /
+                                                                                           2))
+    for iID in nodes
+        @views hooke[iID, :, :] = hooke_matrix(material, dof, iID)
+    end
+end
+
+function compute_stresses_ba(nodes, nlist, dof::Int64, p::CorrespondenceElasticParams,
+                             material, time::Float64, dt::Float64, strain_increment,
+                             stress_N, stress_NP1)
+    @views mapping = get_mapping(dof)
+    for iID in nodes
+        @views hookeMatrix = hooke_matrix(material, dof, iID)
+        @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
+            @views sNP1 = stress_NP1[iID][jID, :, :]
+            @views sInc = strain_increment[iID][jID, :, :]
+            @views sN = stress_N[iID][jID, :, :]
+            fast_mul!(sNP1, hookeMatrix, sInc, sN, mapping)
+        end
+    end
+end
+
 
 function compute_stresses_ba(nodes,
                              nlist,

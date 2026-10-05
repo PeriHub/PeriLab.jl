@@ -302,3 +302,102 @@ end
     @test m.hooke_symmetry == "isotropic"
 end
 
+
+const BCORR = BMAT.Correspondence
+
+@testset "Correspondence Elastic typed init equals legacy" begin
+    for (dof, raw) in ((3, Dict("Symmetry" => "isotropic", "Bulk Modulus" => 10.0,
+                                "Shear Modulus" => 4.0)),
+                       (2, Dict("Symmetry" => "isotropic plane strain",
+                                "Young's Modulus" => 10.0, "Poisson's Ratio" => 0.3)))
+        raw = merge(Dict{String,Any}("Material Model" => "Correspondence Elastic"), raw)
+        legacy = ut_legacy_dict(raw; dof = dof)
+        ut_reset(dof; nnodes = 2)
+        m = typed_block_material(raw; dof = dof)
+        BCORR.Correspondence_Elastic.init_model([1, 2], m.model, m)
+        C = PeriLab.Data_Manager.get_field("Material Gradient")
+        for iID in 1:2
+            @test C[iID, :, :] ≈ Matrix(BBASIS.get_Hooke_matrix(legacy, legacy["Symmetry"],
+                                                                dof, iID))
+        end
+        @test hasmethod(BCORR.Correspondence_Elastic.compute_stresses,
+                        Tuple{Vector{Int64},Int64,typeof(m.model),typeof(m),Float64,Float64,
+                              Array{Float64,3},Array{Float64,3},Array{Float64,3}})
+    end
+end
+
+@testset "Correspondence Plastic typed compute equals legacy" begin
+    dof = 3
+    nnodes = 2
+    raw = Dict{String,Any}("Material Model" => "Correspondence Elastic + Correspondence Plastic",
+                           "Symmetry" => "isotropic", "Bulk Modulus" => 10.0,
+                           "Shear Modulus" => 4.0, "Yield Stress" => 0.01)
+    results = []
+    for typed in (false, true)
+        ut_reset(dof; nnodes = nnodes)
+        coor = PeriLab.Data_Manager.create_constant_node_vector_field("Coordinates", Float64,
+                                                                      dof)
+        coor .= [0.0 0.0 0.0; 1.0 0.0 0.0]
+        if typed
+            m = typed_block_material(raw; dof = dof)
+            p = m.model.parts[2]
+            BCORR.Correspondence_Plastic.init_model(collect(1:nnodes), p, m)
+        else
+            legacy = Dict{String,Any}(raw)
+            BBASIS.get_all_elastic_moduli(legacy)
+            BCORR.Correspondence_Plastic.init_model(collect(1:nnodes), legacy)
+        end
+        strain_inc = zeros(nnodes, dof, dof)
+        strain_inc[:, 1, 1] .= 0.02
+        strain_inc[:, 1, 2] .= 0.01
+        strain_inc[:, 2, 1] .= 0.01
+        stress_N = zeros(nnodes, dof, dof)
+        stress_NP1 = zeros(nnodes, dof, dof)
+        stress_NP1[:, 1, 1] .= 0.5
+        if typed
+            BCORR.Correspondence_Plastic.compute_stresses(collect(1:nnodes), dof, p, m, 0.0,
+                                                          1.0, strain_inc, stress_N,
+                                                          stress_NP1)
+        else
+            BCORR.Correspondence_Plastic.compute_stresses(collect(1:nnodes), dof, legacy,
+                                                          0.0, 1.0, strain_inc, stress_N,
+                                                          stress_NP1)
+        end
+        push!(results, copy(stress_NP1))
+    end
+    @test results[1] ≈ results[2]
+end
+
+@testset "zero energy control skips UMAT" begin
+    ut_reset(3; nnodes = 2)
+    elastic = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
+                                        "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0))
+    umat = typed_block_material(Dict("Material Model" => "Correspondence UMAT",
+                                     "File" => "x.so", "Number of Properties" => 1,
+                                     "Young's Modulus" => 1.0, "Poisson's Ratio" => 0.3))
+    vumat = typed_block_material(Dict("Material Model" => "Correspondence VUMAT",
+                                      "File" => "x.so", "Number of Properties" => 1,
+                                      "Young's Modulus" => 1.0, "Poisson's Ratio" => 0.3))
+    GZEC = PeriLab.Solver_Manager.Zero_Energy_Control.Global_Zero_Energy_Control
+    @test !GZEC.is_umat(elastic)
+    @test GZEC.is_umat(umat)
+    @test !GZEC.is_umat(vumat)
+end
+
+@testset "typed zero energy control init" begin
+    ut_reset(3; nnodes = 2)
+    m = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
+                                  "Bulk Modulus" => 10.0, "Shear Modulus" => 4.0,
+                                  "Zero Energy Control" => "Global"))
+    ZEC = PeriLab.Solver_Manager.Zero_Energy_Control
+    ZEC.init_model([1, 2], m, 1)
+    @test PeriLab.Data_Manager.get_analysis_model("Zero Energy Control Model", 1) == ["Global"]
+    @test PeriLab.Data_Manager.get_field("Material Gradient")[2, :, :] ≈
+          Matrix(BBASIS.hooke_matrix(m, 3, 2))
+    ut_reset(3; nnodes = 2)
+    plain = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
+                                      "Bulk Modulus" => 10.0, "Shear Modulus" => 4.0))
+    ZEC.init_model([1, 2], plain, 1)
+    @test PeriLab.Data_Manager.get_analysis_model("Zero Energy Control Model", 1) == [""]
+end
+
