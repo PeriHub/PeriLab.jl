@@ -171,3 +171,24 @@ end
           (BMAT.PD_Solid_Elastic, BMAT.PD_Solid_Plastic)
 end
 
+
+@testset "binding is cheap when a material has no tables" begin
+    ut_reset(3; nnodes = 2)
+    m = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
+                                  "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0))
+    BMAT.bind_material!(m)
+    @test (@allocated BMAT.bind_material!(m)) < 1000
+end
+
+@testset "block materials are not written to checkpoints" begin
+    ut_reset(3; nnodes = 2)
+    m = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
+                                  "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0))
+    PeriLab.Data_Manager.set_block_material(1, m)
+    dir = mktempdir()
+    PeriLab.Data_Manager.write_checkpoint(dir, 0)
+    PeriLab.Data_Manager.set_block_material(1, nothing)
+    PeriLab.Data_Manager.read_checkpoint!(dir, 0)
+    # rebuilt from the input by read_properties, never restored from a checkpoint
+    @test PeriLab.Data_Manager.get_block_material(1) === nothing
+end

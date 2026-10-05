@@ -12,7 +12,9 @@ export read_checkpoint!
 # communicator, live Module references) or are re-derived every run.
 const CHECKPOINT_EXCLUDED_KEYS = ("commMPi", "model_modules", "active_models",
                                   "all_active_models", "rank", "max_rank",
-                                  "mpi_active")
+                                  "mpi_active",
+                                  # typed materials: rebuilt from the input by read_properties
+                                  "Block Materials")
 
 """
     checkpoint_file(directory::String, rank::Int64)

@@ -11,7 +11,8 @@ using ....Data_Manager
 using ....PeriLabExceptions: @abort
 using ....ModuleLoader: find_module_files, create_module_specifics
 using .....ParameterSpec: @params, Dependent, register_base!, WithBase, Composite,
-                          ParseContext, add_error!, join_path, bind_dependents!, report!
+                          ParseContext, add_error!, join_path, Table1D, parameter_spec,
+                          bind_table!
 import .....ParameterSpec: check!
 
 
@@ -181,6 +182,19 @@ struct BlockMaterial{B,M,E}
     model::M
     symmetry::String
     moduli::E
+    tables::Vector{Table1D}   # dependent tables of base and model, re-bound every step
+end
+
+# the Table1D values of a parameter struct (or of the parts of a Composite)
+function _tables(x)
+    found = Table1D[]
+    for part in (x isa Composite ? x.parts : (x,))
+        for fs in parameter_spec(typeof(part))
+            v = getfield(part, fs.name)
+            v isa Table1D && push!(found, v)
+        end
+    end
+    return found
 end
 
 model_parts(model::Composite) = model.parts
@@ -326,7 +340,8 @@ function block_material(wb::WithBase, model_name::String, dof::Int64)
     bond_based = occursin("Bond-based", model_name) &&
                  !occursin("Unified Bond-based", model_name)
     return BlockMaterial(wb.base, wb.model, material_symmetry(wb.base.symmetry, dof),
-                         elastic_moduli(wb.base, bond_based, dof))
+                         elastic_moduli(wb.base, bond_based, dof),
+                         vcat(_tables(wb.base), _tables(wb.model)))
 end
 
 """
@@ -511,10 +526,13 @@ Binds the dependent tables of a block material to the current node fields. Call
 it before every evaluation, because the N/NP1 field arrays are swapped every step.
 """
 function bind_material!(material::BlockMaterial)
-    ctx = ParseContext()
-    bind_dependents!(material.base, _dependent_field, "Material", ctx)
-    bind_dependents!(material.model, _dependent_field, "Material", ctx)
-    report!(ctx)
+    for table in material.tables
+        field = _dependent_field(table.field_name)
+        if !(field isa Vector{Float64})
+            @abort "Field \"$(table.field_name)\" required by $(table.source) does not exist or is not a per-node Vector{Float64}."
+        end
+        bind_table!(table, field)
+    end
     return material
 end
 
