@@ -229,3 +229,41 @@ end
 
 end
 
+
+@testset "read_properties aborts on an undefined material name" begin
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(3)
+    PeriLab.Data_Manager.set_dof(2)
+    PeriLab.Data_Manager.set_block_name_list(["block_1"])
+    PeriLab.Data_Manager.set_block_id_list([1])
+    models = Dict("Material Models" => Dict("Mat" => Dict("Material Model" => "PD Solid Elastic",
+                                                          "Symmetry" => "isotropic plane strain",
+                                                          "Bulk Modulus" => 10.0,
+                                                          "Shear Modulus" => 10.0)))
+    input = typed_input(Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
+                                                                 "Density" => 1.0,
+                                                                 "Horizon" => 1.0,
+                                                                 "Material Model" => "Steeel")),
+                             "Models" => models))
+    params = Dict{String,Any}("Blocks" => Dict{String,Any}("block_1" => Dict{String,Any}("Block ID" => 1,
+                                                                                         "Material Model" => "Steeel")),
+                              "Models" => input.models)
+    @test_logs (:error,
+                "Material Model model with name Steeel is defined in blocks, but missing in the Material Models definition.") @test_throws PeriLab.PeriLabError PeriLab.Solver_Manager.Model_Factory.read_properties(params,
+                                                                                                                                                                                                                     input,
+                                                                                                                                                                                                                     true)
+    # without a material model the name is not checked
+    PeriLab.Solver_Manager.Model_Factory.read_properties(params, input, false)
+    @test PeriLab.Data_Manager.get_block_material(1) === nothing
+end
+
+@testset "local damping symmetry of a block without material" begin
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_dof(2)
+    @test PeriLab.Solver_Manager.Model_Factory.local_damping_symmetry(1) == "3D"
+    m = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
+                                  "Symmetry" => "isotropic plane strain",
+                                  "Bulk Modulus" => 10.0, "Shear Modulus" => 10.0))
+    PeriLab.Data_Manager.set_block_material(1, m)
+    @test PeriLab.Solver_Manager.Model_Factory.local_damping_symmetry(1) == "plane strain"
+end

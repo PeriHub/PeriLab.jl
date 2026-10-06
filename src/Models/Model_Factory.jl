@@ -43,6 +43,11 @@ has_block_model(block::Int64, name::String) = name == "Material Model" ?
 block_model_parameters(block::Int64, name::String) = name == "Material Model" ?
                                                      Data_Manager.get_block_material(block) :
                                                      Data_Manager.get_properties(block, name)
+# symmetry for the local damping; a block without material (e.g. a damage-only run) is 3D
+function local_damping_symmetry(block::Int64)
+    material = Data_Manager.get_block_material(block)
+    return material === nothing ? "3D" : material.symmetry
+end
 
 
 """
@@ -104,7 +109,7 @@ function init_models(params::Dict,
                    haskey(block_model_parameters(block, active_model_name),
                           "Local Damping")
                     Material.init_local_damping(block_nodes[block],
-                                                Data_Manager.get_block_material(block).symmetry,
+                                                local_damping_symmetry(block),
                                                 Data_Manager.get_properties(block,
                                                                             "Damage Model"))
                 end
@@ -496,7 +501,10 @@ function read_properties(params::Dict, input::PeriLabInput, material_model::Bool
         for (block_name, block) in zip(block_name_list, block_id_list)
             block_params = get(input.sections.blocks, block_name, nothing)
             material_name = block_params === nothing ? nothing : block_params.material_model
-            (material_name === nothing || !haskey(input.materials, material_name)) && continue
+            material_name === nothing && continue
+            if !haskey(input.materials, material_name)
+                @abort "Material Model model with name $material_name is defined in blocks, but missing in the Material Models definition."
+            end
             model_name = String(input.models["Material Models"][material_name]["Material Model"])
             material = Material.block_material(input.materials[material_name], model_name, dof)
             Material.check_material_symmetry(material, dof)
