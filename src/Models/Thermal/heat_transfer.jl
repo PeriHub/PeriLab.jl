@@ -16,6 +16,14 @@ using ......ParameterSpec: @params, register_thermal
     allow_surface_change::Bool = opt("Allow Surface Change"; default = true)
 end
 __init__() = register_thermal("Heat Transfer", HeatTransferParams)
+
+"Environmental temperature: a number, or an expression in the time `t` (evaluated at `time`)."
+environmental_temperature(T::Float64, time::Float64) = T
+function environmental_temperature(expression::String, time::Float64)
+    global t = time
+    return Float64(eval(Meta.parse(expression)))
+end
+
 using TimerOutputs: @timeit
 using .....Data_Manager
 using .....Helpers: normalize_in_place!
@@ -45,18 +53,19 @@ function thermal_model_name()
 end
 
 """
-    init_model(nodes, thermal_parameter)
+    init_model(nodes, p, thermal, block)
 
 Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `thermal parameter::Dict(String, Any)`: Dictionary with thermal parameter.
+- `p`: The model parameters.
+- `thermal::WithBase`: The typed thermal model of the block.
 - `block::Int64`: The current block.
 
 """
-function init_model(nodes::AbstractVector{Int64},
-                    thermal_parameter::Dict)
+function init_model(nodes::AbstractVector{Int64}, p::HeatTransferParams, thermal,
+                    block::Int64)
     nlist = Data_Manager.get_nlist()
     dof = Data_Manager.get_dof()
 
@@ -74,35 +83,28 @@ function init_model(nodes::AbstractVector{Int64},
 end
 
 """
-    compute_model(nodes, thermal_parameter, time, dt)
+    compute_model(nodes, p, thermal, block, time, dt)
 
 Calculates the heat transfer to the environment. [BrighentiR2021](@cite)
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
+- `p::HeatTransferParams`: The model parameters.
+- `thermal::WithBase`: The typed thermal model of the block.
+- `block::Int64`: The current block.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
 ```julia
 ```
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       thermal_parameter::Dict,
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
+function compute_model(nodes::AbstractVector{Int64}, p::HeatTransferParams, thermal,
+                       block::Int64, time::Float64, dt::Float64)
     dof = Data_Manager.get_dof()
     volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
-    kappa::Float64 = thermal_parameter["Heat Transfer Coefficient"]
-    Tenv::Float64 = 0.0
-    if thermal_parameter["Environmental Temperature"] isa String
-        global t = time
-        Tenv = eval(Meta.parse(thermal_parameter["Environmental Temperature"]))
-    else
-        Tenv = thermal_parameter["Environmental Temperature"]
-    end
-    allow_surface_change = get(thermal_parameter, "Allow Surface Change", true)
+    kappa::Float64 = p.heat_transfer_coefficient
+    Tenv::Float64 = environmental_temperature(p.environmental_temperature, time)
+    allow_surface_change = p.allow_surface_change
     additive_enabled = haskey(Data_Manager.get_active_models(), "Additive Model")
     heat_flow::NodeScalarField{Float64} = Data_Manager.get_field("Heat Flow", "NP1")
     temperature::NodeScalarField{Float64} = Data_Manager.get_field("Temperature", "NP1")

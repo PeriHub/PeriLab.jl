@@ -41,17 +41,11 @@ end
                                                                            Float64,
                                                                            2;
                                                                            default_value = 1)
-    PeriLab.Data_Manager.set_block_id_list([1, 2])
-    PeriLab.Data_Manager.init_properties()
-    PeriLab.Data_Manager.set_properties(1,
-                                        "Thermal Model",
-                                        Dict("Thermal Model" => "Heat Transfer"))
+    th = typed_model(:thermal, Dict("Thermal Model" => "Heat Transfer",
+                                    "Heat Transfer Coefficient" => 1.0,
+                                    "Environmental Temperature" => 30);
+                     name_key = "Thermal Model")
+    PeriLab.Data_Manager.set_block_model("Thermal Model", 1, th)
     PeriLab.Solver_Manager.Model_Factory.Thermal.init_model([1], 1)
-    PeriLab.Data_Manager.set_properties(2, "Thermal Model",
-                                        Dict("Thermal Model" => "Missing"))
-    @test_logs (:error,
-                "No thermal model of name Missing exists.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.Model_Factory.Thermal.init_model([1],
-                                                                2)
-    end
+    @test PeriLab.Data_Manager.has_key("Bond Norm")
 end

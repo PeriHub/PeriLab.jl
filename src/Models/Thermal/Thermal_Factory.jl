@@ -7,9 +7,9 @@ module Thermal
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
 using TimerOutputs: @timeit
-using ....ModuleLoader: find_module_files, create_module_specifics
+using ....ModuleLoader: find_module_files
 
-using .....ParameterSpec: @params, register_base!
+using .....ParameterSpec: @params, register_base!, WithBase, Composite
 
 """
     ThermalBaseParams
@@ -49,57 +49,47 @@ function init_fields()
                                                    default_value = true)
 end
 
-"""
-    compute_model(nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
+"The parts of a thermal model: the parts of a `+` composite, else the model itself."
+model_parts(model::Composite) = model.parts
+model_parts(model) = (model,)
 
-Computes the thermal models
+"""
+    compute_model(nodes::AbstractVector{Int64}, thermal::WithBase, block::Int64, time::Float64, dt::Float64)
+
+Computes every part of the block's thermal model, in deck order.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes
-- `model_param::Dict`: The model parameters
+- `thermal::WithBase`: The typed thermal model of the block (`thermal.base`: Thermal Conductivity)
 - `block::Int64`: The block
 - `time::Float64`: The current time
 - `dt::Float64`: The time step
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       model_param::Dict,
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
-    thermal_models = split(model_param["Thermal Model"], "+")
-    thermal_models = map(r -> strip(r), thermal_models)
-    for thermal_model in thermal_models
-        mod = get_model_module(thermal_model)
-        @timeit "$thermal_model" mod.compute_model(nodes, model_param, block, time,
-                                                   dt)
+function compute_model(nodes::AbstractVector{Int64}, thermal::WithBase, block::Int64,
+                       time::Float64, dt::Float64)
+    for part in model_parts(thermal.model)
+        @timeit "$(nameof(parentmodule(typeof(part))))" parentmodule(typeof(part)).compute_model(nodes,
+                                                                                                  part,
+                                                                                                  thermal,
+                                                                                                  block,
+                                                                                                  time,
+                                                                                                  dt)
     end
 end
 
 """
-    init_model(nodes::Union{SubArray,Vector{Int64}, block::Int64)
+    init_model(nodes::AbstractVector{Int64}, block::Int64)
 
-Initializes the thermal model.
+Initializes every part of the block's thermal model (`Data_Manager.get_block_model("Thermal Model", block)`).
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes.
 - `block::Int64`: Block.
 """
-function init_model(nodes::AbstractVector{Int64},
-                    block::Int64)
-    model_param = Data_Manager.get_properties(block, "Thermal Model")
-    thermal_models = split(model_param["Thermal Model"], "+")
-    thermal_models = map(r -> strip(r), thermal_models)
-    for thermal_model in thermal_models
-        @timeit "$thermal_model" mod=create_module_specifics(thermal_model,
-                                                             module_list,
-                                                             @__MODULE__,
-                                                             "thermal_model_name")
-        if isnothing(mod)
-            @abort "No thermal model of name " * thermal_model * " exists."
-            return
-        end
-        Data_Manager.set_model_module(thermal_model, mod)
-        mod.init_model(nodes, model_param)
+function init_model(nodes::AbstractVector{Int64}, block::Int64)
+    thermal = Data_Manager.get_block_model("Thermal Model", block)
+    for part in model_parts(thermal.model)
+        parentmodule(typeof(part)).init_model(nodes, part, thermal, block)
     end
 end
 
@@ -112,14 +102,10 @@ Defines all synchronization fields for local synchronization
 - `model::String`: Model class.
 - `block::Int64`: block ID
 """
-
 function fields_for_local_synchronization(model, block)
-    model_param = Data_Manager.get_properties(block, "Thermal Model")
-    thermal_models = split(model_param["Thermal Model"], "+")
-    thermal_models = map(r -> strip(r), thermal_models)
-    for thermal_model in thermal_models
-        mod = Data_Manager.get_model_module(thermal_model)
-        mod.fields_for_local_synchronization(model)
+    thermal = Data_Manager.get_block_model("Thermal Model", block)
+    for part in model_parts(thermal.model)
+        parentmodule(typeof(part)).fields_for_local_synchronization(model)
     end
 end
 

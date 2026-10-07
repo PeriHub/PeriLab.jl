@@ -87,3 +87,62 @@ end
     @test bd[2][1] == 0.0 && bd[1][1] == 0.0
     @test length(methods(UT_MF.Degradation.Thermal_Decomposition.compute_model)) == 1
 end
+
+function ut_thermal_model(raw)
+    return typed_model(:thermal, raw; name_key = "Thermal Model")
+end
+
+@testset "thermal composite runs every part" begin
+    PeriLab.Data_Manager.initialize_data()
+    th = ut_thermal_model(Dict("Thermal Model" => "Thermal Flow + Heat Transfer",
+                               "Thermal Conductivity" => 1.0,
+                               "Heat Transfer Coefficient" => 1.0,
+                               "Environmental Temperature" => 30))
+    parts = UT_MF.Thermal.model_parts(th.model)
+    @test nameof.(typeof.(parts)) == (:ThermalFlowParams, :HeatTransferParams)
+    th2 = ut_thermal_model(Dict("Thermal Model" => "Heat Transfer+Thermal Flow",
+                                "Thermal Conductivity" => 1.0,
+                                "Heat Transfer Coefficient" => 1.0,
+                                "Environmental Temperature" => 30))
+    @test nameof.(typeof.(UT_MF.Thermal.model_parts(th2.model))) ==
+          (:HeatTransferParams, :ThermalFlowParams)
+    single = ut_thermal_model(Dict("Thermal Model" => "Thermal Expansion",
+                                   "Thermal Expansion Coefficient" => 1.0))
+    @test UT_MF.Thermal.model_parts(single.model) == (single.model,)
+end
+
+@testset "environmental temperature expression" begin
+    HT = UT_MF.Thermal.Heat_Transfer
+    @test HT.environmental_temperature(30.0, 5.0) == 30.0
+    @test HT.environmental_temperature("20+t", 5.0) == 25.0
+end
+
+@testset "thermal critical time step" begin
+    PeriLab.Data_Manager.initialize_data()
+    th = ut_thermal_model(Dict("Thermal Model" => "Heat Transfer",
+                               "Thermal Conductivity" => 0.12,
+                               "Heat Transfer Coefficient" => 1.0,
+                               "Environmental Temperature" => 30))
+    PeriLab.Data_Manager.set_block_model("Thermal Model", 1, th)
+    @test UT_MF.block_thermal_conductivity(1) == 0.12
+    @test UT_MF.block_thermal_conductivity(2) === nothing
+end
+
+@testset "heat capacity from the typed blocks" begin
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(3)
+    input = typed_input(Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
+                                                                "Density" => 1.0,
+                                                                "Horizon" => 1.0,
+                                                                "Specific Heat Capacity" => 5.0),
+                                              "block_2" => Dict("Block ID" => 2,
+                                                                "Density" => 1.0,
+                                                                "Horizon" => 1.0))))
+    hc = zeros(3)
+    UT_MF.set_heat_capacity(input, Dict(1 => [1, 2]), hc)
+    @test hc == [5.0, 5.0, 0.0]
+    @test_logs (:error,
+                "Specific Heat Capacity of block_2 is not defined") @test_throws PeriLab.PeriLabError UT_MF.set_heat_capacity(input,
+                                                                                                                                Dict(2 => [3]),
+                                                                                                                                hc)
+end

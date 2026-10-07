@@ -73,50 +73,50 @@ function thermal_expansion_matrix(alpha::T,
 end
 
 """
-    init_model(nodes, thermal_parameter)
+    init_model(nodes, p, thermal, block)
 
 Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `thermal parameter::Dict(String, Any)`: Dictionary with thermal parameter.
+- `p`: The model parameters.
+- `thermal::WithBase`: The typed thermal model of the block.
 - `block::Int64`: The current block.
 
 """
-function init_model(nodes::AbstractVector{Int64},
-                    thermal_parameter::Dict)
-    if !haskey(thermal_parameter, "Reference Temperature")
+function init_model(nodes::AbstractVector{Int64}, p::ThermalExpansionParams, thermal,
+                    block::Int64)
+    if p.reference_temperature === nothing
         @warn "No reference temperature defined. Assuming 0"
     end
 end
 
 """
-    compute_model(nodes, thermal_parameter, block::Int64, time, dt)
+    compute_model(nodes, p, thermal, block, time, dt)
 
 Calculates the thermal expansion of the material.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
+- `p::ThermalExpansionParams`: The model parameters.
+- `thermal::WithBase`: The typed thermal model of the block.
+- `block::Int64`: The current block.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
 ```julia
 ```
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       thermal_parameter::Dict,
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
+function compute_model(nodes::AbstractVector{Int64}, p::ThermalExpansionParams, thermal,
+                       block::Int64, time::Float64, dt::Float64)
     temperature_NP1::NodeScalarField{Float64} = Data_Manager.get_field("Temperature",
                                                                        "NP1")
     dof::Int64 = Data_Manager.get_dof()
     alpha::Union{Float64,
-                 Vector{Float64}} = thermal_parameter["Thermal Expansion Coefficient"]
+                 Vector{Float64}} = p.thermal_expansion_coefficient
 
     @timeit "thermal_expansion_matrix" alpha_mat=thermal_expansion_matrix(alpha,
                                                                           Val(dof))
-    ref_temp::Float64 = get(thermal_parameter, "Reference Temperature", 0.0)
+    ref_temp::Float64 = something(p.reference_temperature, 0.0)
 
     undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
     undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")

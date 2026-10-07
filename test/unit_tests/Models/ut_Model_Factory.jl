@@ -42,10 +42,7 @@
     @test isempty(PeriLab.Data_Manager.get_properties(1, "Material Model"))
     @test isempty(PeriLab.Data_Manager.get_properties(3, "Material Model"))
     @test isempty(PeriLab.Data_Manager.get_properties(3, "Damage Model"))
-    @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "value") ==
-          params["Models"]["Thermal Models"]["therm"]["value"]
-    @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "bool") ==
-          params["Models"]["Thermal Models"]["therm"]["bool"]
+    @test isempty(PeriLab.Data_Manager.get_properties(3, "Thermal Model"))
     @test isempty(PeriLab.Data_Manager.get_properties(3, "Additive Model"))
 end
 
@@ -153,18 +150,12 @@ end
 
     @test isnothing(PeriLab.Data_Manager.get_property(1, "Material Model",
                                                       "value"))
-    @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "value") ==
-          params["Models"]["Thermal Models"]["therm"]["value"]
-    @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "bool") ==
-          params["Models"]["Thermal Models"]["therm"]["bool"]
+    @test isempty(PeriLab.Data_Manager.get_properties(3, "Thermal Model"))
 
     PeriLab.Solver_Manager.Model_Factory.read_properties(params, typed_input(Dict()), true)
     @test isempty(PeriLab.Data_Manager.get_properties(1, "Material Model"))
 
-    @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "value") ==
-          params["Models"]["Thermal Models"]["therm"]["value"]
-    @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "bool") ==
-          params["Models"]["Thermal Models"]["therm"]["bool"]
+    @test isempty(PeriLab.Data_Manager.get_properties(3, "Thermal Model"))
 end
 
 @testset "ut_add_model" begin

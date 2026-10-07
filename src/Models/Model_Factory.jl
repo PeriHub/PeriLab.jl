@@ -10,7 +10,7 @@ using ...PeriLabExceptions: @abort
 using ...Helpers:
                   check_inf_or_nan, find_active_nodes, invert,
                   determinant, matrix_style, eigvals, get_update_nodes
-using ...InputDeck: PeriLabInput, ContactInput
+using ...InputDeck: PeriLabInput, ContactInput, block_by_id
 include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("./Surface_correction/Surface_correction.jl")
 include("./Contact/Contact_Factory.jl")
@@ -19,7 +19,7 @@ include("./Degradation/Degradation_Factory.jl")
 include("./Damage/Damage_Factory.jl")
 include("./Material/Material_Factory.jl")
 include("./Thermal/Thermal_Factory.jl")
-using ...Parameter_Handling: get_model_parameter, get_heat_capacity
+using ...Parameter_Handling: get_model_parameter
 using .Additive
 using .Degradation
 using .Damage
@@ -41,7 +41,7 @@ function typed_block_model(block::Int64, name::String)
     return Data_Manager.get_block_model(name, block)
 end
 const TYPED_CATEGORIES = ("Material Model", "Damage Model", "Additive Model",
-                          "Degradation Model")
+                          "Degradation Model", "Thermal Model")
 has_block_model(block::Int64, name::String) = name in TYPED_CATEGORIES ?
                                               typed_block_model(block, name) !== nothing :
                                               Data_Manager.check_property(block, name)
@@ -52,6 +52,11 @@ block_model_parameters(block::Int64, name::String) = name in TYPED_CATEGORIES ?
 function block_local_damping(block::Int64)
     damage = Data_Manager.get_block_damage(block)
     return damage === nothing ? nothing : damage.base.local_damping
+end
+# Thermal Conductivity of a block's thermal model, or `nothing`
+function block_thermal_conductivity(block::Int64)
+    thermal = Data_Manager.get_block_model("Thermal Model", block)
+    return thermal === nothing ? nothing : thermal.base.thermal_conductivity
 end
 # symmetry for the local damping; a block without material (e.g. a damage-only run) is 3D
 function local_damping_symmetry(block::Int64)
@@ -95,7 +100,7 @@ function init_models(params::Dict,
     if "Additive" in solver_options["Models"] || "Thermal" in solver_options["Models"]
         heat_capacity = Data_Manager.create_constant_node_scalar_field("Specific Heat Capacity",
                                                                        Float64)
-        heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
+        heat_capacity = set_heat_capacity(input, block_nodes, heat_capacity) # includes the neighbors
     end
 
     if Data_Manager.get_step() <= 1
@@ -547,25 +552,34 @@ function read_properties(params::Dict, input::PeriLabInput, material_model::Bool
                               input.degradations)
         g === nothing || Data_Manager.set_block_model("Degradation Model", block, g)
     end
+    for (block_name, block) in zip(block_name_list, block_id_list)
+        th = block_typed_model(input, block_name, :thermal_model, "Thermal Model",
+                               input.thermals)
+        th === nothing || Data_Manager.set_block_model("Thermal Model", block, th)
+    end
 end
 
 
 """
-	set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::NodeScalarField{Float64})
+	set_heat_capacity(input::PeriLabInput, block_nodes::Dict, heat_capacity::NodeScalarField{Float64})
 
 Sets the heat capacity of the nodes in the dictionary.
 
 # Arguments
-- `params::Dict`: The parameters
+- `input::PeriLabInput`: The typed input deck (`Specific Heat Capacity` of the blocks)
 - `block_nodes::Dict`: The block nodes
 - `heat_capacity::NodeScalarField{Float64}`: The heat capacity array
 # Returns
 - `heat_capacity::SubArray`: The heat capacity array
 """
-function set_heat_capacity(params::Dict, block_nodes::Dict,
+function set_heat_capacity(input::PeriLabInput, block_nodes::Dict,
                            heat_capacity::NodeScalarField{Float64})
     for block in eachindex(block_nodes)
-        heat_capacity[block_nodes[block]] .= get_heat_capacity(params, block)
+        name, params = block_by_id(input.sections.blocks, block)
+        if params.specific_heat_capacity === nothing
+            @abort "Specific Heat Capacity of $name is not defined"
+        end
+        heat_capacity[block_nodes[block]] .= params.specific_heat_capacity
     end
     return heat_capacity
 end
@@ -754,8 +768,7 @@ function compute_crititical_time_step(block_nodes::Dict{Int64,Vector{Int64}},
     critical_time_step::Float64 = 1.0e50
     for iblock in eachindex(block_nodes)
         if thermal
-            lambda = Data_Manager.get_property(iblock, "Thermal Model",
-                                               "Thermal Conductivity")
+            lambda = block_thermal_conductivity(iblock)
             # if Cv and lambda are not defined it is valid, because an analysis can take place, if material is still analysed
             if isnothing(lambda)
                 if !mechanical

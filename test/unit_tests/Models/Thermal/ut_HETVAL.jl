@@ -21,42 +21,33 @@ end
     if !isfile(file)
         file = "../src/Models/Thermal/HETVALs/hetval.so"
     end
+    HV = PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL
+    hetval(raw) = typed_model(:thermal,
+                              merge(Dict{String,Any}("Thermal Model" => "HETVAL"), raw);
+                              name_key = "Thermal Model")
     directory = PeriLab.Data_Manager.get_directory()
+    th = hetval(Dict("File" => file * "_not_there"))
     @test_logs (:error,
-                "File $(joinpath(pwd(), directory, file * "_not_there")) does not exist, please check name and directory.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.init_model(Vector{Int64}(1:nodes),
-                                                                       Dict{String,
-                                                                            Any}("File" => file *
-                                                                                           "_not_there"))
-    end
+                "File $(joinpath(pwd(), directory, file * "_not_there")) does not exist, please check name and directory.") @test_throws PeriLab.PeriLabError HV.init_model(Vector{Int64}(1:nodes),
+                                                                                                                                                                              th.model,
+                                                                                                                                                                              th,
+                                                                                                                                                                              1)
 
-    @test_logs (:error, "HETVAL file is not defined.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.init_model(Vector{Int64}(1:nodes),
-                                                                       Dict{String,
-                                                                            Any}())
-    end
-
+    th = hetval(Dict("File" => file, "Predefined Field Names" => "test_field_2 test_field_3"))
     @test_logs (:error,
-                "Predefined field ''test_field_2'' is not defined in the mesh file.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.init_model(Vector{Int64}(1:nodes),
-                                                                       Dict{String,
-                                                                            Any}("File" => file,
-                                                                                 "Predefined Field Names" => "test_field_2 test_field_3"))
-    end
+                "Predefined field ''test_field_2'' is not defined in the mesh file.") @test_throws PeriLab.PeriLabError HV.init_model(Vector{Int64}(1:nodes),
+                                                                                                                                  th.model,
+                                                                                                                                  th,
+                                                                                                                                  1)
 
     test_1 = PeriLab.Data_Manager.create_constant_node_scalar_field("test_field_2", Float64)
     test_1[1] = 7.3
     test_2 = PeriLab.Data_Manager.create_constant_node_scalar_field("test_field_3", Float64)
     test_2 .= 3
-    mat_dict = Dict{String,Any}("File" => file,
-                                "HETVAL name" => "test_sub",
-                                "Number of Properties" => 3,
-                                "Property_1" => 2,
-                                "Property_2" => 2,
-                                "Property_3" => 2.4,
-                                "Predefined Field Names" => "test_field_2 test_field_3")
-    PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.init_model(Vector{Int64}(1:nodes),
-                                                                   mat_dict)
+    th = hetval(Dict("File" => file, "HETVAL name" => "test_sub", "Property_1" => 2,
+                     "Property_2" => 2, "Property_3" => 2.4,
+                     "Predefined Field Names" => "test_field_2 test_field_3"))
+    HV.init_model(Vector{Int64}(1:nodes), th.model, th, 1)
     fields = PeriLab.Data_Manager.get_field("Predefined Fields")
     inc = PeriLab.Data_Manager.get_field("Predefined Fields Increment")
     @test size(fields) == (2, 2)
@@ -65,18 +56,12 @@ end
     @test fields[2, 1] == test_1[2]
     @test fields[1, 2] == test_2[1]
     @test fields[2, 2] == test_2[2]
-    @test mat_dict["HETVAL name"] == "test_sub"
-    mat_dict = Dict{String,Any}("File" => file,
-                                "Number of Properties" => 3,
-                                "Property_1" => 2,
-                                "Property_2" => 2,
-                                "Property_3" => 2.4,
-                                "Predefined Field Names" => "test_field_2 test_field_3")
-    @test !haskey(mat_dict, "HETVAL name")
-    PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.init_model(Vector{Int64}(1:nodes),
-                                                                   mat_dict)
-    @test haskey(mat_dict, "HETVAL name")
-    @test mat_dict["HETVAL name"] == "HETVAL"
+    @test th.model.hetval_name == "test_sub"
+    th = hetval(Dict("File" => file, "Property_1" => 2, "Property_2" => 2,
+                     "Property_3" => 2.4,
+                     "Predefined Field Names" => "test_field_2 test_field_3"))
+    HV.init_model(Vector{Int64}(1:nodes), th.model, th, 1)
+    @test th.model.hetval_name == "HETVAL"
 end
 @testset "ut_malloc_cstring" begin
     CMNAME = PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.malloc_cstring("HETVAL_TEST")

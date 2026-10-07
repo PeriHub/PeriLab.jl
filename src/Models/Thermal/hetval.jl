@@ -59,27 +59,25 @@ function thermal_model_name()
 end
 
 """
-    compute_model(nodes, thermal_parameter, time, dt)
+    compute_model(nodes, p, thermal, block, time, dt)
 
 Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
+- `p::HETVALParams`: The model parameters.
+- `thermal::WithBase`: The typed thermal model of the block.
+- `block::Int64`: The current block.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
 ```julia
 ```
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       thermal_parameter::Dict,
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
+function compute_model(nodes::AbstractVector{Int64}, p::HETVALParams, thermal,
+                       block::Int64, time::Float64, dt::Float64)
     global hetval_cmname
     global num_state_vars
-    # CMNAME::Cstring = malloc_cstring(thermal_parameter["HETVAL Material Name"])
     temp_N::NodeScalarField{Float64} = Data_Manager.get_field("Temperature", "N")
     temp_NP1::NodeScalarField{Float64} = Data_Manager.get_field("Temperature", "NP1")
     # deltaT::NodeScalarField{Float64} = Data_Manager.get_field("Delta Temperature")
@@ -174,32 +172,26 @@ function HETVAL_interface(CMNAME::Cstring,
 end
 
 """
-    init_model(nodes, thermal_parameter)
+    init_model(nodes, p, thermal, block)
 
 Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `thermal parameter::Dict(String, Any)`: Dictionary with thermal parameter.
+- `p`: The model parameters.
+- `thermal::WithBase`: The typed thermal model of the block.
 
 """
-function init_model(nodes::AbstractVector{Int64},
-                    thermal_parameter::Dict)
+function init_model(nodes::AbstractVector{Int64}, p::HETVALParams, thermal, block::Int64)
     global num_state_vars
-    if !haskey(thermal_parameter, "File")
-        @abort "HETVAL file is not defined."
-        return
-    end
     directory = Data_Manager.get_directory()
-    thermal_parameter["File"] = joinpath(pwd(), directory, thermal_parameter["File"])
-    global hetval_file_path = thermal_parameter["File"]
-    if !isfile(thermal_parameter["File"])
-        @abort "File $(thermal_parameter["File"]) does not exist, please check name and directory."
+    file = joinpath(pwd(), directory, p.file)
+    global hetval_file_path = file
+    if !isfile(file)
+        @abort "File $file does not exist, please check name and directory."
         return
     end
-    if haskey(thermal_parameter, "Number of State Variables")
-        num_state_vars = thermal_parameter["Number of State Variables"]
-    end
+    num_state_vars = p.number_of_state_variables
     # State variables are used to transfer additional information to the next step
     if num_state_vars == 1
         Data_Manager.create_constant_node_scalar_field("State Variables", Float64)
@@ -208,27 +200,16 @@ function init_model(nodes::AbstractVector{Int64},
                                                        num_state_vars)
     end
 
-    if !haskey(thermal_parameter, "HETVAL Material Name")
+    if p.hetval_material_name === nothing
         @warn "No HETVAL Material Name is defined. Please check if you use it as method to check different material in your HETVAL."
-        thermal_parameter["HETVAL Material Name"] = ""
-        global hetval_cmname = malloc_cstring(thermal_parameter["HETVAL Material Name"])
     end
-    if length(thermal_parameter["HETVAL Material Name"]) > 80
-        @abort "Due to old Fortran standards only a name length of 80 is supported"
-        return
-    end
-
-    if !haskey(thermal_parameter, "HETVAL name")
-        thermal_parameter["HETVAL name"] = "HETVAL"
-    end
+    global hetval_cmname = malloc_cstring(something(p.hetval_material_name, ""))
 
     dof = Data_Manager.get_dof()
 
-    if haskey(thermal_parameter, "Predefined Field Names")
-        field_names = split(thermal_parameter["Predefined Field Names"], " ")
-    else
-        field_names = ["Volume"] #Use any if not defined!
-    end
+    # any field if none are defined
+    field_names = p.predefined_field_names === nothing ? ["Volume"] :
+                  split(p.predefined_field_names, " ")
     n_fields = length(field_names)
     if n_fields == 1
         fields = Data_Manager.create_constant_node_scalar_field("Predefined Fields",
