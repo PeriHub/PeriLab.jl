@@ -50,7 +50,8 @@ end
     PeriLabInput
 
 A validated input deck. `materials` holds the typed material models
-(`ParameterSpec.WithBase`), keyed by name; `damages` holds the typed damage models;
+(`ParameterSpec.WithBase`), keyed by name; `damages` and `additives` hold the typed
+damage and additive models;
 `models` stays the raw `Models` dict for the categories not yet migrated;
 `globals` is the unvalidated `Globals` escape hatch.
 """
@@ -59,6 +60,7 @@ struct PeriLabInput
     contact::Union{Nothing,ContactInput}
     materials::Dict{String,Any}
     damages::Dict{String,Any}
+    additives::Dict{String,Any}
     models::Dict{String,Any}
     globals::Dict{String,Any}
 end
@@ -141,11 +143,14 @@ function read_input(deck::AbstractDict, directory::AbstractString = ""; strict::
     end
     materials = models isa AbstractDict ? parse_materials(models, ctx) : Dict{String,Any}()
     damages = models isa AbstractDict ? parse_damages(models, ctx) : Dict{String,Any}()
+    additives = models isa AbstractDict ?
+                parse_single_models(models, "Additive Models", :additive, "Additive Model",
+                                    ctx) : Dict{String,Any}()
     globals = get(deck, "Globals", Dict{String,Any}())
     if ParameterSpec.has_errors(ctx) || sections === nothing
         return nothing, ctx
     end
-    input = PeriLabInput(sections, contact, materials, damages,
+    input = PeriLabInput(sections, contact, materials, damages, additives,
                          Dict{String,Any}(string(k) => v for (k, v) in models),
                          globals isa AbstractDict ?
                          Dict{String,Any}(string(k) => v for (k, v) in globals) :

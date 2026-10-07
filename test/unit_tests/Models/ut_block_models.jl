@@ -39,3 +39,24 @@ end
                     name_key = "Damage Model")
     @test m isa PeriLab.ParameterSpec.WithBase
 end
+
+@testset "additive dispatch reads the block model" begin
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(3)
+    AT = UT_MF.Additive.Additive_template
+    p = AT.AdditiveTemplateParams()
+    PeriLab.Data_Manager.set_block_model("Additive Model", 1, p)
+    @test UT_MF.has_block_model(1, "Additive Model")
+    @test UT_MF.block_model_parameters(1, "Additive Model") === p
+    UT_MF.Additive.init_model([1, 2, 3], 1)
+    UT_MF.Additive.compute_model([1, 2, 3], p, 1, 0.0, 1.0)
+    UT_MF.Additive.fields_for_local_synchronization("Additive Model", 1)
+    @test length(methods(AT.compute_model)) == 1
+end
+
+@testset "licensed additive models load without a license" begin
+    withenv("LICENSE_SERVER_URL" => nothing, "PERIHUB_LICENSE_KEY" => nothing,
+            "LICENSED_MODULES_CONFIG" => nothing, "LICENSED_MODULES_DIR" => nothing) do
+        @test isempty(UT_MF.Additive.load_licensed_models())
+    end
+end

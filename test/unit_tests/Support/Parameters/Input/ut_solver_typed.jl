@@ -110,7 +110,8 @@ function ut_st_compare_all_decks(t)
         raw = PeriLab.IO.read_input(file)
         (raw isa AbstractDict && haskey(raw, "PeriLab")) || continue
         deck = raw["PeriLab"]
-        input, _ = ID.read_input(deck, dirname(file))
+        input, ctx = ID.read_input(deck, dirname(file))
+        deck_needs_license(ctx) && continue
         steps = PH.get_solver_steps(deck)
         @test ID.solver_steps(input) == steps
         for step in steps

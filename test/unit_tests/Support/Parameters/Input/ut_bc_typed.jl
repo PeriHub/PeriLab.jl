@@ -50,7 +50,8 @@ function ut_bc_compare_all_decks()
         raw = PeriLab.IO.read_input(file)
         (raw isa AbstractDict && haskey(raw, "PeriLab")) || continue
         deck = raw["PeriLab"]
-        input, _ = ID.read_input(deck, dirname(file))
+        input, ctx = ID.read_input(deck, dirname(file))
+        deck_needs_license(ctx) && continue
         reference = PeriLab.Parameter_Handling.get_bc_definitions(deck)
         @test sort(collect(keys(input.sections.boundary_conditions))) ==
               sort(string.(collect(keys(reference))))

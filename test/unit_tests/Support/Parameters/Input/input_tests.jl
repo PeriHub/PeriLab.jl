@@ -7,7 +7,7 @@ for file in ["ut_mesh_blocks.jl", "ut_solver.jl", "ut_outputs_conditions_contact
              "ut_solver_typed.jl", "ut_model_reduction_params.jl", "ut_blocks_mesh_typed.jl",
              "ut_node_sets_typed.jl", "ut_outputs_typed.jl", "ut_bc_typed.jl",
              "ut_contact_fem_typed.jl", "ut_material_params.jl",
-             "ut_material_models.jl", "ut_damage_models.jl"]
+             "ut_material_models.jl", "ut_damage_models.jl", "ut_category_models.jl"]
     @testset "$file" begin
         include(joinpath(@__DIR__, file))
     end

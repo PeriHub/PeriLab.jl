@@ -105,7 +105,8 @@ function ut_bm_compare_all_decks()
         raw = PeriLab.IO.read_input(file)
         (raw isa AbstractDict && haskey(raw, "PeriLab")) || continue
         deck = raw["PeriLab"]
-        input, _ = ID.read_input(deck, dirname(file))
+        input, ctx = ID.read_input(deck, dirname(file))
+        deck_needs_license(ctx) && continue
         blocks = input.sections.blocks
         ids = Int64[b["Block ID"] for b in values(deck["Blocks"])]
         @test ID.block_names_and_ids(blocks, ids, true) ==

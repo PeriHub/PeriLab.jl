@@ -46,10 +46,7 @@
           params["Models"]["Thermal Models"]["therm"]["value"]
     @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "bool") ==
           params["Models"]["Thermal Models"]["therm"]["bool"]
-    @test PeriLab.Data_Manager.get_property(3, "Additive Model", "value") ==
-          params["Models"]["Additive Models"]["add"]["value"]
-    @test PeriLab.Data_Manager.get_property(3, "Additive Model", "bool") ==
-          params["Models"]["Additive Models"]["add"]["bool"]
+    @test isempty(PeriLab.Data_Manager.get_properties(3, "Additive Model"))
 end
 
 # from Peridigm

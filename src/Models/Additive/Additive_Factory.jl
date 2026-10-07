@@ -6,7 +6,7 @@ module Additive
 
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
-using .....ModuleLoader: create_module_specifics, licensed_modules, optional_local_modules
+using .....ModuleLoader: licensed_modules, optional_local_modules
 
 local_user_modules = optional_local_modules(@__DIR__, "additive_name")
 
@@ -50,58 +50,52 @@ function init_fields()
     inverse_nlist = Data_Manager.set_inverse_nlist(find_inverse_bond_id(nlist))
 end
 
-"""
-    compute_model(nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
+global licensed = Any[]
 
-Computes the addtive models
+"""
+    load_licensed_models()
+
+Includes the licensed additive modules (if a license is configured) so that they
+register their parameter structs before the input deck is read. Runs once.
+"""
+function load_licensed_models()
+    isempty(licensed) || return licensed
+    global licensed = licensed_modules(@__MODULE__, "Additive")
+    return licensed
+end
+
+model_module(p) = parentmodule(typeof(p))
+
+"""
+    compute_model(nodes::AbstractVector{Int64}, p, block::Int64, time::Float64, dt::Float64)
+
+Computes the additive model of a block.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes
-- `model_param::Dict`: The model parameters
+- `p`: The typed additive model of the block
 - `block::Int64`: The block
 - `time::Float64`: The current time
 - `dt::Float64`: The time step
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       model_param::Dict,
-                       block::Int64,
-                       time::Float64,
+function compute_model(nodes::AbstractVector{Int64}, p, block::Int64, time::Float64,
                        dt::Float64)
-    mod = Data_Manager.get_model_module(model_param["Additive Model"])
-    return Base.@invokelatest mod.compute_model(nodes, model_param, block, time, dt)
+    # invokelatest: licensed models are defined at runtime
+    return Base.@invokelatest model_module(p).compute_model(nodes, p, block, time, dt)
 end
 
 """
     init_model(nodes::AbstractVector{Int64}, block::Int64)
 
-Initialize the additive models.
+Initialize the additive model of a block (`Data_Manager.get_block_model("Additive Model", block)`).
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: Nodes for the additive model.
 - `block::Int64`: Block identifier for the additive model.
-
-# Example
-```julia
-init_model(my_data_manager, [1, 2, 3], 1)
-```
 """
-function init_model(nodes::AbstractVector{Int64},
-                    block::Int64)
-    model_param = Data_Manager.get_properties(block, "Additive Model")
-
-    licensed = licensed_modules(@__MODULE__, "Additive")
-    all_modules = vcat(local_user_modules, licensed)
-
-    mod = create_module_specifics(model_param["Additive Model"],
-                                  all_modules,
-                                  @__MODULE__,
-                                  "additive_name")
-    if isnothing(mod)
-        @abort "No additive model of name " * model_param["Additive Model"] * " exists."
-        return
-    end
-    Data_Manager.set_model_module(model_param["Additive Model"], mod)
-    Base.@invokelatest mod.init_model(nodes, model_param, block)
+function init_model(nodes::AbstractVector{Int64}, block::Int64)
+    p = Data_Manager.get_block_model("Additive Model", block)
+    Base.@invokelatest model_module(p).init_model(nodes, p, block)
 end
 
 """
@@ -114,10 +108,8 @@ Defines all synchronization fields for local synchronization
 - `block::Int64`: block ID
 """
 function fields_for_local_synchronization(model, block)
-    model_param = Data_Manager.get_properties(block, "Additive Model")
-    mod = Data_Manager.get_model_module(model_param["Additive Model"])
-
-    return Base.@invokelatest mod.fields_for_local_synchronization(model)
+    p = Data_Manager.get_block_model("Additive Model", block)
+    return Base.@invokelatest model_module(p).fields_for_local_synchronization(model)
 end
 
 end

@@ -218,3 +218,17 @@ function typed_model(category::Symbol, raw::AbstractDict; name_key::String)
     PeriLab.ParameterSpec.report!(ctx)
     return model
 end
+
+# licensed models: without a license a deck naming them cannot be validated
+PeriLab.ParameterSpec.register_unavailable!(:additive, "Simple")
+ut_license_error(e) = endswith(e.message, "requires a license that is not available")
+
+"""
+    deck_needs_license(ctx)
+
+True if reading a deck failed only because it names an unavailable licensed model.
+"""
+function deck_needs_license(ctx)
+    errors = filter(e -> e.severity == :error, ctx.errors)
+    return !isempty(errors) && all(ut_license_error, errors)
+end
