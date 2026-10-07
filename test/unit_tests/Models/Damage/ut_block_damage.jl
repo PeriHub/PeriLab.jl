@@ -79,3 +79,69 @@ end
     @test aniso[2] == [1.0, 2.0, 2.0]          # Z defaults to Y
     @test aniso[3] == [1.0, 2.0, 3.0]
 end
+
+function ut_stretch_setup(deformed)
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(2)
+    PeriLab.Data_Manager.set_dof(2)
+    nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+    nn .= 1
+    nlist = PeriLab.Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
+    nlist[1] = [2]
+    nlist[2] = [1]
+    PeriLab.Data_Manager.create_constant_node_scalar_field("Block_Id", Int64) .= 1
+    PeriLab.Data_Manager.create_constant_node_scalar_field("Update", Bool)
+    PeriLab.Data_Manager.create_bond_scalar_state("Bond Damage", Float64; default_value = 1)
+    len = PeriLab.Data_Manager.create_constant_bond_scalar_state("Bond Length", Float64)
+    len[1] .= 1.0
+    len[2] .= 1.0
+    _, dlen = PeriLab.Data_Manager.create_bond_scalar_state("Deformed Bond Length", Float64)
+    dlen[1] .= deformed[1]
+    dlen[2] .= deformed[2]
+    return nothing
+end
+
+function ut_stretch_damage(raw; deformed = (1.2, 0.9))
+    ut_stretch_setup(deformed)
+    d = ut_typed_damage(raw)
+    PeriLab.Data_Manager.set_block_damage(1, d)
+    BDAM.Critical_Stretch.init_model([1, 2], d.model, d, 1)
+    BDAM.Critical_Stretch.compute_model([1, 2], d.model, d, 1, 0.0, 1.0)
+    bd = PeriLab.Data_Manager.get_bond_damage("NP1")
+    return (bd[1][1], bd[2][1])
+end
+
+@testset "critical stretch on the typed interface" begin
+    # stretches: node 1 +0.2, node 2 -0.1
+    @test ut_stretch_damage(Dict("Damage Model" => "Critical Stretch",
+                                 "Critical Value" => 0.15)) == (0.0, 1.0)
+    @test ut_stretch_damage(Dict("Damage Model" => "Critical Stretch",
+                                 "Critical Value" => 0.05, "Only Tension" => false)) ==
+          (0.0, 0.0)
+    @test ut_stretch_damage(Dict("Damage Model" => "Critical Stretch",
+                                 "Critical Value" => 0.05)) == (0.0, 1.0)
+end
+
+@testset "anisotropic energy needs Anisotropic Damage" begin
+    ut_stretch_setup((1.0, 1.0))
+    PeriLab.Data_Manager.create_constant_node_scalar_field("Horizon", Float64) .= 1.0
+    d = ut_typed_damage(Dict("Damage Model" => "Critical Energy Anisotropic",
+                             "Critical Value" => 1.0))
+    @test_logs (:error,
+                "Critical Energy Anisotropic requires Anisotropic Damage.") @test_throws PeriLab.PeriLabError BDAM.Critical_Energy_Aniso.init_model([1, 2],
+                                                                                                                                                       d.model,
+                                                                                                                                                       d,
+                                                                                                                                                       1)
+end
+
+@testset "damage dispatch reads the block damage" begin
+    ut_stretch_setup((1.2, 0.9))
+    PeriLab.Data_Manager.create_constant_node_scalar_field("Volume", Float64) .= 1.0
+    PeriLab.Data_Manager.create_node_scalar_field("Damage", Float64)
+    d = ut_typed_damage(Dict("Damage Model" => "Critical Stretch", "Critical Value" => 0.15))
+    PeriLab.Data_Manager.set_block_damage(1, d)
+    BDAM.init_model([1, 2], 1)
+    BDAM.compute_model([1, 2], d, 1, 0.0, 1.0)
+    @test PeriLab.Data_Manager.get_damage("NP1") == [1.0, 0.0]
+    @test length(methods(BDAM.Critical_Stretch.compute_model)) == 1
+end

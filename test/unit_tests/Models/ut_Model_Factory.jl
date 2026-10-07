@@ -41,8 +41,7 @@
     # materials are typed (input.materials), not stored as property dicts
     @test isempty(PeriLab.Data_Manager.get_properties(1, "Material Model"))
     @test isempty(PeriLab.Data_Manager.get_properties(3, "Material Model"))
-    @test PeriLab.Data_Manager.get_property(3, "Damage Model", "value") ==
-          params["Models"]["Damage Models"]["a"]["value"]
+    @test isempty(PeriLab.Data_Manager.get_properties(3, "Damage Model"))
     @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "value") ==
           params["Models"]["Thermal Models"]["therm"]["value"]
     @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "bool") ==
@@ -294,4 +293,22 @@ end
                 "Damage Model is defined in blocks, but no Damage Models definition block exists") match_mode=:any @test_throws PeriLab.PeriLabError PeriLab.Solver_Manager.Model_Factory.read_properties(params,
                                                                                                                                                                                                                  input,
                                                                                                                                                                                                                  false)
+end
+
+@testset "local damping reads the block damage" begin
+    PeriLab.Data_Manager.initialize_data()
+    MF = PeriLab.Solver_Manager.Model_Factory
+    @test !MF.has_block_model(1, "Damage Model")
+    damping = Dict("Representative Young's modulus" => 1.0, "Damping coefficient" => 0.5)
+    damages = Dict("Dam" => Dict("Damage Model" => "Critical Stretch", "Critical Value" => 0.1,
+                                 "Local Damping" => damping))
+    blocks = Dict("block_1" => Dict("Block ID" => 1, "Density" => 1.0, "Horizon" => 1.0,
+                                    "Damage Model" => "Dam"))
+    input = typed_input(Dict("Blocks" => blocks, "Models" => Dict("Damage Models" => damages)))
+    d = MF.Damage.block_damage(input.damages["Dam"])
+    PeriLab.Data_Manager.set_block_damage(1, d)
+    @test MF.has_block_model(1, "Damage Model")
+    @test MF.block_model_parameters(1, "Damage Model") === d
+    @test MF.block_local_damping(1).damping_coefficient == 0.5
+    @test MF.block_local_damping(2) === nothing
 end

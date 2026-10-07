@@ -7,7 +7,7 @@ module Damage
 using TimerOutputs: @timeit
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
-using ....ModuleLoader: find_module_files, create_module_specifics
+using ....ModuleLoader: find_module_files
 using .....ParameterSpec: @params, Dependent, Constant, register_base!, ParseContext,
                           add_error!, join_path, WithBase, Table1D, dependent_tables, value
 import .....ParameterSpec: check!
@@ -132,34 +132,29 @@ function init_fields()
     inverse_nlist = Data_Manager.set_inverse_nlist(find_inverse_bond_id(nlist))
 end
 
-"""
-    compute_model(nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
+model_module(damage::BlockDamage) = parentmodule(typeof(damage.model))
 
-Computes the damage model
+"""
+    compute_model(nodes, damage, block, time, dt)
+
+Binds the damage's dependent values, computes the block's damage model and the
+damage index.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes
-- `model_param::Dict`: The model parameters
+- `damage::BlockDamage`: The typed damage model of the block
 - `block::Int64`: The block
 - `time::Float64`: The current time
 - `dt::Float64`: The time step
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       model_param::Dict,
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
-    mod = Data_Manager.get_model_module(model_param["Damage Model"])
-
-    mod.compute_model(nodes, model_param,
-                      block, time, dt)
-
+function compute_model(nodes::AbstractVector{Int64}, damage::BlockDamage, block::Int64,
+                       time::Float64, dt::Float64)
+    Data_Manager.bind_dependent_tables!(damage.tables)
+    model_module(damage).compute_model(nodes, damage.model, damage, block, time, dt)
     if isnothing(Data_Manager.get_filtered_nlist())
         @timeit "compute index" return damage_index(nodes)
     end
-
-    @timeit "compute index" return damage_index(nodes,
-                                                Data_Manager.get_filtered_nlist())
+    @timeit "compute index" return damage_index(nodes, Data_Manager.get_filtered_nlist())
 end
 
 """
@@ -172,12 +167,9 @@ Defines all synchronization fields for local synchronization
 - `block::Int64`: block ID
 """
 function fields_for_local_synchronization(model, block)
-    model_param = Data_Manager.get_properties(block, "Damage Model")
-    mod = Data_Manager.get_model_module(model_param["Damage Model"])
-
-    mod.fields_for_local_synchronization(model)
+    damage = Data_Manager.get_block_damage(block)
+    model_module(damage).fields_for_local_synchronization(model)
 end
-
 """
     damage_index(::Union{SubArray, Vector{Int64})
 
@@ -236,99 +228,21 @@ function compute_index(damage::NodeScalarField{Float64},
 end
 
 """
-    init_interface_crit_values(params::Dict, block_id::Int64)
-
-Initialize the critical values
-
-# Arguments
-- `params::Dict`: The parameters
-- `block_id::Int64`: current block
-"""
-function init_interface_crit_values(damage_parameter::Dict,
-                                    block_id::Int64)
-    if !haskey(damage_parameter, "Interblock Damage")
-        return
-    end
-    max_block_id = maximum(Data_Manager.get_block_id_list())
-    inter_critical_value = Data_Manager.get_crit_values_matrix()
-    if inter_critical_value == fill(-1, (1, 1, 1))
-        inter_critical_value = fill(Float64(damage_parameter["Critical Value"]),
-                                    (max_block_id, max_block_id, max_block_id))
-    end
-    for block_iId in 1:max_block_id
-        for block_jId in 1:max_block_id
-            critical_value_name = "Interblock Critical Value $(block_iId)_$block_jId"
-            if haskey(damage_parameter["Interblock Damage"], critical_value_name)
-                if damage_parameter["Interblock Damage"][critical_value_name] isa Number
-                    inter_critical_value[block_iId, block_jId,
-                    block_id] = damage_parameter["Interblock Damage"][critical_value_name]
-                end
-            end
-        end
-    end
-    Data_Manager.set_crit_values_matrix(inter_critical_value)
-end
-
-"""
-    init_aniso_crit_values(params::Dict, block_id::Int64)
-
-Initialize the anisotropic critical values
-
-# Arguments
-- `params::Dict`: The parameters
-- `block_id::Int64`: current block
-"""
-function init_aniso_crit_values(damage_parameter::Dict,
-                                block_id::Int64, dof::Int64)
-    aniso_crit::Dict{Int64,Any} = Data_Manager.get_aniso_crit_values()
-
-    crit_x = damage_parameter["Anisotropic Damage"]["Critical Value X"]
-    crit_y = damage_parameter["Anisotropic Damage"]["Critical Value Y"]
-    if dof == 2
-        aniso_crit[block_id] = [crit_x, crit_y]
-    else
-        crit_z = get(damage_parameter["Anisotropic Damage"], "Critical Value Z", crit_y)
-        aniso_crit[block_id] = [crit_x, crit_y, crit_z]
-    end
-    Data_Manager.set_aniso_crit_values(aniso_crit)
-end
-
-"""
     init_model(nodes::AbstractVector{Int64}, block::Int64)
 
-Initialize the damage models.
+Initializes the damage model of a block (`Data_Manager.get_block_damage(block)`),
+its interface and anisotropic critical values.
 
 # Arguments
-- `nodes::AbstractVector{Int64}`: Nodes for the degradation model.
-- `block::Int64`: Block identifier for the degradation model.
-
-# Example
-```julia
-init_model(my_data_manager, [1, 2, 3], 1)
-```
+- `nodes::AbstractVector{Int64}`: Nodes of the block.
+- `block::Int64`: Block identifier.
 """
-function init_model(nodes::AbstractVector{Int64},
-                    block::Int64)
-    model_param = Data_Manager.get_properties(block, "Damage Model")
-    # if haskey(model_param, "Anisotropic Damage")
-    #     Data_Manager.create_bond_vector_state("Bond Damage Anisotropic", Float64, Data_Manager.get_dof(), 1)
-    # end
-    mod = create_module_specifics(model_param["Damage Model"],
-                                  module_list,
-                                  @__MODULE__,
-                                  "damage_name")
-
-    if isnothing(mod)
-        @abort "No damage model of name " * model_param["Damage Model"] * " exists."
-        return
-    end
-    Data_Manager.set_model_module(model_param["Damage Model"], mod)
-    mod.init_model(nodes, model_param, block)
-    mod.fields_for_local_synchronization("Damage Model")
-    Damage.init_interface_crit_values(model_param, block)
-
-    if haskey(model_param, "Anisotropic Damage")
-        Damage.init_aniso_crit_values(model_param, block, Data_Manager.get_dof())
-    end
+function init_model(nodes::AbstractVector{Int64}, block::Int64)
+    damage = Data_Manager.get_block_damage(block)
+    model_module(damage).init_model(nodes, damage.model, damage, block)
+    model_module(damage).fields_for_local_synchronization("Damage Model")
+    init_interface_crit_values(damage, block)
+    damage.base.anisotropic_damage === nothing ||
+        init_aniso_crit_values(damage.base.anisotropic_damage, block, Data_Manager.get_dof())
 end
 end

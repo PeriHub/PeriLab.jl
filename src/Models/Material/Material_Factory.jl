@@ -391,10 +391,8 @@ export init_local_damping
 function compute_local_damping(nodes, params, dt)
     return local_damping_due_to_damage(nodes, params, dt)
 end
-function init_local_damping(nodes, symmetry::String, damage_parameter)
-    return init_local_damping_due_to_damage(nodes,
-                                            symmetry,
-                                            damage_parameter)
+function init_local_damping(nodes, symmetry::String, local_damping)
+    return init_local_damping_due_to_damage(nodes, symmetry, local_damping)
 end
 
 """

@@ -9,23 +9,13 @@
 @testset "ut_init_local_damping_due_to_damage" begin
     PeriLab.Data_Manager.initialize_data()
     PeriLab.Data_Manager.set_num_controller(3)
-    nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
-                                                                Int64)
-    nn .= 2
-    @test_logs (:error,
-                "Representative Young's modulus is missing.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.Material_Basis.init_local_damping_due_to_damage(collect(1:2),
-                                                                               "3D",
-                                                                               Dict("Local Damping" =>
-                                                                                        Dict()))
-    end
-    @test_logs (:error, "Damping coefficient is missing.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.Material_Basis.init_local_damping_due_to_damage(collect(1:2),
-                                                                               "3D",
-                                                                               Dict("Local Damping" =>
-                                                                                        Dict("Representative Young's modulus" =>
-                                                                                                 0)))
-    end
+    PeriLab.Data_Manager.set_dof(2)
+    PeriLab.Data_Manager.create_constant_node_scalar_field("Horizon", Float64) .= 1.0
+    local_damping = (representative_youngs_modulus = 70.0e9, damping_coefficient = 0.5)
+    PeriLab.Solver_Manager.Material_Basis.init_local_damping_due_to_damage(collect(1:2),
+                                                                           "plane strain",
+                                                                           local_damping)
+    @test PeriLab.Data_Manager.has_key("Bond Based Constant")
 end
 
 @testset "ut_apply_pointwise_E" begin

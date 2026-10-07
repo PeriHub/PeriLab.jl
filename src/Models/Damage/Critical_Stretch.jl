@@ -10,7 +10,7 @@ export damage_name
 export init_model
 export fields_for_local_synchronization
 
-using ......ParameterSpec: @params, register_damage
+using ......ParameterSpec: @params, register_damage, value
 @params struct CriticalStretchParams
     only_tension::Bool = opt("Only Tension"; default = true)
 end
@@ -37,25 +37,27 @@ function damage_name()
 end
 
 """
-    compute_model(nodes, damage_parameter, block, time, dt)
+    compute_model(nodes, p, damage, block, time, dt)
 
 Calculates the stretch of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `p::CriticalStretchParams`: The model parameters.
+- `damage::BlockDamage`: The typed damage model of the block (`damage.base`: Critical Value, Interblock Damage).
 - `block::Int64`: Block number.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-Example:
-```julia
-```
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       damage_parameter::Dict,
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
+function compute_model(nodes::AbstractVector{Int64}, p::CriticalStretchParams, damage,
+                       block::Int64, time::Float64, dt::Float64)
+    return _critical_stretch!(nodes, damage.base.critical_value, p.only_tension,
+                              damage.base.interblock_damage !== nothing, block)
+end
+
+# function barrier: `critical_value` has a concrete type (Constant or Table1D) here
+function _critical_stretch!(nodes::AbstractVector{Int64}, critical_value, tension::Bool,
+                            inter_block_damage::Bool, block::Int64)
     nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
     bond_damageNP1::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
     update_list::NodeScalarField{Bool} = Data_Manager.get_field("Update")
@@ -68,11 +70,7 @@ function compute_model(nodes::AbstractVector{Int64},
     critical_field = Data_Manager.has_key("Critical_Value")
     if critical_field
         critical_stretch = Data_Manager.get_field("Critical_Value")
-    else
-        critical_stretch = damage_parameter["Critical Value"]
     end
-    tension::Bool = get(damage_parameter, "Only Tension", true)
-    inter_block_damage::Bool = haskey(damage_parameter, "Interblock Damage")
     if inter_block_damage
         inter_critical_stretch::Array{Float64,3} = Data_Manager.get_crit_values_matrix()
     end
@@ -84,16 +82,13 @@ function compute_model(nodes::AbstractVector{Int64},
 
     for iID in nodes
         @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
-            # stretch = (deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID]) /
-            #           undeformed_bond_length[iID][jID]
-
             if critical_field
                 crit_stretch = critical_stretch[iID]
             else
                 crit_stretch = inter_block_damage ?
                                inter_critical_stretch[block_ids[iID],
                                                       block_ids[nlist[iID][jID]],
-                                                      block] : critical_stretch
+                                                      block] : value(critical_value, iID)
             end
 
             stretch_check = tension ? stretch[iID][jID] : abs(stretch[iID][jID])
@@ -118,11 +113,14 @@ Returns a user developer defined local synchronization. This happens before each
 function fields_for_local_synchronization(model::String)
 end
 
-function init_model(odes::AbstractVector{Int64},
-                    damage_parameter::Dict,
+"""
+    init_model(nodes, p, damage, block)
+
+Creates the bond stretch field.
+"""
+function init_model(nodes::AbstractVector{Int64}, p::CriticalStretchParams, damage,
                     block::Int64)
-    stretch::BondScalarState{Float64} = Data_Manager.create_constant_bond_scalar_state("Bond Stretch",
-                                                                                       Float64)
+    Data_Manager.create_constant_bond_scalar_state("Bond Stretch", Float64)
 end
 
 end

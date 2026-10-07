@@ -34,15 +34,24 @@ export compute_models
 export init_models
 export read_properties
 
-# the material category is typed (Data_Manager.get_block_material); the other
-# categories still use the property dicts
-has_block_model(block::Int64, name::String) = name == "Material Model" ?
-                                              Data_Manager.get_block_material(block) !==
-                                              nothing :
+# typed categories (Data_Manager slots); the other categories still use the property dicts
+function typed_block_model(block::Int64, name::String)
+    name == "Material Model" && return Data_Manager.get_block_material(block)
+    name == "Damage Model" && return Data_Manager.get_block_damage(block)
+    return nothing
+end
+const TYPED_CATEGORIES = ("Material Model", "Damage Model")
+has_block_model(block::Int64, name::String) = name in TYPED_CATEGORIES ?
+                                              typed_block_model(block, name) !== nothing :
                                               Data_Manager.check_property(block, name)
-block_model_parameters(block::Int64, name::String) = name == "Material Model" ?
-                                                     Data_Manager.get_block_material(block) :
+block_model_parameters(block::Int64, name::String) = name in TYPED_CATEGORIES ?
+                                                     typed_block_model(block, name) :
                                                      Data_Manager.get_properties(block, name)
+# local damping of a block's damage model, or `nothing`
+function block_local_damping(block::Int64)
+    damage = Data_Manager.get_block_damage(block)
+    return damage === nothing ? nothing : damage.base.local_damping
+end
 # symmetry for the local damping; a block without material (e.g. a damage-only run) is 3D
 function local_damping_symmetry(block::Int64)
     material = Data_Manager.get_block_material(block)
@@ -105,13 +114,9 @@ function init_models(params::Dict,
                                                                                  block)
                 @timeit "init fields_for_local_synchronization $active_model_name models" active_model.fields_for_local_synchronization(active_model_name,
                                                                                                                                         block)
-                if active_model_name == "Damage Model" &&
-                   haskey(block_model_parameters(block, active_model_name),
-                          "Local Damping")
-                    Material.init_local_damping(block_nodes[block],
-                                                local_damping_symmetry(block),
-                                                Data_Manager.get_properties(block,
-                                                                            "Damage Model"))
+                if active_model_name == "Damage Model" && block_local_damping(block) !== nothing
+                    Material.init_local_damping(block_nodes[block], local_damping_symmetry(block),
+                                                block_local_damping(block))
                 end
                 model_used = true
                 # put it in Data_Manager
@@ -285,23 +290,21 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
     if "Material" in options
         if "Damage" in options
             for (block, nodes) in pairs(block_nodes)
-                if haskey(Data_Manager.get_properties(block, "Damage Model"),
-                          "Local Damping")
-                    active_nodes = Data_Manager.get_field("Active Nodes")
-                    if fem_option
-                        active_nodes = find_active_nodes(active_list,
-                                                         active_nodes,
-                                                         find_active_nodes(fe_nodes,
-                                                                           active_nodes,
-                                                                           nodes))
-                    else
-                        find_active_nodes(active_list, active_nodes, nodes)
-                    end
-                    @timeit "local_damping_due_to_damage" Material.compute_local_damping(active_nodes,
-                                                                                         Data_Manager.get_properties(block,
-                                                                                                                     "Damage Model")["Local Damping"],
-                                                                                         dt)
+                local_damping = block_local_damping(block)
+                local_damping === nothing && continue
+                active_nodes = Data_Manager.get_field("Active Nodes")
+                if fem_option
+                    active_nodes = find_active_nodes(active_list,
+                                                     active_nodes,
+                                                     find_active_nodes(fe_nodes,
+                                                                       active_nodes,
+                                                                       nodes))
+                else
+                    find_active_nodes(active_list, active_nodes, nodes)
                 end
+                @timeit "local_damping_due_to_damage" Material.compute_local_damping(active_nodes,
+                                                                                     local_damping,
+                                                                                     dt)
             end
         end
         active_nodes = Data_Manager.get_field("Active Nodes")
@@ -463,7 +466,7 @@ function get_block_model_definition(params::Dict,
         end
         block = params["Blocks"][block_name]
         for model in prop_keys
-            model == "Material Model" && continue   # typed: input.materials
+            model in TYPED_CATEGORIES && continue   # typed: input.materials / input.damages
             if haskey(block, model)
                 properties(block_id,
                            model,

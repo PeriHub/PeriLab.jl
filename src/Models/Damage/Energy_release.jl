@@ -14,15 +14,14 @@ using ......Helpers:
                      fastdot,
                      sub_in_place!,
                      div_in_place!,
-                     mul_in_place!,
-                     get_dependent_value
+                     mul_in_place!
 
 export compute_model
 export damage_name
 export init_model
 export fields_for_local_synchronization
 
-using ......ParameterSpec: @params, register_damage
+using ......ParameterSpec: @params, register_damage, value
 @params struct CriticalEnergyParams
     only_tension::Bool = opt("Only Tension"; default = true)
     thickness::Float64 = opt("Thickness"; default = 1.0, min = 0, quantity = :length)
@@ -48,27 +47,28 @@ function damage_name()
 end
 
 """
-    compute_model(nodes, damage_parameter, block, time, dt)
+    compute_model(nodes, p, damage, block, time, dt)
 
 Calculates the elastic energy of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
 [WillbergC2019](@cite), [FosterJT2011](@cite)
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `p::CriticalEnergyParams`: The model parameters.
+- `damage::BlockDamage`: The typed damage model of the block (`damage.base`: Critical Value, Interblock Damage).
 - `block::Int64`: Block number.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-Example:
-```julia
-```
 """
+function compute_model(nodes::AbstractVector{Int64}, p::CriticalEnergyParams, damage,
+                       block::Int64, time::Float64, dt::Float64)
+    return _critical_energy!(nodes, damage.base.critical_value, p.only_tension,
+                             damage.base.interblock_damage !== nothing, block)
+end
 
-function compute_model(nodes::AbstractVector{Int64},
-                       damage_parameter::Dict,
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
+# function barrier: `critical_value` has a concrete type (Constant or Table1D) here
+function _critical_energy!(nodes::AbstractVector{Int64}, critical_value, tension::Bool,
+                           inter_block_damage::Bool, block::Int64)
     dof = Data_Manager.get_dof()
     nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
     block_ids::NodeScalarField{Int64} = Data_Manager.get_field("Block_Id")
@@ -85,16 +85,13 @@ function compute_model(nodes::AbstractVector{Int64},
                                                                             "NP1")
     bond_displacements::BondVectorState{Float64} = Data_Manager.get_field("Bond Displacements")
     critical_field = has_key("Critical_Value")
-    critical_energy = critical_field ? Data_Manager.get_field("Critical_Value") :
-                      damage_parameter["Critical Value"]
+    if critical_field
+        critical_energy = Data_Manager.get_field("Critical_Value")
+    end
     critical_energy_value::Float64 = 0.0
     quad_horizons::NodeScalarField{Float64} = Data_Manager.get_field("Quad Horizon")
     inverse_nlist::Vector{Dict{Int64,Int64}} = Data_Manager.get_inverse_nlist()
 
-    critical_value_fn = get_dependent_value("Critical Value", damage_parameter)
-
-    tension::Bool = get(damage_parameter, "Only Tension", true)
-    inter_block_damage::Bool = Data_Manager.haskey(damage_parameter, "Interblock Damage")
     if inter_block_damage
         inter_critical_energy::Array{Float64,3} = Data_Manager.get_crit_values_matrix()
     end
@@ -144,19 +141,8 @@ function compute_model(nodes::AbstractVector{Int64},
             elseif inter_block_damage
                 critical_energy_value = inter_critical_energy[block_ids[iID],
                 neighbor_block_id, block]
-
-                # param_name = "Interblock Critical Value " * string(block_ids[iID]) * "_" *
-                #              string(block_ids[neighborID])
-
-                # dependend_value,
-                # dependent_field = is_dependent(param_name, damage_parameter)
-                # if dependend_value
-                #     critical_energy_value = interpol_data(dependent_field[iID],
-                #                                           damage_parameter[param_name]["Data"],
-                #                                           warning_flag)
-                # end
             else
-                critical_energy_value = critical_value_fn(iID)
+                critical_energy_value = value(critical_value, iID)
             end
 
             product = critical_energy_value * quad_horizons[iID]
@@ -204,14 +190,18 @@ function get_quad_horizon(horizon::Float64, dof::Int64, thickness::Float64,
     return Float64(4 / (pi * avg_horizon^4))
 end
 
-function init_model(nodes::AbstractVector{Int64},
-                    damage_parameter::Dict,
+"""
+    init_model(nodes, p, damage, block)
+
+Creates the fields of the model and the quadric horizons of the block nodes.
+"""
+function init_model(nodes::AbstractVector{Int64}, p::CriticalEnergyParams, damage,
                     block::Int64)
     dof = Data_Manager.get_dof()
     quad_horizons = Data_Manager.create_constant_node_scalar_field("Quad Horizon", Float64)
     Data_Manager.create_constant_bond_vector_state("Bond Displacements", Float64, dof)
     horizon = Data_Manager.get_field("Horizon")
-    thickness::Float64 = get(damage_parameter, "Thickness", 1)
+    thickness::Float64 = p.thickness
     mesh_scaling = Data_Manager.get_horizon_mesh_scaling()
     bond_energy = Data_Manager.create_constant_bond_scalar_state("Bond Energy",
                                                                  Float64)

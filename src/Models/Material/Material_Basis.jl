@@ -32,10 +32,10 @@ function local_damping_due_to_damage(nodes::AbstractVector{Int64},
     deformed_bond_lengthN = Data_Manager.get_field("Deformed Bond Length", "N")
     deformed_bond_lengthNP1 = Data_Manager.get_field("Deformed Bond Length", "NP1")
     deformend_bond_geometry = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
-    local_damping = params["Damping coefficient"]
+    local_damping = params.damping_coefficient
     force_densities = Data_Manager.get_field("Force Densities", "NP1")
     volume = Data_Manager.get_field("Volume")
-    E = params["Representative Young's modulus"]
+    E = params.representative_youngs_modulus
     constant = Data_Manager.get_field("Bond Based Constant")
     t = zeros(Float64, Data_Manager.get_dof())
 
@@ -60,16 +60,8 @@ end
 
 function init_local_damping_due_to_damage(nodes::AbstractVector{Int64},
                                           symmetry::String,
-                                          damage_parameter)
-    if !haskey(damage_parameter["Local Damping"], "Representative Young's modulus")
-        @abort "Representative Young's modulus is missing."
-        return
-    end
-    if !haskey(damage_parameter["Local Damping"], "Damping coefficient")
-        @abort "Damping coefficient is missing."
-        return
-    end
-    @info "Local damping is active with damping coefficient $(damage_parameter["Local Damping"]["Damping coefficient"])"
+                                          local_damping)
+    @info "Local damping is active with damping coefficient $(local_damping.damping_coefficient)"
     constant = Data_Manager.create_constant_node_scalar_field("Bond Based Constant",
                                                               Float64)
     horizon = Data_Manager.get_field("Horizon")

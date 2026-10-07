@@ -14,16 +14,14 @@ using ......Helpers:
                      fastdot,
                      sub_in_place!,
                      div_in_place!,
-                     mul_in_place!,
-                     interpol_data,
-                     is_dependent
+                     mul_in_place!
 
 export compute_model
 export damage_name
 export init_model
 export fields_for_local_synchronization
 
-using ......ParameterSpec: @params, register_damage
+using ......ParameterSpec: @params, register_damage, value
 @params struct CriticalEnergyAnisotropicParams
     only_tension::Bool = opt("Only Tension"; default = false)
     thickness::Float64 = opt("Thickness"; default = 1.0, min = 0, quantity = :length)
@@ -48,26 +46,28 @@ function damage_name()
 end
 
 """
-    compute_model(nodes, damage_parameter, block, time, dt)
+    compute_model(nodes, p, damage, block, time, dt)
 
 Calculates the elastic energy of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
 [WillbergC2019](@cite), [FosterJT2011](@cite)
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `p::CriticalEnergyAnisotropicParams`: The model parameters.
+- `damage::BlockDamage`: The typed damage model of the block (`damage.base`: Critical Value, Interblock Damage, Anisotropic Damage).
 - `block::Int64`: Block number.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-Example:
-```julia
-```
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       damage_parameter::Dict,
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
+function compute_model(nodes::AbstractVector{Int64}, p::CriticalEnergyAnisotropicParams,
+                       damage, block::Int64, time::Float64, dt::Float64)
+    return _critical_energy_aniso!(nodes, damage.base.critical_value, p.only_tension,
+                                   damage.base.interblock_damage !== nothing, block)
+end
+
+# function barrier: `critical_value` has a concrete type (Constant or Table1D) here
+function _critical_energy_aniso!(nodes::AbstractVector{Int64}, critical_value,
+                                 tension::Bool, inter_block_damage::Bool, block::Int64)
     @timeit "init fields" begin
         dof::Int64 = Data_Manager.get_dof()
         nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
@@ -83,10 +83,9 @@ function compute_model(nodes::AbstractVector{Int64},
                                                                                 "NP1")
         bond_displacements::BondVectorState{Float64} = Data_Manager.get_field("Bond Displacements")
         critical_field::Bool = Data_Manager.has_key("Critical_Value")
-        critical_energy::Union{Float64,
-                               Vector{Float64}} = critical_field ?
-                                                  Data_Manager.get_field("Critical_Value")::Vector{Float64} :
-                                                  Float64(damage_parameter["Critical Value"])
+        if critical_field
+            critical_energy::Vector{Float64} = Data_Manager.get_field("Critical_Value")
+        end
         quad_horizons::NodeScalarField{Float64} = Data_Manager.get_field("Quad Horizon")
         inverse_nlist::Vector{Dict{Int64,Int64}} = Data_Manager.get_inverse_nlist()
         rotation_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Rotation Tensor")
@@ -94,14 +93,10 @@ function compute_model(nodes::AbstractVector{Int64},
     end
 
     @timeit "init params" begin
-        dependend_value, dependent_field = is_dependent("Critical Value", damage_parameter)
         rotation::Bool = Data_Manager.get_rotation()
-        tension::Bool = get(damage_parameter, "Only Tension", false)
-        inter_block_damage::Bool = haskey(damage_parameter, "Interblock Damage")
         if inter_block_damage
             inter_critical_energy = Data_Manager.get_crit_values_matrix()
         end
-        warning_flag = true
         critical_energy_value = 0.0
     end
 
@@ -170,23 +165,8 @@ function compute_model(nodes::AbstractVector{Int64},
                         critical_energy_value = inter_critical_energy[block_ids[iID],
                         block_ids[neighborID],
                         block]
-                        param_name = "Interblock Critical Value " *
-                                     string(block_ids[iID]) * "_" *
-                                     string(block_ids[neighborID])
-                        dependend_value,
-                        dependent_field = is_dependent(param_name,
-                                                       damage_parameter)
-                        if dependend_value
-                            critical_energy_value = interpol_data(dependent_field[iID],
-                                                                  damage_parameter[param_name]["Data"],
-                                                                  warning_flag)
-                        end
-                    elseif dependend_value
-                        critical_energy_value = interpol_data(dependent_field[iID],
-                                                              damage_parameter["Critical Value"]["Data"],
-                                                              warning_flag)
                     else
-                        critical_energy_value = critical_energy
+                        critical_energy_value = value(critical_value, iID)
                     end
                 end
 
@@ -266,24 +246,28 @@ function get_quad_horizon(horizon::Float64, dof::Int64, thickness::Float64)
     return Float64(4 / (pi * horizon^4))
 end
 
-function init_model(nodes::AbstractVector{Int64},
-                    damage_parameter::Dict,
-                    block::Int64)
+"""
+    init_model(nodes, p, damage, block)
+
+Creates the fields of the model and the quadric horizons of the block nodes; needs
+`Anisotropic Damage` and the Angles field.
+"""
+function init_model(nodes::AbstractVector{Int64}, p::CriticalEnergyAnisotropicParams,
+                    damage, block::Int64)
+    if damage.base.anisotropic_damage === nothing
+        @abort "Critical Energy Anisotropic requires Anisotropic Damage."
+    end
     dof = Data_Manager.get_dof()
     quad_horizon = Data_Manager.create_constant_node_scalar_field("Quad Horizon", Float64)
     Data_Manager.create_constant_bond_vector_state("Bond Displacements", Float64, dof)
     horizon = Data_Manager.get_field("Horizon")
-    thickness::Float64 = get(damage_parameter, "Thickness", 1)
+    thickness::Float64 = p.thickness
     for iID in nodes
         quad_horizon[iID] = get_quad_horizon(horizon[iID], dof, thickness)
     end
 
-    if haskey(damage_parameter, "Anisotropic Damage")
-        rotation::Bool = Data_Manager.get_rotation()
-        if !rotation
-            @abort "Anisotropic damage requires Angles field"
-            return nothing
-        end
+    if !Data_Manager.get_rotation()
+        @abort "Anisotropic damage requires Angles field"
     end
 end
 end
