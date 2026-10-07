@@ -51,17 +51,15 @@ end
 end
 
 @testset "ut_damage_template" begin
-    @test Damage_template.damage_name() == "Damage Template"
-    Damage_template.compute_model(Vector{Int64}(1:3),
-                                  Dict(),
-                                  1,
-                                  0.0,
-                                  0.0)
-
-    @test Damage_template.init_model(Vector{Int64}(1:3), Dict(), 1) ==
-          PeriLab.Data_Manager
-    @test Damage_template.fields_for_local_synchronization("") ==
-          PeriLab.Data_Manager
+    DT = PeriLab.Solver_Manager.Model_Factory.Damage.Damage_template
+    @test DT.damage_name() == "Damage Template"
+    p = DT.DamageTemplateParams()
+    damage = PeriLab.Solver_Manager.Model_Factory.Damage.BlockDamage(nothing, p,
+                                                                      PeriLab.ParameterSpec.Table1D[])
+    DT.init_model(Vector{Int64}(1:3), p, damage, 1)
+    DT.compute_model(Vector{Int64}(1:3), p, damage, 1, 0.0, 0.0)
+    @test length(methods(DT.compute_model)) == 1
+    DT.fields_for_local_synchronization("")
 end
 
 @testset "ut_FEM_template" begin
