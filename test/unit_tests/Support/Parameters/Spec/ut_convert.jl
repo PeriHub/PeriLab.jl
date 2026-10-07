@@ -128,3 +128,19 @@ end
     union_fs = PS.FieldSpec(:u, Union{Nothing,Float64}, PS.opt("U"; default = nothing, min = 0))
     @test PS.check_constraints!(union_fs, nothing, "u", ctx)
 end
+
+PS.@params struct UTNumberOrList
+    alpha::Union{Float64,Vector{Float64}} = req("Alpha"; min = 0)
+end
+
+@testset "number or list fields" begin
+    ctx = PS.ParseContext()
+    @test PS.parse_section(UTNumberOrList, Dict("Alpha" => 2), "t", ctx).alpha === 2.0
+    @test PS.parse_section(UTNumberOrList, Dict("Alpha" => [1, 2.5]), "t", ctx).alpha ==
+          [1.0, 2.5]
+    @test isempty(ctx.errors)
+    PS.parse_section(UTNumberOrList, Dict("Alpha" => "x"), "t", ctx)
+    @test ctx.errors[end].message == "expected a number or a list of numbers, got \"x\""
+    PS.parse_section(UTNumberOrList, Dict("Alpha" => [1.0, -1.0]), "t", ctx)
+    @test ctx.errors[end].message == "-1.0 is below minimum 0"
+end

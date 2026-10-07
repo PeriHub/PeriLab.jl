@@ -41,6 +41,11 @@ find the column in a `Dependent` data file.
 """
 function convert_value(T, raw, path::String, ctx::ParseContext; alias::String = "")
     raw isa T && return _fresh(raw)
+    if T === Union{Float64,Vector{Float64}}
+        raw isa Real && !(raw isa Bool) && return Float64(raw)
+        raw isa AbstractVector && return _convert_vector(Vector{Float64}, raw, path, ctx)
+        return _fail(ctx, path, "expected a number or a list of numbers, got $(_describe(raw))")
+    end
     if _is_scalar_union(T)
         return _convert_scalar_union(T, raw, path, ctx)
     elseif T isa Union

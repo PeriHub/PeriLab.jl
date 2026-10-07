@@ -60,6 +60,7 @@ const _SCALAR_TYPES = (Float64, Int64, Bool, String)
 const _VECTOR_TYPES = (Vector{Float64}, Vector{Int64}, Vector{String})
 
 function supported_type(T)
+    T === Union{Float64,Vector{Float64}} && return true
     _is_scalar_union(T) && return true
     if T isa Union
         S = _nonnothing(T)
@@ -76,6 +77,7 @@ function supported_type(T)
 end
 
 function _numeric_type(T)
+    T === Union{Float64,Vector{Float64}} && return true
     T isa Union && return _numeric_type(_nonnothing(T))
     return T in (Float64, Int64, Dependent, Vector{Float64}, Vector{Int64})
 end
@@ -95,7 +97,7 @@ function build_spec(T, display::String, entries::Vector{Any})
             throw(ParamsDefinitionError("$location: nested section type $(_typename(ftype)) contains Dependent fields; this is not supported"))
         end
         supported_type(ftype) ||
-            throw(ParamsDefinitionError("$location: unsupported field type $(_typename(ftype)). Supported: Float64, Int64, Bool, String, an @enum, Vector{Float64}, Vector{Int64}, Vector{String}, Dependent, Union{Nothing,T}, a union of Int64/Float64/String/Bool/Nothing (not Int64 and Float64 together), a nested @params struct, or Dict{String,V} of a nested @params struct or a scalar type"))
+            throw(ParamsDefinitionError("$location: unsupported field type $(_typename(ftype)). Supported: Float64, Int64, Bool, String, an @enum, Vector{Float64}, Vector{Int64}, Vector{String}, Dependent, Union{Nothing,T}, a union of Int64/Float64/String/Bool/Nothing (not Int64 and Float64 together), Union{Float64,Vector{Float64}}, a nested @params struct, or Dict{String,V} of a nested @params struct or a scalar type"))
         if haskey(used, decl.alias)
             throw(ParamsDefinitionError("$location: YAML key \"$(decl.alias)\" is already used by field `$(used[decl.alias])`"))
         end

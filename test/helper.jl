@@ -202,3 +202,19 @@ function typed_block_material(raw::AbstractDict;
                                                                         String(dict["Material Model"]),
                                                                         dof)
 end
+
+"""
+    typed_model(category, raw; name_key)
+
+The model of `category` parsed from a raw model block the way the input reader
+does (`WithBase` for categories with a base part); aborts on input errors.
+"""
+function typed_model(category::Symbol, raw::AbstractDict; name_key::String)
+    ctx = PeriLab.ParameterSpec.ParseContext()
+    model = PeriLab.ParameterSpec.parse_model(category,
+                                              Dict{String,Any}(string(k) => v
+                                                               for (k, v) in raw),
+                                              "test", ctx; name_key = name_key)
+    PeriLab.ParameterSpec.report!(ctx)
+    return model
+end

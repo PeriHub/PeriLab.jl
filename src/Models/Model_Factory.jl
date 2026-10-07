@@ -38,7 +38,7 @@ export read_properties
 function typed_block_model(block::Int64, name::String)
     name == "Material Model" && return Data_Manager.get_block_material(block)
     name == "Damage Model" && return Data_Manager.get_block_damage(block)
-    return nothing
+    return Data_Manager.get_block_model(name, block)
 end
 const TYPED_CATEGORIES = ("Material Model", "Damage Model")
 has_block_model(block::Int64, name::String) = name in TYPED_CATEGORIES ?
@@ -478,6 +478,26 @@ function get_block_model_definition(params::Dict,
 end
 
 """
+    block_typed_model(input, block_name, field, category, models)
+
+The parsed model a block names in `field` (e.g. `:damage_model`), or `nothing`.
+Aborts if the name or the category's models section is missing.
+"""
+function block_typed_model(input::PeriLabInput, block_name::String, field::Symbol,
+                           category::String, models::AbstractDict)
+    block_params = get(input.sections.blocks, block_name, nothing)
+    name = block_params === nothing ? nothing : getfield(block_params, field)
+    name === nothing && return nothing
+    if !haskey(input.models, category * "s")
+        @abort "$category is defined in blocks, but no $(category)s definition block exists"
+    end
+    if !haskey(models, name)
+        @abort "$category model with name $name is defined in blocks, but missing in the $(category)s definition."
+    end
+    return models[name]
+end
+
+"""
 	read_properties(params::Dict, input::PeriLabInput, material_model::Bool)
 
 Read properties of material.
@@ -502,29 +522,19 @@ function read_properties(params::Dict, input::PeriLabInput, material_model::Bool
     if material_model
         dof = Data_Manager.get_dof()
         for (block_name, block) in zip(block_name_list, block_id_list)
-            block_params = get(input.sections.blocks, block_name, nothing)
-            material_name = block_params === nothing ? nothing : block_params.material_model
-            material_name === nothing && continue
-            if !haskey(input.materials, material_name)
-                @abort "Material Model model with name $material_name is defined in blocks, but missing in the Material Models definition."
-            end
+            wb = block_typed_model(input, block_name, :material_model, "Material Model",
+                                   input.materials)
+            wb === nothing && continue
+            material_name = input.sections.blocks[block_name].material_model
             model_name = String(input.models["Material Models"][material_name]["Material Model"])
-            material = Material.block_material(input.materials[material_name], model_name, dof)
+            material = Material.block_material(wb, model_name, dof)
             Material.check_material_symmetry(material, dof)
             Data_Manager.set_block_material(block, material)
         end
     end
     for (block_name, block) in zip(block_name_list, block_id_list)
-        block_params = get(input.sections.blocks, block_name, nothing)
-        damage_name = block_params === nothing ? nothing : block_params.damage_model
-        damage_name === nothing && continue
-        if !haskey(input.models, "Damage Models")
-            @abort "Damage Model is defined in blocks, but no Damage Models definition block exists"
-        end
-        if !haskey(input.damages, damage_name)
-            @abort "Damage Model model with name $damage_name is defined in blocks, but missing in the Damage Models definition."
-        end
-        Data_Manager.set_block_damage(block, Damage.block_damage(input.damages[damage_name]))
+        d = block_typed_model(input, block_name, :damage_model, "Damage Model", input.damages)
+        d === nothing || Data_Manager.set_block_damage(block, Damage.block_damage(d))
     end
 end
 

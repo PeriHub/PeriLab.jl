@@ -97,18 +97,24 @@ parse_materials(models::AbstractDict, ctx::ParseContext) = parse_models(models,
                                                                         :material,
                                                                         "Material Model", ctx)
 
-"Typed `Damage Models`; combining damage models with `+` is an error."
-function parse_damages(models::AbstractDict, ctx::ParseContext)
-    damages = parse_models(models, "Damage Models", :damage, "Damage Model", ctx)
-    for (name, d) in damages
-        d.model isa ParameterSpec.Composite || continue
-        add_error!(ctx,
-                   join_path(join_path(join_path("Models", "Damage Models"), name),
-                             "Damage Model"),
-                   "damage models cannot be combined with +")
+"Typed models of `section` that cannot be combined with `+`."
+function parse_single_models(models::AbstractDict, section::String, category::Symbol,
+                             name_key::String, ctx::ParseContext)
+    parsed = parse_models(models, section, category, name_key, ctx)
+    for (name, m) in parsed
+        part = m isa ParameterSpec.WithBase ? m.model : m
+        part isa ParameterSpec.Composite || continue
+        add_error!(ctx, join_path(join_path(join_path("Models", section), name), name_key),
+                   "$category models cannot be combined with +")
     end
-    return damages
+    return parsed
 end
+
+parse_damages(models::AbstractDict, ctx::ParseContext) = parse_single_models(models,
+                                                                             "Damage Models",
+                                                                             :damage,
+                                                                             "Damage Model",
+                                                                             ctx)
 
 """
     read_input(deck, directory = ""; strict = true) -> (input, ctx)

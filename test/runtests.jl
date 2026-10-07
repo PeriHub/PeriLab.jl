@@ -170,6 +170,9 @@ MPI.Init()
             @testset "ut_Model_Factory" begin
                 include("unit_tests/Models/ut_Model_Factory.jl")
             end
+            @testset "ut_block_models" begin
+                include("unit_tests/Models/ut_block_models.jl")
+            end
             @testset "ut_Pre_calculation" begin
                 include("unit_tests/Models/Pre_calculation/ut_pre_bond_associated_correspondence.jl")
             end

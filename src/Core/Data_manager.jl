@@ -63,6 +63,8 @@ export get_fem_params
 export set_block_material
 export set_block_damage
 export get_block_damage
+export set_block_model
+export get_block_model
 export bind_dependent_tables!
 export get_block_material
 export set_surface_correction
@@ -180,6 +182,7 @@ function initialize_data()
     data["FEM Parameters"] = nothing
     data["Block Materials"] = Dict{Int64,Any}()
     data["Block Damages"] = Dict{Int64,Any}()
+    data["Block Models"] = Dict{String,Dict{Int64,Any}}()
     data["Surface Correction"] = nothing
     data["output_frequency"] = []
     data["accuracy_order"] = 1
@@ -375,6 +378,24 @@ The typed damage model of a block, or `nothing`.
 """
 function get_block_damage(block::Int64)
     return get(data["Block Damages"], block, nothing)
+end
+
+"""
+	set_block_model(category, block, model)
+
+Stores the typed model of `category` (e.g. "Thermal Model") of a block.
+"""
+function set_block_model(category::String, block::Int64, model)
+    get!(Dict{Int64,Any}, data["Block Models"], category)[block] = model
+end
+
+"""
+	get_block_model(category, block)
+
+The typed model of `category` of a block, or `nothing`.
+"""
+function get_block_model(category::String, block::Int64)
+    return get(get(data["Block Models"], category, Dict{Int64,Any}()), block, nothing)
 end
 
 # node field a dependent value reads (the NP1 state if the field has one)
