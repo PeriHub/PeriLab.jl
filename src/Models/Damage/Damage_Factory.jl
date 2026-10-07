@@ -9,7 +9,7 @@ using ....Data_Manager
 using ....PeriLabExceptions: @abort
 using ....ModuleLoader: find_module_files, create_module_specifics
 using .....ParameterSpec: @params, Dependent, Constant, register_base!, ParseContext,
-                          add_error!, join_path
+                          add_error!, join_path, WithBase, Table1D, dependent_tables, value
 import .....ParameterSpec: check!
 
 @params struct AnisotropicDamageParams
@@ -58,6 +58,49 @@ end
 
 # registration runs at load time, never during precompilation
 __init__() = register_base!(:damage, DamageBaseParams)
+
+"""
+    BlockDamage
+
+The typed damage model of a block: the shared base part, the model's own part,
+and the field-dependent tables to bind before each compute.
+"""
+struct BlockDamage{B,M}
+    base::B
+    model::M
+    tables::Vector{Table1D}
+end
+
+block_damage(wb::WithBase) = BlockDamage(wb.base, wb.model,
+                                         vcat(dependent_tables(wb.base),
+                                              dependent_tables(wb.model)))
+
+function init_interface_crit_values(damage::BlockDamage, block_id::Int64)
+    interblock = damage.base.interblock_damage
+    interblock === nothing && return
+    max_block_id = maximum(Data_Manager.get_block_id_list())
+    inter_critical_value = Data_Manager.get_crit_values_matrix()
+    if inter_critical_value == fill(-1, (1, 1, 1))
+        inter_critical_value = fill(value(damage.base.critical_value, 1),
+                                    (max_block_id, max_block_id, max_block_id))
+    end
+    for block_iId in 1:max_block_id, block_jId in 1:max_block_id
+        name = "Interblock Critical Value $(block_iId)_$block_jId"
+        haskey(interblock, name) &&
+            (inter_critical_value[block_iId, block_jId, block_id] = interblock[name])
+    end
+    Data_Manager.set_crit_values_matrix(inter_critical_value)
+end
+
+function init_aniso_crit_values(aniso::AnisotropicDamageParams, block_id::Int64,
+                                dof::Int64)
+    aniso_crit::Dict{Int64,Any} = Data_Manager.get_aniso_crit_values()
+    aniso_crit[block_id] = dof == 2 ?
+                           [aniso.critical_value_x, aniso.critical_value_y] :
+                           [aniso.critical_value_x, aniso.critical_value_y,
+                            something(aniso.critical_value_z, aniso.critical_value_y)]
+    Data_Manager.set_aniso_crit_values(aniso_crit)
+end
 global module_list = find_module_files(@__DIR__, "damage_name")
 for mod in module_list
     include(mod["File"])

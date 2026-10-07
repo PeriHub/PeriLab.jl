@@ -131,7 +131,6 @@ end
                                                      "Material Model" => "c"),
                                    "block_3" => Dict("Block ID" => 3,
                                                      "Material Model" => "a",
-                                                     "Damage Model" => "a",
                                                      "Thermal Model" => "therm")),
                   "Models" => Dict("Material Models" => Dict("a" => Dict("value" => 1,
                                                                          "name" => "t4",
@@ -158,8 +157,6 @@ end
 
     @test isnothing(PeriLab.Data_Manager.get_property(1, "Material Model",
                                                       "value"))
-    @test PeriLab.Data_Manager.get_property(3, "Damage Model", "value") ==
-          params["Models"]["Damage Models"]["a"]["value"]
     @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "value") ==
           params["Models"]["Thermal Models"]["therm"]["value"]
     @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "bool") ==
@@ -167,8 +164,6 @@ end
 
     PeriLab.Solver_Manager.Model_Factory.read_properties(params, typed_input(Dict()), true)
     @test isempty(PeriLab.Data_Manager.get_properties(1, "Material Model"))
-    @test PeriLab.Data_Manager.get_property(3, "Damage Model", "value") ==
-          params["Models"]["Damage Models"]["a"]["value"]
 
     @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "value") ==
           params["Models"]["Thermal Models"]["therm"]["value"]
@@ -266,4 +261,37 @@ end
                                   "Bulk Modulus" => 10.0, "Shear Modulus" => 10.0))
     PeriLab.Data_Manager.set_block_material(1, m)
     @test PeriLab.Solver_Manager.Model_Factory.local_damping_symmetry(1) == "plane strain"
+end
+
+@testset "read_properties builds block damages" begin
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(3)
+    PeriLab.Data_Manager.set_dof(2)
+    PeriLab.Data_Manager.set_block_name_list(["block_1", "block_2"])
+    PeriLab.Data_Manager.set_block_id_list([1, 2])
+    blocks = Dict("block_1" => Dict("Block ID" => 1, "Density" => 1.0, "Horizon" => 1.0,
+                                    "Damage Model" => "Dam"),
+                  "block_2" => Dict("Block ID" => 2, "Density" => 1.0, "Horizon" => 1.0))
+    models = Dict("Damage Models" => Dict("Dam" => Dict("Damage Model" => "Critical Stretch",
+                                                        "Critical Value" => 0.1)))
+    input = typed_input(Dict("Blocks" => blocks, "Models" => models))
+    params = Dict{String,Any}("Blocks" => blocks, "Models" => input.models)
+    PeriLab.Solver_Manager.Model_Factory.read_properties(params, input, false)
+    d = PeriLab.Data_Manager.get_block_damage(1)
+    @test d isa PeriLab.Solver_Manager.Model_Factory.Damage.BlockDamage
+    @test PeriLab.Data_Manager.get_block_damage(2) === nothing
+
+    blocks["block_1"]["Damage Model"] = "Dmg"
+    input = typed_input(Dict("Blocks" => blocks, "Models" => models))
+    params = Dict{String,Any}("Blocks" => blocks, "Models" => input.models)
+    @test_logs (:error,
+                "Damage Model model with name Dmg is defined in blocks, but missing in the Damage Models definition.") match_mode=:any @test_throws PeriLab.PeriLabError PeriLab.Solver_Manager.Model_Factory.read_properties(params,
+                                                                                                                                                                                                                                input,
+                                                                                                                                                                                                                                false)
+    input = typed_input(Dict("Blocks" => blocks, "Models" => Dict()))
+    params = Dict{String,Any}("Blocks" => blocks, "Models" => input.models)
+    @test_logs (:error,
+                "Damage Model is defined in blocks, but no Damage Models definition block exists") match_mode=:any @test_throws PeriLab.PeriLabError PeriLab.Solver_Manager.Model_Factory.read_properties(params,
+                                                                                                                                                                                                                 input,
+                                                                                                                                                                                                                 false)
 end

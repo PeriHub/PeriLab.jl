@@ -7,6 +7,7 @@ using MPI
 using SparseArrays
 using DataStructures: OrderedDict
 using ...PeriLabExceptions: @abort
+using ...ParameterSpec: Table1D, bind_table!
 
 ##########################
 # Variables
@@ -60,6 +61,9 @@ export fem_active
 export set_fem_params
 export get_fem_params
 export set_block_material
+export set_block_damage
+export get_block_damage
+export bind_dependent_tables!
 export get_block_material
 export set_surface_correction
 export get_surface_correction
@@ -175,6 +179,7 @@ function initialize_data()
     data["coupling_dict"] = Dict{Int64,Int64}()
     data["FEM Parameters"] = nothing
     data["Block Materials"] = Dict{Int64,Any}()
+    data["Block Damages"] = Dict{Int64,Any}()
     data["Surface Correction"] = nothing
     data["output_frequency"] = []
     data["accuracy_order"] = 1
@@ -352,6 +357,48 @@ The typed material of a block, or `nothing`.
 """
 function get_block_material(block::Int64)
     return get(data["Block Materials"], block, nothing)
+end
+
+"""
+	set_block_damage(block, damage)
+
+Stores the typed damage model (`BlockDamage`) of a block.
+"""
+function set_block_damage(block::Int64, damage)
+    data["Block Damages"][block] = damage
+end
+
+"""
+	get_block_damage(block)
+
+The typed damage model of a block, or `nothing`.
+"""
+function get_block_damage(block::Int64)
+    return get(data["Block Damages"], block, nothing)
+end
+
+# node field a dependent value reads (the NP1 state if the field has one)
+function _dependent_field(name::String)
+    has_key(name * "NP1") && return get_field(name, "NP1")
+    has_key(name) && return get_field(name)
+    return nothing
+end
+
+"""
+	bind_dependent_tables!(tables)
+
+Binds every table to its node field (call before each compute: the N/NP1 switch
+replaces the arrays). Aborts if a field is missing.
+"""
+function bind_dependent_tables!(tables::Vector{Table1D})
+    for table in tables
+        field = _dependent_field(table.field_name)
+        if !(field isa Vector{Float64})
+            @abort "Field \"$(table.field_name)\" required by $(table.source) does not exist or is not a per-node Vector{Float64}."
+        end
+        bind_table!(table, field)
+    end
+    return tables
 end
 
 

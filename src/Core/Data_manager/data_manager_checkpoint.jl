@@ -13,8 +13,8 @@ export read_checkpoint!
 const CHECKPOINT_EXCLUDED_KEYS = ("commMPi", "model_modules", "active_models",
                                   "all_active_models", "rank", "max_rank",
                                   "mpi_active",
-                                  # typed materials: rebuilt from the input by read_properties
-                                  "Block Materials")
+                                  # typed materials and damages: rebuilt from the input by read_properties
+                                  "Block Materials", "Block Damages")
 
 """
     checkpoint_file(directory::String, rank::Int64)

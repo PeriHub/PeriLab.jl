@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-export NoModel, Composite, WithBase
+export NoModel, Composite, WithBase, dependent_tables
 
 "Placeholder for a block that has no model of a category."
 struct NoModel end
@@ -130,4 +130,21 @@ function _parse_model(category::Symbol, dict::Union{Nothing,AbstractDict}, path:
     base !== nothing && base_part === nothing && return nothing
     model = length(parts) == 1 ? parts[1] : Composite(Tuple(parts))
     return base === nothing ? model : WithBase(base_part, model, extras)
+end
+
+"""
+    dependent_tables(x)
+
+The `Table1D` parameters of an `@params` struct or of every part of a `Composite`.
+"""
+function dependent_tables(x)
+    found = Table1D[]
+    for part in (x isa Composite ? x.parts : (x,))
+        part === nothing && continue
+        for fs in parameter_spec(typeof(part))
+            v = getfield(part, fs.name)
+            v isa Table1D && push!(found, v)
+        end
+    end
+    return found
 end

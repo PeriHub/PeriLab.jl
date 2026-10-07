@@ -11,8 +11,8 @@ using ....Data_Manager
 using ....PeriLabExceptions: @abort
 using ....ModuleLoader: find_module_files, create_module_specifics
 using .....ParameterSpec: @params, Dependent, register_base!, WithBase, Composite,
-                          ParseContext, add_error!, join_path, Table1D, parameter_spec,
-                          bind_table!, value
+                          ParseContext, add_error!, join_path, Table1D, dependent_tables,
+                          value
 import .....ParameterSpec: check!
 
 
@@ -185,19 +185,6 @@ struct BlockMaterial{B,M,E}
     correspondence::Bool      # model name contains "Correspondence" (as the legacy dict tests)
 end
 
-
-# the Table1D values of a parameter struct (or of the parts of a Composite)
-function _tables(x)
-    found = Table1D[]
-    for part in (x isa Composite ? x.parts : (x,))
-        for fs in parameter_spec(typeof(part))
-            v = getfield(part, fs.name)
-            v isa Table1D && push!(found, v)
-        end
-    end
-    return found
-end
-
 model_parts(model::Composite) = model.parts
 model_parts(model) = (model,)
 
@@ -356,7 +343,7 @@ function block_material(wb::WithBase, model_name::String, dof::Int64)
     return BlockMaterial(wb.base, wb.model, material_symmetry(wb.base.symmetry, dof),
                          hooke_symmetry(wb.base.symmetry, dof),
                          elastic_moduli(wb.base, bond_based, dof),
-                         vcat(_tables(wb.base), _tables(wb.model)), wb.extras,
+                         vcat(dependent_tables(wb.base), dependent_tables(wb.model)), wb.extras,
                          occursin("Correspondence", model_name))
 
 end
@@ -533,13 +520,6 @@ function compute_model(nodes::AbstractVector{Int64},
 end
 
 
-# node field a dependent table reads: the NP1 state if the field has states
-function _dependent_field(name::String)
-    Data_Manager.has_key(name * "NP1") && return Data_Manager.get_field(name, "NP1")
-    Data_Manager.has_key(name) && return Data_Manager.get_field(name)
-    return nothing
-end
-
 """
     bind_material!(material)
 
@@ -547,13 +527,7 @@ Binds the dependent tables of a block material to the current node fields. Call
 it before every evaluation, because the N/NP1 field arrays are swapped every step.
 """
 function bind_material!(material::BlockMaterial)
-    for table in material.tables
-        field = _dependent_field(table.field_name)
-        if !(field isa Vector{Float64})
-            @abort "Field \"$(table.field_name)\" required by $(table.source) does not exist or is not a per-node Vector{Float64}."
-        end
-        bind_table!(table, field)
-    end
+    Data_Manager.bind_dependent_tables!(material.tables)
     return material
 end
 

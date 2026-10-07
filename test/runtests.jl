@@ -176,6 +176,7 @@ MPI.Init()
             @testset "ut_Damage" begin
                 include("unit_tests/Models/Damage/ut_Damage_Factory.jl")
                 include("unit_tests/Models/Damage/ut_Energy_release.jl")
+                include("unit_tests/Models/Damage/ut_block_damage.jl")
             end
             @testset "ut_Material" begin
                 @testset "ut_Material_Factory" begin

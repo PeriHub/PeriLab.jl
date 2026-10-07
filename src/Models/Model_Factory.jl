@@ -511,6 +511,18 @@ function read_properties(params::Dict, input::PeriLabInput, material_model::Bool
             Data_Manager.set_block_material(block, material)
         end
     end
+    for (block_name, block) in zip(block_name_list, block_id_list)
+        block_params = get(input.sections.blocks, block_name, nothing)
+        damage_name = block_params === nothing ? nothing : block_params.damage_model
+        damage_name === nothing && continue
+        if !haskey(input.models, "Damage Models")
+            @abort "Damage Model is defined in blocks, but no Damage Models definition block exists"
+        end
+        if !haskey(input.damages, damage_name)
+            @abort "Damage Model model with name $damage_name is defined in blocks, but missing in the Damage Models definition."
+        end
+        Data_Manager.set_block_damage(block, Damage.block_damage(input.damages[damage_name]))
+    end
 end
 
 
