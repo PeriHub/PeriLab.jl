@@ -29,12 +29,9 @@ PeriLab:
         Zero Energy Control: "Global"
     Thermal Models:
       Thermal Test:
-        Environmental Temperature: 100.0
-        Heat Transfer Coefficient: 10.015
         #Print Bed Temperature: 60.0
         #Print Bed Y Coordinate: 0.0
         Thermal Conductivity: 0.15
-        Thermal Conductivity Print Bed: 1.2
         Thermal Expansion Coefficient: 1e-6
         Reference Temperature: 0.0
         Thermal Model: Thermal Expansion

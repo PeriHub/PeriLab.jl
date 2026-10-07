@@ -8,6 +8,22 @@ using ....Data_Manager
 using ....PeriLabExceptions: @abort
 using TimerOutputs: @timeit
 using ....ModuleLoader: find_module_files, create_module_specifics
+
+using .....ParameterSpec: @params, register_base!
+
+"""
+    ThermalBaseParams
+
+Keys every thermal model may use: `Thermal Conductivity` (read by the critical
+time step for any thermal model, and by Thermal Flow).
+"""
+@params struct ThermalBaseParams
+    thermal_conductivity::Union{Nothing,Float64} = opt("Thermal Conductivity";
+                                                       default = nothing, min = 0)
+end
+
+# registration runs at load time, never during precompilation
+__init__() = register_base!(:thermal, ThermalBaseParams)
 global module_list = find_module_files(@__DIR__, "thermal_model_name")
 for mod in module_list
     include(mod["File"])

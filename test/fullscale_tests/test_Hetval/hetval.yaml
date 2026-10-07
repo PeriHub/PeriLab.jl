@@ -20,8 +20,6 @@ PeriLab:
     Thermal Models:
       HETVAL:
         Thermal Model: "HETVAL"
-        Type: "Bond based"
-        Thermal Expansion Coefficient: 0.22
         Thermal Conductivity: 2000.0
         File: "hetval.so"
         Number of State Variables: 1

@@ -13,6 +13,32 @@ export compute_model
 export thermal_model_name
 export init_model
 export fields_for_local_synchronization
+
+using ......ParameterSpec: @params, register_thermal, ParseContext, add_error!, join_path
+import ......ParameterSpec: check!
+
+@enum ThermalFlowType BondBased Correspondence
+
+@params struct ThermalFlowParams
+    type::ThermalFlowType = opt("Type"; default = BondBased,
+                                description = "Bond based or Correspondence")
+    print_bed_temperature::Union{Nothing,Float64} = opt("Print Bed Temperature";
+                                                        default = nothing)
+    thermal_conductivity_print_bed::Union{Nothing,Float64} = opt("Thermal Conductivity Print Bed";
+                                                                 default = nothing,
+                                                                 min = 0)
+    print_bed_z_coordinate::Float64 = opt("Print Bed Z Coordinate"; default = 0.0)
+end
+
+function check!(p::ThermalFlowParams, path::String, ctx::ParseContext)
+    if p.print_bed_temperature !== nothing && p.thermal_conductivity_print_bed === nothing
+        add_error!(ctx, join_path(path, "Thermal Conductivity Print Bed"),
+                   "required when Print Bed Temperature is given")
+    end
+    return nothing
+end
+
+__init__() = register_thermal("Thermal Flow", ThermalFlowParams)
 """
 	thermal_model_name()
 

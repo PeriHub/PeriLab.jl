@@ -17,6 +17,16 @@ export fields_for_local_synchronization
 export compute_model
 export thermal_model_name
 export init_model
+
+using ......ParameterSpec: @params, register_thermal
+@params struct ThermalExpansionParams
+    thermal_expansion_coefficient::Union{Float64,Vector{Float64}} = req("Thermal Expansion Coefficient";
+                                                                        description = "a number, or one value per direction")
+    reference_temperature::Union{Nothing,Float64} = opt("Reference Temperature";
+                                                        default = nothing,
+                                                        description = "0 if missing (with a warning)")
+end
+__init__() = register_thermal("Thermal Expansion", ThermalExpansionParams)
 """
 	thermal_model_name()
 

@@ -7,6 +7,15 @@ using LinearAlgebra: dot
 export compute_model
 export thermal_model_name
 export init_model
+
+using ......ParameterSpec: @params, register_thermal
+@params struct HeatTransferParams
+    heat_transfer_coefficient::Float64 = req("Heat Transfer Coefficient"; min = 0)
+    environmental_temperature::Union{Float64,String} = req("Environmental Temperature";
+                                                           description = "a number, or an expression in the time t")
+    allow_surface_change::Bool = opt("Allow Surface Change"; default = true)
+end
+__init__() = register_thermal("Heat Transfer", HeatTransferParams)
 using TimerOutputs: @timeit
 using .....Data_Manager
 using .....Helpers: normalize_in_place!

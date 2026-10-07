@@ -8,6 +8,28 @@ export init_model
 export thermal_model_name
 export fields_for_local_synchronization
 
+using ......ParameterSpec: @params, register_thermal, ParseContext, add_error!, join_path
+import ......ParameterSpec: check!, key_patterns
+@params struct HETVALParams
+    file::String = req("File"; description = "HETVAL library, relative to the input deck")
+    number_of_state_variables::Int64 = opt("Number of State Variables"; default = 1, min = 1)
+    hetval_material_name::Union{Nothing,String} = opt("HETVAL Material Name";
+                                                      default = nothing)
+    hetval_name::String = opt("HETVAL name"; default = "HETVAL")
+    predefined_field_names::Union{Nothing,String} = opt("Predefined Field Names";
+                                                        default = nothing,
+                                                        description = "space separated node field names")
+end
+key_patterns(::Type{HETVALParams}) = [r"^Property_\d+$" => Float64]
+function check!(p::HETVALParams, path::String, ctx::ParseContext)
+    if p.hetval_material_name !== nothing && length(p.hetval_material_name) > 80
+        add_error!(ctx, join_path(path, "HETVAL Material Name"),
+                   "at most 80 characters (Fortran)")
+    end
+    return nothing
+end
+__init__() = register_thermal("HETVAL", HETVALParams)
+
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
 
