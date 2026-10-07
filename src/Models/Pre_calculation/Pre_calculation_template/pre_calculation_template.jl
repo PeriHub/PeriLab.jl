@@ -10,6 +10,12 @@ export compute_model
 export init_model
 export pre_calculation_name
 export fields_for_local_synchronization
+
+using ......ParameterSpec: @params, register_pre_calculation
+"Switch only: this pre-calculation has no parameters."
+@params struct PreCalculationTemplateParams
+end
+# __init__() = register_pre_calculation("pre_calculation Template", PreCalculationTemplateParams)
 """
     pre_calculation_name()
 

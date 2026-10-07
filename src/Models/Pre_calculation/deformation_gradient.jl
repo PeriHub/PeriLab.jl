@@ -11,6 +11,12 @@ export pre_calculation_name
 export init_model
 export compute
 
+using ......ParameterSpec: @params, register_pre_calculation
+"Switch only: this pre-calculation has no parameters."
+@params struct DeformationGradientParams
+end
+__init__() = register_pre_calculation("Deformation Gradient", DeformationGradientParams)
+
 """
     pre_calculation_name()
 

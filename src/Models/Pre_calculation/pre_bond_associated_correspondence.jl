@@ -14,6 +14,12 @@ export pre_calculation_name
 export init_model
 export compute
 
+using ......ParameterSpec: @params, register_pre_calculation
+"Switch only: this pre-calculation has no parameters."
+@params struct BondAssociatedCorrespondenceParams
+end
+__init__() = register_pre_calculation("Bond Associated Correspondence", BondAssociatedCorrespondenceParams)
+
 using .......Helpers: invert, qdim
 
 """

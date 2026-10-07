@@ -52,7 +52,8 @@ end
 A validated input deck. `materials` holds the typed material models
 (`ParameterSpec.WithBase`), keyed by name; `damages`, `additives` and `degradations`
 hold the typed damage, additive and degradation models; `thermals` the typed thermal
-models (`WithBase`);
+models (`WithBase`); `pre_calculation_global` and `pre_calculations` the
+pre-calculation switches;
 `models` stays the raw `Models` dict for the categories not yet migrated;
 `globals` is the unvalidated `Globals` escape hatch.
 """
@@ -64,6 +65,8 @@ struct PeriLabInput
     additives::Dict{String,Any}
     degradations::Dict{String,Any}
     thermals::Dict{String,Any}
+    pre_calculation_global::Union{Nothing,Dict{String,Bool}}
+    pre_calculations::Dict{String,Dict{String,Bool}}
     models::Dict{String,Any}
     globals::Dict{String,Any}
 end
@@ -121,6 +124,30 @@ parse_damages(models::AbstractDict, ctx::ParseContext) = parse_single_models(mod
                                                                              "Damage Model",
                                                                              ctx)
 
+# old switch names: accepted when off, an error naming the replacement when on
+const DEPRECATED_PRE_CALCULATIONS = Dict("Bond Associated Deformation Gradient" => "Bond Associated Correspondence")
+
+"""
+    parse_pre_calculation_switches(raw, path, ctx)
+
+Pre-calculation switches (`name: true/false`); names are the registered
+pre-calculation models.
+"""
+function parse_pre_calculation_switches(raw, path::String, ctx::ParseContext)
+    switches = ParameterSpec.convert_value(Dict{String,Bool}, raw, path, ctx)
+    switches === ParameterSpec.FAILED && return nothing
+    for (name, replacement) in DEPRECATED_PRE_CALCULATIONS
+        haskey(switches, name) || continue
+        switches[name] &&
+            add_error!(ctx, join_path(path, name), "no longer supported; use \"$replacement\"")
+        delete!(switches, name)
+    end
+    ParameterSpec.check_unknown!(switches,
+                                 Set(ParameterSpec.registered_names(:pre_calculation)),
+                                 path, ctx)
+    return switches
+end
+
 """
     read_input(deck, directory = ""; strict = true) -> (input, ctx)
 
@@ -155,12 +182,30 @@ function read_input(deck::AbstractDict, directory::AbstractString = ""; strict::
     thermals = models isa AbstractDict ?
                parse_models(models, "Thermal Models", :thermal, "Thermal Model", ctx) :
                Dict{String,Any}()
+    pre_global = models isa AbstractDict && haskey(models, "Pre Calculation Global") ?
+                 parse_pre_calculation_switches(models["Pre Calculation Global"],
+                                                join_path("Models", "Pre Calculation Global"),
+                                                ctx) : nothing
+    pre_calculations = Dict{String,Dict{String,Bool}}()
+    raw_pre = models isa AbstractDict ? get(models, "Pre Calculation Models", nothing) : nothing
+    if raw_pre isa AbstractDict
+        for (name, entry) in raw_pre
+            s = parse_pre_calculation_switches(entry,
+                                               join_path(join_path("Models",
+                                                                   "Pre Calculation Models"),
+                                                         string(name)), ctx)
+            s === nothing || (pre_calculations[string(name)] = s)
+        end
+    elseif raw_pre !== nothing
+        add_error!(ctx, join_path("Models", "Pre Calculation Models"),
+                   "expected a section of `key: value` entries, got $(ParameterSpec._describe(raw_pre))")
+    end
     globals = get(deck, "Globals", Dict{String,Any}())
     if ParameterSpec.has_errors(ctx) || sections === nothing
         return nothing, ctx
     end
     input = PeriLabInput(sections, contact, materials, damages, additives, degradations,
-                         thermals,
+                         thermals, pre_global, pre_calculations,
                          Dict{String,Any}(string(k) => v for (k, v) in models),
                          globals isa AbstractDict ?
                          Dict{String,Any}(string(k) => v for (k, v) in globals) :

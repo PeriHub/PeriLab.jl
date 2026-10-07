@@ -10,6 +10,12 @@ export compute
 export init_model
 export pre_calculation_name
 
+using ......ParameterSpec: @params, register_pre_calculation
+"Switch only: this pre-calculation has no parameters."
+@params struct AxisSymmetricParams
+end
+__init__() = register_pre_calculation("Axis Symmetric", AxisSymmetricParams)
+
 """
     pre_calculation_name()
 

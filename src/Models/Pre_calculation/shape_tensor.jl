@@ -13,6 +13,12 @@ export init_model
 export compute
 export fields_for_local_synchronization
 
+using ......ParameterSpec: @params, register_pre_calculation
+"Switch only: this pre-calculation has no parameters."
+@params struct ShapeTensorParams
+end
+__init__() = register_pre_calculation("Shape Tensor", ShapeTensorParams)
+
 """
 	pre_calculation_name()
 

@@ -87,3 +87,23 @@ end
                              "Environmental Temperature" => 30, "Type" => "Bond based"))
     @test startswith(ut_category_messages(ctx)["$TH_PATH.Type"], "unknown key")
 end
+
+@testset "pre-calculation switches" begin
+    global_switches = Dict("Deformed Bond Geometry" => true, "Shape Tensor" => false,
+                           "Bond Associated Deformation Gradient" => false)
+    input, ctx = CMID.read_input(ut_category_deck(Dict("Pre Calculation Global" => global_switches,
+                                                       "Pre Calculation Models" => Dict("Pre" => Dict("Deformation Gradient" => true)))))
+    @test isempty(ctx.errors)
+    @test input.pre_calculation_global ==
+          Dict("Deformed Bond Geometry" => true, "Shape Tensor" => false)
+    @test input.pre_calculations["Pre"] == Dict("Deformation Gradient" => true)
+    _, ctx = CMID.read_input(ut_category_deck(Dict("Pre Calculation Global" => Dict("Bond Associated Deformation Gradient" => true))))
+    @test ut_category_messages(ctx)["Models.\"Pre Calculation Global\".\"Bond Associated Deformation Gradient\""] ==
+          "no longer supported; use \"Bond Associated Correspondence\""
+    _, ctx = CMID.read_input(ut_category_deck(Dict("Pre Calculation Global" => Dict("Shape Tenser" => true))))
+    @test ut_category_messages(ctx)["Models.\"Pre Calculation Global\".\"Shape Tenser\""] ==
+          "unknown key — did you mean \"Shape Tensor\"?"
+    input, _ = CMID.read_input(ut_category_deck(Dict{String,Any}()))
+    @test input.pre_calculation_global === nothing
+    @test isempty(input.pre_calculations)
+end
