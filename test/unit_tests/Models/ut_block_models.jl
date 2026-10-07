@@ -60,3 +60,30 @@ end
         @test isempty(UT_MF.Additive.load_licensed_models())
     end
 end
+
+@testset "thermal decomposition on the typed interface" begin
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(2)
+    PeriLab.Data_Manager.set_dof(2)
+    nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+    nn .= 1
+    nlist = PeriLab.Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
+    nlist[1] = [2]
+    nlist[2] = [1]
+    PeriLab.Data_Manager.create_bond_scalar_state("Bond Damage", Float64; default_value = 1)
+    PeriLab.Data_Manager.create_constant_node_scalar_field("Active", Bool;
+                                                           default_value = true)
+    _, temperature = PeriLab.Data_Manager.create_node_scalar_field("Temperature", Float64)
+    temperature .= [10.0, 60.0]
+    UT_MF.Degradation.init_fields()
+    p = typed_model(:degradation, Dict("Degradation Model" => "Thermal Decomposition",
+                                       "Decomposition Temperature" => 50);
+                    name_key = "Degradation Model")
+    PeriLab.Data_Manager.set_block_model("Degradation Model", 1, p)
+    UT_MF.Degradation.init_model([1, 2], 1)
+    UT_MF.Degradation.compute_model([1, 2], p, 1, 0.0, 1.0)
+    @test PeriLab.Data_Manager.get_field("Active") == [true, false]
+    bd = PeriLab.Data_Manager.get_bond_damage("NP1")
+    @test bd[2][1] == 0.0 && bd[1][1] == 0.0
+    @test length(methods(UT_MF.Degradation.Thermal_Decomposition.compute_model)) == 1
+end

@@ -10,6 +10,21 @@ export compute_model
 export degradation_name
 export init_model
 export fields_for_local_synchronization
+
+using ......ParameterSpec: @params, register_degradation
+
+"""
+    DegradationTemplateParams
+
+Declare the YAML keys your degradation model needs. Register it under your model
+name by uncommenting `__init__` (the template stays unregistered so that a copy
+never collides with it).
+"""
+@params struct DegradationTemplateParams
+end
+
+# __init__() = register_degradation("Degradation Template", DegradationTemplateParams)
+
 """
     degradation_name()
 
@@ -31,49 +46,46 @@ function degradation_name()
 end
 
 """
-    compute_model(nodes, degradation_parameter, block::Int64, time, dt)
+    compute_model(nodes, p, block, time, dt)
 
 Calculates the degradation model. This template has to be copied, the file renamed and edited by the user to create a new degradation. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `degradation parameter::Dict(String, Any)`: Dictionary with degradation parameter.
+- `p::DegradationTemplateParams`: The model parameters.
+- `block::Int64`: The current block.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
 ```julia
   ```
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       degradation_parameter::Dict,
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
+function compute_model(nodes::AbstractVector{Int64}, p::DegradationTemplateParams,
+                       block::Int64, time::Float64, dt::Float64)
     @info "Please write a degradation name in degradation_name()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_model(nodes, degradation_parameter, time, dt) function."
-    @info "The Data_Manager and degradation_parameter holds all you need to solve your problem on degradation level."
+    @info "Fill the compute_model(nodes, p, block, time, dt) function."
+    @info "The Data_Manager and p hold all you need to solve your problem on degradation level."
     @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
 end
 
 """
-    init_model(nodes, degradation_parameter)
+    init_model(nodes, p, block)
 
 Inits the degradation model. This template has to be copied, the file renamed and edited by the user to create a new degradation. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `degradation parameter::Dict(String, Any)`: Dictionary with degradation parameter.
+- `p::DegradationTemplateParams`: The model parameters.
 - `block::Int64`: The current block.
 
 """
-function init_model(nodes::AbstractVector{Int64},
-                    degradation_parameter::Dict,
+function init_model(nodes::AbstractVector{Int64}, p::DegradationTemplateParams,
                     block::Int64)
     @info "Please write a degradation name in degradation_name()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_model(nodes, degradation_parameter, time, dt) function."
-    @info "The Data_Manager and degradation_parameter holds all you need to solve your problem on degradation level."
+    @info "Fill the compute_model(nodes, p, block, time, dt) function."
+    @info "The Data_Manager and p hold all you need to solve your problem on degradation level."
     @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
 end
 

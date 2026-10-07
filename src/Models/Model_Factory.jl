@@ -40,7 +40,8 @@ function typed_block_model(block::Int64, name::String)
     name == "Damage Model" && return Data_Manager.get_block_damage(block)
     return Data_Manager.get_block_model(name, block)
 end
-const TYPED_CATEGORIES = ("Material Model", "Damage Model", "Additive Model")
+const TYPED_CATEGORIES = ("Material Model", "Damage Model", "Additive Model",
+                          "Degradation Model")
 has_block_model(block::Int64, name::String) = name in TYPED_CATEGORIES ?
                                               typed_block_model(block, name) !== nothing :
                                               Data_Manager.check_property(block, name)
@@ -540,6 +541,11 @@ function read_properties(params::Dict, input::PeriLabInput, material_model::Bool
         a = block_typed_model(input, block_name, :additive_model, "Additive Model",
                               input.additives)
         a === nothing || Data_Manager.set_block_model("Additive Model", block, a)
+    end
+    for (block_name, block) in zip(block_name_list, block_id_list)
+        g = block_typed_model(input, block_name, :degradation_model, "Degradation Model",
+                              input.degradations)
+        g === nothing || Data_Manager.set_block_model("Degradation Model", block, g)
     end
 end
 

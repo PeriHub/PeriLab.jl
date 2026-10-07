@@ -6,7 +6,7 @@ module Degradation
 
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
-using ....ModuleLoader: find_module_files, create_module_specifics
+using ....ModuleLoader: find_module_files
 global module_list = find_module_files(@__DIR__, "degradation_name")
 for mod in module_list
     include(mod["File"])
@@ -29,55 +29,37 @@ function init_fields()
     inverse_nlist = Data_Manager.set_inverse_nlist(find_inverse_bond_id(nlist))
 end
 
-"""
-    compute_model(nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
+model_module(p) = parentmodule(typeof(p))
 
-Computes the degradation models
+"""
+    compute_model(nodes::AbstractVector{Int64}, p, block::Int64, time::Float64, dt::Float64)
+
+Computes the degradation model of a block.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes
-- `model_param::Dict`: The model parameters
+- `p`: The typed degradation model of the block
 - `block::Int64`: The block
 - `time::Float64`: The current time
 - `dt::Float64`: The time step
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       model_param::Dict,
-                       block::Int64,
-                       time::Float64,
+function compute_model(nodes::AbstractVector{Int64}, p, block::Int64, time::Float64,
                        dt::Float64)
-    mod = Data_Manager.get_model_module(model_param["Degradation Model"])
-    return mod.compute_model(nodes, model_param, block, time, dt)
+    return model_module(p).compute_model(nodes, p, block, time, dt)
 end
 
 """
     init_model(nodes::AbstractVector{Int64}, block::Int64)
 
-Initialize a degradation models.
+Initialize the degradation model of a block (`Data_Manager.get_block_model("Degradation Model", block)`).
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: Nodes for the degradation model.
 - `block::Int64`: Block identifier for the degradation model.
-
-# Example
-```julia
-init_model(my_data_manager, [1, 2, 3], 1)
-```
 """
-function init_model(nodes::AbstractVector{Int64},
-                    block::Int64)
-    model_param = Data_Manager.get_properties(block, "Degradation Model")
-    mod = create_module_specifics(model_param["Degradation Model"],
-                                  module_list,
-                                  @__MODULE__,
-                                  "degradation_name")
-    if isnothing(mod)
-        @abort "No degradation model of name " * model_param["Degradation Model"] *
-               " exists."
-        return nothing
-    end
-    Data_Manager.set_model_module(model_param["Degradation Model"], mod)
-    mod.init_model(nodes, model_param, block)
+function init_model(nodes::AbstractVector{Int64}, block::Int64)
+    p = Data_Manager.get_block_model("Degradation Model", block)
+    model_module(p).init_model(nodes, p, block)
 end
 
 """
@@ -90,10 +72,8 @@ Defines all synchronization fields for local synchronization
 - `block::Int64`: block ID
 """
 function fields_for_local_synchronization(model, block)
-    model_param = Data_Manager.get_properties(block, "Degradation Model")
-    mod = Data_Manager.get_model_module(model_param["Degradation Model"])
-
-    return mod.fields_for_local_synchronization(model)
+    p = Data_Manager.get_block_model("Degradation Model", block)
+    return model_module(p).fields_for_local_synchronization(model)
 end
 
 end

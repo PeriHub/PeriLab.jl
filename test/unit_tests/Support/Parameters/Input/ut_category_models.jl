@@ -26,3 +26,13 @@ ut_category_messages(ctx) = Dict(e.path => e.message for e in ctx.errors)
     input, ctx = CMID.read_input(ut_category_deck(Dict{String,Any}()))
     @test isempty(input.additives)
 end
+
+@testset "degradation models are parsed into typed structs" begin
+    input, ctx = CMID.read_input(ut_category_deck(Dict("Degradation Models" => Dict("Deg" => Dict("Degradation Model" => "Thermal Decomposition",
+                                                                                                    "Decomposition Temperature" => 50)))))
+    @test isempty(ctx.errors)
+    @test input.degradations["Deg"].decomposition_temperature == 50.0
+    _, ctx = CMID.read_input(ut_category_deck(Dict("Degradation Models" => Dict("Deg" => Dict("Degradation Model" => "Thermal Decomposition")))))
+    @test ut_category_messages(ctx)["Models.\"Degradation Models\".Deg.\"Decomposition Temperature\""] ==
+          "missing (required by Thermal Decomposition)"
+end
