@@ -50,30 +50,32 @@ end
     PeriLabInput
 
 A validated input deck. `materials` holds the typed material models
-(`ParameterSpec.WithBase`), keyed by name; `models` stays the raw `Models` dict
-for the categories not yet migrated and for the runtime until phase 3b;
+(`ParameterSpec.WithBase`), keyed by name; `damages` holds the typed damage models;
+`models` stays the raw `Models` dict for the categories not yet migrated;
 `globals` is the unvalidated `Globals` escape hatch.
 """
 struct PeriLabInput
     sections::PeriLabSections
     contact::Union{Nothing,ContactInput}
     materials::Dict{String,Any}
+    damages::Dict{String,Any}
     models::Dict{String,Any}
     globals::Dict{String,Any}
 end
 
 const _SPECIAL_KEYS = ("Models", "Contact", "Globals")
 
-"Typed `Material Models`, keyed by name; errors go to `ctx`."
-function parse_materials(models::AbstractDict, ctx::ParseContext)
-    materials = Dict{String,Any}()
-    raw = get(models, "Material Models", nothing)
-    raw === nothing && return materials
-    path = join_path("Models", "Material Models")
+"Typed models of `section` (e.g. \"Material Models\"), keyed by name; errors go to `ctx`."
+function parse_models(models::AbstractDict, section::String, category::Symbol,
+                      name_key::String, ctx::ParseContext)
+    parsed = Dict{String,Any}()
+    raw = get(models, section, nothing)
+    raw === nothing && return parsed
+    path = join_path("Models", section)
     if !(raw isa AbstractDict)
         add_error!(ctx, path,
                    "expected a section of `key: value` entries, got $(ParameterSpec._describe(raw))")
-        return materials
+        return parsed
     end
     for (name, entry) in raw
         entry_path = join_path(path, string(name))
@@ -82,12 +84,30 @@ function parse_materials(models::AbstractDict, ctx::ParseContext)
                        "expected a section of `key: value` entries, got $(ParameterSpec._describe(entry))")
             continue
         end
-        model = ParameterSpec.parse_model(:material,
+        model = ParameterSpec.parse_model(category,
                                           Dict{String,Any}(string(k) => v for (k, v) in entry),
-                                          entry_path, ctx; name_key = "Material Model")
-        model === nothing || (materials[string(name)] = model)
+                                          entry_path, ctx; name_key = name_key)
+        model === nothing || (parsed[string(name)] = model)
     end
-    return materials
+    return parsed
+end
+
+parse_materials(models::AbstractDict, ctx::ParseContext) = parse_models(models,
+                                                                        "Material Models",
+                                                                        :material,
+                                                                        "Material Model", ctx)
+
+"Typed `Damage Models`; combining damage models with `+` is an error."
+function parse_damages(models::AbstractDict, ctx::ParseContext)
+    damages = parse_models(models, "Damage Models", :damage, "Damage Model", ctx)
+    for (name, d) in damages
+        d.model isa ParameterSpec.Composite || continue
+        add_error!(ctx,
+                   join_path(join_path(join_path("Models", "Damage Models"), name),
+                             "Damage Model"),
+                   "damage models cannot be combined with +")
+    end
+    return damages
 end
 
 """
@@ -114,11 +134,12 @@ function read_input(deck::AbstractDict, directory::AbstractString = ""; strict::
                    "expected a section of `key: value` entries, got $(ParameterSpec._describe(models))")
     end
     materials = models isa AbstractDict ? parse_materials(models, ctx) : Dict{String,Any}()
+    damages = models isa AbstractDict ? parse_damages(models, ctx) : Dict{String,Any}()
     globals = get(deck, "Globals", Dict{String,Any}())
     if ParameterSpec.has_errors(ctx) || sections === nothing
         return nothing, ctx
     end
-    input = PeriLabInput(sections, contact, materials,
+    input = PeriLabInput(sections, contact, materials, damages,
                          Dict{String,Any}(string(k) => v for (k, v) in models),
                          globals isa AbstractDict ?
                          Dict{String,Any}(string(k) => v for (k, v) in globals) :

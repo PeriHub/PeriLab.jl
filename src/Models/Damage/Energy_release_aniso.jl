@@ -22,6 +22,13 @@ export compute_model
 export damage_name
 export init_model
 export fields_for_local_synchronization
+
+using ......ParameterSpec: @params, register_damage
+@params struct CriticalEnergyAnisotropicParams
+    only_tension::Bool = opt("Only Tension"; default = false)
+    thickness::Float64 = opt("Thickness"; default = 1.0, min = 0, quantity = :length)
+end
+__init__() = register_damage("Critical Energy Anisotropic", CriticalEnergyAnisotropicParams)
 """
     damage_name()
 

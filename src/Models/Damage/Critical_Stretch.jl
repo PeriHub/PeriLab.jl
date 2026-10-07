@@ -10,6 +10,12 @@ export damage_name
 export init_model
 export fields_for_local_synchronization
 
+using ......ParameterSpec: @params, register_damage
+@params struct CriticalStretchParams
+    only_tension::Bool = opt("Only Tension"; default = true)
+end
+__init__() = register_damage("Critical Stretch", CriticalStretchParams)
+
 """
     damage_name()
 

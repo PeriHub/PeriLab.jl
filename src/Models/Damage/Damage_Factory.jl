@@ -8,6 +8,56 @@ using TimerOutputs: @timeit
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
 using ....ModuleLoader: find_module_files, create_module_specifics
+using .....ParameterSpec: @params, Dependent, Constant, register_base!, ParseContext,
+                          add_error!, join_path
+import .....ParameterSpec: check!
+
+@params struct AnisotropicDamageParams
+    critical_value_x::Float64 = req("Critical Value X")
+    critical_value_y::Float64 = req("Critical Value Y")
+    critical_value_z::Union{Nothing,Float64} = opt("Critical Value Z"; default = nothing,
+                                                   description = "defaults to Critical Value Y")
+end
+
+@params struct LocalDampingParams
+    representative_youngs_modulus::Float64 = req("Representative Young's modulus"; min = 0,
+                                                 quantity = :stress)
+    damping_coefficient::Float64 = req("Damping coefficient"; min = 0)
+end
+
+"""
+    DamageBaseParams
+
+Keys every damage model may use (read from the same YAML block as the model's
+own keys).
+"""
+@params struct DamageBaseParams
+    critical_value::Dependent = req("Critical Value"; min = 0)
+    interblock_damage::Union{Nothing,Dict{String,Float64}} = opt("Interblock Damage";
+                                                                 default = nothing,
+                                                                 description = "Interblock Critical Value <block>_<block> entries")
+    anisotropic_damage::Union{Nothing,AnisotropicDamageParams} = opt("Anisotropic Damage";
+                                                                     default = nothing)
+    local_damping::Union{Nothing,LocalDampingParams} = opt("Local Damping"; default = nothing)
+end
+
+const INTERBLOCK_KEY = r"^Interblock Critical Value \d+_\d+$"
+
+function check!(p::DamageBaseParams, path::String, ctx::ParseContext)
+    p.interblock_damage === nothing && return nothing
+    for name in keys(p.interblock_damage)
+        occursin(INTERBLOCK_KEY, name) ||
+            add_error!(ctx, join_path(join_path(path, "Interblock Damage"), name),
+                       "unknown key — expected \"Interblock Critical Value <block>_<block>\"")
+    end
+    p.critical_value isa Constant ||
+        add_error!(ctx, join_path(path, "Critical Value"),
+                   "must be a number when Interblock Damage is used")
+    return nothing
+end
+
+# registration runs at load time, never during precompilation
+__init__() = register_base!(:damage, DamageBaseParams)
 global module_list = find_module_files(@__DIR__, "damage_name")
 for mod in module_list
     include(mod["File"])
