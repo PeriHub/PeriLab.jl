@@ -32,8 +32,7 @@ end
 
 using ..MPI_Communication: synch_responder_to_controller,
                            synch_controller_to_responder,
-                           synch_controller_bonds_to_responder,
-                           synch_controller_bonds_to_responder_flattened
+                           synch_controller_bonds_to_responder
 
 include("../Influence_function.jl")
 
@@ -352,10 +351,10 @@ function synchronise_field(comm,
             if synch_fields[synch_field][direction]
                 vector = get_field(synch_field, synch_fields[synch_field]["time"])
                 if occursin("Bond", synch_field)
-                    @timeit "synch_controller_bonds_to_responder_flattened" return synch_controller_bonds_to_responder_flattened(comm,
-                                                                                                                                 overlap_map,
-                                                                                                                                 vector,
-                                                                                                                                 synch_fields[synch_field]["dof"])
+                    @timeit "synch_controller_bonds_to_responder" return synch_controller_bonds_to_responder(comm,
+                                                                                                             overlap_map,
+                                                                                                             vector,
+                                                                                                             synch_fields[synch_field]["dof"])
                 else
                     @timeit "synch_controller_to_responder" return synch_controller_to_responder(comm,
                                                                                                  overlap_map,

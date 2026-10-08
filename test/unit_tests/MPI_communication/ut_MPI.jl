@@ -397,25 +397,32 @@ if ncores == 3
 
     bf = PeriLab.Data_Manager.get_field("Bond Forces")
 
+    # Every bond value encodes the global node and the bond; the responder copies start
+    # from zero and must receive exactly their controller's values.
+    local_to_global = distribution[rank + 1]
+    responders = Int64[]
+    for jcore in 1:ncores
+        jcore == rank + 1 && continue
+        append!(responders, overlap_map[rank + 1][jcore]["Responder"])
+    end
+    for iID in eachindex(bf), jID in eachindex(bf[iID])
+        value = iID in responders ? 0.0 : 10.0 * local_to_global[iID] + jID
+        bf[iID][jID] .= (value, -value)
+    end
+    inner_vectors = [bf[iID][jID] for iID in eachindex(bf) for jID in eachindex(bf[iID])]
     PeriLab.MPI_Communication.synch_controller_bonds_to_responder(comm, overlap_map, bf,
                                                                   dof)
-
-    if rank == 0
-        test = test_dict["synch_controller_bonds_to_responder_rank_0"] = Dict("tests" => [],
+    test = test_dict["synch_controller_bonds_to_responder_rank_$rank"] = Dict("tests" => [],
                                                                               "line" => [])
-        # push_test!(test, (bf[1] == Float64(-0.9)), @__FILE__, @__LINE__)
+    for iID in eachindex(bf), jID in eachindex(bf[iID])
+        value = 10.0 * local_to_global[iID] + jID
+        push_test!(test, (bf[iID][jID] == [value, -value]), @__FILE__, @__LINE__)
     end
-
-    PeriLab.MPI_Communication.synch_controller_bonds_to_responder_flattened(comm,
-                                                                            overlap_map, bf,
-                                                                            dof)
-    if rank == 0
-        test = test_dict["synch_controller_bonds_to_responder_flattened_rank_0"] = Dict("tests" =>
-                                                                                            [],
-                                                                                        "line" =>
-                                                                                            [])
-        # push_test!(test, (bf[1] == Float64(-0.9)), @__FILE__, @__LINE__)
-    end
+    # the bond arrays are written in place, not replaced
+    push_test!(test,
+               (all(inner_vectors .=== [bf[iID][jID] for iID in eachindex(bf)
+                     for jID in eachindex(bf[iID])])),
+               @__FILE__, @__LINE__)
 
     solver_options = Dict("Models" => ["Material"])
     params = Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,

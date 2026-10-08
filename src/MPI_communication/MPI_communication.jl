@@ -8,15 +8,12 @@ export send_single_value_from_vector
 export synch_responder_to_controller
 export synch_controller_to_responder
 export synch_controller_bonds_to_responder
-export split_vector
-export synch_controller_bonds_to_responder_flattened
 export send_vector_from_root_to_core_i
 export broadcast_value
 export find_and_set_core_value_min
 export find_and_set_core_value_sum
 export find_and_set_core_value_avg
 export gather_values
-# export barrier
 
 """
 TODO
@@ -78,297 +75,253 @@ function send_single_value_from_vector(comm::MPI.Comm,
     return recv_msg[1]
 end
 
+# --------------------------------------------------------------------------------------
+# Exchange of overlap data between the ranks
+#
+# Every exchange packs the entries of one field for each neighbouring rank into a single
+# contiguous buffer, posts all receives and sends non-blocking and waits for all of them,
+# then unpacks. The buffers are kept per element type and neighbouring rank, grown when a
+# field needs more and reused by every call; since a call completes all its transfers
+# before it returns, the fields can share them. After the first calls an exchange
+# therefore allocates nothing of the size of the data.
+# --------------------------------------------------------------------------------------
+
+const SEND_BUFFERS = Dict{Tuple{DataType,Int},Vector}()
+const RECV_BUFFERS = Dict{Tuple{DataType,Int},Vector}()
+# created on first use, MPI handles must not be built at precompile time
+const REQUESTS = Ref{Union{Nothing,MPI.MultiRequest}}(nothing)
+
 """
-function synch_overlapnodes(comm::MPI.Comm, topo, vector)
-    currentRank = MPI.Comm_rank(comm)
-    ncores = MPI.Comm_size(comm)
-    overlapCurrentRank = topo[currentRank+1]
-    for icore in 0:ncores-1
-        if icore == currentRank
-            continue
-        end
-        if overlapCurrentRank[icore+1]["Responder"] > 0
-            send_msg = vector[overlapCurrentRank[icore+1]["Responder"]]
-            MPI.Send(send_msg, comm; dest=icore+i, tag=0)
-        end
-        if overlapCurrentRank[icore+1]["Controller"] > 0
-            recv_msg = vector[overlapCurrentRank[icore+1]["Controller"]]
-            MPI.Recv!(recv_msg, comm; source=0, tag=0)
-            vector[overlapCurrentRank[icore+1]["Controller"]]
+    exchange_buffer(buffers, T, jcore, len)
+
+Leading `len` entries of the cached buffer for element type `T` and rank `jcore`, grown
+if it is shorter.
+"""
+function exchange_buffer(buffers::Dict{Tuple{DataType,Int},Vector}, ::Type{T},
+                         jcore::Int, len::Int) where {T}
+    buffer = get!(Vector{T}, buffers, (T, jcore))::Vector{T}
+    length(buffer) < len && resize!(buffer, len)
+    return view(buffer, 1:len)
+end
+
+"""
+    exchange_requests(n)
+
+The cached request set, enlarged to at least `n` requests.
+"""
+function exchange_requests(n::Int)
+    requests = REQUESTS[]
+    if isnothing(requests) || length(requests) < n
+        requests = MPI.MultiRequest(n)
+        REQUESTS[] = requests
+    end
+    return requests
+end
+
+number_type(::Type{T}) where {T<:Number} = T
+number_type(::Type{<:AbstractArray{S}}) where {S} = number_type(S)
+
+# --- node fields: an array whose first dimension runs over the nodes ---------------------
+
+node_width(field::AbstractArray) = size(field, 1) == 0 ? 0 : length(field) ÷ size(field, 1)
+
+function pack_nodes!(buffer::AbstractVector, field::AbstractArray,
+                     nodes::AbstractVector{Int64})
+    n = size(field, 1)
+    k = 0
+    @inbounds for c in 1:node_width(field), i in nodes
+        k += 1
+        buffer[k] = field[i + (c - 1) * n]
+    end
+    return buffer
+end
+
+function unpack_nodes!(field::AbstractArray, buffer::AbstractVector,
+                       nodes::AbstractVector{Int64}, add::Bool)
+    # flags are not summed: a node that is true on its own rank stays true
+    (add && eltype(field) == Bool) && return field
+    n = size(field, 1)
+    k = 0
+    @inbounds for c in 1:node_width(field), i in nodes
+        k += 1
+        if add
+            field[i + (c - 1) * n] += buffer[k]
+        else
+            field[i + (c - 1) * n] = buffer[k]
         end
     end
-    return vector
-
+    return field
 end
+
+function node_count(field::AbstractArray, nodes::AbstractVector{Int64})
+    node_width(field) *
+    length(nodes)
+end
+
+# --- bond fields: one array of bond values per node -----------------------------------
+
+bond_count(bonds::AbstractArray{<:Number}) = length(bonds)
+bond_count(bonds::AbstractVector{<:AbstractArray}) = sum(length, bonds; init = 0)
+
+function bond_count(field::AbstractVector, nodes::AbstractVector{Int64})
+    total = 0
+    @inbounds for i in nodes
+        total += bond_count(field[i])
+    end
+    return total
+end
+
+function pack_bonds!(buffer::AbstractVector, k::Int, bonds::AbstractArray{<:Number})
+    @inbounds for value in bonds
+        k += 1
+        buffer[k] = value
+    end
+    return k
+end
+
+function pack_bonds!(buffer::AbstractVector, k::Int, bonds::AbstractVector{<:AbstractArray})
+    @inbounds for bond in bonds
+        k = pack_bonds!(buffer, k, bond)
+    end
+    return k
+end
+
+function pack_bonds!(buffer::AbstractVector, field::AbstractVector,
+                     nodes::AbstractVector{Int64})
+    k = 0
+    @inbounds for i in nodes
+        k = pack_bonds!(buffer, k, field[i])
+    end
+    return buffer
+end
+
+function unpack_bonds!(bonds::AbstractArray{<:Number}, buffer::AbstractVector, k::Int)
+    @inbounds for index in eachindex(bonds)
+        k += 1
+        bonds[index] = buffer[k]
+    end
+    return k
+end
+
+function unpack_bonds!(bonds::AbstractVector{<:AbstractArray}, buffer::AbstractVector,
+                       k::Int)
+    @inbounds for bond in bonds
+        k = unpack_bonds!(bond, buffer, k)
+    end
+    return k
+end
+
+function unpack_bonds!(field::AbstractVector, buffer::AbstractVector,
+                       nodes::AbstractVector{Int64}, ::Bool)
+    k = 0
+    @inbounds for i in nodes
+        k = unpack_bonds!(field[i], buffer, k)
+    end
+    return field
+end
+
 """
+    exchange!(comm, overlapnodes, field, send_role, recv_role, add, count, pack!, unpack!)
+
+Sends the entries of `field` at the nodes of role `send_role` to every neighbouring rank
+and receives into the nodes of role `recv_role`, adding the received values if `add`,
+replacing them otherwise. `count`, `pack!` and `unpack!` define the layout of the field.
+"""
+function exchange!(comm::MPI.Comm, overlapnodes, field, send_role::String,
+                   recv_role::String, add::Bool, count::F1, pack!::F2,
+                   unpack!::F3) where {F1,F2,F3}
+    ncores = MPI.Comm_size(comm)
+    ncores == 1 && return field
+    rank = MPI.Comm_rank(comm)
+    T = number_type(typeof(field))
+    neighbours = overlapnodes[rank + 1]
+    requests = exchange_requests(2 * ncores)
+
+    r = 0
+    for jcore in 1:ncores
+        jcore == rank + 1 && continue
+        nodes = neighbours[jcore][recv_role]
+        isempty(nodes) && continue
+        buffer = exchange_buffer(RECV_BUFFERS, T, jcore, count(field, nodes))
+        r += 1
+        MPI.Irecv!(buffer, comm, requests[r]; source = jcore - 1, tag = 0)
+    end
+    for jcore in 1:ncores
+        jcore == rank + 1 && continue
+        nodes = neighbours[jcore][send_role]
+        isempty(nodes) && continue
+        buffer = exchange_buffer(SEND_BUFFERS, T, jcore, count(field, nodes))
+        pack!(buffer, field, nodes)
+        r += 1
+        MPI.Isend(buffer, comm, requests[r]; dest = jcore - 1, tag = 0)
+    end
+    MPI.Waitall(requests)
+
+    for jcore in 1:ncores
+        jcore == rank + 1 && continue
+        nodes = neighbours[jcore][recv_role]
+        isempty(nodes) && continue
+        buffer = exchange_buffer(RECV_BUFFERS, T, jcore, count(field, nodes))
+        unpack!(field, buffer, nodes, add)
+    end
+    return field
+end
 
 """
     synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof)
 
-Synch the responder to the controller
+Adds the values of the responder copies of every node to its controller, e.g. the force
+densities a rank computed for nodes it does not own. Boolean fields are not summed.
 
 # Arguments
 - `comm::MPI.Comm`: The MPI communicator
 - `overlapnodes::AbstractDict`: The overlap nodes
-- `vector::Vector`: The vector
-- `dof::Int`: The degree of freedom
+- `vector::AbstractArray`: Node field, first dimension over the nodes
+- `dof::Int`: The degrees of freedom; the layout is taken from `vector` itself
 # Returns
-- `vector::Vector`: The vector
+- `vector::AbstractArray`: The field
 """
 function synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof)
-    rank = MPI.Comm_rank(comm)
-    ncores = MPI.Comm_size(comm)
-
-    if ncores == 1
-        return vector
-    end
-
-    # Create buffers for send and receive operations
-    recv_buffers = Vector{Union{Nothing,Matrix,Vector}}(undef, ncores)
-    send_buffers = Vector{Union{Nothing,Matrix,Vector}}(undef, ncores)
-    requests = Vector{MPI.Request}()
-
-    # Prepare send and receive operations
-    for jcore in 1:ncores
-        if (rank + 1 == jcore)
-            continue
-        end
-        if !isempty(overlapnodes[rank + 1][jcore]["Responder"])
-            send_index = overlapnodes[rank + 1][jcore]["Responder"]
-            if dof == 1
-                send_buffers[jcore] = vector[send_index]
-            else
-                send_buffers[jcore] = vector[send_index, :]
-            end
-            # @debug "Sending $rank -> $(jcore-1)"
-            # @debug size(send_buffers[jcore])
-            push!(requests, MPI.Isend(send_buffers[jcore], comm; dest = jcore - 1, tag = 0))
-        end
-
-        if !isempty(overlapnodes[rank + 1][jcore]["Controller"])
-            recv_index = overlapnodes[rank + 1][jcore]["Controller"]
-            if dof == 1
-                recv_buffers[jcore] = similar(vector[recv_index])
-            else
-                recv_buffers[jcore] = similar(vector[recv_index, :])
-            end
-            # @debug "Receiving $(jcore-1) -> $rank"
-            # @debug size(recv_buffers[jcore])
-            MPI.Recv!(recv_buffers[jcore], comm; source = jcore - 1, tag = 0)
-            if recv_buffers[jcore][1, 1] isa Bool
-                continue
-            end
-            if dof == 1
-                vector[recv_index] .+= recv_buffers[jcore]
-            else
-                vector[recv_index, :] .+= recv_buffers[jcore]
-            end
-        end
-    end
-    if !isempty(requests)
-        MPI.Waitall(requests)
-    end
-    MPI.Barrier(comm)
-
-    return vector
+    return exchange!(comm, overlapnodes, vector, "Responder", "Controller", true,
+                     node_count, pack_nodes!, unpack_nodes!)
 end
 
 """
     synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof)
 
-Synch the controller to the responder
+Copies the values of every controller node to its responder copies on the other ranks.
 
 # Arguments
 - `comm::MPI.Comm`: The MPI communicator
 - `overlapnodes::AbstractDict`: The overlap nodes
-- `vector::Vector`: The vector
-- `dof::Int`: The degree of freedom
+- `vector::AbstractArray`: Node field, first dimension over the nodes
+- `dof::Int`: The degrees of freedom; the layout is taken from `vector` itself
 # Returns
-- `vector::Vector`: The vector
+- `vector::AbstractArray`: The field
 """
 function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof)
-    ncores = MPI.Comm_size(comm)
-    rank = MPI.Comm_rank(comm)
-
-    if ncores == 1
-        return vector
-    end
-    requests = Vector{MPI.Request}()
-    for jcore in 1:ncores
-        if (rank + 1 == jcore)
-            continue
-        end
-        if !isempty(overlapnodes[rank + 1][jcore]["Controller"])
-            send_index = overlapnodes[rank + 1][jcore]["Controller"]
-            # @debug "Sending $rank -> $(jcore-1)"
-            if dof == 1
-                push!(requests,
-                      MPI.Isend(vector[send_index], comm; dest = jcore - 1, tag = 0))
-            else
-                push!(requests,
-                      MPI.Isend(vector[send_index, :], comm; dest = jcore - 1, tag = 0))
-            end
-        end
-        if !isempty(overlapnodes[rank + 1][jcore]["Responder"])
-            recv_index = overlapnodes[rank + 1][jcore]["Responder"]
-            # @debug "Receiving $(jcore-1) -> $rank"
-            if dof == 1
-                vector[recv_index] = MPI.Recv!(vector[recv_index], comm; source = jcore - 1,
-                                               tag = 0)
-            else
-                vector[recv_index,
-                       :] = MPI.Recv!(vector[recv_index, :], comm;
-                                      source = jcore - 1, tag = 0)
-            end
-
-            # if dof == 1
-            #     recv_msg = similar(vector[recv_index])
-            # else
-            #     recv_msg = similar(vector[recv_index, :])
-            # end
-            # MPI.Recv!(recv_msg, comm; source=jcore - 1, tag=0)
-            # if dof == 1
-            #     vector[recv_index] .= recv_msg
-            # else
-            #     vector[recv_index, :] .= recv_msg
-            # end
-            # @debug "Received $(jcore-1) -> $rank = $recv_msg"
-        end
-    end
-    if !isempty(requests)
-        MPI.Waitall(requests)
-    end
-    MPI.Barrier(comm)
-    return vector
+    return exchange!(comm, overlapnodes, vector, "Controller", "Responder", false,
+                     node_count, pack_nodes!, unpack_nodes!)
 end
 
 """
     synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array, dof)
 
-Synch the controller bonds to the responder
+Copies the bond values of every controller node to its responder copies on the other
+ranks. Every node has the same bonds on all ranks, so the values are written into the
+existing bond arrays of the responders.
 
 # Arguments
 - `comm::MPI.Comm`: The MPI communicator
 - `overlapnodes::AbstractDict`: The overlap nodes
-- `array::Array`: The array
-- `dof::Int`: The degree of freedom
+- `array::AbstractVector`: Bond field, one array of bond values per node
+- `dof::Int`: The degrees of freedom; the layout is taken from `array` itself
 # Returns
-- `array::Array`: The array
+- `array::AbstractVector`: The field
 """
 function synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array, dof)
-    ncores = MPI.Comm_size(comm)
-    rank = MPI.Comm_rank(comm)
-
-    if ncores == 1
-        return array
-    end
-    requests = Vector{MPI.Request}()
-    for jcore in 1:ncores
-        if (rank + 1 == jcore)
-            continue
-        end
-        if !isempty(overlapnodes[rank + 1][jcore]["Controller"])
-            for iID in overlapnodes[rank + 1][jcore]["Controller"]
-                if dof == 1
-                    @views send_msg = array[iID]
-                else
-                    #TODO: Check if we can remove the [:,:]
-                    @views send_msg = mapreduce(permutedims, vcat, array[iID])
-                end
-                push!(requests, MPI.Isend(send_msg, comm; dest = jcore - 1, tag = 0))
-                # @debug "Sending   $rank -> $(jcore-1)"
-            end
-        end
-        if !isempty(overlapnodes[rank + 1][jcore]["Responder"])
-            for iID in overlapnodes[rank + 1][jcore]["Responder"]
-                if dof == 1
-                    @views recv_msg = similar(array[iID])
-                else
-                    @views recv_msg = similar(mapreduce(permutedims, vcat, array[iID]))
-                end
-                MPI.Recv!(recv_msg, comm; source = jcore - 1, tag = 0)
-                # @debug "Receiving $(jcore-1) -> $rank"
-                recv_msg = reshape(recv_msg, :, 2)
-                if dof == 1
-                    array[iID] = recv_msg
-                else
-                    array[iID] = Vector{eltype(recv_msg)}[eachcol(recv_msg)...]
-                end
-            end
-        end
-    end
-    if !isempty(requests)
-        MPI.Waitall(requests)
-    end
-    MPI.Barrier(comm)
-    return array
-end
-
-"""
-    split_vector(input, row_nums, dof)
-
-Split a vector into a vector of matrices
-
-# Arguments
-- `input::Vector`: The input vector
-- `row_nums::Vector`: The row numbers
-- `dof::Int`: The degree of freedom
-# Returns
-- `result::Vector`: The result vector
-"""
-function split_vector(input, row_nums, dof)
-    result = Vector{Vector{Vector{eltype(input)}}}()
-    start = firstindex(input)
-    for (i, len) in enumerate(row_nums)
-        push!(result, [input[(start + (j - 1) * dof):(start - 1 + j * dof)] for j in 1:len])
-        start += dof * len
-    end
-    result
-end
-
-"""
-    synch_controller_bonds_to_responder_flattened(comm::MPI.Comm, overlapnodes, array, dof)
-
-Synch the controller bonds to the responder
-
-# Arguments
-- `comm::MPI.Comm`: The MPI communicator
-- `overlapnodes::AbstractDict`: The overlap nodes
-- `array::Array`: The array
-- `dof::Int`: The degree of freedom
-# Returns
-- `array::Array`: The array
-"""
-function synch_controller_bonds_to_responder_flattened(comm::MPI.Comm,
-                                                       overlapnodes,
-                                                       array,
-                                                       dof)
-    ncores = MPI.Comm_size(comm)
-    rank = MPI.Comm_rank(comm)
-
-    if ncores == 1
-        return array
-    end
-    for jcore in 1:ncores
-        if (rank + 1 == jcore)
-            continue
-        end
-        if !isempty(overlapnodes[rank + 1][jcore]["Controller"])
-            @views send_indices = overlapnodes[rank + 1][jcore]["Controller"]
-            # @debug "Sending $rank -> $(jcore-1)"
-            MPI.Send(vcat(vcat(array...)[send_indices]...), comm; dest = jcore - 1, tag = 0)
-        end
-        if !isempty(overlapnodes[rank + 1][jcore]["Responder"])
-            @views recv_indices = overlapnodes[rank + 1][jcore]["Responder"]
-            row_nums = [length(subarr) for subarr in array[recv_indices]]
-            @views recv_msg = zeros(sum(row_nums * dof))
-            # @debug "Receiving $(jcore-1) -> $rank"
-            MPI.Recv!(recv_msg, comm; source = jcore - 1, tag = 0)
-            recv_msg = split_vector(recv_msg, row_nums, dof)
-            array[recv_indices] .= recv_msg
-        end
-    end
-    return array
+    return exchange!(comm, overlapnodes, array, "Controller", "Responder", false,
+                     bond_count, pack_bonds!, unpack_bonds!)
 end
 
 """
@@ -529,9 +482,5 @@ function gather_values(comm::MPI.Comm,
                                                  Any}}
     return MPI.gather(value, comm; root = 0)
 end
-
-# function barrier(comm::MPI.Comm)
-#     MPI.Barrier(comm)
-# end
 
 end
