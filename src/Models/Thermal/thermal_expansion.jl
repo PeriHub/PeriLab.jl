@@ -137,7 +137,7 @@ function compute_model(nodes::AbstractVector{Int64}, p::ThermalExpansionParams, 
 
     if Data_Manager.has_key("Deformation Gradient")
         #TODO all forces computed are from the original configuration
-        @timeit "Deformation_Gradient" compute(nodes, Dict(), block)
+        @timeit "Deformation_Gradient" compute(nodes, block)
     end
 end
 

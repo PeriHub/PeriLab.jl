@@ -146,3 +146,32 @@ end
                                                                                                                                 Dict(2 => [3]),
                                                                                                                                 hc)
 end
+
+@testset "read_properties stores pre-calculations" begin
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(2)
+    PeriLab.Data_Manager.set_dof(2)
+    PeriLab.Data_Manager.set_block_name_list(["block_1", "block_2", "block_3"])
+    PeriLab.Data_Manager.set_block_id_list([1, 2, 3])
+    blocks = Dict("block_1" => Dict("Block ID" => 1, "Density" => 1.0, "Horizon" => 1.0),
+                  "block_2" => Dict("Block ID" => 2, "Density" => 1.0, "Horizon" => 1.0,
+                                    "Pre Calculation Model" => "Pre"),
+                  "block_3" => Dict("Block ID" => 3, "Density" => 1.0, "Horizon" => 1.0,
+                                    "Pre Calculation Model" => "Off"))
+    models = Dict("Pre Calculation Global" => Dict("Shape Tensor" => true,
+                                                   "Deformed Bond Geometry" => true),
+                  "Pre Calculation Models" => Dict("Pre" => Dict("Deformation Gradient" => true),
+                                                   "Off" => Dict("Shape Tensor" => false)))
+    input = typed_input(Dict("Blocks" => blocks, "Models" => models))
+    UT_MF.read_properties(Dict{String,Any}("Blocks" => blocks, "Models" => input.models),
+                          input, false)
+    get(b) = PeriLab.Data_Manager.get_block_model("Pre Calculation Model", b)
+    @test get(1) == ["Deformed Bond Geometry", "Shape Tensor"]
+    @test get(2) == ["Deformation Gradient"]          # replaces the global switches
+    @test get(3) === nothing                          # nothing active
+    @test UT_MF.has_block_model(1, "Pre Calculation Model")
+    @test !UT_MF.has_block_model(3, "Pre Calculation Model")
+    @test UT_MF.Pre_Calculation.order_pre_calculations(["Axis Symmetric", "Shape Tensor",
+                                                        "Deformed Bond Geometry"]) ==
+          ["Deformed Bond Geometry", "Shape Tensor", "Axis Symmetric"]
+end

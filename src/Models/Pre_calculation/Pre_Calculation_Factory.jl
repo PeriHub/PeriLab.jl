@@ -6,13 +6,12 @@ module Pre_Calculation
 
 using TimerOutputs: @timeit
 using ....Data_Manager
-using ....ModuleLoader: find_module_files, create_module_specifics
+using ....ModuleLoader: find_module_files
+using .....ParameterSpec
 global module_list = find_module_files(@__DIR__, "pre_calculation_name")
 for mod in module_list
     include(mod["File"])
 end
-
-using DataStructures
 
 export init_fields
 export init_model
@@ -32,66 +31,53 @@ function init_fields()
     Data_Manager.create_node_vector_field("Displacements", Float64, dof)
 end
 
-"""
-    init_model(nodes::Union{SubArray,Vector{Int64}, block::Int64)
+"The module of the registered pre-calculation `name`."
+pre_calculation_module(name::String) = parentmodule(ParameterSpec.lookup_model(:pre_calculation,
+                                                                               name))
 
-Initializes the model.
+"Active names of `switches` (on/off per pre-calculation), in run order."
+active_pre_calculations(switches::AbstractDict{String,Bool}) = order_pre_calculations([name
+                                                                                       for (name, on) in switches
+                                                                                       if on])
+
+"`names` in run order: the fixed order first, then the others sorted."
+function order_pre_calculations(names)
+    order = Data_Manager.get_pre_calculation_order()
+    return vcat([n for n in order if n in names], sort!([n for n in names if !(n in order)]))
+end
+
+"""
+    init_model(nodes::AbstractVector{Int64}, block::Int64)
+
+Initializes the block's active pre-calculations
+(`Data_Manager.get_block_model("Pre Calculation Model", block)`).
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes.
 - `block::Int64`: Block.
 """
-function init_model(nodes::AbstractVector{Int64},
-                    block::Int64)
-    dof = Data_Manager.get_dof()
-    ## das muss hier rein. Das ist keine Komfortfunktion, sondern setzt Abhängigkeiten
-
-    for (active_model_name,
-         active_model) in pairs(Data_Manager.get_properties(block,
-                                                            "Pre Calculation Model"))
-        if active_model
-            mod = create_module_specifics(active_model_name,
-                                          module_list,
-                                          @__MODULE__,
-                                          "pre_calculation_name")
-
-            Data_Manager.set_model_module(active_model_name, mod)
-            # TODO right now no additional information is needed
-            # the parameter Dict is a kind of placeholder
-            mod.init_model(nodes,
-                           Dict(Data_Manager.get_properties(block,
-                                                            "Pre Calculation Model")),
-                           block)
-        end
+function init_model(nodes::AbstractVector{Int64}, block::Int64)
+    for name in Data_Manager.get_block_model("Pre Calculation Model", block)
+        pre_calculation_module(name).init_model(nodes, block)
     end
 end
 
 """
-    compute_model(nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
+    compute_model(nodes::AbstractVector{Int64}, names::Vector{String}, block::Int64, time::Float64, dt::Float64)
 
-Computes the pre calculation models
+Computes the block's active pre-calculations in run order.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes
-- `model_param::Dict`: The model parameters
+- `names::Vector{String}`: The active pre-calculations of the block
 - `block::Int64`: The block
 - `time::Float64`: The current time
 - `dt::Float64`: The time step
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       model_param::Union{Dict,OrderedDict},
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
-    for (pre_calculation_model, active) in pairs(model_param)
-        if !active
-            continue
-        end
-        mod::Module = Data_Manager.get_model_module(pre_calculation_model)
-
-        @timeit "compute $pre_calculation_model" mod.compute(nodes,
-                                                             model_param,
-                                                             block)
+function compute_model(nodes::AbstractVector{Int64}, names::Vector{String}, block::Int64,
+                       time::Float64, dt::Float64)
+    for name in names
+        @timeit "compute $name" pre_calculation_module(name).compute(nodes, block)
     end
 end
 
@@ -104,23 +90,17 @@ Defines all synchronization fields for local synchronization
 - `model::String`: Model class.
 - `block::Int64`: block ID
 """
-
 function fields_for_local_synchronization(model, block)
-    model_param = Data_Manager.get_properties(block, "Pre Calculation Model")
-
-    for (pre_calculation_model, active) in pairs(model_param)
-        if !active
-            continue
-        end
-        mod = Data_Manager.get_model_module(pre_calculation_model)
-        mod.fields_for_local_synchronization(model)
+    for name in Data_Manager.get_block_model("Pre Calculation Model", block)
+        pre_calculation_module(name).fields_for_local_synchronization(model)
     end
 end
 
 """
-    check_dependencies(block_nodes::Dict{Int64,Vector{Int64}}
+    check_dependencies(block_nodes::Dict{Int64,Vector{Int64}})
 
-Check if materials are used which needs a form of pre calculation. If so, the option will be set.
+Adds the pre-calculations the block's material needs, and the ones the active
+pre-calculations depend on, and stores the block's list in run order.
 
 # Arguments
 - `block_nodes::Dict{Int64,Vector{Int64}}`: block nodes.
@@ -129,78 +109,19 @@ function check_dependencies(block_nodes::Dict{Int64,Vector{Int64}})
     for block_id in eachindex(block_nodes)
         material = Data_Manager.get_block_material(block_id)
         material === nothing && continue
-
-        params_dict = Data_Manager.get_properties(block_id, "Pre Calculation Model")
-        Data_Manager.set_properties(block_id,
-                                    "Pre Calculation Model",
-                                    merge(params_dict,
-                                          Dict("Deformed Bond Geometry" => true)))
+        current = Data_Manager.get_block_model("Pre Calculation Model", block_id)
+        names = Set{String}(current === nothing ? String[] : current)
+        push!(names, "Deformed Bond Geometry")
         if material.correspondence
             if material.base.bond_associated
-                params_dict = Data_Manager.get_properties(block_id, "Pre Calculation Model")
-                Data_Manager.set_properties(block_id,
-                                            "Pre Calculation Model",
-                                            merge(params_dict,
-                                                  Dict("Bond Associated Correspondence" =>
-                                                           true)))
-                continue
-            end
-            params_dict = Data_Manager.get_properties(block_id, "Pre Calculation Model")
-            Data_Manager.set_properties(block_id,
-                                        "Pre Calculation Model",
-                                        merge(params_dict,
-                                              Dict("Shape Tensor" => true,
-                                                   "Deformation Gradient" => true)))
-        end
-        # Check dependencies inside the pre calculation
-        for (active_model_name,
-             active_model) in pairs(Data_Manager.get_properties(block_id,
-                                                                "Pre Calculation Model"))
-            if !active_model
-                continue
-            end
-            if active_model_name == "Deformation Gradient"
-                params_dict = Data_Manager.get_properties(block_id, "Pre Calculation Model")
-                Data_Manager.set_properties(block_id,
-                                            "Pre Calculation Model",
-                                            merge(params_dict,
-                                                  Dict("Deformed Bond Geometry" => true,
-                                                       "Deformation Gradient" => true,
-                                                       "Shape Tensor" => true)))
-                continue
-            end
-            if active_model_name == "Shape Tensor"
-                params_dict = Data_Manager.get_properties(block_id, "Pre Calculation Model")
-                Data_Manager.set_properties(block_id,
-                                            "Pre Calculation Model",
-                                            merge(params_dict,
-                                                  Dict("Deformed Bond Geometry" => true,
-                                                       "Shape Tensor" => true)))
-                continue
-            end
-            if active_model_name == "Bond Associated Correspondence"
-                # Makes sure, that the neighbor information exists
-                for local_block_id in eachindex(block_nodes)
-                    params_dict = Data_Manager.get_properties(local_block_id,
-                                                              "Pre Calculation Model")
-                    Data_Manager.set_properties(block_id,
-                                                "Pre Calculation Model",
-                                                merge(params_dict,
-                                                      Dict("Deformed Bond Geometry" => true,
-                                                           "Bond Associated Correspondence" =>
-                                                               true)))
-                end
-                continue
+                push!(names, "Bond Associated Correspondence")
+            else
+                push!(names, "Shape Tensor", "Deformation Gradient")
             end
         end
-        # sort all elements in the pre defined order
-        order_dict = Data_Manager.get_properties(block_id, "Pre Calculation Model")
-        order_vector = Data_Manager.get_pre_calculation_order()
-        Data_Manager.set_properties(block_id,
-                                    "Pre Calculation Model",
-                                    OrderedDict(k => order_dict[k]
-                                                for k in order_vector
-                                                if haskey(order_dict, k)))
+        "Deformation Gradient" in names && push!(names, "Shape Tensor")
+        Data_Manager.set_block_model("Pre Calculation Model", block_id,
+                                     order_pre_calculations(collect(names)))
     end
 end
 

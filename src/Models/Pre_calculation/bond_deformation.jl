@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Bond_Deformation
-using DataStructures: OrderedDict
 using .......Data_Manager
 using .......Geometry: bond_geometry!
 export pre_calculation_name
@@ -38,18 +37,15 @@ function pre_calculation_name()
 end
 
 """
-    init_model(nodes, parameter)
+    init_model(nodes, block)
 
 Inits the bond deformation calculation.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `parameter::Dict(String, Any)`: Dictionary with parameter.
 
 """
-function init_model(nodes::AbstractVector{Int64},
-                    parameter::Union{Dict,OrderedDict},
-                    block::Int64)
+function init_model(nodes::AbstractVector{Int64}, block::Int64)
     dof = Data_Manager.get_dof()
     Data_Manager.create_bond_vector_state("Deformed Bond Geometry", Float64, dof)
     Data_Manager.create_bond_scalar_state("Deformed Bond Length", Float64)
@@ -57,17 +53,14 @@ function init_model(nodes::AbstractVector{Int64},
 end
 
 """
-    compute(nodes::AbstractVector{Int64}), parameter::Dict
+    compute(nodes::AbstractVector{Int64}, block::Int64)
 
 Compute the bond deformation.
 
 # Arguments
 - `nodes`: List of nodes.
-- `parameter::Dict(String, Any)`: Dictionary with parameter.
 """
-function compute(nodes::AbstractVector{Int64},
-                 parameter::Union{Dict,OrderedDict},
-                 block::Int64)
+function compute(nodes::AbstractVector{Int64}, block::Int64)
     nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
     deformed_coor::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
                                                                      "NP1")

@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Pre_Bond_Associated_Correspondence
-using DataStructures: OrderedDict
 
 using .......Data_Manager
 using .......Geometry: compute_weighted_deformation_gradient
@@ -43,18 +42,15 @@ function pre_calculation_name()
 end
 
 """
-    init_model(nodes, parameter)
+    init_model(nodes, block)
 
 Inits the bond deformation gradient calculation.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `parameter::Dict(String, Any)`: Dictionary with parameter.
 
 """
-function init_model(nodes::AbstractVector{Int64},
-                    parameter::Union{Dict,OrderedDict},
-                    block::Int64)
+function init_model(nodes::AbstractVector{Int64}, block::Int64)
     dof = Data_Manager.get_dof()
     Data_Manager.create_constant_bond_tensor_state("Bond Associated Deformation Gradient",
                                                    Float64, dof)
@@ -87,9 +83,7 @@ Compute the bond deformation gradient.
 - `nodes`: List of nodes.
 """
 
-function compute(nodes::AbstractVector{Int64},
-                 parameter::Union{Dict,OrderedDict},
-                 block::Int64)
+function compute(nodes::AbstractVector{Int64}, block::Int64)
     dof = Data_Manager.get_dof()
     nlist = Data_Manager.get_nlist()
     volume = Data_Manager.get_field("Volume")

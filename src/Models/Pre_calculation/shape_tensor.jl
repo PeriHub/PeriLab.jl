@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Shape_Tensor
-using DataStructures: OrderedDict
 
 using ......Data_Manager
 using ......Helpers: find_active_nodes
@@ -40,18 +39,15 @@ function pre_calculation_name()
 end
 
 """
-    init_model(nodes, parameter)
+    init_model(nodes, block)
 
 Inits the shape tensor calculation.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `parameter::Dict(String, Any)`: Dictionary with parameter.
 
 """
-function init_model(nodes::AbstractVector{Int64},
-                    parameter::Union{Dict,OrderedDict},
-                    block::Int64)
+function init_model(nodes::AbstractVector{Int64}, block::Int64)
     dof = Data_Manager.get_dof()
     Data_Manager.create_constant_node_tensor_field("Shape Tensor", Float64, dof)
     Data_Manager.create_constant_node_tensor_field("Inverse Shape Tensor", Float64, dof)
@@ -83,9 +79,7 @@ Compute the shape tensor.
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 """
-function compute(nodes::AbstractVector{Int64},
-                 parameter::Union{Dict,OrderedDict},
-                 block::Int64)
+function compute(nodes::AbstractVector{Int64}, block::Int64)
     nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
     volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
     omega::BondScalarState{Float64} = Data_Manager.get_field("Influence Function")

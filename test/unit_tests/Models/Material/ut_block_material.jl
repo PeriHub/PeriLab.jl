@@ -548,23 +548,21 @@ end
     function ut_dependencies(raw)
         ut_reset(3; nnodes = 2)
         PeriLab.Data_Manager.set_block_id_list([1])
-        PeriLab.Data_Manager.init_properties()
         PeriLab.Data_Manager.set_block_material(1, typed_block_material(raw))
         PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.check_dependencies(Dict(1 => [1,
                                                                                             2]))
-        return PeriLab.Data_Manager.get_properties(1, "Pre Calculation Model")
+        return PeriLab.Data_Manager.get_block_model("Pre Calculation Model", 1)
     end
     corr = Dict{String,Any}("Material Model" => "Correspondence Elastic",
                             "Symmetry" => "isotropic", "Bulk Modulus" => 1.0,
                             "Shear Modulus" => 1.0)
     p = ut_dependencies(merge(corr, Dict{String,Any}("Bond Associated" => true)))
-    @test p["Bond Associated Correspondence"] && p["Deformed Bond Geometry"]
-    @test !haskey(p, "Shape Tensor")
+    @test p == ["Deformed Bond Geometry", "Bond Associated Correspondence"]
     p = ut_dependencies(corr)
-    @test p["Shape Tensor"] && p["Deformation Gradient"]
+    @test p == ["Deformed Bond Geometry", "Shape Tensor", "Deformation Gradient"]
     p = ut_dependencies(Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                          "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0))
-    @test p["Deformed Bond Geometry"] && !haskey(p, "Shape Tensor")
+    @test p == ["Deformed Bond Geometry"]
 end
 
 @testset "strain Hooke matrix" begin

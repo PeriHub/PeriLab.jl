@@ -41,7 +41,7 @@ function typed_block_model(block::Int64, name::String)
     return Data_Manager.get_block_model(name, block)
 end
 const TYPED_CATEGORIES = ("Material Model", "Damage Model", "Additive Model",
-                          "Degradation Model", "Thermal Model")
+                          "Degradation Model", "Thermal Model", "Pre Calculation Model")
 has_block_model(block::Int64, name::String) = name in TYPED_CATEGORIES ?
                                               typed_block_model(block, name) !== nothing :
                                               Data_Manager.check_property(block, name)
@@ -420,8 +420,8 @@ function compute_matrix_based_bond_forces(block_nodes::Dict{Int64,Vector{Int64}}
 
         if material.correspondence
             Pre_Calculation.compute_model(active_nodes,
-                                          Data_Manager.get_properties(block,
-                                                                      "Pre Calculation Model"),
+                                          block_model_parameters(block,
+                                                                 "Pre Calculation Model"),
                                           block,
                                           time,
                                           dt)
@@ -556,6 +556,15 @@ function read_properties(params::Dict, input::PeriLabInput, material_model::Bool
         th = block_typed_model(input, block_name, :thermal_model, "Thermal Model",
                                input.thermals)
         th === nothing || Data_Manager.set_block_model("Thermal Model", block, th)
+    end
+    for (block_name, block) in zip(block_name_list, block_id_list)
+        switches = block_typed_model(input, block_name, :pre_calculation_model,
+                                     "Pre Calculation Model", input.pre_calculations)
+        switches === nothing && (switches = input.pre_calculation_global)
+        switches === nothing && continue
+        names = Pre_Calculation.active_pre_calculations(switches)
+        isempty(names) ||
+            Data_Manager.set_block_model("Pre Calculation Model", block, names)
     end
 end
 
