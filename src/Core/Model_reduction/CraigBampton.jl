@@ -130,12 +130,12 @@ support in place -- goes through the ordinary, allocating `cholesky`/`lu`.
 """
 function factorize_condensed!(Kll::StridedMatrix{<:LinearAlgebra.BlasFloat})
     n = LinearAlgebra.checksquare(Kll)
-    d = diag(Kll)                                   # nur die Diagonale sichern
+    d = diag(Kll)
     F = cholesky!(Symmetric(Kll, :U); check = false)
     issuccess(F) && return F
 
     _warn_not_pd()
-    # potrf hat nur das obere Dreieck inkl. Diagonale verändert; das untere ist intakt
+    # potrf changed only the upper triangle and the diagonal; the lower one is intact
     @inbounds for j in 1:n
         Kll[j, j] = d[j]
         for i in 1:(j - 1)

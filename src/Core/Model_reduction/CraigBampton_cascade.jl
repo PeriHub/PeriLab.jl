@@ -104,37 +104,29 @@ end
 
 Factorization of the condensed stiffness, Cholesky where possible.
 
-With the interface held fixed `Kcc` is symmetric positive definite. A sparse Cholesky is
-faster to build than an LU and considerably faster to apply to a dense block of right
-hand sides, because CHOLMOD goes through supernodal BLAS3 kernels while UMFPACK works
-column by column. With one right hand side per coupling degree of freedom that
-difference dominates the whole reduction.
-
-A failure is informative in itself: `Kcc` is then not positive definite, which for a
+With the interface held fixed `Kcc` is symmetric positive definite. A failure is informative in itself: `Kcc` is then not positive definite, which for a
 fixed interface points at a condensed region falling apart into pieces not tied to any
 retained degree of freedom — or, in peridynamics, simply at a stiffness that is not
 symmetric.
 
-Dense `Kcc` (a `StridedMatrix` of a BLAS float type -- what a single, small condensed
-region typically comes down to) factorizes in place: LAPACK's `potrf` touches only the
-upper triangle it is asked for, so on failure the lower triangle plus the saved diagonal
-is enough to rebuild the original matrix for the LU fallback, without a second copy of
-`Kcc`. Anything else -- in particular a `SparseMatrixCSC`, which `cholesky!`/`lu!` do not
-support in place -- goes through the ordinary, allocating `cholesky`/`lu`.
+`Kcc` is a dense buffer of the cascade and is factorized in place: LAPACK's `potrf`
+touches only the upper triangle it is asked for, so on failure the lower triangle plus
+the saved diagonal is enough to rebuild the original matrix for the LU fallback, without
+a second copy of `Kcc`.
 
 # Arguments
-- `Kcc::AbstractMatrix`: Stiffness of the condensed part
+- `Kcc::StridedMatrix`: Stiffness of the condensed part, overwritten
 # Returns
 - A factorization object supporting `ldiv!`
 """
 function factorize_condensed!(Kcc::StridedMatrix{<:LinearAlgebra.BlasFloat})
     n = LinearAlgebra.checksquare(Kcc)
-    d = diag(Kcc)                                   # nur die Diagonale sichern
+    d = diag(Kcc)
     F = cholesky!(Symmetric(Kcc, :U); check = false)
     issuccess(F) && return F
 
     _warn_not_pd()
-    # potrf hat nur das obere Dreieck inkl. Diagonale verändert; das untere ist intakt
+    # potrf changed only the upper triangle and the diagonal; the lower one is intact
     @inbounds for j in 1:n
         Kcc[j, j] = d[j]
         for i in 1:(j - 1)
@@ -142,15 +134,6 @@ function factorize_condensed!(Kcc::StridedMatrix{<:LinearAlgebra.BlasFloat})
         end
     end
     return lu!(Kcc)
-end
-
-function factorize_condensed!(Kcc::AbstractMatrix)
-    try
-        return cholesky(Symmetric(Kcc))
-    catch err
-        _warn_not_pd(err)
-        return lu(Kcc)
-    end
 end
 
 """
@@ -487,13 +470,10 @@ function plan_cascade(K0::SparseMatrixCSC{Float64,Int64},
         new_retained = count(d -> !is_condensed[d], neighbours[i])
         retained_on_front = count(d -> on_front[d] && !is_condensed[d],
                                   eachindex(on_front))
-        # if i==19
-        #     readline()
-        # end
-        @info "Craig-Bampton Cascade plan: subregion $i, nc=$(length(c)), ny=$ny, " *
-              "coupling ns=$ns; new neighbours $(length(neighbours[i])) " *
-              "($new_retained retained, $(length(neighbours[i]) - new_retained) " *
-              "condensed later); retained on the front $retained_on_front, modes $nm"
+        @debug "Craig-Bampton Cascade plan: subregion $i, nc=$(length(c)), ny=$ny, " *
+               "coupling ns=$ns; new neighbours $(length(neighbours[i])) " *
+               "($new_retained retained, $(length(neighbours[i]) - new_retained) " *
+               "condensed later); retained on the front $retained_on_front, modes $nm"
     end
     return neighbours, max_ny, max_ns, max_front
 end
@@ -656,8 +636,8 @@ function condense_subregion!(front::Front, buffers::Buffers,
         s_physical = findall(>(0), s)
         nm = min(n_modes, ny)
     end
-    @info "Craig-Bampton Cascade: subregion nc=$nc, ny=$ny, coupling ns=$ns ($nf " *
-          "carried, $(length(neighbours)) new), front after $(ns + nm)"
+    @debug "Craig-Bampton Cascade: subregion nc=$nc, ny=$ny, coupling ns=$ns ($nf " *
+           "carried, $(length(neighbours)) new), front after $(ns + nm)"
 
     pc = 1:nc
     cc = 1:ny
@@ -1045,10 +1025,12 @@ function reduce_matrices(K::AbstractMatrix,
                                                             length(frequencies) + 1,
                                                             max_frequency)
         append!(frequencies, sqrt.(max.(w, 0.0)) ./ (2 * pi))
-        @info "Craig-Bampton Cascade: subregion $i of $(length(subregions)), " *
-              "$(length(subregion)) condensed, $(length(w)) modes, front " *
-              "$(length(front.labels)), peak RSS " *
-              "$(round(Sys.maxrss() / 2^20; digits = 1)) MiB"
+        # progress about every tenth of the subregions
+        if i == length(subregions) || i % max(1, length(subregions) ÷ 10) == 0
+            @info "Craig-Bampton Cascade: subregion $i of $(length(subregions)), front " *
+                  "$(length(front.labels)), peak RSS " *
+                  "$(round(Sys.maxrss() / 2^20; digits = 1)) MiB"
+        end
         @timeit "garbage collection" GC.gc(false)
     end
     buffers = nothing
