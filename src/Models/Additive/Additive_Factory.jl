@@ -64,6 +64,19 @@ function load_licensed_models()
     return licensed
 end
 
+"""
+    load_licensed_models(raw_deck)
+
+Loads the licensed additive modules only if the raw input deck (the YAML dict) has
+`Models: Additive Models`, so that runs without additive models never contact the
+license server.
+"""
+function load_licensed_models(raw_deck::AbstractDict)
+    models = get(get(raw_deck, "PeriLab", Dict()), "Models", nothing)
+    (models isa AbstractDict && haskey(models, "Additive Models")) || return Any[]
+    return load_licensed_models()
+end
+
 model_module(p) = parentmodule(typeof(p))
 
 """

@@ -175,3 +175,14 @@ end
                                                         "Deformed Bond Geometry"]) ==
           ["Deformed Bond Geometry", "Shape Tensor", "Axis Symmetric"]
 end
+
+@testset "licensed additive models load only for additive decks" begin
+    # a half-configured license aborts when licensed modules are loaded
+    withenv("LICENSE_SERVER_URL" => "http://localhost:1", "PERIHUB_LICENSE_KEY" => nothing,
+            "LICENSED_MODULES_CONFIG" => nothing, "LICENSED_MODULES_DIR" => nothing) do
+        mechanical = Dict("PeriLab" => Dict("Models" => Dict("Material Models" => Dict())))
+        @test isempty(UT_MF.Additive.load_licensed_models(mechanical))
+        additive = Dict("PeriLab" => Dict("Models" => Dict("Additive Models" => Dict())))
+        @test_throws PeriLab.PeriLabError UT_MF.Additive.load_licensed_models(additive)
+    end
+end

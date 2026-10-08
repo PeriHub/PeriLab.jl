@@ -405,8 +405,10 @@ function run(filename::String;
 
             Data_Manager.set_silent(silent)
             Data_Manager.set_verbose(verbose)
-            # licensed models register their parameters before the input deck is read
-            Solver_Manager.Model_Factory.Additive.load_licensed_models()
+            # licensed models register their parameters before the input deck is read;
+            # only decks with additive models contact the license server
+            isfile(filename) &&
+                Solver_Manager.Model_Factory.Additive.load_licensed_models(IO.read_input(filename))
             @timeit "IO.initialize_data" params, input,
                                          steps=IO.initialize_data(filename,
                                                                   filedirectory,
