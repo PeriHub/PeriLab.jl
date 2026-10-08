@@ -19,7 +19,6 @@ include("./Degradation/Degradation_Factory.jl")
 include("./Damage/Damage_Factory.jl")
 include("./Material/Material_Factory.jl")
 include("./Thermal/Thermal_Factory.jl")
-using ...Parameter_Handling: get_model_parameter
 using .Additive
 using .Degradation
 using .Damage
@@ -34,20 +33,14 @@ export compute_models
 export init_models
 export read_properties
 
-# typed categories (Data_Manager slots); the other categories still use the property dicts
+# the typed model of a block (Data_Manager slots), or `nothing`
 function typed_block_model(block::Int64, name::String)
     name == "Material Model" && return Data_Manager.get_block_material(block)
     name == "Damage Model" && return Data_Manager.get_block_damage(block)
     return Data_Manager.get_block_model(name, block)
 end
-const TYPED_CATEGORIES = ("Material Model", "Damage Model", "Additive Model",
-                          "Degradation Model", "Thermal Model", "Pre Calculation Model")
-has_block_model(block::Int64, name::String) = name in TYPED_CATEGORIES ?
-                                              typed_block_model(block, name) !== nothing :
-                                              Data_Manager.check_property(block, name)
-block_model_parameters(block::Int64, name::String) = name in TYPED_CATEGORIES ?
-                                                     typed_block_model(block, name) :
-                                                     Data_Manager.get_properties(block, name)
+has_block_model(block::Int64, name::String) = typed_block_model(block, name) !== nothing
+block_model_parameters(block::Int64, name::String) = typed_block_model(block, name)
 # local damping of a block's damage model, or `nothing`
 function block_local_damping(block::Int64)
     damage = Data_Manager.get_block_damage(block)
@@ -435,55 +428,6 @@ function compute_matrix_based_bond_forces(block_nodes::Dict{Int64,Vector{Int64}}
 end
 
 """
-	get_block_model_definition(params::Dict, block_id_list::Int64, prop_keys::Vector{String}, properties)
-
-Get block model definition.
-
-Special case for pre calculation. It is set to all blocks, if no block definition is defined, but pre calculation is.
-
-# Arguments
-- `params::Dict`: Parameters.
-- `input::PeriLabInput`: The typed input deck.
-- `block_id_list::Vector{Int64}`: List of block id's.
-- `prop_keys::Vector{String}`: Property keys.
-- `properties`: Properties function.
-# Returns
-- `properties`: Properties function.
-"""
-function get_block_model_definition(params::Dict,
-                                    block_name_list::Vector{String},
-                                    block_id_list::Vector{Int64},
-                                    prop_keys::Vector{String},
-                                    properties,
-                                    directory::String = "")
-    # properties function from Data_Manager
-
-    if haskey(params["Models"], "Pre Calculation Global")
-        for block_id in block_id_list
-            properties(block_id,
-                       "Pre Calculation Model",
-                       params["Models"]["Pre Calculation Global"])
-        end
-    end
-
-    for (block_id, block_name) in zip(block_id_list, block_name_list)
-        if !haskey(params["Blocks"], block_name)
-            continue
-        end
-        block = params["Blocks"][block_name]
-        for model in prop_keys
-            model in TYPED_CATEGORIES && continue   # typed: input.materials / input.damages
-            if haskey(block, model)
-                properties(block_id,
-                           model,
-                           get_model_parameter(params, model, block[model], directory))
-            end
-        end
-    end
-    return properties
-end
-
-"""
     block_typed_model(input, block_name, field, category, models)
 
 The parsed model a block names in `field` (e.g. `:damage_model`), or `nothing`.
@@ -506,25 +450,17 @@ end
 """
 	read_properties(params::Dict, input::PeriLabInput, material_model::Bool)
 
-Read properties of material.
+Stores the typed models every block names (material, damage, additive, degradation,
+thermal, pre-calculation) in `Data_Manager`; aborts on undefined model names.
 
 # Arguments
-- `params::Dict`: Parameters.
+- `params::Dict`: Parameters (unused; kept for the callers until phase 4).
 - `input::PeriLabInput`: The typed input deck.
 - `material_model::Bool`: Material model.
 """
 function read_properties(params::Dict, input::PeriLabInput, material_model::Bool)
-    Data_Manager.init_properties()
     block_name_list = Data_Manager.get_block_name_list()
     block_id_list = Data_Manager.get_block_id_list()
-    prop_keys = Data_Manager.init_properties()
-    directory = Data_Manager.get_directory()
-    get_block_model_definition(params,
-                               block_name_list,
-                               block_id_list,
-                               prop_keys,
-                               Data_Manager.set_properties,
-                               directory)
     if material_model
         dof = Data_Manager.get_dof()
         for (block_name, block) in zip(block_name_list, block_id_list)

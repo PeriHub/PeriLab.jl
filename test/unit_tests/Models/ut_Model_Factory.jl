@@ -5,47 +5,6 @@
 #using PeriLab
 #using Test
 
-@testset "ut_get_block_model_definition" begin
-    PeriLab.Data_Manager.initialize_data()
-    block_list = ["block_1", "block_2", "block_3"]
-    PeriLab.Data_Manager.set_block_name_list(block_list)
-    block_id_list = [1, 2, 3]
-    PeriLab.Data_Manager.set_block_id_list(block_id_list)
-    prop_keys = PeriLab.Data_Manager.init_properties()
-    params = Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
-                                                     "Material Model" => "a"),
-                                   "block_2" => Dict("Block ID" => 2,
-                                                     "Material Model" => "c"),
-                                   "block_3" => Dict("Block ID" => 3,
-                                                     "Material Model" => "a",
-                                                     "Damage Model" => "a",
-                                                     "Thermal Model" => "therm",
-                                                     "Additive Model" => "add")),
-                  "Models" => Dict("Material Models" => Dict("a" => Dict("value" => 1),
-                                                             "c" => Dict("value" => [1 2],
-                                                                         "value2" => 1)),
-                                   "Damage Models" => Dict("a" => Dict("value" => 3),
-                                                           "c" => Dict("value" => [1 2],
-                                                                       "value2" => 1)),
-                                   "Thermal Models" => Dict("therm" => Dict("value" => "hot",
-                                                                            "bool" => true)),
-                                   "Additive Models" => Dict("add" => Dict("value" => "ad",
-                                                                           "bool" => false))))
-
-    PeriLab.Solver_Manager.Model_Factory.get_block_model_definition(params,
-                                                                    block_list,
-                                                                    block_id_list,
-                                                                    prop_keys,
-                                                                    PeriLab.Data_Manager.set_properties)
-
-    # materials are typed (input.materials), not stored as property dicts
-    @test isempty(PeriLab.Data_Manager.get_properties(1, "Material Model"))
-    @test isempty(PeriLab.Data_Manager.get_properties(3, "Material Model"))
-    @test isempty(PeriLab.Data_Manager.get_properties(3, "Damage Model"))
-    @test isempty(PeriLab.Data_Manager.get_properties(3, "Thermal Model"))
-    @test isempty(PeriLab.Data_Manager.get_properties(3, "Additive Model"))
-end
-
 # from Peridigm
 
 nnodes = 5
@@ -114,48 +73,20 @@ end
 end
 
 @testset "ut_read_properties" begin
-    block_list = ["block_1", "block_2", "block_3"]
-    PeriLab.Data_Manager.set_block_name_list(block_list)
-    PeriLab.Data_Manager.set_block_id_list([1, 2, 3])
-
-    params = Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
-                                                     "Material Model" => "a"),
-                                   "block_2" => Dict("Block ID" => 2,
-                                                     "Material Model" => "c"),
-                                   "block_3" => Dict("Block ID" => 3,
-                                                     "Material Model" => "a",
-                                                     "Thermal Model" => "therm")),
-                  "Models" => Dict("Material Models" => Dict("a" => Dict("value" => 1,
-                                                                         "name" => "t4",
-                                                                         "Material Model" => "Test",
-                                                                         "Symmetry" => "plane stress",
-                                                                         "Young's Modulus" => 1.5,
-                                                                         "Poisson's Ratio" => 0.3),
-                                                             "c" => Dict("value" => [1 2],
-                                                                         "value2" => 1,
-                                                                         "name" => "t4",
-                                                                         "Material Model" => "Test",
-                                                                         "Symmetry" => "plane stress",
-                                                                         "Young's Modulus" => 1.5,
-                                                                         "Poisson's Ratio" => 0.3)),
-                                   "Damage Models" => Dict("a" => Dict("value" => 3,
-                                                                       "name" => "t"),
-                                                           "c" => Dict("value" => [1 2],
-                                                                       "value2" => 1,
-                                                                       "name" => "t2")),
-                                   "Thermal Models" => Dict("therm" => Dict("value" => "hot",
-                                                                            "bool" => true,
-                                                                            "name" => "t3"))))
-    PeriLab.Solver_Manager.Model_Factory.read_properties(params, typed_input(Dict()), false)
-
-    @test isnothing(PeriLab.Data_Manager.get_property(1, "Material Model",
-                                                      "value"))
-    @test isempty(PeriLab.Data_Manager.get_properties(3, "Thermal Model"))
-
-    PeriLab.Solver_Manager.Model_Factory.read_properties(params, typed_input(Dict()), true)
-    @test isempty(PeriLab.Data_Manager.get_properties(1, "Material Model"))
-
-    @test isempty(PeriLab.Data_Manager.get_properties(3, "Thermal Model"))
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_block_name_list(["block_1"])
+    PeriLab.Data_Manager.set_block_id_list([1])
+    input = typed_input(Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
+                                                                "Density" => 1.0,
+                                                                "Horizon" => 1.0,
+                                                                "Thermal Model" => "therm")),
+                             "Models" => Dict("Thermal Models" => Dict("therm" => Dict("Thermal Model" => "Heat Transfer",
+                                                                                       "Heat Transfer Coefficient" => 1.0,
+                                                                                       "Environmental Temperature" => 30)))))
+    params = Dict{String,Any}("Blocks" => Dict{String,Any}(), "Models" => input.models)
+    PeriLab.Solver_Manager.Model_Factory.read_properties(params, input, false)
+    @test PeriLab.Data_Manager.get_block_model("Thermal Model", 1) === input.thermals["therm"]
+    @test !haskey(PeriLab.Data_Manager.data["properties"], 1)     # no property dicts
 end
 
 @testset "ut_add_model" begin
@@ -207,7 +138,7 @@ end
     @test m isa PeriLab.Solver_Manager.Model_Factory.Material.BlockMaterial
     @test m.symmetry == "plane strain"
     @test m.moduli.youngs_modulus == 22.5
-    @test isempty(PeriLab.Data_Manager.get_properties(1, "Material Model"))
+    @test !haskey(PeriLab.Data_Manager.data["properties"], 1)     # no property dicts
 
 end
 
