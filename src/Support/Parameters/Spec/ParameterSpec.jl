@@ -24,5 +24,6 @@ include("build.jl")
 include("registry.jl")
 include("model.jl")
 include("bind.jl")
+include("generators.jl")
 
 end

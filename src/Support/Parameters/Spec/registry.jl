@@ -57,6 +57,12 @@ function registered_names(category::Symbol)
     return sort!([name for (name, entry) in models if entry isa Type])
 end
 
+"Registered models of `category` as name => parameter type, sorted by name."
+function registered_models(category::Symbol)
+    models = get(REGISTRY, category, Dict{String,Any}())
+    return sort!([name => T for (name, T) in models if T isa Type]; by = first)
+end
+
 register_material(name::AbstractString, T::Type) = register_model!(:material, name, T)
 register_damage(name::AbstractString, T::Type) = register_model!(:damage, name, T)
 register_thermal(name::AbstractString, T::Type) = register_model!(:thermal, name, T)
