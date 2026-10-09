@@ -7,6 +7,9 @@ import PeriLab
 
 bib = CitationBibliography(joinpath(@__DIR__, "src", "refs.bib"))
 
+# input reference pages from the typed parameter declarations
+PeriLab.generate_parameter_docs(joinpath(@__DIR__, "src", "generated"))
+
 makedocs(plugins = [bib],
          modules = [PeriLab],
          authors = "Christian Willberg <christian.willberg@dlr.de> and Jan-Timo Hesse <jan-timo.hesse@dlr.de>",
@@ -21,6 +24,8 @@ makedocs(plugins = [bib],
                      "First Steps with PeriLab" => "man/basics.md",
                      "User Guide" => Any["Getting Started" => "man/getting_started.md",
                                          "Input File" => "man/input_yaml.md",
+                                         "Input Reference" => Any["Sections" => "generated/input_sections.md",
+                                                                  "Models" => "generated/input_models.md"],
                                          "Mesh and Nodesets" => "man/mesh_input.md",
                                          "Bond-Filter" => "man/bond_filter.md",
                                          "Influence Function" => "man/innfluence_function.md",
