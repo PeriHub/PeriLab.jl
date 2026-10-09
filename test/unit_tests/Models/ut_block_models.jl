@@ -21,7 +21,7 @@ const UT_MF = PeriLab.Solver_Manager.Model_Factory
                                                                                                                                                                               "block_1",
                                                                                                                                                                               :damage_model,
                                                                                                                                                                               "Damage Model",
-                                                                                                                                                                              Dict{String,Any}())
+                                                                                                                                                                              Dict{String,Any}("Other" => 1))
 end
 
 @testset "typed_model helper" begin
@@ -173,5 +173,8 @@ end
         @test isempty(UT_MF.Additive.load_licensed_models(mechanical))
         additive = Dict("PeriLab" => Dict("Models" => Dict("Additive Models" => Dict())))
         @test_throws PeriLab.PeriLabError UT_MF.Additive.load_licensed_models(additive)
+        # not a deck (empty file, a list): left to the input validation
+        @test isempty(UT_MF.Additive.load_licensed_models(nothing))
+        @test isempty(UT_MF.Additive.load_licensed_models(["a", "b"]))
     end
 end

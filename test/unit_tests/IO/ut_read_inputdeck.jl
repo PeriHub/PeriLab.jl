@@ -76,3 +76,14 @@ end
     write(file, "x")
     @test_logs (:error, "Not a supported filetype $file") @test_throws PeriLab.PeriLabError PeriLab.IO.read_input_deck(file)
 end
+
+@testset "ut_read_input_deck: empty file or no mapping at the top" begin
+    filename = "test_invalid.yaml"
+    for content in ("", "- a\n- b\n", "PeriLab\n")
+        write(filename, content)
+        @test_logs (:error, "Yaml file is not valid.") match_mode=:any @test_throws PeriLab.PeriLabError begin
+            PeriLab.IO.read_input_deck(filename)
+        end
+    end
+    rm(filename)
+end

@@ -36,8 +36,8 @@ Validates a loaded input deck against the typed input declarations. Reports
 every problem at once and aborts if there is an error. Returns the
 `params["PeriLab"]` dict and the typed `PeriLabInput`.
 """
-function validate_input(params::Dict; directory::AbstractString = "", no_strict::Bool = false)
-    if !haskey(params, "PeriLab") || !(params["PeriLab"] isa AbstractDict) ||
+function validate_input(params; directory::AbstractString = "", no_strict::Bool = false)
+    if !(params isa AbstractDict) || !haskey(params, "PeriLab") || !(params["PeriLab"] isa AbstractDict) ||
        length(params["PeriLab"]) < 2
         @abort "Yaml file is not valid."
         return

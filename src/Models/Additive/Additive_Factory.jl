@@ -77,6 +77,9 @@ function load_licensed_models(raw_deck::AbstractDict)
     return load_licensed_models()
 end
 
+# not a deck (empty file, a list): the input validation reports it
+load_licensed_models(raw_deck) = Any[]
+
 model_module(p) = parentmodule(typeof(p))
 
 """
