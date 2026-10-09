@@ -80,3 +80,32 @@ end
         @test isempty(bad)
     end
 end
+
+ut_describe(name; kw...) = sprint(io -> PeriLab.describe(io, name; kw...))
+
+@testset "describe a model" begin
+    text = ut_describe("Correspondence Plastic")
+    @test startswith(text, "Correspondence Plastic (material model)")
+    @test occursin("Yield Stress", text) && occursin("number or data file", text)
+    @test occursin("Shared material keys", text) && occursin("Symmetry", text)
+end
+
+@testset "describe a section" begin
+    text = ut_describe("Solver")
+    @test startswith(text, "Solver (section)")
+    @test occursin("Final Time", text)
+end
+
+@testset "describe template" begin
+    yaml = ut_describe("Correspondence Plastic"; template = true)
+    @test occursin("Material Model: \"Correspondence Plastic\"", yaml)
+    @test occursin(r"\n  Yield Stress: .*# required", yaml)
+    @test occursin(r"\n  # Symmetry:", yaml)                       # optional keys commented
+    file = joinpath(mktempdir(), "t.yaml")
+    write(file, replace(yaml, r"<[^>]*>" => "1"))
+    @test PeriLab.IO.read_input(file) isa AbstractDict
+end
+
+@testset "describe unknown name" begin
+    @test_logs (:error, r"did you mean \"Correspondence Plastic\"") match_mode=:any @test_throws PeriLab.PeriLabError ut_describe("Correspondence Plastik")
+end
