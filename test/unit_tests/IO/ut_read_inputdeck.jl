@@ -60,13 +60,12 @@ end
     println(fid, "  Verlet:")
     println(fid, "   Safety Factor: 1.0")
     close(fid)
-    dict, _ = PeriLab.IO.read_input_deck(filename; no_strict = true)  # Models keys d, a are placeholders
-    @test dict["Models"]["d"] == 3
-    @test dict["Models"]["a"] == 1
-    @test dict["Discretization"]["Input Mesh File"] == "test"
-    @test dict["Discretization"]["Type"] == "test"
-    @test dict["Solver"]["Initial Time"] == 0.0
-    @test dict["Solver"]["Final Time"] == 1.0
+    input = PeriLab.IO.read_input_deck(filename; no_strict = true)  # Models keys d, a are placeholders
+    @test input isa PeriLab.InputDeck.PeriLabInput
+    @test input.sections.discretization.input_mesh_file == "test"
+    @test input.sections.discretization.type == "test"
+    @test input.sections.solver.initial_time == 0.0
+    @test input.sections.solver.final_time == 1.0
     rm(filename)
 end
 

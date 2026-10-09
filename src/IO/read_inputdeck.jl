@@ -52,8 +52,7 @@ end
 """
     read_input_deck(filename; directory = dirname(filename), no_strict = false)
 
-Reads and validates the input deck. Returns the deck dict (for consumers not
-yet switched to typed input) and the typed `PeriLabInput`.
+Reads and validates the input deck; returns the typed `PeriLabInput`.
 """
 function read_input_deck(filename::String; directory::AbstractString = dirname(filename),
                          no_strict::Bool = false)
@@ -66,5 +65,6 @@ function read_input_deck(filename::String; directory::AbstractString = dirname(f
         return
     end
     @info "Read input file $filename"
-    return validate_input(read_input(filename); directory = directory, no_strict = no_strict)
+    return last(validate_input(read_input(filename); directory = directory,
+                               no_strict = no_strict))
 end

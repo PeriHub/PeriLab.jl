@@ -151,7 +151,7 @@ Jumpstart your exploration of the PeriLab simulation core with provided examples
 PeriLab -e
 PeriLab examples/DCB/DCBmodel.yaml
 ```
->Note: More details about the main functionalities in the yaml input deck [here](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Support/Parameters/parameter_handling.jl).
+>Note: Every input key is listed in the [input reference](https://perihub.github.io/PeriLab.jl/dev/generated/input_sections/). In Julia, `PeriLab.describe("Solver")` prints the keys of a section or model, and `PeriLab.describe("Solver"; template = true)` a YAML block to start from.
 
 ### Parallel Processing with `PeriLab` (MPI)
 

@@ -49,8 +49,7 @@ end
               Verlet:
                 Safety Factor: 0.5
           """)
-    deck, input = PeriLab.IO.read_input_deck(file)
-    @test deck["Solver"]["Number of Steps"] == 4
+    input = PeriLab.IO.read_input_deck(file)
     @test input.sections.solver.number_of_steps === 4
     @test PeriLab.InputDeck.solver_steps(input) == [-1]
 end

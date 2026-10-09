@@ -542,7 +542,7 @@ function initialize_data(filename::String,
         Data_Manager.set_max_rank(MPI.Comm_size(comm))
         Data_Manager.set_comm(comm)
     end
-    _, input = read_input_deck(filename; directory = filedirectory, no_strict = no_strict)
+    input = read_input_deck(filename; directory = filedirectory, no_strict = no_strict)
     @timeit "init_data" init_data(input, filedirectory, comm)
     steps = solver_steps(input)
     return input, steps

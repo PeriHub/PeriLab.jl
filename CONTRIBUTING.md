@@ -55,7 +55,7 @@ We are looking for different kind of contributions:
 ### Code quality
 
 * Add tests for new features.
-* Add your input values in the yaml check in parameter_handling.jl.
+* Declare new input values as `@params` fields of your module (see the templates and `docs/src/man/dev/parameters.md`).
 * Do not call Modules at same level, e.g. Material Models should not call Thermal Models.
 
 ### Documentation

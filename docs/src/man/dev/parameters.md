@@ -1,9 +1,30 @@
 # Parameters
-All the parameter are stored in a dictionary called params.
 
-The essential parameter are checked in [parameter_handling.jl](https://github.com/PeriHub/PeriLab.jl/src/support/parameters/parameter_handling.jl) with the variable global _expected_structure_. If parameter are not defined there, a warning is given in the log file.
+The input deck is read into typed structs. Every section and every model declares
+its YAML keys as an `@params` struct (`src/Support/Parameters/Spec`): type,
+required or default, `min` / `max`, allowed values, a quantity (documentation only;
+PeriLab has no fixed units) and a description.
 
-Parameter are included via the YAML input deck. The parameter can be found in the program in a dictionary. Therefore, the parameter naming is used there as well. For some variables, e.g. boundary condition, equations can be specified. These equations are interpreted and can be used to include time or spatial depended variables.
+`PeriLab.InputDeck.read_input` validates a deck against these declarations and
+reports every problem at once (unknown keys with a suggestion, wrong types, values
+out of range). With `Strict Validation: false` (or `--no_strict`) unknown keys are
+warnings instead of errors.
+
+A model module declares its own keys and registers them under its model name, e.g.
+
+    @params struct MyMaterialParams
+        yield_stress::Dependent = req("Yield Stress"; min = 0, quantity = :stress)
+    end
+    __init__() = register_material("My Material", MyMaterialParams)
+
+See the templates under `src/Models/*/…_template` for every category.
+
+The [input reference](../../generated/input_sections.md) lists every section and model with its
+keys; it is generated from the declarations (`PeriLab.generate_parameter_docs`). In a
+Julia session, `PeriLab.describe("Correspondence Plastic")` prints the keys of one
+model and `PeriLab.describe("Correspondence Plastic"; template = true)` a YAML block
+to start from. `PeriLab.to_json_schema(PeriLab.InputDeck.PeriLabInput)` returns a
+JSON Schema of the whole deck for editors.
 
 !!! note "Good start"
     Please check some of the full scale tests. There are several yaml files with parameter definitions.
