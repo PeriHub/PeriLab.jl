@@ -4,7 +4,7 @@ If you want to integrate your own model check if it suits in one of the predefin
 !!! info "Material Template"
     Materials have multiple templates, because the correspondence formulation allows additional options.
 
-Each template has a init function, a name function, a compute function.
+Each template has a parameter struct, a init function, a name function and a compute function.
 
 Copy the template and put it in the folder. Change all the functions and give the module a name.
 
@@ -12,10 +12,10 @@ Copy the template and put it in the folder. Change all the functions and give th
     In PeriLab makros are used to automatically integrate your model.
 
 ## Parameter
-In PeriLab a field called params exists. This field provides all the material information. The structure is given [here](@ref "Parameters")
+Your model gets its parameters as a typed struct `p`, read and checked when the input deck is read. How parameters are declared is described [here](@ref "Parameters").
 
 ## Declare and register your parameters
-Every YAML key your model reads must be declared, otherwise the input deck is rejected (unknown key). Declare the keys in an `@params` struct and register it under the name your name function returns:
+Every YAML key your model reads must be declared, otherwise the input deck is rejected (unknown key). Declare the keys in an `@params` struct and register it under the name the input deck uses:
 
 ```julia
 using ......ParameterSpec: @params, register_material
@@ -29,13 +29,13 @@ __init__() = register_material("My Material", MyMaterialParams)
 Material models do not repeat the shared material keys (Symmetry, Young's Modulus, Bulk Modulus, ...); they are declared once in the material factory. The material template contains the struct with the registration commented out: rename both and uncomment it. A model that is not registered is reported as "not found" when the input deck is read.
 
 ## Init function
-The init function is used to read and check the  properties provided by the yaml. It should be done there, because if the compute function is used, this check is done in every time step. Also specific fields can be defined here as well.
+The init function is called once before the run. The parameters are already checked (types, ranges, required keys); checks that need the mesh or other models belong here, as do the fields your model creates. The template of each category shows the arguments, e.g. `init_model(nodes, p, material)` for materials.
 
 ## Name function
-This function defines the name of the module. This name is used to call this model from the yaml.
+PeriLab loads every file of a model folder that defines the category's name function (`material_name()`, `damage_name()`, ...). The input deck uses the name passed to `register_*`.
 
 !!! info "Correspondence"
-    If you want to integrate a correspondence model, make sure ''Correspodence'' occur in the material name
+    If you want to integrate a correspondence model, make sure "Correspondence" occurs in the registered model name
 
 ## Compute function
 This function is called from the solver. You can call whatever function you like from here. However, this function should evaluate the result needed for the solving process, e.g. heat flux or force densities.
@@ -52,14 +52,7 @@ You can setup the module name as you like as long as it does not exist a second 
 
 To integrate a model category somewhere you have to do the following things. You need a main function of your modeling category. The existing ones are the factory files. These modules have a init function and a compute function. The init function find the modules of the category and the compute function calls these modules during the solving process.
 
-Here, the call for the init function is shown for the material factory.
-
-```julia
-mod = create_module_specifics(material_model, module_list, "material_name")
-Data_Manager.set_model_module(material_model, mod)
-```
-
-The module_list is optained, by applying
+The model modules are found by applying
 
 ```julia
 using ...ModuleLoader: find_module_files, create_module_specifics
@@ -69,9 +62,9 @@ for mod in module_list
 end
 ```
 
-You can integrate these functions than in the compute function of the factory module.
+Each module registers its parameter struct in `__init__()` (`register_material(name, T)`); the factory declares the category with `register_base!` if the category has shared keys. The parsed model of a block is an instance of that struct, so the factory finds the module of the model from its type:
 
 ```julia
-mod = Data_Manager.get_model_module(material_model)
-mod.compute_model(nodes, model_param, time, dt, to)
+mod = parentmodule(typeof(p))
+mod.compute_model(nodes, p, material, block, time, dt)
 ```

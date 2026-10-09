@@ -11,7 +11,8 @@ This is how the module header looks like. You can add here additional functions 
 
 ```julia
 module Material_template
-using TimerOutputs
+using ......Data_Manager
+using ......ParameterSpec: @params, register_material
 export fe_support
 export init_model
 export material_name
@@ -24,13 +25,16 @@ end
 ```
 First you have to rename your module. It should be different from existing ones. The first character should be capital. The rest is your choice.
 
-Next you have to change the function material_name. It is used to define the name of your model
+Next you declare the YAML keys your model reads in an `@params` struct and register it under the name the input deck uses (see [Module integration](module_integration.md)):
 
 ```julia
-function material_name()
-    return "My model"
+@params struct MyModelParams
+    my_parameter::Float64 = req("My Parameter"; min = 0, description = "...")
 end
+__init__() = register_material("My model", MyModelParams)
 ```
+
+The function `material_name()` stays in the module: PeriLab loads every file of the model folder that defines it.
 
 In the YAML file you can call your model like this. The id Mat_1 has to be applied to a block and your module works
 
@@ -38,6 +42,7 @@ In the YAML file you can call your model like this. The id Mat_1 has to be appli
  Material Models:
       Mat_1:
         Material Model: "My model"
+        My Parameter: 1.0
 ```
 The density and the horizon depends on your problem.
 
@@ -53,6 +58,8 @@ The density and the horizon depends on your problem.
 ```
 Congratulations you first model works and runs. However, it does not do anything.
 
+`PeriLab.describe("My model")` prints the keys of your model, `PeriLab.describe("My model"; template = true)` a YAML block to copy into an input deck.
+
 ### Include features
 
 
@@ -67,13 +74,14 @@ The module TimerOutputs allows you measuring the computation speed and memory fo
 end
 ```
 
-The function init_model is used to initialize the model. Here, you can check if parameters exist or set reference values. The dictionary material_params includes all parameters you had defined in your yaml.
+The function init_model is used to initialize the model. Here, you can set reference values. `p` is your parameter struct, read and checked when the input deck was read; `material` holds the shared material keys of the block (`material.base`), the elastic moduli (`material.moduli`) and the symmetry (`material.symmetry`).
 
 You can and should also create fields using the [datamanger](datamanager.md).
 
 ```julia
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
+                    p::MyModelParams,
+                    material)
 end
 ```
 This function is used as marker if it is suited for FE support. Therefore, it must be able to compute a Cauchy stress.
@@ -96,7 +104,7 @@ function fields_for_local_synchronization(model::String)
 end
 ```
 
-The last module computes the model in each time step. You get all nodes and have to compute the neighorhood of it. You must call the fields you need from the datamanager. You should avoid checking if parameter exists in the material_parameter dictionary.
+The last module computes the model in each time step. You get all nodes and have to compute the neighorhood of it. You must call the fields you need from the datamanager. The parameters are fields of `p` (e.g. `p.my_parameter`); they are checked before the run starts.
 
 
 !!! info "Separation of function"
@@ -104,13 +112,15 @@ The last module computes the model in each time step. You get all nodes and have
 
 ```julia
 function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict,
+                       p::MyModelParams,
+                       material,
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
+                       dt::Float64)
 end
 ```
+
+The other model categories follow the same pattern; their templates show the exact arguments (damage and thermal models get their block context like `material`, additive and degradation models only `p` and `block`).
 
 ### Additional functions
 You can add as many functions as you want. You can also create files and include them if needed. As long as the interface functions exists, the module can be called.
@@ -125,9 +135,9 @@ You can add as many functions as you want. You can also create files and include
 
 [Damage](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Damage/Damage_template/damage_template.jl)
 
-[Non correspondence material](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_template/material_template.jl)
+[Non correspondence material](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Material_template/material_template.jl)
 
-[Correspondence material](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_template/correspondence_template.jl)
+[Correspondence material](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Material_template/correspondence_template.jl)
 
 [Pre calculation](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Pre_calculation/Pre_calculation_template/pre_calculation_template.jl)
 
