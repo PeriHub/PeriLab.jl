@@ -147,7 +147,7 @@ end
                                                             "Yield Stress" => "ys.txt"),
                                            "M", ctx; name_key = "Material Model")
     @test isempty(ctx.errors)
-    m = BMAT.block_material(wb, "PD Solid Plastic", 3)
+    m = BMAT.block_material(wb, 3)
     BMAT.bind_material!(m)
     @test PeriLab.ParameterSpec.value(m.model.yield_stress, 2) ≈ 20.0
     PeriLab.Data_Manager.create_constant_node_scalar_field("Active", Bool; default_value = true)
@@ -250,7 +250,7 @@ end
     wb = PeriLab.ParameterSpec.parse_model(:material, raw, "M", ctx;
                                            name_key = "Material Model")
     @test isempty(ctx.errors)
-    m = BMAT.block_material(wb, "Correspondence Elastic", 3)
+    m = BMAT.block_material(wb, 3)
     BMAT.bind_material!(m)
     constant_x(E) = begin
         r = copy(raw)
