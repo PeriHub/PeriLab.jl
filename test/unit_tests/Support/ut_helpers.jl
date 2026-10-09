@@ -10,35 +10,6 @@ using StaticArrays
 using Test
 using LinearAlgebra: norm
 
-@testset "get_dependent_value / _with_ID" begin
-    parameter = Dict("Yield Stress" => 5.3)
-
-    @testset "constant value" begin
-        f = PeriLab.Helpers.get_dependent_value("Yield Stress", parameter)
-
-        @test f(1) == 5.3
-        @test f(42) == 5.3          # constant: independent of the node
-    end
-
-    @testset "with_ID returns a number, not the accessor" begin
-        value = PeriLab.Helpers.get_dependent_value_with_ID("Yield Stress", parameter, 1)
-
-        @test value == 5.3
-    end
-
-    @testset "default iID" begin
-        @test PeriLab.Helpers.get_dependent_value_with_ID("Yield Stress", parameter) == 5.3
-    end
-
-    @testset "with_ID delegates to the factory" begin
-        for iID in (1, 2, 7)
-            @test PeriLab.Helpers.get_dependent_value_with_ID("Yield Stress", parameter,
-                                                              iID) ==
-                  PeriLab.Helpers.get_dependent_value("Yield Stress", parameter)(iID)
-        end
-    end
-end
-
 @testset "PeriLab.Helpers.create_centroid_and_search_radius" begin
     @testset "unit cube - centroid and circumradius" begin
         coor = [0.0 0.0 0.0
@@ -397,30 +368,6 @@ end
     @test isapprox(tensorTest, tensor)
 end
 
-@testset "ut_interpolation" begin
-    x = [0.0, 1.0, 2.0, 3.0, 4.0]
-    y = [-1.0, 0.0, 7.0, 26.0, 63.0]  # x.^3 - 1.
-    values_dict = Dict()
-    values_dict["value"] = PeriLab.Solver_Manager.Helpers.interpolation(x, y)
-    @test isapprox(PeriLab.Solver_Manager.Helpers.interpol_data([1.5, 2.5],
-                                                                values_dict["value"])[1],
-                   2.375)
-    @test isapprox(PeriLab.Solver_Manager.Helpers.interpol_data([1.5, 2.5],
-                                                                values_dict["value"])[2],
-                   14.625)
-    @test isapprox(PeriLab.Solver_Manager.Helpers.interpol_data(1.5, values_dict["value"]),
-                   2.375)
-    @test PeriLab.Solver_Manager.Helpers.interpol_data(-1, values_dict["value"]) ==
-          minimum(y)
-    @test PeriLab.Solver_Manager.Helpers.interpol_data([-1, -8], values_dict["value"]) ==
-          [minimum(y), minimum(y)]
-    @test PeriLab.Solver_Manager.Helpers.interpol_data(5, values_dict["value"]) ==
-          maximum(y)
-    x = [0.0, 1.0]
-    y = [-1.0, 0.0]
-    values_dict = Dict()
-    values_dict["value"] = PeriLab.Solver_Manager.Helpers.interpolation(x, y)
-end
 @testset "ut_find_indices" begin
     @test PeriLab.Solver_Manager.Helpers.find_indices([1, 1, 2, 3, 3, 4, 4, 4, 1], 1) ==
           [1, 2, 9]
@@ -664,21 +611,6 @@ end
     @test C == [-1.0, 2.0]
     PeriLab.Solver_Manager.Helpers.div_in_place!(C, A, B, true)
     @test C == [1.0, 2.0]
-end
-
-@testset "ut_is_dependent" begin
-    (fieldN, fieldNP1) = PeriLab.Data_Manager.create_node_scalar_field("Parameter", Float64)
-    params = Dict("Value" => Dict("Field" => "Parameter"))
-    @test PeriLab.Solver_Manager.Helpers.is_dependent("Value", params) ==
-          (true, fieldNP1)
-    params = Dict("Value" => 1.0)
-    @test PeriLab.Solver_Manager.Helpers.is_dependent("Value", params) ==
-          (false, nothing)
-    params = Dict("Value" => Dict("Field" => "Non_Existent"))
-    @test_logs (:error, "Non_Existent does not exist for value interpolation.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.Helpers.is_dependent("Value",
-                                                    params)
-    end
 end
 
 @testset "ut_matrix_to_voigt" begin

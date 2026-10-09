@@ -7,8 +7,79 @@
 module LegacyMaterialOracle
 using PeriLab.Data_Manager
 using PeriLab.PeriLabExceptions: @abort
-using PeriLab.Helpers: get_dependent_value_with_ID
+using PeriLab.ParameterSpec: evaluate
 using PeriLab.Solver_Manager.Material_Basis: _hooke_matrix
+
+# verbatim copies of the legacy dependent-value helpers (deleted from Helpers.jl in phase 4)
+function get_dependent_value_with_ID(field_name::String,
+                                     parameter::Dict,
+                                     iID::Int64 = 1)
+    return get_dependent_value(field_name, parameter)(iID)
+end
+
+function is_dependent(field_name::String, damage_parameter::Dict)
+    if haskey(damage_parameter, field_name) && damage_parameter[field_name] isa Dict
+        if !Data_Manager.has_key(damage_parameter[field_name]["Field"] * "NP1")
+            @abort "$(damage_parameter[field_name]["Field"]) does not exist for value interpolation."
+            return
+        end
+        field = Data_Manager.get_field(damage_parameter[field_name]["Field"], "NP1")
+        return true, field
+    end
+    return false, nothing
+end
+
+function interpol_data(x::Union{Vector{Float64},Vector{Int64},Float64,Int64},
+                       values::Dict{String,Any},
+                       warning_flag::Bool = true)
+    if warning_flag
+        if values["min"] > minimum(x)
+            @warn "Interpolation value is below interpolation range. Using minimum value of dataset."
+        end
+        if values["max"] < maximum(x)
+            @warn "Interpolation value is above interpolation range. Using maximum value of dataset."
+        end
+        warning_flag = false
+    end
+    return evaluate(values["spl"], x)
+end
+
+abstract type AbstractDependentValue end
+
+# Case 1: constant parameter (not field-dependent)
+struct ConstantValue <: AbstractDependentValue
+    value::Float64
+end
+(cv::ConstantValue)(iID::Int64) = cv.value
+
+# Case 2: field-dependent, interpolated per node
+struct InterpolatedValue{F,D} <: AbstractDependentValue
+    field::F                      # e.g. Data_Manager field (NP1)
+    data::D                       # parameter[field_name]["Data"]
+    warning_flag::Base.RefValue{Bool}
+end
+function (iv::InterpolatedValue)(iID::Int64)
+    val = interpol_data(iv.field[iID], iv.data, iv.warning_flag[])
+    iv.warning_flag[] = false      # only warn once, on first call
+    return val
+end
+
+"""
+    get_dependent_value(field_name, parameter) -> AbstractDependentValue
+
+Call once per field before a loop. Returns a callable `f(iID)` that
+gives either the constant value or the interpolated field value.
+"""
+function get_dependent_value(field_name::String, parameter::Dict)
+    dependent_value, dependent_field = is_dependent(field_name, parameter)
+    if dependent_value
+        return InterpolatedValue(dependent_field,
+                                 parameter[field_name]["Data"],
+                                 Ref(true))
+    else
+        return ConstantValue(parameter[field_name])
+    end
+end
 
 function get_value(parameter::Union{Dict{Any,Any},Dict{String,Any}},
                    any_field_allocated::Bool,

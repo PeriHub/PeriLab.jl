@@ -6,7 +6,7 @@ module Material_Basis
 using LinearAlgebra
 using LoopVectorization
 using StaticArrays
-using ......Helpers: get_MMatrix, determinant, invert, smat, interpol_data,
+using ......Helpers: get_MMatrix, determinant, invert, smat,
                      mat_mul!, matrix_to_voigt, voigt_to_matrix
 using ......Data_Manager
 using ......ParameterSpec: value
@@ -549,19 +549,6 @@ function apply_pointwise_E(nodes::AbstractVector{Int64},
     @inbounds @fastmath for i in nodes
         @views @inbounds @fastmath for bf in bond_force[i]
             bf .*= E[i]
-        end
-    end
-end
-
-function apply_pointwise_E(nodes::AbstractVector{Int64},
-                           bond_force::BondVectorState{Float64}, dependent_field)
-    warning_flag = true
-    @inbounds @fastmath for i in nodes
-        E_int = interpol_data(dependent_field[i],
-                              damage_parameter["Young's Modulus"]["Data"],
-                              warning_flag)
-        @views @inbounds @fastmath for bf in bond_force[i]
-            bf .*= E_int
         end
     end
 end
