@@ -300,3 +300,23 @@ end
     @test PeriLab.IO.clearNP1("ForceNP1") == "Force"
     @test PeriLab.IO.clearNP1("Force") == "Force"
 end
+
+@testset "contact basis follows input.contact" begin
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_dof(2)
+    mesh = PeriLab.IO.DataFrame(x = [0.0, 1.0], y = [0.0, 0.0], block_id = [1, 2])
+    blocks = Dict("block_1" => Dict("Block ID" => 1, "Density" => 1.0, "Horizon" => 1.0),
+                  "block_2" => Dict("Block ID" => 2, "Density" => 1.0, "Horizon" => 1.0))
+    no_contact = typed_input(Dict("Blocks" => blocks))
+    PeriLab.IO.contact_basis(no_contact, mesh, comm, 1)
+    @test isempty(PeriLab.Data_Manager.get_all_positions())          # default: not set
+    group = Dict{String,Any}("Master Block ID" => 1, "Slave Block ID" => 2,
+                             "Search Radius" => 0.01)
+    contact = Dict("cm" => Dict{String,Any}("Type" => "Penalty Contact",
+                                            "Contact Radius" => 0.005,
+                                            "Contact Groups" => Dict("cg" => group)))
+    with_contact = typed_input(Dict("Blocks" => blocks, "Contact" => contact))
+    PeriLab.IO.contact_basis(with_contact, mesh, comm, 1)
+    @test PeriLab.Data_Manager.get_all_positions() == [0.0 0.0; 1.0 0.0]
+    @test PeriLab.Data_Manager.get_all_blocks() == [1, 2]
+end

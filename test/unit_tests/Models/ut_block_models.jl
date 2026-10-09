@@ -163,8 +163,7 @@ end
                   "Pre Calculation Models" => Dict("Pre" => Dict("Deformation Gradient" => true),
                                                    "Off" => Dict("Shape Tensor" => false)))
     input = typed_input(Dict("Blocks" => blocks, "Models" => models))
-    UT_MF.read_properties(Dict{String,Any}("Blocks" => blocks, "Models" => input.models),
-                          input, false)
+    UT_MF.read_properties(input, false)
     get(b) = PeriLab.Data_Manager.get_block_model("Pre Calculation Model", b)
     @test get(1) == ["Deformed Bond Geometry", "Shape Tensor"]
     @test get(2) == ["Deformation Gradient"]          # replaces the global switches

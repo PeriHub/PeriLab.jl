@@ -63,7 +63,6 @@ import .Logging_Module
 import .IO
 using .ModuleLoader
 using .Solver_Manager
-using .Parameter_Handling: get_initial_time
 
 PERILAB_VERSION = "2.2.6"
 
@@ -409,7 +408,7 @@ function run(filename::String;
             # only decks with additive models contact the license server
             isfile(filename) &&
                 Solver_Manager.Model_Factory.Additive.load_licensed_models(IO.read_input(filename))
-            @timeit "IO.initialize_data" params, input,
+            @timeit "IO.initialize_data" input,
                                          steps=IO.initialize_data(filename,
                                                                   filedirectory,
                                                                   comm;
@@ -429,8 +428,7 @@ function run(filename::String;
                 @timeit "IO.init orientations" IO.init_orientations(input.sections.blocks)
                 @timeit "Solver_Manager.init" block_nodes,
                                               bcs,
-                                              solver_options=Solver_Manager.init(params,
-                                                                                 input,
+                                              solver_options=Solver_Manager.init(input,
                                                                                  step_id)
                 if Data_Manager.get_current_time() >= solver_options["Final Time"]
                     @info "Step " * string(step_id) * " skipped."

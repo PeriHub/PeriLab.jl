@@ -59,18 +59,16 @@ end
 
 
 """
-	init_models(params::Dict, input::PeriLabInput, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict, synchronise_field)
+	init_models(input::PeriLabInput, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict, synchronise_field)
 
 Initialize models
 
 # Arguments
-- `params::Dict`: Parameters.
 - `input::PeriLabInput`: The typed input deck.
 - `block_nodes::Dict{Int64,Vector{Int64}}`: block nodes.
 - `solver_options::Dict`: Solver options.
 """
-function init_models(params::Dict,
-                     input::PeriLabInput,
+function init_models(input::PeriLabInput,
                      block_nodes::Dict{Int64,Vector{Int64}},
                      solver_options::Dict,
                      synchronise_field)
@@ -448,17 +446,16 @@ function block_typed_model(input::PeriLabInput, block_name::String, field::Symbo
 end
 
 """
-	read_properties(params::Dict, input::PeriLabInput, material_model::Bool)
+	read_properties(input::PeriLabInput, material_model::Bool)
 
 Stores the typed models every block names (material, damage, additive, degradation,
 thermal, pre-calculation) in `Data_Manager`; aborts on undefined model names.
 
 # Arguments
-- `params::Dict`: Parameters (unused; kept for the callers until phase 4).
 - `input::PeriLabInput`: The typed input deck.
 - `material_model::Bool`: Material model.
 """
-function read_properties(params::Dict, input::PeriLabInput, material_model::Bool)
+function read_properties(input::PeriLabInput, material_model::Bool)
     block_name_list = Data_Manager.get_block_name_list()
     block_id_list = Data_Manager.get_block_id_list()
     if material_model

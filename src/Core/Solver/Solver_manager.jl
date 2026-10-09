@@ -49,12 +49,11 @@ function _calculation_options(s::SolverParams)
 end
 
 """
-	init(params::Dict, input::PeriLabInput, step_id::Int64)
+	init(input::PeriLabInput, step_id::Int64)
 
 Initialize the solver
 
 # Arguments
-- `params::Dict`: The parameters (sections not yet using typed input)
 - `input::PeriLabInput`: The typed input
 - `step_id::Int64`: The solver step (`-1`: single `Solver`)
 # Returns
@@ -62,9 +61,7 @@ Initialize the solver
 - `bcs::Dict{String,BoundaryCondition}`: A dictionary containing boundary conditions.
 - `solver_options::Dict{String,Any}`: A dictionary containing solver options.
 """
-function init(params::Dict,
-              input::PeriLabInput,
-              step_id::Int64)
+function init(input::PeriLabInput, step_id::Int64)
     solver_options = Dict()
     dof = Data_Manager.get_dof()
     nnodes = Data_Manager.get_nnodes()
@@ -121,10 +118,9 @@ function init(params::Dict,
     end
     Data_Manager.create_bond_scalar_state("Bond Damage", Float64; default_value = 1)
     @debug "Read properties"
-    read_properties(params, input, "Material" in solver_options["Models"])
+    read_properties(input, "Material" in solver_options["Models"])
     @debug "Init models"
-    @timeit "init_models" init_models(params,
-                                      input,
+    @timeit "init_models" init_models(input,
                                       block_nodes,
                                       solver_options,
                                       synchronise_field)

@@ -50,20 +50,16 @@ include("Mesh_Import/Mesh_Import.jl")
 using .Mesh_Import: read_mesh
 
 """
-    init_data(params::Dict, input::PeriLabInput, path::String, comm::MPI.Comm)
+    init_data(input::PeriLabInput, path::String, comm::MPI.Comm)
 
 Initializes the data for the mesh.
 
 # Arguments
-- `params::Dict`: The parameters for the simulation (sections not yet using typed input).
 - `input::PeriLabInput`: The typed input deck.
 - `path::String`: The path to the mesh file.
 - `comm::MPI.Comm`: The MPI communicator.
-# Returns
-- `params::Dict`: The parameters for the simulation.
 """
-function init_data(params::Dict,
-                   input::PeriLabInput,
+function init_data(input::PeriLabInput,
                    path::String,
                    comm::MPI.Comm)
     @timeit "init_data - mesh_data.jl" begin
@@ -154,7 +150,7 @@ function init_data(params::Dict,
                                             dof)
         end
 
-        contact_basis(params, mesh, comm, rank)
+        contact_basis(input, mesh, comm, rank)
 
         get_bond_geometry() # gives the initial length and bond damage
         Data_Manager.set_fem(fem_active)
@@ -173,7 +169,7 @@ function init_data(params::Dict,
     nlist = Data_Manager.get_nlist()
     Data_Manager.set_inverse_nlist(find_inverse_bond_id(nlist))
     mesh = nothing
-    return params
+    return nothing
 end
 
 """
@@ -248,11 +244,8 @@ function create_and_distribute_bond_norm(comm::MPI.Comm,
     copyto!.(bond_norm_field, bond_norm)
 end
 
-function contact_basis(params::Dict, mesh::DataFrame, comm,
-                       rank::Int64)
-    if !haskey(params, "Contact")
-        return
-    end
+function contact_basis(input::PeriLabInput, mesh::DataFrame, comm, rank::Int64)
+    input.contact === nothing && return
     ## All coordinates and block Ids are stored at all cores. Reason is, that you might need them for self contact, etc.
     if rank == 1
         mesh_id = ["x", "y"]

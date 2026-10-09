@@ -529,7 +529,6 @@ Initialize data.
 - `comm::MPI.Comm`: The MPI communicator
 - `no_strict::Bool`: Report unknown input keys as warnings instead of errors.
 # Returns
-- `params::Dict`: The deck parameters (for consumers not yet using typed input)
 - `input::PeriLabInput`: The typed input
 - `steps::Vector{Int64}`: The solver steps
 """
@@ -543,10 +542,10 @@ function initialize_data(filename::String,
         Data_Manager.set_max_rank(MPI.Comm_size(comm))
         Data_Manager.set_comm(comm)
     end
-    deck, input = read_input_deck(filename; directory = filedirectory, no_strict = no_strict)
-    @timeit "init_data" params=init_data(deck, input, filedirectory, comm)
+    _, input = read_input_deck(filename; directory = filedirectory, no_strict = no_strict)
+    @timeit "init_data" init_data(input, filedirectory, comm)
     steps = solver_steps(input)
-    return params, input, steps
+    return input, steps
 end
 
 """
