@@ -16,40 +16,9 @@ function ut_valid_params()
                                                                               "Verlet" => Dict{Any,Any}())))
 end
 
-@testset "validate_yaml returns the deck dict unchanged" begin
-    params = ut_valid_params()
-    @test PeriLab.Parameter_Handling.validate_yaml(params) === params["PeriLab"]
-end
-
-@testset "validate_yaml aborts with all input errors" begin
-    params = ut_valid_params()
-    params["PeriLab"]["Blocks"]["block_1"]["Horizon"] = "1.0"
-    params["PeriLab"]["Bocks"] = Dict{Any,Any}()
-    @test_throws PeriLab.PeriLabError PeriLab.Parameter_Handling.validate_yaml(params)
-end
-
-@testset "no_strict flag" begin
-    params = ut_valid_params()
-    params["PeriLab"]["Solver"]["Unused Option"] = 1
-    @test_throws PeriLab.PeriLabError PeriLab.Parameter_Handling.validate_yaml(params)
-    @test PeriLab.Parameter_Handling.validate_yaml(params; no_strict = true) ===
-          params["PeriLab"]
-    params["PeriLab"]["Solver"]["final time"] = 2.0       # case-only typo: always an error
-    @test_throws PeriLab.PeriLabError PeriLab.Parameter_Handling.validate_yaml(params;
-                                                                              no_strict = true)
-    @test PeriLab.parse_commandline(["--no_strict", "a.yaml"])["no_strict"] == true
-    @test PeriLab.parse_commandline(["a.yaml"])["no_strict"] == false
-end
-
-@testset "material model names are validated" begin
-    params = ut_valid_params()
-    params["PeriLab"]["Models"]["Material Models"]["mat_1"]["Material Model"] = 5
-    @test_throws PeriLab.PeriLabError PeriLab.Parameter_Handling.validate_yaml(params)
-end
-
 @testset "validate_input returns the typed input" begin
     params = ut_valid_params()
-    deck, input = PeriLab.Parameter_Handling.validate_input(params)
+    deck, input = PeriLab.IO.validate_input(params)
     @test deck === params["PeriLab"]
     @test input isa PeriLab.InputDeck.PeriLabInput
     @test input.sections.solver.verlet !== nothing
@@ -86,17 +55,31 @@ end
     @test PeriLab.InputDeck.solver_steps(input) == [-1]
 end
 
+
+@testset "no_strict flag" begin
+    params = ut_valid_params()
+    params["PeriLab"]["Solver"]["Unused Option"] = 1
+    @test_throws PeriLab.PeriLabError PeriLab.IO.validate_input(params)
+    @test first(PeriLab.IO.validate_input(params; no_strict = true)) ===
+          params["PeriLab"]
+    params["PeriLab"]["Solver"]["final time"] = 2.0       # case-only typo: always an error
+    @test_throws PeriLab.PeriLabError PeriLab.IO.validate_input(params;
+                                                                              no_strict = true)
+    @test PeriLab.parse_commandline(["--no_strict", "a.yaml"])["no_strict"] == true
+    @test PeriLab.parse_commandline(["a.yaml"])["no_strict"] == false
+end
+
+@testset "material model names are validated" begin
+    params = ut_valid_params()
+    params["PeriLab"]["Models"]["Material Models"]["mat_1"]["Material Model"] = 5
+    @test_throws PeriLab.PeriLabError PeriLab.IO.validate_input(params)
+end
+
 @testset "an unknown material key aborts with the typed error" begin
     params = ut_valid_params()
     params["PeriLab"]["Models"]["Material Models"]["mat_1"]["Youngs Modulus"] = 1.0
     @test_logs (:error, r"did you mean \"Young's Modulus\"") match_mode=:any @test_throws PeriLab.PeriLabError begin
-        PeriLab.Parameter_Handling.validate_yaml(params)
+        PeriLab.IO.validate_input(params)
     end
 end
 
-@testset "legacy model validation still applies to the other categories" begin
-    params = ut_valid_params()
-    params["PeriLab"]["Models"]["Damage Models"] = Dict{Any,Any}("d" => Dict{Any,Any}("Damage Model" => 5,
-                                                                                     "Critical Value" => 1.0))
-    @test_throws PeriLab.PeriLabError PeriLab.Parameter_Handling.validate_yaml(params)
-end

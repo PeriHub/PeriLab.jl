@@ -16,7 +16,6 @@ import .Bond_Filter: apply_bond_filters
 # include("gcode.jl")
 using ..Helpers: fastdot, get_nearest_neighbors, find_inverse_bond_id
 using ..Logging_Module: print_table
-using ..Parameter_Handling: get_header, read_node_sets, external_topology_file
 using ..InputDeck: BlockParams, block_by_id, block_angles, PeriLabInput,
                    SurfaceExtrusionParams, mesh_scaling
 using ..Geometry: bond_geometry!

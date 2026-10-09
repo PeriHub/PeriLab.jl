@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using YAML: load_file, ParserError
-using ...Parameter_Handling: validate_yaml, validate_input
+using ..ParameterSpec: report!, strict_mode
+using ..InputDeck: read_input as read_typed_input
 
-export read_input_file, read_input_deck
+export read_input_deck, validate_input
 
 """
     read_input(filename::String)
@@ -29,28 +30,23 @@ function read_input(filename::String)
 end
 
 """
-    read_input_file(filename::String)
+    validate_input(params; directory = "", no_strict = false) -> (deck, input)
 
-Reads the input deck from a yaml file
-
-# Arguments
-- `filename::String`: The name of the yaml file
-# Returns
-- `Dict{String,Any}`: The validated parameters read from the yaml file.
+Validates a loaded input deck against the typed input declarations. Reports
+every problem at once and aborts if there is an error. Returns the
+`params["PeriLab"]` dict and the typed `PeriLabInput`.
 """
-function read_input_file(filename::String; directory::AbstractString = dirname(filename),
-                         no_strict::Bool = false)
-    params = Dict{String,Any}()
-    if !isfile(filename)
-        @abort "$(filename) can not be found. Make sure the file exist and is readable."
+function validate_input(params::Dict; directory::AbstractString = "", no_strict::Bool = false)
+    if !haskey(params, "PeriLab") || !(params["PeriLab"] isa AbstractDict) ||
+       length(params["PeriLab"]) < 2
+        @abort "Yaml file is not valid."
         return
     end
-    if !occursin("yaml", filename)
-        @abort "Not a supported filetype $filename"
-        return
-    end
-    @info "Read input file $filename"
-    return validate_yaml(read_input(filename); directory = directory, no_strict = no_strict)
+    deck = params["PeriLab"]
+    input, ctx = read_typed_input(deck, directory;
+                                  strict = strict_mode(deck; no_strict_flag = no_strict))
+    report!(ctx)
+    return deck, input
 end
 
 """

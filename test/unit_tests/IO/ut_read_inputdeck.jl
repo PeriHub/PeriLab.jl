@@ -25,10 +25,10 @@
     rm(filename)
 end
 
-@testset "ut_read_input_file" begin
+@testset "ut_read_input_deck" begin
     @test_logs (:error,
                 "filename can not be found. Make sure the file exist and is readable.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.IO.read_input_file("filename")
+        PeriLab.IO.read_input_deck("filename")
     end
     filename = "test.xml"
     fid = open(filename, "w")
@@ -37,7 +37,7 @@ end
     close(fid)
     @test_logs (:error,
                 "Not a supported filetype $filename") @test_throws PeriLab.PeriLabError begin
-        PeriLab.IO.read_input_file(filename)
+        PeriLab.IO.read_input_deck(filename)
     end
     rm(filename)
     filename = "test.yaml"
@@ -60,7 +60,7 @@ end
     println(fid, "  Verlet:")
     println(fid, "   Safety Factor: 1.0")
     close(fid)
-    dict = PeriLab.IO.read_input_file(filename)
+    dict, _ = PeriLab.IO.read_input_deck(filename)
     @test dict["Models"]["d"] == 3
     @test dict["Models"]["a"] == 1
     @test dict["Discretization"]["Input Mesh File"] == "test"
@@ -68,4 +68,12 @@ end
     @test dict["Solver"]["Initial Time"] == 0.0
     @test dict["Solver"]["Final Time"] == 1.0
     rm(filename)
+end
+
+@testset "read_input_deck errors" begin
+    @test_logs (:error,
+                "missing.yaml can not be found. Make sure the file exist and is readable.") @test_throws PeriLab.PeriLabError PeriLab.IO.read_input_deck("missing.yaml")
+    file = joinpath(mktempdir(), "deck.txt")
+    write(file, "x")
+    @test_logs (:error, "Not a supported filetype $file") @test_throws PeriLab.PeriLabError PeriLab.IO.read_input_deck(file)
 end

@@ -84,82 +84,6 @@ end
           Dict("a" => Dict("a" => 1), "g" => Dict("a" => 1), "adas" => Dict("a" => 1))
 end
 
-@testset "ut_validate_yaml" begin
-    params = Dict{Any,Any}()
-    @info "Error messages are tested and therefore okay."
-
-    @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Parameter_Handling.validate_yaml(params)
-    end
-    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}()))
-    @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Parameter_Handling.validate_yaml(params)
-    end
-    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
-                                                                                                          Any}()),
-                                                      "Discretization" => Dict{Any,Any}()))
-    @test_logs (:error, r"^Input errors") match_mode=:any @test_throws PeriLab.PeriLabError begin
-        PeriLab.Parameter_Handling.validate_yaml(params)
-    end
-    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
-                                                                                                          Any}()),
-                                                      "Discretization" => Dict{Any,Any}(),
-                                                      "Blocks" => Dict{Any,Any}()))
-    @test_logs (:error, r"^Input errors") match_mode=:any @test_throws PeriLab.PeriLabError begin
-        PeriLab.Parameter_Handling.validate_yaml(params)
-    end
-    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
-                                                                                                          Any}()),
-                                                      "Blocks" => Dict{Any,Any}()))
-    @test_logs (:error, r"^Input errors") match_mode=:any @test_throws PeriLab.PeriLabError begin
-        PeriLab.Parameter_Handling.validate_yaml(params)
-    end
-
-    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}(),
-                                                      "Discretization" => Dict{Any,Any}(),
-                                                      "Blocks" => Dict{Any,Any}(),
-                                                      "Solver" => Dict{Any,Any}()))
-
-    @test_logs (:error, r"^Input errors") match_mode=:any @test_throws PeriLab.PeriLabError begin
-        PeriLab.Parameter_Handling.validate_yaml(params)
-    end
-
-    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Blocks" => Dict{Any,Any}()))
-
-    @test_logs (:error, "Yaml file is not valid.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Parameter_Handling.validate_yaml(params)
-    end
-
-    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
-                                                                                                          Any}("mat_1" => Dict{Any,
-                                                                                                                               Any}("Material Model" => "a"))),
-                                                      "Discretization" => Dict{Any,Any}("Input Mesh File" => "test",
-                                                                                        "Type" => "test"),
-                                                      "Blocks" => Dict{Any,Any}("Block_1" => Dict{Any,
-                                                                                                  Any}("Block Names" => "Block_1",
-                                                                                                       "Density" => 1.0,
-                                                                                                       "Horizon" => "1.0")),
-                                                      "Solver" => Dict{Any,Any}("Final Time" => 1.0,
-                                                                                "Initial Time" => 0.0)))
-    @test_logs (:error, r"^Input errors") match_mode=:any @test_throws PeriLab.PeriLabError begin
-        PeriLab.Parameter_Handling.validate_yaml(params)
-    end
-    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}("Material Models" => Dict{Any,
-                                                                                                          Any}("mat_1" => Dict{Any,
-                                                                                                                               Any}("Material Model" => "Bond-based Elastic"))),
-                                                      "Discretization" => Dict{Any,Any}("Input Mesh File" => "test",
-                                                                                        "Type" => "test"),
-                                                      "Blocks" => Dict{Any,Any}("Block_1" => Dict{Any,
-                                                                                                  Any}("Block ID" => 1,
-                                                                                                       "Density" => 1.0,
-                                                                                                       "Horizon" => 1.0)),
-                                                      "Solver" => Dict{Any,Any}("Final Time" => 1.0,
-                                                                                "Initial Time" => 0.0,
-                                                                                "Verlet" => Dict{Any,Any}())))
-    @test PeriLab.Parameter_Handling.validate_yaml(params) ==
-          params["PeriLab"]
-end
-
 @testset "ut_get_external_topology_name" begin
     params = Dict("Discretization" => Dict())
     @test isnothing(PeriLab.Parameter_Handling.get_external_topology_name(params,
@@ -724,18 +648,6 @@ end
                                                                               "E")
     @test testData["Damage Model"]["ss"] == 0
     @test testData["Damage Model"]["d"] == 1.1
-end
-
-@testset "ut_check_for_duplicates" begin
-    @test !(PeriLab.Parameter_Handling.check_for_duplicates(["a", "b", "c"]))
-    @test_logs (:error, "Filename a is used 2 times") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Parameter_Handling.check_for_duplicates([
-                                                            "a",
-                                                            "b",
-                                                            "c",
-                                                            "a"
-                                                        ])
-    end
 end
 
 @testset "ut_validate_structure_recursive" begin

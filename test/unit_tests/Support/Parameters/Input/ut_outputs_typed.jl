@@ -35,7 +35,7 @@ ut_ot_vars() = Dict{String,Any}("Displacements" => true)
                                                                             "Output Frequency" => 50,
                                                                             "Output Variables" => ut_ot_vars())))
     by_name(nsteps, step) = Dict(zip(keys(outputs),
-                                     PH.output_frequencies(outputs, nsteps, step)))
+                                     ID.output_frequencies(outputs, nsteps, step)))
     f = by_name(20, 1)
     @test f["freq"] == 5
     @test f["steps"] == 7          # ceil(20 / 3)
@@ -53,8 +53,8 @@ end
                                                                                             "CSV",
                                                                        "Output Variables" => ut_ot_vars())
                                              for i in 1:6))
-    filenames = PH.output_filenames(outputs, "out")
-    frequencies = PH.output_frequencies(outputs, 100, 1)
+    filenames = ID.output_filenames(outputs, "out")
+    frequencies = ID.output_frequencies(outputs, 100, 1)
     for (k, output) in enumerate(values(outputs))
         expected = joinpath("out",
                             output.output_filename *
@@ -68,19 +68,19 @@ end
                                                "b" => Dict{String,Any}("Output Filename" => "same",
                                                                        "Output Frequency" => 1,
                                                                        "Output Variables" => ut_ot_vars())))
-    @test_throws PeriLab.PeriLabError PH.output_filenames(duplicate, "out")
+    @test_throws PeriLab.PeriLabError ID.output_filenames(duplicate, "out")
 end
 
 @testset "output fieldnames" begin
     variables = Dict("Displacements" => true, "Forces" => true, "Temperature" => false,
                      "Missing" => true, "Reaction" => true)
     field_keys = ["DisplacementsNP1", "Forces"]
-    fields = PH.output_fieldnames(variables, field_keys, ["Reaction"], "Exodus")
+    fields = ID.output_fieldnames(variables, field_keys, ["Reaction"], "Exodus")
     @test sort(fields) == sort([["Displacements", "NP1"], ["Forces", "Constant"],
                                 ["Reaction", "Constant"]])
-    @test PH.output_fieldnames(variables, field_keys, ["Reaction"], "CSV") ==
+    @test ID.output_fieldnames(variables, field_keys, ["Reaction"], "CSV") ==
           [["Reaction", "Constant"]]
-    @test PH.output_fieldnames(variables, field_keys, ["Reaction"], "Exodus") ==
+    @test ID.output_fieldnames(variables, field_keys, ["Reaction"], "Exodus") ==
           PH.get_output_fieldnames(variables, field_keys, ["Reaction"], "Exodus")
 end
 
@@ -95,8 +95,8 @@ end
                                       "bad" => Dict{String,Any}("Compute Class" => "Block_Data",
                                                                 "Variable" => "Nope",
                                                                 "Block" => "block_1")))
-    @test PH.compute_names(computes) == ["a_sum", "b_max", "bad"]
-    active = PH.active_computes(computes, ["DisplacementsNP1", "Forces"])
+    @test ID.compute_names(computes) == ["a_sum", "b_max", "bad"]
+    active = ID.active_computes(computes, ["DisplacementsNP1", "Forces"])
     @test sort(collect(keys(active))) == ["a_sum", "b_max"]
     @test active["b_max"] === computes["b_max"]
 end
@@ -122,19 +122,19 @@ function ut_ot_compare_all_decks()
         deck_needs_license(ctx) && continue
         outputs = input.sections.outputs
         computes = input.sections.compute_class_parameters
-        @test sort(PH.output_filenames(outputs, "out")) ==
+        @test sort(ID.output_filenames(outputs, "out")) ==
               sort(PH.get_output_filenames(deck, "out"))
         if haskey(deck, "Outputs")
             for nsteps in (1, 7, 1000)
-                typed = Dict(zip(keys(outputs), PH.output_frequencies(outputs, nsteps, 1)))
+                typed = Dict(zip(keys(outputs), ID.output_frequencies(outputs, nsteps, 1)))
                 reference = Dict(zip(string.(keys(deck["Outputs"])),
                                      PH.get_output_frequencies(deck, nsteps, 1)))
                 @test typed == reference
             end
         end
-        @test PH.compute_names(computes) == PH.get_computes_names(deck)
+        @test ID.compute_names(computes) == PH.get_computes_names(deck)
         variables = String[c.variable for c in values(computes)]
-        @test sort(collect(keys(PH.active_computes(computes, variables)))) ==
+        @test sort(collect(keys(ID.active_computes(computes, variables)))) ==
               sort(collect(keys(PH.get_computes(deck, variables))))
     end
 end
@@ -142,3 +142,16 @@ end
 @testset "output and compute functions equal the Dict getters on every shipped deck" begin
     ut_ot_compare_all_decks()
 end
+
+@testset "ut_check_for_duplicates" begin
+    @test !(PeriLab.InputDeck.check_for_duplicates(["a", "b", "c"]))
+    @test_logs (:error, "Filename a is used 2 times") @test_throws PeriLab.PeriLabError begin
+        PeriLab.InputDeck.check_for_duplicates([
+                                                            "a",
+                                                            "b",
+                                                            "c",
+                                                            "a"
+                                                        ])
+    end
+end
+
