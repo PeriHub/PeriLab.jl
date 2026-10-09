@@ -51,14 +51,14 @@ end
 """
     init_model(nodes::AbstractVector{Int64}, block::Int64)
 
-Initialize the degradation model of a block (`Data_Manager.get_block_model("Degradation Model", block)`).
+Initialize the degradation model of a block (`Data_Manager.get_block_models(block).degradation`).
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: Nodes for the degradation model.
 - `block::Int64`: Block identifier for the degradation model.
 """
 function init_model(nodes::AbstractVector{Int64}, block::Int64)
-    p = Data_Manager.get_block_model("Degradation Model", block)
+    p = Data_Manager.get_block_models(block).degradation
     model_module(p).init_model(nodes, p, block)
 end
 
@@ -72,7 +72,7 @@ Defines all synchronization fields for local synchronization
 - `block::Int64`: block ID
 """
 function fields_for_local_synchronization(model, block)
-    p = Data_Manager.get_block_model("Degradation Model", block)
+    p = Data_Manager.get_block_models(block).degradation
     return model_module(p).fields_for_local_synchronization(model)
 end
 

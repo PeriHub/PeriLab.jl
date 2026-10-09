@@ -858,7 +858,7 @@ function _setup_zero_energy(nodes, dof, C_voigt_trafo, inverse_shape_tensor,
                             include_zero_energy)
     use_zero_energy = false
     zStiff = nothing
-    material = Data_Manager.get_block_material(1)
+    material = Data_Manager.get_block_models(1).material
     if material !== nothing && material.base.zero_energy_control !== nothing
         if material.base.zero_energy_control == "Global"
             use_zero_energy = include_zero_energy

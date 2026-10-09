@@ -167,7 +167,7 @@ Defines all synchronization fields for local synchronization
 - `block::Int64`: block ID
 """
 function fields_for_local_synchronization(model, block)
-    damage = Data_Manager.get_block_damage(block)
+    damage = Data_Manager.get_block_models(block).damage
     model_module(damage).fields_for_local_synchronization(model)
 end
 """
@@ -230,7 +230,7 @@ end
 """
     init_model(nodes::AbstractVector{Int64}, block::Int64)
 
-Initializes the damage model of a block (`Data_Manager.get_block_damage(block)`),
+Initializes the damage model of a block (`Data_Manager.get_block_models(block).damage`),
 its interface and anisotropic critical values.
 
 # Arguments
@@ -238,7 +238,7 @@ its interface and anisotropic critical values.
 - `block::Int64`: Block identifier.
 """
 function init_model(nodes::AbstractVector{Int64}, block::Int64)
-    damage = Data_Manager.get_block_damage(block)
+    damage = Data_Manager.get_block_models(block).damage
     model_module(damage).init_model(nodes, damage.model, damage, block)
     model_module(damage).fields_for_local_synchronization("Damage Model")
     init_interface_crit_values(damage, block)

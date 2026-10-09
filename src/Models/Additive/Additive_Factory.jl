@@ -100,14 +100,14 @@ end
 """
     init_model(nodes::AbstractVector{Int64}, block::Int64)
 
-Initialize the additive model of a block (`Data_Manager.get_block_model("Additive Model", block)`).
+Initialize the additive model of a block (`Data_Manager.get_block_models(block).additive`).
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: Nodes for the additive model.
 - `block::Int64`: Block identifier for the additive model.
 """
 function init_model(nodes::AbstractVector{Int64}, block::Int64)
-    p = Data_Manager.get_block_model("Additive Model", block)
+    p = Data_Manager.get_block_models(block).additive
     Base.@invokelatest model_module(p).init_model(nodes, p, block)
 end
 
@@ -121,7 +121,7 @@ Defines all synchronization fields for local synchronization
 - `block::Int64`: block ID
 """
 function fields_for_local_synchronization(model, block)
-    p = Data_Manager.get_block_model("Additive Model", block)
+    p = Data_Manager.get_block_models(block).additive
     return Base.@invokelatest model_module(p).fields_for_local_synchronization(model)
 end
 

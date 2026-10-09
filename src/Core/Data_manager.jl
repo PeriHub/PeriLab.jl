@@ -60,13 +60,10 @@ export add_active_model
 export fem_active
 export set_fem_params
 export get_fem_params
-export set_block_material
-export set_block_damage
-export get_block_damage
-export set_block_model
-export get_block_model
 export bind_dependent_tables!
-export get_block_material
+export BlockModels
+export set_block_models
+export get_block_models
 export set_surface_correction
 export get_surface_correction
 export initialize_data
@@ -175,9 +172,7 @@ function initialize_data()
     ]
     data["coupling_dict"] = Dict{Int64,Int64}()
     data["FEM Parameters"] = nothing
-    data["Block Materials"] = Dict{Int64,Any}()
-    data["Block Damages"] = Dict{Int64,Any}()
-    data["Block Models"] = Dict{String,Dict{Int64,Any}}()
+    data["Block Models"] = Dict{Int64,BlockModels}()
     data["Surface Correction"] = nothing
     data["output_frequency"] = []
     data["accuracy_order"] = 1
@@ -324,58 +319,43 @@ function get_fem_params()
 end
 
 """
-	set_block_material(block, material)
+    BlockModels
 
-Stores the typed material (`BlockMaterial`) of a block.
+The typed models of one block, `nothing` where the block has none of a category.
+`pre_calculation` lists the active pre-calculations in run order (empty: none).
+Surface correction is global (`input.sections.surface_correction`), not per block.
 """
-function set_block_material(block::Int64, material)
-    data["Block Materials"][block] = material
+struct BlockModels{M,D,T,A,G}
+    material::M
+    damage::D
+    thermal::T
+    additive::A
+    degradation::G
+    pre_calculation::Vector{String}
 end
 
-"""
-	get_block_material(block)
-
-The typed material of a block, or `nothing`.
-"""
-function get_block_material(block::Int64)
-    return get(data["Block Materials"], block, nothing)
+function BlockModels(; material = nothing, damage = nothing, thermal = nothing,
+                     additive = nothing, degradation = nothing,
+                     pre_calculation::Vector{String} = String[])
+    return BlockModels(material, damage, thermal, additive, degradation, pre_calculation)
 end
 
-"""
-	set_block_damage(block, damage)
-
-Stores the typed damage model (`BlockDamage`) of a block.
-"""
-function set_block_damage(block::Int64, damage)
-    data["Block Damages"][block] = damage
-end
+# a block without models; never mutated
+const NO_BLOCK_MODELS = BlockModels()
 
 """
-	get_block_damage(block)
+	set_block_models(block, models)
 
-The typed damage model of a block, or `nothing`.
+Stores the typed models (`BlockModels`) of a block.
 """
-function get_block_damage(block::Int64)
-    return get(data["Block Damages"], block, nothing)
-end
+set_block_models(block::Int64, models::BlockModels) = (data["Block Models"][block] = models)
 
 """
-	set_block_model(category, block, model)
+	get_block_models(block)
 
-Stores the typed model of `category` (e.g. "Thermal Model") of a block.
+The typed models of a block (`NO_BLOCK_MODELS` if it has none).
 """
-function set_block_model(category::String, block::Int64, model)
-    get!(Dict{Int64,Any}, data["Block Models"], category)[block] = model
-end
-
-"""
-	get_block_model(category, block)
-
-The typed model of `category` of a block, or `nothing`.
-"""
-function get_block_model(category::String, block::Int64)
-    return get(get(data["Block Models"], category, Dict{Int64,Any}()), block, nothing)
-end
+get_block_models(block::Int64) = get(data["Block Models"], block, NO_BLOCK_MODELS)
 
 # node field a dependent value reads (the NP1 state if the field has one)
 function _dependent_field(name::String)

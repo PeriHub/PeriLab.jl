@@ -50,14 +50,14 @@ end
     init_model(nodes::AbstractVector{Int64}, block::Int64)
 
 Initializes the block's active pre-calculations
-(`Data_Manager.get_block_model("Pre Calculation Model", block)`).
+(`Data_Manager.get_block_models(block).pre_calculation`).
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes.
 - `block::Int64`: Block.
 """
 function init_model(nodes::AbstractVector{Int64}, block::Int64)
-    for name in Data_Manager.get_block_model("Pre Calculation Model", block)
+    for name in Data_Manager.get_block_models(block).pre_calculation
         pre_calculation_module(name).init_model(nodes, block)
     end
 end
@@ -91,7 +91,7 @@ Defines all synchronization fields for local synchronization
 - `block::Int64`: block ID
 """
 function fields_for_local_synchronization(model, block)
-    for name in Data_Manager.get_block_model("Pre Calculation Model", block)
+    for name in Data_Manager.get_block_models(block).pre_calculation
         pre_calculation_module(name).fields_for_local_synchronization(model)
     end
 end
@@ -107,10 +107,10 @@ pre-calculations depend on, and stores the block's list in run order.
 """
 function check_dependencies(block_nodes::Dict{Int64,Vector{Int64}})
     for block_id in eachindex(block_nodes)
-        material = Data_Manager.get_block_material(block_id)
+        models = Data_Manager.get_block_models(block_id)
+        material = models.material
         material === nothing && continue
-        current = Data_Manager.get_block_model("Pre Calculation Model", block_id)
-        names = Set{String}(current === nothing ? String[] : current)
+        names = Set{String}(models.pre_calculation)
         push!(names, "Deformed Bond Geometry")
         if material.correspondence
             if material.base.bond_associated
@@ -120,8 +120,11 @@ function check_dependencies(block_nodes::Dict{Int64,Vector{Int64}})
             end
         end
         "Deformation Gradient" in names && push!(names, "Shape Tensor")
-        Data_Manager.set_block_model("Pre Calculation Model", block_id,
-                                     order_pre_calculations(collect(names)))
+        Data_Manager.set_block_models(block_id,
+                                      BlockModels(models.material, models.damage,
+                                                  models.thermal, models.additive,
+                                                  models.degradation,
+                                                  order_pre_calculations(collect(names))))
     end
 end
 

@@ -84,7 +84,7 @@ end
                                                                                        "Heat Transfer Coefficient" => 1.0,
                                                                                        "Environmental Temperature" => 30)))))
     PeriLab.Solver_Manager.Model_Factory.read_properties(input, false)
-    @test PeriLab.Data_Manager.get_block_model("Thermal Model", 1) === input.thermals["therm"]
+    @test PeriLab.Data_Manager.get_block_models(1).thermal === input.thermals["therm"]
 end
 
 @testset "ut_add_model" begin
@@ -129,7 +129,7 @@ end
     PeriLab.Data_Manager.set_block_name_list(["block_1"])
     PeriLab.Data_Manager.set_block_id_list([1])
     PeriLab.Solver_Manager.Model_Factory.read_properties(input, true)
-    m = PeriLab.Data_Manager.get_block_material(1)
+    m = PeriLab.Data_Manager.get_block_models(1).material
     @test m isa PeriLab.Solver_Manager.Model_Factory.Material.BlockMaterial
     @test m.symmetry == "plane strain"
     @test m.moduli.youngs_modulus == 22.5
@@ -157,7 +157,7 @@ end
                                                                                                                                                                                                                      true)
     # without a material model the name is not checked
     PeriLab.Solver_Manager.Model_Factory.read_properties(input, false)
-    @test PeriLab.Data_Manager.get_block_material(1) === nothing
+    @test PeriLab.Data_Manager.get_block_models(1).material === nothing
 end
 
 @testset "local damping symmetry of a block without material" begin
@@ -167,7 +167,7 @@ end
     m = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
                                   "Symmetry" => "isotropic plane strain",
                                   "Bulk Modulus" => 10.0, "Shear Modulus" => 10.0))
-    PeriLab.Data_Manager.set_block_material(1, m)
+    PeriLab.Data_Manager.set_block_models(1, PeriLab.Data_Manager.BlockModels(material = m))
     @test PeriLab.Solver_Manager.Model_Factory.local_damping_symmetry(1) == "plane strain"
 end
 
@@ -184,9 +184,9 @@ end
                                                         "Critical Value" => 0.1)))
     input = typed_input(Dict("Blocks" => blocks, "Models" => models))
     PeriLab.Solver_Manager.Model_Factory.read_properties(input, false)
-    d = PeriLab.Data_Manager.get_block_damage(1)
+    d = PeriLab.Data_Manager.get_block_models(1).damage
     @test d isa PeriLab.Solver_Manager.Model_Factory.Damage.BlockDamage
-    @test PeriLab.Data_Manager.get_block_damage(2) === nothing
+    @test PeriLab.Data_Manager.get_block_models(2).damage === nothing
 
     blocks["block_1"]["Damage Model"] = "Dmg"
     input = typed_input(Dict("Blocks" => blocks, "Models" => models))
@@ -210,7 +210,7 @@ end
                                     "Damage Model" => "Dam"))
     input = typed_input(Dict("Blocks" => blocks, "Models" => Dict("Damage Models" => damages)))
     d = MF.Damage.block_damage(input.damages["Dam"])
-    PeriLab.Data_Manager.set_block_damage(1, d)
+    PeriLab.Data_Manager.set_block_models(1, PeriLab.Data_Manager.BlockModels(damage = d))
     @test MF.has_block_model(1, "Damage Model")
     @test MF.block_model_parameters(1, "Damage Model") === d
     @test MF.block_local_damping(1).damping_coefficient == 0.5

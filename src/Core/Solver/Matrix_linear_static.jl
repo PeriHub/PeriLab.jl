@@ -99,7 +99,7 @@ function init_solver(solver_options::Dict{Any,Any},
                            solver_options["Number of Steps"]
 
     for (block, nodes) in pairs(block_nodes)
-        material = Data_Manager.get_block_material(block)
+        material = Data_Manager.get_block_models(block).material
         if !material.correspondence
             @abort "Only Correspondence Models are supported with the Linear Static Matrix based solver"
         end

@@ -80,14 +80,14 @@ end
 """
     init_model(nodes::AbstractVector{Int64}, block::Int64)
 
-Initializes every part of the block's thermal model (`Data_Manager.get_block_model("Thermal Model", block)`).
+Initializes every part of the block's thermal model (`Data_Manager.get_block_models(block).thermal`).
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes.
 - `block::Int64`: Block.
 """
 function init_model(nodes::AbstractVector{Int64}, block::Int64)
-    thermal = Data_Manager.get_block_model("Thermal Model", block)
+    thermal = Data_Manager.get_block_models(block).thermal
     for part in model_parts(thermal.model)
         parentmodule(typeof(part)).init_model(nodes, part, thermal, block)
     end
@@ -103,7 +103,7 @@ Defines all synchronization fields for local synchronization
 - `block::Int64`: block ID
 """
 function fields_for_local_synchronization(model, block)
-    thermal = Data_Manager.get_block_model("Thermal Model", block)
+    thermal = Data_Manager.get_block_models(block).thermal
     for part in model_parts(thermal.model)
         parentmodule(typeof(part)).fields_for_local_synchronization(model)
     end

@@ -45,7 +45,7 @@ end
                                     "Heat Transfer Coefficient" => 1.0,
                                     "Environmental Temperature" => 30);
                      name_key = "Thermal Model")
-    PeriLab.Data_Manager.set_block_model("Thermal Model", 1, th)
+    PeriLab.Data_Manager.set_block_models(1, PeriLab.Data_Manager.BlockModels(thermal = th))
     PeriLab.Solver_Manager.Model_Factory.Thermal.init_model([1], 1)
     @test PeriLab.Data_Manager.has_key("Bond Norm")
 end

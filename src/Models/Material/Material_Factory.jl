@@ -432,7 +432,7 @@ Initializes the material model.
 - `block::Int64`: Block.
 """
 function init_model(nodes::AbstractVector{Int64}, block::Int64)
-    material = Data_Manager.get_block_material(block)
+    material = Data_Manager.get_block_models(block).material
     if material === nothing
         @abort "Block " * string(block) * " has no material model defined."
         return
@@ -478,7 +478,7 @@ Defines all synchronization fields for local synchronization
 - `block::Int64`: block id
 """
 function fields_for_local_synchronization(model, block)
-    material = Data_Manager.get_block_material(block)
+    material = Data_Manager.get_block_models(block).material
     if material.correspondence
         return Correspondence.fields_for_local_synchronization(model, block, material)
     end

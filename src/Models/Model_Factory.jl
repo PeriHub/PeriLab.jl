@@ -33,27 +33,33 @@ export compute_models
 export init_models
 export read_properties
 
-# the typed model of a block (Data_Manager slots), or `nothing`
+const _BLOCK_MODEL_FIELDS = Dict("Material Model" => :material, "Damage Model" => :damage,
+                                 "Thermal Model" => :thermal, "Additive Model" => :additive,
+                                 "Degradation Model" => :degradation)
+
+# the typed model of category `name` of a block, or `nothing`
 function typed_block_model(block::Int64, name::String)
-    name == "Material Model" && return Data_Manager.get_block_material(block)
-    name == "Damage Model" && return Data_Manager.get_block_damage(block)
-    return Data_Manager.get_block_model(name, block)
+    models = Data_Manager.get_block_models(block)
+    if name == "Pre Calculation Model"
+        return isempty(models.pre_calculation) ? nothing : models.pre_calculation
+    end
+    return getfield(models, _BLOCK_MODEL_FIELDS[name])
 end
 has_block_model(block::Int64, name::String) = typed_block_model(block, name) !== nothing
 block_model_parameters(block::Int64, name::String) = typed_block_model(block, name)
 # local damping of a block's damage model, or `nothing`
 function block_local_damping(block::Int64)
-    damage = Data_Manager.get_block_damage(block)
+    damage = Data_Manager.get_block_models(block).damage
     return damage === nothing ? nothing : damage.base.local_damping
 end
 # Thermal Conductivity of a block's thermal model, or `nothing`
 function block_thermal_conductivity(block::Int64)
-    thermal = Data_Manager.get_block_model("Thermal Model", block)
+    thermal = Data_Manager.get_block_models(block).thermal
     return thermal === nothing ? nothing : thermal.base.thermal_conductivity
 end
 # symmetry for the local damping; a block without material (e.g. a damage-only run) is 3D
 function local_damping_symmetry(block::Int64)
-    material = Data_Manager.get_block_material(block)
+    material = Data_Manager.get_block_models(block).material
     return material === nothing ? "3D" : material.symmetry
 end
 
@@ -407,7 +413,7 @@ function compute_matrix_based_bond_forces(block_nodes::Dict{Int64,Vector{Int64}}
                                          active_nodes,
                                          nodes,
                                          true)
-        material = Data_Manager.get_block_material(block)
+        material = Data_Manager.get_block_models(block).material
 
         if material.correspondence
             Pre_Calculation.compute_model(active_nodes,
@@ -456,48 +462,40 @@ thermal, pre-calculation) in `Data_Manager`; aborts on undefined model names.
 - `material_model::Bool`: Material model.
 """
 function read_properties(input::PeriLabInput, material_model::Bool)
-    block_name_list = Data_Manager.get_block_name_list()
-    block_id_list = Data_Manager.get_block_id_list()
-    if material_model
-        dof = Data_Manager.get_dof()
-        for (block_name, block) in zip(block_name_list, block_id_list)
+    dof = Data_Manager.get_dof()
+    for (block_name, block) in zip(Data_Manager.get_block_name_list(),
+                                   Data_Manager.get_block_id_list())
+        material = nothing
+        if material_model
             wb = block_typed_model(input, block_name, :material_model, "Material Model",
                                    input.materials)
-            wb === nothing && continue
-            material_name = input.sections.blocks[block_name].material_model
-            model_name = String(input.models["Material Models"][material_name]["Material Model"])
-            material = Material.block_material(wb, model_name, dof)
-            Material.check_material_symmetry(material, dof)
-            Data_Manager.set_block_material(block, material)
+            if wb !== nothing
+                material_name = input.sections.blocks[block_name].material_model
+                model_name = String(input.models["Material Models"][material_name]["Material Model"])
+                material = Material.block_material(wb, model_name, dof)
+                Material.check_material_symmetry(material, dof)
+            end
         end
-    end
-    for (block_name, block) in zip(block_name_list, block_id_list)
-        d = block_typed_model(input, block_name, :damage_model, "Damage Model", input.damages)
-        d === nothing || Data_Manager.set_block_damage(block, Damage.block_damage(d))
-    end
-    for (block_name, block) in zip(block_name_list, block_id_list)
-        a = block_typed_model(input, block_name, :additive_model, "Additive Model",
-                              input.additives)
-        a === nothing || Data_Manager.set_block_model("Additive Model", block, a)
-    end
-    for (block_name, block) in zip(block_name_list, block_id_list)
-        g = block_typed_model(input, block_name, :degradation_model, "Degradation Model",
-                              input.degradations)
-        g === nothing || Data_Manager.set_block_model("Degradation Model", block, g)
-    end
-    for (block_name, block) in zip(block_name_list, block_id_list)
-        th = block_typed_model(input, block_name, :thermal_model, "Thermal Model",
-                               input.thermals)
-        th === nothing || Data_Manager.set_block_model("Thermal Model", block, th)
-    end
-    for (block_name, block) in zip(block_name_list, block_id_list)
+        damage = block_typed_model(input, block_name, :damage_model, "Damage Model",
+                                   input.damages)
         switches = block_typed_model(input, block_name, :pre_calculation_model,
                                      "Pre Calculation Model", input.pre_calculations)
         switches === nothing && (switches = input.pre_calculation_global)
-        switches === nothing && continue
-        names = Pre_Calculation.active_pre_calculations(switches)
-        isempty(names) ||
-            Data_Manager.set_block_model("Pre Calculation Model", block, names)
+        models = BlockModels(material = material,
+                             damage = damage === nothing ? nothing :
+                                      Damage.block_damage(damage),
+                             thermal = block_typed_model(input, block_name, :thermal_model,
+                                                         "Thermal Model", input.thermals),
+                             additive = block_typed_model(input, block_name,
+                                                          :additive_model, "Additive Model",
+                                                          input.additives),
+                             degradation = block_typed_model(input, block_name,
+                                                             :degradation_model,
+                                                             "Degradation Model",
+                                                             input.degradations),
+                             pre_calculation = switches === nothing ? String[] :
+                                               Pre_Calculation.active_pre_calculations(switches))
+        Data_Manager.set_block_models(block, models)
     end
 end
 
@@ -724,7 +722,7 @@ function compute_crititical_time_step(block_nodes::Dict{Int64,Vector{Int64}},
             end
         end
         if mechanical
-            material = Data_Manager.get_block_material(iblock)
+            material = Data_Manager.get_block_models(iblock).material
             bulk_modulus = material === nothing ? nothing :
                            Material.critical_bulk_modulus(material)
             if isnothing(bulk_modulus)

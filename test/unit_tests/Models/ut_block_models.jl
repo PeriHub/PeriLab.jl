@@ -4,16 +4,6 @@
 
 const UT_MF = PeriLab.Solver_Manager.Model_Factory
 
-@testset "generic block model slot" begin
-    PeriLab.Data_Manager.initialize_data()
-    @test PeriLab.Data_Manager.get_block_model("Thermal Model", 1) === nothing
-    PeriLab.Data_Manager.set_block_model("Thermal Model", 1, :x)
-    @test PeriLab.Data_Manager.get_block_model("Thermal Model", 1) === :x
-    @test PeriLab.Data_Manager.get_block_model("Thermal Model", 2) === nothing
-    @test PeriLab.Data_Manager.get_block_model("Additive Model", 1) === nothing
-    @test "Block Models" in PeriLab.Data_Manager.CHECKPOINT_EXCLUDED_KEYS
-end
-
 @testset "block_typed_model" begin
     blocks = Dict("block_1" => Dict("Block ID" => 1, "Density" => 1.0, "Horizon" => 1.0,
                                     "Damage Model" => "Dam"),
@@ -45,7 +35,7 @@ end
     PeriLab.Data_Manager.set_num_controller(3)
     AT = UT_MF.Additive.Additive_template
     p = AT.AdditiveTemplateParams()
-    PeriLab.Data_Manager.set_block_model("Additive Model", 1, p)
+    PeriLab.Data_Manager.set_block_models(1, PeriLab.Data_Manager.BlockModels(additive = p))
     @test UT_MF.has_block_model(1, "Additive Model")
     @test UT_MF.block_model_parameters(1, "Additive Model") === p
     UT_MF.Additive.init_model([1, 2, 3], 1)
@@ -79,7 +69,7 @@ end
     p = typed_model(:degradation, Dict("Degradation Model" => "Thermal Decomposition",
                                        "Decomposition Temperature" => 50);
                     name_key = "Degradation Model")
-    PeriLab.Data_Manager.set_block_model("Degradation Model", 1, p)
+    PeriLab.Data_Manager.set_block_models(1, PeriLab.Data_Manager.BlockModels(degradation = p))
     UT_MF.Degradation.init_model([1, 2], 1)
     UT_MF.Degradation.compute_model([1, 2], p, 1, 0.0, 1.0)
     @test PeriLab.Data_Manager.get_field("Active") == [true, false]
@@ -123,7 +113,7 @@ end
                                "Thermal Conductivity" => 0.12,
                                "Heat Transfer Coefficient" => 1.0,
                                "Environmental Temperature" => 30))
-    PeriLab.Data_Manager.set_block_model("Thermal Model", 1, th)
+    PeriLab.Data_Manager.set_block_models(1, PeriLab.Data_Manager.BlockModels(thermal = th))
     @test UT_MF.block_thermal_conductivity(1) == 0.12
     @test UT_MF.block_thermal_conductivity(2) === nothing
 end
@@ -164,10 +154,10 @@ end
                                                    "Off" => Dict("Shape Tensor" => false)))
     input = typed_input(Dict("Blocks" => blocks, "Models" => models))
     UT_MF.read_properties(input, false)
-    get(b) = PeriLab.Data_Manager.get_block_model("Pre Calculation Model", b)
+    get(b) = PeriLab.Data_Manager.get_block_models(b).pre_calculation
     @test get(1) == ["Deformed Bond Geometry", "Shape Tensor"]
     @test get(2) == ["Deformation Gradient"]          # replaces the global switches
-    @test get(3) === nothing                          # nothing active
+    @test isempty(get(3))                             # nothing active
     @test UT_MF.has_block_model(1, "Pre Calculation Model")
     @test !UT_MF.has_block_model(3, "Pre Calculation Model")
     @test UT_MF.Pre_Calculation.order_pre_calculations(["Axis Symmetric", "Shape Tensor",

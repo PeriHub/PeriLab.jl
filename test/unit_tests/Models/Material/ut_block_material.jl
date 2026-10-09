@@ -180,13 +180,13 @@ end
     ut_reset(3; nnodes = 2)
     m = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
                                   "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0))
-    PeriLab.Data_Manager.set_block_material(1, m)
+    PeriLab.Data_Manager.set_block_models(1, PeriLab.Data_Manager.BlockModels(material = m))
     dir = mktempdir()
     PeriLab.Data_Manager.write_checkpoint(dir, 0)
-    PeriLab.Data_Manager.set_block_material(1, nothing)
+    PeriLab.Data_Manager.set_block_models(1, PeriLab.Data_Manager.BlockModels())
     PeriLab.Data_Manager.read_checkpoint!(dir, 0)
     # rebuilt from the input by read_properties, never restored from a checkpoint
-    @test PeriLab.Data_Manager.get_block_material(1) === nothing
+    @test PeriLab.Data_Manager.get_block_models(1).material === nothing
 end
 
 function ut_legacy_dict(raw; dof)
@@ -548,10 +548,10 @@ end
     function ut_dependencies(raw)
         ut_reset(3; nnodes = 2)
         PeriLab.Data_Manager.set_block_id_list([1])
-        PeriLab.Data_Manager.set_block_material(1, typed_block_material(raw))
+        PeriLab.Data_Manager.set_block_models(1, PeriLab.Data_Manager.BlockModels(material = typed_block_material(raw)))
         PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.check_dependencies(Dict(1 => [1,
                                                                                             2]))
-        return PeriLab.Data_Manager.get_block_model("Pre Calculation Model", 1)
+        return PeriLab.Data_Manager.get_block_models(1).pre_calculation
     end
     corr = Dict{String,Any}("Material Model" => "Correspondence Elastic",
                             "Symmetry" => "isotropic", "Bulk Modulus" => 1.0,
@@ -595,7 +595,7 @@ end
     PeriLab.Data_Manager.set_block_id_list([1, 2])
     m = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
                                   "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0))
-    PeriLab.Data_Manager.set_block_material(1, m)
+    PeriLab.Data_Manager.set_block_models(1, PeriLab.Data_Manager.BlockModels(material = m))
     @test MF.has_block_model(1, "Material Model")
     @test !MF.has_block_model(2, "Material Model")
     @test MF.block_model_parameters(1, "Material Model") === m

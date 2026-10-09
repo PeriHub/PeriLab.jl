@@ -34,11 +34,11 @@ end
 
 @testset "block damage slot" begin
     PeriLab.Data_Manager.initialize_data()
-    @test PeriLab.Data_Manager.get_block_damage(1) === nothing
+    @test PeriLab.Data_Manager.get_block_models(1).damage === nothing
     d = ut_typed_damage(Dict("Damage Model" => "Critical Stretch", "Critical Value" => 0.1))
-    PeriLab.Data_Manager.set_block_damage(1, d)
-    @test PeriLab.Data_Manager.get_block_damage(1) === d
-    @test "Block Damages" in PeriLab.Data_Manager.CHECKPOINT_EXCLUDED_KEYS
+    PeriLab.Data_Manager.set_block_models(1, PeriLab.Data_Manager.BlockModels(damage = d))
+    @test PeriLab.Data_Manager.get_block_models(1).damage === d
+    @test "Block Models" in PeriLab.Data_Manager.CHECKPOINT_EXCLUDED_KEYS
 end
 
 @testset "typed interface critical values" begin
@@ -104,7 +104,7 @@ end
 function ut_stretch_damage(raw; deformed = (1.2, 0.9))
     ut_stretch_setup(deformed)
     d = ut_typed_damage(raw)
-    PeriLab.Data_Manager.set_block_damage(1, d)
+    PeriLab.Data_Manager.set_block_models(1, PeriLab.Data_Manager.BlockModels(damage = d))
     BDAM.Critical_Stretch.init_model([1, 2], d.model, d, 1)
     BDAM.Critical_Stretch.compute_model([1, 2], d.model, d, 1, 0.0, 1.0)
     bd = PeriLab.Data_Manager.get_bond_damage("NP1")
@@ -139,7 +139,7 @@ end
     PeriLab.Data_Manager.create_constant_node_scalar_field("Volume", Float64) .= 1.0
     PeriLab.Data_Manager.create_node_scalar_field("Damage", Float64)
     d = ut_typed_damage(Dict("Damage Model" => "Critical Stretch", "Critical Value" => 0.15))
-    PeriLab.Data_Manager.set_block_damage(1, d)
+    PeriLab.Data_Manager.set_block_models(1, PeriLab.Data_Manager.BlockModels(damage = d))
     BDAM.init_model([1, 2], 1)
     BDAM.compute_model([1, 2], d, 1, 0.0, 1.0)
     @test PeriLab.Data_Manager.get_damage("NP1") == [1.0, 0.0]

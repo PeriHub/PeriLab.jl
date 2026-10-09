@@ -127,7 +127,7 @@ function calculate_stresses(block_nodes::Dict{Int64,Vector{Int64}},
                             options::Dict{String,Any})
     active_list = Data_Manager.get_field("Active")
     for block in eachindex(block_nodes)
-        material = Data_Manager.get_block_material(block)
+        material = Data_Manager.get_block_models(block).material
         correspondence = material.correspondence
 
         if options["Calculate Cauchy"] |
