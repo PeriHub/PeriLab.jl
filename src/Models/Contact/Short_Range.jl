@@ -4,16 +4,36 @@
 
 module Short_Range
 
+# Not yet implemented: a short range force contact model, built from the contact
+# template (unregistered until it is implemented).
+
 using .....Data_Manager
+using .....ParameterSpec: @params, register_contact
 
 export contact_model_name
 export init_contact_model
-export compute_model
+export compute_contact_model
+
+"""
+    ShortRangeParams
+
+Declare the YAML keys your contact model needs beyond the shared contact keys
+(Contact Radius, Symmetry, Contact Groups are in `contact.base`). Example:
+
+    my_parameter::Float64 = req("My Parameter"; min = 0, description = "...")
+
+Register it under the name the input deck uses (`Type`) by uncommenting
+`__init__` (the template stays unregistered so that a copy never collides with it).
+"""
+@params struct ShortRangeParams
+end
+
+# __init__() = register_contact("Short Range", ShortRangeParams)
 
 """
     contact_model_name()
 
-Gives the contact model name. It is needed for comparison with the yaml input deck.
+Gives the contact model name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_contact` in `__init__()`.
 
 # Arguments
 
@@ -31,49 +51,36 @@ function contact_model_name()
 end
 
 """
-  init_contact_model(
-    nodes::AbstractVector{Int64},
-    contact_parameter::Dict,
-    block::Int64,
-)
+    init_contact_model(p, contact)
 
 Inits the contact model. This template has to be copied, the file renamed and edited by the user to create a new contact. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `nodes::AbstractVector{Int64}`: List of block nodes.
-- `contact_parameter::Dict(String, Any)`: Dictionary with contact parameter.
-- `block::Int64`: The current block.
-
+- `p::ShortRangeParams`: The model parameters.
+- `contact`: The contact model of the input deck; `contact.base` holds the shared contact keys.
 """
-function init_contact_model(nodes::AbstractVector{Int64},
-                            contact_parameter::Dict,
-                            block::Int64)
+function init_contact_model(p::ShortRangeParams, contact)
 end
 
 """
-    compute_model(nodes, contact_parameter, block::Int64,, time, dt)
+    compute_contact_model(cg, p, contact, compute_master_force_density, compute_slave_force_density)
 
-Not yet implemented short range contact model.
+Computes the contact forces of contact group `cg`. The contact pairs of the group are in `Data_Manager.get_contact_dict(cg)`.
 
 # Arguments
-- `nodes::AbstractVector{Int64}`: List of block nodes.
-- `contact_parameter::Dict(String, Any)`: Dictionary with flow parameter.
-- `block::Int64`: The current block.
-- `time::Float64`: The current time.
-- `dt::Float64`: The current time step.
-Example:
-```julia
-```
+- `cg::String`: The contact group.
+- `p::ShortRangeParams`: The model parameters.
+- `contact`: The contact model of the input deck; `contact.base` holds the shared contact keys.
+- `compute_master_force_density::Function`: Adds a force to a master node, `(master_id, slave_id, force)`.
+- `compute_slave_force_density::Function`: Adds a force to a slave node, `(slave_id, master_id, force)`.
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       contact_parameter::Dict,
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
-    @info "Please write a contact model name in thermal_name()."
+function compute_contact_model(cg, p::ShortRangeParams, contact,
+                               compute_master_force_density::Function,
+                               compute_slave_force_density::Function)
+    @info "Please register your contact model with register_contact in __init__()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_model(nodes, contact_parameter, block, time, dt) function."
-    @info "The Data_Manager and contact_parameter holds all you need to solve your problem on contact flow level."
+    @info "Fill the compute_contact_model(cg, p, contact, compute_master_force_density, compute_slave_force_density) function."
+    @info "The Data_Manager, p and contact hold all you need to solve your problem on contact level."
     @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
 end
 

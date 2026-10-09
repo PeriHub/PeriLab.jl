@@ -26,6 +26,8 @@ include("contact.jl")
 include("input.jl")
 include("generators.jl")
 
+__init__() = ParameterSpec.register_base!(:contact, ContactBaseParams)
+
 export read_input, PeriLabInput, SolverParams, SolverOptions, ModelReductionParams,
        active_options, solver_name, start_time, end_time, model_options, solver_steps,
        solver_step,
@@ -35,7 +37,7 @@ export read_input, PeriLabInput, SolverParams, SolverOptions, ModelReductionPara
        check_for_duplicates, output_filenames, output_frequencies, output_fieldnames,
        compute_names, active_computes,
        BoundaryConditionParams, bc_node_set_names, bc_step_ids,
-       ContactInput, ContactModelParams, ContactGroupParams, ContactGlobalsParams,
+       ContactInput, ContactBaseParams, ContactGroupParams, ContactGlobalsParams,
        contact_blocks, contact_search_frequency, FEMParams, FEMCouplingParams, fem_degree,
        SurfaceCorrectionParams
 

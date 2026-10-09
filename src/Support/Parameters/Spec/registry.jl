@@ -4,6 +4,7 @@
 
 export register_model!, register_unavailable!, register_material, register_damage,
        register_thermal, register_additive, register_degradation, register_pre_calculation,
+       register_contact,
        register_base!, base_model
 
 "A model name that is known (e.g. from a license manifest) but not loaded."
@@ -68,6 +69,7 @@ register_damage(name::AbstractString, T::Type) = register_model!(:damage, name, 
 register_thermal(name::AbstractString, T::Type) = register_model!(:thermal, name, T)
 register_additive(name::AbstractString, T::Type) = register_model!(:additive, name, T)
 register_degradation(name::AbstractString, T::Type) = register_model!(:degradation, name, T)
+register_contact(name::AbstractString, T::Type) = register_model!(:contact, name, T)
 function register_pre_calculation(name::AbstractString, T::Type)
     register_model!(:pre_calculation, name, T)
 end

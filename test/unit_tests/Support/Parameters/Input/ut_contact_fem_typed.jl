@@ -27,9 +27,48 @@ end
     @test c.globals.global_search_frequency === 1
     @test c.globals.only_surface_contact_nodes
     m = c.models["C"]
-    @test m.contact_stiffness === 1e8
-    @test m.friction_coefficient === 0.0
-    @test m.symmetry == "3D"
+    @test m.name == "Penalty Contact"
+    @test m.model.contact_stiffness === 1e8
+    @test m.model.friction_coefficient === 0.0
+    @test m.base.symmetry == "3D"
+    @test m.base.contact_radius === 0.005
+end
+
+# a contact model declares its own keys; the shared keys come from the base part
+PeriLab.ParameterSpec.@params struct UTContactModelParams
+    ut_value::Float64 = req("UT Value"; min = 0)
+end
+PeriLab.ParameterSpec.register_contact("UT Contact", UTContactModelParams)
+
+cf_model(type; extra...) = Dict{String,Any}("Type" => type, "Contact Radius" => 0.005,
+                                            "Contact Groups" => Dict{String,Any}("g" => cf_group(2, 1)),
+                                            (string(k) => v for (k, v) in extra)...)
+
+@testset "contact models declare their own keys" begin
+    c, ctx = cf_contact(Dict{String,Any}("C" => cf_model("UT Contact"; var"UT Value" = 2.0)))
+    @test isempty(ctx.errors)
+    m = c.models["C"]
+    @test m.model isa UTContactModelParams && m.model.ut_value === 2.0
+    @test m.base.contact_groups["g"].master_block_id === 2
+    @test CF.contact_blocks(c) == [1, 2]
+    # Penalty keys belong to the penalty model only
+    c, ctx = cf_contact(Dict{String,Any}("C" => cf_model("UT Contact"; var"UT Value" = 2.0,
+                                                         var"Contact Stiffness" = 1.0)))
+    @test ctx.errors[1].path == "Contact.C.\"Contact Stiffness\""
+    @test startswith(ctx.errors[1].message, "unknown key")
+end
+
+@testset "contact model names" begin
+    c, ctx = cf_contact(Dict{String,Any}("C" => cf_model("Penalty Contakt")))
+    @test c === nothing
+    @test ctx.errors[1].path == "Contact.C.Type"
+    @test ctx.errors[1].message ==
+          "model \"Penalty Contakt\" not found — did you mean \"Penalty Contact\"?"
+    c, ctx = cf_contact(Dict{String,Any}("C" => cf_model("Penalty Contact + UT Contact";
+                                                         var"UT Value" = 2.0)))
+    @test c === nothing
+    @test ctx.errors[1].path == "Contact.C.Type"
+    @test ctx.errors[1].message == "contact models cannot be combined with +"
 end
 
 @testset "contact_search_frequency" begin
@@ -39,7 +78,7 @@ end
                                                                  "Contact Groups" => Dict{String,Any}("own" => cf_group(2, 1; var"Global Search Frequency" = 5),
                                                                                                       "inherit" => cf_group(3, 4)))))
     @test isempty(ctx.errors)
-    groups = c.models["C"].contact_groups
+    groups = c.models["C"].base.contact_groups
     @test CF.contact_search_frequency(groups["own"], c.globals) === 5
     @test CF.contact_search_frequency(groups["inherit"], c.globals) === 3
 end

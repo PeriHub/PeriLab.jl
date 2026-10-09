@@ -4,6 +4,10 @@
 
 export to_json_schema
 
+# model sections for the generators: those under `Models` and the contact models
+# (named entries of the top-level `Contact` section)
+const _GENERATED_MODEL_SECTIONS = (MODEL_SECTIONS..., ("Contact", :contact, "Type"))
+
 # a named model entry: the category's base keys, the key naming the model, and
 # per registered model (`if` the name is exactly that model) its own keys, with
 # the key set closed for that model (composite names match no `if`: shared keys only)
@@ -72,10 +76,10 @@ function to_json_schema(::Type{PeriLabInput})
                                                         "additionalProperties" => switches)
     props["Models"] = Dict{String,Any}("type" => "object", "properties" => models,
                                        "additionalProperties" => false)
-    contact = ParameterSpec.json_schema(ContactModelParams)
     props["Contact"] = Dict{String,Any}("type" => "object",
                                         "properties" => Dict{String,Any}("Globals" => ParameterSpec.json_schema(ContactGlobalsParams)),
-                                        "additionalProperties" => contact)
+                                        "additionalProperties" => _model_entry_schema(:contact,
+                                                                                         "Type"))
     props["Globals"] = Dict{String,Any}("type" => "object")
     deck["required"] = sort!(unique([get(deck, "required", String[]); "Models"]))
     return Dict{String,Any}("\$schema" => "https://json-schema.org/draft/2020-12/schema",
@@ -114,9 +118,9 @@ function _described(name::AbstractString)
         title = named ? "$name (section, one entry per name)" : "$name (section)"
         return (title, T, nothing, nothing, named)
     end
-    name == "Contact" && return ("Contact (section, one entry per contact model)",
-                                 ContactModelParams, nothing, nothing, true)
-    for (section, category, name_key) in MODEL_SECTIONS
+    name == "Contact" && return ("Contact (section, one entry per contact model; shared keys)",
+                                 ContactBaseParams, nothing, nothing, true)
+    for (section, category, name_key) in _GENERATED_MODEL_SECTIONS
         for (model, T) in ParameterSpec.registered_models(category)
             model == name || continue
             kind = lowercase(replace(section, " Models" => ""))
@@ -127,7 +131,7 @@ function _described(name::AbstractString)
     candidates = [[fs.alias for fs in ParameterSpec.parameter_spec(PeriLabSections)
                    if ParameterSpec._params_type(fs.type) !== nothing];
                   "Contact";
-                  [first(m) for (_, c, _) in MODEL_SECTIONS
+                  [first(m) for (_, c, _) in _GENERATED_MODEL_SECTIONS
                    for m in ParameterSpec.registered_models(c)]]
     suggestion = ParameterSpec.suggest(name, candidates)
     @abort "unknown section or model \"$name\"" *
@@ -198,6 +202,14 @@ function describe(io::IO, name::AbstractString; template::Bool = false)
             println(io, "  ", first(model_key), ": \"", name, "\"")
             _template(io, T, "  ")
             base === nothing || _template(io, base, "  ")
+        elseif name == "Contact"
+            # one placeholder entry of the first contact model
+            model, M = first(ParameterSpec.registered_models(:contact))
+            println(io, name, ":")
+            println(io, "  ", _entry_name(name), ":")
+            println(io, "    Type: \"", model, "\"")
+            _template(io, M, "    ")
+            _template(io, T, "    ")
         elseif named
             println(io, name, ":")
             println(io, "  ", _entry_name(name), ":")
@@ -209,6 +221,8 @@ function describe(io::IO, name::AbstractString; template::Bool = false)
         return nothing
     end
     println(io, title)
+    name == "Contact" &&
+        println(io, "  Type: one of ", join(ParameterSpec.registered_names(:contact), ", "))
     _describe_table(io, T, "  ")
     if base !== nothing
         println(io, last(model_key), ":")
@@ -249,13 +263,13 @@ function generate_parameter_docs(dir::AbstractString)
             T = ParameterSpec._params_type(fs.type)
             T === nothing || _docs_section(io, fs.alias, T, "##")
         end
-        _docs_section(io, "Contact", ContactModelParams, "##")
         _docs_section(io, "Contact → Globals", ContactGlobalsParams, "##")
+        println(io, "Every other entry of `Contact` is a contact model, see the input models.\n")
     end
     models_file = joinpath(dir, "input_models.md")
     open(models_file, "w") do io
         print(io, _DOCS_HEADER, "# Input Models\n\n", _QUANTITY_NOTE)
-        for (section, category, name_key) in MODEL_SECTIONS
+        for (section, category, name_key) in _GENERATED_MODEL_SECTIONS
             println(io, "## ", section, "\n")
             println(io, "Each entry names its model in `", name_key, "`.\n")
             base = ParameterSpec.base_model(category)

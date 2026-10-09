@@ -8,7 +8,7 @@ using TimerOutputs: @timeit
 
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
-using .....ModuleLoader: find_module_files, create_module_specifics
+using .....ModuleLoader: find_module_files
 using .....InputDeck: ContactInput, contact_blocks, contact_search_frequency
 global module_list = find_module_files(@__DIR__, "contact_model_name")
 for mod in module_list
@@ -59,7 +59,7 @@ function init_contact_model(contact::ContactInput)
     block_nodes = get_block_nodes(block_list, length(block_list)) # all ids
 
     for model in values(contact.models)
-        for (cg, group) in pairs(model.contact_groups)
+        for (cg, group) in pairs(model.base.contact_groups)
             Data_Manager.set_search_step(cg, 0)
             slave_id = group.slave_block_id
             master_id = group.master_block_id
@@ -105,17 +105,7 @@ function init_contact_model(contact::ContactInput)
     @info "Set contact models"
     for (cm, model) in pairs(contact.models)
         init_contact_search(cm)
-
-        mod = create_module_specifics(model.type,
-                                      module_list,
-                                      @__MODULE__,
-                                      "contact_model_name")
-        if isnothing(mod)
-            @abort "No contact model of type " * model.type * " exists."
-            return
-        end
-        Data_Manager.set_model_module(model.type, mod)
-        mod.init_contact_model(model)
+        contact_module(model).init_contact_model(model.model, model)
     end
 
     @info "Finish Init Contact Model"
@@ -161,15 +151,16 @@ function contact_block_ids(global_ids::Vector{Int64}, block_list, contact_blocks
     return mapping
 end
 
-"""
-    compute_model( nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
+# the module of a contact model: the one that declares its parameter struct
+contact_module(model) = parentmodule(typeof(model.model))
 
-Compute the forces of the contact model.
+"""
+    compute_contact_model(contact, time, dt)
+
+Searches the contact pairs and computes the forces of every contact model.
 
 # Arguments
-- `nodes::AbstractVector{Int64}`: The nodes.
-- `model_param::Dict`: The contact parameter.
-- `block::Int64`: The current block.
+- `contact::ContactInput`: The typed `Contact` section.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 """
@@ -194,14 +185,15 @@ function compute_contact_model(contact::ContactInput,
     Data_Manager.set_all_positions(all_positions)
     @timeit "Contact search" begin
         for model in values(contact.models)
-            mod = Data_Manager.get_model_module(model.type)
-            for (cg, group) in pairs(model.contact_groups)
+            mod = contact_module(model)
+            for (cg, group) in pairs(model.base.contact_groups)
                 n = Data_Manager.get_search_step(cg) + 1
                 Data_Manager.set_contact_dict(cg, Dict())
 
                 @timeit "compute_contact_pairs" compute_contact_pairs(cg, group,
-                                                                      model.contact_radius)
+                                                                      model.base.contact_radius)
                 @timeit "compute_contact_model" mod.compute_contact_model(cg,
+                                                                          model.model,
                                                                           model,
                                                                           compute_master_force_density,
                                                                           compute_slave_force_density)
@@ -366,7 +358,7 @@ end
 function check_valid_contact_model(contact::ContactInput, block_ids)
     # an inverse pair (1-2 in one group, 2-1 in another) is not allowed
     check_dict = Dict{Int64,Int64}()
-    for model in values(contact.models), group in values(model.contact_groups)
+    for model in values(contact.models), group in values(model.base.contact_groups)
         master = group.master_block_id
         slave = group.slave_block_id
         if !(master in block_ids)

@@ -7,7 +7,7 @@ module Penalty_Model
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
 using .....Helpers: get_shared_horizon, dot, norm
-using .....InputDeck: ContactModelParams
+using .....ParameterSpec: @params, register_contact
 using TimerOutputs: @timeit
 
 export contact_model_name
@@ -27,26 +27,40 @@ const friction_slave_id2D = zeros(2)
 const friction_id_id3D = zeros(3)
 const friction_slave_id3D = zeros(3)
 
+@params struct PenaltyContactParams
+    contact_stiffness::Float64 = opt("Contact Stiffness"; default = 1e8, min = 0)
+    friction_coefficient::Float64 = opt("Friction Coefficient"; default = 0.0, min = 0)
+end
+
+__init__() = register_contact("Penalty Contact", PenaltyContactParams)
+
 function contact_model_name()
     return "Penalty Contact"
 end
 
-function init_contact_model(params::ContactModelParams)
-    @info "Contact Stiffness $(params.contact_stiffness)"
+"""
+    init_contact_model(p, contact)
+
+Initializes the penalty contact model. `contact` holds the shared contact keys
+in `contact.base`.
+"""
+function init_contact_model(p::PenaltyContactParams, contact)
+    @info "Contact Stiffness $(p.contact_stiffness)"
     return nothing
 end
 """
-    compute_contact_model(cg, params, compute_master_force_density,
+    compute_contact_model(cg, p, contact, compute_master_force_density,
                                compute_slave_force_density)
     Computes a Penalty model taken from [Peridigm](https://github.com/peridigm/peridigm/blob/master/src/contact/Peridigm_ShortRangeForceContactModel.cpp)
 
 """
-function compute_contact_model(cg, params::ContactModelParams,
+function compute_contact_model(cg, p::PenaltyContactParams, contact,
                                compute_master_force_density::Function,
                                compute_slave_force_density::Function)
     contact_dict = Data_Manager.get_contact_dict(cg)
-    contact_stiffness::Float64 = params.contact_stiffness
-    contact_radius::Float64 = params.contact_radius
+    contact_stiffness::Float64 = p.contact_stiffness
+    contact_radius::Float64 = contact.base.contact_radius
+    symmetry::String = contact.base.symmetry
     dof = Data_Manager.get_dof()
     if dof == 2
         normal_force = normal_force2D
@@ -61,9 +75,9 @@ function compute_contact_model(cg, params::ContactModelParams,
             slave_id = contact["Slaves"][id]
             horizon::Float64 = get_shared_horizon(slave_id) # needed to get the correct contact horizon
             # TODO symmetry needed
-            if params.symmetry == "plane stress"
+            if symmetry == "plane stress"
                 stiffness = 9 / (pi * horizon^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
-            elseif params.symmetry == "plane strain"
+            elseif symmetry == "plane strain"
                 stiffness = 48 / (5 * pi * horizon^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
             else
                 stiffness = 9 / (pi * horizon^5)  # -> from Peridigm
@@ -78,7 +92,7 @@ function compute_contact_model(cg, params::ContactModelParams,
             normal_force = temp .* normal
             friction_id,
             friction_slave_id = compute_friction(id, slave_id,
-                                                 params.friction_coefficient,
+                                                 p.friction_coefficient,
                                                  normal_force, normal)
 
             compute_master_force_density(master_id,

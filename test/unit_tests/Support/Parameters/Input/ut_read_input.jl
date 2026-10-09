@@ -79,7 +79,7 @@ end
     @test isempty(ctx.errors)
     @test input.globals == Dict("anything" => 1)
     @test !input.sections.strict_validation
-    @test input.contact.models["C"].type == "Penalty Contact"
+    @test input.contact.models["C"].name == "Penalty Contact"
 end
 
 @testset "case variants of Contact and Models are caught" begin

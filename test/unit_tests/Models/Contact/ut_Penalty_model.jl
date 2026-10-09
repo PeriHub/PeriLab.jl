@@ -11,7 +11,9 @@
                                                          "Contact Groups" => Dict{String,Any}("g" => Dict{String,Any}("Master Block ID" => 2,
                                                                                                                       "Slave Block ID" => 1,
                                                                                                                       "Search Radius" => 0.01)))))
-    params = contact.models["C"]
-    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Contact.Penalty_Model.init_contact_model(params))
-    @test params.contact_stiffness == 1e8
+    model = contact.models["C"]
+    PM = PeriLab.Solver_Manager.Model_Factory.Contact.Penalty_Model
+    @test model.model isa PM.PenaltyContactParams
+    @test isnothing(PM.init_contact_model(model.model, model))
+    @test model.model.contact_stiffness == 1e8
 end

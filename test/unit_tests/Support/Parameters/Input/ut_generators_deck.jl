@@ -39,6 +39,17 @@ end
     @test UT_DECK["properties"]["Models"]["additionalProperties"] == false
 end
 
+@testset "contact models in the schema" begin
+    contact = UT_DECK["properties"]["Contact"]
+    @test haskey(contact["properties"], "Globals")
+    entry = contact["additionalProperties"]
+    @test "Type" in entry["required"]
+    @test haskey(entry["properties"], "Contact Groups")             # shared keys
+    penalty = only(filter(c -> c["if"]["properties"]["Type"]["const"] == "Penalty Contact",
+                          entry["allOf"]))
+    @test haskey(penalty["then"]["properties"], "Contact Stiffness")
+end
+
 # every key a shipped deck uses at top level, under Models and in blocks is a
 # declared property of the schema
 function ut_schema_keys(deck)
@@ -123,6 +134,8 @@ end
     @test occursin("### Correspondence Plastic", models)
     @test occursin("| Yield Stress | number or data file | required |", models)
     @test occursin("### Shared keys", models)
+    @test occursin("## Contact\n", models) && occursin("### Penalty Contact", models)
+    @test occursin("| Contact Stiffness |", models)
     @test occursin("## Pre Calculation", models) && occursin("Shape Tensor", models)
     @test occursin("in your consistent unit system", models)
 end
@@ -198,6 +211,11 @@ end
     composite = merge(plastic,
                       Dict{String,Any}("Material Model" => "Correspondence Elastic + Correspondence Plastic"))
     @test ut_valid(entry, composite)                          # composites: shared keys only
+    contact = UT_DECK["properties"]["Contact"]["additionalProperties"]
+    penalty = Dict{String,Any}("Type" => "Penalty Contact", "Contact Radius" => 0.1,
+                               "Contact Stiffness" => 1.0, "Contact Groups" => Dict{String,Any}())
+    @test ut_valid(contact, penalty)
+    @test !ut_valid(contact, merge(penalty, Dict{String,Any}("Bogus" => 1)))
 end
 
 @testset "shipped decks validate against the schema" begin
@@ -227,7 +245,8 @@ end
               if PeriLab.ParameterSpec._params_type(fs.type) !== nothing];
              "Contact";
              [first(m) for (_, c, _) in GID.MODEL_SECTIONS
-              for m in PeriLab.ParameterSpec.registered_models(c)]]
+              for m in PeriLab.ParameterSpec.registered_models(c)];
+             first.(PeriLab.ParameterSpec.registered_models(:contact))]
     for name in names
         yaml = ut_describe(name; template = true)
         @test ut_template_parses(yaml) isa AbstractDict
@@ -236,5 +255,9 @@ end
     @test length(blocks) == 1 && haskey(only(values(blocks)), "Block ID")
     contact = ut_template_parses(ut_describe("Contact"; template = true))["Contact"]
     @test haskey(only(values(contact)), "Contact Radius")
+    @test only(values(contact))["Type"] == "Penalty Contact"
+    penalty = ut_describe("Penalty Contact")
+    @test startswith(penalty, "Penalty Contact (contact model)")
+    @test occursin("Contact Stiffness", penalty) && occursin("Shared contact keys:", penalty)
     @test occursin("# Maximum Damage: .inf", ut_describe("Solver"; template = true))
 end

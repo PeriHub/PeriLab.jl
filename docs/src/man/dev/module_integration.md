@@ -28,6 +28,8 @@ __init__() = register_material("My Material", MyMaterialParams)
 
 Material models do not repeat the shared material keys (Symmetry, Young's Modulus, Bulk Modulus, ...); they are declared once in the material factory. The material template contains the struct with the registration commented out: rename both and uncomment it. A model that is not registered is reported as "not found" when the input deck is read.
 
+Contact models work the same way: they register with `register_contact` under the name used in `Type`; the shared contact keys (Contact Radius, Symmetry, Contact Groups) are in `contact.base`, see the contact template.
+
 ## Init function
 The init function is called once before the run. The parameters are already checked (types, ranges, required keys); checks that need the mesh or other models belong here, as do the fields your model creates. The template of each category shows the arguments, e.g. `init_model(nodes, p, material)` for materials.
 

@@ -5,14 +5,13 @@
 module FEM_template
 
 using ..Data_Manager
-#export init_element
-#export compute_element
-#export element_name
-#export shape_function
+using .......PeriLabExceptions: @abort
+
 """
   element_name()
 
-Gives the element name. It is needed for comparison with the yaml input deck.
+Gives the element name. It is compared with `Element Type` of the `FEM` section of
+the input deck.
 
 # Arguments
 
@@ -29,33 +28,42 @@ function element_name()
     return "element Template"
 end
 
-function init_element(elements::AbstractVector{Int64},
-                      element_params,
-                      p::Vector{Int64})
-end
 """
-  compute_element(nodes, element_parameter, time, dt)
+    init_element(elements, fem, p)
 
-Calculates element model of the material. This template has to be copied, the file renamed and edited by the user to create a new element. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
+Initializes the element formulation. This template has to be copied, the file renamed and edited by the user to create a new element. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `nodes::AbstractVector{Int64}`: List of block nodes.
-- `element parameter::Dict(String, Any)`: Dictionary with element parameter.
-- `time::Float64`: The current time.
-- `dt::Float64`: The current time step.
-Example:
-```julia
-  ```
+- `elements::AbstractVector{Int64}`: List of elements.
+- `fem::FEMParams`: The `FEM` section of the input deck.
+- `p::Vector{Int64}`: The polynomial degree in each direction.
 """
-function compute_element(nodes::AbstractVector{Int64},
-                         element_parameter::Dict,
-                         time::Float64,
-                         dt::Float64)
-    @info "Please write a element name in element_name()."
-    @info "You can call your routine within the yaml file."
-    @info "Fill the compute_element(nodes, element_parameter, time, dt) function."
-    @info "The Data_Manager and element_parameter holds all you need to solve your problem on element level."
-    @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
+function init_element(elements::AbstractVector{Int64},
+                      fem,
+                      p::Vector{Int64})
+end
+
+"""
+    create_element_matrices(dof, num_int, p, ip_weights, ip_coordinates)
+
+Creates the shape function matrix N and the strain-displacement matrix B at the
+integration points of the element.
+
+# Arguments
+- `dof::Int64`: The degrees of freedom (2 or 3).
+- `num_int::Vector{Int64}`: The number of integration points in each direction.
+- `p::Vector{Int64}`: The polynomial degree in each direction.
+- `ip_weights::Matrix{Float64}`: The weights of the integration points.
+- `ip_coordinates::Matrix{Float64}`: The coordinates of the integration points.
+# Returns
+- `N`, `B`: see `Lagrange_element.create_element_matrices`.
+"""
+function create_element_matrices(dof::Int64,
+                                 num_int::Vector{Int64},
+                                 p::Vector{Int64},
+                                 ip_weights::Matrix{Float64},
+                                 ip_coordinates::Matrix{Float64})
+    @abort "element Template: create_element_matrices is not implemented."
 end
 
 end

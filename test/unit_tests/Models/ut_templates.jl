@@ -141,3 +141,23 @@ end
     PT.compute(UT_NODES, 1)
     PT.fields_for_local_synchronization("Pre Calculation Model")
 end
+
+@testset "ut_contact_template" begin
+    CT = UT_MF.Contact.Contact_template
+    PM = UT_MF.Contact.Penalty_Model
+    ut_same_interface(CT, CT.ContactTemplateParams, PM, PM.PenaltyContactParams,
+                      (:contact_model_name, :init_contact_model, :compute_contact_model))
+    p = CT.ContactTemplateParams()
+    CT.init_contact_model(p, nothing)
+    CT.compute_contact_model("cg", p, nothing, (m, s, f) -> nothing, (s, m, f) -> nothing)
+end
+
+@testset "ut_FEM_template" begin
+    FT = PeriLab.Solver_Manager.FEM.FEM_template
+    LE = PeriLab.Solver_Manager.FEM.Lagrange_element
+    ut_same_interface(FT, nothing, LE, nothing,
+                      (:element_name, :init_element, :create_element_matrices))
+    FT.init_element(UT_NODES, nothing, [1, 1])
+    @test_throws PeriLab.PeriLabError FT.create_element_matrices(2, [2, 2], [1, 1],
+                                                                 zeros(2, 2), zeros(2, 2))
+end
