@@ -73,6 +73,11 @@ end
 
 const _SPECIAL_KEYS = ("Models", "Contact", "Globals")
 
+# sections of `Models`; any other key is reported like an unknown key
+const _MODEL_SECTIONS = Set(["Material Models", "Damage Models", "Thermal Models",
+                             "Additive Models", "Degradation Models",
+                             "Pre Calculation Global", "Pre Calculation Models"])
+
 "Typed models of `section` (e.g. \"Material Models\"), keyed by name; errors go to `ctx`."
 function parse_models(models::AbstractDict, section::String, category::Symbol,
                       name_key::String, ctx::ParseContext)
@@ -170,6 +175,8 @@ function read_input(deck::AbstractDict, directory::AbstractString = ""; strict::
     elseif !(models isa AbstractDict)
         add_error!(ctx, "Models",
                    "expected a section of `key: value` entries, got $(ParameterSpec._describe(models))")
+    else
+        ParameterSpec.check_unknown!(models, _MODEL_SECTIONS, "Models", ctx)
     end
     materials = models isa AbstractDict ? parse_materials(models, ctx) : Dict{String,Any}()
     damages = models isa AbstractDict ? parse_damages(models, ctx) : Dict{String,Any}()

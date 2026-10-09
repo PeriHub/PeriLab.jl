@@ -60,7 +60,7 @@ end
     println(fid, "  Verlet:")
     println(fid, "   Safety Factor: 1.0")
     close(fid)
-    dict, _ = PeriLab.IO.read_input_deck(filename)
+    dict, _ = PeriLab.IO.read_input_deck(filename; no_strict = true)  # Models keys d, a are placeholders
     @test dict["Models"]["d"] == 3
     @test dict["Models"]["a"] == 1
     @test dict["Discretization"]["Input Mesh File"] == "test"

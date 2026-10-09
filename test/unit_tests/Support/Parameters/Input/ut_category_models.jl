@@ -107,3 +107,15 @@ end
     @test input.pre_calculation_global === nothing
     @test isempty(input.pre_calculations)
 end
+
+@testset "unknown Models sections" begin
+    _, ctx = CMID.read_input(ut_category_deck(Dict("Thermal Modells" => Dict())))
+    @test ut_category_messages(ctx)["Models.\"Thermal Modells\""] ==
+          "unknown key — did you mean \"Thermal Models\"?"
+    input, ctx = CMID.read_input(ut_category_deck(Dict("Pre Calculation Globals" => Dict(
+                                                                                          "Shape Tensor" => true)));
+                                 strict = false)
+    @test input !== nothing
+    @test any(e -> e.severity == :warning &&
+                   e.path == "Models.\"Pre Calculation Globals\"", ctx.errors)
+end

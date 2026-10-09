@@ -18,6 +18,9 @@ MPI.Init()
     @testset "ut_perilab" begin
         include("unit_tests/ut_perilab.jl")
     end
+    @testset "ut_docs_references" begin
+        include("unit_tests/ut_docs_references.jl")
+    end
     @testset "Aqua" begin
         Aqua.test_all(PeriLab, ambiguities = false,
                       stale_deps = (ignore = [:ZipArchives, :JSON3],))
