@@ -126,3 +126,115 @@ end
     @test occursin("## Pre Calculation", models) && occursin("Shape Tensor", models)
     @test occursin("in your consistent unit system", models)
 end
+
+# a small JSON Schema validator for the keywords the generator emits
+ut_is_type(t, x) = t == "object" ? x isa AbstractDict :
+                   t == "array" ? x isa AbstractVector :
+                   t == "string" ? x isa AbstractString :
+                   t == "boolean" ? x isa Bool :
+                   t == "integer" ?
+                   ((x isa Integer && !(x isa Bool)) || (x isa AbstractFloat && isinteger(x))) :
+                   t == "number" ? (x isa Real && !(x isa Bool)) : false
+
+function ut_valid(schema::AbstractDict, x)::Bool
+    if haskey(schema, "oneOf")
+        count(s -> ut_valid(s, x), schema["oneOf"]) == 1 || return false
+    end
+    if haskey(schema, "allOf")
+        all(s -> ut_valid(s, x), schema["allOf"]) || return false
+    end
+    if haskey(schema, "if") && ut_valid(schema["if"], x) && haskey(schema, "then")
+        ut_valid(schema["then"], x) || return false
+    end
+    haskey(schema, "const") && x != schema["const"] && return false
+    haskey(schema, "enum") && !(x in schema["enum"]) && return false
+    if haskey(schema, "type")
+        types = schema["type"] isa AbstractVector ? schema["type"] : [schema["type"]]
+        any(t -> ut_is_type(t, x), types) || return false
+    end
+    if x isa Real && !(x isa Bool)
+        haskey(schema, "minimum") && x < schema["minimum"] && return false
+        haskey(schema, "maximum") && x > schema["maximum"] && return false
+    end
+    if x isa AbstractVector && haskey(schema, "items")
+        all(v -> ut_valid(schema["items"], v), x) || return false
+    end
+    if x isa AbstractDict
+        props = get(schema, "properties", Dict())
+        patterns = get(schema, "patternProperties", Dict())
+        all(k -> haskey(x, k), get(schema, "required", String[])) || return false
+        for (k, v) in x
+            key = string(k)
+            matched = false
+            if haskey(props, key)
+                matched = true
+                ut_valid(props[key], v) || return false
+            end
+            for (p, s) in patterns
+                occursin(Regex(p), key) || continue
+                matched = true
+                ut_valid(s, v) || return false
+            end
+            matched && continue
+            extra = get(schema, "additionalProperties", true)
+            extra === false && return false
+            extra isa AbstractDict && !ut_valid(extra, v) && return false
+        end
+    end
+    return true
+end
+
+@testset "single models reject undeclared keys" begin
+    entry = UT_DECK["properties"]["Models"]["properties"]["Material Models"]["additionalProperties"]
+    plastic = Dict{String,Any}("Material Model" => "Correspondence Plastic",
+                               "Symmetry" => "isotropic", "Bulk Modulus" => 1.0,
+                               "Shear Modulus" => 1.0, "Yield Stress" => 1.0)
+    @test ut_valid(entry, plastic)
+    @test !ut_valid(entry, merge(plastic, Dict{String,Any}("Bogus" => 1)))
+    @test !ut_valid(entry, merge(plastic, Dict{String,Any}("Yeild Stress" => 1)))
+    umat = Dict{String,Any}("Material Model" => "Correspondence UMAT", "File" => "u.so",
+                            "Number of Properties" => 1, "Property_1" => 2.0)
+    @test ut_valid(entry, umat)
+    composite = merge(plastic,
+                      Dict{String,Any}("Material Model" => "Correspondence Elastic + Correspondence Plastic"))
+    @test ut_valid(entry, composite)                          # composites: shared keys only
+end
+
+@testset "shipped decks validate against the schema" begin
+    root = normpath(joinpath(@__DIR__, "..", "..", "..", "..", ".."))
+    for dir in ("examples", "test"), (path, _, files) in walkdir(joinpath(root, dir)),
+        file in files
+
+        endswith(file, ".yaml") || continue
+        rel = relpath(joinpath(path, file), root)
+        rel == "test/fullscale_tests/test_PD_Solid_Elastic/strain_xx_external.yaml" && continue
+        raw = PeriLab.IO.read_input(joinpath(path, file))
+        (raw isa AbstractDict && haskey(raw, "PeriLab")) || continue
+        ok = ut_valid(UT_SCHEMA, raw)
+        ok || @error "$rel does not validate against the schema"
+        @test ok
+    end
+end
+
+ut_template_parses(yaml) = begin
+    file = joinpath(mktempdir(), "t.yaml")
+    write(file, replace(yaml, r"<[^>]*>" => "1"))
+    PeriLab.IO.read_input(file)
+end
+
+@testset "templates of every section and model" begin
+    names = [[fs.alias for fs in PeriLab.ParameterSpec.parameter_spec(GID.PeriLabSections)
+              if PeriLab.ParameterSpec._params_type(fs.type) !== nothing];
+             "Contact";
+             [first(m) for (_, c, _) in GID.MODEL_SECTIONS
+              for m in PeriLab.ParameterSpec.registered_models(c)]]
+    for name in names
+        yaml = ut_describe(name; template = true)
+        @test ut_template_parses(yaml) isa AbstractDict
+    end
+    blocks = ut_template_parses(ut_describe("Blocks"; template = true))["Blocks"]
+    @test length(blocks) == 1 && haskey(only(values(blocks)), "Block ID")
+    contact = ut_template_parses(ut_describe("Contact"; template = true))["Contact"]
+    @test haskey(only(values(contact)), "Contact Radius")
+    @test occursin("# Maximum Damage: .inf", ut_describe("Solver"; template = true))
+end

@@ -5,7 +5,8 @@
 export to_json_schema
 
 # a named model entry: the category's base keys, the key naming the model, and
-# per registered model (`if` the name is exactly that model) its own keys
+# per registered model (`if` the name is exactly that model) its own keys, with
+# the key set closed for that model (composite names match no `if`: shared keys only)
 function _model_entry_schema(category::Symbol, name_key::String)
     base = ParameterSpec.base_model(category)
     entry = base === nothing ?
@@ -22,10 +23,12 @@ function _model_entry_schema(category::Symbol, name_key::String)
     cases = Any[]
     for (name, T) in ParameterSpec.registered_models(category)
         model = ParameterSpec.json_schema(T)
-        then = Dict{String,Any}("properties" => model["properties"])
+        then = Dict{String,Any}("properties" => merge(entry["properties"], model["properties"]),
+                                "additionalProperties" => false)
         haskey(model, "required") && (then["required"] = model["required"])
-        haskey(model, "patternProperties") &&
-            (then["patternProperties"] = model["patternProperties"])
+        patterns = merge(get(entry, "patternProperties", Dict{String,Any}()),
+                         get(model, "patternProperties", Dict{String,Any}()))
+        isempty(patterns) || (then["patternProperties"] = patterns)
         push!(cases,
               Dict{String,Any}("if" => Dict{String,Any}("properties" => Dict{String,Any}(name_key => Dict{String,Any}("const" => name))),
                                "then" => then))
@@ -83,25 +86,46 @@ end
 
 export describe
 
-# (title, struct, base struct or nothing, (name key, base title) or nothing) of a
-# section or registered model name; aborts with a suggestion if unknown
+# the declared type without `Nothing`
+_declared(T) = T isa Union && Nothing <: T ? ParameterSpec._nonnothing(T) : T
+
+# `P` if `T` holds named entries of the `@params` struct `P` (`Dict{String,P}`), else nothing
+function _named_entries(T)
+    D = _declared(T)
+    return D isa DataType && D <: Dict && ParameterSpec.is_params(valtype(D)) ? valtype(D) :
+           nothing
+end
+
+# YAML spelling of a default value
+_yaml_value(x::AbstractFloat) = isinf(x) ? (x > 0 ? ".inf" : "-.inf") : ParameterSpec._fmt_value(x)
+_yaml_value(x) = ParameterSpec._fmt_value(x)
+
+# placeholder name of one named entry, e.g. "blocks_1"
+_entry_name(alias::AbstractString) = replace(lowercase(alias), r"[^a-z0-9]+" => "_") * "_1"
+
+# (title, struct, base struct or nothing, (name key, base title) or nothing, named
+# entries?) of a section or registered model name; aborts with a suggestion if unknown
 function _described(name::AbstractString)
     for fs in ParameterSpec.parameter_spec(PeriLabSections)
         fs.alias == name || continue
         T = ParameterSpec._params_type(fs.type)
-        T === nothing || return ("$name (section)", T, nothing, nothing)
+        T === nothing && continue
+        named = _named_entries(fs.type) !== nothing
+        title = named ? "$name (section, one entry per name)" : "$name (section)"
+        return (title, T, nothing, nothing, named)
     end
     name == "Contact" && return ("Contact (section, one entry per contact model)",
-                                 ContactModelParams, nothing, nothing)
+                                 ContactModelParams, nothing, nothing, true)
     for (section, category, name_key) in MODEL_SECTIONS
         for (model, T) in ParameterSpec.registered_models(category)
             model == name || continue
             kind = lowercase(replace(section, " Models" => ""))
             return ("$name ($kind model)", T, ParameterSpec.base_model(category),
-                    (name_key, "Shared $kind keys"))
+                    (name_key, "Shared $kind keys"), false)
         end
     end
-    candidates = [[fs.alias for fs in ParameterSpec.parameter_spec(PeriLabSections)];
+    candidates = [[fs.alias for fs in ParameterSpec.parameter_spec(PeriLabSections)
+                   if ParameterSpec._params_type(fs.type) !== nothing];
                   "Contact";
                   [first(m) for (_, c, _) in MODEL_SECTIONS
                    for m in ParameterSpec.registered_models(c)]]
@@ -126,24 +150,33 @@ function _describe_table(io::IO, T, indent::String)
     end
 end
 
-# YAML lines of `T`: required keys with a placeholder, optional keys commented out
+# YAML lines of `T`: required keys with a placeholder, optional keys commented out;
+# named entries get one placeholder entry
 function _template(io::IO, T, indent::String)
     for fs in ParameterSpec.parameter_spec(T)
         prefix = fs.required ? "" : "# "
-        P = ParameterSpec._params_type(fs.type)
-        if P !== nothing && P === ParameterSpec._nonnothing(fs.type)
+        entry = _named_entries(fs.type)
+        if entry !== nothing
+            println(io, indent, prefix, fs.alias, ":")
+            println(io, indent, prefix, "  ", _entry_name(fs.alias), ":")
+            _template(io, entry, indent * prefix * "    ")
+            continue
+        end
+        P = _declared(fs.type)
+        if ParameterSpec.is_params(P)
             println(io, indent, prefix, fs.alias, ":")
             _template(io, P, indent * prefix * "  ")
             continue
         end
         placeholder = "<" * ParameterSpec.type_label(fs.type) * ">"
-        default = ParameterSpec._default_text(fs)
-        value = fs.required || default == "—" ? placeholder : default
+        default = fs.required || fs.default === nothing ||
+                  (fs.default isa AbstractDict && isempty(fs.default)) ? placeholder :
+                  _yaml_value(fs.default)
         note = filter(!isempty, [fs.required ? "required" : "optional",
                                  ParameterSpec._range_text(fs),
                                  fs.quantity === nothing ? "" : string(fs.quantity),
                                  fs.description])
-        println(io, indent, prefix, fs.alias, ": ", value, "  # ", join(note, "; "))
+        println(io, indent, prefix, fs.alias, ": ", default, "  # ", join(note, "; "))
     end
 end
 
@@ -154,19 +187,25 @@ end
 Prints the parameters of a section (e.g. "Solver") or a registered model (e.g.
 "Correspondence Plastic"). With `template = true`, prints a YAML block to copy
 into an input deck: required keys with a placeholder, optional keys commented
-out with their default.
+out with their default; sections of named entries (e.g. "Blocks") get one
+placeholder entry.
 """
 function describe(io::IO, name::AbstractString; template::Bool = false)
-    title, T, base, model_key = _described(name)
+    title, T, base, model_key, named = _described(name)
     if template
-        if model_key === nothing
-            println(io, name, ":")
-        else
+        if model_key !== nothing
             println(io, "My ", lowercase(first(model_key)), ":")
             println(io, "  ", first(model_key), ": \"", name, "\"")
+            _template(io, T, "  ")
+            base === nothing || _template(io, base, "  ")
+        elseif named
+            println(io, name, ":")
+            println(io, "  ", _entry_name(name), ":")
+            _template(io, T, "    ")
+        else
+            println(io, name, ":")
+            _template(io, T, "  ")
         end
-        _template(io, T, "  ")
-        base === nothing || _template(io, base, "  ")
         return nothing
     end
     println(io, title)
