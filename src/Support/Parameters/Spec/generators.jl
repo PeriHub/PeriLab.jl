@@ -62,6 +62,7 @@ function _bounds!(s::Dict{String,Any}, lo, hi)
 end
 
 _json_value(x::Union{Real,String}) = x
+_json_value(x::AbstractFloat) = isfinite(x) ? x : nothing   # JSON has no Inf / NaN
 _json_value(x::Enum) = string(x)
 _json_value(x::AbstractVector) = all(v -> _json_value(v) !== nothing, x) ?
                                  Any[_json_value(v) for v in x] : nothing

@@ -62,6 +62,8 @@ import .Logging_Module
 import .IO
 using .ModuleLoader
 using .Solver_Manager
+# generators (not exported; `describe` would clash with DataFrames.describe)
+using .InputDeck: to_json_schema
 
 PERILAB_VERSION = "2.2.6"
 

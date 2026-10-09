@@ -83,3 +83,13 @@ end
     @test issorted(names)
     @test all(T -> GPS.is_params(T), last.(GPS.registered_models(:material)))
 end
+
+GPS.@params struct UTGenInf
+    limit::Float64 = opt("Limit"; default = Inf)
+end
+
+@testset "non-finite defaults are not JSON defaults" begin
+    s = GPS.json_schema(UTGenInf)["properties"]["Limit"]
+    @test !haskey(s, "default")
+    @test only(GPS.parameter_rows(UTGenInf)).default == "Inf"
+end

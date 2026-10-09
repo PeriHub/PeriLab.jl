@@ -24,6 +24,7 @@ include("outputs.jl")
 include("conditions.jl")
 include("contact.jl")
 include("input.jl")
+include("generators.jl")
 
 export read_input, PeriLabInput, SolverParams, SolverOptions, ModelReductionParams,
        active_options, solver_name, start_time, end_time, model_options, solver_steps,

@@ -73,10 +73,16 @@ end
 
 const _SPECIAL_KEYS = ("Models", "Contact", "Globals")
 
+# model categories: section under `Models`, registry category, key naming the model
+const MODEL_SECTIONS = (("Material Models", :material, "Material Model"),
+                        ("Damage Models", :damage, "Damage Model"),
+                        ("Thermal Models", :thermal, "Thermal Model"),
+                        ("Additive Models", :additive, "Additive Model"),
+                        ("Degradation Models", :degradation, "Degradation Model"))
+
 # sections of `Models`; any other key is reported like an unknown key
-const _MODEL_SECTIONS = Set(["Material Models", "Damage Models", "Thermal Models",
-                             "Additive Models", "Degradation Models",
-                             "Pre Calculation Global", "Pre Calculation Models"])
+const _MODEL_SECTIONS = Set([first.(MODEL_SECTIONS)...; "Pre Calculation Global";
+                             "Pre Calculation Models"])
 
 "Typed models of `section` (e.g. \"Material Models\"), keyed by name; errors go to `ctx`."
 function parse_models(models::AbstractDict, section::String, category::Symbol,
