@@ -17,8 +17,10 @@ struct WithBase{B,M}
     base::B
     model::M
     extras::Dict{String,Any}   # values of indexed keys (see `key_patterns`), e.g. Property_1
+    name::String               # the model name as written, e.g. "A + B"
 end
-WithBase(base, model) = WithBase(base, model, Dict{String,Any}())
+WithBase(base, model) = WithBase(base, model, Dict{String,Any}(), "")
+WithBase(base, model, extras) = WithBase(base, model, extras, "")
 
 function _check_key_patterns!(dict::AbstractDict, known::Set{String}, types, path::String,
                               ctx::ParseContext)
@@ -129,7 +131,7 @@ function _parse_model(category::Symbol, dict::Union{Nothing,AbstractDict}, path:
     any(isnothing, parts) && return nothing
     base !== nothing && base_part === nothing && return nothing
     model = length(parts) == 1 ? parts[1] : Composite(Tuple(parts))
-    return base === nothing ? model : WithBase(base_part, model, extras)
+    return base === nothing ? model : WithBase(base_part, model, extras, String(strip(raw)))
 end
 
 """

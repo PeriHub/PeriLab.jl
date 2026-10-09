@@ -198,9 +198,7 @@ function typed_block_material(raw::AbstractDict;
     wb = PeriLab.ParameterSpec.parse_model(:material, dict, "test", ctx;
                                            name_key = "Material Model")
     PeriLab.ParameterSpec.report!(ctx)
-    return PeriLab.Solver_Manager.Model_Factory.Material.block_material(wb,
-                                                                        String(dict["Material Model"]),
-                                                                        dof)
+    return PeriLab.Solver_Manager.Model_Factory.Material.block_material(wb, dof)
 end
 
 """

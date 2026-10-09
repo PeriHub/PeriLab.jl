@@ -25,7 +25,7 @@ const MM_PATH = "Models.\"Material Models\".Mat"
     @test isempty(ctx.errors)
     @test input.materials["Mat"] isa PeriLab.ParameterSpec.WithBase
     @test input.materials["Mat"].base.bulk_modulus == 2.0e5
-    @test haskey(input.models, "Material Models")     # raw dict stays for the runtime bridge
+    @test !hasfield(PeriLab.InputDeck.PeriLabInput, :models)   # no raw model dict
 end
 
 @testset "misspelled key in a composite" begin

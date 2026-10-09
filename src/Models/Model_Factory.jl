@@ -442,7 +442,7 @@ function block_typed_model(input::PeriLabInput, block_name::String, field::Symbo
     block_params = get(input.sections.blocks, block_name, nothing)
     name = block_params === nothing ? nothing : getfield(block_params, field)
     name === nothing && return nothing
-    if !haskey(input.models, category * "s")
+    if isempty(models)
         @abort "$category is defined in blocks, but no $(category)s definition block exists"
     end
     if !haskey(models, name)
@@ -470,9 +470,7 @@ function read_properties(input::PeriLabInput, material_model::Bool)
             wb = block_typed_model(input, block_name, :material_model, "Material Model",
                                    input.materials)
             if wb !== nothing
-                material_name = input.sections.blocks[block_name].material_model
-                model_name = String(input.models["Material Models"][material_name]["Material Model"])
-                material = Material.block_material(wb, model_name, dof)
+                material = Material.block_material(wb, dof)
                 Material.check_material_symmetry(material, dof)
             end
         end

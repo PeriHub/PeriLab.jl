@@ -172,6 +172,7 @@ end
     @test isempty(ctx.errors)
     @test m isa PS.WithBase{UTBase,PS.Composite{Tuple{UTEmpty,UTPatterned}}}
     @test m.base.symmetry === nothing
+    @test m.name == "UT Empty + UT Patterned"     # the model name as written
 end
 
 @testset "base keys: errors, unknown keys and conflicts" begin
@@ -213,4 +214,5 @@ end
     m, ctx = ut_parse_based(Dict{String,Any}(UT_KEY => "UT Empty"))
     @test isempty(m.extras)
     @test PS.WithBase(1, 2).extras == Dict{String,Any}()
+    @test PS.WithBase(1, 2).name == ""
 end

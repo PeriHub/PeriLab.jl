@@ -332,12 +332,13 @@ function elastic_moduli(base::MaterialBaseParams, bond_based::Bool, dof::Int64)
 end
 
 """
-    block_material(wb, model_name, dof)
+    block_material(wb, dof)
 
-The `BlockMaterial` of a parsed material block. `model_name` is the block's
-`Material Model` string (bond-based models fix Poisson's ratio).
+The `BlockMaterial` of a parsed material block (bond-based models fix Poisson's
+ratio).
 """
-function block_material(wb::WithBase, model_name::String, dof::Int64)
+function block_material(wb::WithBase, dof::Int64)
+    model_name = wb.name
     bond_based = occursin("Bond-based", model_name) &&
                  !occursin("Unified Bond-based", model_name)
     return BlockMaterial(wb.base, wb.model, material_symmetry(wb.base.symmetry, dof),

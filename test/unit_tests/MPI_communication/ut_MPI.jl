@@ -388,9 +388,7 @@ if ncores == 3
                                                                 "Young's Modulus" => 1.0),
                                                "test", ctx; name_key = "Material Model")
     PeriLab.ParameterSpec.report!(ctx)
-    material = PeriLab.Solver_Manager.Model_Factory.Material.block_material(parsed,
-                                                                            "Bond-based Elastic",
-                                                                            dof)
+    material = PeriLab.Solver_Manager.Model_Factory.Material.block_material(parsed, dof)
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(Vector{Int64}(1:nodes),
                                                                                material.model,
                                                                                material)

@@ -54,7 +54,6 @@ A validated input deck. `materials` holds the typed material models
 hold the typed damage, additive and degradation models; `thermals` the typed thermal
 models (`WithBase`); `pre_calculation_global` and `pre_calculations` the
 pre-calculation switches;
-`models` stays the raw `Models` dict for the categories not yet migrated;
 `globals` is the unvalidated `Globals` escape hatch.
 """
 struct PeriLabInput
@@ -67,7 +66,6 @@ struct PeriLabInput
     thermals::Dict{String,Any}
     pre_calculation_global::Union{Nothing,Dict{String,Bool}}
     pre_calculations::Dict{String,Dict{String,Bool}}
-    models::Dict{String,Any}
     globals::Dict{String,Any}
 end
 
@@ -219,7 +217,6 @@ function read_input(deck::AbstractDict, directory::AbstractString = ""; strict::
     end
     input = PeriLabInput(sections, contact, materials, damages, additives, degradations,
                          thermals, pre_global, pre_calculations,
-                         Dict{String,Any}(string(k) => v for (k, v) in models),
                          globals isa AbstractDict ?
                          Dict{String,Any}(string(k) => v for (k, v) in globals) :
                          Dict{String,Any}())
