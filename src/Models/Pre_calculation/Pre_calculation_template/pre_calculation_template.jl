@@ -18,7 +18,7 @@ end
 """
     pre_calculation_name()
 
-Gives the pre_calculation name. It is needed for comparison with the yaml input deck.
+Gives the pre_calculation name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
 
 # Arguments
 

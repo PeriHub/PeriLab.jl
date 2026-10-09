@@ -29,7 +29,7 @@ end
 """
     additive_name()
 
-Gives the additive name. It is needed for comparison with the yaml input deck.
+Gives the additive name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
 
 # Arguments
 

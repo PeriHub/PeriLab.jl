@@ -35,7 +35,7 @@ const directions_free3D = fill(true, 6)
 """
     thermal_model_name()
 
-Gives the flow name. It is needed for comparison with the yaml input deck.
+Gives the flow name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
 
 # Arguments
 

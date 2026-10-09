@@ -24,7 +24,7 @@ Declare the YAML keys your material needs beyond the shared material keys
 """
 @params struct MaterialTemplateParams
 end
-# Register under your model name (the one material_name() returns) by uncommenting:
+# Register under the name the input deck uses by uncommenting:
 # __init__() = register_material("Material Template", MaterialTemplateParams)
 # The template itself stays unregistered so that a copy never collides with it.
 """
@@ -64,7 +64,7 @@ end
 """
     material_name()
 
-Gives the material name. It is needed for comparison with the yaml input deck.
+Gives the material name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
 
 # Arguments
 

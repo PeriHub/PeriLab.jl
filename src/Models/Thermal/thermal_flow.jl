@@ -47,7 +47,7 @@ print_bed_active(p::ThermalFlowParams, dof::Int64) = p.print_bed_temperature !==
 """
 	thermal_model_name()
 
-Gives the model name. It is needed for comparison with the yaml input deck.
+Gives the model name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
 
 # Arguments
 

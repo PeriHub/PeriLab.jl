@@ -29,7 +29,7 @@ end
 """
     damage_name()
 
-Gives the damage name. It is needed for comparison with the yaml input deck.
+Gives the damage name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
 
 # Arguments
 

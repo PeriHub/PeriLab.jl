@@ -18,8 +18,9 @@ export fields_for_local_synchronization
 
 Declare the YAML keys your model needs beyond the shared material keys (Symmetry,
 moduli, … are in `material.base` / `material.moduli`). Register it under your model
-name by uncommenting `__init__` (the template stays unregistered so that a copy never
-collides with it).
+name by uncommenting `__init__`; the name must contain "Correspondence" (that selects
+the correspondence formulation). The template stays unregistered so that a copy never
+collides with it.
 """
 @params struct CorrespondenceTemplateParams
 end
@@ -62,7 +63,7 @@ end
 """
     correspondence_name()
 
-Gives the correspondence material name. It is needed for comparison with the yaml input deck.
+Gives the correspondence material name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
 
 # Arguments
 

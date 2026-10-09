@@ -42,7 +42,7 @@ end
 """
 	correspondence_name()
 
-Gives the material name. It is needed for comparison with the yaml input deck.
+Gives the material name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
 
 # Arguments
 
