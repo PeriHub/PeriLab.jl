@@ -85,7 +85,6 @@ end
                                                                                        "Environmental Temperature" => 30)))))
     PeriLab.Solver_Manager.Model_Factory.read_properties(input, false)
     @test PeriLab.Data_Manager.get_block_model("Thermal Model", 1) === input.thermals["therm"]
-    @test !haskey(PeriLab.Data_Manager.data["properties"], 1)     # no property dicts
 end
 
 @testset "ut_add_model" begin
@@ -134,7 +133,6 @@ end
     @test m isa PeriLab.Solver_Manager.Model_Factory.Material.BlockMaterial
     @test m.symmetry == "plane strain"
     @test m.moduli.youngs_modulus == 22.5
-    @test !haskey(PeriLab.Data_Manager.data["properties"], 1)     # no property dicts
 
 end
 

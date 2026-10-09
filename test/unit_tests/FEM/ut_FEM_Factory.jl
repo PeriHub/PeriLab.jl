@@ -53,7 +53,6 @@ ut_fem(material) = typed_section(PeriLab.InputDeck.FEMParams,
     topology[2, 3] = 4
     topology[2, 4] = 6
     PeriLab.Data_Manager.data["block_id_list"] = [1, 2]
-    PeriLab.Data_Manager.init_properties()
 
     material_models = Dict("No FEM Model" => Dict("Material Model" => "Correspondence Elastic",
                                                                                                             "Symmetry" => "isotropic plane strain",
@@ -154,7 +153,6 @@ end
     topology[2, 3] = 4
     topology[2, 4] = 6
     PeriLab.Data_Manager.data["block_id_list"] = [1, 2]
-    PeriLab.Data_Manager.init_properties()
 
     material_models = Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
                                                                                                  "Symmetry" => "isotropic plane strain",

@@ -93,8 +93,6 @@ export get_nsets
 export get_nnodes
 export get_num_elements
 export get_pre_calculation_order
-export get_properties
-export get_property
 export get_rank
 export get_num_responder
 export get_max_rank
@@ -102,7 +100,6 @@ export get_cancel
 export get_output_frequency
 export get_element_rotation
 export get_horizon_mesh_scaling
-export init_properties
 export remove_active_model
 export set_accuracy_order
 export set_bc_free_dof
@@ -120,7 +117,6 @@ export set_nset
 export set_num_elements
 export set_num_responder
 # export set_pre_calculation_order
-export set_property
 export set_rank
 export set_max_rank
 export set_cancel
@@ -151,7 +147,6 @@ function initialize_data()
     data["distribution"] = []
     data["crit_values_matrix"] = fill(-1, (1, 1, 1))
     data["aniso_crit_values"] = Dict()
-    data["properties"] = OrderedDict()
     data["glob_to_loc"] = Dict()
     #data["field_array_type"] = Dict()
     data["field_types"] = Dict()
@@ -299,22 +294,6 @@ Set the MPI communicator
 """
 function set_comm(comm::MPI.Comm)
     data["commMPi"] = comm
-end
-
-"""
-	check_property(block_id::Int64, property::String)
-
-Checks if the specified `property` exists for the given `block_id`.
-
-# Arguments
-- `block_id::Int64`: The ID of the block.
-- `property::String`: The name of the property to check.
-# Returns
-- `Bool`: `true` if the property exists, `false` otherwise.
-"""
-function check_property(block_id::Int64, property::String)
-    haskey(data["properties"][block_id], property) &&
-        !isempty(data["properties"][block_id][property])
 end
 
 """
@@ -677,63 +656,6 @@ function get_pre_calculation_order()
 end
 
 """
-	get_properties(block_id::Int64, property::String)
-
-This function retrieves the value of a specified `property` for a given `block_id` if it exists in the properties dictionary.
-
-# Arguments
-- `block_id`::Int64: The identifier of the block for which to retrieve the property.
-- `property`::String: The dictionary entrycontaining the properties for the blocks.
-
-# Returns
-- `property_value`::Any: The value associated with the specified `property` for the given `block_id`.
-- `Dict()`: An empty dictionary if the specified `property` does not exist for the given `block_id`.
-
-# Example
-```julia
-block_properties = Dict(
-	1 => Dict("color" => "red", "size" => 10),
-	2 => Dict("color" => "blue", "height" => 20)
-)
-
-# Retrieve the 'color' property for block 1
-color_value = get_properties(1, "color")  # Returns "red"
-
-# Try to retrieve a non-existent property for block 2
-non_existent_value = get_properties(2, "width")  # Returns an empty dictionary
-```
-"""
-function get_properties(block_id::Int64, property::String)::Dict{String,Any}
-    if check_property(block_id, property)
-        return convert(Dict{String,Any}, data["properties"][block_id][property]) # TODO check why it is needed!
-    end
-    return Dict{String,Any}()::Dict{String,Any}
-end
-
-"""
-	get_property(block_id::Int64, property::String, value_name::String)
-
-This function retrieves a specific `value_name` associated with a specified `property` for a given `block_id` if it exists in the properties dictionary.
-
-# Arguments
-- `block_id`::Int64: The identifier of the block for which to retrieve the property.
-- `property`::String: The String property type (e.g. Material model) for the blocks.
-- `value_name`::String: The name of the value within the specified `property`.
-
-# Returns
-- `value`::Any: The value associated with the specified `value_name` within the `property` for the given `block_id`.
-- `nothing`: If the specified `block_id`, `property`, or `value_name` does not exist in the dictionary.
-"""
-function get_property(block_id::Int64, property::String,
-                      value_name::String)
-    if check_property(block_id, property) &&
-       haskey(data["properties"][block_id][property], value_name)
-        return data["properties"][block_id][property][value_name]
-    end
-    return nothing
-end
-
-"""
 	get_rank()
 
 This function returns the rank of the core.
@@ -863,27 +785,6 @@ end
 function loc_to_glob(iD::Int64)
     return data["distribution"][iD]
 end
-"""
-	init_properties()
-
-This function initializes the properties dictionary. Order of dictionary defines, in which order the models are called later on.
-
-# Returns
-- `keys(properties[1])`: The keys of the properties dictionary in defined order for the Model_Factory.jl.
-"""
-function init_properties()
-    block_id_list = get_block_id_list()
-    for iblock in block_id_list
-        data["properties"][iblock] = OrderedDict{String,Dict{String,Any}}()
-
-        for prop_name in ["Additive Model", "Damage Model", "Pre Calculation Model",
-            "Thermal Model", "Degradation Model", "Material Model"]
-            data["properties"][iblock][prop_name] = Dict{String,Any}()
-        end
-    end
-    return collect(keys(data["properties"][block_id_list[1]]))
-end
-
 """
 	remove_active_model(module_name::Module)
 
@@ -1087,67 +988,6 @@ end
 # function set_pre_calculation_order(values::Vector{String})
 #     data["pre_calculation_order"] = values
 # end
-
-"""
-	set_property(block_id, property, value_name, value)
-
-Sets the value of a specified `property` for a given `block_id`.
-
-# Arguments
-- `block_id`::Int64: The identifier of the block for which to set the property.
-- `property`::String: The name of the property.
-- `value_name`::String: The name of the value within the specified `property`.
-- `value`::Any: The value to set for the specified `value_name`.
-"""
-function set_property(block_id::Int64, property::String, value_name::String,
-                      value::T) where {T}
-    prop_dict = get!(data["properties"][block_id], property, Dict{String,Any}())
-    prop_dict[value_name] = value
-end
-
-function set_property(property::String, value_name::String, value::T) where {T}
-    for block_id in eachindex(data["properties"])
-        set_property(block_id, property, value_name, value)
-    end
-end
-
-"""
-	set_properties(block_id, property, values)
-
-Sets the values of a specified `property` for a given `block_id`.
-
-# Arguments
-- `block_id`::Int64: The identifier of the block for which to set the property.
-- `property`::String: The name of the property.
-- `values`::Any: The values to set for the specified `property`.
-"""
-function set_properties(block_id::Int64, property::String, values::T) where {T}
-    if values isa Dict{String,Any}
-        data["properties"][block_id][property] = values
-    else
-        data["properties"][block_id][property] = convert(Dict{String,Any}, values)
-    end
-end
-
-"""
-	set_properties(property, values)
-
-Sets the values of a specified `property` for a all `blocks`. E.g. for FEM, because it corresponds not to a block yet,
-
-# Arguments
-- `property`::String: The name of the property.
-- `values`::Any: The values to set for the specified `property`.
-"""
-function set_properties(property::String, values::T) where {T}
-    for id in eachindex(data["properties"])
-        # Typ-sichere Zuweisung
-        if values isa Dict{String,Any}
-            data["properties"][id][property] = values
-        else
-            data["properties"][id][property] = convert(Dict{String,Any}, values)
-        end
-    end
-end
 
 """
 	set_rank(value::Int64)

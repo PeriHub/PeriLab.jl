@@ -10,7 +10,6 @@
 @testset "ut_init_surface_correction" begin
     PeriLab.Data_Manager.initialize_data()
     PeriLab.Data_Manager.set_block_id_list([1])
-    PeriLab.Data_Manager.init_properties()
     PeriLab.Data_Manager.set_dof(3)
     PeriLab.Data_Manager.set_num_controller(4)
     block_iD = PeriLab.Data_Manager.create_constant_node_scalar_field("Block_Id", Int64)

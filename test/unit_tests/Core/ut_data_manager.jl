@@ -528,46 +528,6 @@ end
     @test block_name_list == ["1", "2", "3", "4"]
 end
 
-@testset "ut_properties" begin
-    PeriLab.Data_Manager.set_block_id_list([2, 3, 1])
-    PeriLab.Data_Manager.init_properties()
-    @test length(PeriLab.Data_Manager.data["properties"]) == 3
-    @test isnothing(PeriLab.Data_Manager.get_property(1, "Material Model", "E"))
-    PeriLab.Data_Manager.set_property(1, "Material Model", "E", 3)
-    PeriLab.Data_Manager.get_property(1, "Material Model", "E")
-    @test PeriLab.Data_Manager.get_property(1, "Material Model", "E") == 3
-    PeriLab.Data_Manager.set_property(1, "Material Model", "C", "Hello Test")
-    @test PeriLab.Data_Manager.get_property(1, "Material Model", "C") == "Hello Test"
-    PeriLab.Data_Manager.set_property(2, "Material Model", "E", 1.1)
-    @test PeriLab.Data_Manager.get_property(2, "Material Model", "E") == 1.1
-    PeriLab.Data_Manager.set_property(2, "Thermal Model", "E", [3 1 2; 1 2 3; 1 3 4])
-    @test PeriLab.Data_Manager.get_property(2, "Thermal Model", "E") ==
-          [3 1 2; 1 2 3; 1 3 4]
-    PeriLab.Data_Manager.set_property(3, "Thermal Model", "Q", 23.1)
-    @test PeriLab.Data_Manager.get_property(3, "Thermal Model", "Q") == 23.1
-    PeriLab.Data_Manager.set_property(3, "Damage Model", "SS", 0.1)
-    @test PeriLab.Data_Manager.get_property(3, "Damage Model", "SS") == 0.1
-    PeriLab.Data_Manager.set_property(1, "Additive Model", "E", [1, 2, 3])
-    @test PeriLab.Data_Manager.get_property(1, "Additive Model", "E") == [1, 2, 3]
-    PeriLab.Data_Manager.set_property(2, "Additive Model", "Qd", true)
-    @test PeriLab.Data_Manager.get_property(2, "Additive Model", "Qd") == true
-    @test isnothing(PeriLab.Data_Manager.get_property(2, "Additive Model", "not there"))
-    @test PeriLab.Data_Manager.get_properties(1, "Material Model") ==
-          Dict("C" => "Hello Test", "E" => 3)
-    @test PeriLab.Data_Manager.get_properties(1, "Thermal Model") == Dict()
-    @test PeriLab.Data_Manager.get_properties(2, "Material Model") == Dict("E" => 1.1)
-    @test PeriLab.Data_Manager.get_properties(2, "Thermal Model") ==
-          Dict("E" => [3 1 2; 1 2 3; 1 3 4])
-    @test PeriLab.Data_Manager.get_properties(1, "") == Dict()
-    @test !PeriLab.Data_Manager.check_property(1, "This is not a property")
-    @test isnothing(PeriLab.Data_Manager.get_property(1, "Thermal Model",
-                                                      "This is not a property"))
-    PeriLab.Data_Manager.set_properties("FEM", Dict("A" => 2, "C" => "Model"))
-    @test PeriLab.Data_Manager.get_properties(1, "FEM") == Dict("A" => 2, "C" => "Model")
-    @test PeriLab.Data_Manager.get_properties(2, "FEM") == Dict("A" => 2, "C" => "Model")
-    @test PeriLab.Data_Manager.get_properties(3, "FEM") == Dict("A" => 2, "C" => "Model")
-end
-
 @testset "ut_get_and_set_inverse_nlist" begin
     # inv_nlist = PeriLab.Data_Manager.get_inverse_nlist()
     # @test typeof(inv_nlist) == Vector{Dict{Int64,Int64}}

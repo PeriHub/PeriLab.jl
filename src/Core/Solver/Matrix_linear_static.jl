@@ -120,8 +120,7 @@ function init_solver(solver_options::Dict{Any,Any},
     #critical_time_step::Float64 = 1.0e50
     #for iblock in eachindex(block_nodes)
     #	if thermal
-    #		lambda = datamanager.get_property(iblock, "Thermal Model",
-    #			"Thermal Conductivity")
+    #		lambda = block_thermal_conductivity(iblock)
     #		# if Cv and lambda are not defined it is valid, because an analysis can take place, if material is still analysed
     #		if isnothing(lambda)
     #			if !mechanical

@@ -593,7 +593,6 @@ end
     MF = PeriLab.Solver_Manager.Model_Factory
     ut_reset(3; nnodes = 2)
     PeriLab.Data_Manager.set_block_id_list([1, 2])
-    PeriLab.Data_Manager.init_properties()
     m = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
                                   "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0))
     PeriLab.Data_Manager.set_block_material(1, m)
