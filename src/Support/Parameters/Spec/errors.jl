@@ -131,7 +131,7 @@ end
 """
     strict_mode(input; no_strict_flag = false)
 
-Strict validation is on unless the command line flag `--no-strict` is given or
+Strict validation is on unless the command line flag `--no_strict` is given or
 the input deck sets `Strict Validation: false`.
 """
 function strict_mode(input::AbstractDict; no_strict_flag::Bool = false)

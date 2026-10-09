@@ -7,7 +7,7 @@
 
 Typed declarations of PeriLab's fixed input sections and `read_input`, which
 turns the `PeriLab:` part of a YAML deck into a validated `PeriLabInput`.
-Model parameters (`Models`) are declared by the model modules (phase 3).
+Model parameters (`Models`) are declared by the model modules and registered with `register_material` etc.
 """
 module InputDeck
 

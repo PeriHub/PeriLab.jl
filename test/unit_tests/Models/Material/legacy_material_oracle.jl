@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# Test-only copies of the legacy (material dict) functions removed in phase 3c-2.
+# Test-only copies of the legacy (material dict) functions removed when the typed input replaced the material dicts.
 # The typed implementation is compared against them, so its numbers stay pinned.
 module LegacyMaterialOracle
 using PeriLab.Data_Manager
@@ -10,7 +10,7 @@ using PeriLab.PeriLabExceptions: @abort
 using PeriLab.ParameterSpec: evaluate
 using PeriLab.Solver_Manager.Material_Basis: _hooke_matrix
 
-# verbatim copies of the legacy dependent-value helpers (deleted from Helpers.jl in phase 4)
+# verbatim copies of the legacy dependent-value helpers (deleted from Helpers.jl with the typed input)
 function get_dependent_value_with_ID(field_name::String,
                                      parameter::Dict,
                                      iID::Int64 = 1)
