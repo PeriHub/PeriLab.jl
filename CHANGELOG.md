@@ -8,6 +8,24 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0] - unreleased
+
+### Added
+
+- Typed input: every key of the input deck is declared with type, default, range and description; the deck is validated before the run starts and all problems are reported at once, with suggestions for misspelled keys
+- Strict validation: unknown keys are errors; `--no_strict` on the command line or `Strict Validation: false` in the deck reports them as warnings
+- `PeriLab.describe(name)` prints the keys of a section or model, `PeriLab.describe(name; template = true)` a YAML block to copy into an input deck
+- `PeriLab.to_json_schema(PeriLab.InputDeck.PeriLabInput)`: JSON Schema of the input deck, e.g. for editor completion
+- Input reference pages generated from the declarations (`PeriLab.generate_parameter_docs`)
+
+### Changed
+
+- Input decks with keys PeriLab does not know (misspelled, or not used by the chosen model, e.g. `Yield Stress` for an elastic material or `Only Surface Contact Nodes` in a contact model instead of `Contact: Globals`) now abort; use `--no_strict` to run them with warnings
+- `Bond Associated Deformation Gradient` in the pre calculation models is no longer supported; use `Bond Associated Correspondence`
+- Model modules get their parameters as a typed struct instead of a dict: each module declares its keys with `@params` and registers them in `__init__()` (`register_material`, `register_damage`, `register_thermal`, `register_additive`, `register_degradation`, `register_pre_calculation`, `register_contact`); the input deck uses the registered name. User and licensed modules have to be ported, see the templates and the developer documentation
+- Contact models declare their own keys; `Contact Stiffness` and `Friction Coefficient` belong to the penalty contact model
+- Parameters are read from the typed input instead of `Data_Manager` getters (the `properties` API is removed)
+
 ## [2.2.5] - 2026-09-21
 
 ### Added

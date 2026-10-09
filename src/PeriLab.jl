@@ -65,7 +65,7 @@ using .Solver_Manager
 # generators (not exported; `describe` would clash with DataFrames.describe)
 using .InputDeck: to_json_schema, describe, generate_parameter_docs
 
-PERILAB_VERSION = "2.2.6"
+PERILAB_VERSION = "3.0.0"
 
 export main
 
