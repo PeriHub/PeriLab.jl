@@ -5,8 +5,6 @@
 using Test
 const PS = PeriLab.ParameterSpec
 const ID = PeriLab.InputDeck
-const PH = PeriLab.Parameter_Handling
-
 function ut_bm(T, raw)
     ctx = PS.ParseContext()
     value = PS.convert_value(T, raw, "X", ctx)
@@ -88,49 +86,3 @@ end
     @test isempty(ctx.errors)
 end
 
-const UT_BM_ROOT = normpath(joinpath(@__DIR__, "..", "..", "..", "..", ".."))
-const UT_BM_SKIP = ("test/fullscale_tests/test_PD_Solid_Elastic/strain_xx_external.yaml",)
-
-function ut_bm_decks()
-    decks = String[]
-    for root in ("examples", "test"), (dir, _, files) in walkdir(joinpath(UT_BM_ROOT, root))
-        append!(decks, [joinpath(dir, f) for f in files if endswith(f, ".yaml")])
-    end
-    return sort!(decks)
-end
-
-function ut_bm_compare_all_decks()
-    for file in ut_bm_decks()
-        relpath(file, UT_BM_ROOT) in UT_BM_SKIP && continue
-        raw = PeriLab.IO.read_input(file)
-        (raw isa AbstractDict && haskey(raw, "PeriLab")) || continue
-        deck = raw["PeriLab"]
-        input, ctx = ID.read_input(deck, dirname(file))
-        deck_needs_license(ctx) && continue
-        blocks = input.sections.blocks
-        ids = Int64[b["Block ID"] for b in values(deck["Blocks"])]
-        @test ID.block_names_and_ids(blocks, ids, true) ==
-              PH.get_block_names_and_ids(deck, ids, true)
-        @test ID.mesh_scaling(input.sections.discretization) == PH.get_mesh_scaling(deck)
-        for id in unique(ids)
-            name, block = ID.block_by_id(blocks, id)
-            @test block.density == PH.get_density(deck, id)
-            @test block.horizon == PH.get_horizon(deck, id)
-            @test something(block.fem, false) == PH.get_fem_block(deck, id)
-            if block.specific_heat_capacity !== nothing
-                @test block.specific_heat_capacity == PH.get_heat_capacity(deck, id)
-            end
-            for dof in (2, 3)
-                if block.angle_x === nothing
-                    @test PH.get_angles(deck, id, dof) === nothing
-                elseif dof == 2 || (block.angle_y !== nothing && block.angle_z !== nothing)
-                    @test ID.block_angles(name, block, dof) == PH.get_angles(deck, id, dof)
-                end
-            end
-        end
-    end
-end
-
-@testset "block and mesh helpers equal the Dict getters on every shipped deck" begin
-    ut_bm_compare_all_decks()
-end

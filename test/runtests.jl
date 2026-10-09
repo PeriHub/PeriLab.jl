@@ -47,9 +47,6 @@ MPI.Init()
         end
         @testset "Support" begin
             @testset "Parameters" begin
-                @testset "ut_parameter_handling" begin
-                    include("unit_tests/Support/Parameters/ut_parameter_handling.jl")
-                end
                 @testset "ParameterSpec" begin
                     include("unit_tests/Support/Parameters/Spec/spec_tests.jl")
                 end

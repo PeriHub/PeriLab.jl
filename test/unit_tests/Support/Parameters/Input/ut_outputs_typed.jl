@@ -5,8 +5,6 @@
 using Test
 const PS = PeriLab.ParameterSpec
 const ID = PeriLab.InputDeck
-const PH = PeriLab.Parameter_Handling
-
 function ut_ot(T, raw)
     ctx = PS.ParseContext()
     value = PS.convert_value(T, raw, "X", ctx)
@@ -80,8 +78,6 @@ end
                                 ["Reaction", "Constant"]])
     @test ID.output_fieldnames(variables, field_keys, ["Reaction"], "CSV") ==
           [["Reaction", "Constant"]]
-    @test ID.output_fieldnames(variables, field_keys, ["Reaction"], "Exodus") ==
-          PH.get_output_fieldnames(variables, field_keys, ["Reaction"], "Exodus")
 end
 
 @testset "active computes" begin
@@ -99,48 +95,6 @@ end
     active = ID.active_computes(computes, ["DisplacementsNP1", "Forces"])
     @test sort(collect(keys(active))) == ["a_sum", "b_max"]
     @test active["b_max"] === computes["b_max"]
-end
-
-const UT_OT_ROOT = normpath(joinpath(@__DIR__, "..", "..", "..", "..", ".."))
-const UT_OT_SKIP = ("test/fullscale_tests/test_PD_Solid_Elastic/strain_xx_external.yaml",)
-
-function ut_ot_decks()
-    decks = String[]
-    for root in ("examples", "test"), (dir, _, files) in walkdir(joinpath(UT_OT_ROOT, root))
-        append!(decks, [joinpath(dir, f) for f in files if endswith(f, ".yaml")])
-    end
-    return sort!(decks)
-end
-
-function ut_ot_compare_all_decks()
-    for file in ut_ot_decks()
-        relpath(file, UT_OT_ROOT) in UT_OT_SKIP && continue
-        raw = PeriLab.IO.read_input(file)
-        (raw isa AbstractDict && haskey(raw, "PeriLab")) || continue
-        deck = raw["PeriLab"]
-        input, ctx = ID.read_input(deck, dirname(file))
-        deck_needs_license(ctx) && continue
-        outputs = input.sections.outputs
-        computes = input.sections.compute_class_parameters
-        @test sort(ID.output_filenames(outputs, "out")) ==
-              sort(PH.get_output_filenames(deck, "out"))
-        if haskey(deck, "Outputs")
-            for nsteps in (1, 7, 1000)
-                typed = Dict(zip(keys(outputs), ID.output_frequencies(outputs, nsteps, 1)))
-                reference = Dict(zip(string.(keys(deck["Outputs"])),
-                                     PH.get_output_frequencies(deck, nsteps, 1)))
-                @test typed == reference
-            end
-        end
-        @test ID.compute_names(computes) == PH.get_computes_names(deck)
-        variables = String[c.variable for c in values(computes)]
-        @test sort(collect(keys(ID.active_computes(computes, variables)))) ==
-              sort(collect(keys(PH.get_computes(deck, variables))))
-    end
-end
-
-@testset "output and compute functions equal the Dict getters on every shipped deck" begin
-    ut_ot_compare_all_decks()
 end
 
 @testset "ut_check_for_duplicates" begin

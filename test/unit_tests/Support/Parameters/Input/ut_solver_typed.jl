@@ -5,8 +5,6 @@
 using Test
 const PS = PeriLab.ParameterSpec
 const ID = PeriLab.InputDeck
-const PH = PeriLab.Parameter_Handling
-
 function ut_st_solver(dict)
     ctx = PS.ParseContext()
     s = PS.parse_section(ID.SolverParams, dict, "Solver", ctx)
@@ -91,64 +89,6 @@ end
     input = ut_st_deck()
     @test ID.solver_steps(input) == [-1]
     @test ID.solver_step(input, -1) === input.sections.solver
-end
-
-const UT_ST_ROOT = normpath(joinpath(@__DIR__, "..", "..", "..", "..", ".."))
-const UT_ST_SKIP = ("test/fullscale_tests/test_PD_Solid_Elastic/strain_xx_external.yaml",)
-
-function ut_st_decks()
-    decks = String[]
-    for root in ("examples", "test"), (dir, _, files) in walkdir(joinpath(UT_ST_ROOT, root))
-        append!(decks, [joinpath(dir, f) for f in files if endswith(f, ".yaml")])
-    end
-    return sort!(decks)
-end
-
-function ut_st_compare_all_decks(t)
-    for file in ut_st_decks()
-        relpath(file, UT_ST_ROOT) in UT_ST_SKIP && continue
-        raw = PeriLab.IO.read_input(file)
-        (raw isa AbstractDict && haskey(raw, "PeriLab")) || continue
-        deck = raw["PeriLab"]
-        input, ctx = ID.read_input(deck, dirname(file))
-        deck_needs_license(ctx) && continue
-        steps = PH.get_solver_steps(deck)
-        @test ID.solver_steps(input) == steps
-        for step in steps
-            d = step == -1 ? deck["Solver"] : PH.get_solver_params(deck, step)
-            s = ID.solver_step(input, step)
-            options = ID.active_options(s)
-            calc = PH.get_calculation_options(d)
-            @test ID.solver_name(s) == PH.get_solver_name(d)
-            @test something(s.number_of_steps, 1) == PH.get_nsteps(d)
-            @test options.safety_factor == PH.get_safety_factor(d)
-            @test options.fixed_dt == PH.get_fixed_dt(d)
-            @test options.numerical_damping == PH.get_numerical_damping(d)
-            @test s.maximum_damage == PH.get_max_damage(d)
-            @test ID.model_options(s) == PH.get_model_options(d)
-            @test s.calculate_cauchy == calc["Calculate Cauchy"]
-            @test s.calculate_von_mises_stress == calc["Calculate von Mises stress"]
-            @test s.calculate_strain == calc["Calculate Strain"]
-            @test ID.end_time(s, t) == PH.get_final_time(d)
-            if haskey(d, "Initial Time") || t != 0.0     # otherwise both abort
-                @test ID.start_time(s, t) == PH.get_initial_time(d)
-            end
-        end
-    end
-end
-
-@testset "typed solver options equal the Dict getters on every shipped deck" begin
-    # the Dict time getters read the current time from Data_Manager
-    dm = PeriLab.Data_Manager
-    previous = haskey(dm.data, "current_time") ? dm.get_current_time() : nothing
-    t = 0.0
-    dm.set_current_time(t)
-    try
-        ut_st_compare_all_decks(t)
-    finally
-        previous === nothing ? delete!(dm.data, "current_time") :
-        dm.set_current_time(previous)
-    end
 end
 
 @testset "Solver_Manager.init keeps its docstring" begin
