@@ -13,6 +13,11 @@ function ut_typed_damage(raw)
     return BDAM.block_damage(wb)
 end
 
+function ut_bind_allocations(tables)
+    PeriLab.Data_Manager.bind_dependent_tables!(tables)
+    return @allocated PeriLab.Data_Manager.bind_dependent_tables!(tables)
+end
+
 @testset "block damage binds its tables" begin
     PeriLab.Data_Manager.initialize_data()
     PeriLab.Data_Manager.set_num_controller(2)
@@ -28,6 +33,8 @@ end
     PeriLab.Data_Manager.bind_dependent_tables!(d.tables)
     @test PeriLab.ParameterSpec.value(d.base.critical_value, 1) ≈ 1.0
     @test PeriLab.ParameterSpec.value(d.base.critical_value, 2) ≈ 2.0
+    # called before every compute: binding must not allocate
+    @test ut_bind_allocations(d.tables) == 0
     @test isempty(ut_typed_damage(Dict("Damage Model" => "Critical Stretch",
                                        "Critical Value" => 0.1)).tables)
 end

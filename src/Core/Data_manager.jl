@@ -359,7 +359,7 @@ get_block_models(block::Int64) = get(data["Block Models"], block, NO_BLOCK_MODEL
 
 # node field a dependent value reads (the NP1 state if the field has one)
 function _dependent_field(name::String)
-    has_key(name * "NP1") && return get_field(name, "NP1")
+    haskey(data["NP1_to_N"], name) && return get_field(name, "NP1")
     has_key(name) && return get_field(name)
     return nothing
 end
