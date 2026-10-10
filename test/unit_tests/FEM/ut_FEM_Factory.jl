@@ -127,8 +127,6 @@ end
 
     coordinates = PeriLab.Data_Manager.create_constant_node_vector_field("Coordinates",
                                                                          Float64, dof)
-    # only in tests for resize or redefinition reasons
-    PeriLab.Data_Manager.fields[Int64]["FE Topology"] = zeros(Int64, 2, 4)
     coordinates[1, 1] = 0
     coordinates[1, 2] = 0
     coordinates[2, 1] = 1

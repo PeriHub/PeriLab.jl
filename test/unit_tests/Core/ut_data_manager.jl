@@ -17,6 +17,16 @@ using MPI
     # MPI.Finalize()
 end
 
+@testset "initialize_data removes the fields" begin
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(3)
+    PeriLab.Data_Manager.create_constant_node_scalar_field("Stale Field", Float64)
+    @test PeriLab.Data_Manager.has_key("Stale Field")
+    PeriLab.Data_Manager.initialize_data()
+    @test !PeriLab.Data_Manager.has_key("Stale Field")
+    @test isempty(PeriLab.Data_Manager.fieldmanager.fields)
+end
+
 @testset "add_and_get_models" begin
     PeriLab.Data_Manager.initialize_data()
     @test length(keys(PeriLab.Data_Manager.get_active_models())) == 0

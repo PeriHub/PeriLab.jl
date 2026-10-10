@@ -13,7 +13,6 @@ using ...ParameterSpec: Table1D, bind_table!
 # Variables
 ##########################
 
-const fields = Dict()
 const data = Dict()
 #####################
 
@@ -45,7 +44,7 @@ mutable struct NP1_to_N{T}
     value::T
 end
 
-fieldmanager = FieldManager(Dict{String,DataField}())
+const fieldmanager = FieldManager(Dict{String,DataField}())
 #####
 
 include("./Data_manager/data_manager_checkpoint.jl")
@@ -126,8 +125,10 @@ export set_horizon_mesh_scaling
 	initialize_data()
 
 Initialize all parameter in the Data_Manager and sets them to the default values.
+Removes all fields, so that no field of an earlier run is left.
 """
 function initialize_data()
+    empty!(fieldmanager.fields)
     data["current_time"] = 0.0
 
     data["step"] = 0
@@ -209,9 +210,6 @@ function initialize_data()
     data["matrix_exists"] = false
     data["Reduced PD Nodes"] = Vector{Int64}([])
     data["Horizon Mesh Scaling"] = Vector{Float64}([])
-    fields[Int64] = Dict()
-    fields[Float64] = Dict()
-    fields[Bool] = Dict()
 end
 ###################################
 
