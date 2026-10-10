@@ -211,6 +211,11 @@ end
                     inner::UTDependentMat = req("Inner")
                 end),
               "UTBad10.inner: nested section type UTDependentMat contains Dependent fields; this is not supported"),
+             (:(PS.@params struct UTBad11
+                    "Neighborhood radius"
+                    x::Float64 = req("X"; description = "Neighborhood radius")
+                end),
+              "UTBad11: field `x` has a docstring and a description; keep one"),
              (:(PS.@params x = 1),
               "@params must be applied to a struct definition")]
     for (ex, expected) in cases
@@ -218,6 +223,25 @@ end
         @test e isa PS.ParamsDefinitionError
         @test e !== nothing && occursin(expected, e.msg)
     end
+end
+
+PS.@params struct UTDocumented
+    """
+    Neighborhood radius,
+    in mesh units
+    """
+    horizon::Float64 = req("Horizon"; min = 0)
+    steps::Int64 = opt("Number of Steps"; default = 10)
+    "Load factor"
+    factor::Dependent = opt("Factor"; default = 1.0)
+end
+
+@testset "a field docstring is its description" begin
+    spec = PS.parameter_spec(UTDocumented)
+    @test spec[1].description == "Neighborhood radius,\nin mesh units"
+    @test spec[2].description == ""
+    @test spec[3].description == "Load factor"
+    @test fieldnames(UTDocumented) == (:horizon, :steps, :factor)
 end
 
 PS.@params struct UTOptionalRadius

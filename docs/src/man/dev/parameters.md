@@ -13,9 +13,13 @@ warnings instead of errors.
 A model module declares its own keys and registers them under its model name, e.g.
 
     @params struct MyMaterialParams
+        "Stress at which the material starts to yield"
         yield_stress::Dependent = req("Yield Stress"; min = 0, quantity = :stress)
     end
     __init__() = register_material("My Material", MyMaterialParams)
+
+A docstring above a field is its description (the same as
+`description = "..."`; giving both is an error).
 
 See the templates under `src/Models/*/…_template` for every category.
 

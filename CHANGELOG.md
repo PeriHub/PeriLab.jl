@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - `PeriLab.describe(name)` prints the keys of a section or model, `PeriLab.describe(name; template = true)` a YAML block to copy into an input deck
 - `PeriLab.to_json_schema(PeriLab.InputDeck.PeriLabInput)`: JSON Schema of the input deck, e.g. for editor completion
 - Input reference pages generated from the declarations (`PeriLab.generate_parameter_docs`)
+- A docstring above an `@params` field is its description
 
 ### Changed
 

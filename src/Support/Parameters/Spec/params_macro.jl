@@ -138,6 +138,14 @@ end
 
 _definition_error(msg) = :(throw($ParamsDefinitionError($msg)))
 
+_is_description_kw(arg) = arg isa Expr && arg.head === :kw && arg.args[1] === :description
+
+function _has_description(decl::Expr)
+    return any(arg -> _is_description_kw(arg) ||
+                   (arg isa Expr && arg.head === :parameters &&
+                    any(_is_description_kw, arg.args)), decl.args[2:end])
+end
+
 function _field_usage(name, fname)
     return "$name: field `$fname` must be written as `$fname::Type = req(\"YAML key\"; ...)` or `$fname::Type = opt(\"YAML key\"; default = ...)`"
 end
@@ -146,12 +154,15 @@ end
     @params struct Name
         field::Type = req("YAML key"; min, max, allowed, quantity, description)
         field::Type = opt("YAML key"; default, min, max, allowed, quantity, description)
+        "Description of the next field"
+        field::Type = req("YAML key"; ...)
     end
 
 Declares a parameter struct. Generates the plain immutable struct (type
 parameters are added for `Dependent` fields so that every instance is a
-concrete type) and its `parameter_spec`. Invalid declarations raise a
-`ParamsDefinitionError` naming the struct and field.
+concrete type) and its `parameter_spec`. A docstring above a field is its
+`description` and stays the field's documentation; giving both is an error.
+Invalid declarations raise a `ParamsDefinitionError` naming the struct and field.
 """
 macro params(structdef)
     if !(structdef isa Expr && structdef.head === :struct)
@@ -171,12 +182,17 @@ macro params(structdef)
     fields = Any[]
     typeparams = Any[]
     entries = Any[]
+    doc = nothing
     for line in structdef.args[3].args
         if line isa LineNumberNode
             push!(fields, line)
             continue
         end
-        line isa AbstractString && continue
+        if line isa AbstractString
+            doc = strip(line)
+            push!(fields, line)
+            continue
+        end
         if !(line isa Expr && line.head === :(=) && line.args[1] isa Expr &&
              line.args[1].head === :(::) && length(line.args[1].args) == 2)
             fname = line isa Expr && line.head === :(::) ? line.args[1] : line
@@ -188,6 +204,12 @@ macro params(structdef)
             return _definition_error(_field_usage(name, fname))
         end
         call = Expr(:call, GlobalRef(_SELF, decl.args[1]), decl.args[2:end]...)
+        if doc !== nothing
+            _has_description(decl) &&
+                return _definition_error("$name: field `$fname` has a docstring and a description; keep one")
+            push!(call.args, Expr(:kw, :description, String(doc)))
+            doc = nothing
+        end
         if _is_dependent_type(ftype) || _is_optional_dependent_type(ftype)
             bound = _is_dependent_type(ftype) ? Dependent : Union{Nothing,Dependent}
             typeparam = Symbol("T_", fname)
