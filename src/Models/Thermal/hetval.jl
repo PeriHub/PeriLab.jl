@@ -14,7 +14,8 @@ import ......ParameterSpec: check!, key_patterns
     number_of_state_variables::Int64 = opt("Number of State Variables"; default = 1, min = 1)
     hetval_material_name::Union{Nothing,String} = opt("HETVAL Material Name";
                                                       default = nothing)
-    hetval_name::String = opt("HETVAL name"; default = "HETVAL")
+    hetval_name::String = opt("HETVAL name"; default = "HETVAL",
+                              description = "not used: PeriLab calls the routine hetval_ of the library")
     predefined_field_names::Union{Nothing,String} = opt("Predefined Field Names";
                                                         default = nothing,
                                                         description = "space separated node field names")

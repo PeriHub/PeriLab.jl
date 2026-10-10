@@ -23,7 +23,7 @@ export fields_for_local_synchronization
                                                           default = nothing, min = 0)
     vumat_material_name::Union{Nothing,String} = opt("VUMAT Material Name"; default = nothing)
     vumat_name::Union{Nothing,String} = opt("VUMAT name"; default = nothing,
-                                           description = "name of the VUMAT routine, default VUMAT")
+                                           description = "not used: PeriLab calls the routine vumat_ of the library")
 end
 key_patterns(::Type{CorrespondenceVUMATParams}) = [r"^Property_\d+$" => Float64]
 __init__() = register_material("Correspondence VUMAT", CorrespondenceVUMATParams)
