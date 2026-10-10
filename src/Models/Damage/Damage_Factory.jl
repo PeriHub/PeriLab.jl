@@ -117,10 +117,7 @@ export init_fields
 """
     init_fields()
 
-Initialize damage model fields
-
-# Arguments
-- `params::Dict`: Parameters.
+Creates the damage field and the inverse neighbor list.
 """
 function init_fields()
     dof = Data_Manager.get_dof()

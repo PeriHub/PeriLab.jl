@@ -116,12 +116,15 @@ function local_contact_search(contact_radius::Float64, master_nodes, slave_nodes
 end
 
 """
-    find_potential_contact_pairs(contact_params::Dict)
+    find_potential_contact_pairs(dof, points_1, points_2, search_radius)
 
 Finds a list of potential master slave pairs which are next to each other. Only the free surface nodes of the contact blocks are tested. The process is done equally at each computational core.
 
 # Arguments
-- `contact_params::Dict`: dictionary with contact relevant information.
+- `dof::Int64`: The degrees of freedom.
+- `points_1`: The coordinates of the master points.
+- `points_2`: The coordinates of the slave points.
+- `search_radius::Float64`: The contact search radius.
 
 # Returns
 - pairs of potential contact partner in exchange vector ids.
