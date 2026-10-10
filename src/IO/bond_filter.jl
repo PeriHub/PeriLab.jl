@@ -2,15 +2,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 module Bond_Filter
-using ....InputDeck: BondFilterParams
+using ....InputDeck: BondFilterParams, bond_filter
 using ....Data_Manager
-using ....PeriLabExceptions: @abort
-using ....ModuleLoader: find_module_files, create_module_specifics
+using ....ModuleLoader: find_registered_modules
 using DataFrames
 
-global module_list = find_module_files(@__DIR__, "bond_filter_name")
-for mod in module_list
-    include(mod["File"])
+for file in find_registered_modules(joinpath(@__DIR__, "Bond_Filter"), "register_bond_filter")
+    include(file)
 end
 export apply_bond_filters
 
@@ -61,15 +59,9 @@ function apply_bond_filters(nlist::BondScalarState{Int64},
         end
 
         for (name, filter) in filters
-            mod = create_module_specifics(filter.type,
-                                          module_list,
-                                          @__MODULE__,
-                                          "bond_filter_name")
-            if isnothing(mod)
-                @warn "$(filter.type) is not defined"
-                return nlist, nlist_filtered_ids, bond_norm
-            end
-            filter_flag, normal = mod.run_bond_filter(nnodes, data, filter, nlist, dof)
+            # the type was checked when the input deck was read
+            filter_flag, normal = bond_filter(filter.type).run(nnodes, data, filter, nlist,
+                                                               dof)
             # Theoretically all bond filter can be in contact mode from memory side
             # but only the chosen ones are stored here.
             for iID in 1:nnodes

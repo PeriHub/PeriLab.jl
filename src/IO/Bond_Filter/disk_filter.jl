@@ -5,20 +5,14 @@
 module Disk_Filter
 using LinearAlgebra
 using .....Data_Manager
-using .....InputDeck: BondFilterParams
+using .....InputDeck: BondFilterParams, register_bond_filter
 using .....PeriLabExceptions: @abort
-export run_bond_filter, bond_filter_name
+export run_bond_filter
 const TOLERANCE = 1.0e-14
-"""
-    bond_filter_name()
 
-Return the name of this bond filter.
-
-# Returns
-- `String`: The name of the bond filter.
-"""
-function bond_filter_name()
-    return "Disk"
+function __init__()
+    register_bond_filter("Disk", run_bond_filter;
+                         required = ["Center X", "Center Y", "Center Z", "Normal Z", "Radius"])
 end
 
 """

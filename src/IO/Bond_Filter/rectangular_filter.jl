@@ -6,19 +6,15 @@ module Rectangular_Plane_Filter
 using LinearAlgebra
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
-using .....InputDeck: BondFilterParams
-export run_bond_filter, bond_filter_name
+using .....InputDeck: BondFilterParams, register_bond_filter
+export run_bond_filter
 const TOLERANCE = 1.0e-14
-"""
-    get_bond_filter_name()
 
-Return the name of this bond filter.
-
-# Returns
-- `String`: The name of the bond filter.
-"""
-function bond_filter_name()
-    return "Rectangular_Plane"
+function __init__()
+    register_bond_filter("Rectangular_Plane", run_bond_filter;
+                         required = ["Lower Left Corner X", "Lower Left Corner Y",
+                                     "Bottom Unit Vector X", "Bottom Unit Vector Y",
+                                     "Bottom Length", "Side Length"])
 end
 
 """

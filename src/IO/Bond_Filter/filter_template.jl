@@ -4,20 +4,13 @@
 
 module Filter_template
 using .....Data_Manager
-using .....InputDeck: BondFilterParams
-export run_bond_filter, bond_filter_name
+using .....InputDeck: BondFilterParams, register_bond_filter
+export run_bond_filter
 const TOLERANCE = 1.0e-14
-"""
-    bond_filter_name()
 
-Return the name of this bond filter.
-
-# Returns
-- `String`: The name of the bond filter.
-"""
-function bond_filter_name()
-    return "Template"
-end
+# Uncomment to make the filter available as `Type: Template`; `required` lists
+# the Bond Filters keys it needs.
+# __init__() = register_bond_filter("Template", run_bond_filter; required = String[])
 
 """
     run_bond_filter(nnodes::Int64, data::Matrix{Float64}, filter::BondFilterParams, nlist::BondScalarState{Int64}, dof::Int64)

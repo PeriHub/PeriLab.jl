@@ -93,24 +93,52 @@ function gcode_block_ids(g::GcodeParams)
     return Dict{Int64,String}(parse(Int64, key) => condition for (key, condition) in g.blocks)
 end
 
-# Fields each built-in bond filter needs (Z components only in 3D, not checked here).
-const _BOND_FILTER_REQUIRED = Dict("Disk" => (("Center X", :center_x), ("Center Y", :center_y),
-                                              ("Center Z", :center_z), ("Normal Z", :normal_z),
-                                              ("Radius", :radius)),
-                                   "Rectangular_Plane" => (("Lower Left Corner X",
-                                                            :lower_left_corner_x),
-                                                           ("Lower Left Corner Y",
-                                                            :lower_left_corner_y),
-                                                           ("Bottom Unit Vector X",
-                                                            :bottom_unit_vector_x),
-                                                           ("Bottom Unit Vector Y",
-                                                            :bottom_unit_vector_y),
-                                                           ("Bottom Length", :bottom_length),
-                                                           ("Side Length", :side_length)))
+"A registered bond filter: the YAML keys its Type needs and the function that applies it."
+struct BondFilter
+    required::Vector{String}
+    run::Function
+end
+
+# filter type => BondFilter; only mutated at runtime (module `__init__` functions)
+const BOND_FILTERS = Dict{String,BondFilter}()
+
+"""
+    register_bond_filter(name, run; required = String[])
+
+Makes bond filter `name` available as `Type` of a `Bond Filters` entry. `run`
+is called as `run(nnodes, data, filter::BondFilterParams, nlist, dof)` and
+returns the bond flags and the filter normal. `required` lists the
+`BondFilterParams` keys the filter needs (Z components only in 3D are checked
+by the filter itself). Call it from the filter module's `__init__()`.
+"""
+function register_bond_filter(name::AbstractString, run::Function;
+                              required = String[])
+    keys = Set(spec.alias for spec in ParameterSpec.parameter_spec(BondFilterParams))
+    for key in required
+        key in keys ||
+            throw(ParameterSpec.ParamsDefinitionError("bond filter \"$name\": \"$key\" is not a Bond Filters key"))
+    end
+    BOND_FILTERS[String(name)] = BondFilter(collect(String, required), run)
+    return nothing
+end
+
+"The registered bond filter `name`, or `nothing`."
+bond_filter(name::AbstractString) = get(BOND_FILTERS, name, nothing)
 
 function check!(f::BondFilterParams, path::String, ctx::ParseContext)
-    required = get(_BOND_FILTER_REQUIRED, f.type, ())
-    missing = [key for (key, field) in required if getfield(f, field) === nothing]
+    filter = bond_filter(f.type)
+    if filter === nothing
+        available = sort!(collect(keys(BOND_FILTERS)))
+        suggestion = ParameterSpec.suggest(f.type, available)
+        add_error!(ctx, join_path(path, "Type"),
+                   suggestion === nothing ?
+                   "bond filter \"$(f.type)\" not found; available: $(join(available, ", "))" :
+                   "bond filter \"$(f.type)\" not found — did you mean \"$suggestion\"?")
+        return nothing
+    end
+    field = Dict(spec.alias => spec.name
+                 for spec in ParameterSpec.parameter_spec(BondFilterParams))
+    missing = [key for key in filter.required if getfield(f, field[key]) === nothing]
     isempty(missing) ||
         add_error!(ctx, path, "\"$(f.type)\" bond filter requires: $(join(missing, ", "))")
     return nothing

@@ -30,6 +30,7 @@ All notable changes to this project will be documented in this file.
 - Parameters are read from the typed input instead of `Data_Manager` getters (the `properties` API is removed)
 - An active `Flaw Function` without size, magnitude or location, and integers out of range, are input errors
 - A stiffness-matrix symmetry (anisotropic, orthotropic, transverse isotropic) with a model that is not a correspondence model, and a 3D `Rectangular_Plane` bond filter without Z components, abort with a message (they failed at run time before)
+- Bond filters register themselves with `register_bond_filter(name, run; required)` in `__init__()` instead of defining `bond_filter_name()`; an unknown filter `Type` is an input error (it was skipped with a warning, together with all following filters)
 
 ## [2.2.5] - 2026-09-21
 

@@ -83,6 +83,32 @@ end
           "\"Rectangular_Plane\" bond filter requires: Lower Left Corner X, Lower Left Corner Y, Bottom Unit Vector X, Bottom Unit Vector Y, Bottom Length, Side Length"
     _, ctx = ut_bm(ID.BondFilterParams,
                    Dict{String,Any}("Type" => "My_Filter", "Normal X" => 0.0, "Normal Y" => 1.0))
-    @test isempty(ctx.errors)
+    @test ctx.errors[1].path == "X.Type"
+    @test ctx.errors[1].message ==
+          "bond filter \"My_Filter\" not found; available: Disk, Rectangular_Plane"
+    _, ctx = ut_bm(ID.BondFilterParams,
+                   Dict{String,Any}("Type" => "Dsik", "Normal X" => 0.0, "Normal Y" => 1.0))
+    @test ctx.errors[1].message == "bond filter \"Dsik\" not found — did you mean \"Disk\"?"
+end
+
+@testset "bond filter registry" begin
+    @test ID.bond_filter("Disk").required ==
+          ["Center X", "Center Y", "Center Z", "Normal Z", "Radius"]
+    @test ID.bond_filter("Template") === nothing
+    @test_throws PeriLab.ParameterSpec.ParamsDefinitionError ID.register_bond_filter("Bad",
+                                                                                     identity;
+                                                                                     required = ["Centre X"])
+    run_test_filter(nnodes, data, filter, nlist, dof) = ([fill(true, length(nlist[i]))
+                                                          for i in 1:nnodes], [0.0, 1.0])
+    try
+        ID.register_bond_filter("Test_Filter", run_test_filter; required = ["Radius"])
+        _, ctx = ut_bm(ID.BondFilterParams,
+                       Dict{String,Any}("Type" => "Test_Filter", "Normal X" => 0.0,
+                                        "Normal Y" => 1.0))
+        @test ctx.errors[1].message == "\"Test_Filter\" bond filter requires: Radius"
+        @test ID.bond_filter("Test_Filter").run === run_test_filter
+    finally
+        delete!(ID.BOND_FILTERS, "Test_Filter")
+    end
 end
 

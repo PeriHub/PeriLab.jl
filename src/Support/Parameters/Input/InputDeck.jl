@@ -32,6 +32,7 @@ export read_input, PeriLabInput, SolverParams, SolverOptions, ModelReductionPara
        active_options, solver_name, start_time, end_time, model_options, solver_steps,
        solver_step,
        BlockParams, DiscretizationParams, GcodeParams, BondFilterParams,
+       register_bond_filter, bond_filter,
        SurfaceExtrusionParams, ExternalTopologyParams, block_by_id, block_angles,
        block_names_and_ids, mesh_scaling, gcode_block_ids, OutputParams, ComputeClassParams,
        check_for_duplicates, output_filenames, output_frequencies, output_fieldnames,
