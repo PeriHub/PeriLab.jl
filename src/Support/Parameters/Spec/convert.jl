@@ -161,13 +161,21 @@ function check_constraints!(fs::FieldSpec, v, path::String, ctx::ParseContext)
             return false
         end
     end
-    if fs.allowed !== nothing && v !== nothing && !(v in fs.allowed)
-        add_error!(ctx, path,
-                   "$(_describe(v)) is not one of: $(join(_describe.(fs.allowed), ", "))")
-        return false
+    if fs.allowed !== nothing
+        for x in _choices(v)
+            x in fs.allowed && continue
+            add_error!(ctx, path,
+                       "$(_describe(x)) is not one of: $(join(_describe.(fs.allowed), ", "))")
+            return false
+        end
     end
     return true
 end
+
+# the values `allowed` is checked against: every element of a list
+_choices(v::AbstractVector) = v
+_choices(::Nothing) = ()
+_choices(v) = (v,)
 
 const _SCALAR_KIND_NAMES = Dict{Any,String}(Int64 => "an integer", Float64 => "a number",
                                             String => "text", Bool => "true or false")

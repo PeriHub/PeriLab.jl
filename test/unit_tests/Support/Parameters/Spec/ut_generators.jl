@@ -17,6 +17,7 @@ GPS.@params struct UTGenParams
     table::GPS.Dependent = opt("Table Value"; default = 1.0)
     alpha::Union{Float64,Vector{Float64}} = opt("Alpha"; default = 0.5, min = 0)
     kind::String = opt("Kind"; default = "a", allowed = ["a", "b"])
+    kinds::Vector{String} = opt("Kinds"; default = String[], allowed = ["a", "b"])
     mode::UTGenMode = opt("Mode"; default = UTGenFast)
     label::Union{Nothing,String} = opt("Label"; default = nothing)
     id_or_name::Union{Int64,String} = opt("Id"; default = 1)
@@ -47,6 +48,8 @@ end
     @test occursin("elastic stiffness", p["Stiffness"]["description"])
     @test occursin("stress", p["Stiffness"]["description"])
     @test p["Kind"]["enum"] == ["a", "b"] && p["Kind"]["default"] == "a"
+    # on a list the allowed values are those of the elements
+    @test !haskey(p["Kinds"], "enum") && p["Kinds"]["items"]["enum"] == ["a", "b"]
     @test all(b -> get(b, "minimum", 0.0) == 0.0 &&
                    get(get(b, "items", Dict()), "minimum", 0.0) == 0.0, p["Alpha"]["oneOf"])
     @test p["Inner"]["properties"]["Depth"]["minimum"] == 1.0

@@ -61,6 +61,16 @@ function _bounds!(s::Dict{String,Any}, lo, hi)
     return s
 end
 
+# allowed values of a schema (on the elements of an array, as check_constraints!)
+function _allowed!(s::Dict{String,Any}, values::Vector{Any})
+    if get(s, "type", "") == "array"
+        _allowed!(s["items"], values)
+    else
+        s["enum"] = values
+    end
+    return s
+end
+
 _json_value(x::Union{Real,String}) = x
 _json_value(x::AbstractFloat) = isfinite(x) ? x : nothing   # JSON has no Inf / NaN
 _json_value(x::Enum) = string(x)
@@ -76,7 +86,7 @@ end
 function field_schema(fs::FieldSpec)
     s = type_schema(fs.type)
     _bounds!(s, fs.min, fs.max)
-    fs.allowed === nothing || (s["enum"] = Any[_json_value(v) for v in fs.allowed])
+    fs.allowed === nothing || _allowed!(s, Any[_json_value(v) for v in fs.allowed])
     if !fs.required
         v = _json_value(fs.default)
         v === nothing || (s["default"] = v)

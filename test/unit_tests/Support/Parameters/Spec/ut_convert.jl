@@ -131,6 +131,11 @@ end
     @test PS.check_constraints!(type_fs, "CSV", "t", ctx)
     @test !PS.check_constraints!(type_fs, "VTK", "t", ctx)
     @test ctx.errors[end].message == "\"VTK\" is not one of: \"Exodus\", \"CSV\""
+    # on a list, every element is checked
+    list_fs = PS.FieldSpec(:l, Vector{String}, PS.req("Types"; allowed = ["Exodus", "CSV"]))
+    @test PS.check_constraints!(list_fs, ["CSV", "Exodus"], "l", ctx)
+    @test !PS.check_constraints!(list_fs, ["CSV", "VTK"], "l", ctx)
+    @test ctx.errors[end].message == "\"VTK\" is not one of: \"Exodus\", \"CSV\""
     union_fs = PS.FieldSpec(:u, Union{Nothing,Float64}, PS.opt("U"; default = nothing, min = 0))
     @test PS.check_constraints!(union_fs, nothing, "u", ctx)
 end
