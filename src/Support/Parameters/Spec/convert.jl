@@ -60,8 +60,7 @@ function convert_value(T, raw, path::String, ctx::ParseContext; alias::String = 
         end
         return _fail(ctx, path, "expected a number, got $(_describe(raw))")
     elseif T === Int64
-        raw isa Integer && !(raw isa Bool) && return Int64(raw)
-        raw isa AbstractFloat && isinteger(raw) && return Int64(raw)
+        !(raw isa Bool) && _fits_int64(raw) && return Int64(raw)
         return _fail(ctx, path, "expected an integer, got $(_describe(raw))")
     elseif T === Bool
         return _fail(ctx, path, "expected true or false, got $(_describe(raw))")
@@ -173,16 +172,21 @@ end
 const _SCALAR_KIND_NAMES = Dict{Any,String}(Int64 => "an integer", Float64 => "a number",
                                             String => "text", Bool => "true or false")
 
+# an integer value (also a float like 100.0) in the range of Int64
+_fits_int64(raw::Integer) = typemin(Int64) <= raw <= typemax(Int64)
+_fits_int64(raw::AbstractFloat) = isinteger(raw) && -2.0^63 <= raw < 2.0^63
+_fits_int64(raw) = false
+
 function _convert_scalar_union(T, raw, path::String, ctx::ParseContext)
     members = Base.uniontypes(T)
     if raw isa Bool
         Bool in members && return raw
     elseif raw isa Integer
-        Int64 in members && return Int64(raw)
+        Int64 in members && _fits_int64(raw) && return Int64(raw)
         Float64 in members && return Float64(raw)
     elseif raw isa AbstractFloat
         Float64 in members && return Float64(raw)
-        Int64 in members && isinteger(raw) && return Int64(raw)
+        Int64 in members && _fits_int64(raw) && return Int64(raw)
     elseif raw isa AbstractString
         String in members && return String(raw)
     end

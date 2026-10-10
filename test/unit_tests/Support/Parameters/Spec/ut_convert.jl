@@ -38,6 +38,12 @@ end
     @test ut_conv(Int64, 100.0)[1] === 100
     @test ut_conv_error(Int64, 2.5) == "expected an integer, got 2.5"
     @test ut_conv_error(Int64, "3") == "expected an integer, got \"3\""
+    # too large for Int64: an input error, not an InexactError
+    @test ut_conv_error(Int64, 1e20) == "expected an integer, got 1.0e20"
+    @test ut_conv_error(Int64, big(2)^70) == "expected an integer, got 1180591620717411303424"
+    @test ut_conv_error(Union{Int64,String}, 1e20) ==
+          "expected an integer or text, got 1.0e20"
+    @test ut_conv(Union{Int64,Float64}, 1e20)[1] === 1e20
 end
 
 @testset "Bool and String" begin
