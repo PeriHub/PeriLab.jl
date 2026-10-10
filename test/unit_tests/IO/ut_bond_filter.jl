@@ -367,4 +367,20 @@ end
                                                                                dof)
     @test filter_flag == expected_filter_flag
     @test normal == expected_normal
+
+    # a 3D run needs the Z components of the plane
+    filter_2d = typed_section(PeriLab.InputDeck.BondFilterParams,
+                              Dict("Type" => "Rectangular_Plane",
+                                   "Lower Left Corner X" => -0.5,
+                                   "Lower Left Corner Y" => -0.5,
+                                   "Bottom Unit Vector X" => 1.0,
+                                   "Bottom Unit Vector Y" => 0.0, "Normal X" => 0.0,
+                                   "Normal Y" => 1.0, "Bottom Length" => 1.0,
+                                   "Side Length" => 1.0))
+    @test_logs (:error,
+                "Rectangular_Plane bond filter in 3D requires: Normal Z, Lower Left Corner Z, Bottom Unit Vector Z") @test_throws PeriLab.PeriLabError begin
+        PeriLab.IO.Bond_Filter.Rectangular_Plane_Filter.run_bond_filter(nnodes, data,
+                                                                        filter_2d, nlist,
+                                                                        3)
+    end
 end

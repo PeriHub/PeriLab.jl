@@ -5,6 +5,7 @@
 module Rectangular_Plane_Filter
 using LinearAlgebra
 using .....Data_Manager
+using .....PeriLabExceptions: @abort
 using .....InputDeck: BondFilterParams
 export run_bond_filter, bond_filter_name
 const TOLERANCE = 1.0e-14
@@ -114,6 +115,13 @@ function run_bond_filter(nnodes::Int64,
         filter.bottom_unit_vector_y
     ]
     if dof == 3
+        z = (filter.normal_z => "Normal Z",
+             filter.lower_left_corner_z => "Lower Left Corner Z",
+             filter.bottom_unit_vector_z => "Bottom Unit Vector Z")
+        missing_keys = [key for (value, key) in z if value === nothing]
+        if !isempty(missing_keys)
+            @abort "Rectangular_Plane bond filter in 3D requires: $(join(missing_keys, ", "))"
+        end
         push!(normal, filter.normal_z)
         push!(lower_left_corner, filter.lower_left_corner_z)
         push!(bottom_unit_vector, filter.bottom_unit_vector_z)
