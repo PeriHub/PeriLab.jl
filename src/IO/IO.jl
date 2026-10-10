@@ -519,7 +519,7 @@ function get_results_mapping(input::PeriLabInput, path::String)
 end
 
 """
-    initialize_data(filename::String, filedirectory::String, comm::MPI.Comm)
+    initialize_data(filename, filedirectory, comm; no_strict = false, raw_deck = nothing)
 
 Initialize data.
 
@@ -528,6 +528,7 @@ Initialize data.
 - `filedirectory::String`: The directory of the input file.
 - `comm::MPI.Comm`: The MPI communicator
 - `no_strict::Bool`: Report unknown input keys as warnings instead of errors.
+- `raw_deck`: The already parsed yaml file, if any (it is not parsed again).
 # Returns
 - `input::PeriLabInput`: The typed input
 - `steps::Vector{Int64}`: The solver steps
@@ -535,14 +536,15 @@ Initialize data.
 function initialize_data(filename::String,
                          filedirectory::String,
                          comm::MPI.Comm;
-                         no_strict::Bool = false)
+                         no_strict::Bool = false, raw_deck = nothing)
     Data_Manager.set_directory(filedirectory)
     @timeit "MPI init data" begin
         Data_Manager.set_rank(MPI.Comm_rank(comm))
         Data_Manager.set_max_rank(MPI.Comm_size(comm))
         Data_Manager.set_comm(comm)
     end
-    input = read_input_deck(filename; directory = filedirectory, no_strict = no_strict)
+    input = read_input_deck(filename; directory = filedirectory, no_strict = no_strict,
+                            raw_deck = raw_deck)
     @timeit "init_data" init_data(input, filedirectory, comm)
     steps = solver_steps(input)
     return input, steps

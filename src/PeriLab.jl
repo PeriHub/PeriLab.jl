@@ -406,14 +406,17 @@ function run(filename::String;
             Data_Manager.set_silent(silent)
             Data_Manager.set_verbose(verbose)
             # licensed models register their parameters before the input deck is read;
-            # only decks with additive models contact the license server
-            isfile(filename) &&
-                Solver_Manager.Model_Factory.Additive.load_licensed_models(IO.read_input(filename))
+            # only decks with additive models contact the license server. The deck is
+            # parsed once; a missing or non-yaml file is reported by read_input_deck
+            raw_deck = isfile(filename) && occursin("yaml", filename) ?
+                       IO.read_input(filename) : nothing
+            Solver_Manager.Model_Factory.Additive.load_licensed_models(raw_deck)
             @timeit "IO.initialize_data" input,
                                          steps=IO.initialize_data(filename,
                                                                   filedirectory,
                                                                   comm;
-                                                                  no_strict = no_strict)
+                                                                  no_strict = no_strict,
+                                                                  raw_deck = raw_deck)
             Data_Manager.set_max_step(steps[end])
             for step_id in steps
                 # MPI.Barrier(comm)

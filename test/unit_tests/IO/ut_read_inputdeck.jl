@@ -87,3 +87,26 @@ end
     end
     rm(filename)
 end
+
+@testset "read_input_deck uses an already parsed deck" begin
+    # PeriLab.main parses the YAML once (for the licensed models) and hands the
+    # dict on; the file is not read a second time
+    dir = mktempdir()
+    file = joinpath(dir, "deck.yaml")
+    write(file, "not: [a, valid, deck\n")
+    raw = Dict("PeriLab" => Dict("Models" => Dict("Material Models" => Dict("E" => Dict("Material Model" => "Bond-based Elastic",
+                                                        "Bulk Modulus" => 1.0,
+                                                        "Shear Modulus" => 1.0))),
+"Discretization" => Dict("Input Mesh File" => "m.txt",
+                                                          "Type" => "Text File"),
+                                 "Blocks" => Dict("Block_1" => Dict("Block ID" => 1,
+                                                                    "Density" => 1.0,
+                                                                    "Horizon" => 1.0,
+"Material Model" => "E")),
+                                 "Solver" => Dict("Initial Time" => 0.0,
+                                                  "Final Time" => 1.0,
+                                                  "Verlet" => Dict("Safety Factor" => 1.0))))
+    input = PeriLab.IO.read_input_deck(file; raw_deck = raw)
+    @test input.sections.discretization.input_mesh_file == "m.txt"
+    @test input.sections.solver.final_time == 1.0
+end

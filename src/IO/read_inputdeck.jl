@@ -16,7 +16,7 @@ Reads the input deck from a yaml file
 # Arguments
 - `filename::String`: The name of the yaml file
 # Returns
-- `params::Dict{String,Any}`: The parameters read from the yaml file
+- The parsed yaml file (a `Dict` for a valid input deck)
 """
 function read_input(filename::String)
     try
@@ -50,12 +50,14 @@ function validate_input(params; directory::AbstractString = "", no_strict::Bool 
 end
 
 """
-    read_input_deck(filename; directory = dirname(filename), no_strict = false)
+    read_input_deck(filename; directory = dirname(filename), no_strict = false,
+                    raw_deck = nothing)
 
-Reads and validates the input deck; returns the typed `PeriLabInput`.
+Reads and validates the input deck; returns the typed `PeriLabInput`. `raw_deck` is
+the already parsed YAML of `filename`; if given, the file is not parsed again.
 """
 function read_input_deck(filename::String; directory::AbstractString = dirname(filename),
-                         no_strict::Bool = false)
+                         no_strict::Bool = false, raw_deck = nothing)
     if !isfile(filename)
         @abort "$(filename) can not be found. Make sure the file exist and is readable."
         return
@@ -65,6 +67,6 @@ function read_input_deck(filename::String; directory::AbstractString = dirname(f
         return
     end
     @info "Read input file $filename"
-    return last(validate_input(read_input(filename); directory = directory,
-                               no_strict = no_strict))
+    raw = raw_deck === nothing ? read_input(filename) : raw_deck
+    return last(validate_input(raw; directory = directory, no_strict = no_strict))
 end
