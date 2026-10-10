@@ -32,6 +32,9 @@ All notable changes to this project will be documented in this file.
 - An active `Flaw Function` without size, magnitude or location, and integers out of range, are input errors
 - A stiffness-matrix symmetry (anisotropic, orthotropic, transverse isotropic) with a model that is not a correspondence model, and a 3D `Rectangular_Plane` bond filter without Z components, abort with a message (they failed at run time before)
 - Bond filters register themselves with `register_bond_filter(name, run; required)` in `__init__()` instead of defining `bond_filter_name()`; an unknown filter `Type` is an input error (it was skipped with a warning, together with all following filters)
+- Values with a fixed set of choices are compared exactly, including upper and lower case: `Output File Type` must be `Exodus` or `CSV`, a boundary condition `Type` `Initial`, `Dirichlet` or `Neumann` (an unknown BC type became `Dirichlet` before)
+- Mesh importers (`read_mesh(input::PeriLabInput, filename)`) and bond filters (`run(..., filter::BondFilterParams, ...)`) get the typed input; own importers and filters with the old `Dict` signature fail with a `MethodError` and have to be ported
+- `Data_Manager.initialize_data()` removes all fields, so a field of an earlier run in the same Julia session is no longer found
 
 ## [2.2.5] - 2026-09-21
 
