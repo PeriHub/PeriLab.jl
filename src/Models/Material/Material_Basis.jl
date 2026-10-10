@@ -435,22 +435,13 @@ end
 
 flaw_function(::Nothing, coor::AbstractVector{<:Real}, stress::Union{Int64,Float64}) = Float64(stress)
 
-# flaw function of a block material (`FlawFunctionParams`)
+# flaw function of a block material (`FlawFunctionParams`); the input check makes
+# sure an active one has a positive size and magnitude and a location
 function flaw_function(flaw, coor::AbstractVector{<:Real},
                        stress::T)::Float64 where {T<:Union{Int64,Float64}}
     flaw.active || return stress
-    if flaw.flaw_size === nothing || flaw.flaw_magnitude === nothing ||
-       flaw.flaw_location_x === nothing || flaw.flaw_location_y === nothing
-        @abort "An active Flaw Function needs Flaw Size, Flaw Magnitude, Flaw Location X and Flaw Location Y."
-    end
     flaw_size::Float64 = flaw.flaw_size
     flaw_magnitude::Float64 = flaw.flaw_magnitude
-    if !(0 < flaw_magnitude <= 1)
-        @abort "Flaw Magnitude should be between 0 and 1"
-    end
-    if flaw_size <= 0
-        @abort "Flaw Size must be positive."
-    end
     dx = Float64(coor[1]) - flaw.flaw_location_x
     dy = Float64(coor[2]) - flaw.flaw_location_y
     distance_squared = dx * dx + dy * dy

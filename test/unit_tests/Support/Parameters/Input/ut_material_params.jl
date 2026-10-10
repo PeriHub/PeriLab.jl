@@ -70,6 +70,31 @@ end
     @test msgs["$p.\"Flaw Function\".Function"] == "\"Gauss\" is not one of: \"Pre-defined\""
 end
 
+@testset "an active flaw function is complete when the deck is read" begin
+    p = "Models.\"Material Models\".M.\"Flaw Function\""
+    flaw(extra) = Dict("Material Model" => "Bond-based Elastic", "Bulk Modulus" => 1.0,
+                       "Flaw Function" => merge(Dict{String,Any}("Active" => true,
+                                                                 "Function" => "Pre-defined"),
+                                                extra))
+    m, ctx = ut_material(flaw(Dict()))
+    @test only(ctx.errors).path == p
+    @test only(ctx.errors).message ==
+          "an active Flaw Function needs Flaw Size, Flaw Magnitude, Flaw Location X, Flaw Location Y"
+    complete = Dict("Flaw Size" => 0.2, "Flaw Magnitude" => 0.5, "Flaw Location X" => 1.0,
+                    "Flaw Location Y" => 0.0)
+    m, ctx = ut_material(flaw(merge(complete, Dict("Flaw Size" => 0.0))))
+    @test only(ctx.errors).path == "$p.\"Flaw Size\""
+    @test only(ctx.errors).message == "must be positive"
+    m, ctx = ut_material(flaw(merge(complete, Dict("Flaw Magnitude" => 0.0))))
+    @test only(ctx.errors).path == "$p.\"Flaw Magnitude\""
+    @test only(ctx.errors).message == "must be positive"
+    # an inactive flaw function needs nothing
+    m, ctx = ut_material(Dict("Material Model" => "Bond-based Elastic", "Bulk Modulus" => 1.0,
+                              "Flaw Function" => Dict("Active" => false,
+                                                      "Function" => "Pre-defined")))
+    @test isempty(ctx.errors)
+end
+
 const CORR = MAT.Correspondence
 
 @testset "correspondence material names" begin

@@ -279,14 +279,12 @@ end
                                          "Flaw Function" => Dict("Active" => false,
                                                                  "Function" => "Pre-defined")))
     @test BBASIS.flaw_function(inactive.base.flaw_function, [0.0, 0.0], 10.0) == 10.0
-    incomplete = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
-                                           "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0,
-                                           "Flaw Function" => Dict("Active" => true,
-                                                                   "Function" => "Pre-defined")))
-    @test_logs (:error,
-                "An active Flaw Function needs Flaw Size, Flaw Magnitude, Flaw Location X and Flaw Location Y.") @test_throws PeriLab.PeriLabError begin
-        BBASIS.flaw_function(incomplete.base.flaw_function, [0.0, 0.0], 10.0)
-    end
+    # an incomplete active flaw function is an input error
+    @test_throws PeriLab.PeriLabError typed_block_material(Dict("Material Model" => "PD Solid Elastic",
+                                                                "Bulk Modulus" => 1.0,
+                                                                "Shear Modulus" => 1.0,
+                                                                "Flaw Function" => Dict("Active" => true,
+                                                                                        "Function" => "Pre-defined")))
 end
 
 @testset "extras reach the block material" begin

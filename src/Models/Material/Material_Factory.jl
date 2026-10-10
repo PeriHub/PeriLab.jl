@@ -28,6 +28,22 @@ import .....ParameterSpec: check!
     flaw_location_z::Union{Nothing,Float64} = opt("Flaw Location Z"; default = nothing)
 end
 
+# an active flaw function needs its size, magnitude and location (Z is 0 if missing)
+function check!(p::FlawFunctionParams, path::String, ctx::ParseContext)
+    p.active || return nothing
+    required = (p.flaw_size => "Flaw Size", p.flaw_magnitude => "Flaw Magnitude",
+                p.flaw_location_x => "Flaw Location X", p.flaw_location_y => "Flaw Location Y")
+    missing_keys = [alias for (value, alias) in required if value === nothing]
+    if !isempty(missing_keys)
+        add_error!(ctx, path, "an active Flaw Function needs $(join(missing_keys, ", "))")
+        return nothing
+    end
+    for (value, alias) in required[1:2]
+        value > 0 || add_error!(ctx, join_path(path, alias), "must be positive")
+    end
+    return nothing
+end
+
 """
     MaterialBaseParams
 
