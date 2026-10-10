@@ -359,11 +359,15 @@ function block_material(wb::WithBase, dof::Int64)
     model_name = wb.name
     bond_based = occursin("Bond-based", model_name) &&
                  !occursin("Unified Bond-based", model_name)
+    correspondence = correspondence_model(wb.model, model_name)
+    moduli = elastic_moduli(wb.base, bond_based, dof)
+    if moduli === nothing && !correspondence
+        @abort "Material Model \"$model_name\": Symmetry \"$(wb.base.symmetry)\" defines a stiffness matrix, which only correspondence models support."
+    end
     return BlockMaterial(wb.base, wb.model, material_symmetry(wb.base.symmetry, dof),
-                         hooke_symmetry(wb.base.symmetry, dof),
-                         elastic_moduli(wb.base, bond_based, dof),
+                         hooke_symmetry(wb.base.symmetry, dof), moduli,
                          vcat(dependent_tables(wb.base), dependent_tables(wb.model)), wb.extras,
-                         correspondence_model(wb.model, model_name))
+                         correspondence)
 end
 
 "A model struct defined in the Correspondence module (a correspondence formulation)."

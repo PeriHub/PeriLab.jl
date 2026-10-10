@@ -82,7 +82,7 @@ end
 
 @testset "Hooke-matrix symmetries have no isotropic moduli" begin
     ut_reset(3)
-    m = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
+    m = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
                                   "Symmetry" => "orthotropic",
                                   "Young's Modulus X" => 1.0, "Young's Modulus Y" => 1.0,
                                   "Young's Modulus Z" => 1.0, "Poisson's Ratio XY" => 0.3,
@@ -520,6 +520,18 @@ end
                 "Material Model \"Correspondence Elastic + PD Solid Elastic\": correspondence models cannot be combined with other material models.") @test_throws PeriLab.PeriLabError typed_block_material(Dict("Material Model" => "Correspondence Elastic + PD Solid Elastic",
                                                                                                                                                                                                                        "Bulk Modulus" => 1.0,
                                                                                                                                                                                                                        "Shear Modulus" => 1.0))
+end
+
+@testset "a stiffness-matrix symmetry needs a correspondence model" begin
+    ut_reset(3)
+    raw = Dict{String,Any}("Material Model" => "PD Solid Elastic", "Symmetry" => "anisotropic")
+    for i in 1:6, j in i:6
+        raw["C$i$j"] = 1.0
+    end
+    @test_logs (:error,
+                "Material Model \"PD Solid Elastic\": Symmetry \"anisotropic\" defines a stiffness matrix, which only correspondence models support.") match_mode=:any @test_throws PeriLab.PeriLabError typed_block_material(raw)
+    raw["Material Model"] = "Correspondence Elastic"
+    @test typed_block_material(raw).moduli === nothing
 end
 
 @testset "critical bulk modulus" begin
