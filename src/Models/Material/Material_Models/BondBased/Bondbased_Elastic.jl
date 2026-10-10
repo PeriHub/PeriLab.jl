@@ -12,7 +12,6 @@ using LoopVectorization
 using TimerOutputs: @timeit
 export init_model
 export fe_support
-export material_name
 export compute_model
 
 "Parameters of Bond-based Elastic beyond the shared material keys (none)."
@@ -41,7 +40,7 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, p::BondbasedElasticParams, material)
+  init_model(nodes::AbstractVector{Int64}, p::BondbasedElasticParams, material, block::Int64)
 
 Initializes the material model.
 
@@ -52,21 +51,13 @@ Initializes the material model.
 """
 function init_model(nodes::AbstractVector{Int64},
                     p::BondbasedElasticParams,
-                    material)
+                    material,
+                    block::Int64)
     constant = Data_Manager.create_constant_node_scalar_field("Bond Based Constant",
                                                               Float64)
     horizon = Data_Manager.get_field("Horizon")
     symmetry::String = material.symmetry
     compute_bond_based_constants(nodes, symmetry, constant, horizon)
-end
-
-"""
-	material_name()
-
-Returns the name of the material model.
-"""
-function material_name()
-    return "Bond-based Elastic"
 end
 
 """

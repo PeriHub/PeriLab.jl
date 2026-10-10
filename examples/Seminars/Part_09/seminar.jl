@@ -8,7 +8,6 @@ using ......Data_Manager
 
 export init_model
 export compute_model
-export damage_name
 export fields_for_local_synchronization
 
 using ......ParameterSpec: @params, register_damage
@@ -25,26 +24,6 @@ template stays unregistered so that a copy never collides with it).
 end
 
 # __init__() = register_damage("Damage Template", DamageTemplateParams)
-
-"""
-    damage_name()
-
-Gives the damage name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the damage.
-
-Example:
-```julia
-println(damage_name())
-"Damage Template"
-```
-"""
-function damage_name()
-    return "Damage Template"
-end
 
 """
     compute_model(nodes, p, damage, block, time, dt)
@@ -64,7 +43,7 @@ Example:
 """
 function compute_model(nodes::AbstractVector{Int64}, p::DamageTemplateParams, damage,
                        block::Int64, time::Float64, dt::Float64)
-    @info "Please write a damage model name in damage_name()."
+    @info "Register your model name with register_damage in __init__()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_model(nodes, p, damage, block, time, dt) function."
     @info "The Data_Manager, p and damage hold all you need to solve your problem on material level."

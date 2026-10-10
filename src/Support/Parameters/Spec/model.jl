@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-export NoModel, Composite, WithBase, dependent_tables
+export NoModel, Composite, WithBase, dependent_tables, model_parts, model_module
 
 "Placeholder for a block that has no model of a category."
 struct NoModel end
@@ -11,6 +11,13 @@ struct NoModel end
 struct Composite{P<:Tuple}
     parts::P
 end
+
+"The parts of a model: the parts of a `+` composite, else the model itself."
+model_parts(model::Composite) = model.parts
+model_parts(model) = (model,)
+
+"The module that defines the model struct `part` (and its `init_model`, `compute_model`)."
+model_module(part) = parentmodule(typeof(part))
 
 "A model together with the base part of its category (see `register_base!`)."
 struct WithBase{B,M}
@@ -141,7 +148,7 @@ The `Table1D` parameters of an `@params` struct or of every part of a `Composite
 """
 function dependent_tables(x)
     found = Table1D[]
-    for part in (x isa Composite ? x.parts : (x,))
+    for part in model_parts(x)
         part === nothing && continue
         for fs in parameter_spec(typeof(part))
             v = getfield(part, fs.name)

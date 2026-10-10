@@ -20,7 +20,6 @@ using ....Material_Basis: apply_pointwise_E
 
 export init_model
 export fe_support
-export material_name
 export compute_model
 
 "Parameters of Unified Bond-based Elastic beyond the shared material keys (none)."
@@ -49,7 +48,7 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, p, material)
+  init_model(nodes::AbstractVector{Int64}, p, material, block::Int64)
 
 Initializes the material model.
 
@@ -59,7 +58,8 @@ Initializes the material model.
 """
 function init_model(nodes::AbstractVector{Int64},
                     p::UnifiedBondbasedElasticParams,
-                    material)
+                    material,
+                    block::Int64)
     dof = Data_Manager.get_dof()
     nlist = Data_Manager.get_nlist()
     constant = Data_Manager.create_constant_bond_vector_state("Unified Bond Based Constant",
@@ -109,15 +109,6 @@ function init_model(nodes::AbstractVector{Int64},
             end
         end
     end
-end
-
-"""
-    material_name()
-
-Returns the name of the material model.
-"""
-function material_name()
-    return "Unified Bond-based Elastic"
 end
 
 """

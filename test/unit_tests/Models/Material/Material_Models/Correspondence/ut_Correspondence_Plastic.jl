@@ -7,8 +7,8 @@
 # using .PeriLab
 
 @testset "get_name&fe_support" begin
-    @test PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_Plastic.correspondence_name() ==
-          "Correspondence Plastic"
+    @test parentmodule(PeriLab.ParameterSpec.lookup_model(:material, "Correspondence Plastic")) ===
+      PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_Plastic
     @test !(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_Plastic.fe_support())
 end
 
@@ -24,14 +24,14 @@ end
     m = typed_block_material(Dict("Material Model" => "Correspondence Elastic + Correspondence Plastic",
                                   "Symmetry" => "isotropic", "Bulk Modulus" => 10.0,
                                   "Shear Modulus" => 10.5, "Yield Stress" => 3.4))
-    PLASTIC.init_model(Vector{Int64}(1:nodes), m.model.parts[2], m)
+    PLASTIC.init_model(Vector{Int64}(1:nodes), m.model.parts[2], m, 1)
     @test PeriLab.Data_Manager.has_key("von Mises Yield StressN")
     @test PeriLab.Data_Manager.has_key("Plastic StrainN")
     ba = typed_block_material(Dict("Material Model" => "Correspondence Elastic + Correspondence Plastic",
                                    "Symmetry" => "isotropic", "Bulk Modulus" => 10.0,
                                    "Shear Modulus" => 10.5, "Yield Stress" => 3.4,
                                    "Bond Associated" => true))
-    PLASTIC.init_model(Vector{Int64}(1:nodes), ba.model.parts[2], ba)
+    PLASTIC.init_model(Vector{Int64}(1:nodes), ba.model.parts[2], ba, 1)
     @test PeriLab.Data_Manager.has_key("von Mises Bond Yield StressN")
     @test PeriLab.Data_Manager.has_key("Plastic Bond StrainN")
 end

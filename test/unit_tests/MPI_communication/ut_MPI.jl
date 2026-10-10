@@ -391,7 +391,7 @@ if ncores == 3
     material = PeriLab.Solver_Manager.Model_Factory.Material.block_material(parsed, dof)
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(Vector{Int64}(1:nodes),
                                                                                material.model,
-                                                                               material)
+                                                                               material, 1)
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(Vector{Int64}(1:nodes),
                                                                                   material.model,
                                                                                   material,

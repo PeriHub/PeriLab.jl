@@ -6,8 +6,8 @@
 #include("../../../../src/PeriLab.jl")
 #import .PeriLab
 
-@test PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion.thermal_model_name() ==
-      "Thermal Expansion"
+@test parentmodule(PeriLab.ParameterSpec.lookup_model(:thermal, "Thermal Expansion")) ===
+      PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion
 
 @testset "ut_thermal_deformation" begin
     nnodes = 2

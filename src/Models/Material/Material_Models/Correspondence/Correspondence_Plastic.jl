@@ -65,7 +65,7 @@ function fe_support()
 end
 
 """
-    init_model(nodes, p, material)
+    init_model(nodes, p, material, block)
 
 Initializes the model fields of `nodes`.
 
@@ -74,7 +74,8 @@ Initializes the model fields of `nodes`.
 - `p`: The model parameters (the model's `@params` struct).
 - `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
 """
-function init_model(nodes::AbstractVector{Int64}, p::CorrespondencePlasticParams, material)
+function init_model(nodes::AbstractVector{Int64}, p::CorrespondencePlasticParams, material,
+                    block::Int64)
     if material.moduli === nothing
         @abort "Shear Modulus must be defined to be able to run this plastic material"
         return
@@ -87,26 +88,6 @@ function init_model(nodes::AbstractVector{Int64}, p::CorrespondencePlasticParams
     end
 end
 
-
-"""
-   correspondence_name()
-
-   Gives the material name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-   Parameters:
-
-   Returns:
-   - `name::String`: The name of the material.
-
-   Example:
-   ```julia
-   println(material_name())
-   "Material Template"
-   ```
-   """
-function correspondence_name()
-    return "Correspondence Plastic"
-end
 
 """
     compute_stresses(nodes, dof, p, material, time, dt, strain_increment, stress_N, stress_NP1)

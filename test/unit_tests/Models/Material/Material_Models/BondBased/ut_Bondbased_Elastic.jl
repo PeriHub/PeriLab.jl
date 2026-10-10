@@ -10,8 +10,8 @@ using TimerOutputs
 # const to = TimerOutput()
 
 @testset "material_name" begin
-    @test PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.material_name() ==
-          "Bond-based Elastic"
+    @test parentmodule(PeriLab.ParameterSpec.lookup_model(:material, "Bond-based Elastic")) ===
+      PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic
     @test !(PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.fe_support())
 end
 @testset "compute_model" begin
@@ -48,7 +48,7 @@ end
                                          "Young's Modulus" => 1.0))
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(Vector{Int64}(1:nodes),
                                                                                material.model,
-                                                                               material)
+                                                                               material, 1)
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(Vector{Int64}(1:nodes),
                                                                                   material.model,
                                                                                   material,
@@ -79,7 +79,7 @@ end
                                          "Symmetry" => "here is something"))
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(Vector{Int64}(1:nodes),
                                                                                material.model,
-                                                                               material)
+                                                                               material, 1)
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(Vector{Int64}(1:nodes),
                                                                                   material.model,
                                                                                   material,
@@ -112,7 +112,7 @@ end
                                          "Symmetry" => "plane strain"); dof = 2)
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(Vector{Int64}(1:nodes),
                                                                                material.model,
-                                                                               material)
+                                                                               material, 1)
 
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(Vector{Int64}(1:nodes),
                                                                                   material.model,
@@ -145,7 +145,7 @@ end
                                          "Symmetry" => "plane stress"); dof = 2)
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(Vector{Int64}(1:nodes),
                                                                                material.model,
-                                                                               material)
+                                                                               material, 1)
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(Vector{Int64}(1:nodes),
                                                                                   material.model,
                                                                                   material,

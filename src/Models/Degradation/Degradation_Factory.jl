@@ -6,10 +6,10 @@ module Degradation
 
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
-using ....ModuleLoader: find_module_files
-global module_list = find_module_files(@__DIR__, "degradation_name")
-for mod in module_list
-    include(mod["File"])
+using ....ModuleLoader: find_registered_modules
+using .....ParameterSpec: model_module
+for file in find_registered_modules(@__DIR__, "register_degradation")
+    include(file)
 end
 
 using ....Helpers: find_inverse_bond_id
@@ -29,8 +29,6 @@ function init_fields()
     inverse_nlist = Data_Manager.set_inverse_nlist(find_inverse_bond_id(nlist))
 end
 
-model_module(p) = parentmodule(typeof(p))
-
 """
     compute_model(nodes::AbstractVector{Int64}, p, block::Int64, time::Float64, dt::Float64)
 
@@ -45,7 +43,7 @@ Computes the degradation model of a block.
 """
 function compute_model(nodes::AbstractVector{Int64}, p, block::Int64, time::Float64,
                        dt::Float64)
-    return model_module(p).compute_model(nodes, p, block, time, dt)
+    return model_module(p).compute_model(nodes, p, nothing, block, time, dt)
 end
 
 """
@@ -59,7 +57,7 @@ Initialize the degradation model of a block (`Data_Manager.get_block_models(bloc
 """
 function init_model(nodes::AbstractVector{Int64}, block::Int64)
     p = Data_Manager.get_block_models(block).degradation
-    model_module(p).init_model(nodes, p, block)
+    model_module(p).init_model(nodes, p, nothing, block)
 end
 
 """

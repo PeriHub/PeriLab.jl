@@ -7,7 +7,7 @@ using LinearAlgebra
 # include("../../../../../../src/PeriLab.jl")
 # using .PeriLab
 @testset "get_name&fe_support" begin
-    @test PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_VUMAT.correspondence_name() ==
-          "Correspondence VUMAT"
+    @test parentmodule(PeriLab.ParameterSpec.lookup_model(:material, "Correspondence VUMAT")) ===
+      PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_VUMAT
     @test PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_VUMAT.fe_support()
 end

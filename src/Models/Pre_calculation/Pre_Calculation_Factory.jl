@@ -6,11 +6,10 @@ module Pre_Calculation
 
 using TimerOutputs: @timeit
 using ....Data_Manager
-using ....ModuleLoader: find_module_files
+using ....ModuleLoader: find_registered_modules
 using .....ParameterSpec
-global module_list = find_module_files(@__DIR__, "pre_calculation_name")
-for mod in module_list
-    include(mod["File"])
+for file in find_registered_modules(@__DIR__, "register_pre_calculation")
+    include(file)
 end
 
 export init_fields
@@ -31,9 +30,8 @@ function init_fields()
     Data_Manager.create_node_vector_field("Displacements", Float64, dof)
 end
 
-"The module of the registered pre-calculation `name`."
-pre_calculation_module(name::String) = parentmodule(ParameterSpec.lookup_model(:pre_calculation,
-                                                                               name))
+"The parameters of the registered pre-calculation `name` (a switch: they have no keys)."
+pre_calculation(name::String) = ParameterSpec.lookup_model(:pre_calculation, name)()
 
 "Active names of `switches` (on/off per pre-calculation), in run order."
 active_pre_calculations(switches::AbstractDict{String,Bool}) = order_pre_calculations([name
@@ -58,7 +56,8 @@ Initializes the block's active pre-calculations
 """
 function init_model(nodes::AbstractVector{Int64}, block::Int64)
     for name in Data_Manager.get_block_models(block).pre_calculation
-        pre_calculation_module(name).init_model(nodes, block)
+        p = pre_calculation(name)
+        model_module(p).init_model(nodes, p, nothing, block)
     end
 end
 
@@ -77,7 +76,9 @@ Computes the block's active pre-calculations in run order.
 function compute_model(nodes::AbstractVector{Int64}, names::Vector{String}, block::Int64,
                        time::Float64, dt::Float64)
     for name in names
-        @timeit "compute $name" pre_calculation_module(name).compute(nodes, block)
+        p = pre_calculation(name)
+        @timeit "compute $name" model_module(p).compute_model(nodes, p, nothing, block, time,
+                                                              dt)
     end
 end
 
@@ -92,7 +93,7 @@ Defines all synchronization fields for local synchronization
 """
 function fields_for_local_synchronization(model, block)
     for name in Data_Manager.get_block_models(block).pre_calculation
-        pre_calculation_module(name).fields_for_local_synchronization(model)
+        model_module(pre_calculation(name)).fields_for_local_synchronization(model)
     end
 end
 

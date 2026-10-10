@@ -8,11 +8,11 @@ using TimerOutputs: @timeit
 
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
-using .....ModuleLoader: find_module_files
+using .....ModuleLoader: find_registered_modules
+using ......ParameterSpec: model_module
 using .....InputDeck: ContactInput, contact_blocks, contact_search_frequency
-global module_list = find_module_files(@__DIR__, "contact_model_name")
-for mod in module_list
-    include(mod["File"])
+for file in find_registered_modules(@__DIR__, "register_contact")
+    include(file)
 end
 
 using LinearAlgebra
@@ -152,7 +152,7 @@ function contact_block_ids(global_ids::Vector{Int64}, block_list, contact_blocks
 end
 
 # the module of a contact model: the one that declares its parameter struct
-contact_module(model) = parentmodule(typeof(model.model))
+contact_module(model) = model_module(model.model)
 
 """
     compute_contact_model(contact, time, dt)

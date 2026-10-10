@@ -7,9 +7,10 @@ module Damage
 using TimerOutputs: @timeit
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
-using ....ModuleLoader: find_module_files
+using ....ModuleLoader: find_registered_modules
 using .....ParameterSpec: @params, Dependent, Constant, register_base!, ParseContext,
-                          add_error!, join_path, WithBase, Table1D, dependent_tables, value
+                          add_error!, join_path, WithBase, Table1D, dependent_tables, value,
+                          model_module
 import .....ParameterSpec: check!
 
 @params struct AnisotropicDamageParams
@@ -101,9 +102,8 @@ function init_aniso_crit_values(aniso::AnisotropicDamageParams, block_id::Int64,
                             something(aniso.critical_value_z, aniso.critical_value_y)]
     Data_Manager.set_aniso_crit_values(aniso_crit)
 end
-global module_list = find_module_files(@__DIR__, "damage_name")
-for mod in module_list
-    include(mod["File"])
+for file in find_registered_modules(@__DIR__, "register_damage")
+    include(file)
 end
 
 using LoopVectorization
@@ -132,8 +132,6 @@ function init_fields()
     inverse_nlist = Data_Manager.set_inverse_nlist(find_inverse_bond_id(nlist))
 end
 
-model_module(damage::BlockDamage) = parentmodule(typeof(damage.model))
-
 """
     compute_model(nodes, damage, block, time, dt)
 
@@ -150,7 +148,7 @@ damage index.
 function compute_model(nodes::AbstractVector{Int64}, damage::BlockDamage, block::Int64,
                        time::Float64, dt::Float64)
     Data_Manager.bind_dependent_tables!(damage.tables)
-    model_module(damage).compute_model(nodes, damage.model, damage, block, time, dt)
+    model_module(damage.model).compute_model(nodes, damage.model, damage, block, time, dt)
     if isnothing(Data_Manager.get_filtered_nlist())
         @timeit "compute index" return damage_index(nodes)
     end
@@ -168,7 +166,7 @@ Defines all synchronization fields for local synchronization
 """
 function fields_for_local_synchronization(model, block)
     damage = Data_Manager.get_block_models(block).damage
-    model_module(damage).fields_for_local_synchronization(model)
+    model_module(damage.model).fields_for_local_synchronization(model)
 end
 """
     damage_index(::Union{SubArray, Vector{Int64})
@@ -239,8 +237,8 @@ its interface and anisotropic critical values.
 """
 function init_model(nodes::AbstractVector{Int64}, block::Int64)
     damage = Data_Manager.get_block_models(block).damage
-    model_module(damage).init_model(nodes, damage.model, damage, block)
-    model_module(damage).fields_for_local_synchronization("Damage Model")
+    model_module(damage.model).init_model(nodes, damage.model, damage, block)
+    model_module(damage.model).fields_for_local_synchronization("Damage Model")
     init_interface_crit_values(damage, block)
     damage.base.anisotropic_damage === nothing ||
         init_aniso_crit_values(damage.base.anisotropic_damage, block, Data_Manager.get_dof())

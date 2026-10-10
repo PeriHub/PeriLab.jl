@@ -9,7 +9,6 @@ using .....Material_Basis: hooke_matrix
 using .......Helpers: get_fourth_order, fast_mul!, get_mapping
 using StaticArrays: SMatrix
 export compute_stresses
-export correspondence_name
 export fe_support
 export init_model
 export fields_for_local_synchronization
@@ -37,26 +36,6 @@ false
 """
 function fe_support()
     return true
-end
-
-"""
-	correspondence_name()
-
-Gives the material name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the material.
-
-Example:
-```julia
-println(material_name())
-"Material Template"
-```
-"""
-function correspondence_name()
-    return "Correspondence Elastic"
 end
 
 """
@@ -149,7 +128,7 @@ function compute_stresses(nodes::AbstractVector{Int64}, dof::Int64,
 end
 
 """
-    init_model(nodes, p, material)
+    init_model(nodes, p, material, block)
 
 Initializes the model fields of `nodes`.
 
@@ -158,7 +137,8 @@ Initializes the model fields of `nodes`.
 - `p`: The model parameters (the model's `@params` struct).
 - `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
 """
-function init_model(nodes::AbstractVector{Int64}, p::CorrespondenceElasticParams, material)
+function init_model(nodes::AbstractVector{Int64}, p::CorrespondenceElasticParams, material,
+                    block::Int64)
     dof::Int64 = Data_Manager.get_dof()
     hooke::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Material Gradient",
                                                                                      Float64,

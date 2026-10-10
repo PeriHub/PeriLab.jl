@@ -73,9 +73,9 @@
 #   tests or advanced setups (e.g. more than one license server in the
 #   same process). It has no local-mode equivalent.
 #
-# `optional_local_modules(directory, specific)` wraps this module's own
-# `find_module_files` so a missing local module directory is "no local
-# modules", not an error.
+# `find_registered_modules(directory, register_function)` finds the model
+# files of a category by their `register_*` call; a missing directory has
+# none.
 #
 # Both `licensed_modules` and `find_module_files` return a `Vector{Any}` of
 # `Dict("File" => ..., "Module Name" => ...)` entries in the shape
@@ -100,8 +100,8 @@ import YAML
 import JSON3
 import SHA
 
-export find_module_files, create_module_specifics,
-       licensed_modules, optional_local_modules, check_license_on_startup
+export find_module_files, find_registered_modules, create_module_specifics,
+       licensed_modules, check_license_on_startup
 
 # =========================================================================
 # Local, directory-scanned modules (moved here verbatim from wherever
@@ -203,6 +203,24 @@ function find_module_files(directory::AbstractString, specific::String)
         close(file)
     end
     return module_list
+end
+
+"""
+    find_registered_modules(directory, register_function; exclude = String[])
+
+The model files below `directory` that call `register_function` (e.g.
+`"register_damage"`), the call in a comment included, so that the unregistered
+templates load as well. Files and directories in `exclude` are skipped; a missing
+`directory` has no model files.
+"""
+function find_registered_modules(directory::AbstractString, register_function::String;
+                                 exclude = String[])
+    isdir(directory) || return String[]
+    call = register_function * "("
+    excluded(file) = any(e -> file == e || startswith(file, joinpath(e, "")), exclude)
+    return [file
+            for file in find_jl_files(directory)
+            if !excluded(file) && any(line -> occursin(call, line), eachline(file))]
 end
 
 """
@@ -608,23 +626,6 @@ function _licensed_modules_local(target_module::Module,
     end
 
     return module_list
-end
-
-"""
-    optional_local_modules(directory::AbstractString, specific::String)
-
-Wraps this module's own `find_module_files` so a missing local module
-directory means "no local modules" instead of an error. `find_module_files`
-(via `find_jl_files`) calls `@abort` if the directory doesn't exist;
-rather than rely on catching whatever `@abort` actually does (throw vs.
-exit is implementation-specific -- worth checking in your copy of
-PeriLab), this checks `isdir` first and skips calling it entirely.
-"""
-function optional_local_modules(directory::AbstractString, specific::String)
-    if !isdir(directory)
-        return Any[]
-    end
-    return find_module_files(directory, specific)
 end
 
 function _fetch_and_verify_all(license_server_url::AbstractString,

@@ -5,7 +5,6 @@
 module Heat_Transfer
 using LinearAlgebra: dot
 export compute_model
-export thermal_model_name
 export init_model
 
 using ......ParameterSpec: @params, register_thermal
@@ -32,26 +31,6 @@ const directions2D = [[1, 0], [-1, 0], [0, 1], [0, -1]]
 const directions3D = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
 const directions_free2D = fill(true, 4)
 const directions_free3D = fill(true, 6)
-"""
-    thermal_model_name()
-
-Gives the flow name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the thermal flow model.
-
-Example:
-```julia
-println(flow_name())
-"Thermal Template"
-```
-"""
-function thermal_model_name()
-    return "Heat Transfer"
-end
-
 """
     init_model(nodes, p, thermal, block)
 

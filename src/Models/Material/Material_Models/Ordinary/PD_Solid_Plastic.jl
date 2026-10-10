@@ -15,7 +15,6 @@ using ..Ordinary: calculate_symmetry_params, get_bond_forces!
 
 export fe_support
 export init_model
-export material_name
 export compute_model
 export fields_for_local_synchronization
 
@@ -44,7 +43,7 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, p, material)
+  init_model(nodes::AbstractVector{Int64}, p, material, block::Int64)
 
 Initializes the material model.
 
@@ -52,7 +51,8 @@ Initializes the material model.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `p`: Model parameters; `material::BlockMaterial`: typed block material (`material.base`, `material.moduli`, `material.symmetry`).
 """
-function init_model(nodes::AbstractVector{Int64}, p::PDSolidPlasticParams, material)
+function init_model(nodes::AbstractVector{Int64}, p::PDSolidPlasticParams, material,
+                    block::Int64)
     horizon = Data_Manager.get_field("Horizon")
     yield = Data_Manager.create_constant_node_scalar_field("Yield Value", Float64)
     set_yield_value!(yield, nodes, p.yield_stress, material.symmetry, horizon)
@@ -81,26 +81,6 @@ function set_yield_value!(yield, nodes::AbstractVector{Int64}, yield_stress, sym
         end
     end
     return yield
-end
-
-"""
-    material_name()
-
-Gives the material name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the material.
-
-Example:
-```julia
-println(material_name())
-"Material Template"
-```
-"""
-function material_name()
-    return "PD Solid Plastic"
 end
 
 """

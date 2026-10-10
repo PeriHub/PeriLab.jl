@@ -5,9 +5,8 @@
 module Pre_calculation_template
 
 using .......Data_Manager
-export compute
+export compute_model
 export init_model
-export pre_calculation_name
 export fields_for_local_synchronization
 
 using ......ParameterSpec: @params, register_pre_calculation
@@ -15,26 +14,6 @@ using ......ParameterSpec: @params, register_pre_calculation
 @params struct PreCalculationTemplateParams
 end
 # __init__() = register_pre_calculation("pre_calculation Template", PreCalculationTemplateParams)
-"""
-    pre_calculation_name()
-
-Gives the pre_calculation name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the Pre_Calculation.
-
-Example:
-```julia
-println(pre_calculation_name())
-"Pre_calculation Template"
-```
-"""
-function pre_calculation_name()
-    return "pre_calculation Template"
-end
-
 """
     fields_for_local_synchronization(model::String)
 
@@ -52,35 +31,44 @@ function fields_for_local_synchronization(model::String)
 end
 
 """
-    compute(nodes, block)
+    compute_model(nodes, p, pre_calculation, block, time, dt)
 
 This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
+- `p::PreCalculationTemplateParams`: The model parameters.
+- `pre_calculation`: `nothing` (pre-calculations have no shared parameters).
 - `block::Int64`: The current block.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
 Example:
 ```julia
   ```
 """
-function compute(nodes::AbstractVector{Int64}, block::Int64)
-    @info "Please write a possible precalculation routines in pre_calculation_name()."
+function compute_model(nodes::AbstractVector{Int64}, p::PreCalculationTemplateParams,
+                       pre_calculation, block::Int64, time::Float64, dt::Float64)
+    @info "Register your model name with register_pre_calculation in __init__()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute(nodes, block) function."
+    @info "Fill the compute_model(nodes, p, pre_calculation, block, time, dt) function."
     @info "The Data_Manager holds all you need to solve your problem on material level."
     @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
 end
 
 """
-    init_model(nodes, block)
+    init_model(nodes, p, pre_calculation, block)
 
 Inits the calculation.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
+- `p::PreCalculationTemplateParams`: The model parameters.
+- `pre_calculation`: `nothing` (pre-calculations have no shared parameters).
+- `block::Int64`: The current block.
 
 """
-function init_model(nodes::AbstractVector{Int64}, block::Int64)
+function init_model(nodes::AbstractVector{Int64}, p::PreCalculationTemplateParams,
+                    pre_calculation, block::Int64)
 end
 
 end

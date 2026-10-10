@@ -12,10 +12,9 @@ using StaticArrays
 using TimerOutputs: @timeit
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
-using ...Pre_Calculation.Deformation_Gradient: compute
+using ...Pre_Calculation: Deformation_Gradient
 export fields_for_local_synchronization
 export compute_model
-export thermal_model_name
 export init_model
 
 using ......ParameterSpec: @params, register_thermal
@@ -27,25 +26,6 @@ using ......ParameterSpec: @params, register_thermal
                                                         description = "0 if missing (with a warning)")
 end
 __init__() = register_thermal("Thermal Expansion", ThermalExpansionParams)
-"""
-	thermal_model_name()
-
-Gives the expansion model name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the thermal expansion model.
-
-Example:
-```julia
-"Thermal Expansion"
-```
-"""
-function thermal_model_name()
-    return "Thermal Expansion"
-end
-
 function thermal_expansion_matrix(alpha::T,
                                   ::Val{2}) where {T<:Union{Float64,Vector{Float64}}}
     if length(alpha) == 1
@@ -137,7 +117,10 @@ function compute_model(nodes::AbstractVector{Int64}, p::ThermalExpansionParams, 
 
     if Data_Manager.has_key("Deformation Gradient")
         #TODO all forces computed are from the original configuration
-        @timeit "Deformation_Gradient" compute(nodes, block)
+        p_gradient = Deformation_Gradient.DeformationGradientParams()
+        @timeit "Deformation_Gradient" Deformation_Gradient.compute_model(nodes, p_gradient,
+                                                                          nothing, block,
+                                                                          time, dt)
     end
 end
 

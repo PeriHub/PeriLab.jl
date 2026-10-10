@@ -9,9 +9,8 @@ using .......Geometry: compute_weighted_deformation_gradient
 using LoopVectorization
 using StaticArrays: @MVector
 export fields_for_local_synchronization
-export pre_calculation_name
 export init_model
-export compute
+export compute_model
 
 using ......ParameterSpec: @params, register_pre_calculation
 "Switch only: this pre-calculation has no parameters."
@@ -22,35 +21,19 @@ __init__() = register_pre_calculation("Bond Associated Correspondence", BondAsso
 using .......Helpers: invert, qdim
 
 """
-    pre_calculation_name()
-
-Gives the pre_calculation name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the Pre_Calculation.
-
-Example:
-```julia
-println(pre_calculation_name())
-"Bond Associated Correspondence"
-```
-"""
-function pre_calculation_name()
-    return "Bond Associated Correspondence"
-end
-
-"""
-    init_model(nodes, block)
+    init_model(nodes, p, pre_calculation, block)
 
 Inits the bond deformation gradient calculation.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
+- `p::BondAssociatedCorrespondenceParams`: The model parameters.
+- `pre_calculation`: `nothing` (pre-calculations have no shared parameters).
+- `block::Int64`: The current block.
 
 """
-function init_model(nodes::AbstractVector{Int64}, block::Int64)
+function init_model(nodes::AbstractVector{Int64}, p::BondAssociatedCorrespondenceParams,
+                    pre_calculation, block::Int64)
     dof = Data_Manager.get_dof()
     Data_Manager.create_constant_bond_tensor_state("Bond Associated Deformation Gradient",
                                                    Float64, dof)
@@ -75,15 +58,21 @@ function init_model(nodes::AbstractVector{Int64}, block::Int64)
 end
 
 """
-    compute(nodes)
+    compute_model(nodes, p, pre_calculation, block, time, dt)
 
 Compute the bond deformation gradient.
 
 # Arguments
 - `nodes`: List of nodes.
+- `p::BondAssociatedCorrespondenceParams`: The model parameters.
+- `pre_calculation`: `nothing` (pre-calculations have no shared parameters).
+- `block::Int64`: The current block.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
 """
 
-function compute(nodes::AbstractVector{Int64}, block::Int64)
+function compute_model(nodes::AbstractVector{Int64}, p::BondAssociatedCorrespondenceParams,
+                       pre_calculation, block::Int64, time::Float64, dt::Float64)
     dof = Data_Manager.get_dof()
     nlist = Data_Manager.get_nlist()
     volume = Data_Manager.get_field("Volume")

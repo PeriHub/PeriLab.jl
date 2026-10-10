@@ -7,8 +7,8 @@
 #using .PeriLab
 
 @testset "get_name&fe_support" begin
-    @test PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.material_name() ==
-          "PD Solid Plastic"
+    @test parentmodule(PeriLab.ParameterSpec.lookup_model(:material, "PD Solid Plastic")) ===
+      PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic
     @test !(PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.fe_support())
 end
 
@@ -37,7 +37,7 @@ end
                                          "Yield Stress" => 5.3))
     PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(Vector{Int64}(1:nodes),
                                                                               material.model,
-                                                                              material)
+                                                                              material, 1)
     yield = PeriLab.Data_Manager.get_field("Yield Value")
 
     @test isapprox(yield[1], 25 * 5.3 * 5.3 / (8 * pi * 3^5))
@@ -50,7 +50,7 @@ end
                                          "Symmetry" => "plane stress"))
     PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(Vector{Int64}(1:nodes),
                                                                               material.model,
-                                                                              material)
+                                                                              material, 1)
     yield = PeriLab.Data_Manager.get_field("Yield Value")
 
     @test isapprox(yield[1], 225 * 2.2 * 2.2 / (24 * pi * 3^4))

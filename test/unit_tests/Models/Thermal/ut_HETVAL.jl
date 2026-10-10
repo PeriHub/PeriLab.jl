@@ -7,8 +7,8 @@ using LinearAlgebra
 # include("../../../../src/PeriLab.jl")
 # using .PeriLab
 @testset "get_name" begin
-    @test PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.thermal_model_name() ==
-          "HETVAL"
+    @test parentmodule(PeriLab.ParameterSpec.lookup_model(:thermal, "HETVAL")) ===
+      PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL
 end
 @testset "init exceptions" begin
     nodes = 2

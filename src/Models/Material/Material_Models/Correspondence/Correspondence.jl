@@ -9,11 +9,12 @@ using TimerOutputs: @timeit
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
 using ....Zero_Energy_Control
-using .....ModuleLoader: find_module_files
-global module_list = find_module_files(@__DIR__, "correspondence_name")
-for mod in module_list
-    include(mod["File"])
+using .....ModuleLoader: find_registered_modules
+using ......ParameterSpec: model_parts, model_module
+for file in find_registered_modules(@__DIR__, "register_material")
+    include(file)
 end
+include("../Material_template/correspondence_template.jl")
 
 using LinearAlgebra
 a = using LoopVectorization
@@ -25,42 +26,19 @@ using .......Helpers: invert, rotate, determinant, smat, matrix_diff!, fast_mul!
 using .......Geometry: compute_strain!, compute_linear_strain!
 
 export init_model
-export material_name
 export compute_model
 export fields_for_local_synchronization
 """
-    material_name()
-
-Gives the material name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the material.
-
-Example:
-```julia
-println(material_name())
-"Material Template"
-```
-"""
-function material_name()
-    return "Correspondence"
-end
-
-_model_parts(model) = hasfield(typeof(model), :parts) ? model.parts : (model,)
-
-"""
-    init_model(nodes, block, material)
+    init_model(nodes, material, block)
 
 Initializes the correspondence model and its parts for a block.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The block nodes.
-- `block::Int64`: The block.
 - `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
+- `block::Int64`: The block.
 """
-function init_model(nodes::AbstractVector{Int64}, block::Int64, material)
+function init_model(nodes::AbstractVector{Int64}, material, block::Int64)
     # a missing Symmetry means isotropic (the Hooke matrix uses material.hooke_symmetry);
     # in 2D the Hooke matrix aborts without plane strain / plane stress
     dof = Data_Manager.get_dof()
@@ -68,12 +46,8 @@ function init_model(nodes::AbstractVector{Int64}, block::Int64, material)
     Data_Manager.create_constant_node_tensor_field("Strain Increment", Float64, dof)
     Data_Manager.create_node_tensor_field("Cauchy Stress", Float64, dof)
     Data_Manager.create_node_scalar_field("von Mises Stress", Float64)
-    for part in _model_parts(material.model)
-        mod = parentmodule(typeof(part))
-        Data_Manager.set_analysis_model("Correspondence Model", block,
-                                        mod.correspondence_name())
-        Data_Manager.set_model_module(mod.correspondence_name(), mod)
-        mod.init_model(nodes, part, material)
+    for part in model_parts(material.model)
+        model_module(part).init_model(nodes, part, material, block)
     end
     if material.base.bond_associated
         return Bond_Associated_Correspondence.init_model(nodes, material)
@@ -82,17 +56,16 @@ function init_model(nodes::AbstractVector{Int64}, block::Int64, material)
 end
 
 """
-    fields_for_local_synchronization(model, block, material)
+    fields_for_local_synchronization(model, material)
 
 Registers the fields the correspondence parts synchronize locally.
 """
-function fields_for_local_synchronization(model::String, block::Int64, material)
-    for material_model in Data_Manager.get_analysis_model("Correspondence Model", block)
-        mod = Data_Manager.get_model_module(material_model)
-        mod.fields_for_local_synchronization(model)
-        if material.base.bond_associated
-            Bond_Associated_Correspondence.fields_for_local_synchronization(model)
-        end
+function fields_for_local_synchronization(model::String, material)
+    for part in model_parts(material.model)
+        model_module(part).fields_for_local_synchronization(model)
+    end
+    if material.base.bond_associated
+        Bond_Associated_Correspondence.fields_for_local_synchronization(model)
     end
 end
 
@@ -167,8 +140,8 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
     end
 
     @timeit "compute material" begin
-        for part in _model_parts(material.model)
-            parentmodule(typeof(part)).compute_stresses(nodes, dof, part, material, time, dt,
+        for part in model_parts(material.model)
+            model_module(part).compute_stresses(nodes, dof, part, material, time, dt,
                                                         strain_increment, stress_N,
                                                         stress_NP1)
         end

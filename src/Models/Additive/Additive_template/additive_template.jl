@@ -7,7 +7,6 @@ module Additive_template
 using .....Data_Manager
 
 export compute_model
-export additive_name
 export init_model
 export fields_for_local_synchronization
 
@@ -27,33 +26,14 @@ end
 # __init__() = register_additive("Additive Template", AdditiveTemplateParams)
 
 """
-    additive_name()
-
-Gives the additive name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the additive model.
-
-Example:
-```julia
-println(additive_name())
-"additive Template"
-```
-"""
-function additive_name()
-    return "Additive Template"
-end
-
-"""
-    compute_model(nodes::AbstractVector{Int64}, p::AdditiveTemplateParams, block::Int64, time::Float64, dt::Float64)
+    compute_model(nodes, p, additive, block, time, dt)
 
 Calculates the force densities of the additive. This template has to be copied, the file renamed and edited by the user to create a new additive. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `p::AdditiveTemplateParams`: The model parameters.
+- `additive`: `nothing` (additive models have no shared parameters).
 - `block::Int64`: The current block.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
@@ -61,30 +41,32 @@ Example:
 ```julia
 ```
 """
-function compute_model(nodes::AbstractVector{Int64}, p::AdditiveTemplateParams, block::Int64,
-                       time::Float64, dt::Float64)
-    @info "Please write a additive name in additive_name()."
+function compute_model(nodes::AbstractVector{Int64}, p::AdditiveTemplateParams, additive,
+                       block::Int64, time::Float64, dt::Float64)
+    @info "Register your model name with register_additive in __init__()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_model(nodes, p, block, time, dt) function."
+    @info "Fill the compute_model(nodes, p, additive, block, time, dt) function."
     @info "The Data_Manager and p hold all you need to solve your problem on additive level."
     @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
 end
 
 """
-    init_model(nodes, p, block)
+    init_model(nodes, p, additive, block)
 
 Inits the additive model. This template has to be copied, the file renamed and edited by the user to create a new additive. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `p::AdditiveTemplateParams`: The model parameters.
+- `additive`: `nothing` (additive models have no shared parameters).
 - `block::Int64`: The current block.
 
 """
-function init_model(nodes::AbstractVector{Int64}, p::AdditiveTemplateParams, block::Int64)
-    @info "Please write a additive name in additive_name()."
+function init_model(nodes::AbstractVector{Int64}, p::AdditiveTemplateParams, additive,
+                    block::Int64)
+    @info "Register your model name with register_additive in __init__()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_model(nodes, p, block, time, dt) function."
+    @info "Fill the compute_model(nodes, p, additive, block, time, dt) function."
     @info "The Data_Manager and p hold all you need to solve your problem on additive level."
     @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
 end

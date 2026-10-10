@@ -7,9 +7,8 @@ module Shape_Tensor
 using ......Data_Manager
 using ......Helpers: find_active_nodes
 using ......Geometry: compute_shape_tensors!
-export pre_calculation_name
 export init_model
-export compute
+export compute_model
 export fields_for_local_synchronization
 
 using ......ParameterSpec: @params, register_pre_calculation
@@ -19,35 +18,19 @@ end
 __init__() = register_pre_calculation("Shape Tensor", ShapeTensorParams)
 
 """
-	pre_calculation_name()
-
-Gives the pre_calculation name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the Pre_Calculation.
-
-Example:
-```julia
-println(pre_calculation_name())
-"Shape Tensor"
-```
-"""
-function pre_calculation_name()
-    return "Shape Tensor"
-end
-
-"""
-    init_model(nodes, block)
+    init_model(nodes, p, pre_calculation, block)
 
 Inits the shape tensor calculation.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
+- `p::ShapeTensorParams`: The model parameters.
+- `pre_calculation`: `nothing` (pre-calculations have no shared parameters).
+- `block::Int64`: The current block.
 
 """
-function init_model(nodes::AbstractVector{Int64}, block::Int64)
+function init_model(nodes::AbstractVector{Int64}, p::ShapeTensorParams, pre_calculation,
+                    block::Int64)
     dof = Data_Manager.get_dof()
     Data_Manager.create_constant_node_tensor_field("Shape Tensor", Float64, dof)
     Data_Manager.create_constant_node_tensor_field("Inverse Shape Tensor", Float64, dof)
@@ -72,14 +55,20 @@ function init_model(nodes::AbstractVector{Int64}, block::Int64)
 end
 
 """
-    compute(nodes::AbstractVector{Int64})
+    compute_model(nodes, p, pre_calculation, block, time, dt)
 
 Compute the shape tensor.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
+- `p::ShapeTensorParams`: The model parameters.
+- `pre_calculation`: `nothing` (pre-calculations have no shared parameters).
+- `block::Int64`: The current block.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
 """
-function compute(nodes::AbstractVector{Int64}, block::Int64)
+function compute_model(nodes::AbstractVector{Int64}, p::ShapeTensorParams, pre_calculation,
+                       block::Int64, time::Float64, dt::Float64)
     nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
     volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
     omega::BondScalarState{Float64} = Data_Manager.get_field("Influence Function")

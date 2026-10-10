@@ -24,6 +24,9 @@ All notable changes to this project will be documented in this file.
 - `Bond Associated Deformation Gradient` in the pre calculation models is no longer supported; use `Bond Associated Correspondence`
 - Model modules get their parameters as a typed struct instead of a dict: each module declares its keys with `@params` and registers them in `__init__()` (`register_material`, `register_damage`, `register_thermal`, `register_additive`, `register_degradation`, `register_pre_calculation`, `register_contact`); the input deck uses the registered name. User and licensed modules have to be ported, see the templates and the developer documentation
 - Contact models declare their own keys; `Contact Stiffness` and `Friction Coefficient` belong to the penalty contact model
+- PeriLab finds a model module by its `register_*` call; the name functions (`material_name()`, `damage_name()`, `thermal_model_name()`, `degradation_name()`, `additive_name()`, `pre_calculation_name()`, `correspondence_name()`, `contact_model_name()`) are removed
+- All model categories call their models the same way: `init_model(nodes, p, ctx, block)` and `compute_model(nodes, p, ctx, block, time, dt)`; material models get `block` in `init_model`, additive and degradation models get `nothing` as `ctx`, pre-calculations get their parameters and `compute` is renamed to `compute_model`
+- A material model runs in the correspondence formulation if it is defined in the Correspondence module, not if its name contains "Correspondence"; combining correspondence and other material models with `+` aborts with a message (it failed at run time before)
 - Parameters are read from the typed input instead of `Data_Manager` getters (the `properties` API is removed)
 
 ## [2.2.5] - 2026-09-21

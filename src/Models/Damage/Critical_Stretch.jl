@@ -6,7 +6,6 @@ module Critical_Stretch
 using .....Data_Manager
 using .....Geometry: compute_stretch!
 export compute_model
-export damage_name
 export init_model
 export fields_for_local_synchronization
 
@@ -15,26 +14,6 @@ using ......ParameterSpec: @params, register_damage, value
     only_tension::Bool = opt("Only Tension"; default = true)
 end
 __init__() = register_damage("Critical Stretch", CriticalStretchParams)
-
-"""
-    damage_name()
-
-Gives the damage name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the damage.
-
-Example:
-```julia
-println(damage_name())
-"Critical Stretch"
-```
-"""
-function damage_name()
-    return "Critical Stretch"
-end
 
 """
     compute_model(nodes, p, damage, block, time, dt)

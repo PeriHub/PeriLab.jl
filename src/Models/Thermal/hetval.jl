@@ -5,7 +5,6 @@
 module HETVAL
 export compute_model
 export init_model
-export thermal_model_name
 export fields_for_local_synchronization
 
 using ......ParameterSpec: @params, register_thermal, ParseContext, add_error!, join_path
@@ -37,26 +36,6 @@ global hetval_file_path = ""
 global hetval_cmname::Cstring
 # set to 1 to avoid a later check if the state variable field exists or not
 global num_state_vars::Int64 = 1
-
-"""
-    thermal_model_name()
-
-Gives the thermal model name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the thermal flow model.
-
-Example:
-```julia
-println(flow_name())
-"Thermal Template"
-```
-"""
-function thermal_model_name()
-    return "HETVAL"
-end
 
 """
     compute_model(nodes, p, thermal, block, time, dt)

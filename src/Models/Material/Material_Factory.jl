@@ -9,10 +9,10 @@ include("Material_Models/Ordinary/Ordinary.jl")
 using TimerOutputs: @timeit
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
-using ....ModuleLoader: find_module_files, create_module_specifics
+using ....ModuleLoader: find_registered_modules
 using .....ParameterSpec: @params, Dependent, register_base!, WithBase, Composite,
                           ParseContext, add_error!, join_path, Table1D, dependent_tables,
-                          value
+                          value, model_parts, model_module
 import .....ParameterSpec: check!
 
 
@@ -138,10 +138,15 @@ end
 # registration runs at load time, never during precompilation
 __init__() = register_base!(:material, MaterialBaseParams)
 
-global module_list = find_module_files(@__DIR__, "material_name")
-for mod in module_list
-    include(mod["File"])
+# the correspondence models register as materials too; they live in Correspondence
+const CORRESPONDENCE_DIR = joinpath(@__DIR__, "Material_Models", "Correspondence")
+const CORRESPONDENCE_TEMPLATE = joinpath(@__DIR__, "Material_Models", "Material_template",
+                                         "correspondence_template.jl")
+for file in find_registered_modules(@__DIR__, "register_material";
+                                    exclude = [CORRESPONDENCE_DIR, CORRESPONDENCE_TEMPLATE])
+    include(file)
 end
+include("Material_Models/Correspondence/Correspondence.jl")
 
 using ...Material_Basis:
                          distribute_forces!,
@@ -182,11 +187,8 @@ struct BlockMaterial{B,M,E}
     moduli::E
     tables::Vector{Table1D}   # dependent tables of base and model, re-bound every step
     extras::Dict{String,Any}  # values of indexed keys, e.g. Property_1
-    correspondence::Bool      # model name contains "Correspondence" (as the legacy dict tests)
+    correspondence::Bool      # the model parts are correspondence models
 end
-
-model_parts(model::Composite) = model.parts
-model_parts(model) = (model,)
 
 """
     material_symmetry(symmetry, dof)
@@ -345,8 +347,25 @@ function block_material(wb::WithBase, dof::Int64)
                          hooke_symmetry(wb.base.symmetry, dof),
                          elastic_moduli(wb.base, bond_based, dof),
                          vcat(dependent_tables(wb.base), dependent_tables(wb.model)), wb.extras,
-                         occursin("Correspondence", model_name))
+                         correspondence_model(wb.model, model_name))
+end
 
+"A model struct defined in the Correspondence module (a correspondence formulation)."
+is_correspondence(part) = parentmodule(model_module(part)) === Correspondence
+
+"""
+    correspondence_model(model, name)
+
+`true` if the parts of `model` are correspondence models. Correspondence and other
+material models cannot be combined with `+`.
+"""
+function correspondence_model(model, name::AbstractString)
+    parts = model_parts(model)
+    correspondence = any(is_correspondence, parts)
+    if correspondence && !all(is_correspondence, parts)
+        @abort "Material Model \"$name\": correspondence models cannot be combined with other material models."
+    end
+    return correspondence
 end
 
 _constant(x) = x === nothing ? nothing : value(x, 1)
@@ -439,18 +458,13 @@ function init_model(nodes::AbstractVector{Int64}, block::Int64)
         return
     end
 
+    bind_material!(material)
     if material.correspondence
-        Data_Manager.set_model_module("Correspondence", Correspondence)
-        bind_material!(material)
-        return Correspondence.init_model(nodes, block, material)
+        return Correspondence.init_model(nodes, material, block)
     end
 
-    bind_material!(material)
     for part in model_parts(material.model)
-        mod = parentmodule(typeof(part))
-        Data_Manager.set_analysis_model("Material Model", block, mod.material_name())
-        Data_Manager.set_model_module(mod.material_name(), mod)
-        mod.init_model(nodes, part, material)
+        model_module(part).init_model(nodes, part, material, block)
     end
     #TODO in extra function
     # nlist = Data_Manager.get_nlist()
@@ -481,12 +495,11 @@ Defines all synchronization fields for local synchronization
 function fields_for_local_synchronization(model, block)
     material = Data_Manager.get_block_models(block).material
     if material.correspondence
-        return Correspondence.fields_for_local_synchronization(model, block, material)
+        return Correspondence.fields_for_local_synchronization(model, material)
     end
 
-    for material_model in Data_Manager.get_analysis_model("Material Model", block)
-        mod = Data_Manager.get_model_module(material_model)
-        mod.fields_for_local_synchronization(model)
+    for part in model_parts(material.model)
+        model_module(part).fields_for_local_synchronization(model)
     end
 end
 
@@ -535,7 +548,7 @@ function compute_block_material(nodes::AbstractVector{Int64}, material::BlockMat
                                 block::Int64, time::Float64, dt::Float64)
     bind_material!(material)
     for part in model_parts(material.model)
-        parentmodule(typeof(part)).compute_model(nodes, part, material, block, time, dt)
+        model_module(part).compute_model(nodes, part, material, block, time, dt)
     end
     return nothing
 end

@@ -9,7 +9,6 @@ using ......ParameterSpec: @params, register_material
 # Declare your parameters with @params (see MaterialTemplateParams) and register them in __init__ (see below).
 export fe_support
 export init_model
-export material_name
 export compute_model
 export init_model
 export fields_for_local_synchronization
@@ -48,37 +47,19 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, p, material)
+  init_model(nodes::AbstractVector{Int64}, p, material, block::Int64)
 
 Initializes the material model.
 
 # Arguments
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `p`: Model parameters; `material::BlockMaterial`: typed block material (`material.base`, `material.moduli`, `material.symmetry`).
+  - `block::Int64`: The block.
 """
 function init_model(nodes::AbstractVector{Int64},
                     p::MaterialTemplateParams,
-                    material)
-end
-
-"""
-    material_name()
-
-Gives the material name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the material.
-
-Example:
-```julia
-println(material_name())
-"Material Template"
-```
-"""
-function material_name()
-    return "Material Template"
+                    material,
+                    block::Int64)
 end
 
 """
@@ -117,7 +98,7 @@ function compute_model(nodes::AbstractVector{Int64},
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    @info "Please write a material name in material_name()."
+    @info "Register your model name with register_material in __init__()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_model() and init_model() function."
     @info "The Data_Manager, p and material hold all you need to solve your problem on material level."

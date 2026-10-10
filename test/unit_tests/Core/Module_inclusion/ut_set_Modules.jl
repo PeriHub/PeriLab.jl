@@ -145,3 +145,43 @@ end
         @test length(result) == 0
     end
 end
+@testset "ut_find_registered_modules" begin
+    mktempdir() do dir
+        registered = joinpath(dir, "Registered.jl")
+        create_test_file(registered, """
+                         module Registered
+                         using ParameterSpec: register_damage
+                         __init__() = register_damage("Registered", RegisteredParams)
+                         end
+                         """)
+        mkdir(joinpath(dir, "Template"))
+        template = joinpath(dir, "Template", "template.jl")
+        create_test_file(template, """
+                         module Template
+                         # __init__() = register_damage("Template", TemplateParams)
+                         end
+                         """)
+        create_test_file(joinpath(dir, "Helper.jl"), """
+                         module Helper
+                         using ParameterSpec: register_damage
+                         end
+                         """)
+        create_test_file(joinpath(dir, "Thermal.jl"), """
+                         module Thermal
+                         __init__() = register_thermal("Thermal", ThermalParams)
+                         end
+                         """)
+        mkdir(joinpath(dir, "Skipped"))
+        create_test_file(joinpath(dir, "Skipped", "skipped.jl"), """
+                         module Skipped
+                         __init__() = register_damage("Skipped", SkippedParams)
+                         end
+                         """)
+        found = PeriLab.ModuleLoader.find_registered_modules(dir, "register_damage";
+                                                            exclude = [joinpath(dir,
+                                                                                "Skipped")])
+        @test sort(found) == sort([registered, template])
+        @test PeriLab.ModuleLoader.find_registered_modules(joinpath(dir, "missing"),
+                                                           "register_damage") == String[]
+    end
+end

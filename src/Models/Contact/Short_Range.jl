@@ -10,7 +10,6 @@ module Short_Range
 using .....Data_Manager
 using .....ParameterSpec: @params, register_contact
 
-export contact_model_name
 export init_contact_model
 export compute_contact_model
 
@@ -29,26 +28,6 @@ Register it under the name the input deck uses (`Type`) by uncommenting
 end
 
 # __init__() = register_contact("Short Range", ShortRangeParams)
-
-"""
-    contact_model_name()
-
-Gives the contact model name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_contact` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the contact model.
-
-Example:
-```julia
-println(contact_model_name())
-"Short Range"
-```
-"""
-function contact_model_name()
-    return "Short Range"
-end
 
 """
     init_contact_model(p, contact)

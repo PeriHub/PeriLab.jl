@@ -7,8 +7,8 @@
 #include("../../../../src/PeriLab.jl")
 #using .PeriLab
 
-@test PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow.thermal_model_name() ==
-      "Thermal Flow"
+@test parentmodule(PeriLab.ParameterSpec.lookup_model(:thermal, "Thermal Flow")) ===
+      PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Flow
 
 @testset "ut_init_model" begin
 

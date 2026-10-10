@@ -7,9 +7,9 @@ module Thermal
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
 using TimerOutputs: @timeit
-using ....ModuleLoader: find_module_files
+using ....ModuleLoader: find_registered_modules
 
-using .....ParameterSpec: @params, register_base!, WithBase, Composite
+using .....ParameterSpec: @params, register_base!, WithBase, model_parts, model_module
 
 """
     ThermalBaseParams
@@ -24,9 +24,8 @@ end
 
 # registration runs at load time, never during precompilation
 __init__() = register_base!(:thermal, ThermalBaseParams)
-global module_list = find_module_files(@__DIR__, "thermal_model_name")
-for mod in module_list
-    include(mod["File"])
+for file in find_registered_modules(@__DIR__, "register_thermal")
+    include(file)
 end
 
 export init_model
@@ -49,10 +48,6 @@ function init_fields()
                                                    default_value = true)
 end
 
-"The parts of a thermal model: the parts of a `+` composite, else the model itself."
-model_parts(model::Composite) = model.parts
-model_parts(model) = (model,)
-
 """
     compute_model(nodes::AbstractVector{Int64}, thermal::WithBase, block::Int64, time::Float64, dt::Float64)
 
@@ -68,12 +63,9 @@ Computes every part of the block's thermal model, in deck order.
 function compute_model(nodes::AbstractVector{Int64}, thermal::WithBase, block::Int64,
                        time::Float64, dt::Float64)
     for part in model_parts(thermal.model)
-        @timeit "$(nameof(parentmodule(typeof(part))))" parentmodule(typeof(part)).compute_model(nodes,
-                                                                                                  part,
-                                                                                                  thermal,
-                                                                                                  block,
-                                                                                                  time,
-                                                                                                  dt)
+        @timeit "$(nameof(model_module(part)))" model_module(part).compute_model(nodes, part,
+                                                                                  thermal, block,
+                                                                                  time, dt)
     end
 end
 
@@ -89,7 +81,7 @@ Initializes every part of the block's thermal model (`Data_Manager.get_block_mod
 function init_model(nodes::AbstractVector{Int64}, block::Int64)
     thermal = Data_Manager.get_block_models(block).thermal
     for part in model_parts(thermal.model)
-        parentmodule(typeof(part)).init_model(nodes, part, thermal, block)
+        model_module(part).init_model(nodes, part, thermal, block)
     end
 end
 
@@ -105,7 +97,7 @@ Defines all synchronization fields for local synchronization
 function fields_for_local_synchronization(model, block)
     thermal = Data_Manager.get_block_models(block).thermal
     for part in model_parts(thermal.model)
-        parentmodule(typeof(part)).fields_for_local_synchronization(model)
+        model_module(part).fields_for_local_synchronization(model)
     end
 end
 

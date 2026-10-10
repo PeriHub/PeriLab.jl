@@ -6,9 +6,8 @@ module Deformation_Gradient
 
 using .......Data_Manager
 using .......Geometry: compute_deformation_gradients!
-export pre_calculation_name
 export init_model
-export compute
+export compute_model
 
 using ......ParameterSpec: @params, register_pre_calculation
 "Switch only: this pre-calculation has no parameters."
@@ -17,48 +16,38 @@ end
 __init__() = register_pre_calculation("Deformation Gradient", DeformationGradientParams)
 
 """
-    pre_calculation_name()
-
-Gives the pre_calculation name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the Pre_Calculation.
-
-Example:
-```julia
-println(pre_calculation_name())
-"Deformation Gradient"
-```
-"""
-function pre_calculation_name()
-    return "Deformation Gradient"
-end
-
-"""
-    init_model(nodes, block)
+    init_model(nodes, p, pre_calculation, block)
 
 Inits the deformation gradient calculation.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
+- `p::DeformationGradientParams`: The model parameters.
+- `pre_calculation`: `nothing` (pre-calculations have no shared parameters).
+- `block::Int64`: The current block.
 
 """
-function init_model(nodes::AbstractVector{Int64}, block::Int64)
+function init_model(nodes::AbstractVector{Int64}, p::DeformationGradientParams,
+                    pre_calculation, block::Int64)
     dof = Data_Manager.get_dof()
     Data_Manager.create_constant_node_tensor_field("Deformation Gradient", Float64, dof)
 end
 
 """
-    compute(nodes::AbstractVector{Int64})
+    compute_model(nodes, p, pre_calculation, block, time, dt)
 
 Compute the deformation gradient.
 
 # Arguments
 - `nodes`: List of nodes.
+- `p::DeformationGradientParams`: The model parameters.
+- `pre_calculation`: `nothing` (pre-calculations have no shared parameters).
+- `block::Int64`: The current block.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
 """
-function compute(nodes::AbstractVector{Int64}, block::Int64)
+function compute_model(nodes::AbstractVector{Int64}, p::DeformationGradientParams,
+                       pre_calculation, block::Int64, time::Float64, dt::Float64)
     nlist = Data_Manager.get_nlist()
     volume = Data_Manager.get_field("Volume")
     omega = Data_Manager.get_field("Influence Function")

@@ -10,7 +10,6 @@ using .....Helpers: get_shared_horizon, dot, norm
 using .....ParameterSpec: @params, register_contact
 using TimerOutputs: @timeit
 
-export contact_model_name
 export init_contact_model
 export compute_contact_model
 
@@ -33,10 +32,6 @@ const friction_slave_id3D = zeros(3)
 end
 
 __init__() = register_contact("Penalty Contact", PenaltyContactParams)
-
-function contact_model_name()
-    return "Penalty Contact"
-end
 
 """
     init_contact_model(p, contact)

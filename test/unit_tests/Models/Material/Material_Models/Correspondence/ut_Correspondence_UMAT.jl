@@ -6,8 +6,8 @@ using LinearAlgebra
 #include("../../../../../../src/PeriLab.jl")
 #using .PeriLab
 @testset "get_name&fe_support" begin
-    @test PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.correspondence_name() ==
-          "Correspondence UMAT"
+    @test parentmodule(PeriLab.ParameterSpec.lookup_model(:material, "Correspondence UMAT")) ===
+      PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT
     @test PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.fe_support()
 end
 @testset "ut_malloc_cstring" begin

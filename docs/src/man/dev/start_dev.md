@@ -15,7 +15,6 @@ using ......Data_Manager
 using ......ParameterSpec: @params, register_material
 export fe_support
 export init_model
-export material_name
 export compute_model
 export fields_for_local_synchronization
 
@@ -34,7 +33,7 @@ end
 __init__() = register_material("My model", MyModelParams)
 ```
 
-The function `material_name()` stays in the module: PeriLab loads every file of the model folder that defines it.
+PeriLab loads every file of the model folder that calls `register_material` (also in a comment, so the unregistered template loads too).
 
 In the YAML file you can call your model like this. The id Mat_1 has to be applied to a block and your module works
 
@@ -81,7 +80,8 @@ You can and should also create fields using the [datamanger](datamanager.md).
 ```julia
 function init_model(nodes::AbstractVector{Int64},
                     p::MyModelParams,
-                    material)
+                    material,
+                    block::Int64)
 end
 ```
 This function is used as marker if it is suited for FE support. Therefore, it must be able to compute a Cauchy stress.
@@ -120,7 +120,14 @@ function compute_model(nodes::AbstractVector{Int64},
 end
 ```
 
-The other model categories follow the same pattern; their templates show the exact arguments (damage and thermal models get their block context like `material`, additive and degradation models only `p` and `block`).
+Every model category calls its models the same way:
+
+```julia
+init_model(nodes, p, ctx, block)
+compute_model(nodes, p, ctx, block, time, dt)
+```
+
+`ctx` holds what the models of a category share in a block: `material` for materials, `damage` for damage models (shared keys in `damage.base`), `thermal` for thermal models (`thermal.base`). Additive, degradation and pre-calculation models have no shared keys; they get `nothing`. Two kinds of models differ: correspondence models compute stresses (`compute_stresses`, see the correspondence template), and contact models work on contact groups (see the contact template).
 
 ### Additional functions
 You can add as many functions as you want. You can also create files and include them if needed. As long as the interface functions exists, the module can be called.

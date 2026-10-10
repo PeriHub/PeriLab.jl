@@ -4,7 +4,7 @@ If you want to integrate your own model check if it suits in one of the predefin
 !!! info "Material Template"
     Materials have multiple templates, because the correspondence formulation allows additional options.
 
-Each template has a parameter struct, a init function, a name function and a compute function.
+Each template has a parameter struct, an init function and a compute function.
 
 Copy the template and put it in the folder. Change all the functions and give the module a name.
 
@@ -31,16 +31,16 @@ Material models do not repeat the shared material keys (Symmetry, Young's Modulu
 Contact models work the same way: they register with `register_contact` under the name used in `Type`; the shared contact keys (Contact Radius, Symmetry, Contact Groups) are in `contact.base`, see the contact template.
 
 ## Init function
-The init function is called once before the run. The parameters are already checked (types, ranges, required keys); checks that need the mesh or other models belong here, as do the fields your model creates. The template of each category shows the arguments, e.g. `init_model(nodes, p, material)` for materials.
+The init function is called once before the run. The parameters are already checked (types, ranges, required keys); checks that need the mesh or other models belong here, as do the fields your model creates. Every category calls it the same way, `init_model(nodes, p, ctx, block)`; `ctx` is the block's shared category data (`material`, `damage`, `thermal`) or `nothing` (additive, degradation, pre-calculation).
 
-## Name function
-PeriLab loads every file of a model folder that defines the category's name function (`material_name()`, `damage_name()`, ...). The input deck uses the name passed to `register_*`.
+## How PeriLab finds your model
+PeriLab loads every file of a model folder that calls the category's `register_*` function (`register_material`, `register_damage`, ...), also in a comment, so the unregistered templates load too. The input deck uses the name passed to `register_*`.
 
 !!! info "Correspondence"
-    If you want to integrate a correspondence model, make sure "Correspondence" occurs in the registered model name
+    Put a correspondence model in the folder `Material_Models/Correspondence`. Every material model defined there runs in the correspondence formulation, whatever its name. Correspondence models cannot be combined with other material models by `+`.
 
 ## Compute function
-This function is called from the solver. You can call whatever function you like from here. However, this function should evaluate the result needed for the solving process, e.g. heat flux or force densities.
+This function is called from the solver, `compute_model(nodes, p, ctx, block, time, dt)`. You can call whatever function you like from here. However, this function should evaluate the result needed for the solving process, e.g. heat flux or force densities.
 
 ## Module name
 You can setup the module name as you like as long as it does not exist a second time in PeriLab.
@@ -57,16 +57,17 @@ To integrate a model category somewhere you have to do the following things. You
 The model modules are found by applying
 
 ```julia
-using ...ModuleLoader: find_module_files, create_module_specifics
-global module_list = find_module_files(@__DIR__, "material_name")
-for mod in module_list
-    include(mod["File"])
+using ...ModuleLoader: find_registered_modules
+for file in find_registered_modules(@__DIR__, "register_material")
+    include(file)
 end
 ```
 
 Each module registers its parameter struct in `__init__()` (`register_material(name, T)`); the factory declares the category with `register_base!` if the category has shared keys. The parsed model of a block is an instance of that struct, so the factory finds the module of the model from its type:
 
 ```julia
-mod = parentmodule(typeof(p))
-mod.compute_model(nodes, p, material, block, time, dt)
+using ...ParameterSpec: model_parts, model_module
+for part in model_parts(material.model)   # the parts of a `+` composite
+    model_module(part).compute_model(nodes, part, material, block, time, dt)
+end
 ```

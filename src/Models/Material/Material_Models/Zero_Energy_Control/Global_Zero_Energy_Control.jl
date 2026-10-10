@@ -10,6 +10,7 @@ using ....Data_Manager
 using ....Helpers: get_fourth_order
 using ...Material_Basis: hooke_matrix
 using ....Geometry: rotation_tensor
+using .....ParameterSpec: model_parts
 
 export init_model
 export control_name
@@ -27,9 +28,8 @@ function control_name()
 end
 
 # the legacy dict marked UMAT materials by the key "UMAT Material Name"
-_model_parts(model) = hasfield(typeof(model), :parts) ? model.parts : (model,)
 is_umat(material) = any(part -> nameof(typeof(part)) === :CorrespondenceUMATParams,
-                        _model_parts(material.model))
+                        model_parts(material.model))
 
 """
     init_model(nodes, material)

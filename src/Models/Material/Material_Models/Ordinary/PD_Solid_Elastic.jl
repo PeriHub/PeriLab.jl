@@ -14,7 +14,6 @@ using ..Ordinary:
                   get_bond_forces!
 export fe_support
 export init_model
-export material_name
 export compute_model
 export init_model
 export fields_for_local_synchronization
@@ -44,7 +43,7 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, p, material)
+  init_model(nodes::AbstractVector{Int64}, p, material, block::Int64)
 
 Initializes the material model.
 
@@ -54,7 +53,8 @@ Initializes the material model.
 """
 function init_model(nodes::AbstractVector{Int64},
                     p::PDSolidElasticParams,
-                    material)
+                    material,
+                    block::Int64)
     Data_Manager.create_constant_node_scalar_field("Weighted Volume", Float64)
     Data_Manager.create_constant_node_scalar_field("Dilatation", Float64)
 
@@ -62,15 +62,6 @@ function init_model(nodes::AbstractVector{Int64},
                                                                                 Float64)
     bond_force_isotropic_part = Data_Manager.create_constant_bond_scalar_state("Bond Forces Isotropic",
                                                                                Float64)
-end
-
-"""
-    material_name()
-
-Returns the name of the material model.
-"""
-function material_name()
-    return "PD Solid Elastic"
 end
 
 """

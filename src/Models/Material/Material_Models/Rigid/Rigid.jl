@@ -9,7 +9,6 @@ using ......ParameterSpec: @params, register_material
 
 export init_model
 export fe_support
-export material_name
 export compute_model
 
 "Parameters of Rigid beyond the shared material keys (none)."
@@ -38,7 +37,7 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, p, material)
+  init_model(nodes::AbstractVector{Int64}, p, material, block::Int64)
 
 Initializes the material model.
 
@@ -48,17 +47,9 @@ Initializes the material model.
 """
 function init_model(nodes::AbstractVector{Int64},
                     p::RigidParams,
-                    material)
+                    material,
+                    block::Int64)
     @info "Rigid material is applied. No internal forces are calculated. No deformation occurs only rigid body motion."
-end
-
-"""
-    material_name()
-
-Returns the name of the material model.
-"""
-function material_name()
-    return "Rigid"
 end
 
 """

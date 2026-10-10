@@ -11,7 +11,6 @@ using .......PeriLabExceptions: @abort
 
 export init_model
 export fe_support
-export material_name
 export compute_model
 
 @params struct OneDBondbasedElasticParams
@@ -41,7 +40,7 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, p, material)
+  init_model(nodes::AbstractVector{Int64}, p, material, block::Int64)
 
 Initializes the material model.
 
@@ -51,17 +50,9 @@ Initializes the material model.
 """
 function init_model(nodes::AbstractVector{Int64},
                     p::OneDBondbasedElasticParams,
-                    material)
+                    material,
+                    block::Int64)
     constant = Data_Manager.create_constant_bond_scalar_state("Visual", Float64)
-end
-
-"""
-    material_name()
-
-Returns the name of the material model.
-"""
-function material_name()
-    return "1D Bond-based Elastic"
 end
 
 """

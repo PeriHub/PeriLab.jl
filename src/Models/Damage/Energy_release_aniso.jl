@@ -17,7 +17,6 @@ using ......Helpers:
                      mul_in_place!
 
 export compute_model
-export damage_name
 export init_model
 export fields_for_local_synchronization
 
@@ -27,24 +26,6 @@ using ......ParameterSpec: @params, register_damage, value
     thickness::Float64 = opt("Thickness"; default = 1.0, min = 0, quantity = :length)
 end
 __init__() = register_damage("Critical Energy Anisotropic", CriticalEnergyAnisotropicParams)
-"""
-    damage_name()
-
-Gives the damage name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Returns
-- `name::String`: The name of the damage.
-
-Example:
-```julia
-println(damage_name())
-"Critical Energy"
-```
-"""
-function damage_name()
-    return "Critical Energy Anisotropic"
-end
-
 """
     compute_model(nodes, p, damage, block, time, dt)
 

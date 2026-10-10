@@ -13,7 +13,6 @@ using ......Helpers: voigt_to_matrix, matrix_to_voigt, matrix_to_engineering_voi
 using .....Material_Basis: hooke_matrix
 export fe_support
 export init_model
-export correspondence_name
 export fields_for_local_synchronization
 
 @params struct CorrespondenceUMATParams
@@ -123,7 +122,7 @@ function _init_umat_fields!(nodes::AbstractVector{Int64},
 end
 
 """
-    init_model(nodes, p, material)
+    init_model(nodes, p, material, block)
 
 Initializes the model fields of `nodes`.
 
@@ -132,7 +131,8 @@ Initializes the model fields of `nodes`.
 - `p`: The model parameters (the model's `@params` struct).
 - `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
 """
-function init_model(nodes::AbstractVector{Int64}, p::CorrespondenceUMATParams, material)
+function init_model(nodes::AbstractVector{Int64}, p::CorrespondenceUMATParams, material,
+                    block::Int64)
     num_state_vars::Int64 = something(p.number_of_state_variables, 1)
     file = joinpath(pwd(), Data_Manager.get_directory(), p.file)
     global umat_file_path = file
@@ -187,26 +187,6 @@ function _state_scaled(material)
     return (base = material.base, moduli = moduli, hooke_symmetry = material.hooke_symmetry)
 end
 
-
-"""
-    correspondence_name()
-
-Gives the correspondence material name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the material.
-
-Example:
-```julia
-println(correspondence_name())
-"Material Template"
-```
-"""
-function correspondence_name()
-    return "Correspondence UMAT"
-end
 
 """
     compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, p, material, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
@@ -412,7 +392,7 @@ Computes the bond-associated stresses of `nodes`.
 - `stress_NP1`: Stress of step N+1, updated in place.
 """
 compute_stresses_ba(nodes, nlist, dof::Int64, p::CorrespondenceUMATParams, material,
-                    time::Float64, dt::Float64, strain_increment, stress_N, stress_NP1) = @abort "$(correspondence_name()) not yet implemented for bond associated."
+                    time::Float64, dt::Float64, strain_increment, stress_N, stress_NP1) = @abort "Correspondence UMAT not yet implemented for bond associated."
 
 
 """

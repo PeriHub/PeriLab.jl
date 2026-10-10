@@ -6,12 +6,11 @@ module Additive
 
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
-using .....ModuleLoader: licensed_modules, optional_local_modules
+using .....ModuleLoader: licensed_modules, find_registered_modules
+using ......ParameterSpec: model_module
 
-local_user_modules = optional_local_modules(@__DIR__, "additive_name")
-
-for mod in local_user_modules
-    include(mod["File"])
+for file in find_registered_modules(@__DIR__, "register_additive")
+    include(file)
 end
 
 using .....Helpers: find_inverse_bond_id
@@ -80,8 +79,6 @@ end
 # not a deck (empty file, a list): the input validation reports it
 load_licensed_models(raw_deck) = Any[]
 
-model_module(p) = parentmodule(typeof(p))
-
 """
     compute_model(nodes::AbstractVector{Int64}, p, block::Int64, time::Float64, dt::Float64)
 
@@ -97,7 +94,8 @@ Computes the additive model of a block.
 function compute_model(nodes::AbstractVector{Int64}, p, block::Int64, time::Float64,
                        dt::Float64)
     # invokelatest: licensed models are defined at runtime
-    return Base.@invokelatest model_module(p).compute_model(nodes, p, block, time, dt)
+    return Base.@invokelatest model_module(p).compute_model(nodes, p, nothing, block, time,
+                                                            dt)
 end
 
 """
@@ -111,7 +109,7 @@ Initialize the additive model of a block (`Data_Manager.get_block_models(block).
 """
 function init_model(nodes::AbstractVector{Int64}, block::Int64)
     p = Data_Manager.get_block_models(block).additive
-    Base.@invokelatest model_module(p).init_model(nodes, p, block)
+    Base.@invokelatest model_module(p).init_model(nodes, p, nothing, block)
 end
 
 """

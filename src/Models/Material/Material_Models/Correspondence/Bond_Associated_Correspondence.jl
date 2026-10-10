@@ -8,6 +8,7 @@ using StaticArrays: I, @MMatrix
 
 using ........Data_Manager
 using ........PeriLabExceptions: @abort
+using .........ParameterSpec: model_parts, model_module
 using .....Material_Basis: compute_Piola_Kirchhoff_stress!
 using ........Helpers:
                        find_local_neighbors, invert, rotate, determinant, smat,
@@ -167,11 +168,9 @@ function compute_model(nodes::AbstractVector{Int64},
         end
     end
 
-    for part in (hasfield(typeof(material.model), :parts) ? material.model.parts :
-                 (material.model,))
-        parentmodule(typeof(part)).compute_stresses_ba(nodes, nlist, dof, part, material,
-                                                       time, dt, strain_increment, stress_N,
-                                                       stress_NP1)
+    for part in model_parts(material.model)
+        model_module(part).compute_stresses_ba(nodes, nlist, dof, part, material, time, dt,
+                                               strain_increment, stress_N, stress_NP1)
     end
 
     if rotation

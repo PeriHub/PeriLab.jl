@@ -42,19 +42,13 @@ PeriLab.Data_Manager.set_dof(2)
     p = MT.MaterialTemplateParams()
     material = typed_block_material(Dict("Material Model" => "Bond-based Elastic",
                                          "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0))
-    MT.init_model(UT_NODES, p, material)
+    MT.init_model(UT_NODES, p, material, 1)
     MT.compute_model(UT_NODES, p, material, 1, 0.0, 0.0)
     MT.fields_for_local_synchronization("Material Model")
 end
 
 @testset "ut_correspondence_template" begin
-    # not loaded by PeriLab (it lives next to the material template); load it
-    # where a copy would live, beside the correspondence models
     C = UT_MF.Material.Correspondence
-    isdefined(C, :Correspondence_template) ||
-        Base.include(C,
-                     joinpath(pkgdir(PeriLab), "src", "Models", "Material", "Material_Models",
-                              "Material_template", "correspondence_template.jl"))
     CT = C.Correspondence_template
     CE = C.Correspondence_Elastic
     ut_same_interface(CT, CT.CorrespondenceTemplateParams, CE, CE.CorrespondenceElasticParams,
@@ -64,7 +58,7 @@ end
     p = CT.CorrespondenceTemplateParams()
     material = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
                                          "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0))
-    CT.init_model(UT_NODES, p, material)
+    CT.init_model(UT_NODES, p, material, 1)
     stress_NP1 = zeros(1, 2, 2)
     stress_NP1[1, :, 1] = [-1, 2.2]
     vec = CT.compute_stresses(Vector{Int64}(1:1), 2, p, material, 0.0, 0.0, ones(1, 2, 2),
@@ -116,8 +110,8 @@ end
     ut_same_interface(AT, AT.AdditiveTemplateParams, BC, BC.BondbasedCorrosionParams,
                       (:init_model, :compute_model, :fields_for_local_synchronization))
     p = AT.AdditiveTemplateParams()
-    AT.init_model(UT_NODES, p, 1)
-    AT.compute_model(UT_NODES, p, 1, 0.0, 0.0)
+    AT.init_model(UT_NODES, p, nothing, 1)
+    AT.compute_model(UT_NODES, p, nothing, 1, 0.0, 0.0)
     AT.fields_for_local_synchronization("Additive Model")
 end
 
@@ -127,18 +121,19 @@ end
     ut_same_interface(GT, GT.DegradationTemplateParams, BC, BC.BondbasedCorrosionParams,
                       (:init_model, :compute_model, :fields_for_local_synchronization))
     p = GT.DegradationTemplateParams()
-    GT.init_model(UT_NODES, p, 1)
-    GT.compute_model(UT_NODES, p, 1, 0.0, 0.0)
+    GT.init_model(UT_NODES, p, nothing, 1)
+    GT.compute_model(UT_NODES, p, nothing, 1, 0.0, 0.0)
     GT.fields_for_local_synchronization("Degradation Model")
 end
 
 @testset "ut_pre_calculation_template" begin
     PT = UT_MF.Pre_Calculation.Pre_calculation_template
     ST = UT_MF.Pre_Calculation.Shape_Tensor
-    ut_same_interface(PT, nothing, ST, nothing,
-                      (:init_model, :compute, :fields_for_local_synchronization))
-    PT.init_model(UT_NODES, 1)
-    PT.compute(UT_NODES, 1)
+    ut_same_interface(PT, PT.PreCalculationTemplateParams, ST, ST.ShapeTensorParams,
+                      (:init_model, :compute_model, :fields_for_local_synchronization))
+    p = PT.PreCalculationTemplateParams()
+    PT.init_model(UT_NODES, p, nothing, 1)
+    PT.compute_model(UT_NODES, p, nothing, 1, 0.0, 0.0)
     PT.fields_for_local_synchronization("Pre Calculation Model")
 end
 
@@ -146,7 +141,7 @@ end
     CT = UT_MF.Contact.Contact_template
     PM = UT_MF.Contact.Penalty_Model
     ut_same_interface(CT, CT.ContactTemplateParams, PM, PM.PenaltyContactParams,
-                      (:contact_model_name, :init_contact_model, :compute_contact_model))
+                      (:init_contact_model, :compute_contact_model))
     p = CT.ContactTemplateParams()
     CT.init_contact_model(p, nothing)
     CT.compute_contact_model("cg", p, nothing, (m, s, f) -> nothing, (s, m, f) -> nothing)
@@ -160,4 +155,25 @@ end
     FT.init_element(UT_NODES, nothing, [1, 1])
     @test_throws PeriLab.PeriLabError FT.create_element_matrices(2, [2, 2], [1, 1],
                                                                  zeros(2, 2), zeros(2, 2))
+end
+
+@testset "every model category is called the same way" begin
+    # init_model(nodes, p, ctx, block), compute_model(nodes, p, ctx, block, time, dt)
+    for (mod, P) in ((UT_MF.Material.Bondbased_Elastic,
+                      UT_MF.Material.Bondbased_Elastic.BondbasedElasticParams),
+                     (UT_MF.Damage.Critical_Stretch,
+                      UT_MF.Damage.Critical_Stretch.CriticalStretchParams),
+                     (UT_MF.Thermal.Heat_Transfer, UT_MF.Thermal.Heat_Transfer.HeatTransferParams),
+                     (UT_MF.Degradation.Bondbased_Corrosion,
+                      UT_MF.Degradation.Bondbased_Corrosion.BondbasedCorrosionParams),
+                     (UT_MF.Additive.Additive_template,
+                      UT_MF.Additive.Additive_template.AdditiveTemplateParams),
+                     (UT_MF.Pre_Calculation.Shape_Tensor,
+                      UT_MF.Pre_Calculation.Shape_Tensor.ShapeTensorParams))
+        init = ut_signature(mod.init_model, P)
+        compute = ut_signature(mod.compute_model, P)
+        @test length(init) == 4 && init[2] === :params && Int64 <: init[4]
+        @test length(compute) == 6 && compute[2] === :params &&
+              all(T -> Float64 <: T, compute[5:6])
+    end
 end

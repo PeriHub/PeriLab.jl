@@ -5,7 +5,6 @@
 module Thermal_template
 export compute_model
 export init_model
-export thermal_model_name
 export fields_for_local_synchronization
 
 using .....Data_Manager
@@ -25,26 +24,6 @@ end
 # __init__() = register_thermal("Thermal Template", ThermalTemplateParams)
 
 """
-    thermal_model_name()
-
-Gives the thermal model name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the thermal flow model.
-
-Example:
-```julia
-println(flow_name())
-"Thermal Template"
-```
-"""
-function thermal_model_name()
-    return "Thermal Template"
-end
-
-"""
     compute_model(nodes, p, thermal, block, time, dt)
 
 Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
@@ -61,7 +40,7 @@ Example:
 """
 function compute_model(nodes::AbstractVector{Int64}, p::ThermalTemplateParams, thermal,
                        block::Int64, time::Float64, dt::Float64)
-    @info "Please write a thermal model name in thermal_name()."
+    @info "Register your model name with register_thermal in __init__()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_model(nodes, p, thermal, block, time, dt) function."
     @info "The Data_Manager, p and thermal hold all you need to solve your problem on thermal flow level."

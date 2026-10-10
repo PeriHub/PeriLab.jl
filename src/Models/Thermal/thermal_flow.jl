@@ -10,7 +10,6 @@ using .....Data_Manager
 using .....PeriLabExceptions: @abort
 using .....Helpers: rotate_second_order_tensor2x2, rotate_second_order_tensor3x3
 export compute_model
-export thermal_model_name
 export init_model
 export fields_for_local_synchronization
 
@@ -43,20 +42,6 @@ __init__() = register_thermal("Thermal Flow", ThermalFlowParams)
 # the print bed only exists in 3D
 print_bed_active(p::ThermalFlowParams, dof::Int64) = p.print_bed_temperature !== nothing &&
                                                      dof == 3
-
-"""
-	thermal_model_name()
-
-Gives the model name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: "Thermal Flow"
-"""
-function thermal_model_name()
-    return "Thermal Flow"
-end
 
 """
     init_model(nodes, p, thermal, block)

@@ -130,7 +130,7 @@ end
     @test hasmethod(BMAT.Bondbased_Elastic.compute_model,
                     Tuple{Vector{Int64},typeof(m.model),typeof(m),Int64,Float64,Float64})
     @test hasmethod(BMAT.Rigid.init_model,
-                    Tuple{Vector{Int64},BMAT.Rigid.RigidParams,Any})
+                    Tuple{Vector{Int64},BMAT.Rigid.RigidParams,Any,Int64})
 end
 
 @testset "table follows the NP1 switch" begin
@@ -310,7 +310,7 @@ const BCORR = BMAT.Correspondence
         legacy = ut_legacy_dict(raw; dof = dof)
         ut_reset(dof; nnodes = 2)
         m = typed_block_material(raw; dof = dof)
-        BCORR.Correspondence_Elastic.init_model([1, 2], m.model, m)
+        BCORR.Correspondence_Elastic.init_model([1, 2], m.model, m, 1)
         C = PeriLab.Data_Manager.get_field("Material Gradient")
         for iID in 1:2
             @test C[iID, :, :] ≈ Matrix(LEGACY.get_Hooke_matrix(legacy, legacy["Symmetry"],
@@ -339,7 +339,7 @@ const UT_PLASTIC_REFERENCE = [0.004444444444444446 0.0 0.0; 0.004444444444444446
     coor .= [0.0 0.0 0.0; 1.0 0.0 0.0]
     m = typed_block_material(raw; dof = dof)
     p = m.model.parts[2]
-    BCORR.Correspondence_Plastic.init_model(collect(1:nnodes), p, m)
+    BCORR.Correspondence_Plastic.init_model(collect(1:nnodes), p, m, 1)
     strain_inc = zeros(nnodes, dof, dof)
     strain_inc[:, 1, 1] .= 0.02
     strain_inc[:, 1, 2] .= 0.01
@@ -400,7 +400,7 @@ end
                                   "Number of Properties" => 3, "Property_1" => 2,
                                   "Property_3" => 2.4, "Young's Modulus" => 2.0,
                                   "Poisson's Ratio" => 0.1))
-    UMAT.init_model([1, 2], m.model, m)
+    UMAT.init_model([1, 2], m.model, m, 1)
     props = PeriLab.Data_Manager.get_field("Properties")
     @test props[1] == 2.0 && props[2] == 0.0 && props[3] == 2.4
     @test PeriLab.Data_Manager.get_field("Material Gradient")[1, :, :] ≈
@@ -422,7 +422,7 @@ end
                                                  "Poisson's Ratio" => 0.1))
         @test_logs (:error,
                     "File $(joinpath(pwd(), PeriLab.Data_Manager.get_directory(), file * "_not_there")) does not exist, please check name and directory.") @test_throws PeriLab.PeriLabError begin
-            UM.init_model([1, 2], missing_file.model, missing_file)
+            UM.init_model([1, 2], missing_file.model, missing_file, 1)
         end
         long_name = typed_block_material(Dict("Material Model" => model, "File" => file,
                                               "Number of Properties" => 1,
@@ -431,7 +431,7 @@ end
                                               "Poisson's Ratio" => 0.1))
         @test_logs (:error,
                     "Due to old Fortran standards only a name length of 80 is supported") @test_throws PeriLab.PeriLabError begin
-            UM.init_model([1, 2], long_name.model, long_name)
+            UM.init_model([1, 2], long_name.model, long_name, 1)
         end
     end
 end
@@ -446,7 +446,7 @@ end
                                   "File" => ut_umat_file(), "Number of Properties" => 1,
                                   "Predefined Field Names" => "test_field_2 test_field_3",
                                   "Young's Modulus" => 2.0, "Poisson's Ratio" => 0.1))
-    BCORR.Correspondence_UMAT.init_model([1, 2], m.model, m)
+    BCORR.Correspondence_UMAT.init_model([1, 2], m.model, m, 1)
     fields = PeriLab.Data_Manager.get_field("Predefined Fields")
     @test fields[1, 1] == 7.3 && fields[2, 2] == 3.0
 end
@@ -458,16 +458,15 @@ end
     m = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
                                   "Symmetry" => "isotropic", "Bulk Modulus" => 10.0,
                                   "Shear Modulus" => 4.0))
-    BCORR.init_model([1, 2], 1, m)
-    @test PeriLab.Data_Manager.get_analysis_model("Correspondence Model", 1) ==
-          ["Correspondence Elastic"]
+    @test m.correspondence
+    BCORR.init_model([1, 2], m, 1)
     @test PeriLab.Data_Manager.get_field("Material Gradient")[1, :, :] ≈
           Matrix(BBASIS.hooke_matrix(m, 3, 1))
     ut_reset(3; nnodes = 2)
     nosym = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
                                       "Bulk Modulus" => 10.0, "Shear Modulus" => 4.0))
     # as before (the dict got "isotropic" when Symmetry was missing): 3D runs isotropic
-    BCORR.init_model([1, 2], 1, nosym)
+    BCORR.init_model([1, 2], nosym, 1)
     @test PeriLab.Data_Manager.get_field("Material Gradient")[1, :, :] ≈
           Matrix(BBASIS.hooke_matrix(nosym, 3, 1))
     @test nosym.hooke_symmetry == "isotropic"
@@ -486,7 +485,7 @@ end
                                   "State Factor ID" => 1, "Young's Modulus" => 10.0,
                                   "Poisson's Ratio" => 0.25))
     E = copy(m.moduli.youngs_modulus)
-    BCORR.Correspondence_UMAT.init_model([1, 2, 3], m.model, m)
+    BCORR.Correspondence_UMAT.init_model([1, 2, 3], m.model, m, 1)
     @test PeriLab.Data_Manager.get_field("Young's_Modulus") ≈ 2 .* E
 end
 
@@ -498,7 +497,7 @@ end
                                       "State Factor ID" => 1, "Young's Modulus" => 10.0,
                                       "Poisson's Ratio" => 0.25))
         nodes = collect(1:nnodes)
-        return @allocated BCORR.Correspondence_UMAT.init_model(nodes, m.model, m)
+        return @allocated BCORR.Correspondence_UMAT.init_model(nodes, m.model, m, 1)
     end
     umat_init_allocations(50)
     a1 = umat_init_allocations(500)
@@ -512,6 +511,17 @@ end
                                     "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0)).correspondence
     @test !typed_block_material(Dict("Material Model" => "PD Solid Elastic",
                                      "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0)).correspondence
+    # the type decides, not the name
+    elastic = BMAT.Correspondence.Correspondence_Elastic.CorrespondenceElasticParams()
+    @test BMAT.correspondence_model(elastic, "My Model")
+    plastic = typed_block_material(Dict("Material Model" => "Correspondence Elastic + Correspondence Plastic",
+                                        "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0,
+                                        "Yield Stress" => 1.0))
+    @test plastic.correspondence
+    @test_logs (:error,
+                "Material Model \"Correspondence Elastic + PD Solid Elastic\": correspondence models cannot be combined with other material models.") @test_throws PeriLab.PeriLabError typed_block_material(Dict("Material Model" => "Correspondence Elastic + PD Solid Elastic",
+                                                                                                                                                                                                                       "Bulk Modulus" => 1.0,
+                                                                                                                                                                                                                       "Shear Modulus" => 1.0))
 end
 
 @testset "critical bulk modulus" begin

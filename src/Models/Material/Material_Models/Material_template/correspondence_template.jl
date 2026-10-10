@@ -8,7 +8,6 @@ using .......Data_Manager
 using .......PeriLabExceptions: @abort
 using .......ParameterSpec: @params, register_material
 export compute_stresses
-export correspondence_name
 export fe_support
 export init_model
 export fields_for_local_synchronization
@@ -18,9 +17,9 @@ export fields_for_local_synchronization
 
 Declare the YAML keys your model needs beyond the shared material keys (Symmetry,
 moduli, … are in `material.base` / `material.moduli`). Register it under your model
-name by uncommenting `__init__`; the name must contain "Correspondence" (that selects
-the correspondence formulation). The template stays unregistered so that a copy never
-collides with it.
+name by uncommenting `__init__`. Put the copy in `Material_Models/Correspondence`: the
+models defined there run in the correspondence formulation. The template stays
+unregistered so that a copy never collides with it.
 """
 @params struct CorrespondenceTemplateParams
 end
@@ -48,7 +47,7 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, p::CorrespondenceTemplateParams, material)
+  init_model(nodes::AbstractVector{Int64}, p::CorrespondenceTemplateParams, material, block::Int64)
 
 Initializes the material model.
 
@@ -56,28 +55,10 @@ Initializes the material model.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `p::CorrespondenceTemplateParams`: The model parameters.
   - `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
+  - `block::Int64`: The block.
 """
-function init_model(nodes::AbstractVector{Int64}, p::CorrespondenceTemplateParams, material)
-end
-
-"""
-    correspondence_name()
-
-Gives the correspondence material name. PeriLab loads the module because it defines this function; the input deck uses the name passed to `register_*` in `__init__()`.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the material.
-
-Example:
-```julia
-println(correspondence_name())
-"Material Template"
-```
-"""
-function correspondence_name()
-    return "Correspondence Template"
+function init_model(nodes::AbstractVector{Int64}, p::CorrespondenceTemplateParams, material,
+                    block::Int64)
 end
 
 """
@@ -111,7 +92,7 @@ function compute_stresses(nodes::AbstractVector{Int64},
                           strain_increment::AbstractArray{Float64},
                           stress_N::AbstractArray{Float64},
                           stress_NP1::AbstractArray{Float64})
-    @info "Please write a material name in material_name()."
+    @info "Register your model name with register_material in __init__()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_model() and init_model() function."
     @info "The Data_Manager, p and material hold all you need to solve your problem on material level."
@@ -129,7 +110,7 @@ function compute_stresses_ba(nodes,
                              strain_increment,
                              stress_N,
                              stress_NP1)
-    @abort "$(correspondence_name()) not yet implemented for bond associated."
+    @abort "Correspondence Template not yet implemented for bond associated."
 end
 
 """

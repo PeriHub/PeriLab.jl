@@ -7,8 +7,8 @@
 #include("../../../../src/PeriLab.jl")
 #import .PeriLab
 
-@test PeriLab.Solver_Manager.Model_Factory.Thermal.Heat_Transfer.thermal_model_name() ==
-      "Heat Transfer"
+@test parentmodule(PeriLab.ParameterSpec.lookup_model(:thermal, "Heat Transfer")) ===
+      PeriLab.Solver_Manager.Model_Factory.Thermal.Heat_Transfer
 
 @testset "ut_calculate_specific_volume" begin
     nnodes = 10
