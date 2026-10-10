@@ -270,10 +270,6 @@ function parse_reduction_blocks(model_param::ModelReductionParams)
         @warn "No reduction blocks defined for model reduction. If you want to use a reduced model please define 'Reduction Blocks' in the yaml input deck."
         return nothing
     end
-    if reduction_blocks isa Float64
-        @error "Type Float is not supported for Reduction Blocks"
-        return nothing
-    end
     reduction_blocks isa Int64 && return [reduction_blocks]
     return parse.(Int64, filter(!isempty, split(reduction_blocks, r"[,\s]")))
 end

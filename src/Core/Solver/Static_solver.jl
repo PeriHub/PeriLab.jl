@@ -53,7 +53,7 @@ A tuple `(initial_time, dt, nsteps, numerical_damping)` where:
 
 # Dependencies
 This function may depend on the following functions:
-- `get_initial_time`, `get_final_time`, `get_safety_factor`, `get_fixed_dt`: Used to retrieve simulation parameters.
+- `start_time` and the fields of `params` (final time, safety factor, fixed time step): The simulation parameters.
 - `get_integration_steps`: Used to determine the number of integration steps and adjust the time step.
 """
 function init_solver(solver_options::Dict{Any,Any},

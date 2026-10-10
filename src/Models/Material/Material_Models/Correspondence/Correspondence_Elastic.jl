@@ -39,28 +39,11 @@ function fe_support()
 end
 
 """
-	compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, p, material, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
+    _elastic_stresses!(nodes, dof, strain_increment, stress_N, stress_NP1)
 
-Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
-
-# Arguments
-- `nodes::AbstractVector{Int64}`: The nodes.
-- `dof::Int64`: Degrees of freedom
-- `p`: The model parameters.
-- `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
-- `time::Float64`: The current time.
-- `dt::Float64`: The current time step.
-- `strainInc::Union{NodeTensorField{Float64},Array{Float64,6}}`: Strain increment.
-- `stress_N::SubArray`: Stress of step N.
-- `stress_NP1::SubArray`: Stress of step N+1.
-- `iID_jID_nID::Tuple=(): (optional) are the index and node id information. The tuple is ordered iID as index of the point,  jID the index of the bond of iID and nID the neighborID.
-# Returns
-- `stress_NP1::SubArray`: updated stresses
-Example:
-```julia
-```
+Adds the elastic stress increment (the node's Hooke matrix, field "Material Gradient",
+times the strain increment) to `stress_N` and stores the result in `stress_NP1`.
 """
-
 function _elastic_stresses!(nodes::AbstractVector{Int64},
                             dof::Int64,
                             strain_increment::NodeTensorField{Float64},
