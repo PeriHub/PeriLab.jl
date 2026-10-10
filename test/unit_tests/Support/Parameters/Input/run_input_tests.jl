@@ -6,6 +6,7 @@
 #   julia --project=. test/unit_tests/Support/Parameters/Input/run_input_tests.jl
 using Test
 import PeriLab
+include(joinpath(@__DIR__, "..", "..", "..", "..", "helper.jl"))
 
 @testset "InputDeck" begin
     include(joinpath(@__DIR__, "input_tests.jl"))

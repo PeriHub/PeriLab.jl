@@ -194,7 +194,6 @@ MPI.Init()
                 @testset "ut_material_basis" begin
                     include("unit_tests/Models/Material/ut_material_basis.jl")
                 end
-                include("unit_tests/Models/Material/legacy_material_oracle.jl")
                 @testset "ut_block_material" begin
                     include("unit_tests/Models/Material/ut_block_material.jl")
                 end

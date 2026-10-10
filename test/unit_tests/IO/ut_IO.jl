@@ -27,6 +27,13 @@ PeriLab.Data_Manager.create_constant_node_scalar_field("Block_Id", Int64)
 block_Id = PeriLab.Data_Manager.get_field("Block_Id")
 PeriLab.Data_Manager.create_node_vector_field("Displacements", Float64, 2)
 PeriLab.Data_Manager.create_node_vector_field("Forces", Float64, 6)
+# init_write_results reads the neighborhood list (bond export)
+nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+nn .= 1
+nlist = PeriLab.Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
+for i in 1:nnodes
+    nlist[i] .= mod1(i + 1, nnodes)
+end
 
 block_list = ["block_1", "block_2"]
 PeriLab.Data_Manager.set_block_name_list(block_list)
