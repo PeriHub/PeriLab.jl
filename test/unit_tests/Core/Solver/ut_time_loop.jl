@@ -81,11 +81,11 @@ function utl_run(solver::Dict{String,Any}; models = ["Material"], extra = Dict{S
                              Dict{String,UTL_BC}(), Dict{Int64,Vector{Int64}}())
 end
 
-function utl_ctx(writes; set_output_frequency = nsteps -> nothing)
+function utl_ctx(writes; fallback_output_frequency = (nsteps, dt, fallback_dt) -> nothing)
     write = (rf, t, max_damage, outputs) -> (push!(writes, (t, max_damage)); rf)
     return UTL_SM.SolverContext(Dict{Int64,Vector{Int64}}(), Dict{String,UTL_BC}(),
                                 Dict{Int64,Dict{}}(), Dict[], write, true,
-                                set_output_frequency)
+                                fallback_output_frequency)
 end
 
 function utl_with_solver(f)
@@ -178,15 +178,19 @@ end
 @testset "a failed step continues with the fallback solver" begin
     utl_with_solver() do
         writes = Tuple{Float64,Float64}[]
-        frequencies = Int64[]
+        frequencies = Tuple{Int64,Float64,Float64}[]
         run = utl_run(Dict{String,Any}("Fail At" => 3); extra = utl_fallback(2))
-        UTL_SM.solver(run, utl_ctx(writes; set_output_frequency = n -> push!(frequencies, n)))
+        UTL_SM.solver(run,
+                      utl_ctx(writes;
+                              fallback_output_frequency = (n, dt, fallback_dt) -> push!(frequencies,
+                                                                                         (n, dt,
+                                                                                          fallback_dt))))
         first_run, fallback = UTLoopSolver.WORKSPACES
         @test length(first_run.clocks) == 3
         @test [c.time for c in fallback.clocks] ≈ [0.5, 0.75, 1.0]
         @test [c.step_time for c in fallback.clocks] ≈ [0.5, 0.75, 1.0]
         @test first.(writes) ≈ [0.0, 0.25, 0.5, 0.75, 1.0]
-        @test frequencies == [2]
+        @test frequencies == [(2, 0.25, 0.25)]
         @test !UTL_DM.get_cancel()
         @test UTL_DM.get_current_time() == 1.0
     end

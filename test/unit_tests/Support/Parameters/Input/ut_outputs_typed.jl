@@ -109,3 +109,40 @@ end
     end
 end
 
+
+@testset "fallback output frequencies" begin
+    output(extra) = merge(Dict{String,Any}("Output Filename" => "f" * string(hash(extra)),
+                                           "Output Frequency" => 1,
+                                           "Output Variables" => ut_ot_vars()), extra)
+    outputs = ut_ot_outputs(Dict{String,Any}("auto" => output(Dict{String,Any}()),
+                                             "auto_counter" => output(Dict{String,Any}()),
+                                             "fixed" => output(Dict{String,Any}("Fallback Output Frequency" => 50)),
+                                             "steps" => output(Dict{String,Any}("Fallback Number of Output Steps" => 20,
+                                                                                "Fallback Output Frequency" => 3)),
+                                             "per_step" => output(Dict{String,Any}("Fallback Output Frequency" => "10 30")),
+                                             "clamped" => output(Dict{String,Any}())))
+    names = collect(keys(outputs))
+    old_frequency = Dict("auto" => 1, "auto_counter" => 4, "fixed" => 1, "steps" => 1,
+                         "per_step" => 1, "clamped" => 100)
+    old_counter = Dict("auto" => 0, "auto_counter" => 2, "fixed" => 0, "steps" => 0,
+                       "per_step" => 0, "clamped" => 0)
+    function by_name(nsteps, step, dt, fallback_dt)
+        frequencies,
+        counters = ID.fallback_output_frequencies(outputs, nsteps, step,
+                                                  [old_frequency[n] for n in names],
+                                                  [old_counter[n] for n in names], dt,
+                                                  fallback_dt)
+        return Dict(zip(names, frequencies)), Dict(zip(names, counters))
+    end
+    f, c = by_name(1000, 2, 1.0, 0.01)
+    @test f["auto"] == 100              # keeps the interval in time: 1 * 1.0 / 0.01
+    @test f["auto_counter"] == 400 && c["auto_counter"] == 200   # and the time since the last output
+    @test f["fixed"] == 50
+    @test f["steps"] == 50              # Fallback Number of Output Steps wins: ceil(1000 / 20)
+    @test f["per_step"] == 30           # second entry for step 2
+    @test f["clamped"] == 1000          # clamped to nsteps
+    @test all(c[n] < f[n] for n in names)
+    f, c = by_name(10, 1, 0.01, 1.0)
+    @test f["auto"] == 1                # fallback steps longer than the interval: every step
+    @test c["auto_counter"] == 0
+end

@@ -18,7 +18,7 @@ All notable changes to this project will be documented in this file.
 - `PeriLab.to_json_schema(PeriLab.InputDeck.PeriLabInput)`: JSON Schema of the input deck, e.g. for editor completion
 - Input reference pages generated from the declarations (`PeriLab.generate_parameter_docs`)
 - A docstring above an `@params` field is its description
-- `Fallback` in a solver section: a step the solver cannot compute (Static without convergence, Linear Static Matrix Based when damage starts) is recomputed by the fallback solver, which runs to the final time of the step
+- `Fallback` in a solver section: a step the solver cannot compute (Static without convergence, Linear Static Matrix Based when damage starts) is recomputed by the fallback solver, which runs to the final time of the step. Outputs keep their time interval over the switch; `Fallback Output Frequency` and `Fallback Number of Output Steps` in an output set the frequency for the fallback steps
 
 ### Changed
 

@@ -10,6 +10,12 @@
                                                         description = "Every n-th step; per step as \"n1 n2\"")
     number_of_output_steps::Union{Nothing,Int64,String} = opt("Number of Output Steps";
                                                               default = nothing)
+    fallback_output_frequency::Union{Nothing,Int64,String} = opt("Fallback Output Frequency";
+                                                                 default = nothing,
+                                                                 description = "Every n-th step of a fallback solver; per step as \"n1 n2\"")
+    fallback_number_of_output_steps::Union{Nothing,Int64,String} = opt("Fallback Number of Output Steps";
+                                                                       default = nothing,
+                                                                       description = "Outputs over the steps of a fallback solver")
     output_variables::Dict{String,Bool} = req("Output Variables")
     flush_file::Bool = opt("Flush File"; default = true)
     write_after_damage::Bool = opt("Write After Damage"; default = false)
@@ -65,6 +71,10 @@ function output_filenames(outputs::Dict{String,OutputParams}, output_dir::String
     return filenames
 end
 
+"A value given per solver step as a string (\"n1 n2\") is the entry of `step_id`."
+step_value(value::Int64, step_id::Int64) = value
+step_value(value::String, step_id::Int64) = parse(Int, split(value)[step_id])
+
 """
     output_frequencies(outputs, nsteps, step_id)
 
@@ -80,14 +90,43 @@ function output_frequencies(outputs::Dict{String,OutputParams}, nsteps::Int64,
         if !use_frequency && output.output_frequency !== nothing
             @warn "Double output step / frequency definition. First option is used. ''Output Frequency'' is ignored."
         end
-        value = use_frequency ? output.output_frequency : output.number_of_output_steps
-        if value isa String
-            value = parse(Int, split(value)[step_id])
-        end
+        value = step_value(use_frequency ? output.output_frequency :
+                           output.number_of_output_steps, step_id)
         frequencies[id] = use_frequency ? value : Int64(ceil(nsteps / value))
         frequencies[id] = min(frequencies[id], nsteps)
     end
     return frequencies
+end
+
+"""
+    fallback_output_frequencies(outputs, nsteps, step_id, frequencies, counters, dt, fallback_dt)
+
+Output frequencies and counters, in `values(outputs)` order, when a fallback
+solver with `nsteps` steps of `fallback_dt` takes over from a solver with steps
+of `dt` and the given `frequencies` and `counters`. `Fallback Number of Output
+Steps` (which wins) and `Fallback Output Frequency` set the frequency like their
+counterparts; without them an output keeps its interval in time. The counter
+keeps the time since the last output. Frequencies are clamped to `nsteps`.
+"""
+function fallback_output_frequencies(outputs::Dict{String,OutputParams}, nsteps::Int64,
+                                     step_id::Int64, frequencies::Vector{Int64},
+                                     counters::Vector{Int64}, dt::Float64,
+                                     fallback_dt::Float64)
+    ratio = dt / fallback_dt
+    new_frequencies = zeros(Int64, length(outputs))
+    new_counters = zeros(Int64, length(outputs))
+    for (id, output) in enumerate(values(outputs))
+        frequency = if output.fallback_number_of_output_steps !== nothing
+            Int64(ceil(nsteps / step_value(output.fallback_number_of_output_steps, step_id)))
+        elseif output.fallback_output_frequency !== nothing
+            step_value(output.fallback_output_frequency, step_id)
+        else
+            max(1, round(Int64, frequencies[id] * ratio))
+        end
+        new_frequencies[id] = min(frequency, nsteps)
+        new_counters[id] = min(round(Int64, counters[id] * ratio), new_frequencies[id] - 1)
+    end
+    return new_frequencies, new_counters
 end
 
 """

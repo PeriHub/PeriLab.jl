@@ -473,10 +473,12 @@ function run(filename::String;
                 solver_context = Solver_Manager.SolverContext(block_nodes, bcs, outputs,
                                                               result_files, IO.write_results,
                                                               silent,
-                                                              nsteps -> IO.set_output_frequency(input,
-                                                                                                nsteps,
-                                                                                                step_id,
-                                                                                                true))
+                                                              (nsteps, dt,
+                                                               fallback_dt) -> IO.set_fallback_output_frequency(input,
+                                                                                                                 nsteps,
+                                                                                                                 step_id,
+                                                                                                                 dt,
+                                                                                                                 fallback_dt))
                 if dry_run
                     nsteps = solver_run.time.nsteps
                     elapsed_time = @elapsed begin

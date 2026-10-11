@@ -61,6 +61,12 @@ the solver step; otherwise the run is cancelled:
         Verlet:
           Safety Factor: 0.9
 
+When the fallback takes over, each output keeps the time between two outputs, so
+a fallback with many short steps does not write every step. `Fallback Output
+Frequency` and `Fallback Number of Output Steps` in an output set the frequency
+for the fallback steps instead, like `Output Frequency` and `Number of Output
+Steps` do for the solver steps.
+
 `SolverParams` selects the solver with a `one_of` field:
 `options::SolverOptions = one_of(:solver)` holds exactly one sub-section whose
 key is a registered solver name. Errors for a missing, a second or a misspelled

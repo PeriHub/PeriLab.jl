@@ -31,7 +31,8 @@ using ..MPI_Communication: send_single_value_from_vector, synch_responder_to_con
 using ..Helpers: progress_bar
 using ..Logging_Module: get_log_stream
 using ..InputDeck: solver_steps, BlockParams, PeriLabInput, output_filenames,
-                   output_frequencies, output_fieldnames, active_computes, compute_names
+                   output_frequencies, fallback_output_frequencies, output_fieldnames,
+                   active_computes, compute_names
 using ..Geometry: rotation_tensor
 
 using DataStructures
@@ -845,6 +846,29 @@ function set_output_frequency(input::PeriLabInput,
             output_frequency[id]["Output Frequency"] = frequencies[id]
             output_frequency[id]["Counter"] = 0
         end
+    end
+    Data_Manager.set_output_frequency(output_frequency)
+end
+
+"""
+    set_fallback_output_frequency(input::PeriLabInput, nsteps::Int64, step_id::Int64, dt::Float64, fallback_dt::Float64)
+
+Sets the output frequencies and counters when a fallback solver with `nsteps`
+steps of `fallback_dt` takes over from steps of `dt`; see
+`InputDeck.fallback_output_frequencies`.
+"""
+function set_fallback_output_frequency(input::PeriLabInput, nsteps::Int64, step_id::Int64,
+                                       dt::Float64, fallback_dt::Float64)
+    output_frequency = Data_Manager.get_output_frequency()
+    frequencies,
+    counters = fallback_output_frequencies(input.sections.outputs, nsteps, step_id,
+                                           Int64[o["Output Frequency"]
+                                                 for o in output_frequency],
+                                           Int64[o["Counter"] for o in output_frequency],
+                                           dt, fallback_dt)
+    for id in eachindex(output_frequency)
+        output_frequency[id]["Output Frequency"] = frequencies[id]
+        output_frequency[id]["Counter"] = counters[id]
     end
     Data_Manager.set_output_frequency(output_frequency)
 end

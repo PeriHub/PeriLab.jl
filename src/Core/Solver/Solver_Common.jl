@@ -60,8 +60,9 @@ end
 
 """
 What a solver run reads and writes besides the fields: nodes, BCs, output, and
-`set_output_frequency(nsteps)`, which recomputes the output frequency when a
-fallback solver takes over.
+`fallback_output_frequency(nsteps, dt, fallback_dt)`, which sets the output
+frequencies when a fallback solver with `nsteps` steps of `fallback_dt` takes over
+from steps of `dt`.
 """
 struct SolverContext
     block_nodes::Dict{Int64,Vector{Int64}}
@@ -70,12 +71,12 @@ struct SolverContext
     result_files::Vector{Dict}
     write_results::Function
     silent::Bool
-    set_output_frequency::Function
+    fallback_output_frequency::Function
 end
 
 function SolverContext(block_nodes, bcs, outputs, result_files, write_results, silent)
     return SolverContext(block_nodes, bcs, outputs, result_files, write_results, silent,
-                         nsteps -> nothing)
+                         (nsteps, dt, fallback_dt) -> nothing)
 end
 
 "Registered name of the solver of `run`."
@@ -292,8 +293,9 @@ function time_loop(run::SolverRun, ctx::SolverContext)
         Data_Manager.set_current_time(clock.time)
         loads === nothing || (Data_Manager.get_field("External Force Densities") .= loads)
         step_time = clock.step_time
+        dt = run.time.dt
         run = Base.invokelatest(fallback_run, run, ctx, clock.time)
-        ctx.set_output_frequency(run.time.nsteps)
+        ctx.fallback_output_frequency(run.time.nsteps, dt, run.time.dt)
     end
     Data_Manager.set_current_time(final_time)
     return result_files
