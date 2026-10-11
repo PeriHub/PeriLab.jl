@@ -254,8 +254,10 @@ The run of the fallback solver of `run`, from `t_N` to the final time of `run`,
 with the models, BCs and nodes of `run`.
 """
 function fallback_run(run::SolverRun, ctx::SolverContext, t_N::Float64)
+    # the fallback ends where the solver step ends, also if the step is given by `Additional Time`
     params = with_fields(run.params; options = run.params.fallback.options,
-                         initial_time = t_N, fallback = nothing)
+                         initial_time = t_N, final_time = run.time.final_time,
+                         additional_time = nothing, fallback = nothing)
     return create_run(params, run.models, run.all_models, run.calculation, ctx.bcs,
                       ctx.block_nodes)
 end
@@ -271,9 +273,14 @@ function time_loop(run::SolverRun, ctx::SolverContext)
     atexit(() -> Data_Manager.set_cancel(true))
     final_time = run.time.final_time
     result_files = ctx.result_files
+    step_time = 0.0
+    # a solver may add up external loads in a constant field; the fallback starts from the
+    # loads of the step start, as if it had run the whole step
+    loads = Data_Manager.has_key("External Force Densities") ?
+            copy(Data_Manager.get_field("External Force Densities")) : nothing
     while true
         @info "Run $(solver_name(run)) Solver"
-        result_files, failure = run_steps(run, ctx, result_files)
+        result_files, failure = run_steps(run, ctx, result_files, step_time)
         failure === nothing && break
         clock, failed = failure
         @info "Step $(clock.idt) failed: $(failed.reason)"
@@ -283,6 +290,8 @@ function time_loop(run::SolverRun, ctx::SolverContext)
         end
         @info "Switching to $(solver_name(run.params.fallback.options)) at t = $(@sprintf("%.3e", clock.time)) s"
         Data_Manager.set_current_time(clock.time)
+        loads === nothing || (Data_Manager.get_field("External Force Densities") .= loads)
+        step_time = clock.step_time
         run = Base.invokelatest(fallback_run, run, ctx, clock.time)
         ctx.set_output_frequency(run.time.nsteps)
     end
@@ -292,22 +301,23 @@ end
 
 "Maximum NP1 damage over the active nodes (0 without active nodes)."
 function max_active_damage()
-    damage = Data_Manager.get_damage("NP1")
-    active = Data_Manager.get_field("Active")
+    damage = Data_Manager.get_damage("NP1")::Vector{Float64}
+    active = Data_Manager.get_field("Active")::Vector{Bool}
     max_damage = 0.0
-    @inbounds for i in 1:Data_Manager.get_nnodes()
+    nnodes = Data_Manager.get_nnodes()::Int64
+    @inbounds for i in 1:nnodes
         active[i] && (max_damage = max(max_damage, damage[i]))
     end
     return max_damage
 end
 
 """
-    run_steps(run, ctx, result_files)
+    run_steps(run, ctx, result_files, step_time)
 
-Steps of one run. Returns the result files and `nothing`, or
+Steps of one run, starting at `step_time` (time since the start of the solver step). Returns the result files and `nothing`, or
 `(clock, StepFailed)` of the failed step after resetting NP1.
 """
-function run_steps(run::SolverRun, ctx::SolverContext, result_files)
+function run_steps(run::SolverRun, ctx::SolverContext, result_files, step_time::Float64)
     ws = prepare_solver(run, ctx)
     name = solver_name(run)
     rank = Data_Manager.get_rank()
@@ -315,7 +325,6 @@ function run_steps(run::SolverRun, ctx::SolverContext, result_files)
     nsteps = run.time.nsteps
     dt = run.time.dt
     time = run.time.initial_time
-    step_time = 0.0
     max_damage = 0.0
     damage_init = false
     damage_models = "Damage" in run.models

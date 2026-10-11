@@ -7,7 +7,7 @@ using Test
 module UTLoopSolver
 import PeriLab
 using PeriLab.ParameterSpec: @params
-using PeriLab.InputDeck: SolverOptions, SolverParams
+using PeriLab.InputDeck: SolverOptions, SolverParams, start_time, end_time
 using PeriLab.Solver_Manager: TimeWindow, SolverRun, SolverContext, StepClock, StepFailed
 import PeriLab.Solver_Manager: prepare_solver, time_step!
 const DM = PeriLab.Data_Manager
@@ -17,21 +17,26 @@ const DM = PeriLab.Data_Manager
     fail_at::Int64 = opt("Fail At"; default = 0)
     cancel_at::Int64 = opt("Cancel At"; default = 0)
     damage_at::Int64 = opt("Damage At"; default = 0)
+    accumulate::Bool = opt("Accumulate"; default = false)
 end
 
 struct UTLoopWorkspace
     clocks::Vector{StepClock}
+    start_load::Float64
 end
 
 const WORKSPACES = UTLoopWorkspace[]
 
 function init_solver(options::UTLoopParams, params::SolverParams, models, bcs, block_nodes)
-    t0 = something(params.initial_time, 0.0)
-    return TimeWindow(t0, 1.0, (1.0 - t0) / options.steps, options.steps), nothing
+    t0 = start_time(params, DM.get_current_time())
+    t1 = end_time(params, DM.get_current_time())
+    return TimeWindow(t0, t1, (t1 - t0) / options.steps, options.steps), nothing
 end
 
 function prepare_solver(run::SolverRun{UTLoopParams}, ctx::SolverContext)
-    ws = UTLoopWorkspace(StepClock[])
+    load = DM.has_key("External Force Densities") ?
+           DM.get_field("External Force Densities")[1, 1] : 0.0
+    ws = UTLoopWorkspace(StepClock[], load)
     push!(WORKSPACES, ws)
     return ws
 end
@@ -43,6 +48,7 @@ function time_step!(ws::UTLoopWorkspace, run::SolverRun{UTLoopParams}, ctx::Solv
     DM.get_field("Displacements", "NP1") .= clock.idt
     clock.idt == o.damage_at && (DM.get_damage("NP1")[1] = 0.5)
     clock.idt == o.cancel_at && DM.set_cancel(true)
+    o.accumulate && (DM.get_field("External Force Densities") .+= 1.0)
     clock.idt == o.fail_at && return StepFailed("UT failure")
     return nothing
 end
@@ -63,10 +69,10 @@ function utl_data()
     empty!(UTLoopSolver.WORKSPACES)
 end
 
-function utl_run(solver::Dict{String,Any}; models = ["Material"], extra = Dict{String,Any}())
+function utl_run(solver::Dict{String,Any}; models = ["Material"], extra = Dict{String,Any}(),
+                 times = Dict{String,Any}("Initial Time" => 0.0, "Final Time" => 1.0))
     ctx = PeriLab.ParameterSpec.ParseContext()
-    deck = merge(Dict{String,Any}("Initial Time" => 0.0, "Final Time" => 1.0,
-                                  "UT Loop" => solver), extra)
+    deck = merge(times, Dict{String,Any}("UT Loop" => solver), extra)
     params = PeriLab.ParameterSpec.parse_section(PeriLab.InputDeck.SolverParams, deck,
                                                  "Solver", ctx)
     @test isempty(ctx.errors)
@@ -178,7 +184,7 @@ end
         first_run, fallback = UTLoopSolver.WORKSPACES
         @test length(first_run.clocks) == 3
         @test [c.time for c in fallback.clocks] ≈ [0.5, 0.75, 1.0]
-        @test fallback.clocks[1].step_time == 0.0
+        @test [c.step_time for c in fallback.clocks] ≈ [0.5, 0.75, 1.0]
         @test first.(writes) ≈ [0.0, 0.25, 0.5, 0.75, 1.0]
         @test frequencies == [2]
         @test !UTL_DM.get_cancel()
@@ -216,4 +222,41 @@ end
         @test length(UTLoopSolver.WORKSPACES) == 2
         @test !UTL_DM.get_cancel()
     end
+end
+
+@testset "the fallback ends at the end of a step given by Additional Time" begin
+    utl_with_solver() do
+        writes = Tuple{Float64,Float64}[]
+        UTL_DM.set_current_time(2.0)
+        run = utl_run(Dict{String,Any}("Fail At" => 3); extra = utl_fallback(2),
+                      times = Dict{String,Any}("Additional Time" => 1.0))
+        @test run.time.initial_time == 2.0 && run.time.final_time == 3.0
+        UTL_SM.solver(run, utl_ctx(writes))
+        @test [c.time for c in UTLoopSolver.WORKSPACES[2].clocks] ≈ [2.5, 2.75, 3.0]
+        @test UTL_DM.get_current_time() == 3.0
+    end
+end
+
+@testset "the fallback starts from the external loads of the step start" begin
+    utl_with_solver() do
+        UTL_DM.create_constant_node_vector_field("External Force Densities", Float64, 2)
+        UTL_DM.get_field("External Force Densities") .= 5.0
+        writes = Tuple{Float64,Float64}[]
+        UTL_SM.solver(utl_run(Dict{String,Any}("Fail At" => 3, "Accumulate" => true);
+                              extra = utl_fallback(2)), utl_ctx(writes))
+        @test UTLoopSolver.WORKSPACES[2].start_load == 5.0
+    end
+end
+
+@testset "max_active_damage does not allocate per node" begin
+    function damage_allocations(nnodes)
+        UTL_DM.initialize_data()
+        UTL_DM.set_num_controller(nnodes)
+        UTL_DM.set_dof(2)
+        UTL_DM.create_constant_node_scalar_field("Active", Bool; default_value = true)
+        UTL_DM.create_node_scalar_field("Damage", Float64)
+        UTL_SM.Solver_Common.max_active_damage()
+        return @allocated UTL_SM.Solver_Common.max_active_damage()
+    end
+    @test damage_allocations(3) == damage_allocations(3000)
 end
