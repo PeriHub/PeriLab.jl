@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Linear_static_matrix_based
-using ProgressBars: set_multiline_postfix, set_postfix
 using Printf
 using SparseArrays
 using LinearAlgebra
@@ -11,13 +10,14 @@ using TimerOutputs: @timeit
 
 using ...Data_Manager
 using ...PeriLabExceptions: @abort
-using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style,
+using ...Helpers: check_inf_or_nan, find_active_nodes, matrix_style,
                   create_permutation
 # using ...MPI_Communication: barrier
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof, BoundaryCondition
 using ...ParameterSpec: @params, register_solver
 using ...InputDeck: SolverParams, SolverOptions, start_time, end_time
-using ..Solver_Common: TimeWindow, SolverRun, SolverContext, synchronise_field,
+using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, StepFailed,
+                       synchronise_field,
                        compute_parabolic_problems_before_model_evaluation,
                        compute_parabolic_problems_after_model_evaluation
 
@@ -37,7 +37,7 @@ using ..Correspondence_matrix_based: init_model, init_matrix,
 using ..Model_Factory.Pre_Calculation.Bond_Deformation
 
 export init_solver
-import ..Solver_Common: run_solver
+import ..Solver_Common: prepare_solver, time_step!
 
 
 mutable struct DisplacementSolverCache
@@ -156,236 +156,251 @@ end
 
 #     return filtered
 # end
-function run_solver(run::SolverRun{LinearStaticMatrixParams}, ctx::SolverContext)
+"""
+    LinearStaticWorkspace
+
+Fields, stiffness matrix and solver cache of the linear static solver; `K`,
+`active_nodes` and `all_nodes_active` follow the active nodes from step to step.
+"""
+mutable struct LinearStaticWorkspace
+    volume::Vector{Float64}
+    coor::Matrix{Float64}
+    external_forces::Matrix{Float64}
+    external_force_densities::Matrix{Float64}
+    nodes::Vector{Int64}
+    dof::Int64
+    nnodes::Int64
+    delta_u::Matrix{Float64}
+    matrix_update::Bool
+    active_nodes::AbstractVector{Int64}
+    K::AbstractMatrix{Float64}
+    displacement_solver_cache::DisplacementSolverCache
+    all_nodes_active::Bool
+    non_BCs_global::Vector{Int64}
+end
+
+"""
+    prepare_solver(run::SolverRun{LinearStaticMatrixParams}, ctx::SolverContext)
+
+Fetches the fields, the stiffness matrix and the active nodes.
+"""
+function prepare_solver(run::SolverRun{LinearStaticMatrixParams}, ctx::SolverContext)
+    material = "Material" in run.models
+    nnodes = Data_Manager.get_nnodes()
+    dof = Data_Manager.get_dof()
+    nodes::Vector{Int64} = collect(1:nnodes)
+    active_nodes = Data_Manager.get_field("Active Nodes")
+    active_list = Data_Manager.get_field("Active")
+    active_nodes = find_active_nodes(active_list, active_nodes, nodes)
+    @info "Static time increment: $(run.time.dt)"
+    return LinearStaticWorkspace(Data_Manager.get_field("Volume"),
+                                 Data_Manager.get_field("Coordinates"),
+                                 material ? Data_Manager.get_field("External Forces") :
+                                 zeros(0, 0),
+                                 material ?
+                                 Data_Manager.get_field("External Force Densities") :
+                                 zeros(0, 0),
+                                 nodes, dof, nnodes,
+                                 Data_Manager.get_field("Delta Displacements"),
+                                 run.params.options.matrix_update,
+                                 active_nodes,
+                                 Data_Manager.get_stiffness_matrix(),
+                                 DisplacementSolverCache(nnodes * dof),
+                                 length(active_nodes) == nnodes,
+                                 convert(Vector{Int64}, Data_Manager.get_bc_free_dof()))
+end
+
+"""
+    time_step!(ws::LinearStaticWorkspace, run::SolverRun{LinearStaticMatrixParams}, ctx::SolverContext, clock::StepClock)
+
+One linear static step with the stiffness matrix; the matrix is rebuilt for the
+active nodes when nodes become inactive. Returns `StepFailed` when the step
+initiates damage, because the matrix does not follow damage.
+"""
+function time_step!(ws::LinearStaticWorkspace, run::SolverRun{LinearStaticMatrixParams},
+                    ctx::SolverContext, clock::StepClock)
     block_nodes = ctx.block_nodes
     bcs = ctx.bcs
-    outputs = ctx.outputs
-    result_files = ctx.result_files
-    write_results = ctx.write_results
-    silent = ctx.silent
-    atexit(() -> Data_Manager.set_cancel(true))
+    time = clock.time
+    step_time = clock.step_time
+    dt = clock.dt
+    volume = ws.volume
+    coor = ws.coor
+    external_forces = ws.external_forces
+    external_force_densities = ws.external_force_densities
+    nodes = ws.nodes
+    dof = ws.dof
+    nnodes = ws.nnodes
+    delta_u = ws.delta_u
+    matrix_update = ws.matrix_update
+    active_nodes = ws.active_nodes
+    K = ws.K
+    displacement_solver_cache = ws.displacement_solver_cache
+    all_nodes_active = ws.all_nodes_active
+    non_BCs_global = ws.non_BCs_global
+    uN::NodeVectorField{Float64} = Data_Manager.get_field("Displacements", "N")
+    uNP1::NodeVectorField{Float64} = Data_Manager.get_field("Displacements", "NP1")
+    velocities::NodeVectorField{Float64} = Data_Manager.get_field("Velocity", "NP1")
+    deformed_coorN::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
+                                                                      "N")
+    deformed_coorNP1::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
+                                                                        "NP1")
 
-    @info "Run Linear Static Solver"
-    max_damage::Float64 = 0
-    volume = Data_Manager.get_field("Volume")
-    coor = Data_Manager.get_field("Coordinates")
-    bond_force = Data_Manager.get_field("Bond Forces")
-    comm = Data_Manager.get_comm()
+    forces::NodeVectorField{Float64} = Data_Manager.get_field("Forces", "NP1")
+    force_densities_N::NodeVectorField{Float64} = Data_Manager.get_field("Force Densities",
+                                                                         "N")
+    force_densities_NP1::NodeVectorField{Float64} = Data_Manager.get_field("Force Densities",
+                                                                           "NP1")
 
-    if "Material" in run.models
-        external_forces = Data_Manager.get_field("External Forces")
-        external_force_densities = Data_Manager.get_field("External Force Densities")
-    end
+    deformed_coorNP1 .= coor
 
-    dt::Float64 = run.time.dt
-    nsteps::Int64 = run.time.nsteps
-    time::Float64 = run.time.initial_time
-    final_time::Float64 = run.time.final_time
-    step_time::Float64 = 0
-    rank = Data_Manager.get_rank()
-    iter = progress_bar(rank, nsteps, silent)
-    nodes::Vector{Int64} = collect(1:Data_Manager.get_nnodes())
-    dof = Data_Manager.get_dof()
-    nnodes = Data_Manager.get_nnodes()
+    compute_parabolic_problems_before_model_evaluation(active_nodes, run)
+    apply_bc_dirichlet([
+                           "Displacements",
+                           "Forces",
+                           "Force Densities",
+                           "Temperature"
+                       ],
+                       bcs,
+                       time,
+                       step_time)
 
-    delta_u = Data_Manager.get_field("Delta Displacements")
+    @. external_force_densities += external_forces / volume
 
-    matrix_update::Bool = run.params.options.matrix_update
+    @timeit "compute_models" compute_stiff_matrix_compatible_models(block_nodes,
+                                                                    dt,
+                                                                    time,
+                                                                    run.models,
+                                                                    synchronise_field)
 
     active_nodes = Data_Manager.get_field("Active Nodes")
     active_list = Data_Manager.get_field("Active")
-
     active_nodes = find_active_nodes(active_list, active_nodes, nodes)
-    K = Data_Manager.get_stiffness_matrix()
 
-    displacement_solver_cache = DisplacementSolverCache(nnodes * dof)
+    # Test current status
+    current_all_active = length(active_nodes) == nnodes
 
-    # Determine if all nodes are active
-    all_nodes_active = length(active_nodes) == nnodes
+    if !current_all_active
+        @timeit "rebuild matrix (partial active)" begin
+            compute_matrix(active_nodes)
+            K = Data_Manager.get_stiffness_matrix()
+        end
 
-    non_BCs_global = Data_Manager.get_bc_free_dof()
-    @info "Static time increment: $dt"
-    for idt in iter
-        Data_Manager.set_iteration(idt)
-        @timeit "Linear Static" begin
-            uN::NodeVectorField{Float64} = Data_Manager.get_field("Displacements", "N")
-            uNP1::NodeVectorField{Float64} = Data_Manager.get_field("Displacements", "NP1")
-            velocities::NodeVectorField{Float64} = Data_Manager.get_field("Velocity", "NP1")
-            deformed_coorN::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
-                                                                              "N")
-            deformed_coorNP1::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
-                                                                                "NP1")
+        # Build global DOF indices for active nodes
+        # Using block-style indexing: global_idx = (d - 1) * nnodes + node
+        active_dofs_global = Vector{Int}(undef, length(active_nodes) * dof)
+        idx = 1
+        for d in 1:dof
+            for node in active_nodes
+                active_dofs_global[idx] = (d - 1) * nnodes + node
+                idx += 1
+            end
+        end
+        sort!(active_dofs_global)
 
-            forces::NodeVectorField{Float64} = Data_Manager.get_field("Forces", "NP1")
-            force_densities_N::NodeVectorField{Float64} = Data_Manager.get_field("Force Densities",
-                                                                                 "N")
-            force_densities_NP1::NodeVectorField{Float64} = Data_Manager.get_field("Force Densities",
-                                                                                   "NP1")
+        # Filter non_BCs to active DOFs
+        active_non_BCs_global = intersect(non_BCs_global, active_dofs_global)
 
-            deformed_coorNP1 .= coor
+        @timeit "compute_displacements (partial)" begin
+            if length(active_non_BCs_global) > 0
+                # Create views to active node data in matrix form
+                u_active_nodes = @view uNP1[active_nodes, :]
+                F_int_active_nodes = @view force_densities_NP1[active_nodes, :]
+                F_ext_active_nodes = @view external_force_densities[active_nodes, :]
 
-            compute_parabolic_problems_before_model_evaluation(active_nodes, run)
-            apply_bc_dirichlet([
-                                   "Displacements",
-                                   "Forces",
-                                   "Force Densities",
-                                   "Temperature"
-                               ],
-                               bcs,
-                               time,
-                               step_time)
-
-            @. external_force_densities += external_forces / volume
-
-            @timeit "compute_models" compute_stiff_matrix_compatible_models(block_nodes,
-                                                                            dt,
-                                                                            time,
-                                                                            run.models,
-                                                                            synchronise_field)
-
-            active_nodes = Data_Manager.get_field("Active Nodes")
-            active_list = Data_Manager.get_field("Active")
-            active_nodes = find_active_nodes(active_list, active_nodes, nodes)
-
-            # Test current status
-            current_all_active = length(active_nodes) == nnodes
-
-            if !current_all_active
-                @timeit "rebuild matrix (partial active)" begin
-                    compute_matrix(active_nodes)
-                    K = Data_Manager.get_stiffness_matrix()
+                # Build mapping from global to active indices
+                global_to_active = Dict{Int,Int}()
+                sizehint!(global_to_active, length(active_dofs_global))
+                for (active_idx, global_idx) in enumerate(active_dofs_global)
+                    global_to_active[global_idx] = active_idx
                 end
 
-                # Build global DOF indices for active nodes
-                # Using block-style indexing: global_idx = (d - 1) * nnodes + node
-                active_dofs_global = Vector{Int}(undef, length(active_nodes) * dof)
-                idx = 1
+                # Map BC indices to active system
+                active_non_BCs_local = Vector{Int}(undef,
+                                                   length(active_non_BCs_global))
+                @inbounds for (i, g) in enumerate(active_non_BCs_global)
+                    active_non_BCs_local[i] = global_to_active[g]
+                end
+
+                # Extract submatrix for active DOFs
+                K_active = K[active_dofs_global, active_dofs_global]
+
+                # Solve system using same structure as reference
+                # but with mapping for active nodes
+                compute_displacements_active_subset!(-K_active,
+                                                     active_dofs_global,
+                                                     active_non_BCs_local,
+                                                     u_active_nodes,
+                                                     F_int_active_nodes,
+                                                     F_ext_active_nodes,
+                                                     volume[active_nodes],
+                                                     active_nodes,
+                                                     nnodes,
+                                                     dof,
+                                                     displacement_solver_cache)
+            end
+
+            # Update forces for active nodes
+            @inbounds for iID in active_nodes
                 for d in 1:dof
-                    for node in active_nodes
-                        active_dofs_global[idx] = (d - 1) * nnodes + node
-                        idx += 1
-                    end
-                end
-                sort!(active_dofs_global)
-
-                # Filter non_BCs to active DOFs
-                active_non_BCs_global = intersect(non_BCs_global, active_dofs_global)
-
-                @timeit "compute_displacements (partial)" begin
-                    if length(active_non_BCs_global) > 0
-                        # Create views to active node data in matrix form
-                        u_active_nodes = @view uNP1[active_nodes, :]
-                        F_int_active_nodes = @view force_densities_NP1[active_nodes, :]
-                        F_ext_active_nodes = @view external_force_densities[active_nodes, :]
-
-                        # Build mapping from global to active indices
-                        global_to_active = Dict{Int,Int}()
-                        sizehint!(global_to_active, length(active_dofs_global))
-                        for (active_idx, global_idx) in enumerate(active_dofs_global)
-                            global_to_active[global_idx] = active_idx
-                        end
-
-                        # Map BC indices to active system
-                        active_non_BCs_local = Vector{Int}(undef,
-                                                           length(active_non_BCs_global))
-                        @inbounds for (i, g) in enumerate(active_non_BCs_global)
-                            active_non_BCs_local[i] = global_to_active[g]
-                        end
-
-                        # Extract submatrix for active DOFs
-                        K_active = K[active_dofs_global, active_dofs_global]
-
-                        # Solve system using same structure as reference
-                        # but with mapping for active nodes
-                        compute_displacements_active_subset!(-K_active,
-                                                             active_dofs_global,
-                                                             active_non_BCs_local,
-                                                             u_active_nodes,
-                                                             F_int_active_nodes,
-                                                             F_ext_active_nodes,
-                                                             volume[active_nodes],
-                                                             active_nodes,
-                                                             nnodes,
-                                                             dof,
-                                                             displacement_solver_cache)
-                    end
-
-                    # Update forces for active nodes
-                    @inbounds for iID in active_nodes
-                        for d in 1:dof
-                            forces[iID, d] = force_densities_NP1[iID, d] * volume[iID]
-                        end
-                    end
-                end
-
-            else
-                # All nodes are active
-                if matrix_update
-                    @timeit "update matrix (all active)" begin
-                        compute_matrix(active_nodes)
-                        K = Data_Manager.get_stiffness_matrix()
-                    end
-                end
-
-                all_dofs = collect(1:(nnodes * dof))
-
-                @timeit "compute_displacements (all active)" begin
-                    @views compute_displacements!(-K,
-                                                  all_dofs,
-                                                  non_BCs_global,
-                                                  uNP1,
-                                                  force_densities_NP1,
-                                                  external_force_densities,
-                                                  displacement_solver_cache)
-
-                    # Update forces for all nodes
-                    @inbounds for iID in nodes
-                        for d in 1:dof
-                            forces[iID, d] += force_densities_NP1[iID, d] .* volume[iID]
-                        end
-                    end
+                    forces[iID, d] = force_densities_NP1[iID, d] * volume[iID]
                 end
             end
-            deformed_coor = Data_Manager.get_field("Deformed Coordinates", "NP1")
-            @. deformed_coor = coor + uNP1
-            compute_matrix_based_bond_forces(block_nodes, time, dt)
+        end
 
-            all_nodes_active = current_all_active
-
-            active_nodes = Data_Manager.get_field("Active Nodes")
-            active_list = Data_Manager.get_field("Active")
-            active_nodes = find_active_nodes(active_list, active_nodes, 1:nnodes)
-
-            compute_parabolic_problems_after_model_evaluation(active_nodes, run, dt)
-
-            @. velocities = (uNP1 - uN) / dt
-
-            @timeit "write_results" result_files=write_results(result_files, time,
-                                                               max_damage, outputs)
-
-            if rank == 0 && !silent && Data_Manager.get_cancel()
-                set_multiline_postfix(iter, "Simulation canceled!")
-                break
+    else
+        # All nodes are active
+        if matrix_update
+            @timeit "update matrix (all active)" begin
+                compute_matrix(active_nodes)
+                K = Data_Manager.get_stiffness_matrix()
             end
+        end
 
-            @timeit "switch_NP1_to_N" Data_Manager.switch_NP1_to_N()
+        all_dofs = collect(1:(nnodes * dof))
 
-            time += dt
-            step_time += dt
-            Data_Manager.set_current_time(time)
+        @timeit "compute_displacements (all active)" begin
+            @views compute_displacements!(-K,
+                                          all_dofs,
+                                          non_BCs_global,
+                                          uNP1,
+                                          force_densities_NP1,
+                                          external_force_densities,
+                                          displacement_solver_cache)
 
-            if idt % ceil(nsteps / 100) == 0 || idt == 1 || idt == nsteps + 1
-                @info "Step: $idt / $(nsteps) [$(@sprintf("%.3e", time)) s]"
+            # Update forces for all nodes
+            @inbounds for iID in nodes
+                for d in 1:dof
+                    forces[iID, d] += force_densities_NP1[iID, d] .* volume[iID]
+                end
             end
-            if rank == 0 && !silent
-                set_postfix(iter, t = @sprintf("%.3e", time))
-            end
-
-            # barrier(comm)
         end
     end
-    Data_Manager.set_current_time(final_time)
-    return result_files
+    deformed_coor = Data_Manager.get_field("Deformed Coordinates", "NP1")
+    @. deformed_coor = coor + uNP1
+    compute_matrix_based_bond_forces(block_nodes, time, dt)
+
+    all_nodes_active = current_all_active
+
+    active_nodes = Data_Manager.get_field("Active Nodes")
+    active_list = Data_Manager.get_field("Active")
+    active_nodes = find_active_nodes(active_list, active_nodes, 1:nnodes)
+
+    compute_parabolic_problems_after_model_evaluation(active_nodes, run, dt)
+
+    @. velocities = (uNP1 - uN) / dt
+    ws.K = K
+    ws.active_nodes = active_nodes
+    ws.all_nodes_active = all_nodes_active
+    if "Damage" in run.models
+        damageN = Data_Manager.get_damage("N")
+        damageNP1 = Data_Manager.get_damage("NP1")
+        for i in active_nodes
+            damageNP1[i] > damageN[i] &&
+                return StepFailed("damage initiated; the stiffness matrix does not follow damage")
+        end
+    end
+    return nothing
 end
 
 function compute_displacements_active_subset!(K_active::AbstractMatrix{Float64},
