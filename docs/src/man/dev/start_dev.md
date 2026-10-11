@@ -150,6 +150,10 @@ You can add as many functions as you want. You can also create files and include
 
 [Thermal](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Thermal/Thermal_template/thermal_template.jl)
 
+#### Solver template
+
+[Solver](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Core/Solver/Solver_template/solver_template.jl)
+
 #### Mesh based templates
 
 [Bond Filter](https://github.com/PeriHub/PeriLab.jl/blob/main/src/IO/Bond_Filter/filter_template.jl)

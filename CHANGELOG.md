@@ -35,6 +35,9 @@ All notable changes to this project will be documented in this file.
 - Values with a fixed set of choices are compared exactly, including upper and lower case: `Output File Type` must be `Exodus` or `CSV`, a boundary condition `Type` `Initial`, `Dirichlet` or `Neumann` (an unknown BC type became `Dirichlet` before)
 - Mesh importers (`read_mesh(input::PeriLabInput, filename)`) and bond filters (`run(..., filter::BondFilterParams, ...)`) get the typed input; own importers and filters with the old `Dict` signature fail with a `MethodError` and have to be ported
 - `Data_Manager.initialize_data()` removes all fields, so a field of an earlier run in the same Julia session is no longer found
+- Solvers register their options with `register_solver(name, Params)` in `__init__()`, like the models; `solver_name()` in solver modules is removed. A new `one_of` field kind selects the solver section, so the registered solvers appear in the schema, `describe` and the input reference
+- Solver modules implement `init_solver(options, params, models, bcs, block_nodes)` (returns a `TimeWindow` and the solver state) and `run_solver(run::SolverRun, ctx::SolverContext)`; the `solver_options` dict and the 10-argument `run_solver` are removed. `Solver_Manager.init` returns a `SolverRun`, `Model_Factory.init_models` and `calculate_stresses` take the active models and `CalculationOptions`
+- An empty solver section (`Verlet:` without keys) uses the solver's defaults
 
 ## [2.2.5] - 2026-09-21
 

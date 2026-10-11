@@ -177,3 +177,20 @@ end
               all(T -> Float64 <: T, compute[5:6])
     end
 end
+
+@testset "solver template" begin
+    ST = PeriLab.Solver_Manager.Solver_template
+    @test !("Solver Template" in PeriLab.ParameterSpec.registered_names(:solver))
+    PeriLab.Data_Manager.initialize_data()
+    ctx = PeriLab.ParameterSpec.ParseContext()
+    params = PeriLab.ParameterSpec.parse_section(PeriLab.InputDeck.SolverParams,
+                                                 Dict{String,Any}("Initial Time" => 0.0,
+                                                                  "Final Time" => 2.0,
+                                                                  "Number of Steps" => 4,
+                                                                  "Verlet" => Dict{String,Any}()),
+                                                 "Solver", ctx)
+    time, state = ST.init_solver(ST.SolverTemplateParams(1.0, -1.0, 0.0), params,
+                                 ["Material"], Dict{String,Any}(), Dict{Int64,Vector{Int64}}())
+    @test time == PeriLab.Solver_Manager.TimeWindow(0.0, 2.0, 0.5, 4)
+    @test state === nothing
+end

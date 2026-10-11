@@ -23,6 +23,26 @@ A docstring above a field is its description (the same as
 
 See the templates under `src/Models/*/…_template` for every category.
 
+A solver is registered the same way. Its options struct is a subtype of
+`SolverOptions`, and the input deck names the solver by its key inside
+`Solver` (or a `Multistep Solver` step):
+
+    @params struct MySolverParams <: SolverOptions
+        safety_factor::Float64 = opt("Safety Factor"; default = 1.0, min = 0)
+    end
+    __init__() = register_solver("My Solver", MySolverParams)
+
+The solver module defines `init_solver(options, params, models, bcs, block_nodes)`,
+which returns a `TimeWindow` and the solver's state, and
+`run_solver(run::SolverRun{MySolverParams}, ctx::SolverContext)`; see
+`src/Core/Solver/Solver_template/solver_template.jl`.
+
+`SolverParams` selects the solver with a `one_of` field:
+`options::SolverOptions = one_of(:solver)` holds exactly one sub-section whose
+key is a registered solver name. Errors for a missing, a second or a misspelled
+solver come from `one_of`; schema, `describe` and the generated pages list the
+registered solvers.
+
 The [input reference](../../generated/input_sections.md) lists every section and model with its
 keys; it is generated from the declarations (`PeriLab.generate_parameter_docs`). In a
 Julia session, `PeriLab.describe("Correspondence Plastic")` prints the keys of one
