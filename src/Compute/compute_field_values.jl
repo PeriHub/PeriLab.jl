@@ -115,34 +115,34 @@ function calculate_strain(nodes::AbstractVector{Int64},
 end
 
 """
-    calculate_stresses(block_nodes::Dict{Int64,Vector{Int64}}, options::Dict{String, Any})
+    calculate_stresses(block_nodes::Dict{Int64,Vector{Int64}}, options::CalculationOptions)
 
 Computes the stresses.
 
 # Arguments
 - `block_nodes::Dict{Int64,Vector{Int64}}`: List of block nodes.
-- `options::Dict{String, Any}`: List of options.
+- `options::CalculationOptions`: Which stress and strain fields to compute.
 """
 function calculate_stresses(block_nodes::Dict{Int64,Vector{Int64}},
-                            options::Dict{String,Any})
+                            options::CalculationOptions)
     active_list = Data_Manager.get_field("Active")
     for block in eachindex(block_nodes)
         material = Data_Manager.get_block_models(block).material
         correspondence = material.correspondence
 
-        if options["Calculate Cauchy"] |
-           options["Calculate von Mises stress"] |
-           options["Calculate Strain"] | correspondence
+        if options.cauchy |
+           options.von_mises |
+           options.strain | correspondence
             active_nodes = Data_Manager.get_field("Active Nodes")
             active_nodes = find_active_nodes(active_list, active_nodes, block_nodes[block])
             if !correspondence
                 get_partial_stresses(active_nodes)
             end
         end
-        if options["Calculate von Mises stress"] #| correspondence
+        if options.von_mises #| correspondence
             calculate_von_mises_stress(active_nodes)
         end
-        if options["Calculate Strain"] && !correspondence
+        if options.strain && !correspondence
             hookeMatrix = hooke_matrix(material, Data_Manager.get_dof())
             calculate_strain(active_nodes,
                              invert(hookeMatrix))

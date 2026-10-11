@@ -93,6 +93,9 @@ MPI.Init()
                 @testset "ut_Verlet" begin
                     include("unit_tests/Core/Solver/ut_Verlet.jl")
                 end
+                @testset "ut_solver_plugin" begin
+                    include("unit_tests/Core/Solver/ut_solver_plugin.jl")
+                end
             end
             @testset "Module_inclusion" begin
                 include("unit_tests/Core/Module_inclusion/ut_set_Modules.jl")

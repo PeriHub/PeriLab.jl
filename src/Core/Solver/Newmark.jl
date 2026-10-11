@@ -15,6 +15,9 @@ using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_
 using ...ParameterSpec: @params, register_solver, ParseContext, add_error!
 import ...ParameterSpec: check!
 using ...InputDeck: SolverParams, SolverOptions, start_time, end_time
+using ..Solver_Common: TimeWindow, SolverRun, SolverContext, synchronise_field,
+                       compute_parabolic_problems_before_model_evaluation,
+                       compute_parabolic_problems_after_model_evaluation
 
 @params struct NewmarkParams <: SolverOptions
     safety_factor::Float64 = opt("Safety Factor"; default = 1.0, min = 0)
@@ -69,15 +72,17 @@ end
 # Init
 # ────────────────────────────────────────────────────────────
 """
-    init_solver(solver_options, params, bcs, block_nodes)
+    init_solver(options::NewmarkParams, params, models, bcs, block_nodes)
 
-Initialise Newmark-beta solver.
+Initialise Newmark-beta solver. Returns the `TimeWindow` and the state
+`(alpha = …, beta = …)`.
 
 Default: average acceleration (beta=0.5,alpha=0.25, unconditionally stable) taken from Bathe page 512.
 With numerical damping alpha: beta >= 0.5 ,alpha >= 0.25*(0.5+beta)^2
 """
-function init_solver(solver_options::Dict{Any,Any},
+function init_solver(options::NewmarkParams,
                      params::SolverParams,
+                     models::Vector{String},
                      bcs::Dict{String,BoundaryCondition},
                      block_nodes::Dict{Int64,Vector{Int64}})
     find_bc_free_dof(bcs)
@@ -85,16 +90,13 @@ function init_solver(solver_options::Dict{Any,Any},
     Data_Manager.create_constant_node_vector_field("Delta Displacements", Float64,
                                                    Data_Manager.get_dof())
 
-    solver_options["Initial Time"] = start_time(params, Data_Manager.get_current_time())
-    solver_options["Final Time"] = end_time(params, Data_Manager.get_current_time())
-    solver_options["Number of Steps"] = something(params.number_of_steps, 1)
-    solver_options["dt"] = (solver_options["Final Time"] - solver_options["Initial Time"]) /
-                           solver_options["Number of Steps"]
+    initial_time = start_time(params, Data_Manager.get_current_time())
+    final_time = end_time(params, Data_Manager.get_current_time())
+    nsteps = something(params.number_of_steps, 1)
+    dt = (final_time - initial_time) / nsteps
 
-    solver_options["Newmark Beta"] = params.options.newmark_delta # name is delta because of beta. Internally it is beta.
-    solver_options["Newmark Alpha"] = something(params.options.newmark_alpha,
-                                                0.25 * (0.5 + solver_options["Newmark Beta"])^2)
-    solver_options["Matrix Update"] = params.options.matrix_update
+    beta = options.newmark_delta # name is delta because of beta. Internally it is beta.
+    alpha = something(options.newmark_alpha, 0.25 * (0.5 + beta)^2)
 
     for (block, nodes) in pairs(block_nodes)
         init_model(nodes, Data_Manager.get_block_models(block).material, block)
@@ -108,17 +110,14 @@ function init_solver(solver_options::Dict{Any,Any},
     coor = Data_Manager.get_field("Coordinates")
     Data_Manager.get_field("Deformed Coordinates", "N") .= coor
     Data_Manager.get_field("Deformed Coordinates", "NP1") .= coor
-
+    return TimeWindow(initial_time, final_time, dt, nsteps), (alpha = alpha, beta = beta)
 end
 
 # ────────────────────────────────────────────────────────────
 # Run
 # ────────────────────────────────────────────────────────────
 """
-    run_solver(solver_options, block_nodes, bcs, outputs, result_files,
-               synchronise_field, write_results,
-               compute_parabolic_problems_before_model_evaluation,
-               compute_parabolic_problems_after_model_evaluation, silent)
+    run_solver(run::SolverRun{NewmarkParams}, ctx::SolverContext)
 
 Run the Newmark-beta implicit time integration for structural dynamics.
 
@@ -150,7 +149,7 @@ followed by the acceleration and velocity updates
 
 ``v_{n+1} = v_n + \\Delta t\\,(1-\\gamma)\\, a_n + \\gamma\\,\\Delta t\\, a_{n+1}``
 
-# Parameters (set in `solver_options`)
+# Parameters (`run.params.options` and `run.state`)
 
 | Parameter        | Default                | Description                          |
 |:-----------------|:-----------------------|:-------------------------------------|
@@ -168,16 +167,8 @@ stable, second-order accurate, and energy-conserving.
 Lumped diagonal mass: ``M_i = \\rho_i\\, V_i``.
 
 # Arguments
-- `solver_options::Dict{Any,Any}`:  solver configuration (dt, nsteps, beta,gamma, …)
-- `block_nodes::Dict{Int64,Vector{Int64}}`:  block → node mapping
-- `bcs::Dict{String,BoundaryCondition}`:  boundary conditions (Dirichlet / Neumann)
-- `outputs::Dict{Int64,Dict{}}`:  output configuration per block
-- `result_files::Vector{Dict}`:  file handles for result output
-- `synchronise_field::Function`:  MPI field synchronisation callback
-- `write_results::Function`:  result writer callback
-- `compute_parabolic_problems_before_model_evaluation::Function`:  thermal pre-step
-- `compute_parabolic_problems_after_model_evaluation::Function`:  thermal post-step
-- `silent::Bool`:  suppress progress bar
+- `run::SolverRun{NewmarkParams}`:  the solver step (time discretization, models, alpha and beta in `run.state`)
+- `ctx::SolverContext`:  block nodes, boundary conditions, outputs, result files, result writer, silent flag
 
 # Returns
 - `result_files::Vector{Dict}`:  updated result file handles
@@ -188,16 +179,13 @@ Lumped diagonal mass: ``M_i = \\rho_i\\, V_i``.
 - Hughes, T. J. R. (2000). *The Finite Element Method*, §9.1–9.3.
 """
 
-function run_solver(solver_options::Dict{Any,Any},
-                    block_nodes::Dict{Int64,Vector{Int64}},
-                    bcs::Dict{String,BoundaryCondition},
-                    outputs::Dict{Int64,Dict{}},
-                    result_files::Vector{Dict},
-                    synchronise_field::Function,
-                    write_results::Function,
-                    compute_parabolic_problems_before_model_evaluation::Function,
-                    compute_parabolic_problems_after_model_evaluation::Function,
-                    silent::Bool)
+function run_solver(run::SolverRun{NewmarkParams}, ctx::SolverContext)
+    block_nodes = ctx.block_nodes
+    bcs = ctx.bcs
+    outputs = ctx.outputs
+    result_files = ctx.result_files
+    write_results = ctx.write_results
+    silent = ctx.silent
     atexit(() -> Data_Manager.set_cancel(true))
     @info "Run Newmark-beta Solver"
 
@@ -206,13 +194,13 @@ function run_solver(solver_options::Dict{Any,Any},
     external_forces = Data_Manager.get_field("External Forces")
     external_force_densities = Data_Manager.get_field("External Force Densities")
 
-    dt::Float64 = solver_options["dt"]
-    nsteps::Int64 = solver_options["Number of Steps"]
-    beta::Float64 = solver_options["Newmark Beta"]
-    alpha::Float64 = solver_options["Newmark Alpha"]
-    matrix_update = solver_options["Matrix Update"]
-    time::Float64 = solver_options["Initial Time"]
-    final_time::Float64 = solver_options["Final Time"]
+    dt::Float64 = run.time.dt
+    nsteps::Int64 = run.time.nsteps
+    beta::Float64 = run.state.beta
+    alpha::Float64 = run.state.alpha
+    matrix_update = run.params.options.matrix_update
+    time::Float64 = run.time.initial_time
+    final_time::Float64 = run.time.final_time
     step_time = 0.0
 
     rank = Data_Manager.get_rank()
@@ -259,7 +247,7 @@ function run_solver(solver_options::Dict{Any,Any},
 
             deformed_coorNP1 .= coor
 
-            compute_parabolic_problems_before_model_evaluation(active_nodes, solver_options)
+            compute_parabolic_problems_before_model_evaluation(active_nodes, run)
             apply_bc_dirichlet([
                                    "Displacements",
                                    "Forces",
@@ -272,7 +260,7 @@ function run_solver(solver_options::Dict{Any,Any},
             compute_matrix_based_bond_forces(block_nodes, time, dt) #-> für schädigung davor
             @timeit "compute_models" compute_stiff_matrix_compatible_models(block_nodes,
                                                                             dt, time,
-                                                                            solver_options["Models"],
+                                                                            run.models,
                                                                             synchronise_field)
             # Stiffness
             if matrix_update
@@ -299,8 +287,7 @@ function run_solver(solver_options::Dict{Any,Any},
             active_nodes = Data_Manager.get_field("Active Nodes")
             active_list = Data_Manager.get_field("Active")
             active_nodes = find_active_nodes(active_list, active_nodes, nodes)
-            compute_parabolic_problems_after_model_evaluation(active_nodes, solver_options,
-                                                              dt)
+            compute_parabolic_problems_after_model_evaluation(active_nodes, run, dt)
 
             @timeit "write_results" result_files=write_results(result_files, time, 0.0,
                                                                outputs)

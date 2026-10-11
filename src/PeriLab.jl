@@ -432,18 +432,18 @@ function run(filename::String;
                 @timeit "IO.init orientations" IO.init_orientations(input.sections.blocks)
                 @timeit "Solver_Manager.init" block_nodes,
                                               bcs,
-                                              solver_options=Solver_Manager.init(input,
-                                                                                 step_id)
-                if Data_Manager.get_current_time() >= solver_options["Final Time"]
+                                              solver_run=Solver_Manager.init(input,
+                                                                             step_id)
+                if Data_Manager.get_current_time() >= solver_run.time.final_time
                     @info "Step " * string(step_id) * " skipped."
                     continue
                 end
-                if Data_Manager.get_current_time() < solver_options["Initial Time"]
+                if Data_Manager.get_current_time() < solver_run.time.initial_time
                     @info "Initial time not reached. Skipping step " * string(step_id)
                     continue
                 end
 
-                IO.show_block_summary(solver_options,
+                IO.show_block_summary(solver_run.models,
                                       input.sections.blocks,
                                       Logging_Module.get_log_file(),
                                       silent,
@@ -452,7 +452,7 @@ function run(filename::String;
                                     silent,
                                     comm)
                 @debug "Init write results"
-                reuse = solver_options["Initial Time"] != 0.0
+                reuse = solver_run.time.initial_time != 0.0
                 if step_id <= 1
                     @timeit "IO.init_write_results" result_files,
                                                     outputs=IO.init_write_results(input,
@@ -463,24 +463,22 @@ function run(filename::String;
                                                                                   reuse)
                 end
                 IO.set_output_frequency(input,
-                                        solver_options["Number of Steps"],
+                                        solver_run.time.nsteps,
                                         step_id, reuse)
                 if verbose
                     fields = Data_Manager.get_all_field_keys()
                     @info "Found " * string(length(fields)) * " Fields"
                     @info sort(fields)
                 end
+                solver_context = Solver_Manager.SolverContext(block_nodes, bcs, outputs,
+                                                              result_files, IO.write_results,
+                                                              silent)
                 if dry_run
-                    nsteps = solver_options["Number of Steps"]
-                    solver_options["Number of Steps"] = 10
+                    nsteps = solver_run.time.nsteps
                     elapsed_time = @elapsed begin
-                        @timeit "Solver" result_files=Solver_Manager.solver(solver_options,
-                                                                            block_nodes,
-                                                                            bcs,
-                                                                            outputs,
-                                                                            result_files,
-                                                                            IO.write_results,
-                                                                            silent)
+                        @timeit "Solver" result_files=Solver_Manager.solver(Solver_Manager.with_steps(solver_run,
+                                                                                                      10),
+                                                                            solver_context)
                     end
 
                     @info "Estimated runtime: " *
@@ -492,13 +490,8 @@ function run(filename::String;
                           " [b]"
 
                 else
-                    @timeit "Solver_Manager.solver" result_files=Solver_Manager.solver(solver_options,
-                                                                                       block_nodes,
-                                                                                       bcs,
-                                                                                       outputs,
-                                                                                       result_files,
-                                                                                       IO.write_results,
-                                                                                       silent)
+                    @timeit "Solver_Manager.solver" result_files=Solver_Manager.solver(solver_run,
+                                                                                       solver_context)
                 end
                 if reload
                     @info "Writing checkpoint"

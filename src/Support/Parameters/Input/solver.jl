@@ -87,3 +87,21 @@ function model_options(s::SolverParams)
                                  ("Degradation", s.degradation_models),
                                  ("Material", s.material_models)) if used]
 end
+
+"Which stress and strain fields the models compute."
+struct CalculationOptions
+    cauchy::Bool
+    von_mises::Bool
+    strain::Bool
+end
+
+function calculation_options(s::SolverParams)
+    return CalculationOptions(s.calculate_cauchy, s.calculate_von_mises_stress,
+                              s.calculate_strain)
+end
+
+"Merges the options of several solver steps: a field is computed if any step asks for it."
+function Base.:|(a::CalculationOptions, b::CalculationOptions)
+    return CalculationOptions(a.cauchy | b.cauchy, a.von_mises | b.von_mises,
+                              a.strain | b.strain)
+end

@@ -10,7 +10,7 @@ using ...PeriLabExceptions: @abort
 using ...Helpers:
                   check_inf_or_nan, find_active_nodes, invert,
                   determinant, matrix_style, eigvals, get_update_nodes
-using ...InputDeck: PeriLabInput, ContactInput, block_by_id
+using ...InputDeck: PeriLabInput, ContactInput, CalculationOptions, block_by_id
 include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("./Surface_correction/Surface_correction.jl")
 include("./Contact/Contact_Factory.jl")
@@ -65,20 +65,24 @@ end
 
 
 """
-	init_models(input::PeriLabInput, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict, synchronise_field)
+	init_models(input::PeriLabInput, block_nodes::Dict{Int64,Vector{Int64}}, models::Vector{String}, all_models::Vector{String}, calculation::CalculationOptions, synchronise_field)
 
 Initialize models
 
 # Arguments
 - `input::PeriLabInput`: The typed input deck.
 - `block_nodes::Dict{Int64,Vector{Int64}}`: block nodes.
-- `solver_options::Dict`: Solver options.
+- `models::Vector{String}`: Model categories of the step.
+- `all_models::Vector{String}`: Model categories of all steps.
+- `calculation::CalculationOptions`: Which stress and strain fields to create.
 """
 function init_models(input::PeriLabInput,
                      block_nodes::Dict{Int64,Vector{Int64}},
-                     solver_options::Dict,
+                     models::Vector{String},
+                     all_models::Vector{String},
+                     calculation::CalculationOptions,
                      synchronise_field)
-    if "Pre_Calculation" in solver_options["Models"]
+    if "Pre_Calculation" in models
         @info "Check pre calculation models are initialized for material models"
         Pre_Calculation.check_dependencies(block_nodes)
         for material in values(input.materials)
@@ -87,14 +91,14 @@ function init_models(input::PeriLabInput,
         end
 
     end
-    for model_name in solver_options["Models"]
+    for model_name in models
         add_model(model_name)
     end
-    for model_name in solver_options["All Models"]
+    for model_name in all_models
         add_model(model_name, true)
     end
 
-    if "Additive" in solver_options["Models"] || "Thermal" in solver_options["Models"]
+    if "Additive" in models || "Thermal" in models
         heat_capacity = Data_Manager.create_constant_node_scalar_field("Specific Heat Capacity",
                                                                        Float64)
         heat_capacity = set_heat_capacity(input, block_nodes, heat_capacity) # includes the neighbors
@@ -133,15 +137,15 @@ function init_models(input::PeriLabInput,
     init_surface_correction(input.sections.surface_correction, local_synch,
                             synchronise_field)
 
-    if solver_options["Calculation"]["Calculate Cauchy"] |
-       solver_options["Calculation"]["Calculate von Mises stress"]
+    if calculation.cauchy |
+       calculation.von_mises
         Data_Manager.create_node_tensor_field("Cauchy Stress",
                                               Float64, Data_Manager.get_dof())
     end
-    if solver_options["Calculation"]["Calculate Strain"]
+    if calculation.strain
         Data_Manager.create_node_tensor_field("Strain", Float64, Data_Manager.get_dof())
     end
-    if solver_options["Calculation"]["Calculate von Mises stress"]
+    if calculation.von_mises
         Data_Manager.create_node_scalar_field("von Mises Stress", Float64)
     end
 

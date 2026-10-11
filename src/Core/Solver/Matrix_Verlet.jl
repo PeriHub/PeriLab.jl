@@ -18,7 +18,10 @@ using ...PeriLabExceptions: @abort
 using ...Helpers: check_inf_or_nan, progress_bar, matrix_style
 
 using ...ParameterSpec: @params, register_solver
-using ...InputDeck: SolverParams, SolverOptions, start_time, end_time
+using ...InputDeck: SolverParams, SolverOptions, CalculationOptions, start_time, end_time
+using ..Solver_Common: TimeWindow, SolverRun, SolverContext, synchronise_field,
+                       compute_parabolic_problems_before_model_evaluation,
+                       compute_parabolic_problems_after_model_evaluation
 using ...MPI_Communication: find_and_set_core_value_min, find_and_set_core_value_max
 using ..Model_Factory: compute_models, compute_crititical_time_step
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof, BoundaryCondition
@@ -42,8 +45,16 @@ using ..Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
 export init_solver, run_solver
 
 
-function init_solver(solver_options::Dict{Any,Any},
+"""
+    init_solver(options::VerletMatrixParams, params::SolverParams, models::Vector{String}, bcs::Dict{String,BoundaryCondition}, block_nodes::Dict{Int64,Vector{Int64}})
+
+Initializes the matrix based Verlet solver: stiffness and mass matrix, the
+optional model reduction and the time discretization. Returns the `TimeWindow`
+and `nothing` (the run reads `Model Reduction` from `options`).
+"""
+function init_solver(options::VerletMatrixParams,
                      params::SolverParams,
+                     models::Vector{String},
                      bcs::Dict{String,BoundaryCondition},
                      block_nodes::Dict{Int64,Vector{Int64}})
     horizon = Data_Manager.get_field("Horizon")
@@ -55,13 +66,11 @@ function init_solver(solver_options::Dict{Any,Any},
     final_time = end_time(params, Data_Manager.get_current_time())
     nsteps = something(params.number_of_steps, 1)
 
-    mechanical = "Material" in solver_options["Models"]
-    thermal = "Thermal" in solver_options["Models"]
+    mechanical = "Material" in models
+    thermal = "Thermal" in models
 
-    solver_options["dt"] = compute_crititical_time_step(block_nodes, mechanical, thermal)
-    #solver_options["dt"] = 1e-8
-    safety_factor = params.options.safety_factor
-    fixed_dt = params.options.fixed_dt
+    safety_factor = options.safety_factor
+    fixed_dt = options.fixed_dt
     min_dt = compute_crititical_time_step(block_nodes, mechanical, thermal)
     if fixed_dt == -1.0
         nsteps_temp,
@@ -77,20 +86,14 @@ function init_solver(solver_options::Dict{Any,Any},
     dof = Data_Manager.get_dof()
     density = Data_Manager.get_field("Density")
 
-    model_reduction = something(params.options.model_reduction, false)
+    model_reduction = something(options.model_reduction, false)
     reduce = model_reduction !== false
-    solver_options["Model Reduction"] = model_reduction
-    solver_options["Numerical Damping"] = params.options.numerical_damping
-    solver_options["dt"] = dt
-    solver_options["Initial Time"] = initial_time
-    solver_options["Final Time"] = final_time
-    solver_options["Number of Steps"] = nsteps
     @info "Solver parameter"
-    @info "Initial Time: $(solver_options["Initial Time"])"
-    @info "Final Time: $(solver_options["Final Time"])"
-    @info "Number of Steps: $(solver_options["Number of Steps"])"
-    @info "dt: $(solver_options["dt"])"
-    @info "Numerical Damping: $(solver_options["Numerical Damping"])"
+    @info "Initial Time: $initial_time"
+    @info "Final Time: $final_time"
+    @info "Number of Steps: $nsteps"
+    @info "dt: $dt"
+    @info "Numerical Damping: $(options.numerical_damping)"
 
     K = Data_Manager.get_stiffness_matrix()
 
@@ -111,7 +114,7 @@ function init_solver(solver_options::Dict{Any,Any},
                                                     density_mass)
         mass = Data_Manager.get_mass_matrix()
         Data_Manager.set_mass_matrix(lu(sparse(mass)))
-        return
+        return TimeWindow(initial_time, final_time, dt, nsteps), nothing
     end
     # if not reduced the mass has to be created here.
     mass = Diagonal(density_mass)
@@ -120,26 +123,23 @@ function init_solver(solver_options::Dict{Any,Any},
     # contribute anywhere, K alone drives the whole domain. See run_solver.
     Data_Manager.set_reduced_model_pd(Int64[])
 
-    return
+    return TimeWindow(initial_time, final_time, dt, nsteps), nothing
 end
 
-function run_solver(solver_options::Dict{Any,Any},
-                    block_nodes::Dict{Int64,Vector{Int64}},
-                    bcs::Dict{String,BoundaryCondition},
-                    outputs::Dict{Int64,Dict{}},
-                    result_files::Vector{Dict},
-                    synchronise_field::Function,
-                    write_results::Function,
-                    compute_parabolic_problems_before_model_evaluation::Function,
-                    compute_parabolic_problems_after_model_evaluation::Function,
-                    silent::Bool)
-    dt::Float64 = solver_options["dt"]
-    nsteps::Int64 = solver_options["Number of Steps"]
-    time::Float64 = solver_options["Initial Time"]
-    final_time::Float64 = solver_options["Final Time"]
+function run_solver(run::SolverRun{VerletMatrixParams}, ctx::SolverContext)
+    block_nodes = ctx.block_nodes
+    bcs = ctx.bcs
+    outputs = ctx.outputs
+    result_files = ctx.result_files
+    write_results = ctx.write_results
+    silent = ctx.silent
+    dt::Float64 = run.time.dt
+    nsteps::Int64 = run.time.nsteps
+    time::Float64 = run.time.initial_time
+    final_time::Float64 = run.time.final_time
     step_time::Float64 = 0
-    #max_cancel_damage::Float64 = solver_options["Maximum Damage"]
-    numerical_damping::Float64 = solver_options["Numerical Damping"]
+    #max_cancel_damage::Float64 = run.params.maximum_damage
+    numerical_damping::Float64 = run.params.options.numerical_damping
     max_damage::Float64 = 0
     damage_init::Bool = false
 
@@ -148,7 +148,7 @@ function run_solver(solver_options::Dict{Any,Any},
     active_list::NodeScalarField{Bool} = Data_Manager.get_field("Active")
     volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
 
-    if "Material" in solver_options["Models"]
+    if "Material" in run.models
         external_forces::NodeVectorField{Float64} = Data_Manager.get_field("External Forces")
         external_force_densities::NodeVectorField{Float64} = Data_Manager.get_field("External Force Densities")
     end
@@ -163,7 +163,7 @@ function run_solver(solver_options::Dict{Any,Any},
     # Master nodes and state vectors. Without a reduction every node is a master and the
     # state has no modal part, so the loop below needs no case distinction: the reduced
     # run differs only in which nodes are masters and in the extra modal entries.
-    master_nodes, state = setup_reduced_state(solver_options["Model Reduction"], K)
+    master_nodes, state = setup_reduced_state(something(run.params.options.model_reduction, false), K)
     modal_active = n_modal(state) > 0
 
     @timeit "Matrix Verlet" begin
@@ -227,7 +227,7 @@ function run_solver(solver_options::Dict{Any,Any},
             @timeit "compute models" compute_models(block_nodes,
                                                     dt,
                                                     time,
-                                                    solver_options["Models"],
+                                                    run.models,
                                                     synchronise_field)
 
             @timeit "Force computations" begin

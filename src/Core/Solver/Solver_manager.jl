@@ -6,7 +6,8 @@ module Solver_Manager
 using TimerOutputs: @timeit
 using ..Data_Manager
 using ..PeriLabExceptions: @abort
-using ..InputDeck: PeriLabInput, SolverParams, solver_name, model_options, solver_step,
+using ..InputDeck: PeriLabInput, SolverParams, CalculationOptions, calculation_options,
+                   solver_name, model_options, solver_step,
                    BlockParams, block_by_id, block_angles, block_names_and_ids
 using ..Helpers
 using ..ModuleLoader: find_registered_modules
@@ -17,15 +18,12 @@ include("../../Models/Material/Material_Models/Zero_Energy_Control/Zero_Energy_C
 include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
 include("../../Models/Model_Factory.jl")
 include("../BC_manager.jl")
+include("Solver_Common.jl")
+using .Solver_Common
 
 for file in find_registered_modules(@__DIR__, "register_solver")
     include(file)
 end
-
-using ..MPI_Communication: synch_responder_to_controller,
-                           synch_controller_to_responder,
-                           synch_controller_bonds_to_responder,
-                           synch_controller_bonds_to_responder_flattened
 
 include("../Influence_function.jl")
 
@@ -40,13 +38,7 @@ using .Influence_Function
 
 export init
 export solver
-
-# Runtime format read by the models
-function _calculation_options(s::SolverParams)
-    return Dict{String,Any}("Calculate Cauchy" => s.calculate_cauchy,
-                            "Calculate von Mises stress" => s.calculate_von_mises_stress,
-                            "Calculate Strain" => s.calculate_strain)
-end
+export TimeWindow, SolverRun, SolverContext, with_steps, create_run
 
 """
 	init(input::PeriLabInput, step_id::Int64)
@@ -59,10 +51,9 @@ Initialize the solver
 # Returns
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `bcs::Dict{String,BoundaryCondition}`: A dictionary containing boundary conditions.
-- `solver_options::Dict{String,Any}`: A dictionary containing solver options.
+- `solver_run::SolverRun`: the initialized solver step.
 """
 function init(input::PeriLabInput, step_id::Int64)
-    solver_options = Dict()
     dof = Data_Manager.get_dof()
     nnodes = Data_Manager.get_nnodes()
     num_responder = Data_Manager.get_num_responder()
@@ -93,22 +84,16 @@ function init(input::PeriLabInput, step_id::Int64)
     horizon = set_horizon(blocks, block_nodes_with_neighbors, horizon) # includes the neighbors
     set_angles(blocks, block_nodes_with_neighbors) # includes the Neighbors
     solver_params = solver_step(input, step_id)
-    solver_options["Models"] = model_options(solver_params)
-    solver_options["All Models"] = model_options(solver_params)
-    solver_options["Calculation"] = _calculation_options(solver_params)
+    models = model_options(solver_params)
+    all_models = copy(models)
+    calculation = calculation_options(solver_params)
     if step_id != -1
         for step in 1:Data_Manager.get_max_step()
             step_solver_params = solver_step(input, step)
-            append!(solver_options["All Models"],
-                    model_options(step_solver_params))
-            calc_options = _calculation_options(step_solver_params)
-            for key in keys(calc_options)
-                if calc_options[key]
-                    solver_options["Calculation"][key] = true
-                end
-            end
+            append!(all_models, model_options(step_solver_params))
+            calculation = calculation | calculation_options(step_solver_params)
         end
-        solver_options["All Models"] = unique(solver_options["All Models"])
+        all_models = unique(all_models)
     end
     Data_Manager.create_constant_bond_scalar_state("Influence Function", Float64;
                                                    default_value = 1)
@@ -118,29 +103,23 @@ function init(input::PeriLabInput, step_id::Int64)
     end
     Data_Manager.create_bond_scalar_state("Bond Damage", Float64; default_value = 1)
     @debug "Read properties"
-    read_properties(input, "Material" in solver_options["Models"])
+    read_properties(input, "Material" in models)
     @debug "Init models"
     @timeit "init_models" init_models(input,
                                       block_nodes,
-                                      solver_options,
+                                      models,
+                                      all_models,
+                                      calculation,
                                       synchronise_field)
     @debug "Init Boundary Conditions"
 
     @timeit "init_BCs" bcs=init_BCs(input.sections.boundary_conditions)
-    # get name and checks if it is there
-    solver_options["Solver"] = solver_name(solver_params)
-
     @info "Init " * solver_name(solver_params)
-    mod = model_module(solver_params.options)
     if !Data_Manager.has_key("Active")
         active = Data_Manager.create_constant_node_scalar_field("Active", Bool;
                                                                 default_value = true)
     end
-    mod.init_solver(solver_options,
-                    solver_params,
-                    bcs,
-                    block_nodes)
-    Data_Manager.set_model_module(solver_name(solver_params), mod)
+    solver_run = create_run(solver_params, models, all_models, calculation, bcs, block_nodes)
 
     if Data_Manager.fem_active()
         @timeit "init_FEM" FEM.init_FEM(input.sections.fem,
@@ -151,10 +130,27 @@ function init(input::PeriLabInput, step_id::Int64)
 
     #TODO: sync active with Data_Manager
 
-    remove_models(solver_options["Models"])
+    remove_models(models)
 
     @debug "Finished Init Solver"
-    return block_nodes, bcs, solver_options
+    return block_nodes, bcs, solver_run
+end
+
+"""
+    create_run(params, models, all_models, calculation, bcs, block_nodes)
+
+Initializes the solver selected by `params.options` (its module's
+`init_solver`) and returns the `SolverRun` of the step.
+"""
+function create_run(params::SolverParams, models::Vector{String},
+                    all_models::Vector{String}, calculation::CalculationOptions,
+                    bcs::Dict{String,BoundaryCondition},
+                    block_nodes::Dict{Int64,Vector{Int64}})
+    mod = model_module(params.options)
+    # invokelatest: the solver may come from a module loaded at runtime (licensed modules)
+    time, state = Base.invokelatest(mod.init_solver, params.options, params, models, bcs,
+                                    block_nodes)
+    return SolverRun(params, models, all_models, calculation, time, state)
 end
 
 """
@@ -264,111 +260,24 @@ function set_horizon(blocks::Dict{String,BlockParams}, block_nodes::Dict,
 end
 
 """
-	solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{String,BoundaryCondition}, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, silent::Bool)
+    solver(run::SolverRun, ctx::SolverContext)
 
-Runs the solver.
-
-# Arguments
-- `solver_options::Dict{String,Any}`: The solver options
-- `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes
-- `bcs::Dict{String,BoundaryCondition}`: The boundary conditions
-- `outputs::Dict{Int64,Dict{}}`: A dictionary for output settings
-- `result_files::Vector{Any}`: A vector of result files
-- `write_results`: A function to write simulation results
-- `silent::Bool`: A boolean flag to suppress progress bars
-# Returns
-- `result_files`: A vector of updated result files
+Runs the solver step `run`; returns the updated result files.
 """
-function solver(solver_options::Dict{Any,Any},
-                block_nodes::Dict{Int64,Vector{Int64}},
-                bcs::Dict{String,BoundaryCondition},
-                outputs::Dict{Int64,Dict{}},
-                result_files::Vector{Dict},
-                write_results,
-                silent::Bool)
-    mod = Data_Manager.get_model_module(solver_options["Solver"])::Module
-
-    mod.run_solver(solver_options,
-                   block_nodes,
-                   bcs,
-                   outputs,
-                   result_files,
-                   synchronise_field,
-                   write_results,
-                   compute_parabolic_problems_before_model_evaluation,
-                   compute_parabolic_problems_after_model_evaluation,
-                   silent)
+function solver(run::SolverRun, ctx::SolverContext)
+    return Base.invokelatest(model_module(run.params.options).run_solver, run, ctx)
 end
 
 """
-	synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, synch_field::String, direction::String)
-
-Synchronises field.
-
-# Arguments
-- `comm`: The MPI communicator
-- `synch_fields::Dict`: A dictionary of fields
-- `overlap_map`: The overlap map
-- `get_field`: The function to get the field
-- `synch_field::String`: The field
-- `direction::String`: The direction
-# Returns
-- `nothing`
-"""
-function synchronise_field(comm,
-                           synch_fields::Dict,
-                           overlap_map,
-                           get_field,
-                           synch_field::String,
-                           direction::String)
-    # might not needed
-    @timeit "synchronise_field" begin
-        if !haskey(synch_fields, synch_field)
-            @abort "Field $synch_field does not exist in synch_field dictionary"
-            return nothing
-        end
-        if direction == "download_from_cores"
-            if synch_fields[synch_field][direction]
-                vector = get_field(synch_field, synch_fields[synch_field]["time"])
-                @timeit "synch_responder_to_controller" return synch_responder_to_controller(comm,
-                                                                                             overlap_map,
-                                                                                             vector,
-                                                                                             synch_fields[synch_field]["dof"])
-            end
-            return nothing
-        end
-        if direction == "upload_to_cores"
-            if synch_fields[synch_field][direction]
-                vector = get_field(synch_field, synch_fields[synch_field]["time"])
-                if occursin("Bond", synch_field)
-                    @timeit "synch_controller_bonds_to_responder_flattened" return synch_controller_bonds_to_responder_flattened(comm,
-                                                                                                                                 overlap_map,
-                                                                                                                                 vector,
-                                                                                                                                 synch_fields[synch_field]["dof"])
-                else
-                    @timeit "synch_controller_to_responder" return synch_controller_to_responder(comm,
-                                                                                                 overlap_map,
-                                                                                                 vector,
-                                                                                                 synch_fields[synch_field]["dof"])
-                end
-            end
-            return nothing
-        end
-        @abort "Wrong direction key word $direction in function synchronise_field; it should be download_from_cores or upload_to_cores"
-        return nothing
-    end
-end
-
-"""
-	remove_models(solver_options::Vector{String})
+	remove_models(models::Vector{String})
 
 Sets the active models to false if they are deactivated in the solver. They can be active, because they are defined as model and in the blocks.
 
 # Arguments
-- `solver_options::Vector{String}`: A dictionary of fields
+- `models::Vector{String}`: The model categories of the step
 """
-function remove_models(solver_options::Vector{String})
-    check = replace.(solver_options .* " Model", "_" => " ")
+function remove_models(models::Vector{String})
+    check = replace.(models .* " Model", "_" => " ")
     for active_model_name in keys(Data_Manager.get_active_models())
         if !(active_model_name in check)
             Data_Manager.remove_active_model(active_model_name)
@@ -376,45 +285,5 @@ function remove_models(solver_options::Vector{String})
     end
 end
 
-## TODO generalize this interface
-
-function compute_parabolic_problems_before_model_evaluation(active_nodes,
-                                                            solver_options)
-    if !("Thermal" in solver_options["Models"]) &&
-       !("Thermal" in solver_options["All Models"])
-        return
-    end
-    temperatureN = Data_Manager.get_field("Temperature", "N")
-    temperatureNP1 = Data_Manager.get_field("Temperature", "NP1")
-    deltaT = Data_Manager.get_field("Delta Temperature")
-    if "Thermal" in solver_options["Models"]
-        temperatureNP1[active_nodes] = temperatureN[active_nodes] + deltaT[active_nodes]
-    else
-        if "Thermal" in solver_options["All Models"]
-            temperatureNP1[active_nodes] = temperatureN[active_nodes]
-        end
-    end
-end
-function compute_parabolic_problems_after_model_evaluation(active_nodes,
-                                                           solver_options, dt)
-    if !("Thermal" in solver_options["Models"]) &&
-       !("Thermal" in solver_options["All Models"])
-        return
-    end
-    deltaT = Data_Manager.get_field("Delta Temperature")
-    flowNP1 = Data_Manager.get_field("Heat Flow", "NP1")
-    density = Data_Manager.get_field("Density")
-    heat_capacity = Data_Manager.get_field("Specific Heat Capacity")
-    if "Thermal" in solver_options["Models"]
-        check_inf_or_nan(flowNP1, "Heat Flow")
-        # heat capacity check. if it is zero deltaT = 0
-        @views deltaT[active_nodes] = -flowNP1[active_nodes] .* dt ./
-                                      (density[active_nodes] .*
-                                       heat_capacity[active_nodes])
-        # if fem_option && time == 0
-        #     @warn "Thermal models are not supported for FEM yet."
-        # end
-    end
-end
 
 end

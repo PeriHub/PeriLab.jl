@@ -419,7 +419,7 @@ if ncores == 3
         # push_test!(test, (bf[1] == Float64(-0.9)), @__FILE__, @__LINE__)
     end
 
-    solver_options = Dict("Models" => ["Material"])
+    models = ["Material"]
     # runs standalone under mpiexec (no test/helper.jl), so convert inline
     params = PeriLab.ParameterSpec.convert_value(Dict{String,PeriLab.InputDeck.BlockParams},
                            Dict("block_1" => Dict("Block ID" => 1, "Density" => 1.0,
@@ -429,8 +429,8 @@ if ncores == 3
                                                   "Horizon" => 1.0,
                                                   "Material Model" => "Test 2")),
                                                  "blocks", PeriLab.ParameterSpec.ParseContext())
-    PeriLab.IO.show_block_summary(solver_options, params, "", false, comm)
-    PeriLab.IO.show_block_summary(solver_options, params, "", true, comm)
+    PeriLab.IO.show_block_summary(models, params, "", false, comm)
+    PeriLab.IO.show_block_summary(models, params, "", true, comm)
     PeriLab.Logging_Module.init_logging("test", false, false, 0, 2)
     PeriLab.IO.show_mpi_summary("test", false, comm)
     PeriLab.IO.show_mpi_summary("test", true, comm)

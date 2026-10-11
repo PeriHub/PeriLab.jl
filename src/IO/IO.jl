@@ -1088,18 +1088,18 @@ function _block_summary_cell(block::BlockParams, column::String)
 end
 
 """
-    show_block_summary(solver_options::Dict, blocks::Dict{String,BlockParams}, log_file::String, silent::Bool, comm::MPI.Comm)
+    show_block_summary(models::Vector{String}, blocks::Dict{String,BlockParams}, log_file::String, silent::Bool, comm::MPI.Comm)
 
 Show block summary.
 
 # Arguments
-- `solver_options::Dict`: The solver options
+- `models::Vector{String}`: The model categories of the step
 - `blocks::Dict{String,BlockParams}`: The blocks of the input deck
 - `log_file::String`: The log file
 - `silent::Bool`: The silent flag
 - `comm::MPI.Comm`: The Comm_rank
 """
-function show_block_summary(solver_options::Dict,
+function show_block_summary(models::Vector{String},
                             blocks::Dict{String,BlockParams},
                             log_file::String,
                             silent::Bool,
@@ -1109,7 +1109,7 @@ function show_block_summary(solver_options::Dict,
 
     headers = ["Block"]
 
-    for model_name in solver_options["Models"]
+    for model_name in models
         if model_name != "Pre_Calculation"
             push!(headers, model_name)
         end

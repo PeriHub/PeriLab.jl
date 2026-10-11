@@ -187,13 +187,6 @@ end
     # rm(filename3 * ".csv")
 end
 
-# @testset "ut_show_block_summary" begin
-#     PeriLab.Data_Manager.set_block_name_list([1])
-#     solver_options = Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)
-#     params = Dict("Blocks" => Dict("block_1" => Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)))
-#     PeriLab.IO.show_block_summary(solver_options, params, "test.log", comm)
-# end
-
 @testset "ut_init_orientations" begin
     angles = PeriLab.Data_Manager.create_constant_node_scalar_field("Angles", Float64;
                                                                     default_value = 90)
@@ -282,11 +275,7 @@ end
     block_Id .+= 1
     block_Id[end] = 2
     PeriLab.Data_Manager.set_block_name_list(["block_1", "block_2"])
-    solver_options = Dict("Models" => ["Material",
-                              "Damage",
-                              "Additive",
-                              "Thermal",
-                              "Degradation"])
+    models = ["Material", "Damage", "Additive", "Thermal", "Degradation"]
     params = typed_section(Dict{String,PeriLab.InputDeck.BlockParams},
                            Dict("block_1" => Dict("Block ID" => 1, "Density" => 1.0,
                                                   "Horizon" => 1.0, "Material Model" => "m",
@@ -296,7 +285,7 @@ end
                                                   "Degradation Model" => "g"),
                                 "block_2" => Dict("Block ID" => 2, "Density" => 1.0,
                                                   "Horizon" => 1.0, "Material Model" => "m")))
-    PeriLab.IO.show_block_summary(solver_options,
+    PeriLab.IO.show_block_summary(models,
                                   params,
                                   "",
                                   false,

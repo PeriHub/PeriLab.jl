@@ -32,7 +32,7 @@ function __init__()
 end
 
 export read_input, PeriLabInput, SolverParams, SolverOptions,
-       solver_name, start_time, end_time, model_options, solver_steps,
+       solver_name, CalculationOptions, calculation_options, start_time, end_time, model_options, solver_steps,
        solver_step,
        BlockParams, DiscretizationParams, GcodeParams, BondFilterParams,
        register_bond_filter, bond_filter,

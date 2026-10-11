@@ -17,6 +17,9 @@ using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_styl
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof, BoundaryCondition
 using ...ParameterSpec: @params, register_solver
 using ...InputDeck: SolverParams, SolverOptions, start_time, end_time
+using ..Solver_Common: TimeWindow, SolverRun, SolverContext, synchronise_field,
+                       compute_parabolic_problems_before_model_evaluation,
+                       compute_parabolic_problems_after_model_evaluation
 
 @params struct LinearStaticMatrixParams <: SolverOptions
     safety_factor::Float64 = opt("Safety Factor"; default = 1.0, min = 0)
@@ -59,26 +62,21 @@ mutable struct DisplacementSolverCache
 end
 
 """
-	init_solver(params::SolverParams, bcs::Dict{String,BoundaryCondition}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+	init_solver(options::LinearStaticMatrixParams, params::SolverParams, models::Vector{String}, bcs::Dict{String,BoundaryCondition}, block_nodes::Dict{Int64,Vector{Int64}})
 
-Initialize the Verlet solver for a simulation.
-
-This function sets up the Verlet solver for a simulation by initializing various parameters and calculating the time step based on provided parameters or critical time step calculations.
+Initialize the linear static matrix based solver: the stiffness matrix of the
+correspondence models and the time discretization (`Number of Steps` load steps).
 
 # Arguments
+- `options::LinearStaticMatrixParams`: The solver options of the step.
 - `params::SolverParams`: The solver parameters of the current step.
+- `models::Vector{String}`: The model categories of the step.
 - `bcs::Dict{String,BoundaryCondition}`: Boundary conditions
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
-- `mechanical::Bool`: If `true`, mechanical properties are considered in the calculation.
-- `thermo::Bool`: If `true`, thermodynamic properties are considered in the calculation.
 
 # Returns
-A tuple `(initial_time, dt, nsteps, numerical_damping)` where:
-- `initial_time::Float64`: The initial time for the simulation.
-- `dt::Float64`: The time step for the simulation.
-- `nsteps::Int64`: The number of time integration steps.
-- `numerical_damping::Float64`: The numerical damping factor.
-- `max_damage::Float64`: The maximum damage in the simulation.
+- `TimeWindow`: initial and final time, time step and number of steps.
+- `nothing`: the run reads `Matrix Update` from `options`.
 
 # Dependencies
 This function may depend on the following functions:
@@ -86,23 +84,23 @@ This function may depend on the following functions:
 - `get_integration_steps`: Used to determine the number of integration steps and adjust the time step.
 - `find_and_set_core_value_min` and `find_and_set_core_value_max`: Used to set core values in a distributed computing environment.
 """
-function init_solver(solver_options::Dict{Any,Any},
+function init_solver(options::LinearStaticMatrixParams,
                      params::SolverParams,
+                     models::Vector{String},
                      bcs::Dict{String,BoundaryCondition},
                      block_nodes::Dict{Int64,Vector{Int64}})
     find_bc_free_dof(bcs)
     delta_u = Data_Manager.create_constant_node_vector_field("Delta Displacements", Float64,
                                                              Data_Manager.get_dof())
-    solver_options["Initial Time"] = start_time(params, Data_Manager.get_current_time())
-    solver_options["Final Time"] = end_time(params, Data_Manager.get_current_time())
+    initial_time = start_time(params, Data_Manager.get_current_time())
+    final_time = end_time(params, Data_Manager.get_current_time())
 
-    solver_options["Number of Steps"] = something(params.number_of_steps, 1)
+    nsteps = something(params.number_of_steps, 1)
     ## Remark: For static analysis, the number of steps is mandatory
     # dt cannot be defined here; Number of steps define the value,
     # because for static analysis it is a virtual case
     # for thermal analysis this must be adopted and dt and nsteps must be computed
-    solver_options["dt"] = (solver_options["Final Time"] - solver_options["Initial Time"]) /
-                           solver_options["Number of Steps"]
+    dt = (final_time - initial_time) / nsteps
 
     for (block, nodes) in pairs(block_nodes)
         material = Data_Manager.get_block_models(block).material
@@ -114,12 +112,12 @@ function init_solver(solver_options::Dict{Any,Any},
 
     @timeit "init matrix" init_matrix()
     Data_Manager.create_node_scalar_field("Damage", Float64)
-    solver_options["Matrix Update"] = params.options.matrix_update
     deformed_coorN = Data_Manager.get_field("Deformed Coordinates", "N")
     deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
     coor = Data_Manager.get_field("Coordinates")
     deformed_coorN .= coor
     deformed_coorNP1 .= coor
+    return TimeWindow(initial_time, final_time, dt, nsteps), nothing
 
     ### for coupled thermal analysis
 
@@ -158,16 +156,13 @@ end
 
 #     return filtered
 # end
-function run_solver(solver_options::Dict{Any,Any},
-                    block_nodes::Dict{Int64,Vector{Int64}},
-                    bcs::Dict{String,BoundaryCondition},
-                    outputs::Dict{Int64,Dict{}},
-                    result_files::Vector{Dict},
-                    synchronise_field::Function,
-                    write_results::Function,
-                    compute_parabolic_problems_before_model_evaluation::Function,
-                    compute_parabolic_problems_after_model_evaluation::Function,
-                    silent::Bool)
+function run_solver(run::SolverRun{LinearStaticMatrixParams}, ctx::SolverContext)
+    block_nodes = ctx.block_nodes
+    bcs = ctx.bcs
+    outputs = ctx.outputs
+    result_files = ctx.result_files
+    write_results = ctx.write_results
+    silent = ctx.silent
     atexit(() -> Data_Manager.set_cancel(true))
 
     @info "Run Linear Static Solver"
@@ -177,15 +172,15 @@ function run_solver(solver_options::Dict{Any,Any},
     bond_force = Data_Manager.get_field("Bond Forces")
     comm = Data_Manager.get_comm()
 
-    if "Material" in solver_options["Models"]
+    if "Material" in run.models
         external_forces = Data_Manager.get_field("External Forces")
         external_force_densities = Data_Manager.get_field("External Force Densities")
     end
 
-    dt::Float64 = solver_options["dt"]
-    nsteps::Int64 = solver_options["Number of Steps"]
-    time::Float64 = solver_options["Initial Time"]
-    final_time::Float64 = solver_options["Final Time"]
+    dt::Float64 = run.time.dt
+    nsteps::Int64 = run.time.nsteps
+    time::Float64 = run.time.initial_time
+    final_time::Float64 = run.time.final_time
     step_time::Float64 = 0
     rank = Data_Manager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
@@ -195,7 +190,7 @@ function run_solver(solver_options::Dict{Any,Any},
 
     delta_u = Data_Manager.get_field("Delta Displacements")
 
-    matrix_update::Bool = solver_options["Matrix Update"]
+    matrix_update::Bool = run.params.options.matrix_update
 
     active_nodes = Data_Manager.get_field("Active Nodes")
     active_list = Data_Manager.get_field("Active")
@@ -229,7 +224,7 @@ function run_solver(solver_options::Dict{Any,Any},
 
             deformed_coorNP1 .= coor
 
-            compute_parabolic_problems_before_model_evaluation(active_nodes, solver_options)
+            compute_parabolic_problems_before_model_evaluation(active_nodes, run)
             apply_bc_dirichlet([
                                    "Displacements",
                                    "Forces",
@@ -245,7 +240,7 @@ function run_solver(solver_options::Dict{Any,Any},
             @timeit "compute_models" compute_stiff_matrix_compatible_models(block_nodes,
                                                                             dt,
                                                                             time,
-                                                                            solver_options["Models"],
+                                                                            run.models,
                                                                             synchronise_field)
 
             active_nodes = Data_Manager.get_field("Active Nodes")
@@ -361,8 +356,7 @@ function run_solver(solver_options::Dict{Any,Any},
             active_list = Data_Manager.get_field("Active")
             active_nodes = find_active_nodes(active_list, active_nodes, 1:nnodes)
 
-            compute_parabolic_problems_after_model_evaluation(active_nodes, solver_options,
-                                                              dt)
+            compute_parabolic_problems_after_model_evaluation(active_nodes, run, dt)
 
             @. velocities = (uNP1 - uN) / dt
 
