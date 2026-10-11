@@ -12,13 +12,13 @@ function ut_st_solver(dict)
     return s
 end
 
-@testset "active options and solver name" begin
+@testset "options and solver name" begin
     s = ut_st_solver(Dict{String,Any}("Initial Time" => 0.0, "Final Time" => 1.0,
                                       "Static" => Dict{String,Any}("m" => 3)))
-    @test ID.active_options(s) === s.static
-    @test ID.active_options(s) isa ID.SolverOptions
-    @test ID.solver_name(s) == "Static"
-    @test ID.active_options(s).safety_factor === 1.0
+    @test s.options isa ID.SolverOptions
+    @test s.options isa PeriLab.Solver_Manager.Static_Solver.StaticParams
+    @test ID.solver_name(s) == "Static" && ID.solver_name(s.options) == "Static"
+    @test s.options.safety_factor === 1.0 && s.options.m === 3
     names = [ID.solver_name(ut_st_solver(Dict{String,Any}("Initial Time" => 0.0,
                                                           "Final Time" => 1.0,
                                                           key => Dict{String,Any}())))
@@ -35,7 +35,7 @@ end
     s = ut_st_solver(Dict{String,Any}("Initial Time" => 0.0, "Final Time" => 1.0,
                                       "Number of Steps" => 7,
                                       "Static" => Dict{String,Any}("Fixed dt" => 0.1)))
-    @test s.number_of_steps === 7 && s.static.fixed_dt === 0.1
+    @test s.number_of_steps === 7 && s.options.fixed_dt === 0.1
 end
 
 @testset "start and end time depend on the current time" begin

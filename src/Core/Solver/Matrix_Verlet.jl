@@ -17,7 +17,8 @@ using ...PeriLabExceptions: @abort
 
 using ...Helpers: check_inf_or_nan, progress_bar, matrix_style
 
-using ...InputDeck: SolverParams, start_time, end_time
+using ...ParameterSpec: @params, register_solver
+using ...InputDeck: SolverParams, SolverOptions, start_time, end_time
 using ...MPI_Communication: find_and_set_core_value_min, find_and_set_core_value_max
 using ..Model_Factory: compute_models, compute_crititical_time_step
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof, BoundaryCondition
@@ -25,15 +26,21 @@ using ...Logging_Module: print_table
 include("../Model_reduction/Model_reduction.jl")
 using .Model_reduction: init_reduce_model, ReducedState, setup_reduced_state,
                         n_modal, physical_part, modal_part,
-                        pull_from_nodes!, add_from_nodes!, push_to_nodes!
+                        pull_from_nodes!, add_from_nodes!, push_to_nodes!, ModelReductionParams
+
+@params struct VerletMatrixParams <: SolverOptions
+    safety_factor::Float64 = opt("Safety Factor"; default = 1.0, min = 0)
+    fixed_dt::Float64 = opt("Fixed dt"; default = -1.0, quantity = :time)
+    numerical_damping::Float64 = opt("Numerical Damping"; default = 0.0, min = 0)
+    model_reduction::Union{Nothing,ModelReductionParams} = opt("Model Reduction";
+                                                               default = nothing)
+end
+__init__() = register_solver("Verlet Matrix Based", VerletMatrixParams)
 include("../../Compute/compute_field_values.jl")
 using ..Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
                                      compute_model
 export init_solver, run_solver
 
-function solver_name()
-    return "Verlet Matrix Based"
-end
 
 function init_solver(solver_options::Dict{Any,Any},
                      params::SolverParams,
@@ -53,8 +60,8 @@ function init_solver(solver_options::Dict{Any,Any},
 
     solver_options["dt"] = compute_crititical_time_step(block_nodes, mechanical, thermal)
     #solver_options["dt"] = 1e-8
-    safety_factor = params.verlet_matrix_based.safety_factor
-    fixed_dt = params.verlet_matrix_based.fixed_dt
+    safety_factor = params.options.safety_factor
+    fixed_dt = params.options.fixed_dt
     min_dt = compute_crititical_time_step(block_nodes, mechanical, thermal)
     if fixed_dt == -1.0
         nsteps_temp,
@@ -70,10 +77,10 @@ function init_solver(solver_options::Dict{Any,Any},
     dof = Data_Manager.get_dof()
     density = Data_Manager.get_field("Density")
 
-    model_reduction = something(params.verlet_matrix_based.model_reduction, false)
+    model_reduction = something(params.options.model_reduction, false)
     reduce = model_reduction !== false
     solver_options["Model Reduction"] = model_reduction
-    solver_options["Numerical Damping"] = params.verlet_matrix_based.numerical_damping
+    solver_options["Numerical Damping"] = params.options.numerical_damping
     solver_options["dt"] = dt
     solver_options["Initial Time"] = initial_time
     solver_options["Final Time"] = final_time

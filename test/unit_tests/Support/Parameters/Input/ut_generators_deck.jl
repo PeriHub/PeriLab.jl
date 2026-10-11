@@ -261,3 +261,17 @@ end
     @test occursin("Contact Stiffness", penalty) && occursin("Shared contact keys:", penalty)
     @test occursin("# Maximum Damage: .inf", ut_describe("Solver"; template = true))
 end
+
+@testset "solver choice in schema, describe and template" begin
+    solver = UT_DECK["properties"]["Solver"]
+    @test haskey(solver["properties"], "Verlet") && haskey(solver["properties"], "Newmark")
+    @test Dict{String,Any}("required" => ["Static"]) in solver["oneOf"]
+    text = ut_describe("Solver")
+    @test occursin("<solver>", text) && occursin("one of: Linear Static Matrix Based", text)
+    @test occursin("Verlet:", text) && occursin("Safety Factor", text)
+    @test occursin("# exactly one of: Linear Static Matrix Based, Newmark, Static, Verlet, Verlet Matrix Based",
+                   ut_describe("Solver"; template = true))
+    sections = read(first(PeriLab.generate_parameter_docs(mktempdir())), String)
+    @test occursin("## Solver → Verlet", sections) && occursin("## Solver → Newmark", sections)
+    @test occursin("| <solver> | one of: Linear Static Matrix Based", sections)
+end

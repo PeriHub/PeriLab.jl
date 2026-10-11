@@ -12,7 +12,27 @@ using ProgressBars: set_multiline_postfix, set_postfix
 using ...Data_Manager
 using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof, BoundaryCondition
-using ...InputDeck: SolverParams, start_time, end_time
+using ...ParameterSpec: @params, register_solver, ParseContext, add_error!
+import ...ParameterSpec: check!
+using ...InputDeck: SolverParams, SolverOptions, start_time, end_time
+
+@params struct NewmarkParams <: SolverOptions
+    safety_factor::Float64 = opt("Safety Factor"; default = 1.0, min = 0)
+    fixed_dt::Float64 = opt("Fixed dt"; default = -1.0, quantity = :time)
+    numerical_damping::Float64 = opt("Numerical Damping"; default = 0.0, min = 0)
+    matrix_update::Bool = opt("Matrix Update"; default = false)
+    newmark_delta::Float64 = opt("Newmark Delta"; default = 0.5)
+    newmark_alpha::Union{Nothing,Float64} = opt("Newmark Alpha"; default = nothing)
+    model_reduction::Bool = opt("Model Reduction"; default = false)
+end
+__init__() = register_solver("Newmark", NewmarkParams)
+
+function check!(p::NewmarkParams, path::String, ctx::ParseContext)
+    p.model_reduction &&
+        add_error!(ctx, path,
+                   "\"Model Reduction\" is not supported by the Newmark solver; use \"Verlet Matrix Based\" with a \"Model Reduction\" section")
+    return nothing
+end
 using ..Model_Factory: compute_stiff_matrix_compatible_models,
                        compute_matrix_based_bond_forces
 
@@ -23,9 +43,6 @@ using ..Model_Factory.Pre_Calculation.Bond_Deformation
 export init_solver
 export run_solver
 
-function solver_name()
-    return "Newmark"
-end
 
 # ────────────────────────────────────────────────────────────
 # Cache
@@ -74,10 +91,10 @@ function init_solver(solver_options::Dict{Any,Any},
     solver_options["dt"] = (solver_options["Final Time"] - solver_options["Initial Time"]) /
                            solver_options["Number of Steps"]
 
-    solver_options["Newmark Beta"] = params.newmark.newmark_delta # name is delta because of beta. Internally it is beta.
-    solver_options["Newmark Alpha"] = something(params.newmark.newmark_alpha,
+    solver_options["Newmark Beta"] = params.options.newmark_delta # name is delta because of beta. Internally it is beta.
+    solver_options["Newmark Alpha"] = something(params.options.newmark_alpha,
                                                 0.25 * (0.5 + solver_options["Newmark Beta"])^2)
-    solver_options["Matrix Update"] = params.newmark.matrix_update
+    solver_options["Matrix Update"] = params.options.matrix_update
 
     for (block, nodes) in pairs(block_nodes)
         init_model(nodes, Data_Manager.get_block_models(block).material, block)

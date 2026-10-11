@@ -15,7 +15,16 @@ using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_styl
                   create_permutation
 # using ...MPI_Communication: barrier
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof, BoundaryCondition
-using ...InputDeck: SolverParams, start_time, end_time
+using ...ParameterSpec: @params, register_solver
+using ...InputDeck: SolverParams, SolverOptions, start_time, end_time
+
+@params struct LinearStaticMatrixParams <: SolverOptions
+    safety_factor::Float64 = opt("Safety Factor"; default = 1.0, min = 0)
+    fixed_dt::Float64 = opt("Fixed dt"; default = -1.0, quantity = :time)
+    numerical_damping::Float64 = opt("Numerical Damping"; default = 0.0, min = 0)
+    matrix_update::Bool = opt("Matrix Update"; default = false)
+end
+__init__() = register_solver("Linear Static Matrix Based", LinearStaticMatrixParams)
 
 using ..Model_Factory: compute_stiff_matrix_compatible_models,
                        compute_matrix_based_bond_forces
@@ -27,9 +36,6 @@ using ..Model_Factory.Pre_Calculation.Bond_Deformation
 export init_solver
 export run_solver
 
-function solver_name()
-    return "Linear Static Matrix Based"
-end
 
 mutable struct DisplacementSolverCache
     # Workspace
@@ -108,7 +114,7 @@ function init_solver(solver_options::Dict{Any,Any},
 
     @timeit "init matrix" init_matrix()
     Data_Manager.create_node_scalar_field("Damage", Float64)
-    solver_options["Matrix Update"] = params.linear_static_matrix_based.matrix_update
+    solver_options["Matrix Update"] = params.options.matrix_update
     deformed_coorN = Data_Manager.get_field("Deformed Coordinates", "N")
     deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
     coor = Data_Manager.get_field("Coordinates")

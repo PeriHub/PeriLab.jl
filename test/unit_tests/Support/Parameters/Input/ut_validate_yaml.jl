@@ -21,7 +21,7 @@ end
     deck, input = PeriLab.IO.validate_input(params)
     @test deck === params["PeriLab"]
     @test input isa PeriLab.InputDeck.PeriLabInput
-    @test input.sections.solver.verlet !== nothing
+    @test input.sections.solver.options isa PeriLab.Solver_Manager.Verlet_Solver.VerletParams
 end
 
 @testset "read_input_deck" begin

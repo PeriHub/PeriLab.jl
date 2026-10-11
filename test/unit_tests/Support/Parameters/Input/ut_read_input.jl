@@ -24,7 +24,7 @@ end
     @test isempty(ctx.errors)
     @test input isa ID.PeriLabInput
     @test input.sections.blocks["block_1"].block_id === 1
-    @test input.sections.solver.verlet.safety_factor === 1.0
+    @test input.sections.solver.options.safety_factor === 1.0
     @test input.contact === nothing
     @test input.materials["Mat"] isa PS.WithBase
     @test isempty(input.globals)

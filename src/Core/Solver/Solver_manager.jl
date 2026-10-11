@@ -9,7 +9,8 @@ using ..PeriLabExceptions: @abort
 using ..InputDeck: PeriLabInput, SolverParams, solver_name, model_options, solver_step,
                    BlockParams, block_by_id, block_angles, block_names_and_ids
 using ..Helpers
-using ..ModuleLoader: find_module_files, create_module_specifics
+using ..ModuleLoader: find_registered_modules
+using ..ParameterSpec: model_module
 include("../../Models/Material/Material_Basis.jl")
 include("../../FEM/FEM_Factory.jl")
 include("../../Models/Material/Material_Models/Zero_Energy_Control/Zero_Energy_Control.jl")
@@ -17,9 +18,8 @@ include("../../Models/Material/Material_Models/Correspondence/Correspondence_mat
 include("../../Models/Model_Factory.jl")
 include("../BC_manager.jl")
 
-global module_list = find_module_files(@__DIR__, "solver_name")
-for mod in module_list
-    include(mod["File"])
+for file in find_registered_modules(@__DIR__, "register_solver")
+    include(file)
 end
 
 using ..MPI_Communication: synch_responder_to_controller,
@@ -131,17 +131,7 @@ function init(input::PeriLabInput, step_id::Int64)
     solver_options["Solver"] = solver_name(solver_params)
 
     @info "Init " * solver_name(solver_params)
-    mod = create_module_specifics(solver_name(solver_params),
-                                  module_list,
-                                  @__MODULE__,
-                                  "solver_name")
-
-    if isnothing(mod)
-        @info "Module list: " * string(module_list)
-        @abort "Solver module for solver " * solver_name(solver_params) *
-               " not found. Check if the solver name is correct and if the module file is in the Solver folder."
-        return nothing
-    end
+    mod = model_module(solver_params.options)
     if !Data_Manager.has_key("Active")
         active = Data_Manager.create_constant_node_scalar_field("Active", Bool;
                                                                 default_value = true)

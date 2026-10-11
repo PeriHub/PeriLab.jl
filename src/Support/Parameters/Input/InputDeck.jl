@@ -12,7 +12,7 @@ Model parameters (`Models`) are declared by the model modules and registered wit
 module InputDeck
 
 using ..ParameterSpec
-using ..ParameterSpec: @params, req, opt, ParseContext, add_error!, join_path,
+using ..ParameterSpec: @params, req, opt, one_of, ParseContext, add_error!, join_path,
                        parse_section
 import ..ParameterSpec: check!
 using ..PeriLabExceptions: @abort
@@ -26,10 +26,13 @@ include("contact.jl")
 include("input.jl")
 include("generators.jl")
 
-__init__() = ParameterSpec.register_base!(:contact, ContactBaseParams)
+function __init__()
+    ParameterSpec.register_base!(:contact, ContactBaseParams)
+    ParameterSpec.register_one_of_type!(:solver, SolverOptions)
+end
 
-export read_input, PeriLabInput, SolverParams, SolverOptions, ModelReductionParams,
-       active_options, solver_name, start_time, end_time, model_options, solver_steps,
+export read_input, PeriLabInput, SolverParams, SolverOptions,
+       solver_name, start_time, end_time, model_options, solver_steps,
        solver_step,
        BlockParams, DiscretizationParams, GcodeParams, BondFilterParams,
        register_bond_filter, bond_filter,

@@ -13,7 +13,15 @@ using TimerOutputs: @timeit
 using ...Data_Manager
 using ...PeriLabExceptions: @abort
 using ...Helpers#: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
-using ...InputDeck: SolverParams, start_time, end_time
+using ...ParameterSpec: @params, register_solver
+using ...InputDeck: SolverParams, SolverOptions, start_time, end_time
+
+@params struct VerletParams <: SolverOptions
+    safety_factor::Float64 = opt("Safety Factor"; default = 1.0, min = 0)
+    fixed_dt::Float64 = opt("Fixed dt"; default = -1.0, quantity = :time)
+    numerical_damping::Float64 = opt("Numerical Damping"; default = 0.0, min = 0)
+end
+__init__() = register_solver("Verlet", VerletParams)
 using ...MPI_Communication: find_and_set_core_value_min, find_and_set_core_value_max
 using ..Model_Factory: compute_models, compute_crititical_time_step
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, BoundaryCondition
@@ -22,9 +30,6 @@ include("../../Compute/compute_field_values.jl")
 export init_solver
 export run_solver
 
-function solver_name()
-    return "Verlet"
-end
 
 """
 	init_solver(params::SolverParams, bcs::Dict{String,BoundaryCondition}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
@@ -67,8 +72,8 @@ function init_solver(solver_options::Dict{Any,Any},
     thermal = "Thermal" in solver_options["Models"]
     initial_time = start_time(params, Data_Manager.get_current_time())
     final_time = end_time(params, Data_Manager.get_current_time())
-    safety_factor = params.verlet.safety_factor
-    fixed_dt = params.verlet.fixed_dt
+    safety_factor = params.options.safety_factor
+    fixed_dt = params.options.fixed_dt
     min_dt = compute_crititical_time_step(block_nodes, mechanical, thermal)
     if fixed_dt == -1.0
         nsteps, dt = get_integration_steps(initial_time, final_time, safety_factor * min_dt)
@@ -79,7 +84,7 @@ function init_solver(solver_options::Dict{Any,Any},
     comm = Data_Manager.get_comm()
     dt = find_and_set_core_value_min(comm, dt)
     nsteps = find_and_set_core_value_max(comm, nsteps)
-    numerical_damping = params.verlet.numerical_damping
+    numerical_damping = params.options.numerical_damping
     max_damage = params.maximum_damage
 
     if Data_Manager.get_rank() == 0

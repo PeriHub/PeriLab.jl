@@ -13,7 +13,25 @@ using TimerOutputs: @timeit
 
 using ...Data_Manager
 using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
-using ...InputDeck: SolverParams, start_time, end_time
+using ...ParameterSpec: @params, register_solver
+using ...InputDeck: SolverParams, SolverOptions, start_time, end_time
+
+@params struct StaticParams <: SolverOptions
+    safety_factor::Float64 = opt("Safety Factor"; default = 1.0, min = 0)
+    fixed_dt::Float64 = opt("Fixed dt"; default = -1.0, quantity = :time)
+    numerical_damping::Float64 = opt("Numerical Damping"; default = 0.0, min = 0)
+    solution_tolerance::Float64 = opt("Solution tolerance"; default = 1e-7, min = 0)
+    residual_tolerance::Float64 = opt("Residual tolerance"; default = 1e-7, min = 0)
+    maximum_number_of_iterations::Int64 = opt("Maximum number of iterations"; default = 100,
+                                              min = 1)
+    show_solver_iteration::Bool = opt("Show solver iteration"; default = false)
+    residual_scaling::Float64 = opt("Residual scaling"; default = 1e6)
+    m::Int64 = opt("m"; default = 15, min = 1)
+    linear_start_value::Union{Nothing,String} = opt("Linear Start Value"; default = nothing)
+    nlsolve::Union{Nothing,Bool} = opt("NLSolve"; default = nothing)
+    solver_type::Union{Nothing,String} = opt("Solver Type"; default = nothing)
+end
+__init__() = register_solver("Static", StaticParams)
 # using ...MPI_Communication: barrier
 using ..Model_Factory
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof, BoundaryCondition
@@ -21,9 +39,6 @@ using ...Logging_Module: print_table
 
 export init_solver
 export run_solver
-function solver_name()
-    return "Static"
-end
 """
     init_solver(params::SolverParams, bcs::Dict{String,BoundaryCondition}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
@@ -68,7 +83,7 @@ function init_solver(solver_options::Dict{Any,Any},
     thermal = "Thermal" in solver_options["Models"]
     initial_time = start_time(params, Data_Manager.get_current_time())
     final_time = end_time(params, Data_Manager.get_current_time())
-    fixed_dt = params.static.fixed_dt
+    fixed_dt = params.options.fixed_dt
     dof = Data_Manager.get_dof()
     if fixed_dt == -1.0
         if params.number_of_steps !== nothing
@@ -88,9 +103,9 @@ function init_solver(solver_options::Dict{Any,Any},
     comm = Data_Manager.get_comm()
 
     # not needed here
-    numerical_damping = params.static.numerical_damping
+    numerical_damping = params.options.numerical_damping
     max_damage = params.maximum_damage
-    static = params.static
+    static = params.options
     solver_specifics = Dict("Solution tolerance" => static.solution_tolerance,
                             "Residual tolerance" => static.residual_tolerance,
                             "Maximum number of iterations" => static.maximum_number_of_iterations,

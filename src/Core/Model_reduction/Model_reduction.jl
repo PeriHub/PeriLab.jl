@@ -5,7 +5,15 @@
 module Model_reduction
 using TimerOutputs: @timeit
 using ...Data_Manager
-using ....InputDeck: ModelReductionParams
+using ....ParameterSpec: @params
+
+@params struct ModelReductionParams
+    type::String = req("Type")
+    number_of_modes::Int64 = opt("Number of Modes"; default = 1, min = 1)
+    material_point_region::Bool = opt("Material Point Region"; default = true)
+    reduction_blocks::Union{Nothing,Int64,String} = opt("Reduction Blocks"; default = nothing,
+                                                        description = "Block id or list, e.g. \"2, 3\"")
+end
 using SparseArrays
 using ....ModuleLoader: find_module_files, create_module_specifics
 using ...Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
@@ -16,7 +24,7 @@ for mod in module_list
     include(mod["File"])
 end
 
-export ReducedState
+export ReducedState, ModelReductionParams
 export n_physical, n_modal, physical_part, modal_part
 export pull_from_nodes!, add_from_nodes!, push_to_nodes!
 export setup_reduced_state

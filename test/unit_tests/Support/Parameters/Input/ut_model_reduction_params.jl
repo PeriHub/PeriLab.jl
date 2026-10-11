@@ -11,7 +11,7 @@ const UT_MR = PeriLab.Solver_Manager.Matrix_Verlet.Model_reduction
 
 function ut_mr(dict)
     ctx = PS.ParseContext()
-    p = PS.parse_section(ID.ModelReductionParams, dict, "MR", ctx)
+    p = PS.parse_section(UT_MR.ModelReductionParams, dict, "MR", ctx)
     @test isempty(ctx.errors)
     return p
 end
