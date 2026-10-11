@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file.
 - `PeriLab.to_json_schema(PeriLab.InputDeck.PeriLabInput)`: JSON Schema of the input deck, e.g. for editor completion
 - Input reference pages generated from the declarations (`PeriLab.generate_parameter_docs`)
 - A docstring above an `@params` field is its description
+- `Fallback` in a solver section: a step the solver cannot compute (Static without convergence, Linear Static Matrix Based when damage starts) is recomputed by the fallback solver, which runs to the final time of the step
 
 ### Changed
 
@@ -38,6 +39,9 @@ All notable changes to this project will be documented in this file.
 - Solvers register their options with `register_solver(name, Params)` in `__init__()`, like the models; `solver_name()` in solver modules is removed. A new `one_of` field kind selects the solver section, so the registered solvers appear in the schema, `describe` and the input reference
 - Solver modules implement `init_solver(options, params, models, bcs, block_nodes)` (returns a `TimeWindow` and the solver state) and `run_solver(run::SolverRun, ctx::SolverContext)`; the `solver_options` dict and the 10-argument `run_solver` are removed. `Solver_Manager.init` returns a `SolverRun`, `Model_Factory.init_models` and `calculate_stresses` take the active models and `CalculationOptions`
 - An empty solver section (`Verlet:` without keys) uses the solver's defaults
+- All solvers run on one shared time loop; solver modules implement `prepare_solver(run, ctx)` and `time_step!(ws, run, ctx, clock)` instead of `run_solver`, which remains possible for solvers with their own time control
+- Static writes the step that reaches `Maximum Damage` before cancelling; Newmark, Verlet Matrix Based and Linear Static Matrix Based apply `Maximum Damage`, pass the maximum damage to the output (`write_after_damage`) and cancel on every MPI rank
+- Linear Static Matrix Based fails a step that starts damage: the run is cancelled, or continued by the `Fallback` solver
 
 ## [2.2.5] - 2026-09-21
 

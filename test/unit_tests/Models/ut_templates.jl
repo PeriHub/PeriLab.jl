@@ -193,4 +193,11 @@ end
                                  ["Material"], Dict{String,Any}(), Dict{Int64,Vector{Int64}}())
     @test time == PeriLab.Solver_Manager.TimeWindow(0.0, 2.0, 0.5, 4)
     @test state === nothing
+    SM = PeriLab.Solver_Manager
+    @test hasmethod(SM.prepare_solver,
+                    Tuple{SM.SolverRun{ST.SolverTemplateParams,Nothing},SM.SolverContext})
+    @test hasmethod(SM.time_step!,
+                    Tuple{ST.SolverTemplateWorkspace,
+                          SM.SolverRun{ST.SolverTemplateParams,Nothing},SM.SolverContext,
+                          SM.StepClock})
 end

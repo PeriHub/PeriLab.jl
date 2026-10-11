@@ -6,8 +6,8 @@ module Solver_template
 using ...Data_Manager
 using ...ParameterSpec: @params, register_solver
 using ...InputDeck: SolverOptions, SolverParams, start_time, end_time
-using ..Solver_Common: TimeWindow, SolverRun, SolverContext
-import ..Solver_Common: run_solver
+using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, StepFailed
+import ..Solver_Common: prepare_solver, time_step!
 
 """
     SolverTemplateParams
@@ -40,13 +40,36 @@ function init_solver(options::SolverTemplateParams, params::SolverParams,
 end
 
 """
-    run_solver(run, ctx)
+    SolverTemplateWorkspace
 
-Runs the time loop of the step `run` and returns the result files.
+What the solver keeps between steps: fields fetched once, buffers, start values.
 """
-function run_solver(run::SolverRun{SolverTemplateParams}, ctx::SolverContext)
-    @info "please add your solver here"
-    return ctx.result_files
+struct SolverTemplateWorkspace
+    volume::Vector{Float64}
+end
+
+"""
+    prepare_solver(run, ctx)
+
+Called once before the first step, after the models are initialized.
+"""
+function prepare_solver(run::SolverRun{SolverTemplateParams}, ctx::SolverContext)
+    return SolverTemplateWorkspace(Data_Manager.get_field("Volume"))
+end
+
+"""
+    time_step!(ws, run, ctx, clock)
+
+Computes one step from N to NP1 at `clock.time` with increment `clock.dt`.
+Return `StepFailed(reason)` if the step cannot be computed; the shared loop then
+discards it and hands it to the `Fallback` solver of the deck, if any. Writing
+results, the damage limit, cancelling, `NP1 → N` and the time are done by the
+shared loop.
+"""
+function time_step!(ws::SolverTemplateWorkspace, run::SolverRun{SolverTemplateParams},
+                    ctx::SolverContext, clock::StepClock)
+    @info "please add your solver step here"
+    return nothing
 end
 
 end

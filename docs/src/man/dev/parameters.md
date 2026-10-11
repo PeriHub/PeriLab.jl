@@ -33,9 +33,33 @@ A solver is registered the same way. Its options struct is a subtype of
     __init__() = register_solver("My Solver", MySolverParams)
 
 The solver module defines `init_solver(options, params, models, bcs, block_nodes)`,
-which returns a `TimeWindow` and the solver's state, and
-`run_solver(run::SolverRun{MySolverParams}, ctx::SolverContext)`; see
+which returns a `TimeWindow` and the solver's state, and two functions for the
+time steps:
+
+- `prepare_solver(run::SolverRun{MySolverParams}, ctx::SolverContext)` is called
+  once before the first step and returns the solver's workspace (fields, buffers,
+  start values);
+- `time_step!(ws, run, ctx, clock::StepClock)` computes one step from N to NP1 at
+  `clock.time` with increment `clock.dt`, and returns `StepFailed(reason)` if the
+  step cannot be computed.
+
+The time loop is shared by all solvers (`time_loop`): it writes the results,
+applies `Maximum Damage`, cancels, switches `NP1 → N` and advances the time. A
+solver with its own time control may still define
+`run_solver(run::SolverRun{MySolverParams}, ctx::SolverContext)`. See
 `src/Core/Solver/Solver_template/solver_template.jl`.
+
+A failed step is discarded. If the solver section has a `Fallback`, that solver
+recomputes the step from the last converged state and runs to the final time of
+the solver step; otherwise the run is cancelled:
+
+    Solver:
+      Final Time: 1.0e-3
+      Static:
+        Maximum number of iterations: 50
+      Fallback:
+        Verlet:
+          Safety Factor: 0.9
 
 `SolverParams` selects the solver with a `one_of` field:
 `options::SolverOptions = one_of(:solver)` holds exactly one sub-section whose
