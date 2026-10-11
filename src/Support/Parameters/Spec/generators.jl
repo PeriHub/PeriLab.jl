@@ -106,13 +106,22 @@ required keys; indexed keys (`key_patterns`) become `patternProperties`.
 function json_schema(T)
     props = Dict{String,Any}("Globals" => copy(_GLOBALS_SCHEMA))
     required = String[]
+    choices = Any[]
     for fs in parameter_spec(T)
+        if fs.category !== nothing
+            for (name, S) in registered_models(fs.category)
+                props[name] = json_schema(S)
+                push!(choices, Dict{String,Any}("required" => [name]))
+            end
+            continue
+        end
         props[fs.alias] = field_schema(fs)
         fs.required && push!(required, fs.alias)
     end
     schema = Dict{String,Any}("type" => "object", "properties" => props,
                               "additionalProperties" => false)
     isempty(required) || (schema["required"] = sort!(required))
+    isempty(choices) || (schema["oneOf"] = choices)
     patterns = key_patterns(T)
     if !isempty(patterns)
         schema["patternProperties"] = Dict{String,Any}(first(p).pattern => type_schema(last(p))
@@ -165,12 +174,20 @@ end
 One row of strings per YAML key of `T`: key, type, required, default, range,
 quantity, description.
 """
-function parameter_rows(T)
-    return [(key = fs.alias, type = type_label(fs.type),
-             required = fs.required ? "required" : "optional",
-             default = _default_text(fs), range = _range_text(fs),
-             quantity = fs.quantity === nothing ? "" : string(fs.quantity),
-             description = fs.description) for fs in parameter_spec(T)]
+parameter_rows(T) = [_row(fs) for fs in parameter_spec(T)]
+
+function _row(fs::FieldSpec)
+    if fs.category !== nothing
+        return (key = "<" * _category_noun(fs.category) * ">",
+                type = "one of: " * join(registered_names(fs.category), ", "),
+                required = "required", default = "", range = "", quantity = "",
+                description = fs.description)
+    end
+    return (key = fs.alias, type = type_label(fs.type),
+            required = fs.required ? "required" : "optional",
+            default = _default_text(fs), range = _range_text(fs),
+            quantity = fs.quantity === nothing ? "" : string(fs.quantity),
+            description = fs.description)
 end
 
 function _params_type(T)
@@ -184,6 +201,10 @@ end
 function nested_params(T)
     nested = Pair{String,Any}[]
     for fs in parameter_spec(T)
+        if fs.category !== nothing
+            append!(nested, [name => S for (name, S) in registered_models(fs.category)])
+            continue
+        end
         P = _params_type(fs.type)
         P === nothing || push!(nested, fs.alias => P)
     end

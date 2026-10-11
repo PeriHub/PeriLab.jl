@@ -151,3 +151,30 @@ end
     end
     @test_throws PS.ParamsDefinitionError PS.register_one_of_type!(:ut_drive, UTCar)
 end
+
+@testset "one_of: schema, rows, nested sections" begin
+    with_ut_drives() do
+        s = PS.json_schema(UTTrip)
+        @test s["required"] == ["Distance"]
+        @test s["properties"]["Car"] == PS.json_schema(UTCar)
+        @test s["properties"]["Boat"] == PS.json_schema(UTBoat)
+        @test s["oneOf"] == Any[Dict{String,Any}("required" => ["Boat"]),
+                                Dict{String,Any}("required" => ["Car"])]
+        @test !haskey(s["properties"], "")
+        rows = PS.parameter_rows(UTTrip)
+        @test rows[2].key == "<ut drive>" && rows[2].type == "one of: Boat, Car"
+        @test rows[2].required == "required" && rows[2].description == "how to travel"
+        @test PS.nested_params(UTTrip) == ["Boat" => UTBoat, "Car" => UTCar]
+        @test occursin("| <ut drive> | one of: Boat, Car | required |",
+                       PS.markdown_table(rows))
+    end
+end
+
+@testset "one_of: template" begin
+    with_ut_drives() do
+        io = IOBuffer()
+        PeriLab.InputDeck._template(io, UTTrip, "  ")
+        text = String(take!(io))
+        @test occursin("  # exactly one of: Boat, Car\n  Boat:\n    Depth: <number>", text)
+    end
+end

@@ -158,6 +158,15 @@ end
 # named entries get one placeholder entry
 function _template(io::IO, T, indent::String)
     for fs in ParameterSpec.parameter_spec(T)
+        if fs.category !== nothing
+            models = ParameterSpec.registered_models(fs.category)
+            println(io, indent, "# exactly one of: ", join(first.(models), ", "))
+            isempty(models) && continue
+            name, S = first(models)
+            println(io, indent, name, ":")
+            _template(io, S, indent * "  ")
+            continue
+        end
         prefix = fs.required ? "" : "# "
         entry = _named_entries(fs.type)
         if entry !== nothing
