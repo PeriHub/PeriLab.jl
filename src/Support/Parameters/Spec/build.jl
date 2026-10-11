@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"YAML keys declared by an `@params` struct."
-aliases(T) = Set{String}(fs.alias for fs in parameter_spec(T))
+"YAML keys declared by an `@params` struct (`one_of` fields have none, see `one_of_keys`)."
+aliases(T) = Set{String}(fs.alias for fs in parameter_spec(T) if fs.category === nothing)
 
 """
     build(T, dict, path, ctx; owner)
@@ -19,6 +19,11 @@ function build(T, dict::AbstractDict, path::String, ctx::ParseContext;
     values = Any[]
     failed = false
     for fs in parameter_spec(T)
+        if fs.category !== nothing
+            v = _select_one_of(fs, dict, path, ctx)
+            v === FAILED ? (failed = true) : push!(values, v)
+            continue
+        end
         field_path = join_path(path, fs.alias)
         if !haskey(dict, fs.alias)
             if fs.required
@@ -79,7 +84,7 @@ end
 function _parse_section(T, dict::AbstractDict, path::String, ctx::ParseContext,
                         known_extra = ())
     p = build(T, dict, path, ctx)
-    check_unknown!(dict, union(aliases(T), known_extra), path, ctx)
+    check_unknown!(dict, union(aliases(T), one_of_keys(T), known_extra), path, ctx)
     p === nothing && return nothing
     check!(p, path, ctx)
     return derive(p)

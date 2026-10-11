@@ -173,7 +173,7 @@ end
     cases = [(:(PS.@params struct UTBad1
                     x::Float64
                 end),
-              "UTBad1: field `x` must be written as `x::Type = req(\"YAML key\"; ...)` or `x::Type = opt(\"YAML key\"; default = ...)`"),
+              "UTBad1: field `x` must be written as `x::Type = req(\"YAML key\"; ...)`, `x::Type = opt(\"YAML key\"; default = ...)` or `x::AbstractType = one_of(:category)`"),
              (:(PS.@params struct UTBad2
                     x::Float64 = 3.0
                 end),

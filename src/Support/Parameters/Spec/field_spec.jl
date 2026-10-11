@@ -21,6 +21,7 @@ struct FieldDecl
     allowed::Union{Nothing,Vector{Any}}
     quantity::Union{Nothing,Symbol}
     description::String
+    category::Union{Nothing,Symbol}
 end
 
 _bound(::Nothing) = nothing
@@ -37,7 +38,7 @@ PeriLab has no fixed unit system.
 function req(alias::AbstractString; min = nothing, max = nothing, allowed = nothing,
              quantity = nothing, description::AbstractString = "")
     return FieldDecl(String(alias), true, NO_DEFAULT, _bound(min), _bound(max),
-                     _allowed(allowed), quantity, String(description))
+                     _allowed(allowed), quantity, String(description), nothing)
 end
 
 """
@@ -48,7 +49,7 @@ An optional parameter; `default` is required.
 function opt(alias::AbstractString; default = NO_DEFAULT, min = nothing, max = nothing,
              allowed = nothing, quantity = nothing, description::AbstractString = "")
     return FieldDecl(String(alias), false, default, _bound(min), _bound(max),
-                     _allowed(allowed), quantity, String(description))
+                     _allowed(allowed), quantity, String(description), nothing)
 end
 
 """
@@ -68,9 +69,10 @@ struct FieldSpec
     allowed::Union{Nothing,Vector{Any}}
     quantity::Union{Nothing,Symbol}
     description::String
+    category::Union{Nothing,Symbol}
 end
 
 function FieldSpec(name::Symbol, type, decl::FieldDecl; default = decl.default)
     return FieldSpec(name, type, decl.alias, decl.required, default, decl.min, decl.max,
-                     decl.allowed, decl.quantity, decl.description)
+                     decl.allowed, decl.quantity, decl.description, decl.category)
 end

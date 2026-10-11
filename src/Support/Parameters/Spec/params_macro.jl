@@ -90,9 +90,19 @@ into `FieldSpec`s, raising `ParamsDefinitionError` for invalid declarations.
 """
 function build_spec(T, display::String, entries::Vector{Any})
     specs = FieldSpec[]
+    one_of_seen = false
     used = Dict{String,Symbol}()
     for (fname, ftype, decl) in entries
         location = "$display.$fname"
+        if decl.category !== nothing
+            (ftype isa DataType && isabstracttype(ftype)) ||
+                throw(ParamsDefinitionError("$location: one_of needs an abstract type, got $(_typename(ftype))"))
+            one_of_seen &&
+                throw(ParamsDefinitionError("$location: only one one_of field per struct"))
+            one_of_seen = true
+            push!(specs, FieldSpec(fname, ftype, decl))
+            continue
+        end
         if ftype isa UnionAll && is_params(ftype)
             throw(ParamsDefinitionError("$location: nested section type $(_typename(ftype)) contains Dependent fields; this is not supported"))
         end
@@ -147,7 +157,7 @@ function _has_description(decl::Expr)
 end
 
 function _field_usage(name, fname)
-    return "$name: field `$fname` must be written as `$fname::Type = req(\"YAML key\"; ...)` or `$fname::Type = opt(\"YAML key\"; default = ...)`"
+    return "$name: field `$fname` must be written as `$fname::Type = req(\"YAML key\"; ...)`, `$fname::Type = opt(\"YAML key\"; default = ...)` or `$fname::AbstractType = one_of(:category)`"
 end
 
 """
@@ -200,7 +210,7 @@ macro params(structdef)
         end
         fname, ftype = line.args[1].args
         decl = line.args[2]
-        if !(decl isa Expr && decl.head === :call && decl.args[1] in (:req, :opt))
+        if !(decl isa Expr && decl.head === :call && decl.args[1] in (:req, :opt, :one_of))
             return _definition_error(_field_usage(name, fname))
         end
         call = Expr(:call, GlobalRef(_SELF, decl.args[1]), decl.args[2:end]...)

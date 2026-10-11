@@ -4,7 +4,7 @@
 
 export register_model!, register_unavailable!, register_material, register_damage,
        register_thermal, register_additive, register_degradation, register_pre_calculation,
-       register_contact,
+       register_contact, register_solver, register_one_of_type!,
        register_base!, base_model
 
 "A model name that is known (e.g. from a license manifest) but not loaded."
@@ -17,6 +17,23 @@ end
 # never during precompilation.
 const REGISTRY = Dict{Symbol,Dict{String,Any}}()
 
+# category => abstract type every model of a `one_of` category must subtype
+const ONE_OF_TYPES = Dict{Symbol,Type}()
+
+"""
+    register_one_of_type!(category, S)
+
+Declares the abstract type `S` of the `one_of` field reading `category`;
+`register_model!` then rejects structs that are no subtype of `S`. Call it from
+the `__init__()` of the module declaring the `one_of` field.
+"""
+function register_one_of_type!(category::Symbol, S::Type)
+    isabstracttype(S) ||
+        throw(ParamsDefinitionError("register_one_of_type!: $(_typename(S)) is not an abstract type"))
+    ONE_OF_TYPES[category] = S
+    return nothing
+end
+
 """
     register_model!(category, name, T)
 
@@ -26,6 +43,9 @@ from your module's `__init__()`.
 function register_model!(category::Symbol, name::AbstractString, T::Type)
     is_params(T) ||
         throw(ParamsDefinitionError("register_model!: $(_typename(T)) is not an @params struct"))
+    S = get(ONE_OF_TYPES, category, nothing)
+    S === nothing || T <: S ||
+        throw(ParamsDefinitionError("$category model \"$name\": $(_typename(T)) must be a subtype of $(_typename(S))"))
     models = get!(Dict{String,Any}, REGISTRY, category)
     existing = get(models, name, nothing)
     if existing isa Type && existing !== T
@@ -70,6 +90,7 @@ register_thermal(name::AbstractString, T::Type) = register_model!(:thermal, name
 register_additive(name::AbstractString, T::Type) = register_model!(:additive, name, T)
 register_degradation(name::AbstractString, T::Type) = register_model!(:degradation, name, T)
 register_contact(name::AbstractString, T::Type) = register_model!(:contact, name, T)
+register_solver(name::AbstractString, T::Type) = register_model!(:solver, name, T)
 function register_pre_calculation(name::AbstractString, T::Type)
     register_model!(:pre_calculation, name, T)
 end
