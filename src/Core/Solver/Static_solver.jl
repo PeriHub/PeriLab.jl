@@ -5,7 +5,6 @@
 module Static_Solver
 using LinearAlgebra
 using NLsolve
-using ProgressBars: set_multiline_postfix, set_postfix
 using Printf
 using LoopVectorization
 using Logging
@@ -15,7 +14,8 @@ using ...Data_Manager
 using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
 using ...ParameterSpec: @params, register_solver
 using ...InputDeck: SolverParams, SolverOptions, start_time, end_time
-using ..Solver_Common: TimeWindow, SolverRun, SolverContext, synchronise_field,
+using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, StepFailed,
+                       synchronise_field,
                        compute_parabolic_problems_before_model_evaluation,
                        compute_parabolic_problems_after_model_evaluation
 
@@ -41,7 +41,7 @@ using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_
 using ...Logging_Module: print_table
 
 export init_solver
-import ..Solver_Common: run_solver
+import ..Solver_Common: prepare_solver, time_step!
 """
     init_solver(options::StaticParams, params::SolverParams, models::Vector{String}, bcs::Dict{String,BoundaryCondition}, block_nodes::Dict{Int64,Vector{Int64}})
 
@@ -158,138 +158,89 @@ function init_solver(options::StaticParams,
     return TimeWindow(initial_time, final_time, dt, nsteps), nothing
 end
 
-function run_solver(run::SolverRun{StaticParams}, ctx::SolverContext)
+"""
+    StaticWorkspace
+
+Fields and nlsolve settings of the static solver; `start_u` is the start value
+of the next step.
+"""
+mutable struct StaticWorkspace
+    bc_free_dof::Vector{Int64}
+    scaling::Float64
+    xtol::Float64
+    ftol::Float64
+    iterations::Int64
+    show_trace::Bool
+    m::Int64
+    start_u::Matrix{Float64}
+    uNP1::Matrix{Float64}
+    forces::Matrix{Float64}
+    volume::Vector{Float64}
+    active_list::Vector{Bool}
+end
+
+"""
+    prepare_solver(run::SolverRun{StaticParams}, ctx::SolverContext)
+
+Fetches the fields and the nlsolve settings of the static steps.
+"""
+function prepare_solver(run::SolverRun{StaticParams}, ctx::SolverContext)
+    options = run.params.options
+    return StaticWorkspace(convert(Vector{Int64}, Data_Manager.get_bc_free_dof()),
+                           options.residual_scaling,
+                           options.solution_tolerance,
+                           options.residual_tolerance,
+                           options.maximum_number_of_iterations,
+                           options.show_solver_iteration,
+                           options.m,
+                           Data_Manager.get_field("Start_Values"),
+                           Data_Manager.get_field("Displacements", "NP1"),
+                           Data_Manager.get_field("Forces", "NP1"),
+                           Data_Manager.get_field("Volume"),
+                           Data_Manager.get_field("Active"))
+end
+
+"""
+    time_step!(ws::StaticWorkspace, run::SolverRun{StaticParams}, ctx::SolverContext, clock::StepClock)
+
+One static step: Dirichlet conditions, then the equilibrium solved with nlsolve
+(Anderson). Returns `StepFailed` if nlsolve does not converge.
+"""
+function time_step!(ws::StaticWorkspace, run::SolverRun{StaticParams}, ctx::SolverContext,
+                    clock::StepClock)
     block_nodes = ctx.block_nodes
     bcs = ctx.bcs
-    outputs = ctx.outputs
-    result_files = ctx.result_files
-    write_results = ctx.write_results
-    silent = ctx.silent
-    atexit(() -> Data_Manager.set_cancel(true))
-
-    coor = Data_Manager.get_field("Coordinates")
-    comm = Data_Manager.get_comm()
-
-    dt::Float64 = run.time.dt
-    nsteps::Int64 = run.time.nsteps
-    time::Float64 = run.time.initial_time
-    final_time::Float64 = run.time.final_time
-    step_time::Float64 = 0
-    max_cancel_damage::Float64 = run.params.maximum_damage
-    numerical_damping::Float64 = run.params.options.numerical_damping
-    max_damage::Float64 = 0
-    damage_init::Bool = false
-    rank = Data_Manager.get_rank()
-    iter = progress_bar(rank, nsteps, silent)
-    bc_free_dof = Data_Manager.get_bc_free_dof()
-    options = run.params.options
-    scaling = options.residual_scaling
-    xtol = options.solution_tolerance
-    ftol = options.residual_tolerance
-    iterations = options.maximum_number_of_iterations
-    show_trace = options.show_solver_iteration
-    m = options.m
-    uN = Data_Manager.get_field("Displacements", "N")
-    uNP1 = Data_Manager.get_field("Displacements", "NP1")
-    resdiual = Data_Manager.get_field("Residual")
-    start_u = Data_Manager.get_field("Start_Values")
-    coor = Data_Manager.get_field("Coordinates")
-    external_forces = Data_Manager.get_field("External Forces")
-    external_force_densities = Data_Manager.get_field("External Force Densities")
-    force_densities = Data_Manager.get_field("Force Densities", "NP1")
-    forces = Data_Manager.get_field("Forces", "NP1")
-    volume = Data_Manager.get_field("Volume")
+    time = clock.time
+    step_time = clock.step_time
+    dt = clock.dt
+    apply_bc_dirichlet(["Forces", "Force Densities"], bcs, time, step_time)
     active_nodes = Data_Manager.get_field("Active Nodes")
-    active_list = Data_Manager.get_field("Active")
-    for idt in iter
-        Data_Manager.set_iteration(idt)
-        #apply_bc_dirichlet(bcs, time) #-> Dirichlet
-        apply_bc_dirichlet(["Forces", "Force Densities"],
-                           bcs,
-                           time,
-                           step_time) #-> Dirichlet
-        external_force_densities += external_forces ./ volume
-        active_nodes = Data_Manager.get_field("Active Nodes")
-        active_nodes = find_active_nodes(active_list, active_nodes,
-                                         1:Data_Manager.get_nnodes())
-
-        compute_parabolic_problems_before_model_evaluation(active_nodes, run)
-        apply_bc_dirichlet(["Displacements", "Temperature"], bcs,
-                           time,
-                           step_time + dt) #-> Dirichlet
-
-        sol = nlsolve((residual,
-                       U) -> residual!(residual,
-                                       U,
-                                       bc_free_dof,
-                                       block_nodes,
-                                       dt,
-                                       time,
-                                       run.models,
-                                       synchronise_field,
-                                       scaling),
-                      start_u;
-                      xtol = xtol,
-                      ftol = ftol,
-                      iterations = iterations,
-                      show_trace = show_trace & !silent,
-                      extended_trace = false,
-                      method = :anderson,
-                      m = m,)
-
-        compute_parabolic_problems_after_model_evaluation(active_nodes, run, dt)
-
-        start_u = copy(uNP1)
-        if !sol.x_converged && !sol.f_converged
-            @info "Failed to converge at step $idt: maximum number of iterations reached"
-            Data_Manager.set_cancel(true)
-        end
-        # method=:newton, linsolve=KrylovJL_GMRES()
-        # method=:broyden
-        active_nodes = find_active_nodes(active_list, active_nodes,
-                                         1:Data_Manager.get_nnodes())
-
-        if "Damage" in run.models
-            damage = Data_Manager.get_damage("NP1")
-            max_damage = maximum(damage[active_nodes])
-            if max_damage > max_cancel_damage
-                @info "Maximum damage reached at step $idt: $max_damage"
-                Data_Manager.set_cancel(true)
-            end
-            if !damage_init && max_damage > 0
-                damage_init = true
-            end
-        end
-
-        if Data_Manager.get_cancel()
-            @info "Canceling at step $idt"
-            break
-        end
-
-        force_densities = Data_Manager.get_field("Force Densities", "NP1")
-
-        @. @views forces[active_nodes,
-        :] = force_densities[active_nodes, :] .*
-                                            volume[active_nodes]
-
-        @timeit "write_results" result_files=write_results(result_files, time,
-                                                           max_damage, outputs)
-
-        @timeit "switch_NP1_to_N" Data_Manager.switch_NP1_to_N()
-
-        time += dt
-        step_time += dt
-        Data_Manager.set_current_time(time)
-        if idt % ceil(nsteps / 100) == 0 || idt == 1 || idt == nsteps + 1
-            @info "Step: $idt / $(nsteps+1) [$(@sprintf("%.3e", time)) s]"
-        end
-        # if rank == 0 && !silent
-        #     set_postfix(iter, t=@sprintf("%.3e", time))
-        # end
-        # barrier(comm)
+    active_nodes = find_active_nodes(ws.active_list, active_nodes,
+                                     1:Data_Manager.get_nnodes())
+    compute_parabolic_problems_before_model_evaluation(active_nodes, run)
+    apply_bc_dirichlet(["Displacements", "Temperature"], bcs, time, step_time + dt)
+    sol = nlsolve((residual, U) -> residual!(residual, U, ws.bc_free_dof, block_nodes, dt,
+                                             time, run.models, synchronise_field,
+                                             ws.scaling),
+                  ws.start_u;
+                  xtol = ws.xtol,
+                  ftol = ws.ftol,
+                  iterations = ws.iterations,
+                  show_trace = ws.show_trace & !ctx.silent,
+                  extended_trace = false,
+                  method = :anderson,
+                  m = ws.m,)
+    compute_parabolic_problems_after_model_evaluation(active_nodes, run, dt)
+    ws.start_u = copy(ws.uNP1)
+    if !sol.x_converged && !sol.f_converged
+        return StepFailed("no convergence after $(ws.iterations) iterations")
     end
-    Data_Manager.set_current_time(final_time)
-    return result_files
+    active_nodes = find_active_nodes(ws.active_list, active_nodes,
+                                     1:Data_Manager.get_nnodes())
+    force_densities = Data_Manager.get_field("Force Densities", "NP1")
+    @. @views ws.forces[active_nodes, :] = force_densities[active_nodes, :] *
+                                           ws.volume[active_nodes]
+    return nothing
 end
 
 function residual!(residual,
