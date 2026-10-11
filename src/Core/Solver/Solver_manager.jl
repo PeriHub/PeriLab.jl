@@ -38,7 +38,8 @@ using .Influence_Function
 
 export init
 export solver
-export TimeWindow, SolverRun, SolverContext, with_steps, create_run
+export TimeWindow, SolverRun, SolverContext, with_steps, create_run, StepClock, StepFailed,
+       prepare_solver, time_step!, time_loop, run_solver
 
 """
 	init(input::PeriLabInput, step_id::Int64)
@@ -265,7 +266,8 @@ end
 Runs the solver step `run`; returns the updated result files.
 """
 function solver(run::SolverRun, ctx::SolverContext)
-    return Base.invokelatest(model_module(run.params.options).run_solver, run, ctx)
+    # invokelatest: the solver may come from a module loaded at runtime (licensed modules)
+    return Base.invokelatest(Solver_Common.run_solver, run, ctx)
 end
 
 """

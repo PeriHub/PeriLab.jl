@@ -7,6 +7,7 @@ using ...Data_Manager
 using ...ParameterSpec: @params, register_solver
 using ...InputDeck: SolverOptions, SolverParams, start_time, end_time
 using ..Solver_Common: TimeWindow, SolverRun, SolverContext
+import ..Solver_Common: run_solver
 
 """
     SolverTemplateParams

@@ -42,7 +42,8 @@ __init__() = register_solver("Verlet Matrix Based", VerletMatrixParams)
 include("../../Compute/compute_field_values.jl")
 using ..Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
                                      compute_model
-export init_solver, run_solver
+export init_solver
+import ..Solver_Common: run_solver
 
 
 """

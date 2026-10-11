@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 export switch_NP1_to_N
+export reset_NP1
 export set_NP1_to_N
 export switch_bonds!
 function switch_bonds!(field_N::Vector{Vector{T}},
@@ -63,6 +64,24 @@ function switch_NP1_to_N() ##TODO check type stability
         field_NP1 = get_field(key, "NP1")
         _fill_field_barrier(field_NP1, active, data["NP1_to_N"][key])
     end
+end
+
+"""
+    reset_NP1()
+
+Discards the NP1 state of a failed step: every NP1 field is as directly after
+`switch_NP1_to_N` (the fill value on active nodes, `Bond Damage` NP1 equal to N).
+"""
+function reset_NP1()
+    active::Vector = _get_field("Active")
+    if haskey(data["NP1_to_N"], "Bond Damage")
+        switch_bonds!(get_field("Bond Damage", "NP1"), get_field("Bond Damage", "N"))
+    end
+    for key::String in keys(data["NP1_to_N"])
+        key == "Bond Damage" && continue
+        _fill_field_barrier(get_field(key, "NP1"), active, data["NP1_to_N"][key])
+    end
+    return nothing
 end
 
 @inline function fill_field!(field_NP1::Vector{Vector{Vector{T}}},

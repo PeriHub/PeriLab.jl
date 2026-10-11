@@ -44,7 +44,7 @@ using ..Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
 using ..Model_Factory.Pre_Calculation.Bond_Deformation
 
 export init_solver
-export run_solver
+import ..Solver_Common: run_solver
 
 
 # ────────────────────────────────────────────────────────────

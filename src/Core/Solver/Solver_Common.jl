@@ -12,7 +12,9 @@ module Solver_Common
 using TimerOutputs: @timeit
 using ...Data_Manager
 using ...PeriLabExceptions: @abort
-using ...Helpers: check_inf_or_nan
+using ...Helpers: check_inf_or_nan, progress_bar
+using Printf: @sprintf
+using ProgressBars: set_multiline_postfix, set_postfix
 using ...InputDeck: SolverParams, SolverOptions, CalculationOptions
 import ...InputDeck: solver_name
 using ...MPI_Communication: synch_responder_to_controller, synch_controller_to_responder,
@@ -20,6 +22,7 @@ using ...MPI_Communication: synch_responder_to_controller, synch_controller_to_r
 using ..Boundary_Conditions: BoundaryCondition
 
 export TimeWindow, SolverRun, SolverContext, with_steps, synchronise_field,
+       StepClock, StepFailed, prepare_solver, time_step!, time_loop, run_solver,
        compute_parabolic_problems_before_model_evaluation,
        compute_parabolic_problems_after_model_evaluation
 
@@ -53,7 +56,11 @@ struct SolverRun{O<:SolverOptions,S}
     end
 end
 
-"What a solver run reads and writes besides the fields: nodes, BCs and output."
+"""
+What a solver run reads and writes besides the fields: nodes, BCs, output, and
+`set_output_frequency(nsteps)`, which recomputes the output frequency when a
+fallback solver takes over.
+"""
 struct SolverContext
     block_nodes::Dict{Int64,Vector{Int64}}
     bcs::Dict{String,BoundaryCondition}
@@ -61,6 +68,12 @@ struct SolverContext
     result_files::Vector{Dict}
     write_results::Function
     silent::Bool
+    set_output_frequency::Function
+end
+
+function SolverContext(block_nodes, bcs, outputs, result_files, write_results, silent)
+    return SolverContext(block_nodes, bcs, outputs, result_files, write_results, silent,
+                         nsteps -> nothing)
 end
 
 "Registered name of the solver of `run`."
@@ -170,6 +183,130 @@ function compute_parabolic_problems_after_model_evaluation(active_nodes, run::So
         #     @warn "Thermal models are not supported for FEM yet."
         # end
     end
+end
+
+
+"Time of one step: its number, start time, time since the start of the run and increment."
+struct StepClock
+    idt::Int64
+    time::Float64
+    step_time::Float64
+    dt::Float64
+end
+
+"Returned by `time_step!` when the step cannot be computed."
+struct StepFailed
+    reason::String
+end
+
+"""
+    prepare_solver(run, ctx)
+
+Called once per run before the first step; returns the solver's workspace
+(fields, buffers, start values). Each solver adds a method.
+"""
+function prepare_solver end
+
+"""
+    time_step!(ws, run, ctx, clock::StepClock)
+
+Computes one step from N to NP1. Returns `StepFailed(reason)` if the step
+cannot be computed, anything else on success. Each solver adds a method.
+"""
+function time_step! end
+
+"""
+    run_solver(run, ctx)
+
+Runs the solver step `run` and returns the result files. The default is
+`time_loop`; a solver with its own time control may add a method.
+"""
+run_solver(run::SolverRun, ctx::SolverContext) = time_loop(run, ctx)
+
+"""
+    time_loop(run, ctx)
+
+The time loop shared by all solvers: steps, damage limit, results, cancel,
+`NP1 → N`, time and logging. A failed step is discarded and cancels the run.
+"""
+function time_loop(run::SolverRun, ctx::SolverContext)
+    atexit(() -> Data_Manager.set_cancel(true))
+    @info "Run $(solver_name(run)) Solver"
+    result_files, failure = run_steps(run, ctx, ctx.result_files)
+    if failure !== nothing
+        clock, failed = failure
+        @info "Step $(clock.idt) failed: $(failed.reason)"
+        Data_Manager.set_cancel(true)
+    end
+    Data_Manager.set_current_time(run.time.final_time)
+    return result_files
+end
+
+"Maximum NP1 damage over the active nodes (0 without active nodes)."
+function max_active_damage()
+    damage = Data_Manager.get_damage("NP1")
+    active = Data_Manager.get_field("Active")
+    max_damage = 0.0
+    @inbounds for i in 1:Data_Manager.get_nnodes()
+        active[i] && (max_damage = max(max_damage, damage[i]))
+    end
+    return max_damage
+end
+
+"""
+    run_steps(run, ctx, result_files)
+
+Steps of one run. Returns the result files and `nothing`, or
+`(clock, StepFailed)` of the failed step after resetting NP1.
+"""
+function run_steps(run::SolverRun, ctx::SolverContext, result_files)
+    ws = prepare_solver(run, ctx)
+    name = solver_name(run)
+    rank = Data_Manager.get_rank()
+    show = rank == 0 && !ctx.silent
+    nsteps = run.time.nsteps
+    dt = run.time.dt
+    time = run.time.initial_time
+    step_time = 0.0
+    max_damage = 0.0
+    damage_init = false
+    damage_models = "Damage" in run.models
+    iter = progress_bar(rank, nsteps, ctx.silent)
+    for idt in iter
+        Data_Manager.set_iteration(idt)
+        clock = StepClock(idt, time, step_time, dt)
+        result = @timeit name time_step!(ws, run, ctx, clock)
+        if result isa StepFailed
+            Data_Manager.reset_NP1()
+            return result_files, (clock, result)
+        end
+        if damage_models
+            max_damage = max_active_damage()
+            if max_damage > run.params.maximum_damage
+                @info "Maximum damage reached at step $idt: $max_damage"
+                Data_Manager.set_cancel(true)
+            end
+            if !damage_init && max_damage > 0
+                damage_init = true
+                show && set_multiline_postfix(iter, "Damage initiated in step $idt [$time s]!")
+            end
+        end
+        @timeit "write_results" result_files=ctx.write_results(result_files, time,
+                                                               max_damage, ctx.outputs)
+        if Data_Manager.get_cancel()
+            show && set_multiline_postfix(iter, "Simulation canceled!")
+            break
+        end
+        @timeit "switch_NP1_to_N" Data_Manager.switch_NP1_to_N()
+        time += dt
+        step_time += dt
+        Data_Manager.set_current_time(time)
+        if idt % ceil(nsteps / 100) == 0 || idt == 1 || idt == nsteps + 1
+            @info "Step: $idt / $(nsteps+1) [$(@sprintf("%.3e", time)) s]"
+        end
+        show && set_postfix(iter, t = @sprintf("%.3e", time))
+    end
+    return result_files, nothing
 end
 
 end

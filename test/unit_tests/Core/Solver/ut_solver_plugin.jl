@@ -9,6 +9,7 @@ import PeriLab
 using PeriLab.ParameterSpec: @params
 using PeriLab.InputDeck: SolverOptions, SolverParams
 using PeriLab.Solver_Manager: TimeWindow, SolverRun, SolverContext
+import PeriLab.Solver_Manager: run_solver
 
 @params struct UTPluginParams <: SolverOptions
     steps::Int64 = opt("Steps"; default = 3, min = 1)

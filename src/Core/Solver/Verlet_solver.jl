@@ -31,7 +31,7 @@ using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, BoundaryCondi
 using ...Logging_Module: print_table
 include("../../Compute/compute_field_values.jl")
 export init_solver
-export run_solver
+import ..Solver_Common: run_solver
 
 """
 	init_solver(options::VerletParams, params::SolverParams, models::Vector{String}, bcs::Dict{String,BoundaryCondition}, block_nodes::Dict{Int64,Vector{Int64}})

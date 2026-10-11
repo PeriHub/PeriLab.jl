@@ -41,7 +41,7 @@ using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_
 using ...Logging_Module: print_table
 
 export init_solver
-export run_solver
+import ..Solver_Common: run_solver
 """
     init_solver(options::StaticParams, params::SolverParams, models::Vector{String}, bcs::Dict{String,BoundaryCondition}, block_nodes::Dict{Int64,Vector{Int64}})
 

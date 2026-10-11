@@ -37,7 +37,7 @@ using ..Correspondence_matrix_based: init_model, init_matrix,
 using ..Model_Factory.Pre_Calculation.Bond_Deformation
 
 export init_solver
-export run_solver
+import ..Solver_Common: run_solver
 
 
 mutable struct DisplacementSolverCache
