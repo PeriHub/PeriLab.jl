@@ -13,6 +13,17 @@ solver by that key inside `Solver` or a `Multistep Solver` step.
 """
 abstract type SolverOptions end
 
+"""
+    FallbackParams
+
+The solver that takes over when a step of the main solver fails; it recomputes
+the failed step and runs to the final time of the solver step.
+"""
+@params struct FallbackParams
+    options::SolverOptions = one_of(:solver;
+                                    description = "the solver that takes over a failed step")
+end
+
 "Used for `Solver` and for every step of `Multistep Solver`."
 @params struct SolverParams
     initial_time::Union{Nothing,Float64} = opt("Initial Time"; default = nothing,
@@ -34,6 +45,8 @@ abstract type SolverOptions end
     calculate_von_mises_stress::Bool = opt("Calculate von Mises stress"; default = false)
     calculate_strain::Bool = opt("Calculate Strain"; default = false)
     options::SolverOptions = one_of(:solver; description = "the solver of this step")
+    fallback::Union{Nothing,FallbackParams} = opt("Fallback"; default = nothing,
+                                                  description = "solver that takes over a failed step")
 end
 
 function check!(p::SolverParams, path::String, ctx::ParseContext)

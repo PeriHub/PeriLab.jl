@@ -16,6 +16,7 @@ using ...Helpers: check_inf_or_nan, progress_bar
 using Printf: @sprintf
 using ProgressBars: set_multiline_postfix, set_postfix
 using ...InputDeck: SolverParams, SolverOptions, CalculationOptions
+using ...ParameterSpec: model_module
 import ...InputDeck: solver_name
 using ...MPI_Communication: synch_responder_to_controller, synch_controller_to_responder,
                             synch_controller_bonds_to_responder_flattened
@@ -23,6 +24,7 @@ using ..Boundary_Conditions: BoundaryCondition
 
 export TimeWindow, SolverRun, SolverContext, with_steps, synchronise_field,
        StepClock, StepFailed, prepare_solver, time_step!, time_loop, run_solver,
+       create_run,
        compute_parabolic_problems_before_model_evaluation,
        compute_parabolic_problems_after_model_evaluation
 
@@ -224,21 +226,67 @@ Runs the solver step `run` and returns the result files. The default is
 run_solver(run::SolverRun, ctx::SolverContext) = time_loop(run, ctx)
 
 """
+    create_run(params, models, all_models, calculation, bcs, block_nodes)
+
+Initializes the solver selected by `params.options` (its module's
+`init_solver`) and returns the `SolverRun` of the step.
+"""
+function create_run(params::SolverParams, models::Vector{String},
+                    all_models::Vector{String}, calculation::CalculationOptions,
+                    bcs::Dict{String,BoundaryCondition},
+                    block_nodes::Dict{Int64,Vector{Int64}})
+    mod = model_module(params.options)
+    # invokelatest: the solver may come from a module loaded at runtime (licensed modules)
+    time, state = Base.invokelatest(mod.init_solver, params.options, params, models, bcs,
+                                    block_nodes)
+    return SolverRun(params, models, all_models, calculation, time, state)
+end
+
+"`p` with the given fields replaced."
+function with_fields(p::T; kwargs...) where {T}
+    return T((haskey(kwargs, f) ? kwargs[f] : getfield(p, f) for f in fieldnames(T))...)
+end
+
+"""
+    fallback_run(run, ctx, t_N)
+
+The run of the fallback solver of `run`, from `t_N` to the final time of `run`,
+with the models, BCs and nodes of `run`.
+"""
+function fallback_run(run::SolverRun, ctx::SolverContext, t_N::Float64)
+    params = with_fields(run.params; options = run.params.fallback.options,
+                         initial_time = t_N, fallback = nothing)
+    return create_run(params, run.models, run.all_models, run.calculation, ctx.bcs,
+                      ctx.block_nodes)
+end
+
+"""
     time_loop(run, ctx)
 
 The time loop shared by all solvers: steps, damage limit, results, cancel,
-`NP1 → N`, time and logging. A failed step is discarded and cancels the run.
+`NP1 → N`, time and logging. A failed step is discarded; the fallback solver,
+if given, recomputes it and runs to the final time, otherwise the run cancels.
 """
 function time_loop(run::SolverRun, ctx::SolverContext)
     atexit(() -> Data_Manager.set_cancel(true))
-    @info "Run $(solver_name(run)) Solver"
-    result_files, failure = run_steps(run, ctx, ctx.result_files)
-    if failure !== nothing
+    final_time = run.time.final_time
+    result_files = ctx.result_files
+    while true
+        @info "Run $(solver_name(run)) Solver"
+        result_files, failure = run_steps(run, ctx, result_files)
+        failure === nothing && break
         clock, failed = failure
         @info "Step $(clock.idt) failed: $(failed.reason)"
-        Data_Manager.set_cancel(true)
+        if run.params.fallback === nothing
+            Data_Manager.set_cancel(true)
+            break
+        end
+        @info "Switching to $(solver_name(run.params.fallback.options)) at t = $(@sprintf("%.3e", clock.time)) s"
+        Data_Manager.set_current_time(clock.time)
+        run = Base.invokelatest(fallback_run, run, ctx, clock.time)
+        ctx.set_output_frequency(run.time.nsteps)
     end
-    Data_Manager.set_current_time(run.time.final_time)
+    Data_Manager.set_current_time(final_time)
     return result_files
 end
 

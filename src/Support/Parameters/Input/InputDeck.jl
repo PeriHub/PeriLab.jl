@@ -31,7 +31,7 @@ function __init__()
     ParameterSpec.register_one_of_type!(:solver, SolverOptions)
 end
 
-export read_input, PeriLabInput, SolverParams, SolverOptions,
+export read_input, PeriLabInput, SolverParams, SolverOptions, FallbackParams,
        solver_name, CalculationOptions, calculation_options, start_time, end_time, model_options, solver_steps,
        solver_step,
        BlockParams, DiscretizationParams, GcodeParams, BondFilterParams,

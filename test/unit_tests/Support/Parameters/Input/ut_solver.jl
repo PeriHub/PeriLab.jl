@@ -114,3 +114,27 @@ end
     @test ID.solver_step(input, 2).options isa SM.Static_Solver.StaticParams
     @test ID.solver_step(input, 2).options.m === 4
 end
+
+@testset "Fallback names one solver" begin
+    s, ctx = ut_solver(Dict{String,Any}("Final Time" => 1.0, "Static" => Dict{String,Any}(),
+                                        "Fallback" => Dict{String,Any}("Verlet" => Dict{String,Any}("Safety Factor" => 0.9))))
+    @test isempty(ctx.errors)
+    @test s.fallback.options isa PeriLab.Solver_Manager.Verlet_Solver.VerletParams
+    @test s.fallback.options.safety_factor == 0.9
+    @test PeriLab.InputDeck.solver_name(s.fallback.options) == "Verlet"
+    s, ctx = ut_solver(Dict{String,Any}("Final Time" => 1.0, "Static" => Dict{String,Any}()))
+    @test isempty(ctx.errors) && s.fallback === nothing
+end
+
+@testset "Fallback errors" begin
+    function fallback_errors(fallback)
+        s, ctx = ut_solver(Dict{String,Any}("Final Time" => 1.0, "Static" => Dict{String,Any}(),
+                                            "Fallback" => fallback))
+        return join((e.path * ": " * e.message for e in ctx.errors), "\n")
+    end
+    @test occursin("one solver is required", fallback_errors(Dict{String,Any}()))
+    @test occursin("Verlett", fallback_errors(Dict{String,Any}("Verlett" => Dict{String,Any}())))
+    @test occursin("Fallback",
+                   fallback_errors(Dict{String,Any}("Verlet" => Dict{String,Any}(),
+                                                    "Fallback" => Dict{String,Any}("Static" => Dict{String,Any}()))))
+end

@@ -163,3 +163,57 @@ end
     @test UTL_DM.get_field("A", "NP1") == [0.0, 0.0]
     @test UTL_DM.get_field("A", "N") == [3.0, 3.0]
 end
+
+function utl_fallback(steps; fail_at = 0)
+    return Dict{String,Any}("Fallback" => Dict{String,Any}("UT Loop" => Dict{String,Any}("Steps" => steps,
+                                                                                        "Fail At" => fail_at)))
+end
+
+@testset "a failed step continues with the fallback solver" begin
+    utl_with_solver() do
+        writes = Tuple{Float64,Float64}[]
+        frequencies = Int64[]
+        run = utl_run(Dict{String,Any}("Fail At" => 3); extra = utl_fallback(2))
+        UTL_SM.solver(run, utl_ctx(writes; set_output_frequency = n -> push!(frequencies, n)))
+        first_run, fallback = UTLoopSolver.WORKSPACES
+        @test length(first_run.clocks) == 3
+        @test [c.time for c in fallback.clocks] ≈ [0.5, 0.75, 1.0]
+        @test fallback.clocks[1].step_time == 0.0
+        @test first.(writes) ≈ [0.0, 0.25, 0.5, 0.75, 1.0]
+        @test frequencies == [2]
+        @test !UTL_DM.get_cancel()
+        @test UTL_DM.get_current_time() == 1.0
+    end
+end
+
+@testset "fallback after a failure in the first step" begin
+    utl_with_solver() do
+        writes = Tuple{Float64,Float64}[]
+        UTL_SM.solver(utl_run(Dict{String,Any}("Fail At" => 1); extra = utl_fallback(2)),
+                      utl_ctx(writes))
+        @test [c.time for c in UTLoopSolver.WORKSPACES[2].clocks] ≈ [0.0, 0.5, 1.0]
+        @test first.(writes) ≈ [0.0, 0.5, 1.0]
+    end
+end
+
+@testset "a failing fallback cancels" begin
+    utl_with_solver() do
+        writes = Tuple{Float64,Float64}[]
+        UTL_SM.solver(utl_run(Dict{String,Any}("Fail At" => 2); extra = utl_fallback(4; fail_at = 1)),
+                      utl_ctx(writes))
+        @test length(UTLoopSolver.WORKSPACES) == 2
+        @test first.(writes) ≈ [0.0]
+        @test UTL_DM.get_cancel()
+    end
+end
+
+@testset "a dry run with a fallback does not crash" begin
+    utl_with_solver() do
+        writes = Tuple{Float64,Float64}[]
+        run = UTL_SM.with_steps(utl_run(Dict{String,Any}("Fail At" => 2, "Steps" => 4);
+                                        extra = utl_fallback(2)), 3)
+        UTL_SM.solver(run, utl_ctx(writes))
+        @test length(UTLoopSolver.WORKSPACES) == 2
+        @test !UTL_DM.get_cancel()
+    end
+end

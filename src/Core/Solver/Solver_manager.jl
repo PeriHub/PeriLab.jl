@@ -11,7 +11,6 @@ using ..InputDeck: PeriLabInput, SolverParams, CalculationOptions, calculation_o
                    BlockParams, block_by_id, block_angles, block_names_and_ids
 using ..Helpers
 using ..ModuleLoader: find_registered_modules
-using ..ParameterSpec: model_module
 include("../../Models/Material/Material_Basis.jl")
 include("../../FEM/FEM_Factory.jl")
 include("../../Models/Material/Material_Models/Zero_Energy_Control/Zero_Energy_Control.jl")
@@ -135,23 +134,6 @@ function init(input::PeriLabInput, step_id::Int64)
 
     @debug "Finished Init Solver"
     return block_nodes, bcs, solver_run
-end
-
-"""
-    create_run(params, models, all_models, calculation, bcs, block_nodes)
-
-Initializes the solver selected by `params.options` (its module's
-`init_solver`) and returns the `SolverRun` of the step.
-"""
-function create_run(params::SolverParams, models::Vector{String},
-                    all_models::Vector{String}, calculation::CalculationOptions,
-                    bcs::Dict{String,BoundaryCondition},
-                    block_nodes::Dict{Int64,Vector{Int64}})
-    mod = model_module(params.options)
-    # invokelatest: the solver may come from a module loaded at runtime (licensed modules)
-    time, state = Base.invokelatest(mod.init_solver, params.options, params, models, bcs,
-                                    block_nodes)
-    return SolverRun(params, models, all_models, calculation, time, state)
 end
 
 """
