@@ -37,7 +37,7 @@ end
                                                                                              nodesPD,
                                                                                              2,
                                                                                              coupling_type)
-    @test collect(keys(test_dict)) == [7, 8]
+    @test sort!(collect(keys(test_dict))) == [7, 8]
     @test test_dict[7] == 2
     @test test_dict[8] == 1
 end
@@ -100,7 +100,8 @@ end
     fem = typed_section(PeriLab.InputDeck.FEMParams,
                         Dict{String,Any}("Degree" => 1, "Element Type" => "Lagrange",
                                          "Material Model" => "m",
-                                         "Coupling" => Dict{String,Any}("Coupling Type" => "Arlequin")))
+                                         "Coupling" =>
+                                             Dict{String,Any}("Coupling Type" => "Arlequin")))
     PeriLab.Data_Manager.initialize_data()
     PeriLab.Data_Manager.set_fem_params(fem)
     # compute reads the same immutable struct init saw; no init-time mutation needed

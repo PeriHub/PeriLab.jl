@@ -14,9 +14,12 @@ const UT_DECK_ALLOWLIST = Dict("test/fullscale_tests/test_PD_Solid_Elastic/strai
 # licensed models (`ut_license_error`, test/helper.jl): without a license a deck
 # naming them cannot be validated
 
+# examples/dev is gitignored local scratch; only shipped decks are checked
 function ut_all_decks()
     decks = String[]
-    for root in ("examples", "test"), (dir, _, files) in walkdir(joinpath(UT_REPO_ROOT, root))
+    for root in ("examples", "test"),
+        (dir, _, files) in walkdir(joinpath(UT_REPO_ROOT, root))
+        startswith(relpath(dir, UT_REPO_ROOT), joinpath("examples", "dev")) && continue
         for file in files
             endswith(file, ".yaml") && push!(decks, joinpath(dir, file))
         end

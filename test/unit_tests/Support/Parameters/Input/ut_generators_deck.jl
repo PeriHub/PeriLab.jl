@@ -13,7 +13,8 @@ const UT_DECK = UT_SCHEMA["properties"]["PeriLab"]
     @test UT_SCHEMA["\$schema"] == "https://json-schema.org/draft/2020-12/schema"
     @test UT_SCHEMA["required"] == ["PeriLab"]
     @test issubset(["Blocks", "Discretization", "Models"], UT_DECK["required"])
-    @test haskey(UT_DECK["properties"], "Solver") && haskey(UT_DECK["properties"], "Contact")
+    @test haskey(UT_DECK["properties"], "Solver") &&
+          haskey(UT_DECK["properties"], "Contact")
     @test UT_DECK["properties"]["Globals"] == Dict("type" => "object")
     @test JSON3.read(JSON3.write(UT_SCHEMA)) isa JSON3.Object       # serialisable
 end
@@ -30,7 +31,8 @@ end
     umat = only(filter(c -> c["if"]["properties"]["Material Model"]["const"] ==
                             "Correspondence UMAT", entry["allOf"]))
     @test haskey(umat["then"]["patternProperties"], "^Property_\\d+\$")
-    @test haskey(models["Damage Models"]["additionalProperties"]["properties"], "Critical Value")
+    @test haskey(models["Damage Models"]["additionalProperties"]["properties"],
+                 "Critical Value")
     switches = models["Pre Calculation Global"]
     @test switches["properties"]["Shape Tensor"] == Dict("type" => "boolean")
     @test haskey(switches["properties"], "Bond Associated Deformation Gradient")
@@ -77,17 +79,13 @@ function ut_schema_keys(deck)
 end
 
 @testset "shipped decks fit the schema keys" begin
-    root = normpath(joinpath(@__DIR__, "..", "..", "..", "..", ".."))
-    for dir in ("examples", "test"), (path, _, files) in walkdir(joinpath(root, dir)),
-        file in files
-
-        endswith(file, ".yaml") || continue
-        raw = PeriLab.IO.read_input(joinpath(path, file))
+    for file in ut_all_decks()
+        rel = relpath(file, UT_REPO_ROOT)
+        haskey(UT_DECK_ALLOWLIST, rel) && continue
+        raw = PeriLab.IO.read_input(file)
         (raw isa AbstractDict && haskey(raw, "PeriLab")) || continue
-        relpath(joinpath(path, file), root) ==
-        "test/fullscale_tests/test_PD_Solid_Elastic/strain_xx_external.yaml" && continue
         bad = ut_schema_keys(raw["PeriLab"])
-        isempty(bad) || @error "$(relpath(joinpath(path, file), root)): $bad"
+        isempty(bad) || @error "$rel: $bad"
         @test isempty(bad)
     end
 end
@@ -141,13 +139,15 @@ end
 end
 
 # a small JSON Schema validator for the keywords the generator emits
-ut_is_type(t, x) = t == "object" ? x isa AbstractDict :
-                   t == "array" ? x isa AbstractVector :
-                   t == "string" ? x isa AbstractString :
-                   t == "boolean" ? x isa Bool :
-                   t == "integer" ?
-                   ((x isa Integer && !(x isa Bool)) || (x isa AbstractFloat && isinteger(x))) :
-                   t == "number" ? (x isa Real && !(x isa Bool)) : false
+function ut_is_type(t, x)
+    t == "object" ? x isa AbstractDict :
+    t == "array" ? x isa AbstractVector :
+    t == "string" ? x isa AbstractString :
+    t == "boolean" ? x isa Bool :
+    t == "integer" ?
+    ((x isa Integer && !(x isa Bool)) || (x isa AbstractFloat && isinteger(x))) :
+    t == "number" ? (x isa Real && !(x isa Bool)) : false
+end
 
 function ut_valid(schema::AbstractDict, x)::Bool
     if haskey(schema, "oneOf")
@@ -213,20 +213,17 @@ end
     @test ut_valid(entry, composite)                          # composites: shared keys only
     contact = UT_DECK["properties"]["Contact"]["additionalProperties"]
     penalty = Dict{String,Any}("Type" => "Penalty Contact", "Contact Radius" => 0.1,
-                               "Contact Stiffness" => 1.0, "Contact Groups" => Dict{String,Any}())
+                               "Contact Stiffness" => 1.0,
+                               "Contact Groups" => Dict{String,Any}())
     @test ut_valid(contact, penalty)
     @test !ut_valid(contact, merge(penalty, Dict{String,Any}("Bogus" => 1)))
 end
 
 @testset "shipped decks validate against the schema" begin
-    root = normpath(joinpath(@__DIR__, "..", "..", "..", "..", ".."))
-    for dir in ("examples", "test"), (path, _, files) in walkdir(joinpath(root, dir)),
-        file in files
-
-        endswith(file, ".yaml") || continue
-        rel = relpath(joinpath(path, file), root)
-        rel == "test/fullscale_tests/test_PD_Solid_Elastic/strain_xx_external.yaml" && continue
-        raw = PeriLab.IO.read_input(joinpath(path, file))
+    for file in ut_all_decks()
+        rel = relpath(file, UT_REPO_ROOT)
+        haskey(UT_DECK_ALLOWLIST, rel) && continue
+        raw = PeriLab.IO.read_input(file)
         (raw isa AbstractDict && haskey(raw, "PeriLab")) || continue
         ok = ut_valid(UT_SCHEMA, raw)
         ok || @error "$rel does not validate against the schema"
@@ -241,7 +238,8 @@ ut_template_parses(yaml) = begin
 end
 
 @testset "templates of every section and model" begin
-    names = [[fs.alias for fs in PeriLab.ParameterSpec.parameter_spec(GID.PeriLabSections)
+    names = [[fs.alias
+              for fs in PeriLab.ParameterSpec.parameter_spec(GID.PeriLabSections)
               if PeriLab.ParameterSpec._params_type(fs.type) !== nothing];
              "Contact";
              [first(m) for (_, c, _) in GID.MODEL_SECTIONS
@@ -258,7 +256,8 @@ end
     @test only(values(contact))["Type"] == "Penalty Contact"
     penalty = ut_describe("Penalty Contact")
     @test startswith(penalty, "Penalty Contact (contact model)")
-    @test occursin("Contact Stiffness", penalty) && occursin("Shared contact keys:", penalty)
+    @test occursin("Contact Stiffness", penalty) &&
+          occursin("Shared contact keys:", penalty)
     @test occursin("# Maximum Damage: .inf", ut_describe("Solver"; template = true))
 end
 
@@ -272,6 +271,7 @@ end
     @test occursin("# exactly one of: Linear Static Matrix Based, Newmark, Static, Verlet, Verlet Matrix Based",
                    ut_describe("Solver"; template = true))
     sections = read(first(PeriLab.generate_parameter_docs(mktempdir())), String)
-    @test occursin("## Solver → Verlet", sections) && occursin("## Solver → Newmark", sections)
+    @test occursin("## Solver → Verlet", sections) &&
+          occursin("## Solver → Newmark", sections)
     @test occursin("| <solver> | one of: Linear Static Matrix Based", sections)
 end

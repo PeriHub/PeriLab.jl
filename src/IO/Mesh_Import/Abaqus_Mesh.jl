@@ -77,12 +77,10 @@ function read_mesh(input::PeriLabInput, filename::String)
     element_written = []
     nsets = Dict{String,Vector{Int64}}()
 
-    nset_names = ["All"]
-
-    for bc in values(input.sections.boundary_conditions)
-        push!(nset_names, bc.node_set)
-    end
-    nset_names = unique(nset_names)
+    # sorted: the node numbering must not depend on the Dict order
+    nset_names = unique(["All";
+                         sort([bc.node_set
+                               for bc in values(input.sections.boundary_conditions)])])
 
     element_sets_keys = collect(keys(element_sets))
     for nset in nset_names

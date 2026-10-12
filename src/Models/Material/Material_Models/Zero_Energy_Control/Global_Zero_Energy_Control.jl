@@ -28,8 +28,10 @@ function control_name()
 end
 
 # the legacy dict marked UMAT materials by the key "UMAT Material Name"
-is_umat(material) = any(part -> nameof(typeof(part)) === :CorrespondenceUMATParams,
-                        model_parts(material.model))
+function is_umat(material)
+    any(part -> nameof(typeof(part)) === :CorrespondenceUMATParams,
+        model_parts(material.model))
+end
 
 """
     init_model(nodes, material)
@@ -54,7 +56,6 @@ function init_model(nodes::AbstractVector{Int64}, material)
         @views hooke[iID, :, :] = hooke_matrix(material, dof, iID)
     end
 end
-
 
 """
 	compute_control(nodes::AbstractVector{Int64}, material, time::Float64, dt::Float64)
@@ -122,11 +123,12 @@ function _compute_control!(nodes::AbstractVector{Int64},
     end
 end
 
-compute_control(nodes::AbstractVector{Int64}, material, time::Float64, dt::Float64) = _compute_control!(nodes,
-                                                                                                        !is_umat(material),
-                                                                                                        time,
-                                                                                                        dt)
-
+function compute_control(nodes::AbstractVector{Int64}, material, time::Float64, dt::Float64)
+    _compute_control!(nodes,
+                      !is_umat(material),
+                      time,
+                      dt)
+end
 
 """
 	get_zero_energy_mode_force(nodes::AbstractVector{Int64}, zStiff::SubArray, deformation_gradient::SubArray, undeformed_bond::SubArray, deformed_bond::SubArray, bond_force::SubArray)
@@ -305,7 +307,8 @@ Rotates the fourth order tensor
 - `dof::Int64`: The degree of freedom
 - `back::Bool`: The back
 # Returns
-- `C::Array{Float64,4}`: The fourth order tensor
+- `C::Array{Float64,4}`: The rotated fourth order tensor (a new array; `C` is not changed,
+  it may be the shared buffer of `get_fourth_order`)
 """
 function rotate_fourth_order_tensor(angles::AbstractVector{T},
                                     C::Array{Float64,4},
@@ -313,15 +316,11 @@ function rotate_fourth_order_tensor(angles::AbstractVector{T},
                                     back::Bool) where {T<:Union{Int64,Float64}}
     rot = rotation_tensor(angles, dof)
     @views R = rot[1:dof, 1:dof]
-    if back
-        fourth_order_rotation(R', C)
-    else
-        fourth_order_rotation(R, C)
-    end
-    return C
+    return back ? fourth_order_rotation(R', C) : fourth_order_rotation(R, C)
 end
 
 function fourth_order_rotation(R, C::Array{Float64,4})
+    C_rot = similar(C)
     @inbounds @fastmath for m in axes(C, 1)
         @inbounds @fastmath for n in axes(C, 1)
             @inbounds @fastmath for o in axes(C, 1)
@@ -340,11 +339,12 @@ function fourth_order_rotation(R, C::Array{Float64,4})
                             end
                         end
                     end
-                    C[m, n, o, p] = Cmnop
+                    C_rot[m, n, o, p] = Cmnop
                 end
             end
         end
     end
+    return C_rot
 end
 
 end

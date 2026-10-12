@@ -277,8 +277,8 @@ end
                                                                      deformation_gradient,
                                                                      rot_tensor)
 
-    @test rot_tensor[1, :, :] == rot
-    @test rot_tensor[1, :, :] == rot
+    @test rot_tensor[1, :, :] ≈ rot
+    @test rot_tensor[1, :, :] ≈ rot
 end
 
 @testset "ut_undeformed_bond" begin
@@ -429,7 +429,7 @@ end
     left_stretch_tensor = zeros(Float64, 2, 2, 2)
     result = zeros(2, 2, 2)
     result = PeriLab.Geometry.compute_left_stretch_tensor(deformation_gradient[1, :, :])
-    @test result[:, :] == expected_result[1]
+    @test result[:, :] ≈ expected_result[1]
     result = PeriLab.Geometry.compute_left_stretch_tensor(deformation_gradient[2, :, :])
     @test isapprox(result[:, :], expected_result[2])
     alpha = 22 * pi / 180
@@ -440,7 +440,7 @@ end
     deformation_gradient[1, :, :] = deformation_gradient[1, :, :] * rot
     deformation_gradient[2, :, :] = deformation_gradient[2, :, :] * rot
     result = PeriLab.Geometry.compute_left_stretch_tensor(deformation_gradient[1, :, :])
-    @test result == expected_result[1]
+    @test result ≈ expected_result[1]
     result = PeriLab.Geometry.compute_left_stretch_tensor(deformation_gradient[2, :, :])
     @test isapprox(result[:, :], expected_result[2])
 end

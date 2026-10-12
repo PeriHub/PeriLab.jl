@@ -181,17 +181,17 @@ end
     @test length(bcs) == 0
     params = typed_section(Dict{String,PeriLab.InputDeck.BoundaryConditionParams},
                            Dict("BC_1" => Dict("Variable" => "Forces",
-                                                               "Node Set" => "Nset_1",
-                                                               "Coordinate" => "x",
-                                                               "Value" => "20*t"),
-                                                "BC_2" => Dict("Variable" => "Displacements",
-                                                               "Node Set" => "Nset_2",
-                                                               "Coordinate" => "z",
-                                                               "Value" => "0"),
-                                                "BC_3" => Dict("Variable" => "Displacements",
-                                                               "Node Set" => "Nset_3",
-                                                               "Coordinate" => "z",
-                                                               "Value" => "0")))
+                                     "Node Set" => "Nset_1",
+                                     "Coordinate" => "x",
+                                     "Value" => "20*t"),
+                                "BC_2" => Dict("Variable" => "Displacements",
+                                     "Node Set" => "Nset_2",
+                                     "Coordinate" => "z",
+                                     "Value" => "0"),
+                                "BC_3" => Dict("Variable" => "Displacements",
+                                     "Node Set" => "Nset_3",
+                                     "Coordinate" => "z",
+                                     "Value" => "0")))
 
     PeriLab.Data_Manager.set_nset("Nset_1", [1, 2, 3])
     PeriLab.Data_Manager.set_nset("Nset_2", [3, 4, 7, 10])
@@ -212,13 +212,13 @@ end
 
     params = typed_section(Dict{String,PeriLab.InputDeck.BoundaryConditionParams},
                            Dict("BC_1" => Dict("Variable" => "Forces",
-                                                               "Node Set" => "Nset_1",
-                                                               "Coordinate" => "x",
-                                                               "Value" => "20*t"),
-                                                "BC_2" => Dict("Variable" => "Displacements",
-                                                               "Node Set" => "Nset_2",
-                                                               "Coordinate" => "z",
-                                                               "Value" => "0")))
+                                     "Node Set" => "Nset_1",
+                                     "Coordinate" => "x",
+                                     "Value" => "20*t"),
+                                "BC_2" => Dict("Variable" => "Displacements",
+                                     "Node Set" => "Nset_2",
+                                     "Coordinate" => "z",
+                                     "Value" => "0")))
 
     bcs = PeriLab.Solver_Manager.Boundary_Conditions.boundary_condition(params)
 
@@ -234,13 +234,13 @@ end
 @testset "ut_check_valid_bcs" begin
     params = typed_section(Dict{String,PeriLab.InputDeck.BoundaryConditionParams},
                            Dict("BC_1" => Dict("Variable" => "Forces",
-                                                               "Node Set" => "Nset_1",
-                                                               "Coordinate" => "x",
-                                                               "Value" => "20*t"),
-                                                "BC_2" => Dict("Variable" => "Displacements",
-                                                               "Node Set" => "Nset_2",
-                                                               "Coordinate" => "z",
-                                                               "Value" => "0")))
+                                     "Node Set" => "Nset_1",
+                                     "Coordinate" => "x",
+                                     "Value" => "20*t"),
+                                "BC_2" => Dict("Variable" => "Displacements",
+                                     "Node Set" => "Nset_2",
+                                     "Coordinate" => "z",
+                                     "Value" => "0")))
 
     PeriLab.Data_Manager.set_nset("Nset_1", [1, 2, 3])
     PeriLab.Data_Manager.set_nset("Nset_2", [3, 4, 7, 10])
@@ -265,13 +265,13 @@ end
 
     params = typed_section(Dict{String,PeriLab.InputDeck.BoundaryConditionParams},
                            Dict("BC_1" => Dict("Variable" => "Forces",
-                                                               "Node Set" => "Nset_1",
-                                                               "Coordinate" => "x",
-                                                               "Value" => "20*t"),
-                                                "BC_2" => Dict("Variable" => "not there",
-                                                               "Node Set" => "Nset_2",
-                                                               "Coordinate" => "z",
-                                                               "Value" => "0")))
+                                     "Node Set" => "Nset_1",
+                                     "Coordinate" => "x",
+                                     "Value" => "20*t"),
+                                "BC_2" => Dict("Variable" => "not there",
+                                     "Node Set" => "Nset_2",
+                                     "Coordinate" => "z",
+                                     "Value" => "0")))
 
     bcs = PeriLab.Solver_Manager.Boundary_Conditions.boundary_condition(params)
     @test_logs (:error,
@@ -301,9 +301,9 @@ end
 
     params = typed_section(Dict{String,PeriLab.InputDeck.BoundaryConditionParams},
                            Dict("BC_1" => Dict("Variable" => "Forces",
-                                                               "Node Set" => "Nset_1",
-                                                               "Coordinate" => "x",
-                                                               "Value" => "20*t")))
+                                     "Node Set" => "Nset_1",
+                                     "Coordinate" => "x",
+                                     "Value" => "20*t")))
 
     bcs = PeriLab.Solver_Manager.Boundary_Conditions.init_BCs(params)
     @test length(bcs) == 1
@@ -317,13 +317,13 @@ end
 
     params = typed_section(Dict{String,PeriLab.InputDeck.BoundaryConditionParams},
                            Dict("BC_1" => Dict("Variable" => "Forces",
-                                                               "Node Set" => "Nset_1",
-                                                               "Coordinate" => "x",
-                                                               "Value" => "20*t"),
-                                                "BC_2" => Dict("Variable" => "Displacements",
-                                                               "Node Set" => "Nset_2",
-                                                               "Coordinate" => "z",
-                                                               "Value" => "5")))
+                                     "Node Set" => "Nset_1",
+                                     "Coordinate" => "x",
+                                     "Value" => "20*t"),
+                                "BC_2" => Dict("Variable" => "Displacements",
+                                     "Node Set" => "Nset_2",
+                                     "Coordinate" => "z",
+                                     "Value" => "5")))
     bcs = PeriLab.Solver_Manager.Boundary_Conditions.init_BCs(params)
     @test length(bcs) == 2
     @test "BC_1" in keys(bcs)
@@ -368,13 +368,13 @@ end
                                               10 => 10))
     params = typed_section(Dict{String,PeriLab.InputDeck.BoundaryConditionParams},
                            Dict("BC_1" => Dict("Variable" => "Temperature",
-                                                               "Node Set" => "Nset_1",
-                                                               "Coordinate" => "x",
-                                                               "Value" => "20*t"),
-                                                "BC_2" => Dict("Variable" => "Displacements",
-                                                               "Node Set" => "Nset_2",
-                                                               "Coordinate" => "z",
-                                                               "Value" => "5")))
+                                     "Node Set" => "Nset_1",
+                                     "Coordinate" => "x",
+                                     "Value" => "20*t"),
+                                "BC_2" => Dict("Variable" => "Displacements",
+                                     "Node Set" => "Nset_2",
+                                     "Coordinate" => "z",
+                                     "Value" => "5")))
 
     temperature = PeriLab.Data_Manager.get_field("Temperature")
     disp = PeriLab.Data_Manager.get_field("Displacements", "NP1")
@@ -424,9 +424,9 @@ end
 
     params = typed_section(Dict{String,PeriLab.InputDeck.BoundaryConditionParams},
                            Dict("BC_2" => Dict("Variable" => "Displacements",
-                                                               "Node Set" => "Nset_2",
-                                                               "Coordinate" => "u",
-                                                               "Value" => "5")))
+                                     "Node Set" => "Nset_2",
+                                     "Coordinate" => "u",
+                                     "Value" => "5")))
     bcs = PeriLab.Solver_Manager.Boundary_Conditions.init_BCs(params)
     @test_logs (:error,
                 "Coordinate in boundary condition must be x,y or z.") @test_throws PeriLab.PeriLabError begin
@@ -443,9 +443,9 @@ end
 
     params = typed_section(Dict{String,PeriLab.InputDeck.BoundaryConditionParams},
                            Dict("BC_1" => Dict("Variable" => "Forces",
-                                                               "Node Set" => "Nset_1",
-                                                               "Coordinate" => "x",
-                                                               "Value" => "20")))
+                                     "Node Set" => "Nset_1",
+                                     "Coordinate" => "x",
+                                     "Value" => "20")))
     bcs = PeriLab.Solver_Manager.Boundary_Conditions.init_BCs(params)
 
     PeriLab.Solver_Manager.Boundary_Conditions.apply_bc_dirichlet([
@@ -468,9 +468,9 @@ end
 
     params = typed_section(Dict{String,PeriLab.InputDeck.BoundaryConditionParams},
                            Dict("BC_1" => Dict("Variable" => "Force Densities",
-                                                               "Node Set" => "Nset_1",
-                                                               "Coordinate" => "x",
-                                                               "Value" => "20")))
+                                     "Node Set" => "Nset_1",
+                                     "Coordinate" => "x",
+                                     "Value" => "20")))
     bcs = PeriLab.Solver_Manager.Boundary_Conditions.init_BCs(params)
 
     PeriLab.Solver_Manager.Boundary_Conditions.apply_bc_dirichlet([
@@ -495,9 +495,9 @@ end
 
     params = typed_section(Dict{String,PeriLab.InputDeck.BoundaryConditionParams},
                            Dict("BC_1" => Dict("Variable" => "Density",
-                                                               "Node Set" => "Nset_1",
-                                                               "Value" => "10",
-                                                               "Type" => "Neumann")))
+                                     "Node Set" => "Nset_1",
+                                     "Value" => "10",
+                                     "Type" => "Neumann")))
     bcs = PeriLab.Solver_Manager.Boundary_Conditions.init_BCs(params)
 
     PeriLab.Solver_Manager.Boundary_Conditions.apply_bc_neumann(bcs, 0.0,
@@ -520,8 +520,8 @@ end
     PeriLab.Data_Manager.create_node_vector_field("Displacements", Float64, 2)
     params = typed_section(Dict{String,PeriLab.InputDeck.BoundaryConditionParams},
                            Dict("BC_1" => Dict("Variable" => "Displacements",
-                                               "Node Set" => "Nset_1",
-                                               "Coordinate" => "x", "Value" => 1.0)))
+                                     "Node Set" => "Nset_1",
+                                     "Coordinate" => "x", "Value" => 1.0)))
     bcs = PeriLab.Solver_Manager.Boundary_Conditions.init_BCs(params)
     @test bcs["BC_1"].type == "Dirichlet"
     @test !bcs["BC_1"].initial
@@ -537,14 +537,14 @@ end
     PeriLab.Data_Manager.create_node_vector_field("Displacements", Float64, 2)
     params = typed_section(Dict{String,PeriLab.InputDeck.BoundaryConditionParams},
                            Dict("always" => Dict("Variable" => "Displacements",
-                                                 "Node Set" => "Nset_1",
-                                                 "Coordinate" => "x", "Value" => 0.0),
+                                     "Node Set" => "Nset_1",
+                                     "Coordinate" => "x", "Value" => 0.0),
                                 "steps_1_3" => Dict("Variable" => "Displacements",
-                                                    "Node Set" => "Nset_1",
-                                                    "Coordinate" => "y", "Value" => 0.0,
-                                                    "Step ID" => "1, 3")))
+                                     "Node Set" => "Nset_1",
+                                     "Coordinate" => "y", "Value" => 0.0,
+                                     "Step ID" => "1, 3")))
     for (step, expected) in ((-1, ["always", "steps_1_3"]), (1, ["always", "steps_1_3"]),
-                             (2, ["always"]), (3, ["always", "steps_1_3"]))
+        (2, ["always"]), (3, ["always", "steps_1_3"]))
         PeriLab.Data_Manager.set_step(step)
         bcs = PeriLab.Solver_Manager.Boundary_Conditions.init_BCs(params)
         @test sort(collect(keys(bcs))) == expected
@@ -558,20 +558,23 @@ end
     PeriLab.Data_Manager.set_nset("Nset_1", [1, 2])
     PeriLab.Data_Manager.set_glob_to_loc(Dict(1 => 1, 2 => 2, 3 => 3))
     PeriLab.Data_Manager.create_constant_node_vector_field("Coordinates", Float64, 2)
-    displacements_N, displacements_NP1 = PeriLab.Data_Manager.create_node_vector_field("Displacements",
-                                                                                      Float64,
-                                                                                      2)
+    displacements_N,
+    displacements_NP1 = PeriLab.Data_Manager.create_node_vector_field("Displacements",
+                                                                      Float64,
+                                                                      2)
     params = typed_section(Dict{String,PeriLab.InputDeck.BoundaryConditionParams},
                            Dict("BC_1" => Dict("Variable" => "Displacements",
-                                               "Node Set" => "Nset_1",
-                                               "Coordinate" => "x", "Value" => "10*t")))
+                                     "Node Set" => "Nset_1",
+                                     "Coordinate" => "x", "Value" => "10*t")))
     bcs = PeriLab.Solver_Manager.Boundary_Conditions.init_BCs(params)
     @test bcs["BC_1"].value == "10*t"
-    PeriLab.Solver_Manager.Boundary_Conditions.apply_bc_dirichlet(["Displacements"], bcs, 1.0,
+    PeriLab.Solver_Manager.Boundary_Conditions.apply_bc_dirichlet(["Displacements"], bcs,
+                                                                  1.0,
                                                                   1.0)
     @test bcs["BC_1"].value isa Function
     compiled = bcs["BC_1"].value
-    PeriLab.Solver_Manager.Boundary_Conditions.apply_bc_dirichlet(["Displacements"], bcs, 2.0,
+    PeriLab.Solver_Manager.Boundary_Conditions.apply_bc_dirichlet(["Displacements"], bcs,
+                                                                  2.0,
                                                                   2.0)
     @test bcs["BC_1"].value === compiled
     @test displacements_NP1[1:2, 1] == [20.0, 20.0]
@@ -580,7 +583,8 @@ end
 @testset "skipped Initial condition still returns the compiled function" begin
     field = zeros(3)
     coordinates = [0.0 0.0 0.0; 1.0 0.0 0.0; 2.0 0.0 0.0]
-    bc = PeriLab.Solver_Manager.Boundary_Conditions.eval_bc!(field, "10*sin(t)", coordinates,
+    bc = PeriLab.Solver_Manager.Boundary_Conditions.eval_bc!(field, "10*sin(t)",
+                                                             coordinates,
                                                              1.0, 1.0, 3, true)
     @test bc isa Function
     @test field == zeros(3)
@@ -598,7 +602,8 @@ end
                                                             0.0, 0.0, 2, false)
     end
     @test PeriLab.Solver_Manager.Boundary_Conditions.eval_bc!(field, "10*t", coordinates,
-                                                              1.0, 1.0, 2, false) isa Function
+                                                              1.0, 1.0, 2, false) isa
+          Function
 end
 
 @testset "a z condition in 2D skips only itself" begin
@@ -608,16 +613,21 @@ end
     PeriLab.Data_Manager.set_nset("Nset_1", [1, 2])
     PeriLab.Data_Manager.set_glob_to_loc(Dict(1 => 1, 2 => 2, 3 => 3))
     PeriLab.Data_Manager.create_node_vector_field("Displacements", Float64, 2)
-    raw = Dict{String,Any}("BC_$i" => Dict("Variable" => "Displacements",
-                                           "Node Set" => "Nset_1",
-                                           "Coordinate" => "x", "Value" => 0.0)
-                           for i in 1:6)
+    bc_x = Dict("Variable" => "Displacements", "Node Set" => "Nset_1",
+                "Coordinate" => "x", "Value" => 0.0)
+    raw = Dict{String,Any}("BC_$i" => bc_x for i in 1:6)
     raw["BC_z"] = Dict("Variable" => "Displacements", "Node Set" => "Nset_1",
                        "Coordinate" => "z", "Value" => 0.0)
     params = typed_section(Dict{String,PeriLab.InputDeck.BoundaryConditionParams}, raw)
     # the old `break` dropped every condition iterated after the z condition;
-    # the test only discriminates if some condition comes after it
+    # the test only discriminates if some condition comes after it (Dict order)
+    n = 6
+    while findfirst(==("BC_z"), collect(keys(params))) == length(params)
+        n += 1
+        raw["BC_$n"] = bc_x
+        params = typed_section(Dict{String,PeriLab.InputDeck.BoundaryConditionParams}, raw)
+    end
     @test findfirst(==("BC_z"), collect(keys(params))) < length(params)
     bcs = PeriLab.Solver_Manager.Boundary_Conditions.init_BCs(params)
-    @test sort(collect(keys(bcs))) == sort(["BC_$i" for i in 1:6])
+    @test sort(collect(keys(bcs))) == sort(["BC_$i" for i in 1:n])
 end
