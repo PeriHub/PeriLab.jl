@@ -5,11 +5,12 @@
 module Critical_Stretch
 using .....Data_Manager
 using .....Geometry: compute_stretch!
+using ..Damage: critical_value_lookup
 export compute_model
 export init_model
 export fields_for_local_synchronization
 
-using ......ParameterSpec: @params, register_damage, value
+using ......ParameterSpec: @params, register_damage
 @params struct CriticalStretchParams
     only_tension::Bool = opt("Only Tension"; default = true)
 end
@@ -30,13 +31,14 @@ Calculates the stretch of each bond and compares it to a critical one. If it is 
 """
 function compute_model(nodes::AbstractVector{Int64}, p::CriticalStretchParams, damage,
                        block::Int64, time::Float64, dt::Float64)
-    return _critical_stretch!(nodes, damage.base.critical_value, p.only_tension,
-                              damage.base.interblock_damage !== nothing, block)
+    crit_of = critical_value_lookup(damage.base.critical_value,
+                                    damage.base.interblock_damage !== nothing, block)
+    return _critical_stretch!(nodes, p.only_tension, crit_of)
 end
 
-# function barrier: `critical_value` has a concrete type (Constant or Table1D) here
-function _critical_stretch!(nodes::AbstractVector{Int64}, critical_value, tension::Bool,
-                            inter_block_damage::Bool, block::Int64)
+# function barrier: `crit_of` has a concrete closure type here
+function _critical_stretch!(nodes::AbstractVector{Int64}, tension::Bool,
+                            crit_of::F) where {F}
     nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
     bond_damageNP1::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
     update_list::NodeScalarField{Bool} = Data_Manager.get_field("Update")
@@ -44,34 +46,13 @@ function _critical_stretch!(nodes::AbstractVector{Int64}, critical_value, tensio
     deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
                                                                             "NP1")
     stretch::BondScalarState{Float64} = Data_Manager.get_field("Bond Stretch")
-    block_ids::NodeScalarField{Int64} = Data_Manager.get_field("Block_Id")
-
-    critical_field = Data_Manager.has_key("Critical_Value")
-    if critical_field
-        critical_stretch = Data_Manager.get_field("Critical_Value")
-    end
-    if inter_block_damage
-        inter_critical_stretch::Array{Float64,3} = Data_Manager.get_crit_values_matrix()
-    end
     compute_stretch!(stretch, deformed_bond_length, undeformed_bond_length)
     # TBD all points; for MPI it must be only the nodes
 
-    stretch_check::Float64 = 0.0
-    crit_stretch::Float64 = 0.0
-
     for iID in nodes
-        @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
-            if critical_field
-                crit_stretch = critical_stretch[iID]
-            else
-                crit_stretch = inter_block_damage ?
-                               inter_critical_stretch[block_ids[iID],
-                                                      block_ids[nlist[iID][jID]],
-                                                      block] : value(critical_value, iID)
-            end
-
+        @inbounds for (jID, neighborID) in enumerate(nlist[iID])
             stretch_check = tension ? stretch[iID][jID] : abs(stretch[iID][jID])
-            if stretch_check > crit_stretch
+            if stretch_check > crit_of(iID, neighborID)
                 bond_damageNP1[iID][jID] = 0.0
                 update_list[iID] = true
             end

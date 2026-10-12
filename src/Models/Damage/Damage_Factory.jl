@@ -39,7 +39,8 @@ own keys).
                                                                  description = "Interblock Critical Value <block>_<block> entries")
     anisotropic_damage::Union{Nothing,AnisotropicDamageParams} = opt("Anisotropic Damage";
                                                                      default = nothing)
-    local_damping::Union{Nothing,LocalDampingParams} = opt("Local Damping"; default = nothing)
+    local_damping::Union{Nothing,LocalDampingParams} = opt("Local Damping";
+                                                           default = nothing)
 end
 
 const INTERBLOCK_KEY = r"^Interblock Critical Value \d+_\d+$"
@@ -72,9 +73,11 @@ struct BlockDamage{B,M}
     tables::Vector{Table1D}
 end
 
-block_damage(wb::WithBase) = BlockDamage(wb.base, wb.model,
-                                         vcat(dependent_tables(wb.base),
-                                              dependent_tables(wb.model)))
+function block_damage(wb::WithBase)
+    BlockDamage(wb.base, wb.model,
+                vcat(dependent_tables(wb.base),
+                     dependent_tables(wb.model)))
+end
 
 function init_interface_crit_values(damage::BlockDamage, block_id::Int64)
     interblock = damage.base.interblock_damage
@@ -99,9 +102,30 @@ function init_aniso_crit_values(aniso::AnisotropicDamageParams, block_id::Int64,
     aniso_crit[block_id] = dof == 2 ?
                            [aniso.critical_value_x, aniso.critical_value_y] :
                            [aniso.critical_value_x, aniso.critical_value_y,
-                            something(aniso.critical_value_z, aniso.critical_value_y)]
+        something(aniso.critical_value_z, aniso.critical_value_y)]
     Data_Manager.set_aniso_crit_values(aniso_crit)
 end
+
+"""
+    critical_value_lookup(critical_value, inter_block_damage::Bool, block::Int64)
+
+Returns `(iID, neighborID) -> critical value` of a bond: the `Critical_Value` node field
+if it exists, else the interblock matrix, else the `Critical Value` parameter. Each case
+is its own closure type, so a bond loop taking it as an argument is type stable.
+"""
+function critical_value_lookup(critical_value, inter_block_damage::Bool, block::Int64)
+    if Data_Manager.has_key("Critical_Value")
+        crit_field::NodeScalarField{Float64} = Data_Manager.get_field("Critical_Value")
+        return (iID, neighborID) -> crit_field[iID]
+    elseif inter_block_damage
+        block_ids::NodeScalarField{Int64} = Data_Manager.get_field("Block_Id")
+        crit_matrix::Array{Float64,3} = Data_Manager.get_crit_values_matrix()
+        return (iID, neighborID) -> crit_matrix[block_ids[iID], block_ids[neighborID],
+                                                block]
+    end
+    return (iID, neighborID) -> value(critical_value, iID)
+end
+
 for file in find_registered_modules(@__DIR__, "register_damage")
     include(file)
 end
@@ -238,6 +262,7 @@ function init_model(nodes::AbstractVector{Int64}, block::Int64)
     model_module(damage.model).fields_for_local_synchronization("Damage Model")
     init_interface_crit_values(damage, block)
     damage.base.anisotropic_damage === nothing ||
-        init_aniso_crit_values(damage.base.anisotropic_damage, block, Data_Manager.get_dof())
+        init_aniso_crit_values(damage.base.anisotropic_damage, block,
+                               Data_Manager.get_dof())
 end
 end

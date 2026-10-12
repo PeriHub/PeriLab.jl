@@ -20,7 +20,7 @@ export compute_model
 export init_model
 export fields_for_local_synchronization
 
-using ......ParameterSpec: @params, register_damage, value
+using ......ParameterSpec: @params, register_damage
 @params struct CriticalEnergyAnisotropicParams
     only_tension::Bool = opt("Only Tension"; default = false)
     thickness::Float64 = opt("Thickness"; default = 1.0, min = 0, quantity = :length)
@@ -42,13 +42,10 @@ Calculates the elastic energy of each bond and compares it to a critical one. If
 """
 function compute_model(nodes::AbstractVector{Int64}, p::CriticalEnergyAnisotropicParams,
                        damage, block::Int64, time::Float64, dt::Float64)
-    return _critical_energy_aniso!(nodes, damage.base.critical_value, p.only_tension,
-                                   damage.base.interblock_damage !== nothing, block)
+    return _critical_energy_aniso!(nodes, p.only_tension)
 end
 
-# function barrier: `critical_value` has a concrete type (Constant or Table1D) here
-function _critical_energy_aniso!(nodes::AbstractVector{Int64}, critical_value,
-                                 tension::Bool, inter_block_damage::Bool, block::Int64)
+function _critical_energy_aniso!(nodes::AbstractVector{Int64}, tension::Bool)
     @timeit "init fields" begin
         dof::Int64 = Data_Manager.get_dof()
         nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
@@ -63,10 +60,6 @@ function _critical_energy_aniso!(nodes::AbstractVector{Int64}, critical_value,
         deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
                                                                                 "NP1")
         bond_displacements::BondVectorState{Float64} = Data_Manager.get_field("Bond Displacements")
-        critical_field::Bool = Data_Manager.has_key("Critical_Value")
-        if critical_field
-            critical_energy::Vector{Float64} = Data_Manager.get_field("Critical_Value")
-        end
         quad_horizons::NodeScalarField{Float64} = Data_Manager.get_field("Quad Horizon")
         inverse_nlist::Vector{Dict{Int64,Int64}} = Data_Manager.get_inverse_nlist()
         rotation_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Rotation Tensor")
@@ -75,10 +68,6 @@ function _critical_energy_aniso!(nodes::AbstractVector{Int64}, critical_value,
 
     @timeit "init params" begin
         rotation::Bool = Data_Manager.get_rotation()
-        if inter_block_damage
-            inter_critical_energy = Data_Manager.get_crit_values_matrix()
-        end
-        critical_energy_value = 0.0
     end
 
     @timeit "preallocate" begin
@@ -104,7 +93,7 @@ function _critical_energy_aniso!(nodes::AbstractVector{Int64}, critical_value,
         bond_displacement = bond_displacements[iID]
         bond_force_vec = bond_forces[iID]
         quad_horizon = quad_horizons[iID]
-        rotation_temp = view(rotation_tensor,iID,:,:)
+        rotation_temp = view(rotation_tensor, iID, :, :)
         crit_vals = aniso_crit_values[block_ids[iID]]
 
         @timeit "jID loop" begin
@@ -137,18 +126,6 @@ function _critical_energy_aniso!(nodes::AbstractVector{Int64}, critical_value,
                     mul!(projected_force, product / norm_displacement, relative_disp_buf)
                     product = fastdot(projected_force, relative_disp_buf, true)
                     bond_energy = 0.25 * product
-                end
-
-                @timeit "critical energy" begin
-                    if critical_field
-                        critical_energy_value = critical_energy[iID]
-                    elseif inter_block_damage
-                        critical_energy_value = inter_critical_energy[block_ids[iID],
-                        block_ids[neighborID],
-                        block]
-                    else
-                        critical_energy_value = value(critical_value, iID)
-                    end
                 end
 
                 @timeit "rotated bond" begin
