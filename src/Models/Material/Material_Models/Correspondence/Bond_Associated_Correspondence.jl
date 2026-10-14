@@ -8,7 +8,7 @@ using StaticArrays: I, @MMatrix, SMatrix
 
 using ........Data_Manager
 using ........PeriLabExceptions: @abort
-using .........ParameterSpec: model_parts, model_module
+using .........ParameterSpec: model_parts, model_module, model_function
 using .....Material_Basis: compute_Piola_Kirchhoff_stress!
 using ........Helpers:
                        find_local_neighbors, invert, rotate, determinant, smat,
@@ -169,8 +169,9 @@ function compute_model(nodes::AbstractVector{Int64},
     end
 
     for part in model_parts(material.model)
-        model_module(part).compute_stresses_ba(nodes, nlist, dof, part, material, time, dt,
-                                               strain_increment, stress_N, stress_NP1)
+        model_function(part, Val(:compute_stresses_ba))(nodes, nlist, dof, part, material,
+                                                        time, dt, strain_increment,
+                                                        stress_N, stress_NP1)
     end
 
     if rotation

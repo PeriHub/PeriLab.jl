@@ -12,7 +12,8 @@ using ....PeriLabExceptions: @abort
 using ....ModuleLoader: find_registered_modules
 using .....ParameterSpec: @params, Dependent, register_base!, WithBase, Composite,
                           ParseContext, add_error!, join_path, Table1D, dependent_tables,
-                          value, model_parts, model_module
+                          value, model_parts, model_module,
+                          model_function
 import .....ParameterSpec: check!
 
 @params struct FlawFunctionParams
@@ -584,7 +585,7 @@ function compute_block_material(nodes::AbstractVector{Int64}, material::BlockMat
                                 block::Int64, time::Float64, dt::Float64)
     bind_material!(material)
     for part in model_parts(material.model)
-        model_module(part).compute_model(nodes, part, material, block, time, dt)
+        model_function(part, Val(:compute_model))(nodes, part, material, block, time, dt)
     end
     return nothing
 end

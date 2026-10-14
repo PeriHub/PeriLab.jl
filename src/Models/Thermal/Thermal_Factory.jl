@@ -9,7 +9,8 @@ using ....PeriLabExceptions: @abort
 using TimerOutputs: @timeit
 using ....ModuleLoader: find_registered_modules
 
-using .....ParameterSpec: @params, register_base!, WithBase, model_parts, model_module
+using .....ParameterSpec: @params, register_base!, WithBase, model_parts, model_module,
+                          model_function, model_label
 
 """
     ThermalBaseParams
@@ -63,9 +64,9 @@ Computes every part of the block's thermal model, in deck order.
 function compute_model(nodes::AbstractVector{Int64}, thermal::WithBase, block::Int64,
                        time::Float64, dt::Float64)
     for part in model_parts(thermal.model)
-        @timeit "$(nameof(model_module(part)))" model_module(part).compute_model(nodes, part,
-                                                                                  thermal, block,
-                                                                                  time, dt)
+        @timeit model_label(part) model_function(part, Val(:compute_model))(nodes, part,
+                                                                            thermal, block,
+                                                                            time, dt)
     end
 end
 

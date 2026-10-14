@@ -5,7 +5,8 @@
 const BMAT = PeriLab.Solver_Manager.Model_Factory.Material
 const BBASIS = PeriLab.Solver_Manager.Material_Basis
 const LEGACY = isdefined(@__MODULE__, :LegacyMaterialOracle) ? LegacyMaterialOracle :
-               (include(joinpath(@__DIR__, "legacy_material_oracle.jl")); LegacyMaterialOracle)
+               (include(joinpath(@__DIR__, "legacy_material_oracle.jl"));
+                LegacyMaterialOracle)
 
 function ut_reset(dof; nnodes = 3)
     PeriLab.Data_Manager.initialize_data()
@@ -21,7 +22,7 @@ function ut_both(raw; dof = 3, setup = () -> nothing)
     LEGACY.get_all_elastic_moduli(legacy)
     legacy_values = Dict(k => copy(legacy[k])
                          for k in ("Bulk Modulus", "Young's Modulus", "Shear Modulus",
-                                   "Poisson's Ratio"))
+                             "Poisson's Ratio"))
     ut_reset(dof)
     setup()
     typed = typed_block_material(raw; dof = dof)
@@ -36,19 +37,20 @@ function ut_same(legacy, m::BMAT.ElasticModuli)
 end
 
 @testset "isotropic completion matches the legacy completion" begin
-    for raw in [Dict("Material Model" => "PD Solid Elastic", "Bulk Modulus" => 10.0,
-                     "Shear Modulus" => 10.0),
-                Dict("Material Model" => "PD Solid Elastic", "Bulk Modulus" => 5.0,
-                     "Young's Modulus" => 1.25),
-                Dict("Material Model" => "PD Solid Elastic", "Poisson's Ratio" => 0.45,
-                     "Shear Modulus" => 1.25),
-                Dict("Material Model" => "PD Solid Elastic", "Young's Modulus" => 5.0,
-                     "Poisson's Ratio" => 0.125, "Symmetry" => "isotropic"),
-                Dict("Material Model" => "PD Solid Elastic", "Bulk Modulus" => 1.0,
-                     "Shear Modulus" => 10.0, "Poisson's Ratio" => 0.2),
-                Dict("Material Model" => "Unified Bond-based Elastic",
-                     "Young's Modulus" => 5.0, "Poisson's Ratio" => 0.125,
-                     "Symmetry" => "isotropic plane strain")]
+    for raw in [
+            Dict("Material Model" => "PD Solid Elastic", "Bulk Modulus" => 10.0,
+                 "Shear Modulus" => 10.0),
+            Dict("Material Model" => "PD Solid Elastic", "Bulk Modulus" => 5.0,
+                 "Young's Modulus" => 1.25),
+            Dict("Material Model" => "PD Solid Elastic", "Poisson's Ratio" => 0.45,
+                 "Shear Modulus" => 1.25),
+            Dict("Material Model" => "PD Solid Elastic", "Young's Modulus" => 5.0,
+                 "Poisson's Ratio" => 0.125, "Symmetry" => "isotropic"),
+            Dict("Material Model" => "PD Solid Elastic", "Bulk Modulus" => 1.0,
+                 "Shear Modulus" => 10.0, "Poisson's Ratio" => 0.2),
+            Dict("Material Model" => "Unified Bond-based Elastic",
+                 "Young's Modulus" => 5.0, "Poisson's Ratio" => 0.125,
+                 "Symmetry" => "isotropic plane strain")]
         legacy, typed = ut_both(raw)
         @test typed isa BMAT.BlockMaterial
         @test ut_same(legacy, typed.moduli)
@@ -59,8 +61,9 @@ end
     for (dof, nu) in ((2, 1 / 3), (3, 1 / 4))
         legacy, typed = ut_both(Dict("Material Model" => "Bond-based Elastic",
                                      "Young's Modulus" => 5.0, "Poisson's Ratio" => 0.125,
-                                     "Symmetry" => dof == 2 ? "isotropic plane stress" :
-                                                   "isotropic"); dof = dof)
+                                     "Symmetry" =>
+                                         dof == 2 ? "isotropic plane stress" :
+                                         "isotropic"); dof = dof)
         @test typed.moduli.poissons_ratio == nu
         @test typed.moduli.youngs_modulus == 5.0
         @test ut_same(legacy, typed.moduli)
@@ -69,8 +72,8 @@ end
 
 @testset "moduli from a mesh field" begin
     setup = () -> PeriLab.Data_Manager.create_constant_node_scalar_field("Bulk_Modulus",
-                                                                        Float64;
-                                                                        default_value = 10)
+                                                                         Float64;
+                                                                         default_value = 10)
     legacy, typed = ut_both(Dict("Material Model" => "PD Solid Elastic",
                                  "Shear Modulus" => 10.0); setup = setup)
     @test typed.moduli.youngs_modulus == [22.5, 22.5, 22.5]
@@ -103,12 +106,13 @@ end
 
 @testset "material_symmetry follows the legacy symmetry rules" begin
     for (sym, dof) in (("isotropic plane strain", 2), ("isotropic plane stress", 2),
-                       ("isotropic plane strain", 3), ("Isotropic Plane Stress", 2),
-                       ("isotropic", 3), (nothing, 2), (nothing, 3),
-                       ("iso Plane Strain", 3))
+        ("isotropic plane strain", 3), ("Isotropic Plane Stress", 2),
+        ("isotropic", 3), (nothing, 2), (nothing, 3),
+        ("iso Plane Strain", 3))
         legacy = sym === nothing ? Dict{String,Any}() : Dict{String,Any}("Symmetry" => sym)
         if dof == 3 && haskey(legacy, "Symmetry")
-            legacy["Symmetry"] = replace(replace(legacy["Symmetry"], r"plane strain$" => ""),
+            legacy["Symmetry"] = replace(replace(legacy["Symmetry"],
+                                                 r"plane strain$" => ""),
                                          r"plane stress$" => "")
         end
         @test BMAT.material_symmetry(sym, dof) == LEGACY.get_symmetry(legacy)
@@ -120,6 +124,18 @@ end
     m = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
                                   "Bulk Modulus" => 10.0, "Shear Modulus" => 10.0))
     @test BMAT.model_parts(m.model) == (m.model,)
+end
+
+@testset "model_function resolves the module function statically" begin
+    ut_reset(3)
+    m = typed_block_material(Dict("Material Model" => "Bond-based Elastic",
+                                  "Young's Modulus" => 1.0))
+    f(part) = PeriLab.ParameterSpec.model_function(part, Val(:compute_model))
+    @test f(m.model) === BMAT.Bondbased_Elastic.compute_model
+    # a constant return type means the call is dispatched at compile time
+    @test Base.return_types(f, (typeof(m.model),)) ==
+          [typeof(BMAT.Bondbased_Elastic.compute_model)]
+    @test PeriLab.ParameterSpec.model_label(m.model) == "Bondbased_Elastic"
 end
 
 @testset "factory dispatches typed parts to their modules" begin
@@ -150,7 +166,8 @@ end
     m = BMAT.block_material(wb, 3)
     BMAT.bind_material!(m)
     @test PeriLab.ParameterSpec.value(m.model.yield_stress, 2) ≈ 20.0
-    PeriLab.Data_Manager.create_constant_node_scalar_field("Active", Bool; default_value = true)
+    PeriLab.Data_Manager.create_constant_node_scalar_field("Active", Bool;
+                                                           default_value = true)
     PeriLab.Data_Manager.switch_NP1_to_N()
     PeriLab.Data_Manager.get_field("Temperature", "NP1") .= [100.0, 0.0]
     BMAT.bind_material!(m)
@@ -166,7 +183,6 @@ end
     @test parentmodule.(typeof.(BMAT.model_parts(m.model))) ==
           (BMAT.PD_Solid_Elastic, BMAT.PD_Solid_Plastic)
 end
-
 
 @testset "binding is cheap when a material has no tables" begin
     ut_reset(3; nnodes = 2)
@@ -203,20 +219,25 @@ end
                  "Shear Modulus XY" => 0.7, "Shear Modulus YZ" => 0.6,
                  "Shear Modulus XZ" => 0.5)
     aniso = Dict("C$i$j" => (i == j ? 100.0 * i : 1.0 * i + j) for i in 1:6 for j in i:6)
-    cases = [(3, Dict("Symmetry" => "isotropic", "Bulk Modulus" => 10.0, "Shear Modulus" => 4.0)),
-             (2, Dict("Symmetry" => "isotropic plane strain", "Bulk Modulus" => 10.0,
-                      "Shear Modulus" => 4.0)),
-             (2, Dict("Symmetry" => "isotropic plane stress", "Young's Modulus" => 10.0,
-                      "Poisson's Ratio" => 0.3)),
-             (2, Dict("Symmetry" => "something else", "Young's Modulus" => 10.0,
-                      "Poisson's Ratio" => 0.3)),
-             (3, merge(Dict("Symmetry" => "orthotropic"), ortho)),
-             (2, merge(Dict("Symmetry" => "orthotropic plane strain"), ortho)),
-             (3, merge(Dict("Symmetry" => "transverse isotropic"), ortho)),
-             (2, merge(Dict("Symmetry" => "transverse isotropic plane strain"), ortho)),
-             (2, merge(Dict("Symmetry" => "transverse isotropic plane stress"), ortho)),
-             (3, merge(Dict{String,Any}("Symmetry" => "anisotropic"), aniso)),
-             (2, merge(Dict{String,Any}("Symmetry" => "anisotropic plane strain"), aniso))]
+    cases = [
+        (3,
+         Dict("Symmetry" => "isotropic", "Bulk Modulus" => 10.0, "Shear Modulus" => 4.0)),
+        (2,
+         Dict("Symmetry" => "isotropic plane strain", "Bulk Modulus" => 10.0,
+              "Shear Modulus" => 4.0)),
+        (2,
+         Dict("Symmetry" => "isotropic plane stress", "Young's Modulus" => 10.0,
+              "Poisson's Ratio" => 0.3)),
+        (2,
+         Dict("Symmetry" => "something else", "Young's Modulus" => 10.0,
+              "Poisson's Ratio" => 0.3)),
+        (3, merge(Dict("Symmetry" => "orthotropic"), ortho)),
+        (2, merge(Dict("Symmetry" => "orthotropic plane strain"), ortho)),
+        (3, merge(Dict("Symmetry" => "transverse isotropic"), ortho)),
+        (2, merge(Dict("Symmetry" => "transverse isotropic plane strain"), ortho)),
+        (2, merge(Dict("Symmetry" => "transverse isotropic plane stress"), ortho)),
+        (3, merge(Dict{String,Any}("Symmetry" => "anisotropic"), aniso)),
+        (2, merge(Dict{String,Any}("Symmetry" => "anisotropic plane strain"), aniso))]
     for (dof, raw) in cases
         raw = merge(Dict{String,Any}("Material Model" => "Correspondence Elastic"), raw)
         legacy = ut_legacy_dict(raw; dof = dof)
@@ -237,7 +258,8 @@ end
 @testset "Hooke matrix from a table" begin
     ut_reset(3; nnodes = 2)
     dir = mktempdir()
-    write(joinpath(dir, "ex.txt"), "header: Temperature Young's_Modulus_X\n0 1000\n100 3000\n")
+    write(joinpath(dir, "ex.txt"),
+          "header: Temperature Young's_Modulus_X\n0 1000\n100 3000\n")
     N, NP1 = PeriLab.Data_Manager.create_node_scalar_field("Temperature", Float64)
     NP1 .= [0.0, 100.0]
     raw = Dict{String,Any}("Material Model" => "Correspondence Elastic",
@@ -277,33 +299,36 @@ end
     inactive = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
                                          "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0,
                                          "Flaw Function" => Dict("Active" => false,
-                                                                 "Function" => "Pre-defined")))
+                                              "Function" => "Pre-defined")))
     @test BBASIS.flaw_function(inactive.base.flaw_function, [0.0, 0.0], 10.0) == 10.0
     # an incomplete active flaw function is an input error
     @test_throws PeriLab.PeriLabError typed_block_material(Dict("Material Model" => "PD Solid Elastic",
                                                                 "Bulk Modulus" => 1.0,
                                                                 "Shear Modulus" => 1.0,
-                                                                "Flaw Function" => Dict("Active" => true,
-                                                                                        "Function" => "Pre-defined")))
+                                                                "Flaw Function" =>
+                                                                    Dict("Active" => true,
+                                                                         "Function" => "Pre-defined")))
 end
 
 @testset "extras reach the block material" begin
     ut_reset(3)
-    m = typed_block_material(Dict("Material Model" => "Correspondence UMAT", "File" => "x.so",
+    m = typed_block_material(Dict("Material Model" => "Correspondence UMAT",
+                                  "File" => "x.so",
                                   "Number of Properties" => 2, "Property_1" => 3.0,
                                   "Young's Modulus" => 1.0, "Poisson's Ratio" => 0.3))
     @test m.extras == Dict{String,Any}("Property_1" => 3.0)
     @test m.hooke_symmetry == "isotropic"
 end
 
-
 const BCORR = BMAT.Correspondence
 
 @testset "Correspondence Elastic typed init equals legacy" begin
-    for (dof, raw) in ((3, Dict("Symmetry" => "isotropic", "Bulk Modulus" => 10.0,
-                                "Shear Modulus" => 4.0)),
-                       (2, Dict("Symmetry" => "isotropic plane strain",
-                                "Young's Modulus" => 10.0, "Poisson's Ratio" => 0.3)))
+    for (dof, raw) in ((3,
+                        Dict("Symmetry" => "isotropic", "Bulk Modulus" => 10.0,
+                             "Shear Modulus" => 4.0)),
+                       (2,
+                        Dict("Symmetry" => "isotropic plane strain",
+                             "Young's Modulus" => 10.0, "Poisson's Ratio" => 0.3)))
         raw = merge(Dict{String,Any}("Material Model" => "Correspondence Elastic"), raw)
         legacy = ut_legacy_dict(raw; dof = dof)
         ut_reset(dof; nnodes = 2)
@@ -312,7 +337,7 @@ const BCORR = BMAT.Correspondence
         C = PeriLab.Data_Manager.get_field("Material Gradient")
         for iID in 1:2
             @test C[iID, :, :] ≈ Matrix(LEGACY.get_Hooke_matrix(legacy, legacy["Symmetry"],
-                                                                dof, iID))
+                                                 dof, iID))
         end
         @test hasmethod(BCORR.Correspondence_Elastic.compute_stresses,
                         Tuple{Vector{Int64},Int64,typeof(m.model),typeof(m),Float64,Float64,
@@ -373,7 +398,8 @@ end
                                   "Zero Energy Control" => "Global"))
     ZEC = PeriLab.Solver_Manager.Zero_Energy_Control
     ZEC.init_model([1, 2], m, 1)
-    @test PeriLab.Data_Manager.get_analysis_model("Zero Energy Control Model", 1) == ["Global"]
+    @test PeriLab.Data_Manager.get_analysis_model("Zero Energy Control Model", 1) ==
+          ["Global"]
     @test PeriLab.Data_Manager.get_field("Material Gradient")[2, :, :] ≈
           Matrix(BBASIS.hooke_matrix(m, 3, 2))
     ut_reset(3; nnodes = 2)
@@ -382,7 +408,6 @@ end
     ZEC.init_model([1, 2], plain, 1)
     @test PeriLab.Data_Manager.get_analysis_model("Zero Energy Control Model", 1) == [""]
 end
-
 
 function ut_umat_file()
     file = "./src/Models/Material/UMATs/libperuser.so"
@@ -449,7 +474,6 @@ end
     @test fields[1, 1] == 7.3 && fields[2, 2] == 3.0
 end
 
-
 @testset "typed correspondence dispatcher" begin
     ut_reset(3; nnodes = 2)
     PeriLab.Data_Manager.set_rotation(false)
@@ -468,11 +492,11 @@ end
     @test PeriLab.Data_Manager.get_field("Material Gradient")[1, :, :] ≈
           Matrix(BBASIS.hooke_matrix(nosym, 3, 1))
     @test nosym.hooke_symmetry == "isotropic"
-    @test hasmethod(BCORR.compute_model, Tuple{Vector{Int64},typeof(m),Int64,Float64,Float64})
+    @test hasmethod(BCORR.compute_model,
+                    Tuple{Vector{Int64},typeof(m),Int64,Float64,Float64})
     @test hasmethod(BCORR.Bond_Associated_Correspondence.compute_model,
                     Tuple{Vector{Int64},typeof(m),Int64,Float64,Float64})
 end
-
 
 @testset "UMAT state factor scales the moduli once" begin
     ut_reset(3; nnodes = 3)
@@ -518,13 +542,16 @@ end
     @test plastic.correspondence
     @test_logs (:error,
                 "Material Model \"Correspondence Elastic + PD Solid Elastic\": correspondence models cannot be combined with other material models.") @test_throws PeriLab.PeriLabError typed_block_material(Dict("Material Model" => "Correspondence Elastic + PD Solid Elastic",
-                                                                                                                                                                                                                       "Bulk Modulus" => 1.0,
-                                                                                                                                                                                                                       "Shear Modulus" => 1.0))
+                                                                                                                                                                                                                  "Bulk Modulus" =>
+                                                                                                                                                                                                                      1.0,
+                                                                                                                                                                                                                  "Shear Modulus" =>
+                                                                                                                                                                                                                      1.0))
 end
 
 @testset "a stiffness-matrix symmetry needs a correspondence model" begin
     ut_reset(3)
-    raw = Dict{String,Any}("Material Model" => "PD Solid Elastic", "Symmetry" => "anisotropic")
+    raw = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                           "Symmetry" => "anisotropic")
     for i in 1:6, j in i:6
         raw["C$i$j"] = 1.0
     end
@@ -541,9 +568,12 @@ end
     @test BMAT.critical_bulk_modulus(iso) == 7.0
     ortho = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
                                       "Symmetry" => "orthotropic",
-                                      "Young's Modulus X" => 2.0, "Young's Modulus Y" => 1.5,
-                                      "Young's Modulus Z" => 1.0, "Poisson's Ratio XY" => 0.3,
-                                      "Poisson's Ratio YZ" => 0.25, "Poisson's Ratio XZ" => 0.2,
+                                      "Young's Modulus X" => 2.0,
+                                      "Young's Modulus Y" => 1.5,
+                                      "Young's Modulus Z" => 1.0,
+                                      "Poisson's Ratio XY" => 0.3,
+                                      "Poisson's Ratio YZ" => 0.25,
+                                      "Poisson's Ratio XZ" => 0.2,
                                       "Shear Modulus XY" => 0.7, "Shear Modulus YZ" => 0.6,
                                       "Shear Modulus XZ" => 0.5))
     s11, s22, s33 = 1 / 2.0, 1 / 1.5, 1 / 1.0
@@ -568,9 +598,12 @@ end
     function ut_dependencies(raw)
         ut_reset(3; nnodes = 2)
         PeriLab.Data_Manager.set_block_id_list([1])
-        PeriLab.Data_Manager.set_block_models(1, PeriLab.Data_Manager.BlockModels(material = typed_block_material(raw)))
-        PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.check_dependencies(Dict(1 => [1,
-                                                                                            2]))
+        PeriLab.Data_Manager.set_block_models(1,
+                                              PeriLab.Data_Manager.BlockModels(material = typed_block_material(raw)))
+        PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.check_dependencies(Dict(1 =>
+                                                                                         [1,
+                                                                                             2
+                                                                                         ]))
         return PeriLab.Data_Manager.get_block_models(1).pre_calculation
     end
     corr = Dict{String,Any}("Material Model" => "Correspondence Elastic",
@@ -598,13 +631,13 @@ end
           Matrix(LEGACY.get_Hooke_matrix(legacy, legacy["Symmetry"], 2))
 end
 
-
 @testset "matrix-based correspondence init takes the block material" begin
     MB = PeriLab.Solver_Manager.Correspondence_matrix_based
     ut_reset(3; nnodes = 2)
     m = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
                                   "Symmetry" => "isotropic", "Bulk Modulus" => 1.0,
-                                  "Shear Modulus" => 1.0, "Zero Energy Control" => "Global"))
+                                  "Shear Modulus" => 1.0,
+                                  "Zero Energy Control" => "Global"))
     @test hasmethod(MB.init_model, Tuple{Vector{Int64},typeof(m),Int64})
     @test length(methods(MB.init_model)) == 1   # the Dict method is gone
 end
@@ -623,7 +656,8 @@ end
     @test_logs (:error, "Block 2 has no material model defined.") @test_throws PeriLab.PeriLabError begin
         BMAT.init_model([1, 2], 2)
     end
-    @test hasmethod(BMAT.compute_model, Tuple{Vector{Int64},typeof(m),Int64,Float64,Float64})
+    @test hasmethod(BMAT.compute_model,
+                    Tuple{Vector{Int64},typeof(m),Int64,Float64,Float64})
 end
 
 @testset "2D symmetry check" begin
@@ -640,4 +674,3 @@ end
                                    "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0); dof = 2)
     @test isnothing(BMAT.check_material_symmetry(ok, 2))
 end
-

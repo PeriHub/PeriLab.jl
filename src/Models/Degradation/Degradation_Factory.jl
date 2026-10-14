@@ -7,7 +7,7 @@ module Degradation
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
 using ....ModuleLoader: find_registered_modules
-using .....ParameterSpec: model_module
+using .....ParameterSpec: model_module, model_function
 for file in find_registered_modules(@__DIR__, "register_degradation")
     include(file)
 end
@@ -43,7 +43,7 @@ Computes the degradation model of a block.
 """
 function compute_model(nodes::AbstractVector{Int64}, p, block::Int64, time::Float64,
                        dt::Float64)
-    return model_module(p).compute_model(nodes, p, nothing, block, time, dt)
+    return model_function(p, Val(:compute_model))(nodes, p, nothing, block, time, dt)
 end
 
 """

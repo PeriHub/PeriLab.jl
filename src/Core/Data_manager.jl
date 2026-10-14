@@ -153,7 +153,7 @@ function initialize_data()
     #data["field_array_type"] = Dict()
     data["field_types"] = Dict()
     data["field_names"] = Vector{String}([])
-    data["fields_to_synch"] = Dict()
+    data["fields_to_synch"] = Dict{String,Any}()
     data["Stiffness Matrix"] = PD_matrix
     data["local_fields_to_synch"] = Dict("Material Model" => Dict(),
                                          "Damage Model" => Dict(),

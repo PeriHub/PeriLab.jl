@@ -131,7 +131,7 @@ Computes the stresses.
 """
 function calculate_stresses(block_nodes::Dict{Int64,Vector{Int64}},
                             options::CalculationOptions)
-    active_list = Data_Manager.get_field("Active")
+    active_list = Data_Manager.get_field("Active")::Vector{Bool}
     for block in eachindex(block_nodes)
         material = Data_Manager.get_block_models(block).material
         correspondence = material.correspondence
@@ -139,7 +139,7 @@ function calculate_stresses(block_nodes::Dict{Int64,Vector{Int64}},
         if options.cauchy |
            options.von_mises |
            options.strain | correspondence
-            active_nodes = Data_Manager.get_field("Active Nodes")
+            active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
             active_nodes = find_active_nodes(active_list, active_nodes, block_nodes[block])
             if !correspondence
                 get_partial_stresses(active_nodes)

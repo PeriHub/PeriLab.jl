@@ -79,11 +79,24 @@ Computes the block's active pre-calculations in run order.
 """
 function compute_model(nodes::AbstractVector{Int64}, names::Vector{String}, block::Int64,
                        time::Float64, dt::Float64)
-    for name in names
-        p = pre_calculation(name)
-        @timeit compute_label(name) model_module(p).compute_model(nodes, p, nothing,
-                                                                  block, time, dt)
-    end
+    return compute_each(nodes, typed_pre_calculations(names), block, time, dt)
+end
+
+# `name => parameters` of `names`, built once per list: the type of the tuple lets
+# `compute_each` dispatch every pre-calculation statically.
+# ponytail: keyed by the identity of the block's (never mutated) name list
+const TYPED_PRE_CALCULATIONS = IdDict{Vector{String},Any}()
+function typed_pre_calculations(names::Vector{String})
+    return get!(() -> Tuple(name => pre_calculation(name) for name in names),
+                TYPED_PRE_CALCULATIONS, names)
+end
+
+compute_each(nodes, ::Tuple{}, block, time, dt) = nothing
+function compute_each(nodes, pre::Tuple, block, time, dt)
+    name, p = first(pre)
+    @timeit compute_label(name) model_function(p, Val(:compute_model))(nodes, p, nothing,
+                                                                       block, time, dt)
+    return compute_each(nodes, Base.tail(pre), block, time, dt)
 end
 
 """

@@ -50,9 +50,11 @@ has_block_model(block::Int64, name::String) = typed_block_model(block, name) !==
 block_model_parameters(block::Int64, name::String) = typed_block_model(block, name)
 # local damping of a block's damage model, or `nothing`
 function block_local_damping(block::Int64)
-    damage = Data_Manager.get_block_models(block).damage
-    return damage === nothing ? nothing : damage.base.local_damping
+    return base_local_damping(Data_Manager.get_block_models(block).damage)
 end
+# function barrier: reading `base` of an untyped damage would copy it
+base_local_damping(::Nothing) = nothing
+base_local_damping(damage) = damage.base.local_damping
 # Thermal Conductivity of a block's thermal model, or `nothing`
 function block_thermal_conductivity(block::Int64)
     thermal = Data_Manager.get_block_models(block).thermal
@@ -182,10 +184,10 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
                         synchronise_field)
     fem_option = Data_Manager.fem_active()
     if fem_option
-        fe_nodes = Data_Manager.get_field("FE Nodes")
+        fe_nodes = Data_Manager.get_field("FE Nodes")::Vector{Bool}
     end
 
-    active_list = Data_Manager.get_field("Active")
+    active_list = Data_Manager.get_field("Active")::Vector{Bool}
     # TODO check if pre calculation should run block wise. For mixed model applications it makes sense.
     # TODO add for pre calculation a whole model option, to get the neighbors as well, e.g. for bond associated
     # TODO check for loop order?
@@ -203,7 +205,7 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
 
         for (block, nodes) in pairs(block_nodes)
             # "delete" the view of active nodes
-            active_nodes = Data_Manager.get_field("Active Nodes")
+            active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
 
             active_nodes = find_active_nodes(active_list,
                                              active_nodes,
@@ -212,7 +214,7 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
 
             if fem_option # TODO might lead to problems in 3D
                 # find all non-FEM nodes in active nodes
-                #active_nodes = Data_Manager.get_field("Active Nodes")
+                #active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
                 active_nodes = find_active_nodes(fe_nodes,
                                                  active_nodes,
                                                  nodes,
@@ -234,7 +236,7 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
     end
 
     # Why not update_list.=false? -> avoid neighbors in MPI
-    update_list = Data_Manager.get_field("Update")
+    update_list = Data_Manager.get_field("Update")::Vector{Bool}
     for (block, nodes) in pairs(block_nodes)
         update_list[nodes] .= false
     end
@@ -249,12 +251,12 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
                     "download_from_cores",
                     synchronise_field)
         for (block, nodes) in pairs(block_nodes)
-            active_nodes = Data_Manager.get_field("Active Nodes")
-            update_nodes = Data_Manager.get_field("Update Nodes")
+            active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
+            update_nodes = Data_Manager.get_field("Update Nodes")::Vector{Int64}
             active_nodes = find_active_nodes(active_list, active_nodes, nodes)
             if fem_option
                 # FEM active means FEM nodes
-                #active_nodes = Data_Manager.get_field("Active Nodes")
+                #active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
                 active_nodes = find_active_nodes(fe_nodes,
                                                  active_nodes,
                                                  nodes,
@@ -292,7 +294,7 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
             @timeit "eval" FEM.eval_FEM(Vector{Int64}(1:nelements),
                                         time,
                                         dt)
-            active_nodes = Data_Manager.get_field("Active Nodes")
+            active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
 
             FEM.force_densities(find_active_nodes(fe_nodes, active_nodes,
                                                   1:Data_Manager.get_nnodes(), true))
@@ -304,7 +306,7 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
             for (block, nodes) in pairs(block_nodes)
                 local_damping = block_local_damping(block)
                 local_damping === nothing && continue
-                active_nodes = Data_Manager.get_field("Active Nodes")
+                active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
                 if fem_option
                     active_nodes = find_active_nodes(active_list,
                                                      active_nodes,
@@ -319,7 +321,7 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
                                                                                      dt)
             end
         end
-        active_nodes = Data_Manager.get_field("Active Nodes")
+        active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
         active_nodes = find_active_nodes(active_list, active_nodes,
                                          1:Data_Manager.get_nnodes())
 
@@ -338,7 +340,7 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
     Used for shape tensor or other fixed calculations, to avoid an update if its not needed.
     The damage update is done in the second loop.
     =#
-    update_list = Data_Manager.get_field("Update")
+    update_list = Data_Manager.get_field("Update")::Vector{Bool}
     for (block, nodes) in pairs(block_nodes)
         update_list[nodes] .= false
     end
@@ -361,8 +363,8 @@ function compute_stiff_matrix_compatible_models(block_nodes::Dict{Int64,Vector{I
                                                 time::Float64,
                                                 options::Vector{String},
                                                 synchronise_field)
-    active_list = Data_Manager.get_field("Active")
-    update_list = Data_Manager.get_field("Update")
+    active_list = Data_Manager.get_field("Active")::Vector{Bool}
+    update_list = Data_Manager.get_field("Update")::Vector{Bool}
     for (block, nodes) in pairs(block_nodes)
         update_list[nodes] .= false
     end
@@ -382,7 +384,7 @@ function compute_stiff_matrix_compatible_models(block_nodes::Dict{Int64,Vector{I
 
         for (block, nodes) in pairs(block_nodes)
             # "delete" the view of active nodes
-            active_nodes = Data_Manager.get_field("Active Nodes")
+            active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
 
             active_nodes = find_active_nodes(active_list,
                                              active_nodes,
@@ -402,7 +404,7 @@ function compute_stiff_matrix_compatible_models(block_nodes::Dict{Int64,Vector{I
     end
 
     if ("Material" in options) && ("Thermal" in options)
-        active_nodes = Data_Manager.get_field("Active Nodes")
+        active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
         active_nodes = find_active_nodes(active_list, active_nodes,
                                          1:Data_Manager.get_nnodes())
         @timeit "distribute_force_densities" Material.distribute_force_densities(active_nodes)
@@ -412,12 +414,12 @@ end
 function compute_matrix_based_bond_forces(block_nodes::Dict{Int64,Vector{Int64}},
                                           time::Float64,
                                           dt::Float64)
-    active_list = Data_Manager.get_field("Active")
+    active_list = Data_Manager.get_field("Active")::Vector{Bool}
 
     # deformation
     for (block, nodes) in pairs(block_nodes)
         # "delete" the view of active nodes
-        active_nodes = Data_Manager.get_field("Active Nodes")
+        active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
 
         active_nodes = find_active_nodes(active_list,
                                          active_nodes,

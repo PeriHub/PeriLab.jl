@@ -2,7 +2,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-export NoModel, Composite, WithBase, dependent_tables, model_parts, model_module
+export NoModel, Composite, WithBase, dependent_tables, model_parts, model_module,
+       model_function, model_label
 
 "Placeholder for a block that has no model of a category."
 struct NoModel end
@@ -18,6 +19,21 @@ model_parts(model) = (model,)
 
 "The module that defines the model struct `part` (and its `init_model`, `compute_model`)."
 model_module(part) = parentmodule(typeof(part))
+
+"""
+    model_function(part, Val(name))
+
+The function `name` (e.g. `:compute_model`) of the module that defines `part`.
+Unlike `model_module(part).name`, which is always a dynamic call, it is resolved
+at compile time once the type of `part` is known, so the call is dispatched
+statically. Works for modules loaded at runtime, as long as the caller runs in a
+newer world (`invokelatest`), like the solver does.
+"""
+@generated model_function(part, ::Val{name}) where {name} = GlobalRef(parentmodule(part),
+                                                                      name)
+
+"Name of the module that defines `part`, a constant string (timer label)."
+@generated model_label(part) = string(nameof(parentmodule(part)))
 
 "A model together with the base part of its category (see `register_base!`)."
 struct WithBase{B,M}

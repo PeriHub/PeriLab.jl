@@ -10,7 +10,7 @@ using .....Data_Manager
 using .....PeriLabExceptions: @abort
 using ....Zero_Energy_Control
 using .....ModuleLoader: find_registered_modules
-using ......ParameterSpec: model_parts, model_module
+using ......ParameterSpec: model_parts, model_module, model_function
 for file in find_registered_modules(@__DIR__, "register_material")
     include(file)
 end
@@ -142,9 +142,9 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
 
     @timeit "compute material" begin
         for part in model_parts(material.model)
-            model_module(part).compute_stresses(nodes, dof, part, material, time, dt,
-                                                strain_increment, stress_N,
-                                                stress_NP1)
+            model_function(part, Val(:compute_stresses))(nodes, dof, part, material,
+                                                         time, dt, strain_increment,
+                                                         stress_N, stress_NP1)
         end
     end
 

@@ -207,7 +207,7 @@ function time_step!(ws::VerletWorkspace, run::SolverRun{VerletParams}, ctx::Solv
         end
         deformed_coorNP1::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
                                                                             "NP1")
-        active_nodes = Data_Manager.get_field("Active Nodes")
+        active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
         active_nodes = find_active_nodes(active_list,
                                          active_nodes,
                                          1:Data_Manager.get_nnodes())
@@ -262,7 +262,7 @@ function time_step!(ws::VerletWorkspace, run::SolverRun{VerletParams}, ctx::Solv
                                                         time,
                                                         step_time) #-> Dirichlet
         # @timeit "apply_bc_neumann" apply_bc_neumann(bcs, time) #-> von neumann
-        active_nodes = get_field("Active Nodes")
+        active_nodes = get_field("Active Nodes")::Vector{Int64}
         active_nodes = find_active_nodes(active_list, active_nodes,
                                          1:Data_Manager.get_nnodes())
         if "Material" in run.models
@@ -272,7 +272,7 @@ function time_step!(ws::VerletWorkspace, run::SolverRun{VerletParams}, ctx::Solv
             if fem_option
                 # edit external force densities won't work so easy, because the corresponded volume is in detJ
                 # force density is for FEM part force
-                active_nodes = Data_Manager.get_field("Active Nodes")
+                active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
                 active_nodes = find_active_nodes(fe_nodes,
                                                  active_nodes,
                                                  1:Data_Manager.get_nnodes())
@@ -280,7 +280,7 @@ function time_step!(ws::VerletWorkspace, run::SolverRun{VerletParams}, ctx::Solv
                 compute_forces_add!(volume, density, active_nodes,
                                     "Material" in run.models)
 
-                active_nodes = Data_Manager.get_field("Active Nodes")
+                active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
                 active_nodes = find_active_nodes(fe_nodes,
                                                  active_nodes,
                                                  1:Data_Manager.get_nnodes(),

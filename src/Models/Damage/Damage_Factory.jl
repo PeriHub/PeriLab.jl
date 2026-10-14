@@ -10,7 +10,7 @@ using ....PeriLabExceptions: @abort
 using ....ModuleLoader: find_registered_modules
 using .....ParameterSpec: @params, Dependent, Constant, register_base!, ParseContext,
                           add_error!, join_path, WithBase, Table1D, dependent_tables, value,
-                          model_module
+                          model_module, model_function
 import .....ParameterSpec: check!
 
 @params struct AnisotropicDamageParams
@@ -170,7 +170,8 @@ damage index.
 function compute_model(nodes::AbstractVector{Int64}, damage::BlockDamage, block::Int64,
                        time::Float64, dt::Float64)
     Data_Manager.bind_dependent_tables!(damage.tables)
-    model_module(damage.model).compute_model(nodes, damage.model, damage, block, time, dt)
+    model_function(damage.model, Val(:compute_model))(nodes, damage.model, damage, block,
+                                                      time, dt)
     if isnothing(Data_Manager.get_filtered_nlist())
         @timeit "compute index" return damage_index(nodes)
     end
