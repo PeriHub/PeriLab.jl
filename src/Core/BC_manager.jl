@@ -13,6 +13,15 @@ using ...Data_Manager
 using ...InputDeck: BoundaryConditionParams, bc_node_set_names, bc_step_ids
 using ...PeriLabExceptions: @abort
 
+const DOF_MAPPING = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
+
+# column `d` of the coordinates as a view; for a node-set view it indexes the parent
+# directly, a view of the view would copy the node set
+coordinate_column(coordinates::AbstractMatrix, d::Int64) = view(coordinates, :, d)
+function coordinate_column(coordinates::SubArray, d::Int64)
+    return view(parent(coordinates), parentindices(coordinates)[1], d)
+end
+
 """
     BoundaryCondition
 
@@ -41,7 +50,7 @@ function find_bc_free_dof(bcs::Dict{String,BoundaryCondition})
     nnodes = Data_Manager.get_nnodes()
     dof = Data_Manager.get_dof()
     bc_free_dof = vec([(i, j) for i in 1:nnodes, j in 1:dof])
-    dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
+    dof_mapping = DOF_MAPPING
     for bc in values(bcs)
         if bc.variable == "Displacements" && bc.type == "Dirichlet"
             act = Vector{Tuple{Int64,Int64}}([(node, dof_mapping[bc.coordinate])
@@ -144,10 +153,10 @@ function apply_bc_dirichlet(allowed_variables::Vector{String},
                             time::Float64,
                             step_time::Float64)
     dof = Data_Manager.get_dof()
-    dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
+    dof_mapping = DOF_MAPPING
     coordinates = Data_Manager.get_field("Coordinates")
     for (name, bc) in bcs
-        if !(bc.type in ["Initial", "Dirichlet"])
+        if !(bc.type in ("Initial", "Dirichlet"))
             continue
         end
         if !(bc.variable in allowed_variables)
@@ -163,28 +172,28 @@ function apply_bc_dirichlet(allowed_variables::Vector{String},
         if ndims(field) > 1
             if haskey(dof_mapping, bc.coordinate)
                 @views field_to_apply_bc = field[bc.node_set,
-                dof_mapping[bc.coordinate]]
+                                                 dof_mapping[bc.coordinate]]
                 bc.value = eval_bc!(field_to_apply_bc,
-                                       bc.value,
-                                       coordinates[bc.node_set, :],
-                                       time,
-                                       step_time,
-                                       dof,
-                                       bc.initial,
-                                       name)
+                                    bc.value,
+                                    view(coordinates, bc.node_set, :),
+                                    time,
+                                    step_time,
+                                    dof,
+                                    bc.initial,
+                                    name)
             else
                 @abort "Coordinate in boundary condition must be x,y or z."
             end
         else
             @views field_to_apply_bc = field[bc.node_set]
             bc.value = eval_bc!(field_to_apply_bc,
-                                   bc.value,
-                                   coordinates[bc.node_set, :],
-                                   time,
-                                   step_time,
-                                   dof,
-                                   bc.initial,
-                                   name)
+                                bc.value,
+                                view(coordinates, bc.node_set, :),
+                                time,
+                                step_time,
+                                dof,
+                                bc.initial,
+                                name)
         end
     end
 end
@@ -202,7 +211,7 @@ function apply_bc_neumann(bcs::Dict{String,BoundaryCondition}, time::Float64,
                           step_time::Float64)
     # Currently not supported
     dof = Data_Manager.get_dof()
-    dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
+    dof_mapping = DOF_MAPPING
     coordinates = Data_Manager.get_field("Coordinates")
     for (name, bc) in bcs
         if bc.type != "Neumann"
@@ -213,16 +222,16 @@ function apply_bc_neumann(bcs::Dict{String,BoundaryCondition}, time::Float64,
         if ndims(field) > 1
             if haskey(dof_mapping, bc.coordinate)
                 @views field_to_apply_bc = field[bc.node_set,
-                dof_mapping[bc.coordinate]]
+                                                 dof_mapping[bc.coordinate]]
                 bc.value = eval_bc!(field_to_apply_bc,
-                                       bc.value,
-                                       coordinates[bc.node_set, :],
-                                       time,
-                                       step_time,
-                                       dof,
-                                       bc.initial,
-                                       name,
-                                       true)
+                                    bc.value,
+                                    view(coordinates, bc.node_set, :),
+                                    time,
+                                    step_time,
+                                    dof,
+                                    bc.initial,
+                                    name,
+                                    true)
             else
                 @abort "Coordinate in boundary condition must be x,y or z."
                 return nothing
@@ -230,14 +239,14 @@ function apply_bc_neumann(bcs::Dict{String,BoundaryCondition}, time::Float64,
         else
             @views field_to_apply_bc = field[bc.node_set]
             bc.value = eval_bc!(field_to_apply_bc,
-                                   bc.value,
-                                   coordinates[bc.node_set, :],
-                                   time,
-                                   step_time,
-                                   dof,
-                                   bc.initial,
-                                   name,
-                                   true)
+                                bc.value,
+                                view(coordinates, bc.node_set, :),
+                                time,
+                                step_time,
+                                dof,
+                                bc.initial,
+                                name,
+                                true)
         end
     end
 end
@@ -282,7 +291,7 @@ function clean_up(bc::String)
 end
 
 """
-    eval_bc!(field_values::Union{NodeScalarField{Float64},NodeScalarField{Int64}}, bc::Union{Float64,Float64,Int64,String}, coordinates::Matrix{Float64}, time::Float64, dof::Int64)
+    eval_bc!(field_values::Union{NodeScalarField{Float64},NodeScalarField{Int64}}, bc::Union{Float64,Float64,Int64,String}, coordinates::AbstractMatrix{Float64}, time::Float64, dof::Int64)
 Working with if-statements
 "if t>2 0 else 20 end"
 works for scalars. If you want to evaluate a vector, please use the Julia notation as input
@@ -291,7 +300,7 @@ works for scalars. If you want to evaluate a vector, please use the Julia notati
 function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
                                       NodeScalarField{Int64}},
                   bc::Union{Float64,Int64,String},
-                  coordinates::Matrix{Float64},
+                  coordinates::AbstractMatrix{Float64},
                   time::Float64,
                   step_time::Float64,
                   dof::Int64,
@@ -324,7 +333,9 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
         dynamic_bc_3D_func = Base.eval(@__MODULE__, dynamic_func_expr)
 
         value = Base.invokelatest(dynamic_bc_3D_func,
-                                  (coordinates[:, 1], coordinates[:, 2], coordinates[:, 3],
+                                  (coordinate_column(coordinates, 1),
+                                   coordinate_column(coordinates, 2),
+                                   coordinate_column(coordinates, 3),
                                    time,
                                    step_time)...)
         bc_out = dynamic_bc_3D_func
@@ -337,7 +348,8 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
         dynamic_2D_bc_func = Base.eval(@__MODULE__, dynamic_func_expr)
 
         value = Base.invokelatest(dynamic_2D_bc_func,
-                                  (coordinates[:, 1], coordinates[:, 2],
+                                  (coordinate_column(coordinates, 1),
+                                   coordinate_column(coordinates, 2),
                                    time,
                                    step_time)...)
         bc_out = dynamic_2D_bc_func
@@ -361,13 +373,13 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
 end
 
 """
-    eval_bc!(field_values::Union{NodeScalarField{Float64},NodeScalarField{Int64}}, bc::Function, coordinates::Matrix{Float64}, time::Float64, dof::Int64)
+    eval_bc!(field_values::Union{NodeScalarField{Float64},NodeScalarField{Int64}}, bc::Function, coordinates::AbstractMatrix{Float64}, time::Float64, dof::Int64)
 uses the already created bc function"
 """
 function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
                                       NodeScalarField{Int64}},
                   bc::Function,
-                  coordinates::Matrix{Float64},
+                  coordinates::AbstractMatrix{Float64},
                   time::Float64,
                   step_time::Float64,
                   dof::Int64,
@@ -391,7 +403,9 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
         #dynamic_bc_3D_func = Base.eval(@__MODULE__, dynamic_func_expr)
 
         value = Base.invokelatest(bc,
-                                  (coordinates[:, 1], coordinates[:, 2], coordinates[:, 3],
+                                  (coordinate_column(coordinates, 1),
+                                   coordinate_column(coordinates, 2),
+                                   coordinate_column(coordinates, 3),
                                    time,
                                    step_time)...)
     else
@@ -401,7 +415,8 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
         #end
         #dynamic_2D_bc_func = Base.eval(@__MODULE__, dynamic_func_expr)
         value = Base.invokelatest(bc,
-                                  (coordinates[:, 1], coordinates[:, 2],
+                                  (coordinate_column(coordinates, 1),
+                                   coordinate_column(coordinates, 2),
                                    time,
                                    step_time)...)
     end

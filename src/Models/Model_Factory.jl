@@ -9,7 +9,8 @@ using ...Data_Manager
 using ...PeriLabExceptions: @abort
 using ...Helpers:
                   check_inf_or_nan, find_active_nodes, invert,
-                  determinant, matrix_style, eigvals, get_update_nodes
+                  determinant, matrix_style, eigvals, get_update_nodes,
+                  compute_label
 using ...InputDeck: PeriLabInput, ContactInput, CalculationOptions, block_by_id
 include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("./Surface_correction/Surface_correction.jl")
@@ -63,7 +64,6 @@ function local_damping_symmetry(block::Int64)
     return material === nothing ? "3D" : material.symmetry
 end
 
-
 """
 	init_models(input::PeriLabInput, block_nodes::Dict{Int64,Vector{Int64}}, models::Vector{String}, all_models::Vector{String}, calculation::CalculationOptions, synchronise_field)
 
@@ -89,7 +89,6 @@ function init_models(input::PeriLabInput,
             material.base.accuracy_order === nothing ||
                 Data_Manager.set_accuracy_order(material.base.accuracy_order)
         end
-
     end
     for model_name in models
         add_model(model_name)
@@ -106,7 +105,7 @@ function init_models(input::PeriLabInput,
 
     if Data_Manager.get_step() <= 1
         for (active_model_name,
-             active_model) in pairs(Data_Manager.get_active_models(true))
+            active_model) in pairs(Data_Manager.get_active_models(true))
             @debug "Init $active_model_name fields"
             @timeit "$active_model_name model fields" active_model.init_fields()
         end
@@ -121,8 +120,10 @@ function init_models(input::PeriLabInput,
                                                                                  block)
                 @timeit "init fields_for_local_synchronization $active_model_name models" active_model.fields_for_local_synchronization(active_model_name,
                                                                                                                                         block)
-                if active_model_name == "Damage Model" && block_local_damping(block) !== nothing
-                    Material.init_local_damping(block_nodes[block], local_damping_symmetry(block),
+                if active_model_name == "Damage Model" &&
+                   block_local_damping(block) !== nothing
+                    Material.init_local_damping(block_nodes[block],
+                                                local_damping_symmetry(block),
                                                 block_local_damping(block))
                 end
                 model_used = true
@@ -156,9 +157,11 @@ end
 check_contact(::Nothing) = nothing
 check_contact(contact::ContactInput) = Contact.init_contact_model(contact)
 check_contact(::Nothing, time::Float64, dt::Float64) = nothing
-check_contact(contact::ContactInput, time::Float64, dt::Float64) = Contact.compute_contact_model(contact,
-                                                                                                time,
-                                                                                                dt)
+function check_contact(contact::ContactInput, time::Float64, dt::Float64)
+    Contact.compute_contact_model(contact,
+                                  time,
+                                  dt)
+end
 
 """
 	compute_models(block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field)
@@ -220,11 +223,12 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
             end
             if has_block_model(block, active_model_name)
                 # synch
-                @timeit "compute $active_model_name" active_model.compute_model(active_nodes,
-                                                                                block_model_parameters(block, active_model_name),
-                                                                                block,
-                                                                                time,
-                                                                                dt)
+                @timeit compute_label(active_model_name) active_model.compute_model(active_nodes,
+                                                                                    block_model_parameters(block,
+                                                                                                           active_model_name),
+                                                                                    block,
+                                                                                    time,
+                                                                                    dt)
             end
         end
     end
@@ -270,11 +274,12 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
 
             if has_block_model(block, active_model_name)
                 # TODO synch
-                @timeit "compute $active_model_name" active_model.compute_model(update_nodes,
-                                                                                block_model_parameters(block, active_model_name),
-                                                                                block,
-                                                                                time,
-                                                                                dt)
+                @timeit compute_label(active_model_name) active_model.compute_model(update_nodes,
+                                                                                    block_model_parameters(block,
+                                                                                                           active_model_name),
+                                                                                    block,
+                                                                                    time,
+                                                                                    dt)
             end
         end
     end
@@ -386,11 +391,12 @@ function compute_stiff_matrix_compatible_models(block_nodes::Dict{Int64,Vector{I
 
             if has_block_model(block, active_model_name)
                 # synch
-                @timeit "compute $active_model_name" active_model.compute_model(active_nodes,
-                                                                                block_model_parameters(block, active_model_name),
-                                                                                block,
-                                                                                time,
-                                                                                dt)
+                @timeit compute_label(active_model_name) active_model.compute_model(active_nodes,
+                                                                                    block_model_parameters(block,
+                                                                                                           active_model_name),
+                                                                                    block,
+                                                                                    time,
+                                                                                    dt)
             end
         end
     end
@@ -500,7 +506,6 @@ function read_properties(input::PeriLabInput, material_model::Bool)
         Data_Manager.set_block_models(block, models)
     end
 end
-
 
 """
 	set_heat_capacity(input::PeriLabInput, block_nodes::Dict, heat_capacity::NodeScalarField{Float64})

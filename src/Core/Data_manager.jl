@@ -328,12 +328,14 @@ The typed models of one block, `nothing` where the block has none of a category.
 `pre_calculation` lists the active pre-calculations in run order (empty: none).
 Surface correction is global (`input.sections.surface_correction`), not per block.
 """
-struct BlockModels{M,D,T,A,G}
-    material::M
-    damage::D
-    thermal::T
-    additive::A
-    degradation::G
+# untyped fields on purpose: the models are boxed once here, reading a field from the
+# (never inferred) BlockModels then returns the box instead of copying the struct
+struct BlockModels
+    material::Any
+    damage::Any
+    thermal::Any
+    additive::Any
+    degradation::Any
     pre_calculation::Vector{String}
 end
 
@@ -358,7 +360,10 @@ set_block_models(block::Int64, models::BlockModels) = (data["Block Models"][bloc
 
 The typed models of a block (`NO_BLOCK_MODELS` if it has none).
 """
-get_block_models(block::Int64) = get(data["Block Models"], block, NO_BLOCK_MODELS)
+function get_block_models(block::Int64)
+    get(data["Block Models"]::Dict{Int64,BlockModels}, block,
+        NO_BLOCK_MODELS)
+end
 
 # node field a dependent value reads (the NP1 state if the field has one)
 function _dependent_field(name::String)

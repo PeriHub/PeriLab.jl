@@ -70,7 +70,8 @@ function register_unavailable!(category::Symbol, name::AbstractString;
 end
 
 function lookup_model(category::Symbol, name::AbstractString)
-    return get(get(REGISTRY, category, Dict{String,Any}()), name, nothing)
+    models = get(REGISTRY, category, nothing)
+    return models === nothing ? nothing : get(models, name, nothing)
 end
 
 function registered_names(category::Symbol)

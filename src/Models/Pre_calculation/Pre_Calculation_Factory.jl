@@ -6,6 +6,7 @@ module Pre_Calculation
 
 using TimerOutputs: @timeit
 using ....Data_Manager
+using ....Helpers: compute_label
 using ....ModuleLoader: find_registered_modules
 using .....ParameterSpec
 for file in find_registered_modules(@__DIR__, "register_pre_calculation")
@@ -34,14 +35,17 @@ end
 pre_calculation(name::String) = ParameterSpec.lookup_model(:pre_calculation, name)()
 
 "Active names of `switches` (on/off per pre-calculation), in run order."
-active_pre_calculations(switches::AbstractDict{String,Bool}) = order_pre_calculations([name
-                                                                                       for (name, on) in switches
-                                                                                       if on])
+function active_pre_calculations(switches::AbstractDict{String,Bool})
+    order_pre_calculations([name
+                            for (name, on) in switches
+                            if on])
+end
 
 "`names` in run order: the fixed order first, then the others sorted."
 function order_pre_calculations(names)
     order = Data_Manager.get_pre_calculation_order()
-    return vcat([n for n in order if n in names], sort!([n for n in names if !(n in order)]))
+    return vcat([n for n in order if n in names],
+                sort!([n for n in names if !(n in order)]))
 end
 
 """
@@ -77,8 +81,8 @@ function compute_model(nodes::AbstractVector{Int64}, names::Vector{String}, bloc
                        time::Float64, dt::Float64)
     for name in names
         p = pre_calculation(name)
-        @timeit "compute $name" model_module(p).compute_model(nodes, p, nothing, block, time,
-                                                              dt)
+        @timeit compute_label(name) model_module(p).compute_model(nodes, p, nothing,
+                                                                  block, time, dt)
     end
 end
 

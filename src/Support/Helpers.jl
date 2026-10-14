@@ -24,6 +24,7 @@ export qdim
 export check_inf_or_nan
 export compute_geometry
 export find_active_nodes
+export compute_label
 export get_active_update_nodes
 export find_indices
 export find_inverse_bond_id
@@ -579,6 +580,11 @@ function get_active_update_nodes(active::AbstractVector{Bool},
     end
     return view(index, 1:count)
 end
+
+const COMPUTE_LABELS = Dict{String,String}()
+
+"Timer label `\"compute \$name\"`, built once instead of every step."
+compute_label(name::String) = get!(() -> "compute " * name, COMPUTE_LABELS, name)
 
 function find_active_nodes(active::AbstractVector{Bool},
                            active_nodes::AbstractVector{Int64},

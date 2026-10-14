@@ -204,7 +204,9 @@ Typed material of one block: the shared base parameters, the model struct (or
 `"plane stress"` or `"3D"`), and the completed elastic moduli (`nothing` for
 materials defined by a stiffness matrix).
 """
-struct BlockMaterial{B,M,E}
+# mutable only for heap identity (never mutated): passing it through dynamic calls
+# then shares the object instead of copying the struct
+mutable struct BlockMaterial{B,M,E}
     base::B
     model::M
     symmetry::String          # used by the force models: "plane strain", "plane stress" or "3D"

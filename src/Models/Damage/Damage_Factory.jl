@@ -67,7 +67,8 @@ __init__() = register_base!(:damage, DamageBaseParams)
 The typed damage model of a block: the shared base part, the model's own part,
 and the field-dependent tables to bind before each compute.
 """
-struct BlockDamage{B,M}
+# mutable only for heap identity (never mutated), see BlockMaterial
+mutable struct BlockDamage{B,M}
     base::B
     model::M
     tables::Vector{Table1D}

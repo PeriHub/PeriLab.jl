@@ -208,9 +208,9 @@ function time_step!(ws::VerletWorkspace, run::SolverRun{VerletParams}, ctx::Solv
         deformed_coorNP1::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
                                                                             "NP1")
         active_nodes = Data_Manager.get_field("Active Nodes")
-        active_nodes::Vector{Int64} = find_active_nodes(active_list,
-                                                        active_nodes,
-                                                        1:Data_Manager.get_nnodes())
+        active_nodes = find_active_nodes(active_list,
+                                         active_nodes,
+                                         1:Data_Manager.get_nnodes())
 
         # one step more, because of init step (time = 0)
 
@@ -299,7 +299,7 @@ end
 
 function update_velocity_and_position!(dt::Float64,
                                        numerical_damping::Float64,
-                                       active_nodes::Vector{Int},
+                                       active_nodes::AbstractVector{Int},
                                        has_material::Bool,
                                        bcs,
                                        time::Float64,
@@ -336,7 +336,7 @@ function update_velocity_and_position!(dt::Float64,
 end
 
 function compute_forces!(volume::Vector{Float64}, density::Vector{Float64},
-                         active_nodes::Vector{Int}, has_material::Bool)
+                         active_nodes::AbstractVector{Int}, has_material::Bool)
     if !has_material
         return nothing
     end
