@@ -8,7 +8,7 @@
 
 using Test
 
-make_bond_state(values...) = [collect(Float64, v) for v in values]
+make_bond_state(values...) = bond_field([collect(Float64, v) for v in values])
 
 @testset "compute_stretch!" begin
     @testset "basic stretch" begin
@@ -87,13 +87,12 @@ end
 
 @testset "ut_compute_bond_level_deformation_gradient" begin
     nodes = [1]
-    nlist = [[2]]
+    nlist = bond_field([[2]])
     dof = 2
-    ba_deformation_gradient = [zeros(Float64, 1, dof, dof) for _ in 1:dof]
-    bond_deformation = [zeros(1, dof)]
-    bond_geometry = [zeros(1, dof)]
-    bond_geometry[1][1, :] = [0 0] # as simple test
-    bond_length = [[1.0]]
+    ba_deformation_gradient = bond_field([[zeros(Float64, dof, dof)]])
+    bond_deformation = bond_field([[zeros(dof)]])
+    bond_geometry = bond_field([[zeros(dof)]]) # as simple test
+    bond_length = bond_field([[1.0]])
     deformation_gradient = zeros(2, dof, dof)
     deformation_gradient[1, :, :] = [1 0; 0 1]
     deformation_gradient[2, :, :] = [1 0; 0 1]
@@ -105,9 +104,7 @@ end
                                                                    bond_length,
                                                                    bond_deformation,
                                                                    deformation_gradient,
-                                                                   ba_deformation_gradient)[1][1,
-                                                                                               :,
-                                                                                               :] ==
+                                                                   ba_deformation_gradient)[1][1] ==
           [1 0; 0 1]
 end
 
@@ -234,20 +231,16 @@ end
 
 @testset "ut_compute_bond_level_rotation_tensor" begin
     nodes = [1]
-    nlist = [[2]]
+    nlist = bond_field([[2]])
     dof = 2
-    ba_deformation_gradient = [zeros(Float64, 1, dof, dof) for _ in 1:dof]
+    ba_deformation_gradient = bond_field([[[1.0 0; 0 1]]])
 
-    ba_deformation_gradient[1][1, :, :] = [1 0; 0 1]
-
-    ba_rotation_tensor = [zeros(Float64, 1, dof, dof) for _ in 1:dof]
+    ba_rotation_tensor = bond_field([[zeros(Float64, dof, dof)]])
 
     @test PeriLab.Geometry.compute_bond_level_rotation_tensor(nodes,
                                                               nlist,
                                                               ba_deformation_gradient,
-                                                              ba_rotation_tensor)[1][1,
-                                                                                     :,
-                                                                                     :] ==
+                                                              ba_rotation_tensor)[1][1] ==
           [1 0; 0 1]
 end
 
@@ -391,7 +384,7 @@ end
     coor[:, :] .= 0
     for i in 1:nnodes
         for j in eachindex(undeformed_bond[i])
-            undeformed_bond[i][j] .= 0
+            undeformed_bond[i][j] = zero(undeformed_bond[i][j])
         end
     end
 

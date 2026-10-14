@@ -24,6 +24,7 @@ end
     bond_force = [[ones(2), ones(2)], [ones(2), ones(2)], [ones(2), ones(2)]]
     E = 3.3
     bond_force[3][2][2] = 3
+    bond_force = bond_field(bond_force)
     PeriLab.Solver_Manager.Material_Basis.apply_pointwise_E(nodes, E, bond_force)
     @test bond_force[1][1][1] == 1
     @test bond_force[1][1][2] == 1
@@ -38,7 +39,8 @@ end
     @test bond_force[3][2][1] == E
     @test bond_force[3][2][2] == 3 * E
 
-    bond_force = [[ones(2), ones(2)], [ones(2), ones(2)], [ones(2), ones(2), ones(2)]]
+    bond_force = bond_field([[ones(2), ones(2)], [ones(2), ones(2)],
+                                [ones(2), ones(2), ones(2)]])
     E = zeros(4)
     PeriLab.Solver_Manager.Material_Basis.apply_pointwise_E(nodes, E, bond_force)
     @test bond_force[1][1][1] == 1
@@ -82,9 +84,10 @@ end
                                         volume[iID]
     end
 
-    PeriLab.Solver_Manager.Material_Basis.distribute_forces!(force_densities, nodes, nlist,
-                                                             bond_force, volume,
-                                                             bond_damage)
+    PeriLab.Solver_Manager.Material_Basis.distribute_forces!(force_densities, nodes,
+                                                             bond_field(nlist),
+                                                             bond_field(bond_force), volume,
+                                                             bond_field(bond_damage))
     @test force_densities ≈ expected_force_densities
 end
 @testset "ut_compute_Piola_Kirchhoff_stress" begin

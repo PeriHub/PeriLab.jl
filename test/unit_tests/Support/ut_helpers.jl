@@ -416,7 +416,7 @@ end
                                                                 Int64)
     nn[1] = 1
     nn[2] = 2
-    nn[3] = 3
+    nn[3] = 2
     nlist = PeriLab.Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist",
                                                                    Int64)
     nlist[1] = [2]
@@ -582,25 +582,28 @@ end
 end
 
 @testset "ut_sub_in_place" begin
-    C = [[[0.0, 0], [0, 0]], [[0, 0], [0, 0]]]
-    A = [[[1, 2], [3, 4]], [[5, 6.1], [7, 8]]]
-    B = [[[1.0, 4], [5, 1]], [[2, 1], [1, 4]]]
+    vector_state(x) = bond_field(Vector{Vector{Vector{Float64}}}(x))
+    C = vector_state([[[0.0, 0], [0, 0]], [[0, 0], [0, 0]]])
+    A = vector_state([[[1, 2], [3, 4]], [[5, 6.1], [7, 8]]])
+    B = vector_state([[[1.0, 4], [5, 1]], [[2, 1], [1, 4]]])
     PeriLab.Solver_Manager.Helpers.sub_in_place!(C, A, B)
     @test C == [[[0, -2.0], [-2.0, 3.0]], [[3.0, 5.1], [6.0, 4.0]]]
 end
 
 @testset "ut_add_in_place" begin
-    C = [[0.0, 0], [0, 0], [0, 0], [0, 0]]
-    A = [[1, 2], [3, 4], [5, 6.1], [7, 8]]
-    B = [[1.0, 4], [5, 1], [2, 1], [1, 4]]
+    scalar_state(x) = bond_field(Vector{Vector{Float64}}(x))
+    C = scalar_state([[0.0, 0], [0, 0], [0, 0], [0, 0]])
+    A = scalar_state([[1, 2], [3, 4], [5, 6.1], [7, 8]])
+    B = scalar_state([[1.0, 4], [5, 1], [2, 1], [1, 4]])
     PeriLab.Solver_Manager.Helpers.add_in_place!(C, A, B)
     @test C == [[2.0, 6.0], [8.0, 5.0], [7.0, 7.1], [8.0, 12.0]]
 end
 
 @testset "ut_div_in_place" begin
-    C = [[0.0, 0], [0, 0], [0, 0], [0, 0]]
-    A = [[1, 2], [3, 4], [5, 6.1], [7, 8]]
-    B = [[1.0, 4], [5, 1], [2, 1], [1, 4]]
+    scalar_state(x) = bond_field(Vector{Vector{Float64}}(x))
+    C = scalar_state([[0.0, 0], [0, 0], [0, 0], [0, 0]])
+    A = scalar_state([[1, 2], [3, 4], [5, 6.1], [7, 8]])
+    B = scalar_state([[1.0, 4], [5, 1], [2, 1], [1, 4]])
     PeriLab.Solver_Manager.Helpers.div_in_place!(C, A, B)
     @test C == [[1.0, 0.5], [0.6, 4.0], [2.5, 6.1], [7.0, 2.0]]
 

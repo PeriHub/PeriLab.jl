@@ -11,7 +11,7 @@ using TimerOutputs
 
 @testset "material_name" begin
     @test parentmodule(PeriLab.ParameterSpec.lookup_model(:material, "Bond-based Elastic")) ===
-      PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic
+          PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic
     @test !(PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.fe_support())
 end
 @testset "compute_model" begin
@@ -69,11 +69,11 @@ end
                        [0.010851473392629237, 0.010851473392629237, 0.010851473392629237]
                    ])
 
-    bf[1][1] .= 0
-    bf[1][2] .= 0
-    bf[2][1] .= 0
-    bf[2][2] .= 0
-    bf[2][3] .= 0
+    bf[1][1] = zero(bf[1][1])
+    bf[1][2] = zero(bf[1][2])
+    bf[2][1] = zero(bf[2][1])
+    bf[2][2] = zero(bf[2][2])
+    bf[2][3] = zero(bf[2][3])
     material = typed_block_material(Dict("Material Model" => "Bond-based Elastic",
                                          "Young's Modulus" => 1.0,
                                          "Symmetry" => "here is something"))
@@ -101,11 +101,11 @@ end
                        [0.010851473392629237, 0.010851473392629237, 0.010851473392629237]
                    ])
 
-    bf[1][1] .= 0
-    bf[1][2] .= 0
-    bf[2][1] .= 0
-    bf[2][2] .= 0
-    bf[2][3] .= 0
+    bf[1][1] = zero(bf[1][1])
+    bf[1][2] = zero(bf[1][2])
+    bf[2][1] = zero(bf[2][1])
+    bf[2][2] = zero(bf[2][2])
+    bf[2][3] = zero(bf[2][3])
     # plane strain is ignored in 3D (check_symmetry); build the material as in 2D
     material = typed_block_material(Dict("Material Model" => "Bond-based Elastic",
                                          "Young's Modulus" => 1.0,
@@ -135,11 +135,11 @@ end
                        [0.01736235742820678, 0.01736235742820678, 0.01736235742820678]
                    ])
 
-    bf[1][1] .= 0
-    bf[1][2] .= 0
-    bf[2][1] .= 0
-    bf[2][2] .= 0
-    bf[2][3] .= 0
+    bf[1][1] = zero(bf[1][1])
+    bf[1][2] = zero(bf[1][2])
+    bf[2][1] = zero(bf[2][1])
+    bf[2][2] = zero(bf[2][2])
+    bf[2][3] = zero(bf[2][3])
     material = typed_block_material(Dict("Material Model" => "Bond-based Elastic",
                                          "Young's Modulus" => 1.0,
                                          "Symmetry" => "plane stress"); dof = 2)

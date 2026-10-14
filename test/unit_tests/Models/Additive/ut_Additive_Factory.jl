@@ -10,8 +10,8 @@
     PeriLab.Data_Manager.set_num_controller(4)
     nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
                                                                 Int64)
-    nn[1] = 2
-    nn[2] = 3
+    nn[1] = 1
+    nn[2] = 2
     nn[3] = 1
     nn[4] = 2
     nlist = PeriLab.Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist",
@@ -34,4 +34,3 @@
         @test active[iID] == false
     end
 end
-

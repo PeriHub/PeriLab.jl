@@ -29,11 +29,11 @@
     strainN = PeriLab.Data_Manager.create_bond_tensor_state("Strain", Float64, 2)
     strain_inc = PeriLab.Data_Manager.create_constant_bond_tensor_state("Strain Increment",
                                                                         Float64, 2)
-    deformation_gradient[1][1, :, :] = [1 0; 0 1]
-    deformation_gradient[2][1, :, :] = [0 1; 0 1]
+    deformation_gradient[1][1] = [1 0; 0 1]
+    deformation_gradient[2][1] = [0 1; 0 1]
 
-    strainN[1][1, :, :] = [-1 -1; -1 -1]
-    strainN[2][1, :, :] = [0.5 0; 0 0.5]
+    strainN[1][1] = [-1 -1; -1 -1]
+    strainN[2][1] = [0.5 0; 0 0.5]
     PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.compute_bond_strain(nodes,
                                                                                                                     nlist,
                                                                                                                     deformation_gradient,
@@ -41,10 +41,10 @@
                                                                                                                     strainN,
                                                                                                                     strain_inc)
 
-    @test strain[1][1, :, :] == [0 0; 0 0]
-    @test strain[2][1, :, :] == [-0.5 0; 0 0.5]
-    @test strain_inc[1][1, :, :] == [1 1; 1 1]
-    @test strain_inc[2][1, :, :] == [-1.0 0.0; 0.0 0.0]
+    @test strain[1][1] == [0 0; 0 0]
+    @test strain[2][1] == [-0.5 0; 0 0.5]
+    @test strain_inc[1][1] == [1 1; 1 1]
+    @test strain_inc[2][1] == [-1.0 0.0; 0.0 0.0]
 end
 
 @testset "ut_update_Green_Langrange_strain" begin
@@ -149,14 +149,14 @@ end
     deformation_gradient = PeriLab.Data_Manager.create_constant_bond_tensor_state("Bond Deformation Gradient",
                                                                                   Float64,
                                                                                   dof)
-    deformation_gradient[1][1, :, :] = [1 0; 0 1]
-    deformation_gradient[2][1, :, :] = [1 0; 0 1]
+    deformation_gradient[1][1] = [1 0; 0 1]
+    deformation_gradient[2][1] = [1 0; 0 1]
 
     bond_stresses = PeriLab.Data_Manager.create_constant_bond_tensor_state("Bond Cauchy Stress",
                                                                            Float64,
                                                                            dof)
-    bond_stresses[1][1, :, :] = [1.0 0.0; 0.0 1.0]
-    bond_stresses[2][1, :, :] = [1.0 0.0; 0.0 1.0]
+    bond_stresses[1][1] = [1.0 0.0; 0.0 1.0]
+    bond_stresses[2][1] = [1.0 0.0; 0.0 1.0]
 
     stress_integral = PeriLab.Data_Manager.create_constant_node_tensor_field("Stress Integral",
                                                                              Float64, dof)

@@ -288,7 +288,7 @@ end
     @test PeriLab.Data_Manager.get_field_type("A") == Float64
     @test PeriLab.Data_Manager.get_field_type("DN") == Int64
     @test PeriLab.Data_Manager.get_field_type("DNP1") == Int64
-    @test PeriLab.Data_Manager.get_field_type("GN") == Vector{Bool}
+    @test PeriLab.Data_Manager.get_field_type("GN") == Bool
     @test_logs (:error,
                 "Field ''not there'' does not exist.") @test_throws PeriLab.PeriLabError begin
         PeriLab.Data_Manager.get_field_type("not there")
@@ -393,10 +393,10 @@ end
     test[1, 2, 2] = 1.2
     @test test == PeriLab.Data_Manager.get_field("test9")
     test = PeriLab.Data_Manager.create_constant_bond_tensor_state("test10", Float64, 3)
-    test[1][1, 1, 1] = 1.2
-    test[2][1, 2, 1] = -1.2
-    test[2][1, 1, 3] = 1.4
-    test[2][1, 2, 2] = 1.2
+    test[1][1] = Base.setindex(test[1][1], 1.2, 1, 1)
+    test[2][1] = Base.setindex(test[2][1], -1.2, 2, 1)
+    test[2][1] = Base.setindex(test[2][1], 1.4, 1, 3)
+    test[2][1] = Base.setindex(test[2][1], 1.2, 2, 2)
     @test test == PeriLab.Data_Manager.get_field("test10")
     test1,
     test2 = PeriLab.Data_Manager.create_bond_tensor_state("test11", Float64, 6)
@@ -442,23 +442,23 @@ bdnp1 = PeriLab.Data_Manager.create_bond_scalar_state("Bond Damage", Float64;
 
     IN = PeriLab.Data_Manager.get_field("I", "N")
     INP1 = PeriLab.Data_Manager.get_field("I", "NP1")
-    IN[2][1][3] = 0
+    IN[2][1] = Base.setindex(IN[2][1], 0, 3)
 
     DNP1[2, 3] = 5
     @test DN[2, 3] == 0
     @test DNP1[2, 3] == 5
     # bonds
-    INP1[2][1][3] = 5
+    INP1[2][1] = Base.setindex(INP1[2][1], 5, 3)
     @test IN[2][1][3] == 0
     @test INP1[2][1][3] == 5
     nmatrixNP1[1, 1, 1] = 2
     nmatrixNP1[1, 1, 2] = 2
     nmatrixNP1[1, 2, 1] = 3
     nmatrixNP1[1, 2, 2] = 4
-    bmatrixNP1[1][1, 1, 1] = 2
-    bmatrixNP1[1][2, 1, 2] = 2
-    bmatrixNP1[1][1, 2, 1] = 3
-    bmatrixNP1[1][2, 2, 2] = 4
+    bmatrixNP1[1][1] = Base.setindex(bmatrixNP1[1][1], 2, 1, 1)
+    bmatrixNP1[1][2] = Base.setindex(bmatrixNP1[1][2], 2, 1, 2)
+    bmatrixNP1[1][1] = Base.setindex(bmatrixNP1[1][1], 3, 2, 1)
+    bmatrixNP1[1][2] = Base.setindex(bmatrixNP1[1][2], 4, 2, 2)
     # extra test, because Bond Damage is set to one, to avoid unneccessary operations
     bdn = PeriLab.Data_Manager.get_field("Bond Damage", "N")
     bdnp1 = PeriLab.Data_Manager.get_field("Bond Damage", "NP1")
@@ -490,14 +490,14 @@ bdnp1 = PeriLab.Data_Manager.create_bond_scalar_state("Bond Damage", Float64;
     @test nmatrixNP1[1, 2, 2] == 0.0
     bmatrixN = PeriLab.Data_Manager.get_field("Bmat", "N")
     bmatrixNP1 = PeriLab.Data_Manager.get_field("Bmat", "NP1")
-    @test bmatrixN[1][1, 1, 1] == 2
-    @test bmatrixN[1][2, 1, 2] == 2
-    @test bmatrixN[1][1, 2, 1] == 3
-    @test bmatrixN[1][2, 2, 2] == 4
-    @test bmatrixNP1[1][1, 1, 1] == 0.0
-    @test bmatrixNP1[1][2, 1, 2] == 0.0
-    @test bmatrixNP1[1][1, 2, 1] == 0.0
-    @test bmatrixNP1[1][2, 2, 2] == 0.0
+    @test bmatrixN[1][1][1, 1] == 2
+    @test bmatrixN[1][2][1, 2] == 2
+    @test bmatrixN[1][1][2, 1] == 3
+    @test bmatrixN[1][2][2, 2] == 4
+    @test bmatrixNP1[1][1][1, 1] == 0.0
+    @test bmatrixNP1[1][2][1, 2] == 0.0
+    @test bmatrixNP1[1][1][2, 1] == 0.0
+    @test bmatrixNP1[1][2][2, 2] == 0.0
     # dependency test
 
     @test DNP1[2, 3] == 0
@@ -683,4 +683,28 @@ end
     alloc += @allocated t = PeriLab.Data_Manager.get_field("T", "NP1")
 
     @test alloc == 0
+end
+
+@testset "checkpoint keeps the shared bond offsets" begin
+    DM = PeriLab.Data_Manager
+    DM.initialize_data()
+    DM.set_num_controller(3)
+    DM.set_dof(2)
+    nn = DM.create_constant_node_scalar_field("Number of Neighbors", Int64)
+    nn .= [2, 1, 2]
+    lengths = DM.create_constant_bond_scalar_state("Bond Length", Float64)
+    geometry = DM.create_constant_bond_vector_state("Bond Geometry", Float64, 2)
+    lengths[3][2] = 4.5
+    geometry[1][2] = [1.0, -2.0]
+    directory = mktempdir()
+    DM.write_checkpoint(directory, 0)
+    DM.initialize_data()
+    DM.read_checkpoint!(directory, 0)
+    lengths = DM.get_field("Bond Length")
+    geometry = DM.get_field("Bond Geometry")
+    @test lengths[3][2] == 4.5
+    @test geometry[1][2] == [1.0, -2.0]
+    ptr = DM.internal_element_ptr(lengths)
+    @test ptr === DM.internal_element_ptr(geometry)
+    @test ptr === DM.get_bond_ptr()
 end

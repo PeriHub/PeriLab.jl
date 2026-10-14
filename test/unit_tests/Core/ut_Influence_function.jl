@@ -47,9 +47,9 @@
 
         # node 1 has 2 bonds, node 2 has 1 bond
         # entries: [xiX, xiY]
-        bg[1][1] .= [1.0, 0.0]
-        bg[1][2] .= [0.0, 2.0]
-        bg[2][1] .= [3.0, 4.0]
+        bg[1][1] = [1.0, 0.0]
+        bg[1][2] = [0.0, 2.0]
+        bg[2][1] = [3.0, 4.0]
         bl[1][1] = 1.0
         bl[1][2] = 2.0
         bl[2][1] = 5.0
@@ -80,8 +80,8 @@
         omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
                                                                        Float64)
 
-        bg[1][1] .= [1.0, 1.0]
-        bg[1][2] .= [2.0, 0.0]
+        bg[1][1] = [1.0, 1.0]
+        bg[1][2] = [2.0, 0.0]
         bl[1][1] = 1.41421356
         bl[1][2] = 2.0
 
@@ -109,8 +109,8 @@
         omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
                                                                        Float64)
 
-        bg[1][1] .= [1.0, 0.0]
-        bg[1][2] .= [0.0, 1.0]
+        bg[1][1] = [1.0, 0.0]
+        bg[1][2] = [0.0, 1.0]
         bl[1][1] = 2.0
         bl[1][2] = 4.0
 
@@ -139,7 +139,7 @@
         omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
                                                                        Float64)
 
-        bg[1][1] .= [3.0, 4.0]
+        bg[1][1] = [3.0, 4.0]
         bl[1][1] = 5.0
 
         params = Dict("Influence Function" => "xiX^2 + xiY^2")
@@ -166,7 +166,7 @@
         omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
                                                                        Float64)
 
-        bg[1][1] .= [1.0, 0.0]
+        bg[1][1] = [1.0, 0.0]
         bl[1][1] = 1.0
 
         params = Dict("Influence Function" => "exp(-xi)")
@@ -193,7 +193,7 @@
         omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
                                                                        Float64)
 
-        bg[1][1] .= [1.0, 0.0]
+        bg[1][1] = [1.0, 0.0]
         bl[1][1] = 1.0
 
         params = Dict("Influence Function" => "xiZ + 1.0")
@@ -221,7 +221,7 @@
                                                                        Float64)
 
         # xiX=1, xiY=2, xiZ=2 -> xi = sqrt(1+4+4)=3
-        bg[1][1] .= [1.0, 2.0, 2.0]
+        bg[1][1] = [1.0, 2.0, 2.0]
         bl[1][1] = 3.0
 
         params = Dict("Influence Function" => "xiX + xiY + xiZ")
@@ -247,7 +247,7 @@
                                                                     Float64)
         omega = PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function",
                                                                        Float64)
-        bg[1][1] .= [1.0, 0.0]
+        bg[1][1] = [1.0, 0.0]
         bl[1][1] = 1.0
 
         params = Dict("Influence Function" => "1/xi^2")

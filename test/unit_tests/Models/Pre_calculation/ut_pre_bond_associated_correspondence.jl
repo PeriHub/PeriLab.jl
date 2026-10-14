@@ -144,8 +144,10 @@ end
     volume = [1.0, 2.0, 1.0, 1.0, 1.0, 4.0, 1.0, 1.0]
     gradient_weights = [
         [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
-        [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0 0.0]]
+        [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]
     ]
+    undeformed_bond = bond_field(undeformed_bond)
+    gradient_weights = bond_field(gradient_weights)
     Q = zeros(5)
     Minv = zeros(5, 5)
     M = zeros(5, 5)
@@ -154,10 +156,10 @@ end
                                                                                                                                 dof,
                                                                                                                                 accuracy_order,
                                                                                                                                 volume,
-                                                                                                                                nlist,
+                                                                                                                                bond_field(nlist),
                                                                                                                                 horizon,
-                                                                                                                                bond_damage,
-                                                                                                                                omega,
+                                                                                                                                bond_field(bond_damage),
+                                                                                                                                bond_field(omega),
                                                                                                                                 Q,
                                                                                                                                 M,
                                                                                                                                 Minv,

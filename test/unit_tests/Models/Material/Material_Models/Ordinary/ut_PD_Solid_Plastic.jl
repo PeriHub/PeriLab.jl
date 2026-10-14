@@ -8,7 +8,7 @@
 
 @testset "get_name&fe_support" begin
     @test parentmodule(PeriLab.ParameterSpec.lookup_model(:material, "PD Solid Plastic")) ===
-      PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic
+          PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic
     @test !(PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.fe_support())
 end
 
@@ -74,10 +74,10 @@ end
                                                                                                                   yield_value,
                                                                                                                   lambdaNP1,
                                                                                                                   alpha,
-                                                                                                                  omega,
-                                                                                                                  bond_damage,
-                                                                                                                  deviatoric_plastic_extension_state,
-                                                                                                                  bond_force_deviatoric)
+                                                                                                                  bond_field(omega),
+                                                                                                                  bond_field(bond_damage),
+                                                                                                                  bond_field(deviatoric_plastic_extension_state),
+                                                                                                                  bond_field(bond_force_deviatoric))
     @test bond_force_deviatoric == [[0.0, 0.0], [0.0, 0.0]]
     @test deviatoric_plastic_extension_state == [[0.0, 0.0], [0.0, 0.0]]
 end
