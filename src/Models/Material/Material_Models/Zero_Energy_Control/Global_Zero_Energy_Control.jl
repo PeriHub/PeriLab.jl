@@ -4,7 +4,7 @@
 
 module Global_Zero_Energy_Control
 
-using StaticArrays: MMatrix, MVector
+using StaticArrays: MMatrix, MVector, SVector
 using LoopVectorization
 using ....Data_Manager
 using ....Helpers: get_fourth_order
@@ -79,9 +79,9 @@ function _compute_control!(nodes::AbstractVector{Int64},
                            dt::Float64)
     dof::Int64 = Data_Manager.get_dof()
     deformation_gradient::NodeTensorField{Float64} = Data_Manager.get_field("Deformation Gradient")
-    bond_force::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
-    undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
-    deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
+    bond_force::BondVectorField{Float64} = Data_Manager.get_field("Bond Forces")
+    undeformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Bond Geometry")
+    deformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
                                                                      "NP1")
     omega::BondScalarState{Float64} = Data_Manager.get_field("Influence Function")
     Kinv::NodeTensorField{Float64} = Data_Manager.get_field("Inverse Shape Tensor")
@@ -162,32 +162,25 @@ function get_zero_energy_mode_force_2d!(nodes::AbstractVector{Int64},
                 end
                 df[m] = df_i - deformed_bond[iID][nID][m]
             end
-            @views bond_force_computation_2d!(zStiff[iID, :, :], df, omega[iID][nID],
-                                              bond_force[iID][nID])
+            @views bond_force[iID][nID] = bond_force_computation(zStiff[iID, :, :], df,
+                                                                 omega[iID][nID],
+                                                                 bond_force[iID][nID])
         end
     end
 end
-function bond_force_computation_2d!(zStiff::AbstractArray{Float64}, df::MVector{2},
-                                    omega::Float64,
-                                    bond_force::Vector{Float64})
+# returns the updated bond force, bond values are immutable
+function bond_force_computation(zStiff::AbstractArray{Float64}, df::MVector{D},
+                                omega::Float64,
+                                bond_force::SVector{D,Float64}) where {D}
+    bf = MVector(bond_force)
     @inbounds @fastmath @views for m in axes(zStiff, 1)
         bf_i = zero(eltype(zStiff))
         @inbounds @fastmath @views for n in axes(zStiff, 2)
             bf_i -= zStiff[m, n] * df[n]
         end
-        bond_force[m] += bf_i * omega
+        bf[m] += bf_i * omega
     end
-end
-function bond_force_computation_3d!(zStiff::AbstractArray{Float64}, df::MVector{3},
-                                    omega::Float64,
-                                    bond_force::Vector{Float64})
-    @inbounds @fastmath @views for m in axes(zStiff, 1)
-        bf_i = zero(eltype(zStiff))
-        @inbounds @fastmath @views for n in axes(zStiff, 2)
-            bf_i -= zStiff[m, n] * df[n]
-        end
-        bond_force[m] += bf_i * omega
-    end
+    return SVector(bf)
 end
 
 function get_zero_energy_mode_force_3d!(nodes::AbstractVector{Int64},
@@ -207,8 +200,9 @@ function get_zero_energy_mode_force_3d!(nodes::AbstractVector{Int64},
                 end
                 df[m] = df_i - deformed_bond[iID][nID][m]
             end
-            @views bond_force_computation_3d!(zStiff[iID, :, :], df, omega[iID][nID],
-                                              bond_force[iID][nID])
+            @views bond_force[iID][nID] = bond_force_computation(zStiff[iID, :, :], df,
+                                                                 omega[iID][nID],
+                                                                 bond_force[iID][nID])
         end
     end
 end

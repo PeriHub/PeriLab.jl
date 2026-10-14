@@ -73,7 +73,7 @@ function compute_model(nodes::AbstractVector{Int64}, p::ShapeTensorParams, pre_c
     volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
     omega::BondScalarState{Float64} = Data_Manager.get_field("Influence Function")
     bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
-    undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
+    undeformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Bond Geometry")
     shape_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Shape Tensor")
     inverse_shape_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Inverse Shape Tensor")
     # update_list = Data_Manager.get_field("Update")

@@ -17,6 +17,7 @@ end
 include("../Material_template/correspondence_template.jl")
 
 using LinearAlgebra
+using StaticArrays: SVector
 a = using LoopVectorization
 using Rotations
 include("./Bond_Associated_Correspondence.jl")
@@ -84,11 +85,11 @@ Computes the correspondence forces of a block.
 function compute_model(nodes::AbstractVector{Int64}, material, block::Int64, time::Float64,
                        dt::Float64)
     if material.base.bond_associated
-        return Bond_Associated_Correspondence.compute_model(nodes, material, block, time, dt)
+        return Bond_Associated_Correspondence.compute_model(nodes, material, block, time,
+                                                            dt)
     end
     return compute_correspondence_model(nodes, material, block, time, dt)
 end
-
 
 """
     compute_correspondence_model(nodes, material, block, time, dt)
@@ -110,9 +111,9 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
     rotation::Bool = Data_Manager.get_rotation()
     dof::Int64 = Data_Manager.get_dof()
     deformation_gradient::NodeTensorField{Float64} = Data_Manager.get_field("Deformation Gradient")
-    bond_force::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
+    bond_force::BondVectorField{Float64} = Data_Manager.get_field("Bond Forces")
     bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
-    undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
+    undeformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Bond Geometry")
     inverse_shape_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Inverse Shape Tensor")
     omega::BondScalarState{Float64} = Data_Manager.get_field("Influence Function")
     strain_N::NodeTensorField{Float64} = Data_Manager.get_field("Strain", "N")
@@ -142,8 +143,8 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
     @timeit "compute material" begin
         for part in model_parts(material.model)
             model_module(part).compute_stresses(nodes, dof, part, material, time, dt,
-                                                        strain_increment, stress_N,
-                                                        stress_NP1)
+                                                strain_increment, stress_N,
+                                                stress_NP1)
         end
     end
 
@@ -272,8 +273,8 @@ function calculate_bond_force_2d!(bond_force::BondVectorState{Float64},
             xi1 = undeformed_bond[iID][jID][1]
             xi2 = undeformed_bond[iID][jID][2]
 
-            bond_force[iID][jID][1] = bd * (t11 * xi1 + t12 * xi2)
-            bond_force[iID][jID][2] = bd * (t21 * xi1 + t22 * xi2)
+            bond_force[iID][jID] = SVector(bd * (t11 * xi1 + t12 * xi2),
+                                           bd * (t21 * xi1 + t22 * xi2))
         end
     end
     return nothing
@@ -380,9 +381,9 @@ function calculate_bond_force_3d!(bond_force::BondVectorState{Float64},
             xi2 = undeformed_bond[iID][jID][2]
             xi3 = undeformed_bond[iID][jID][3]
 
-            bond_force[iID][jID][1] = bd * (t11 * xi1 + t12 * xi2 + t13 * xi3)
-            bond_force[iID][jID][2] = bd * (t21 * xi1 + t22 * xi2 + t23 * xi3)
-            bond_force[iID][jID][3] = bd * (t31 * xi1 + t32 * xi2 + t33 * xi3)
+            bond_force[iID][jID] = SVector(bd * (t11 * xi1 + t12 * xi2 + t13 * xi3),
+                                           bd * (t21 * xi1 + t22 * xi2 + t23 * xi3),
+                                           bd * (t31 * xi1 + t32 * xi2 + t33 * xi3))
         end
     end
 

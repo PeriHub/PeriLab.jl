@@ -12,6 +12,7 @@ It is simplified. Rigid body motion is not considered )omega_{ij} = 0 as well as
 
 #
 using LoopVectorization
+using StaticArrays: SVector, setindex
 
 using .....Data_Manager
 using ......ParameterSpec: @params, register_material
@@ -85,27 +86,25 @@ function init_model(nodes::AbstractVector{Int64},
 
             if occursin("plane stress", symmetry)
                 #constant[iID] = 9 / (pi * horizon[iID]^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
-                constant[iID][jID][1],
-                constant[iID][jID][2] = compute_constant_2D_pstress(iID,
-                                                                    nu,
-                                                                    horizon,
-                                                                    beta,
-                                                                    I1,
-                                                                    I2)
+                constant[iID][jID] = SVector(compute_constant_2D_pstress(iID,
+                                                                         nu,
+                                                                         horizon,
+                                                                         beta,
+                                                                         I1,
+                                                                         I2))
             elseif occursin("plane strain", symmetry)
                 #constant[iID] = 48 / (5 * pi * horizon[iID]^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
-                constant[iID][jID][1],
-                constant[iID][jID][2] = compute_constant_2D_pstrain(iID,
-                                                                    nu,
-                                                                    horizon,
-                                                                    beta,
-                                                                    I1,
-                                                                    I2)
+                constant[iID][jID] = SVector(compute_constant_2D_pstrain(iID,
+                                                                         nu,
+                                                                         horizon,
+                                                                         beta,
+                                                                         I1,
+                                                                         I2))
             else
-                constant[iID][jID][1] = compute_beta_3D_1(iID, nu) * 12 /
-                                        (pi * horizon[iID]^4)
-                constant[iID][jID][2] = compute_beta_3D_2(iID, nu) * 12 /
-                                        (pi * horizon[iID]^4) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
+                constant[iID][jID] = SVector(compute_beta_3D_1(iID, nu) * 12 /
+                                             (pi * horizon[iID]^4),
+                                             compute_beta_3D_2(iID, nu) * 12 /
+                                             (pi * horizon[iID]^4)) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
             end
         end
     end
@@ -209,10 +208,10 @@ function compute_bond_based_strain(bb_strain,
                 end
 
                 bb_strain[k,
-                l] += bond_damage[j] *
-                                   (deformed_bond[j][k] - undeformed_bond[j][k]) *
-                                   volume[nlist[j]] /
-                                   (undeformed_bond[j][l] * reference_volume)
+                          l] += bond_damage[j] *
+                                (deformed_bond[j][k] - undeformed_bond[j][k]) *
+                                volume[nlist[j]] /
+                                (undeformed_bond[j][l] * reference_volume)
             end
         end
     end
@@ -261,13 +260,15 @@ function compute_bb_force_3D!(bond_force,
                               deformed_bond,
                               iso_strain)
     @inbounds @fastmath for i in axes(bond_force, 1)
+        # axes(bond_force, 2) is 1:1, so only the first component is written (kept as is)
         @inbounds @fastmath for j in axes(bond_force, 2)
-            bond_force[i][j] = bond_damage[i] *
-                               (constant[i][1] * iso_strain +
-                                constant[i][2] *
-                                (deformed_bond_length[i] - undeformed_bond_length[i]) /
-                                undeformed_bond_length[i]) *
-                               deformed_bond[i][j] / deformed_bond_length[i]
+            bond_force[i] = setindex(bond_force[i],
+                                     bond_damage[i] *
+                                     (constant[i][1] * iso_strain +
+                                      constant[i][2] *
+                                      (deformed_bond_length[i] - undeformed_bond_length[i]) /
+                                      undeformed_bond_length[i]) *
+                                     deformed_bond[i][j] / deformed_bond_length[i], j)
         end
     end
 end
@@ -282,15 +283,17 @@ function compute_bb_force_2D!(bond_force,
                               bond_strain,
                               iso_strain)
     @inbounds @fastmath for i in axes(bond_force, 1)
+        # axes(bond_force, 2) is 1:1, so only the first component is written (kept as is)
         @inbounds @fastmath for j in axes(bond_force, 2)
-            bond_force[i][j] = bond_damage[i] *
-                               ((constant[i][2] *
-                                 bond_strain[j, j] *
-                                 undeformed_bond[i][j] *
-                                 undeformed_bond[i][j]) / undeformed_bond_length[i] /
-                                undeformed_bond_length[i] +
-                                constant[i][2] * iso_strain) *
-                               deformed_bond[i][j] / deformed_bond_length[i] # Eq(42)
+            bond_force[i] = setindex(bond_force[i],
+                                     bond_damage[i] *
+                                     ((constant[i][2] *
+                                       bond_strain[j, j] *
+                                       undeformed_bond[i][j] *
+                                       undeformed_bond[i][j]) / undeformed_bond_length[i] /
+                                      undeformed_bond_length[i] +
+                                      constant[i][2] * iso_strain) *
+                                     deformed_bond[i][j] / deformed_bond_length[i], j) # Eq(42)
         end
     end
 end

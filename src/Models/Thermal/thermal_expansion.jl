@@ -19,8 +19,9 @@ export init_model
 
 using ......ParameterSpec: @params, register_thermal
 @params struct ThermalExpansionParams
-    thermal_expansion_coefficient::Union{Float64,Vector{Float64}} = req("Thermal Expansion Coefficient";
-                                                                        description = "a number, or one value per direction")
+    thermal_expansion_coefficient::Union{Float64,
+                                         Vector{Float64}} = req("Thermal Expansion Coefficient";
+                                                                description = "a number, or one value per direction")
     reference_temperature::Union{Nothing,Float64} = opt("Reference Temperature";
                                                         default = nothing,
                                                         description = "0 if missing (with a warning)")
@@ -98,9 +99,9 @@ function compute_model(nodes::AbstractVector{Int64}, p::ThermalExpansionParams, 
                                                                           Val(dof))
     ref_temp::Float64 = something(p.reference_temperature, 0.0)
 
-    undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
+    undeformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Bond Geometry")
     undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
-    deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
+    deformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
                                                                      "NP1")
     deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
                                                                             "NP1")
@@ -142,7 +143,7 @@ Apply thermal expansion corrections to deformed bonds and bond lengths.
 - `undeformed_bond_length`: Array of undeformed bond lengths
 - `dof`: Degrees of freedom
 """
-function apply_thermal_expansion!(deformed_bond::BondVectorState{Float64},
+function apply_thermal_expansion!(deformed_bond::BondVectorState{Float64,D},
                                   deformed_bond_length::BondScalarState{Float64},
                                   nodes::AbstractVector{Int64},
                                   temperature_NP1::NodeScalarField{Float64},
@@ -150,7 +151,7 @@ function apply_thermal_expansion!(deformed_bond::BondVectorState{Float64},
                                   alpha_mat::AbstractMatrix{Float64},
                                   undeformed_bond::BondVectorState{Float64},
                                   undeformed_bond_length::BondScalarState{Float64},
-                                  dof::Int64)
+                                  dof::Int64) where {D}
     # Precompute average thermal expansion coefficient
     avg_alpha = sum(alpha_mat) / dof
 
@@ -164,10 +165,9 @@ function apply_thermal_expansion!(deformed_bond::BondVectorState{Float64},
 
         # Apply thermal expansion to bond vectors
         @inbounds @fastmath @views for jID in eachindex(undeformed_bond[iID])
-            for j in 1:dof
-                deformed_bond[iID][jID][j] -= temp_diff * alpha_mat[j, j] *
-                                              undeformed_bond[iID][jID][j]
-            end
+            xi = undeformed_bond[iID][jID]
+            deformed_bond[iID][jID] -= SVector(ntuple(j -> temp_diff * alpha_mat[j, j] *
+                                                           xi[j], Val(D)))
         end
 
         # Apply thermal expansion to bond lengths

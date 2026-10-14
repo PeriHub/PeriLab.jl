@@ -30,11 +30,17 @@ Computes the partial stresses.
 - `nodes::Vector{Int64}`: List of block nodes.
 """
 function get_partial_stresses(nodes::AbstractVector{Int64})
-    bond_forces = Data_Manager.get_field("Bond Forces")
-    undeformed_bond = Data_Manager.get_field("Bond Geometry")
-    volume = Data_Manager.get_field("Volume")
-    stress = Data_Manager.get_field("Cauchy Stress", "NP1")
+    bond_forces::BondVectorField{Float64} = Data_Manager.get_field("Bond Forces")
+    undeformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Bond Geometry")
+    volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
+    stress::NodeTensorField{Float64} = Data_Manager.get_field("Cauchy Stress", "NP1")
+    partial_stresses!(stress, nodes, bond_forces, undeformed_bond, volume)
+end
 
+function partial_stresses!(stress::NodeTensorField{Float64}, nodes::AbstractVector{Int64},
+                           bond_forces::BondVectorState{Float64},
+                           undeformed_bond::BondVectorState{Float64},
+                           volume::NodeScalarField{Float64})
     for iID in nodes
         str = @view stress[iID, :, :]
         add_in_place!(str, bond_forces[iID], undeformed_bond[iID], volume[iID])

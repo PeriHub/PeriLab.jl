@@ -104,14 +104,14 @@ function compute_model(nodes::AbstractVector{Int64},
     nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
     volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
 
-    deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
+    deformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
                                                                      "NP1")
     deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
                                                                             "NP1")
     bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
     omega::BondScalarState{Float64} = Data_Manager.get_field("Influence Function")
     undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
-    bond_force::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
+    bond_force::BondVectorField{Float64} = Data_Manager.get_field("Bond Forces")
     temp::BondScalarState{Float64} = Data_Manager.get_field("Temporary Bond Field")
 
     bond_force_deviatoric_part::BondScalarState{Float64} = Data_Manager.get_field("Bond Forces Deviatoric")

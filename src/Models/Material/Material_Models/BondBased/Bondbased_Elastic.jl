@@ -81,12 +81,12 @@ function compute_model(nodes::AbstractVector{Int64},
     constant::NodeScalarField{Float64} = Data_Manager.get_field("Bond Based Constant")
 
     undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
-    deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
+    deformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
                                                                      "NP1")
     deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
                                                                             "NP1")
     bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
-    bond_force::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
+    bond_force::BondVectorField{Float64} = Data_Manager.get_field("Bond Forces")
 
     E = material.moduli.youngs_modulus
 
@@ -111,20 +111,18 @@ function compute_model(nodes::AbstractVector{Int64},
     @timeit "apply_pointwise_E" apply_pointwise_E(nodes, E, bond_force)
 end
 
-function compute_bb_force!(bond_force::BondScalarState{Float64},
+function compute_bb_force!(bond_force::AbstractVector{<:AbstractVector{Float64}},
                            constant::Float64,
-                           bond_damage::NodeScalarField{Float64},
-                           deformed_bond_length::NodeScalarField{Float64},
-                           undeformed_bond_length::NodeScalarField{Float64},
-                           deformed_bond::BondScalarState{Float64})
+                           bond_damage::AbstractVector{Float64},
+                           deformed_bond_length::AbstractVector{Float64},
+                           undeformed_bond_length::AbstractVector{Float64},
+                           deformed_bond::AbstractVector{<:AbstractVector{Float64}})
     @inbounds @fastmath for i in axes(bond_force, 1)
-        @inbounds @fastmath for j in eachindex(bond_force[i])
-            bond_force[i][j] = (constant *
-                                bond_damage[i] *
-                                (deformed_bond_length[i] - undeformed_bond_length[i]) /
-                                undeformed_bond_length[i]) * deformed_bond[i][j] /
-                               deformed_bond_length[i]
-        end
+        bond_force[i] = (constant *
+                         bond_damage[i] *
+                         (deformed_bond_length[i] - undeformed_bond_length[i]) /
+                         undeformed_bond_length[i]) * deformed_bond[i] /
+                        deformed_bond_length[i]
     end
 end
 

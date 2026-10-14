@@ -11,7 +11,6 @@ MIT licensed GcodeParser.jl project (https://github.com/janvorisek/GcodeParser.j
 module Gcode_Mesh
 
 using LinearAlgebra
-using LazyGrids
 using Rotations
 using CSV, DataFrames
 using NearestNeighbors

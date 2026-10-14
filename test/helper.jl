@@ -16,6 +16,21 @@ export run_and_compare
 export run_mpi_test
 export push_test!
 
+# CSR bond field from nested vectors, for kernels typed with the Data_Manager bond aliases
+bond_field(x) = PeriLab.Data_Manager.VectorOfVectors(x)
+# vector state: the bond values become SVectors
+function bond_field(x::AbstractVector{<:AbstractVector{<:AbstractVector{T}}}) where {T}
+    D = length(first(first(filter(!isempty, x))))
+    S = PeriLab.Data_Manager.SVector{D,T}
+    return PeriLab.Data_Manager.VectorOfVectors([S[S(v) for v in row] for row in x])
+end
+# tensor state: the bond values become SMatrices
+function bond_field(x::AbstractVector{<:AbstractVector{<:AbstractMatrix{T}}}) where {T}
+    D = size(first(first(filter(!isempty, x))), 1)
+    S = PeriLab.Data_Manager.SMatrix{D,D,T,D * D}
+    return PeriLab.Data_Manager.VectorOfVectors([S[S(v) for v in row] for row in x])
+end
+
 function run_perilab(filename, cores, compare, folder_name = ""; silent = true,
                      reload = false, compare_csv = false)
     if cores == 1
@@ -39,7 +54,7 @@ function run_perilab(filename, cores, compare, folder_name = ""; silent = true,
         if cores == 1
             same = exodiff(filename * ".e",
                            "./Reference/" * filename * ".e";
-                           command_file = folder_name * ".cmd",)
+                           command_file = folder_name * ".cmd")
         else
             same = exodiff(filename * ".e",
                            "./Reference/" * filename * ".e",
@@ -158,14 +173,15 @@ A typed `PeriLabInput` from a minimal valid deck with `sections` merged in.
 """
 function typed_input(sections::AbstractDict)
     deck = Dict{String,Any}("Discretization" => Dict{String,Any}("Type" => "Text File",
-                                                                 "Input Mesh File" => "mesh.txt"),
-                            "Blocks" => Dict{String,Any}("block_1" => Dict{String,Any}("Block ID" => 1,
-                                                                                       "Density" => 1.0,
-                                                                                       "Horizon" => 1.0)),
+                                             "Input Mesh File" => "mesh.txt"),
+                            "Blocks" => Dict{String,Any}("block_1" =>
+                                                 Dict{String,Any}("Block ID" => 1,
+                                                                  "Density" => 1.0,
+                                                                  "Horizon" => 1.0)),
                             "Models" => Dict{String,Any}(),
                             "Solver" => Dict{String,Any}("Initial Time" => 0.0,
-                                                         "Final Time" => 1.0,
-                                                         "Verlet" => Dict{String,Any}()))
+                                             "Final Time" => 1.0,
+                                             "Verlet" => Dict{String,Any}()))
     merge!(deck, Dict{String,Any}(string(k) => v for (k, v) in sections))
     input, ctx = PeriLab.InputDeck.read_input(deck)
     PeriLab.ParameterSpec.report!(ctx)
@@ -179,7 +195,8 @@ The typed `Contact` section from its raw dict; aborts on input errors.
 """
 function typed_contact(raw::AbstractDict)
     ctx = PeriLab.ParameterSpec.ParseContext()
-    value = PeriLab.InputDeck.parse_contact(Dict{String,Any}(string(k) => v for (k, v) in raw),
+    value = PeriLab.InputDeck.parse_contact(Dict{String,Any}(string(k) => v
+                                                             for (k, v) in raw),
                                             "Contact", ctx)
     PeriLab.ParameterSpec.report!(ctx)
     return value

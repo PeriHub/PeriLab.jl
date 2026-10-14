@@ -28,7 +28,7 @@ function compute_surface_volume_correction(nodes)
     volume_correction = Data_Manager.get_field("Volume Correction")
     for iID in nodes
         @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
-            bond_force[iID][jID][:] .*= volume_correction[iID][jID]
+            bond_force[iID][jID] = bond_force[iID][jID] * volume_correction[iID][jID]
         end
     end
 end

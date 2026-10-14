@@ -15,13 +15,13 @@ using .....ParameterSpec: @params, Dependent, register_base!, WithBase, Composit
                           value, model_parts, model_module
 import .....ParameterSpec: check!
 
-
 @params struct FlawFunctionParams
     active::Bool = req("Active")
     function_name::String = req("Function"; allowed = ["Pre-defined"])
     flaw_size::Union{Nothing,Float64} = opt("Flaw Size"; default = nothing, min = 0,
                                             quantity = :length)
-    flaw_magnitude::Union{Nothing,Float64} = opt("Flaw Magnitude"; default = nothing, min = 0,
+    flaw_magnitude::Union{Nothing,Float64} = opt("Flaw Magnitude"; default = nothing,
+                                                 min = 0,
                                                  max = 1)
     flaw_location_x::Union{Nothing,Float64} = opt("Flaw Location X"; default = nothing)
     flaw_location_y::Union{Nothing,Float64} = opt("Flaw Location Y"; default = nothing)
@@ -32,7 +32,8 @@ end
 function check!(p::FlawFunctionParams, path::String, ctx::ParseContext)
     p.active || return nothing
     required = (p.flaw_size => "Flaw Size", p.flaw_magnitude => "Flaw Magnitude",
-                p.flaw_location_x => "Flaw Location X", p.flaw_location_y => "Flaw Location Y")
+                p.flaw_location_x => "Flaw Location X",
+                p.flaw_location_y => "Flaw Location Y")
     missing_keys = [alias for (value, alias) in required if value === nothing]
     if !isempty(missing_keys)
         add_error!(ctx, path, "an active Flaw Function needs $(join(missing_keys, ", "))")
@@ -55,7 +56,8 @@ symmetry; they are completed at initialisation.
 @params struct MaterialBaseParams
     symmetry::Union{Nothing,String} = opt("Symmetry"; default = nothing,
                                           description = "e.g. isotropic, isotropic plane strain, isotropic plane stress, orthotropic, anisotropic")
-    youngs_modulus::Union{Nothing,Float64} = opt("Young's Modulus"; default = nothing, min = 0,
+    youngs_modulus::Union{Nothing,Float64} = opt("Young's Modulus"; default = nothing,
+                                                 min = 0,
                                                  quantity = :stress)
     poissons_ratio::Union{Nothing,Float64} = opt("Poisson's Ratio"; default = nothing,
                                                  min = -1, max = 0.5)
@@ -69,9 +71,12 @@ symmetry; they are completed at initialisation.
                                                      min = 0, quantity = :stress)
     youngs_modulus_z::Union{Nothing,Dependent} = opt("Young's Modulus Z"; default = nothing,
                                                      min = 0, quantity = :stress)
-    poissons_ratio_xy::Union{Nothing,Dependent} = opt("Poisson's Ratio XY"; default = nothing)
-    poissons_ratio_yz::Union{Nothing,Dependent} = opt("Poisson's Ratio YZ"; default = nothing)
-    poissons_ratio_xz::Union{Nothing,Dependent} = opt("Poisson's Ratio XZ"; default = nothing)
+    poissons_ratio_xy::Union{Nothing,Dependent} = opt("Poisson's Ratio XY";
+                                                      default = nothing)
+    poissons_ratio_yz::Union{Nothing,Dependent} = opt("Poisson's Ratio YZ";
+                                                      default = nothing)
+    poissons_ratio_xz::Union{Nothing,Dependent} = opt("Poisson's Ratio XZ";
+                                                      default = nothing)
     shear_modulus_xy::Union{Nothing,Dependent} = opt("Shear Modulus XY"; default = nothing,
                                                      min = 0, quantity = :stress)
     shear_modulus_yz::Union{Nothing,Dependent} = opt("Shear Modulus YZ"; default = nothing,
@@ -99,7 +104,8 @@ symmetry; they are completed at initialisation.
     c55::Union{Nothing,Float64} = opt("C55"; default = nothing, quantity = :stress)
     c56::Union{Nothing,Float64} = opt("C56"; default = nothing, quantity = :stress)
     c66::Union{Nothing,Float64} = opt("C66"; default = nothing, quantity = :stress)
-    state_factor_id::Union{Nothing,Int64} = opt("State Factor ID"; default = nothing, min = 1,
+    state_factor_id::Union{Nothing,Int64} = opt("State Factor ID"; default = nothing,
+                                                min = 1,
                                                 description = "index of the state variable that scales the elastic constants")
     accuracy_order::Union{Nothing,Int64} = opt("Accuracy Order"; default = nothing, min = 1)
     zero_energy_control::Union{Nothing,String} = opt("Zero Energy Control";
@@ -107,7 +113,8 @@ symmetry; they are completed at initialisation.
                                                      description = "zero energy control model, e.g. Global")
     bond_associated::Bool = opt("Bond Associated"; default = false)
     linear_strain::Bool = opt("Linear Strain"; default = false)
-    flaw_function::Union{Nothing,FlawFunctionParams} = opt("Flaw Function"; default = nothing)
+    flaw_function::Union{Nothing,FlawFunctionParams} = opt("Flaw Function";
+                                                           default = nothing)
 end
 
 const _ORTHOTROPIC_KEYS = ((:youngs_modulus_x, "Young's Modulus X"),
@@ -121,9 +128,11 @@ const _ORTHOTROPIC_KEYS = ((:youngs_modulus_x, "Young's Modulus X"),
                            (:shear_modulus_xz, "Shear Modulus XZ"))
 
 function _transverse_keys(symmetry::String)
-    keys = [(:youngs_modulus_x, "Young's Modulus X"), (:youngs_modulus_y, "Young's Modulus Y"),
-            (:poissons_ratio_xy, "Poisson's Ratio XY")]
-    occursin("plane stress", symmetry) || push!(keys, (:poissons_ratio_yz, "Poisson's Ratio YZ"))
+    keys = [(:youngs_modulus_x, "Young's Modulus X"),
+        (:youngs_modulus_y, "Young's Modulus Y"),
+        (:poissons_ratio_xy, "Poisson's Ratio XY")]
+    occursin("plane stress", symmetry) ||
+        push!(keys, (:poissons_ratio_yz, "Poisson's Ratio YZ"))
     push!(keys, (:shear_modulus_xy, "Shear Modulus XY"))
     if !occursin("plane strain", symmetry) && !occursin("plane stress", symmetry)
         push!(keys, (:shear_modulus_yz, "Shear Modulus YZ"))
@@ -236,7 +245,6 @@ function hooke_symmetry(symmetry::Union{Nothing,String}, dof::Int64)
     return replace(replace(symmetry, r"plane strain$" => ""), r"plane stress$" => "")
 end
 
-
 const _MODULI = (("Bulk Modulus", :bulk_modulus), ("Young's Modulus", :youngs_modulus),
                  ("Shear Modulus", :shear_modulus), ("Poisson's Ratio", :poissons_ratio))
 
@@ -249,7 +257,8 @@ function _modulus_value(given, field_allocated::Bool, any_field_allocated::Bool,
     field_allocated && return Data_Manager.get_field(_modulus_field(key))
     if any_field_allocated
         return given === nothing ?
-               Data_Manager.create_constant_node_scalar_field(_modulus_field(key), Float64) :
+               Data_Manager.create_constant_node_scalar_field(_modulus_field(key),
+                                                              Float64) :
                Data_Manager.create_constant_node_scalar_field(_modulus_field(key), Float64;
                                                               default_value = given)
     end
@@ -268,7 +277,8 @@ matrix; completeness is checked when the input is read).
 """
 function elastic_moduli(base::MaterialBaseParams, bond_based::Bool, dof::Int64)
     state_factor_defined = base.state_factor_id !== nothing
-    allocated = Dict(key => Data_Manager.has_key(_modulus_field(key)) for (key, _) in _MODULI)
+    allocated = Dict(key => Data_Manager.has_key(_modulus_field(key))
+                     for (key, _) in _MODULI)
     any_field_allocated = any(values(allocated)) || state_factor_defined
     given = Dict(key => getfield(base, name) for (key, name) in _MODULI)
     has = Dict(key => given[key] !== nothing || allocated[key] for (key, _) in _MODULI)
@@ -295,7 +305,8 @@ function elastic_moduli(base::MaterialBaseParams, bond_based::Bool, dof::Int64)
     end
     if base.symmetry !== nothing
         symmetry = lowercase(base.symmetry)
-        if occursin("anisotropic", symmetry) || occursin("transverse isotropic", symmetry) ||
+        if occursin("anisotropic", symmetry) ||
+           occursin("transverse isotropic", symmetry) ||
            occursin("orthotropic", symmetry)
             return nothing
         end
@@ -366,7 +377,8 @@ function block_material(wb::WithBase, dof::Int64)
     end
     return BlockMaterial(wb.base, wb.model, material_symmetry(wb.base.symmetry, dof),
                          hooke_symmetry(wb.base.symmetry, dof), moduli,
-                         vcat(dependent_tables(wb.base), dependent_tables(wb.model)), wb.extras,
+                         vcat(dependent_tables(wb.base), dependent_tables(wb.model)),
+                         wb.extras,
                          correspondence)
 end
 
@@ -400,7 +412,8 @@ or Shear Modulus XY as estimates; `nothing` if none is defined.
 function critical_bulk_modulus(material::BlockMaterial)
     material.moduli === nothing || return material.moduli.bulk_modulus
     base = material.base
-    nu_xy, nu_yz, nu_xz = _constant(base.poissons_ratio_xy), _constant(base.poissons_ratio_yz),
+    nu_xy, nu_yz, nu_xz = _constant(base.poissons_ratio_xy),
+                          _constant(base.poissons_ratio_yz),
                           _constant(base.poissons_ratio_xz)
     if nu_xy !== nothing && nu_yz !== nothing && nu_xz !== nothing
         E_x, E_y, E_z = _constant(base.youngs_modulus_x), _constant(base.youngs_modulus_y),
@@ -495,8 +508,9 @@ function init_model(nodes::AbstractVector{Int64}, block::Int64)
         for iID in nodes
             if length(nlist_filtered_ids[iID]) != 0
                 for neighborID in nlist_filtered_ids[iID]
-                    bond_norm[iID][neighborID] .*= sign(dot((bond_geometry[iID][neighborID]),
-                                                            bond_norm[iID][neighborID]))
+                    bond_norm[iID][neighborID] = bond_norm[iID][neighborID] *
+                                                 sign(dot((bond_geometry[iID][neighborID]),
+                                                          bond_norm[iID][neighborID]))
                 end
             end
         end
@@ -543,14 +557,14 @@ function compute_model(nodes::AbstractVector{Int64},
     @timeit "all" begin
         if material.correspondence
             @timeit "corresponcence" begin
-                Correspondence.compute_model(nodes, bind_material!(material), block, time, dt)
+                Correspondence.compute_model(nodes, bind_material!(material), block, time,
+                                             dt)
                 return
             end
         end
         @timeit "material" compute_block_material(nodes, material, block, time, dt)
     end
 end
-
 
 """
     bind_material!(material)
@@ -582,7 +596,8 @@ end
 function check_material_symmetry(material::BlockMaterial, dof::Int64)
     symmetry = material.base.symmetry
     symmetry === nothing && return nothing
-    if dof == 2 && !occursin("plane strain", symmetry) && !occursin("plane stress", symmetry)
+    if dof == 2 && !occursin("plane strain", symmetry) &&
+       !occursin("plane stress", symmetry)
         @abort "Model definition is missing; plane stress or plane strain has to be defined for 2D"
         return
     end
@@ -605,25 +620,26 @@ Distribute the force densities.
 """
 function distribute_force_densities(nodes::AbstractVector{Int64})
     @timeit "load data" begin
-        nlist = Data_Manager.get_nlist()
+        nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
         nlist_filtered_ids = Data_Manager.get_filtered_nlist()
-        bond_force = Data_Manager.get_field("Bond Forces")
-        force_densities = Data_Manager.get_field("Force Densities", "NP1")
-        volume = Data_Manager.get_field("Volume")
-        bond_damage = Data_Manager.get_bond_damage("NP1")
+        bond_force::BondVectorField{Float64} = Data_Manager.get_field("Bond Forces")
+        force_densities::NodeVectorField{Float64} = Data_Manager.get_field("Force Densities",
+                                                                           "NP1")
+        volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
+        bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
     end
     if !isnothing(nlist_filtered_ids)
         bond_norm = Data_Manager.get_field("Bond Norm")
         displacements = Data_Manager.get_field("Displacements", "NP1")
-        @timeit "local dist" force_densities=distribute_forces!(force_densities,
-                                                                nodes,
-                                                                nlist,
-                                                                nlist_filtered_ids,
-                                                                bond_force,
-                                                                volume,
-                                                                bond_damage,
-                                                                displacements,
-                                                                bond_norm)
+        @timeit "local dist" distribute_forces!(force_densities,
+                                                nodes,
+                                                nlist,
+                                                nlist_filtered_ids,
+                                                bond_force,
+                                                volume,
+                                                bond_damage,
+                                                displacements,
+                                                bond_norm)
     else
         @timeit "local dist" distribute_forces!(force_densities, nodes, nlist,
                                                 bond_force, volume, bond_damage)
@@ -635,6 +651,5 @@ function compute_correspondence_bond_forces(nodes::AbstractVector{Int64}, materi
     Correspondence.compute_correspondence_model(nodes, bind_material!(material), block,
                                                 time, dt)
 end
-
 
 end

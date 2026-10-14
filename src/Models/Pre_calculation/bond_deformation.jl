@@ -52,7 +52,7 @@ function compute_model(nodes::AbstractVector{Int64}, p::DeformedBondGeometryPara
     nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
     deformed_coor::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
                                                                      "NP1")
-    deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
+    deformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
                                                                      "NP1")
     deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
                                                                             "NP1")

@@ -11,6 +11,7 @@ using ProgressBars: ProgressBar
 using LinearAlgebra: Adjoint, dot, det, norm, pinv, eigvals, inv, normalize, cross, diagm,
                      cholesky
 using StaticArrays: MMatrix, MVector, SMatrix, @SMatrix, SVector, @SVector
+using ArraysOfArrays: flatview
 using LoopVectorization
 using Unitful: ustrip
 using CDDLib
@@ -137,22 +138,12 @@ end
 # taken from peridigm
 function compute_distance_and_normals(p1, p2)
     distance = norm(p2 - p1)
-    distance == 0 ? distance + eps() :
-    distance
     return distance, (p2 - p1) ./ distance
 end
 
-function get_surface_normals(poly)
-    return MixedMatHRep(hrep(poly)).A
-end
-
-function get_surface_offset(poly)
-    return MixedMatHRep(hrep(poly)).b
-end
-
 function get_surface_information(poly)
-    normals = get_surface_normals(poly)
-    b = get_surface_offset(poly)
+    h = MixedMatHRep(hrep(poly))
+    normals, b = h.A, h.b
     for i in eachindex(b)
         b[i] /= norm(normals[i, :])
         normals[i, :] ./= norm(normals[i, :])
@@ -230,10 +221,11 @@ function get_nearest_neighbors(nodes,
                          coords_nb,# Potential neighbor coordinates -> must be transpose for the datamanager definition
                          nhs,
                          iID,
-                         search_radius = radius isa AbstractVector ? radius[iID] : radius) do i,
-                                                                                              j,
-                                                                                              _,
-                                                                                              L
+                         search_radius = radius isa AbstractVector ? radius[iID] : radius
+                         ) do i,
+                              j,
+                              _,
+                              L
             if i != j || diffent_lists
                 push!(neighbors, j)
                 list_empty = false
@@ -406,8 +398,8 @@ function mat_mul!(C::AbstractMatrix{T}, A::AbstractMatrix{T},
 end
 
 function add_in_place!(C::AbstractMatrix{T},
-                       A::Vector{Vector{T}},
-                       B::Vector{Vector{T}},
+                       A::AbstractVector{<:AbstractVector{T}},
+                       B::AbstractVector{<:AbstractVector{T}},
                        factor = 1) where {T<:Union{Int64,Float64}}
     m = length(A)
     n = length(A[1])
@@ -442,29 +434,14 @@ function mul_in_place!(C::Vector{T}, A::Vector{T},
         C[i] = A[i] * B[i]
     end
 end
-function mul_in_place!(C::Vector{Vector{T}},
-                       A::Vector{Vector{T}},
-                       B::Vector{T}) where {T<:Union{Int64,Float64,Bool}}
+# one node of a vector state: C[i] = A[i] * B[i] with a scalar B[i] per bond
+function mul_in_place!(C::AbstractVector{SVector{D,T}}, A::AbstractVector{SVector{D,T}},
+                       B::AbstractVector{T}) where {D,T<:Union{Int64,Float64,Bool}}
     # Check if dimensions match
     @assert length(C) == length(A) == length(B)
 
     @inbounds for i in eachindex(A)
-        @inbounds for j in eachindex(A[i])
-            C[i][j] = A[i][j] * B[i]
-        end
-    end
-end
-function mul_in_place!(D::Vector{Vector{T}},
-                       A::Vector{Vector{T}},
-                       B::Vector{Vector{T}},
-                       C::T = 1.0) where {T<:Union{Int64,Float64,Bool}}
-    # Check if dimensions match
-    @assert length(D) == length(A) == length(B)
-
-    @inbounds for i in eachindex(A)
-        @inbounds for j in eachindex(A[i])
-            D[i][j] = A[i][j] * B[i][j] * C
-        end
+        C[i] = A[i] * B[i]
     end
 end
 function sub_in_place!(C::Vector{T}, A::Vector{T}, B::Vector{T}) where {T<:Number}
@@ -474,36 +451,27 @@ function sub_in_place!(C::Vector{T}, A::Vector{T}, B::Vector{T}) where {T<:Numbe
         C[i] = A[i] - B[i]
     end
 end
-function sub_in_place!(C::Vector{Vector{T}},
-                       A::Vector{Vector{T}},
-                       B::Vector{Vector{T}}) where {T<:Union{Int64,Float64,Bool}}
-    # Check if dimensions match
-    @assert length(C) == length(A) == length(B)
-
-    @inbounds for i in eachindex(A)
-        C[i] .= A[i] .- B[i]
-    end
+# CSR bond fields share their offsets, so whole-field operations work on the flat data.
+function sub_in_place!(C::BondField{E}, A::BondField{E}, B::BondField{E}) where {E}
+    flatview(C) .= flatview(A) .- flatview(B)
 end
-function sub_in_place!(C::Vector{Vector{Vector{T}}},
-                       A::Vector{Vector{Vector{T}}},
-                       B::Vector{Vector{Vector{T}}}) where {T<:Union{Int64,Float64,Bool}}
-    # Check if dimensions match
-    @assert length(C) == length(A) == length(B)
-
-    @inbounds for i in eachindex(A)
-        @inbounds for j in eachindex(A[i])
-            C[i][j] .= A[i][j] .- B[i][j]
-        end
-    end
+function add_in_place!(C::BondScalarState{T}, A::BondScalarState{T},
+                       B::BondScalarState{T}) where {T<:Union{Int64,Float64,Bool}}
+    flatview(C) .= flatview(A) .+ flatview(B)
 end
-function add_in_place!(C::Vector{Vector{T}},
-                       A::Vector{Vector{T}},
-                       B::Vector{Vector{T}}) where {T<:Union{Int64,Float64,Bool}}
-    # Check if dimensions match
-    @assert length(C) == length(A) == length(B)
-
+function div_in_place!(C::BondScalarState{T}, A::BondScalarState{T},
+                       B::BondScalarState{T}) where {T<:Union{Int64,Float64,Bool}}
+    flatview(C) .= flatview(A) ./ flatview(B)
+end
+function mul_in_place!(D::BondScalarState{T}, A::BondScalarState{T}, B::BondScalarState{T},
+                       C::T = 1.0) where {T<:Union{Int64,Float64,Bool}}
+    flatview(D) .= flatview(A) .* flatview(B) .* C
+end
+# B holds one value per node
+function mul_in_place!(C::BondScalarState{T}, A::BondScalarState{T},
+                       B::AbstractVector{T}) where {T<:Union{Int64,Float64,Bool}}
     @inbounds for i in eachindex(A)
-        C[i] .= A[i] .+ B[i]
+        C[i] .= A[i] .* B[i]
     end
 end
 function div_in_place!(C::Vector{T}, A::Vector{T}, B::T,
@@ -514,16 +482,6 @@ function div_in_place!(C::Vector{T}, A::Vector{T}, B::T,
         else
             C[i] = A[i] / B
         end
-    end
-end
-function div_in_place!(C::Vector{Vector{T}},
-                       A::Vector{Vector{T}},
-                       B::Vector{Vector{T}}) where {T<:Union{Int64,Float64,Bool}}
-    # Check if dimensions match
-    @assert length(C) == length(A) == length(B)
-
-    @inbounds for i in eachindex(A)
-        C[i] .= A[i] ./ B[i]
     end
 end
 function fastdot(a::Vector{Float64}, b::Vector{Float64}, absolute = false)
@@ -537,11 +495,6 @@ function fastdot(a::Vector{Float64}, b::Vector{Float64}, absolute = false)
         end
     end
     c
-end
-function abs!(a::Vector{T}) where {T<:Union{Int64,Float64}}
-    @inbounds for i in eachindex(a)
-        a[i] = abs(a[i])
-    end
 end
 function normalize_in_place!(B::Vector{T}, A::Vector{T}) where {T<:Number}
     nrm = norm(A)
@@ -1019,6 +972,26 @@ end
     end
 end
 
+# scratch matrix for one bond tensor of `field`
+tensor_buffer(::BondTensorState{T,D,L}) where {T,D,L} = zeros(MMatrix{D,D,T,L})
+
+# the bond tensors of one node, `rot` holds a rotation tensor per bond
+function rotate(bonds::AbstractVector{Int64},
+                tensors::AbstractVector{SMatrix{D,D,Float64,L}},
+                rot::AbstractVector{SMatrix{D,D,Float64,L}},
+                back::Bool) where {D,L}
+    buffer = zeros(MMatrix{D,D,Float64,L})
+    for jID in bonds
+        buffer .= tensors[jID]
+        if D == 2
+            rotate_second_order_tensor2x2(rot[jID], buffer, back)
+        else
+            rotate_second_order_tensor3x3(rot[jID], buffer, back)
+        end
+        tensors[jID] = SMatrix(buffer)
+    end
+end
+
 """
 	rotate(nodes::AbstractVector{Int64}, dof::Int64, matrix::AbstractArray{Float64,3}, angles::SubArray, back::Bool)
 
@@ -1064,21 +1037,13 @@ Rotates the second order tensor.
 function rotate_second_order_tensor2x2(R::AbstractMatrix{Float64},
                                        tensor::AbstractMatrix{Float64},
                                        back::Bool)
-    if back
-        rotation2x2!(R', tensor)
-    else
-        rotation2x2!(R, tensor)
-    end
+    rotation2x2!(back ? R' : R, tensor)
     return nothing
 end
 function rotate_second_order_tensor3x3(R::AbstractMatrix{Float64},
                                        tensor::AbstractMatrix{Float64},
                                        back::Bool)
-    if back
-        rotation3x3!(R', tensor)
-    else
-        rotation3x3!(R, tensor)
-    end
+    rotation3x3!(back ? R' : R, tensor)
     return nothing
 end
 function rotation3x3!(R::AbstractMatrix{Float64}, T::AbstractMatrix{Float64})
@@ -1092,41 +1057,41 @@ function rotation3x3!(R::AbstractMatrix{Float64}, T::AbstractMatrix{Float64})
 
     @inbounds @fastmath begin
         T[1,
-        1] = r11 * (r11 * t11 + r12 * t21 + r13 * t31) +
-                  r12 * (r11 * t12 + r12 * t22 + r13 * t32) +
-                  r13 * (r11 * t13 + r12 * t23 + r13 * t33)
+          1] = r11 * (r11 * t11 + r12 * t21 + r13 * t31) +
+               r12 * (r11 * t12 + r12 * t22 + r13 * t32) +
+               r13 * (r11 * t13 + r12 * t23 + r13 * t33)
         T[1,
-        2] = r21 * (r11 * t11 + r12 * t21 + r13 * t31) +
-                  r22 * (r11 * t12 + r12 * t22 + r13 * t32) +
-                  r23 * (r11 * t13 + r12 * t23 + r13 * t33)
+          2] = r21 * (r11 * t11 + r12 * t21 + r13 * t31) +
+               r22 * (r11 * t12 + r12 * t22 + r13 * t32) +
+               r23 * (r11 * t13 + r12 * t23 + r13 * t33)
         T[1,
-        3] = r31 * (r11 * t11 + r12 * t21 + r13 * t31) +
-                  r32 * (r11 * t12 + r12 * t22 + r13 * t32) +
-                  r33 * (r11 * t13 + r12 * t23 + r13 * t33)
+          3] = r31 * (r11 * t11 + r12 * t21 + r13 * t31) +
+               r32 * (r11 * t12 + r12 * t22 + r13 * t32) +
+               r33 * (r11 * t13 + r12 * t23 + r13 * t33)
         T[2,
-        1] = r11 * (r21 * t11 + r22 * t21 + r23 * t31) +
-                  r12 * (r21 * t12 + r22 * t22 + r23 * t32) +
-                  r13 * (r21 * t13 + r22 * t23 + r23 * t33)
+          1] = r11 * (r21 * t11 + r22 * t21 + r23 * t31) +
+               r12 * (r21 * t12 + r22 * t22 + r23 * t32) +
+               r13 * (r21 * t13 + r22 * t23 + r23 * t33)
         T[2,
-        2] = r21 * (r21 * t11 + r22 * t21 + r23 * t31) +
-                  r22 * (r21 * t12 + r22 * t22 + r23 * t32) +
-                  r23 * (r21 * t13 + r22 * t23 + r23 * t33)
+          2] = r21 * (r21 * t11 + r22 * t21 + r23 * t31) +
+               r22 * (r21 * t12 + r22 * t22 + r23 * t32) +
+               r23 * (r21 * t13 + r22 * t23 + r23 * t33)
         T[2,
-        3] = r31 * (r21 * t11 + r22 * t21 + r23 * t31) +
-                  r32 * (r21 * t12 + r22 * t22 + r23 * t32) +
-                  r33 * (r21 * t13 + r22 * t23 + r23 * t33)
+          3] = r31 * (r21 * t11 + r22 * t21 + r23 * t31) +
+               r32 * (r21 * t12 + r22 * t22 + r23 * t32) +
+               r33 * (r21 * t13 + r22 * t23 + r23 * t33)
         T[3,
-        1] = r11 * (r31 * t11 + r32 * t21 + r33 * t31) +
-                  r12 * (r31 * t12 + r32 * t22 + r33 * t32) +
-                  r13 * (r31 * t13 + r32 * t23 + r33 * t33)
+          1] = r11 * (r31 * t11 + r32 * t21 + r33 * t31) +
+               r12 * (r31 * t12 + r32 * t22 + r33 * t32) +
+               r13 * (r31 * t13 + r32 * t23 + r33 * t33)
         T[3,
-        2] = r21 * (r31 * t11 + r32 * t21 + r33 * t31) +
-                  r22 * (r31 * t12 + r32 * t22 + r33 * t32) +
-                  r23 * (r31 * t13 + r32 * t23 + r33 * t33)
+          2] = r21 * (r31 * t11 + r32 * t21 + r33 * t31) +
+               r22 * (r31 * t12 + r32 * t22 + r33 * t32) +
+               r23 * (r31 * t13 + r32 * t23 + r33 * t33)
         T[3,
-        3] = r31 * (r31 * t11 + r32 * t21 + r33 * t31) +
-                  r32 * (r31 * t12 + r32 * t22 + r33 * t32) +
-                  r33 * (r31 * t13 + r32 * t23 + r33 * t33)
+          3] = r31 * (r31 * t11 + r32 * t21 + r33 * t31) +
+               r32 * (r31 * t12 + r32 * t22 + r33 * t32) +
+               r33 * (r31 * t13 + r32 * t23 + r33 * t33)
     end
     return nothing
 end

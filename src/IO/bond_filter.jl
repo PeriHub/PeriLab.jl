@@ -7,27 +7,28 @@ using ....Data_Manager
 using ....ModuleLoader: find_registered_modules
 using DataFrames
 
-for file in find_registered_modules(joinpath(@__DIR__, "Bond_Filter"), "register_bond_filter")
+for file in find_registered_modules(joinpath(@__DIR__, "Bond_Filter"),
+                                    "register_bond_filter")
     include(file)
 end
 export apply_bond_filters
 
 """
-    apply_bond_filters(nlist::BondScalarState{Int64}, mesh::DataFrame, filters::Dict{String,BondFilterParams}, dof::Int64)
+    apply_bond_filters(nlist::NestedNeighborhoodList, mesh::DataFrame, filters::Dict{String,BondFilterParams}, dof::Int64)
 
 Apply the bond filters to the neighborhood list.
 
 # Arguments
-- `nlist::BondScalarState{Int64}`: The neighborhood list.
+- `nlist::NestedNeighborhoodList`: The neighborhood list.
 - `mesh::DataFrame`: The mesh.
 - `filters::Dict{String,BondFilterParams}`: The bond filters of the input deck.
 - `dof::Int64`: The degrees of freedom.
 # Returns
-- `nlist::BondScalarState{Int64}`: The filtered neighborhood list.
-- `nlist_filtered_ids::BondScalarState{Int64}`: The filtered neighborhood list.
+- `nlist::NestedNeighborhoodList`: The filtered neighborhood list.
+- `nlist_filtered_ids::NestedNeighborhoodList`: The filtered neighborhood list.
 """
 
-function apply_bond_filters(nlist::BondScalarState{Int64},
+function apply_bond_filters(nlist::NestedNeighborhoodList,
                             mesh::DataFrame,
                             filters::Dict{String,BondFilterParams},
                             dof::Int64)

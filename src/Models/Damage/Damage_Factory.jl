@@ -200,7 +200,7 @@ damageIndex = sum_i (brokenBonds_i * volume_i) / volumeNeighborhood
 - `nodes::AbstractVector{Int64}`: corresponding nodes to this model
 """
 function damage_index(nodes::AbstractVector{Int64},
-                      nlist_filtered_ids::BondScalarState{Int64})
+                      nlist_filtered_ids::NestedNeighborhoodList)
     bond_damageNP1 = Data_Manager.get_bond_damage("NP1")
     for iID in nodes
         bond_damageNP1[iID][nlist_filtered_ids[iID]] .= 1

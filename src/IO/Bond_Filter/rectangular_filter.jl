@@ -13,8 +13,8 @@ const TOLERANCE = 1.0e-14
 function __init__()
     register_bond_filter("Rectangular_Plane", run_bond_filter;
                          required = ["Lower Left Corner X", "Lower Left Corner Y",
-                                     "Bottom Unit Vector X", "Bottom Unit Vector Y",
-                                     "Bottom Length", "Side Length"])
+                             "Bottom Unit Vector X", "Bottom Unit Vector Y",
+                             "Bottom Length", "Side Length"])
 end
 
 """
@@ -85,7 +85,7 @@ function bond_intersect_rectangle_plane(x::Union{Vector{Float64},Vector{Int64}},
 end
 
 """
-    run_bond_filter(nnodes::Int64, data::Matrix{Float64}, filter::BondFilterParams, nlist::BondScalarState{Int64}, dof::Int64)
+    run_bond_filter(nnodes::Int64, data::Matrix{Float64}, filter::BondFilterParams, nlist::NestedNeighborhoodList, dof::Int64)
 
 Apply the rectangular plane filter to the neighborhood list.
 
@@ -93,7 +93,7 @@ Apply the rectangular plane filter to the neighborhood list.
 - `nnodes::Int64`: The number of nodes.
 - `data::Matrix{Float64}`: The data.
 - `filter::BondFilterParams`: The filter.
-- `nlist::BondScalarState{Int64}`: The neighborhood list.
+- `nlist::NestedNeighborhoodList`: The neighborhood list.
 - `dof::Int64`: The degrees of freedom.
 # Returns
 - `filter_flag::Vector{Vector{Bool}}`: The filter flag.
@@ -102,7 +102,7 @@ Apply the rectangular plane filter to the neighborhood list.
 function run_bond_filter(nnodes::Int64,
                          data::Matrix{Float64},
                          filter::BondFilterParams,
-                         nlist::BondScalarState{Int64},
+                         nlist::NestedNeighborhoodList,
                          dof::Int64)
     normal = [filter.normal_x, filter.normal_y]
     lower_left_corner = [filter.lower_left_corner_x, filter.lower_left_corner_y]

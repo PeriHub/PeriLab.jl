@@ -332,14 +332,14 @@ function get_2D_Hooke_matrix(aniso_matrix::MMatrix{T}, symmetry::String,
 end
 
 """
-	distribute_forces!(nodes::AbstractVector{Int64}, nlist::BondScalarState{Int64}, nlist_filtered_ids::BondScalarState{Int64}, bond_force::Vector{Matrix{Float64}}, volume::NodeScalarField{Float64}, bond_damage::BondScalarState{Float64}, displacements::Matrix{Float64}, bond_norm::Vector{Matrix{Float64}}, force_densities::Matrix{Float64})
+	distribute_forces!(nodes::AbstractVector{Int64}, nlist::BondScalarState{Int64}, nlist_filtered_ids::NestedNeighborhoodList, bond_force::Vector{Matrix{Float64}}, volume::NodeScalarField{Float64}, bond_damage::BondScalarState{Float64}, displacements::Matrix{Float64}, bond_norm::Vector{Matrix{Float64}}, force_densities::Matrix{Float64})
 
 Distribute the forces on the nodes
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes.
 - `nlist::BondScalarState{Int64}`: The neighbor list.
-- `nlist_filtered_ids::BondScalarState{Int64},`:  The filtered neighbor list.
+- `nlist_filtered_ids::NestedNeighborhoodList,`:  The filtered neighbor list.
 - `bond_force::Vector{Matrix{Float64}}`: The bond forces.
 - `volume::NodeScalarField{Float64}`: The volumes.
 - `bond_damage::BondScalarState{Float64}`: The bond damage.
@@ -352,7 +352,7 @@ Distribute the forces on the nodes
 function distribute_forces!(force_densities::Matrix{Float64},
                             nodes::AbstractVector{Int64},
                             nlist::BondScalarState{Int64},
-                            nlist_filtered_ids::BondScalarState{Int64},
+                            nlist_filtered_ids::NestedNeighborhoodList,
                             bond_force::BondVectorState{Float64},
                             volume::NodeScalarField{Float64},
                             bond_damage::BondScalarState{Float64},
@@ -364,10 +364,13 @@ function distribute_forces!(force_densities::Matrix{Float64},
             for neighborID in nlist_filtered_ids[iID]
                 if dot((displacements[nlist[iID][neighborID], :] - displacements[iID, :]),
                        bond_norm[iID][neighborID]) > 0
-                    bond_mod[neighborID] .= 0
+                    bond_mod[neighborID] = zero(bond_mod[neighborID])
                 else
-                    bond_mod[neighborID] .= abs.(bond_norm[iID][neighborID])
+                    bond_mod[neighborID] = abs.(bond_norm[iID][neighborID])
                 end
+                # the nested copy shared its vectors with "Bond Norm", which was therefore
+                # overwritten as well (kept as is)
+                bond_norm[iID][neighborID] = bond_mod[neighborID]
             end
         end
 
@@ -433,7 +436,10 @@ function distribute_forces!(force_densities::Matrix{Float64},
     return nothing
 end
 
-flaw_function(::Nothing, coor::AbstractVector{<:Real}, stress::Union{Int64,Float64}) = Float64(stress)
+function flaw_function(::Nothing, coor::AbstractVector{<:Real},
+                       stress::Union{Int64,Float64})
+    Float64(stress)
+end
 
 # flaw function of a block material (`FlawFunctionParams`); the input check makes
 # sure an active one has a positive size and magnitude and a location
@@ -528,8 +534,9 @@ end
 function apply_pointwise_E(nodes::AbstractVector{Int64}, E::Union{Int64,Float64},
                            bond_force::BondVectorState{Float64})
     @inbounds @fastmath for i in nodes
-        @views @inbounds @fastmath for bf in bond_force[i]
-            bf .*= E
+        bf = bond_force[i]
+        @inbounds @fastmath for j in eachindex(bf)
+            bf[j] = bf[j] * E
         end
     end
 end
@@ -538,8 +545,9 @@ function apply_pointwise_E(nodes::AbstractVector{Int64},
                            E::Union{SubArray,Vector{Float64},Vector{Int64}},
                            bond_force::BondVectorState{Float64})
     @inbounds @fastmath for i in nodes
-        @views @inbounds @fastmath for bf in bond_force[i]
-            bf .*= E[i]
+        bf = bond_force[i]
+        @inbounds @fastmath for j in eachindex(bf)
+            bf[j] = bf[j] * E[i]
         end
     end
 end

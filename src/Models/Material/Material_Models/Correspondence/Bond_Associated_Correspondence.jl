@@ -4,7 +4,7 @@
 
 module Bond_Associated_Correspondence
 using LinearAlgebra: mul!
-using StaticArrays: I, @MMatrix
+using StaticArrays: I, @MMatrix, SMatrix
 
 using ........Data_Manager
 using ........PeriLabExceptions: @abort
@@ -12,7 +12,7 @@ using .........ParameterSpec: model_parts, model_module
 using .....Material_Basis: compute_Piola_Kirchhoff_stress!
 using ........Helpers:
                        find_local_neighbors, invert, rotate, determinant, smat,
-                       matrix_diff!
+                       matrix_diff!, tensor_buffer
 using ........Geometry:
                         compute_strain!,
                         compute_bond_level_rotation_tensor,
@@ -175,10 +175,10 @@ function compute_model(nodes::AbstractVector{Int64},
 
     if rotation
         for iID in nodes
-            stress_NP1[iID] = rotate(Vector{Int64}(1:nneighbors[iID]),
-                                     stress_NP1[iID],
-                                     ba_rotation_tensor[iID],
-                                     true)
+            rotate(Vector{Int64}(1:nneighbors[iID]),
+                   stress_NP1[iID],
+                   ba_rotation_tensor[iID],
+                   true)
         end
     end
 
@@ -242,14 +242,10 @@ function compute_stress_integral(nodes::AbstractVector{Int64},
                             omega[iID][jID] *
                             bond_damage[iID][jID] *
                             (0.5 / weighted_volume[iID] + 0.5 / weighted_volume[nID])
-            @views compute_Piola_Kirchhoff_stress!(pk_stress, bond_stresses[iID][jID,
-                                                                                 :,
-                                                                                 :],
-                                                   deformation_gradient[iID][jID,
-                                                                             :,
-                                                                             :])
+            @views compute_Piola_Kirchhoff_stress!(pk_stress, bond_stresses[iID][jID],
+                                                   deformation_gradient[iID][jID])
             @views stress_integral[iID, :,
-            :] += factor .* pk_stress * temp
+                                   :] += factor .* pk_stress * temp
         end
     end
     return stress_integral
@@ -263,13 +259,13 @@ function compute_bond_strain(nodes,
                              strain_NP1,
                              strain_N,
                              strain_increment)
+    strain = tensor_buffer(strain_NP1)
     for iID in nodes
-        compute_strain!(eachindex(nlist[iID]), deformation_gradient[iID],
-                        strain_NP1[iID])
-        matrix_diff!(strain_increment[iID],
-                     eachindex(nlist[iID]),
-                     strain_NP1[iID],
-                     strain_N[iID])
+        for jID in eachindex(nlist[iID])
+            compute_strain!(strain, deformation_gradient[iID][jID])
+            strain_NP1[iID][jID] = SMatrix(strain)
+            strain_increment[iID][jID] = strain_NP1[iID][jID] - strain_N[iID][jID]
+        end
     end
 end
 
@@ -281,16 +277,16 @@ function update_Green_Langrange_nodal_strain_increment(nodes::Union{SubArray,
                                                        strain_increment::SubArray)
     for iID in nodes
         @views strain_increment[iID, :,
-        :] = update_Green_Langrange_strain(dt,
-                                                                           deformation_gradient[iID,
-                                                                           :,
-                                                                           :],
-                                                                           deformation_gradient_dot[iID,
-                                                                           :,
-                                                                           :],
-                                                                           strain_increment[iID,
-                                                                           :,
-                                                                           :])
+                                :] = update_Green_Langrange_strain(dt,
+                                                                   deformation_gradient[iID,
+                                                                                        :,
+                                                                                        :],
+                                                                   deformation_gradient_dot[iID,
+                                                                                            :,
+                                                                                            :],
+                                                                   strain_increment[iID,
+                                                                                    :,
+                                                                                    :])
     end
 end
 
@@ -337,6 +333,8 @@ function compute_bond_forces(nodes::AbstractVector{Int64},
                              omega,
                              bond_damage,
                              bond_forces)
+    force = zeros(Float64, size(integral_nodal_stress, 2))
+    weights = similar(force)
     for iID in nodes
         for (jID, nID) in enumerate(nlist[iID])
             if bond_damage[iID][jID] == 0
@@ -346,14 +344,16 @@ function compute_bond_forces(nodes::AbstractVector{Int64},
             # bond_forces[iID][jID, :] =
             #     integral_nodal_stress[iID, :, :] * gradient_weights[iID][jID, :]
 
-            mul!(bond_forces[iID][jID],
+            weights .= gradient_weights[iID][jID]
+            mul!(force,
                  integral_nodal_stress[iID, :, :],
-                 gradient_weights[iID][jID])
-            @views bond_forces[iID][jID] += bond_damage[iID][jID] * omega[iID][jID] /
-                                            (weighted_volume[iID] * bond_length[iID][jID] *
-                                             bond_length[iID][jID]) .*
-                                            bond_stress[iID][jID, :, :] *
-                                            bond_geometry[iID][jID]
+                 weights)
+            @views bond_forces[iID][jID] = force +
+                                           bond_damage[iID][jID] * omega[iID][jID] /
+                                           (weighted_volume[iID] * bond_length[iID][jID] *
+                                            bond_length[iID][jID]) .*
+                                           bond_stress[iID][jID] *
+                                           bond_geometry[iID][jID]
 
             #
             #mul!(bond_forces[iID][jID, :], integral_nodal_stress[iID, :, :], gradient_weights[iID][jID, :])

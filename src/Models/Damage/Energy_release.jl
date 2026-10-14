@@ -9,7 +9,6 @@ using LinearAlgebra: mul!, dot
 
 using ......Data_Manager
 using ......Helpers:
-                     abs!,
                      rotate,
                      fastdot,
                      sub_in_place!,
@@ -58,27 +57,47 @@ function _critical_energy!(nodes::AbstractVector{Int64}, tension::Bool,
     bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
 
     bond_energy::BondScalarState{Float64} = Data_Manager.get_field("Bond Energy")
-    undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
+    undeformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Bond Geometry")
     undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
-    bond_forces::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
-    deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
+    bond_forces::BondVectorField{Float64} = Data_Manager.get_field("Bond Forces")
+    deformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
                                                                      "NP1")
     deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
                                                                             "NP1")
-    bond_displacements::BondVectorState{Float64} = Data_Manager.get_field("Bond Displacements")
+    bond_displacements::BondVectorField{Float64} = Data_Manager.get_field("Bond Displacements")
     quad_horizons::NodeScalarField{Float64} = Data_Manager.get_field("Quad Horizon")
     inverse_nlist::Vector{Dict{Int64,Int64}} = Data_Manager.get_inverse_nlist()
-
-    norm_displacement::Float64 = 0.0
-    product::Float64 = 0.0
 
     temp_vector::Vector{Float64} = zeros(Float64, dof)
 
     sub_in_place!(bond_displacements, deformed_bond, undeformed_bond)
 
+    _critical_energy_bonds!(nodes, tension, crit_of, nlist, update_list, bond_damage,
+                            bond_energy, undeformed_bond_length, bond_forces,
+                            deformed_bond_length, bond_displacements, quad_horizons,
+                            inverse_nlist, temp_vector)
+end
+
+# bond loop behind a function barrier, the vector states are only typed up to their dof
+function _critical_energy_bonds!(nodes::AbstractVector{Int64}, tension::Bool,
+                                 crit_of::F,
+                                 nlist::BondScalarState{Int64},
+                                 update_list::NodeScalarField{Bool},
+                                 bond_damage::BondScalarState{Float64},
+                                 bond_energy::BondScalarState{Float64},
+                                 undeformed_bond_length::BondScalarState{Float64},
+                                 bond_forces::BondVectorState{Float64},
+                                 deformed_bond_length::BondScalarState{Float64},
+                                 bond_displacements::BondVectorState{Float64},
+                                 quad_horizons::NodeScalarField{Float64},
+                                 inverse_nlist::Vector{Dict{Int64,Int64}},
+                                 temp_vector::Vector{Float64}) where {F}
+    norm_displacement::Float64 = 0.0
+    product::Float64 = 0.0
+
     for iID in nodes
         @fastmath @inbounds for jID in eachindex(nlist[iID])
-            relative_displacement::Vector{Float64} = bond_displacements[iID][jID]
+            relative_displacement = bond_displacements[iID][jID]
             norm_displacement = dot(relative_displacement, relative_displacement)
             if norm_displacement == 0 || (tension &&
                 deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0)
@@ -98,12 +117,12 @@ function _critical_energy!(nodes::AbstractVector{Int64}, tension::Bool,
             #     # Handle the case when the key doesn't exist
             # end
 
-            bond_force::Vector{Float64} = bond_forces[iID][jID]
-            neighbor_bond_force::Vector{Float64} = bond_forces[neighborID][inverse_neighborID]
+            bond_force = bond_forces[iID][jID]
+            neighbor_bond_force = bond_forces[neighborID][inverse_neighborID]
             temp_vector .= bond_force .- neighbor_bond_force
 
             product = abs(dot(temp_vector, relative_displacement))
-            abs!(relative_displacement)
+            relative_displacement = abs.(relative_displacement)
             mul!(temp_vector, product / norm_displacement, relative_displacement)
             product = dot(temp_vector, relative_displacement)
             bond_energy[iID][jID] = 0.25 * product

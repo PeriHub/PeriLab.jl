@@ -5,6 +5,8 @@
 module Data_Manager
 using MPI
 using SparseArrays
+using ArraysOfArrays: VectorOfArrays, VectorOfVectors, flatview, internal_element_ptr
+using StaticArrays: StaticArray, SVector, SMatrix
 using DataStructures: OrderedDict
 using ...PeriLabExceptions: @abort
 using ...ParameterSpec: Table1D, bind_table!
@@ -18,7 +20,9 @@ const data = Dict()
 
 struct DataField{T,D}
     name::String
-    data::D
+    # `Any` keeps immutable field types (CSR bond fields) boxed once at creation, so
+    # `get_field` returns that box instead of allocating a new one on every call
+    data::Any
 end
 
 mutable struct PD_matrix
@@ -160,6 +164,7 @@ function initialize_data()
                                          "Surface Correction" => Dict())
     data["filedirectory"] = ""
     data["inverse_nlist"] = []
+    data["bond_ptr"] = Vector{Int64}()
     data["model_modules"] = OrderedDict{String,Module}()
     data["analysis_models"] = Dict()
     data["nsets"] = Dict{String,Vector{Int64}}()
@@ -378,7 +383,6 @@ function bind_dependent_tables!(tables::Vector{Table1D})
     end
     return tables
 end
-
 
 """
 	set_surface_correction(sc)
@@ -1131,8 +1135,10 @@ function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
         if dof == 0
             dof = length(field[1, :, :])
         end
-        data["fields_to_synch"][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
-                                                         "download_from_cores" => download_from_cores,
+        data["fields_to_synch"][name] = Dict{String,Any}("upload_to_cores" =>
+                                                             upload_to_cores,
+                                                         "download_from_cores" =>
+                                                             download_from_cores,
                                                          "dof" => dof,
                                                          "time" => "Constant")
     elseif name * "NP1" in get_all_field_keys()
@@ -1140,8 +1146,10 @@ function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
         if dof == 0
             dof = length(field[1, :, :])
         end
-        data["fields_to_synch"][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
-                                                         "download_from_cores" => download_from_cores,
+        data["fields_to_synch"][name] = Dict{String,Any}("upload_to_cores" =>
+                                                             upload_to_cores,
+                                                         "download_from_cores" =>
+                                                             download_from_cores,
                                                          "dof" => length(field[1, :, :]),
                                                          "time" => "NP1")
     end
@@ -1167,8 +1175,10 @@ function set_local_synch(model, name, download_from_cores, upload_to_cores, dof 
         if dof == 0
             dof = length(field[1, :, :])
         end
-        data["local_fields_to_synch"][model][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
-                                                                      "download_from_cores" => download_from_cores,
+        data["local_fields_to_synch"][model][name] = Dict{String,Any}("upload_to_cores" =>
+                                                                          upload_to_cores,
+                                                                      "download_from_cores" =>
+                                                                          download_from_cores,
                                                                       "dof" => dof,
                                                                       "time" => "Constant")
     elseif name * "NP1" in get_all_field_keys()
@@ -1176,11 +1186,14 @@ function set_local_synch(model, name, download_from_cores, upload_to_cores, dof 
         if dof == 0
             dof = length(field[1, :, :])
         end
-        data["local_fields_to_synch"][model][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
-                                                                      "download_from_cores" => download_from_cores,
-                                                                      "dof" => length(field[1,
-                                                                                            :,
-                                                                                            :]),
+        data["local_fields_to_synch"][model][name] = Dict{String,Any}("upload_to_cores" =>
+                                                                          upload_to_cores,
+                                                                      "download_from_cores" =>
+                                                                          download_from_cores,
+                                                                      "dof" =>
+                                                                          length(field[1,
+                                                                                       :,
+                                                                                       :]),
                                                                       "time" => "NP1")
     end
 end

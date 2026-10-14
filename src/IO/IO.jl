@@ -21,8 +21,7 @@ include("csv_export.jl")
 include("../Compute/compute_global_values.jl")
 using ..MPI_Communication: send_single_value_from_vector, synch_responder_to_controller,
                            synch_controller_to_responder,
-                           synch_controller_bonds_to_responder,
-                           split_vector, synch_controller_bonds_to_responder_flattened,
+                           synch_controller_bonds_to_responder_flattened,
                            send_vector_from_root_to_core_i, broadcast_value,
                            find_and_set_core_value_min, find_and_set_core_value_sum,
                            find_and_set_core_value_max,
@@ -223,10 +222,9 @@ Returns the size of a single bond value, i.e. `()` for a scalar bond field, `(do
 for a vector one such as `Deformed Bond Geometry`, and `(i_dof, j_dof)` for a tensor
 one.
 
-Handles both the nested layout PeriLab uses for bond fields
-(`field[node][neighbor][...]`) and a flat one (`field[node][neighbor, ...]`). Nodes
-without neighbours are skipped, so a boundary node cannot make a vector field look
-scalar.
+Bond fields are indexed as `field[node][neighbor]`, the bond value being a number, an
+`SVector` or an `SMatrix`. Nodes without neighbours are skipped, so a boundary node cannot
+make a vector field look scalar.
 
 # Arguments
 - `datafield`: The bond field, indexed by node
@@ -236,13 +234,7 @@ scalar.
 function bond_component_size(datafield)
     for node_entry in datafield
         isempty(node_entry) && continue
-        if ndims(node_entry) == 1
-            # nested: the neighbour entry is the value itself
-            return size(first(node_entry))
-        else
-            # flat: strip the neighbour dimension
-            return size(node_entry)[2:end]
-        end
+        return size(first(node_entry))
     end
     return ()
 end
@@ -351,7 +343,8 @@ function get_results_mapping(input::PeriLabInput, path::String)
 
         isempty(output.output_variables) &&
             @warn "No output variables are defined for " * output_name * "."
-        fieldnames = output_fieldnames(output.output_variables, field_keys, all_compute_names,
+        fieldnames = output_fieldnames(output.output_variables, field_keys,
+                                       all_compute_names,
                                        output.output_file_type)
         output_mapping[id]["flush_file"] = output.flush_file
         output_mapping[id]["write_after_damage"] = output.write_after_damage
@@ -1100,7 +1093,8 @@ end
 
 # Block summary columns that name a model of the block
 const _BLOCK_MODEL_COLUMNS = Dict("Material" => :material_model, "Damage" => :damage_model,
-                                  "Thermal" => :thermal_model, "Additive" => :additive_model,
+                                  "Thermal" => :thermal_model,
+                                  "Additive" => :additive_model,
                                   "Degradation" => :degradation_model)
 
 function _block_summary_cell(block::BlockParams, column::String)

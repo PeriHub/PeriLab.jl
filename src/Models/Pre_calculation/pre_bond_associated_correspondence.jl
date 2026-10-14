@@ -7,7 +7,7 @@ module Pre_Bond_Associated_Correspondence
 using .......Data_Manager
 using .......Geometry: compute_weighted_deformation_gradient
 using LoopVectorization
-using StaticArrays: @MVector
+using StaticArrays: @MVector, MVector, SVector
 export fields_for_local_synchronization
 export init_model
 export compute_model
@@ -16,7 +16,10 @@ using ......ParameterSpec: @params, register_pre_calculation
 "Switch only: this pre-calculation has no parameters."
 @params struct BondAssociatedCorrespondenceParams
 end
-__init__() = register_pre_calculation("Bond Associated Correspondence", BondAssociatedCorrespondenceParams)
+function __init__()
+    register_pre_calculation("Bond Associated Correspondence",
+                             BondAssociatedCorrespondenceParams)
+end
 
 using .......Helpers: invert, qdim
 
@@ -139,7 +142,7 @@ accuracy_order::Int64 - needs a number of bonds which are linear independent
 
 function calculate_Q_old(accuracy_order::Int64,
                          dof::Int64,
-                         bond_geometry::Vector{Float64},
+                         bond_geometry::AbstractVector{Float64},
                          horizon::Union{Int64,Float64})
     Q = ones(Float64, qdim(accuracy_order, dof))  # Initialize Q with ones
     counter = 0
@@ -165,11 +168,12 @@ end
 
 function calculate_Q(accuracy_order::Int64,
                      dof::Int64,
-                     bond_geometry::Vector{Float64},
+                     bond_geometry::AbstractVector{Float64},
                      horizon::Union{Int64,Float64},
                      Q::Vector{Float64})
     counter = 0
-    p = @MVector zeros(Int64, dof)
+    # static size from the bond (length(bond_geometry) == dof), keeps prod_Q type stable
+    p = zeros(MVector{length(bond_geometry),Int64})
     for this_order in 1:accuracy_order
         for p[1] in this_order:-1:0
             if dof == 3
@@ -222,8 +226,11 @@ function compute_Lagrangian_gradient_weights(nodes::AbstractVector{Int64},
             QTQ!(M, omega[iID][jID], bond_damage[iID][jID], volume[nID], Q)
         end
 
-        @views Minv = invert(M,
-                             "In compute_Lagrangian_gradient_weights the matrix M is singular and cannot be inverted. To many bond damages or a to small horizon might cause this.")
+        # in place: `invert` is not type stable, rebinding `Minv` made the bond loop
+        # below dispatch dynamically
+        copyto!(Minv,
+                invert(M,
+                       "In compute_Lagrangian_gradient_weights the matrix M is singular and cannot be inverted. To many bond damages or a to small horizon might cause this."))
 
         @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
             Q = calculate_Q(accuracy_order, dof, bond_geometry[iID][jID], horizon[iID], Q)
@@ -260,15 +267,23 @@ function compute_gradient_weights!(gradient_weights,
                                    Q,
                                    iID,
                                    jID)
-    for idof in 1:dof # Eq (3) flowing
-        gradient_weights[iID][jID][idof] = 0
-        @inbounds @fastmath for m in axes(Minv, 2)
-            gradient_weights[iID][jID][idof] += omega[iID][jID] * bond_damage[iID][jID] /
-                                                horizon[iID] *
-                                                Minv[idof, m] *
-                                                Q[m]
-        end
-    end
+    gradient_weights[iID][jID] = gradient_weight(eltype(gradient_weights[iID]),
+                                                 omega[iID][jID], bond_damage[iID][jID],
+                                                 horizon[iID], Minv, Q)
+end
+
+function gradient_weight(::Type{SVector{D,T}}, omega, bond_damage, horizon, Minv,
+                         Q) where {D,T}
+    return SVector{D,T}(ntuple(Val(D)) do idof # Eq (3) flowing
+                            weight = zero(T)
+                            @inbounds @fastmath for m in axes(Minv, 2)
+                                weight += omega * bond_damage /
+                                          horizon *
+                                          Minv[idof, m] *
+                                          Q[m]
+                            end
+                            weight
+                        end)
 end
 
 """

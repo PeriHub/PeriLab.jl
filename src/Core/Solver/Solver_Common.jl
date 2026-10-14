@@ -132,8 +132,7 @@ function synchronise_field(comm,
                 if occursin("Bond", synch_field)
                     @timeit "synch_controller_bonds_to_responder_flattened" return synch_controller_bonds_to_responder_flattened(comm,
                                                                                                                                  overlap_map,
-                                                                                                                                 vector,
-                                                                                                                                 synch_fields[synch_field]["dof"])
+                                                                                                                                 vector)
                 else
                     @timeit "synch_controller_to_responder" return synch_controller_to_responder(comm,
                                                                                                  overlap_map,
@@ -187,7 +186,6 @@ function compute_parabolic_problems_after_model_evaluation(active_nodes, run::So
         # end
     end
 end
-
 
 "Time of one step: its number, start time, time since the start of the run and increment."
 struct StepClock
@@ -347,7 +345,8 @@ function run_steps(run::SolverRun, ctx::SolverContext, result_files, step_time::
             end
             if !damage_init && max_damage > 0
                 damage_init = true
-                show && set_multiline_postfix(iter, "Damage initiated in step $idt [$time s]!")
+                show &&
+                    set_multiline_postfix(iter, "Damage initiated in step $idt [$time s]!")
             end
         end
         @timeit "write_results" result_files=ctx.write_results(result_files, time,

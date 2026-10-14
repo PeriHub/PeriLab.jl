@@ -6,11 +6,8 @@ export switch_NP1_to_N
 export reset_NP1
 export set_NP1_to_N
 export switch_bonds!
-function switch_bonds!(field_N::Vector{Vector{T}},
-                       field_NP1::Vector{Vector{T}}) where {T<:Union{Int64,Float64}}
-    for fieldID in eachindex(field_NP1)
-        copyto!(field_N[fieldID], field_NP1[fieldID])
-    end
+function switch_bonds!(field_N::BondField{E}, field_NP1::BondField{E}) where {E}
+    copyto!(flatview(field_N), flatview(field_NP1))
 end
 
 """
@@ -84,23 +81,14 @@ function reset_NP1()
     return nothing
 end
 
-@inline function fill_field!(field_NP1::Vector{Vector{Vector{T}}},
+@inline function fill_field!(field_NP1::BondField{E},
                              active::Vector{Bool},
-                             value::T) where {T<:Union{Int64,Float64,Bool}}
-    fill_in_place!(field_NP1, value, active)
+                             value::T) where {E,T<:Union{Int64,Float64,Bool}}
+    fill_in_place!(field_NP1, _bond_value(E, value), active)
 end
 
-@inline function fill_field!(field_NP1::Vector{Vector{T}},
-                             active::Vector{Bool},
-                             value::T) where {T<:Union{Int64,Float64,Bool}}
-    fill_in_place!(field_NP1, value, active)
-end
-
-@inline function fill_field!(field_NP1::Vector{Array{T,3}},
-                             active::Vector{Bool},
-                             value::T) where {T<:Union{Int64,Float64,Bool}}
-    fill_in_place!(field_NP1, value, active)
-end
+_bond_value(::Type{E}, value) where {E<:Number} = E(value)
+_bond_value(::Type{E}, value) where {E<:StaticArray} = E(ntuple(_ -> value, Val(length(E))))
 
 @inline function fill_field!(field_NP1::Array{T,N},
                              active::Vector{Bool},
@@ -108,40 +96,11 @@ end
     fill!(field_NP1, value)
 end
 
-@inline function fill_in_place!(A::Vector{Vector{T}},
-                                value::T,
-                                active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool}}
-    @inbounds @simd for i in eachindex(active)
-        active[i] && fill!(A[i], value)
-    end
-end
-
-@inline function fill_in_place!(A::Vector{Array{T,3}},
-                                value::T,
-                                active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool}}
-    @inbounds @simd for i in eachindex(active)
-        active[i] && fill!(A[i], value)
-    end
-end
-@inline function fill_in_place!(A::Vector{Vector{Vector{T}}},
-                                value::T,
-                                active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool}}
+@inline function fill_in_place!(A::BondField{E},
+                                value::E,
+                                active::Vector{Bool}) where {E}
     @inbounds for i in eachindex(active)
-        active[i] || continue
-        @simd for j in eachindex(A[i])
-            fill!(A[i][j], value)
-        end
-    end
-    return nothing
-end
-@inline function fill_in_place!(A::Vector{Vector{Array{T,3}}},
-                                value::T,
-                                active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool}}
-    @inbounds for i in eachindex(active)
-        active[i] || continue
-        @simd for j in eachindex(A[i])
-            fill!(A[i][j], value)
-        end
+        active[i] && fill!(A[i], value)
     end
     return nothing
 end

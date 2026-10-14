@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Heat_Transfer
-using LinearAlgebra: dot
+using LinearAlgebra: dot, normalize
 export compute_model
 export init_model
 
@@ -25,7 +25,6 @@ end
 
 using TimerOutputs: @timeit
 using .....Data_Manager
-using .....Helpers: normalize_in_place!
 
 const directions2D = [[1, 0], [-1, 0], [0, 1], [0, -1]]
 const directions3D = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
@@ -56,7 +55,7 @@ function init_model(nodes::AbstractVector{Int64}, p::HeatTransferParams, thermal
                                                                      dof; default_value = 1)
     for iID in nodes
         for (jID, neighborID) in enumerate(nlist[iID])
-            normalize_in_place!(bond_norm_field[iID][jID], undeformed_bond[iID][jID])
+            bond_norm_field[iID][jID] = normalize(undeformed_bond[iID][jID])
         end
     end
 end
@@ -90,7 +89,7 @@ function compute_model(nodes::AbstractVector{Int64}, p::HeatTransferParams, ther
     surface_nodes::NodeScalarField{Bool} = Data_Manager.get_field("Surface_Nodes")
     specific_volume::NodeScalarField{Float64} = Data_Manager.get_field("Specific Volume")
     active::NodeScalarField{Bool} = Data_Manager.get_field("Active")
-    bond_norm::BondVectorState{Float64} = Data_Manager.get_field("Bond Norm")
+    bond_norm::BondVectorField{Float64} = Data_Manager.get_field("Bond Norm")
     rotation_tensor = Data_Manager.get_rotation() ?
                       Data_Manager.get_field("Rotation Tensor") : nothing
     specific_volume_check::NodeScalarField{Bool} = Data_Manager.get_field("Specific Volume Check")

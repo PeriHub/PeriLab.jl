@@ -6,7 +6,7 @@ module Correspondence_Elastic
 using .......Data_Manager
 using .......ParameterSpec: @params, register_material
 using .....Material_Basis: hooke_matrix
-using .......Helpers: get_fourth_order, fast_mul!, get_mapping
+using .......Helpers: get_fourth_order, fast_mul!, get_mapping, tensor_buffer
 using StaticArrays: SMatrix
 export compute_stresses
 export fe_support
@@ -49,7 +49,6 @@ function _elastic_stresses!(nodes::AbstractVector{Int64},
                             strain_increment::NodeTensorField{Float64},
                             stress_N::NodeTensorField{Float64},
                             stress_NP1::NodeTensorField{Float64})
-
     mapping = if dof == 2
         get_mapping(2)::SMatrix{3,2,Int64,6}
     elseif dof == 3
@@ -155,17 +154,16 @@ function compute_stresses_ba(nodes, nlist, dof::Int64, p::CorrespondenceElasticP
                              material, time::Float64, dt::Float64, strain_increment,
                              stress_N, stress_NP1)
     @views mapping = get_mapping(dof)
+    sNP1 = tensor_buffer(stress_NP1)
     for iID in nodes
         @views hookeMatrix = hooke_matrix(material, dof, iID)
         @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
-            @views sNP1 = stress_NP1[iID][jID, :, :]
-            @views sInc = strain_increment[iID][jID, :, :]
-            @views sN = stress_N[iID][jID, :, :]
-            fast_mul!(sNP1, hookeMatrix, sInc, sN, mapping)
+            fast_mul!(sNP1, hookeMatrix, strain_increment[iID][jID], stress_N[iID][jID],
+                      mapping)
+            stress_NP1[iID][jID] = SMatrix(sNP1)
         end
     end
 end
-
 
 """
 	fields_for_local_synchronization(model::String)

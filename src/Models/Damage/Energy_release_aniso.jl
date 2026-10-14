@@ -52,14 +52,14 @@ function _critical_energy_aniso!(nodes::AbstractVector{Int64}, tension::Bool)
         block_ids::NodeScalarField{Int64} = Data_Manager.get_field("Block_Id")
         update_list::NodeScalarField{Bool} = Data_Manager.get_field("Update")
         bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
-        undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
+        undeformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Bond Geometry")
         undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
-        bond_forces::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
-        deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
+        bond_forces::BondVectorField{Float64} = Data_Manager.get_field("Bond Forces")
+        deformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
                                                                          "NP1")
         deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
                                                                                 "NP1")
-        bond_displacements::BondVectorState{Float64} = Data_Manager.get_field("Bond Displacements")
+        bond_displacements::BondVectorField{Float64} = Data_Manager.get_field("Bond Displacements")
         quad_horizons::NodeScalarField{Float64} = Data_Manager.get_field("Quad Horizon")
         inverse_nlist::Vector{Dict{Int64,Int64}} = Data_Manager.get_inverse_nlist()
         rotation_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Rotation Tensor")
@@ -82,13 +82,33 @@ function _critical_energy_aniso!(nodes::AbstractVector{Int64}, tension::Bool)
         neighbor_force_buf = zeros(Float64, dof)
         bond_force_delta = zeros(Float64, dof)
         projected_force = zeros(Float64, dof)
-        bond_energy = 0.0
-        norm_displacement = 0.0
-        product = 0.0
     end
 
     @timeit "sub_in_place" sub_in_place!(bond_displacements, deformed_bond, undeformed_bond)
 
+    _critical_energy_aniso_bonds!(nodes, tension, nlist, block_ids, update_list,
+                                  bond_damage, undeformed_bond_length, bond_forces,
+                                  deformed_bond, deformed_bond_length, bond_displacements,
+                                  quad_horizons, inverse_nlist, rotation_tensor,
+                                  aniso_crit_values, rotation, rotated_bond, bond_norm_all,
+                                  condition, temp, temp2, deformed_buf, relative_disp_buf,
+                                  bond_force_buf, neighbor_force_buf, bond_force_delta,
+                                  projected_force)
+end
+
+# bond loop behind a function barrier, the vector states are only typed up to their dof
+function _critical_energy_aniso_bonds!(nodes, tension, nlist, block_ids, update_list,
+                                       bond_damage, undeformed_bond_length, bond_forces,
+                                       deformed_bond, deformed_bond_length,
+                                       bond_displacements, quad_horizons, inverse_nlist,
+                                       rotation_tensor, aniso_crit_values, rotation,
+                                       rotated_bond, bond_norm_all, condition, temp, temp2,
+                                       deformed_buf, relative_disp_buf, bond_force_buf,
+                                       neighbor_force_buf, bond_force_delta,
+                                       projected_force)
+    bond_energy = 0.0
+    norm_displacement = 0.0
+    product = 0.0
     for iID in nodes
         bond_displacement = bond_displacements[iID]
         bond_force_vec = bond_forces[iID]

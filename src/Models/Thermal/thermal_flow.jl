@@ -23,9 +23,10 @@ import ......ParameterSpec: check!
                                 description = "Bond based or Correspondence")
     print_bed_temperature::Union{Nothing,Float64} = opt("Print Bed Temperature";
                                                         default = nothing)
-    thermal_conductivity_print_bed::Union{Nothing,Float64} = opt("Thermal Conductivity Print Bed";
-                                                                 default = nothing,
-                                                                 min = 0)
+    thermal_conductivity_print_bed::Union{Nothing,
+                                          Float64} = opt("Thermal Conductivity Print Bed";
+                                                         default = nothing,
+                                                         min = 0)
     print_bed_z_coordinate::Float64 = opt("Print Bed Z Coordinate"; default = 0.0)
 end
 
@@ -40,8 +41,10 @@ end
 __init__() = register_thermal("Thermal Flow", ThermalFlowParams)
 
 # the print bed only exists in 3D
-print_bed_active(p::ThermalFlowParams, dof::Int64) = p.print_bed_temperature !== nothing &&
-                                                     dof == 3
+function print_bed_active(p::ThermalFlowParams, dof::Int64)
+    p.print_bed_temperature !== nothing &&
+        dof == 3
+end
 
 """
     init_model(nodes, p, thermal, block)
@@ -98,7 +101,7 @@ function compute_model(nodes::AbstractVector{Int64}, p::ThermalFlowParams, therm
     bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
     heat_flow::NodeScalarField{Float64} = Data_Manager.get_field("Heat Flow", "NP1")
 
-    undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
+    undeformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Bond Geometry")
     undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
     volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
     temperature::NodeScalarField{Float64} = Data_Manager.get_field("Temperature", "NP1")
@@ -190,6 +193,8 @@ function compute_heat_flow_state_correspondence!(nodes::AbstractVector{Int64},
                                                  heat_flow::NodeScalarField{Float64})
     nablaT = @MVector zeros(Float64, dof)
     H = @MVector zeros(Float64, dof)
+    # dense copy of the bond, so that the product below stays the BLAS one
+    xi = zeros(Float64, dof)
     for iID in nodes
         H .= 0
         for (jID, neighborID) in enumerate(nlist[iID])
@@ -206,7 +211,8 @@ function compute_heat_flow_state_correspondence!(nodes::AbstractVector{Int64},
             q = rotate_second_order_tensor(rotation_tensor[iID, :, :], lamba[:, :], false)
         end
         for (jID, neighborID) in enumerate(nlist[iID])
-            temp = Kinv[iID, :, :] * undeformed_bond[iID][jID]
+            xi .= undeformed_bond[iID][jID]
+            temp = Kinv[iID, :, :] * xi
             heat_flow[iID] -= dot(temp, q) * volume[neighborID]
             heat_flow[neighborID] += dot(temp, q) * volume[iID]
         end
