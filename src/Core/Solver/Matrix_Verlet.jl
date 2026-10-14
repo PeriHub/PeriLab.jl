@@ -139,8 +139,9 @@ function init_solver(solver_options::Dict{Any,Any},
         @info "Model reduction enabled."
         @timeit "Model reduction" init_reduce_model(model_reduction, block_nodes,
                                                     density_mass)
-        mass = Data_Manager.get_mass_matrix()
-        Data_Manager.set_mass_matrix(lu(sparse(mass)))
+        # the reduced mass matrix is symmetric positive definite with a dense boundary
+        # block; Cholesky needs no copy and far less memory there than a sparse LU
+        Data_Manager.set_mass_matrix(cholesky(Symmetric(Data_Manager.get_mass_matrix())))
         return
     end
     # if not reduced the mass has to be created here.
