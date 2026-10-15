@@ -977,6 +977,29 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                                        Int64},
                                                                                                                  false
                                                                                                              ],
+                                                                                                         "Reaction Rate" =>
+                                                                                                             [
+                                                                                                                 Union{Float64,
+                                                                                                                       Int64},
+                                                                                                                 false
+                                                                                                             ],
+                                                                                                         "Core Size" =>
+                                                                                                             [
+                                                                                                                 Union{Float64,
+                                                                                                                       Int64},
+                                                                                                                 false
+                                                                                                             ],
+                                                                                                         "Reaction Law" =>
+                                                                                                             [
+                                                                                                                 String,
+                                                                                                                 false
+                                                                                                             ],
+                                                                                                         "Diffusant Block ID" =>
+                                                                                                             [
+                                                                                                                 Union{Int64,
+                                                                                                                       String},
+                                                                                                                 false
+                                                                                                             ],
                                                                                                          "Print Bed Temperature" =>
                                                                                                              [
                                                                                                                  Union{Float64,

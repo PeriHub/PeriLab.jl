@@ -1,0 +1,55 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+const STVD = PeriLab.Solver_Manager.Model_Factory.Thermal.STVD_Flow
+
+@test STVD.thermal_model_name() == "STVD Flow"
+
+@testset "ut_compute_depth" begin
+    # chain of 7 nodes, spacing 1, nodes 3:5 are diffusant (block 2)
+    coordinates = zeros(7, 2)
+    coordinates[:, 1] .= 1:7
+    block_ids = [1, 1, 2, 2, 2, 1, 1]
+    bond_length = [[1.0] for _ in 1:7]
+    depth = zeros(7)
+    STVD.compute_depth!(depth, coordinates, block_ids, [2], bond_length)
+    @test depth ≈ [-1, -1, 0.5, 1.5, 0.5, -1, -1]
+    @test STVD.parse_block_ids("2 3") == [2, 3]
+    @test STVD.parse_block_ids(2) == [2]
+end
+
+@testset "ut_compute_stvd_flow" begin
+    nlist = [[2], [1, 3], [2, 4], [3, 5], [4]]
+    bond_length = [ones(length(n)) for n in nlist]
+    bond_damage = [ones(length(n)) for n in nlist]
+    depth = [-1.0, 0.5, 1.5, 0.5, -1.0]
+    concentration = [0.0, 1.0, 1.0, 1.0, 0.0]
+    volume = ones(5)
+    horizon = ones(5)
+
+    # front not yet in the core -> only surface bonds of the core are active
+    flow = zeros(5)
+    STVD.compute_stvd_flow!(1:5, 2, nlist, 1.0, 0.6, depth, bond_damage, bond_length,
+                            horizon, concentration, volume, flow)
+    @test flow[3] == 0
+    @test flow[2] ≈ 6 / pi
+    @test flow[1] ≈ -6 / pi
+    @test isapprox(sum(flow), 0; atol = 1e-14)
+
+    # no reaction -> core is frozen, substrate has no gradient
+    flow .= 0
+    STVD.compute_stvd_flow!(1:5, 2, nlist, 1.0, 0.0, depth, bond_damage, bond_length,
+                            horizon, concentration, volume, flow)
+    @test all(flow .== 0)
+end
+
+@testset "ut_compute_front_depth" begin
+    @test STVD.compute_front_depth(Dict("Reaction Rate" => 0.1), 2.5) ≈ 0.25
+    @test STVD.compute_front_depth(Dict("Reaction Rate" => 0.1, "Reaction Law" => "Linear"),
+                                   2.5) ≈ 0.25
+    parameter = Dict("Reaction Rate" => 0.25, "Reaction Law" => "Exponential",
+                     "Core Size" => 0.5)
+    @test STVD.compute_front_depth(parameter, 0.0) == 0
+    @test STVD.compute_front_depth(parameter, 4.0) ≈ 0.5 * (1 - exp(-1))
+end

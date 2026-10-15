@@ -150,6 +150,9 @@ MPI.Init()
                 @testset "ut_Thermal_Flow" begin
                     include("unit_tests/Models/Thermal/ut_Thermal_flow.jl")
                 end
+                @testset "ut_STVD_Flow" begin
+                    include("unit_tests/Models/Thermal/ut_STVD_flow.jl")
+                end
                 @testset "ut_Thermal_Expansion" begin
                     include("unit_tests/Models/Thermal/ut_Thermal_expansion.jl")
                 end
