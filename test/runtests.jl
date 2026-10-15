@@ -276,6 +276,9 @@ MPI.Init()
         @testset "test_thermal_flow" begin
             include("fullscale_tests/test_thermal_flow/test_thermal_flow.jl")
         end
+        @testset "test_stvd_flow" begin
+            include("fullscale_tests/test_stvd_flow/test_stvd_flow.jl")
+        end
         @testset "test_hetval" begin
             include("fullscale_tests/test_Hetval/test_Hetval.jl")
         end
