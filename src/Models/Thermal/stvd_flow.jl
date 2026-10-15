@@ -30,7 +30,10 @@ Inits the spatio-temporal variable diffusivity (STVD) model [AtiehM2021](@cite).
 temperature field is interpreted as concentration of the diffusant. Nodes of the
 diffusant blocks form an inert core with zero diffusivity. The core is consumed by a
 reaction front which advances from the diffusant surface with the speed `Reaction Rate`.
-For each diffusant node the distance to the diffusant surface is stored in "STVD Depth".
+For each diffusant node the distance to the diffusant surface is stored in "STVD_Depth".
+It is estimated from the nearest substrate node, unless the mesh file provides an
+`STVD_Depth` column (negative for substrate nodes). An exact depth from the mesh is
+recommended for touching particles, where no substrate node lies at the contact points.
 
 The front position is defined by the `Reaction Law`:
 - `"Linear"` (default): front depth = `Reaction Rate` * t [AtiehM2022](@cite)
@@ -62,8 +65,11 @@ function init_model(nodes::AbstractVector{Int64},
     if reaction_law == "Exponential" && !haskey(thermal_parameter, "Core Size")
         @abort "Core Size has to be defined for the exponential reaction law."
     end
+    if Data_Manager.has_key("STVD_Depth")
+        return
+    end
     diffusant_blocks = parse_block_ids(thermal_parameter["Diffusant Block ID"])
-    depth = Data_Manager.create_constant_node_scalar_field("STVD Depth", Float64)
+    depth = Data_Manager.create_constant_node_scalar_field("STVD_Depth", Float64)
     compute_depth!(depth,
                    Data_Manager.get_field("Coordinates"),
                    Data_Manager.get_field("Block_Id"),
@@ -123,7 +129,7 @@ function compute_model(nodes::AbstractVector{Int64},
                        Data_Manager.get_nlist(),
                        thermal_parameter["Thermal Conductivity"],
                        front_depth,
-                       Data_Manager.get_field("STVD Depth"),
+                       Data_Manager.get_field("STVD_Depth"),
                        Data_Manager.get_bond_damage("NP1"),
                        Data_Manager.get_field("Bond Length"),
                        Data_Manager.get_field("Horizon"),

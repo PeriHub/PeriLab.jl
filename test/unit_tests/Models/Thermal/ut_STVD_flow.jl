@@ -78,3 +78,14 @@ end
                                                                                                                                                                           parameter)
     PeriLab.Data_Manager.data["mpi_active"] = false
 end
+
+@testset "ut_init_model_depth_from_mesh" begin
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_num_controller(3)
+    depth = PeriLab.Data_Manager.create_constant_node_scalar_field("STVD_Depth", Float64)
+    depth .= [-1.0, 0.25, 0.5]
+    STVD.init_model(Vector{Int64}(1:3),
+                    Dict{String,Any}("Thermal Conductivity" => 1.0, "Reaction Rate" => 0.1,
+                                     "Diffusant Block ID" => 2))
+    @test PeriLab.Data_Manager.get_field("STVD_Depth") == [-1.0, 0.25, 0.5]
+end
