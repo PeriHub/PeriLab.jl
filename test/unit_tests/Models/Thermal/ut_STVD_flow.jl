@@ -53,3 +53,28 @@ end
     @test STVD.compute_front_depth(parameter, 0.0) == 0
     @test STVD.compute_front_depth(parameter, 4.0) ≈ 0.5 * (1 - exp(-1))
 end
+
+@testset "ut_init_model_errors" begin
+    PeriLab.Data_Manager.initialize_data()
+    nodes = Vector{Int64}(1:3)
+    @test_logs (:error, "Thermal Conductivity not defined.") @test_throws PeriLab.PeriLabError STVD.init_model(nodes,
+                                                                                                               Dict{String,
+                                                                                                                    Any}())
+    @test_logs (:error, "Reaction Rate not defined.") @test_throws PeriLab.PeriLabError STVD.init_model(nodes,
+                                                                                                        Dict{String,
+                                                                                                             Any}("Thermal Conductivity" =>
+                                                                                                                      1.0))
+    parameter = Dict{String,Any}("Thermal Conductivity" => 1.0, "Reaction Rate" => 0.1,
+                                 "Diffusant Block ID" => 2, "Reaction Law" => "Cubic")
+    @test_logs (:error,
+                "Reaction Law Cubic not supported. Use ''Linear'' or ''Exponential''.") @test_throws PeriLab.PeriLabError STVD.init_model(nodes,
+                                                                                                                                          parameter)
+    parameter["Reaction Law"] = "Exponential"
+    @test_logs (:error, "Core Size has to be defined for the exponential reaction law.") @test_throws PeriLab.PeriLabError STVD.init_model(nodes,
+                                                                                                                                           parameter)
+    PeriLab.Data_Manager.data["mpi_active"] = true
+    @test_logs (:error,
+                "STVD Flow does not support MPI yet, the depth below the diffusant surface needs all substrate nodes.") @test_throws PeriLab.PeriLabError STVD.init_model(nodes,
+                                                                                                                                                                          parameter)
+    PeriLab.Data_Manager.data["mpi_active"] = false
+end

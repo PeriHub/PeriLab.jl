@@ -43,6 +43,9 @@ The front position is defined by the `Reaction Law`:
 """
 function init_model(nodes::AbstractVector{Int64},
                     thermal_parameter::AbstractDict)
+    if Data_Manager.get_mpi_active()
+        @abort "STVD Flow does not support MPI yet, the depth below the diffusant surface needs all substrate nodes."
+    end
     if !haskey(thermal_parameter, "Thermal Conductivity")
         @abort "Thermal Conductivity not defined."
     end
