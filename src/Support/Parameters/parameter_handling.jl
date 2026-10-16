@@ -994,6 +994,11 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                                  String,
                                                                                                                  false
                                                                                                              ],
+                                                                                                         "Release" =>
+                                                                                                             [
+                                                                                                                 String,
+                                                                                                                 false
+                                                                                                             ],
                                                                                                          "Diffusant Block ID" =>
                                                                                                              [
                                                                                                                  Union{Int64,

@@ -264,6 +264,7 @@ const THERMAL_MODEL_ENTRY = SObject(Dict("Thermal Model" => SField(String; requi
                                          "Thermal Conductivity" => SField(NUM, min = 0),
                                          "Reaction Rate" => SField(NUM, min = 0),
                                          "Reaction Law" => SField(String),
+                                         "Release" => SField(String),
                                          "Core Size" => SField(NUM, min = 0),
                                          "Diffusant Block ID" => SField([Int64, String]),
                                          "Thermal Expansion Coefficient" => SField(NUM),

@@ -35,6 +35,13 @@ It is estimated from the nearest substrate node, unless the mesh file provides a
 `STVD_Depth` column (negative for substrate nodes). An exact depth from the mesh is
 recommended for touching particles, where no substrate node lies at the contact points.
 
+The release of the core is defined by `Release`:
+- `"Node"` (default): a node is released completely when the front passes it.
+- `"Continuous"`: a node is released in proportion to the crossed part of its spacing w,
+  with the inert fraction f = clamp((depth + w/2 - s) / w, 0, 1). The bonds transport the
+  mobile concentration u - f. This avoids release pulses of one node volume, which disturb
+  threshold-based quantities when the diffusion is fast compared to the front.
+
 The front position is defined by the `Reaction Law`:
 - `"Linear"` (default): front depth = `Reaction Rate` * t [AtiehM2022](@cite)
 - `"Exponential"`: the core shrinks with exp(-`Reaction Rate` * t), i.e.
@@ -64,6 +71,19 @@ function init_model(nodes::AbstractVector{Int64},
     end
     if reaction_law == "Exponential" && !haskey(thermal_parameter, "Core Size")
         @abort "Core Size has to be defined for the exponential reaction law."
+    end
+    release = get!(thermal_parameter, "Release", "Node")
+    if !(release in ["Node", "Continuous"])
+        @abort "Release $release not supported. Use ''Node'' or ''Continuous''."
+    end
+    if !Data_Manager.has_key("STVD_Spacing")
+        spacing = Data_Manager.create_constant_node_scalar_field("STVD_Spacing", Float64)
+        if release == "Continuous"
+            bond_length = Data_Manager.get_field("Bond Length")
+            for iID in eachindex(spacing)
+                spacing[iID] = isempty(bond_length[iID]) ? 0.0 : minimum(bond_length[iID])
+            end
+        end
     end
     if Data_Manager.has_key("STVD_Depth")
         return
@@ -108,8 +128,8 @@ end
 """
     compute_model(nodes, thermal_parameter, block, time, dt)
 
-Calculates the concentration flow of the STVD model. A bond transports concentration only
-if both nodes are reached by the reaction front, i.e. `depth <= Reaction Rate * time`.
+Calculates the concentration flow of the STVD model. A bond transports the mobile
+concentration only if neither node is completely inert.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
@@ -129,7 +149,9 @@ function compute_model(nodes::AbstractVector{Int64},
                        Data_Manager.get_nlist(),
                        thermal_parameter["Thermal Conductivity"],
                        front_depth,
+                       get(thermal_parameter, "Release", "Node") == "Continuous",
                        Data_Manager.get_field("STVD_Depth"),
+                       Data_Manager.get_field("STVD_Spacing"),
                        Data_Manager.get_bond_damage("NP1"),
                        Data_Manager.get_field("Bond Length"),
                        Data_Manager.get_field("Horizon"),
@@ -152,18 +174,36 @@ function compute_front_depth(thermal_parameter::AbstractDict, time::Float64)
 end
 
 """
-    compute_stvd_flow!(nodes, dof, nlist, diffusivity, front_depth, depth, bond_damage,
-                       bond_length, horizon, concentration, volume, flow)
+    inert_fraction(depth, spacing, front_depth, continuous)
 
-Bond-based diffusion [OterkusS2014b](@cite) with the diffusivity of a bond set to zero as
-long as one of its nodes lies in the not yet reacted core.
+Part of the node concentration that is still bound in the core. Node-wise release: 1 while
+the front has not passed the node, 0 afterwards. Continuous release: the crossed part of the
+node spacing is released.
+"""
+function inert_fraction(depth::Float64, spacing::Float64, front_depth::Float64,
+                        continuous::Bool)
+    if !continuous || spacing == 0
+        return depth > front_depth ? 1.0 : 0.0
+    end
+    return clamp((depth + 0.5 * spacing - front_depth) / spacing, 0.0, 1.0)
+end
+
+"""
+    compute_stvd_flow!(nodes, dof, nlist, diffusivity, front_depth, continuous, depth,
+                       spacing, bond_damage, bond_length, horizon, concentration, volume,
+                       flow)
+
+Bond-based diffusion [OterkusS2014b](@cite) of the mobile concentration u - f, where f is
+the inert fraction. A bond is switched off as long as one of its nodes is completely inert.
 """
 function compute_stvd_flow!(nodes::AbstractVector{Int64},
                             dof::Int64,
                             nlist,
                             diffusivity::Float64,
                             front_depth::Float64,
+                            continuous::Bool,
                             depth::AbstractVector{Float64},
+                            spacing::AbstractVector{Float64},
                             bond_damage,
                             bond_length,
                             horizon::AbstractVector{Float64},
@@ -171,16 +211,23 @@ function compute_stvd_flow!(nodes::AbstractVector{Int64},
                             volume::AbstractVector{Float64},
                             flow::AbstractVector{Float64})
     for iID in nodes
-        if depth[iID] > front_depth
+        f_i = inert_fraction(depth[iID], spacing[iID], front_depth, continuous)
+        if f_i == 1
             continue
         end
+        mobile_i = concentration[iID] - f_i
         kernel = dof == 2 ? 6.0 / (pi * horizon[iID]^3) : 6.0 / (pi * horizon[iID]^4)
         for (jID, neighborID) in enumerate(nlist[iID])
-            if depth[neighborID] > front_depth || bond_damage[iID][jID] == 0
+            if bond_damage[iID][jID] == 0
+                continue
+            end
+            f_j = inert_fraction(depth[neighborID], spacing[neighborID], front_depth,
+                                 continuous)
+            if f_j == 1
                 continue
             end
             flow[iID] -= diffusivity * kernel * bond_damage[iID][jID] *
-                         (concentration[neighborID] - concentration[iID]) *
+                         (concentration[neighborID] - f_j - mobile_i) *
                          volume[neighborID] / bond_length[iID][jID]
         end
     end
