@@ -4,6 +4,7 @@
 
 module Heat_Transfer
 using LinearAlgebra: dot, normalize
+using StaticArrays: SVector, MVector
 export compute_model
 export init_model
 
@@ -25,11 +26,14 @@ end
 
 using TimerOutputs: @timeit
 using .....Data_Manager
+using .....Helpers: node_tensor
 
-const directions2D = [[1, 0], [-1, 0], [0, 1], [0, -1]]
-const directions3D = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
-const directions_free2D = fill(true, 4)
-const directions_free3D = fill(true, 6)
+# axis directions; a direction is free if no active neighbor lies (roughly) in it
+const DIRECTIONS_2D = (SVector(1.0, 0.0), SVector(-1.0, 0.0), SVector(0.0, 1.0),
+                       SVector(0.0, -1.0))
+const DIRECTIONS_3D = (SVector(1.0, 0.0, 0.0), SVector(-1.0, 0.0, 0.0),
+                       SVector(0.0, 1.0, 0.0), SVector(0.0, -1.0, 0.0),
+                       SVector(0.0, 0.0, 1.0), SVector(0.0, 0.0, -1.0))
 """
     init_model(nodes, p, thermal, block)
 
@@ -91,7 +95,7 @@ function compute_model(nodes::AbstractVector{Int64}, p::HeatTransferParams, ther
     active::NodeScalarField{Bool} = Data_Manager.get_field("Active")
     bond_norm::BondVectorField{Float64} = Data_Manager.get_field("Bond Norm")
     rotation_tensor = Data_Manager.get_rotation() ?
-                      Data_Manager.get_field("Rotation Tensor") : nothing
+                      Data_Manager.get_field("Rotation Tensor")::Array{Float64,3} : nothing
     specific_volume_check::NodeScalarField{Bool} = Data_Manager.get_field("Specific Volume Check")
     nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
     dx = 1.0
@@ -200,83 +204,39 @@ function calculate_specific_volume!(specific_volume::NodeScalarField{Float64},
                                     nodes::AbstractVector{Int64},
                                     nlist::Union{SubArray,BondScalarState{Int64}},
                                     active::NodeScalarField{Bool},
-                                    bond_norm::BondVectorState{Float64},
-                                    rotation_tensor::Array{Float64,3},
+                                    bond_norm::BondVectorState{Float64,D},
+                                    rotation_tensor::Union{Nothing,Array{Float64,3}},
                                     specific_volume_check::NodeScalarField{Bool},
-                                    dof::Int64)
-    if dof == 2
-        directions = directions2D
-        directions_free = directions_free2D
-    else
-        directions = directions3D
-        directions_free = directions_free3D
-    end
-    rot_directions = copy(directions)
-
+                                    dof::Int64) where {D}
+    directions = D == 2 ? DIRECTIONS_2D : DIRECTIONS_3D
     for iID in nodes
         !specific_volume_check[iID] && continue
-
-        rot_directions = [rotation_tensor[iID, :, :] * direction
-                          for direction in directions]
-
-        directions_free .= true
+        rotated = rotate_directions(directions, rotation_tensor, iID)
+        free = MVector(map(_ -> true, directions))
+        norms = bond_norm[iID]
         for (jID, neighborID) in enumerate(nlist[iID])
             !active[neighborID] && continue
-
-            for (kID, direction) in enumerate(rot_directions)
-                !directions_free[kID] && continue
-
-                if dot(bond_norm[iID][jID], direction) >= 0.6
-                    directions_free[kID] = false
+            for kID in eachindex(rotated)
+                !free[kID] && continue
+                if dot(norms[jID], rotated[kID]) >= 0.6
+                    free[kID] = false
                     break
                 end
             end
         end
         # If the up direction is not free, the specific_volume should not change
-        if dof == 3 && !directions_free[5]
+        if D == 3 && !free[5]
             specific_volume_check[iID] = false
         end
-        specific_volume[iID] = sum(directions_free)
+        specific_volume[iID] = count(free)
     end
 end
 
-function calculate_specific_volume!(specific_volume::NodeScalarField{Float64},
-                                    nodes::AbstractVector{Int64},
-                                    nlist::Union{SubArray,BondScalarState{Int64}},
-                                    active::NodeScalarField{Bool},
-                                    bond_norm::BondVectorState{Float64},
-                                    rotation_tensor::Nothing,
-                                    specific_volume_check::NodeScalarField{Bool},
-                                    dof::Int64)
-    if dof == 2
-        directions = directions2D
-        directions_free = directions_free2D
-    else
-        directions = directions3D
-        directions_free = directions_free3D
-    end
-
-    for iID in nodes
-        !specific_volume_check[iID] && continue
-        directions_free .= true
-        for (jID, neighborID) in enumerate(nlist[iID])
-            !active[neighborID] && continue
-
-            for (kID, direction) in enumerate(directions)
-                !directions_free[kID] && continue
-
-                if dot(bond_norm[iID][jID], direction) >= 0.6
-                    directions_free[kID] = false
-                    break
-                end
-            end
-        end
-        # If the up direction is not free, the specific_volume should not change
-        if dof == 3 && !directions_free[5]
-            specific_volume_check[iID] = false
-        end
-        specific_volume[iID] = sum(directions_free)
-    end
+rotate_directions(directions, ::Nothing, iID::Int64) = directions
+function rotate_directions(directions::Tuple{SVector{D,Float64},Vararg{SVector{D,Float64}}},
+                           rotation_tensor::Array{Float64,3}, iID::Int64) where {D}
+    R = node_tensor(rotation_tensor, iID, Val(D))
+    return map(direction -> R * direction, directions)
 end
 
 """

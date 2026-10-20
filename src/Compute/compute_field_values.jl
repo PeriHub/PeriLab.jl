@@ -113,10 +113,10 @@ Calculate the von Mises stress.
 """
 function calculate_strain(nodes::AbstractVector{Int64},
                           hooke_matrix::Union{Matrix{Float64},MMatrix,SMatrix})
-    stress_NP1 = Data_Manager.get_field("Cauchy Stress", "NP1")
-    strain = Data_Manager.get_field("Strain", "NP1")
+    stress_NP1 = Data_Manager.get_field("Cauchy Stress", "NP1")::Array{Float64,3}
+    strain = Data_Manager.get_field("Strain", "NP1")::Array{Float64,3}
     for iID in nodes
-        strain[iID, :, :] = get_strain(stress_NP1[iID, :, :], hooke_matrix)
+        @views strain[iID, :, :] = get_strain(stress_NP1[iID, :, :], hooke_matrix)
     end
 end
 

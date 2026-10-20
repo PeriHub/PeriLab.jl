@@ -4,7 +4,7 @@
 
 module Bond_Associated_Correspondence
 using LinearAlgebra: mul!
-using StaticArrays: I, @MMatrix, SMatrix
+using StaticArrays: I, @MMatrix, MMatrix, SMatrix, SVector
 
 using ........Data_Manager
 using ........PeriLabExceptions: @abort
@@ -12,7 +12,7 @@ using .........ParameterSpec: model_parts, model_module, model_function
 using .....Material_Basis: compute_Piola_Kirchhoff_stress!
 using ........Helpers:
                        find_local_neighbors, invert, rotate, determinant, smat,
-                       matrix_diff!, tensor_buffer
+                       matrix_diff!, tensor_buffer, node_tensor
 using ........Geometry:
                         compute_strain!,
                         compute_bond_level_rotation_tensor,
@@ -216,37 +216,31 @@ function compute_stress_integral(nodes::AbstractVector{Int64},
                                  bond_damage::BondScalarState{Float64},
                                  volume::NodeScalarField{Float64},
                                  weighted_volume::NodeScalarField{Float64},
-                                 bond_geometry::BondVectorState{Float64},
+                                 bond_geometry::BondVectorState{Float64,D},
                                  bond_length::BondScalarState{Float64},
                                  bond_stresses::BondTensorState{Float64},
                                  deformation_gradient::BondTensorState{Float64},
-                                 stress_integral::Array{Float64,3})
-    if dof == 2
-        temp = @MMatrix zeros(2, 2)
-        pk_stress = @MMatrix zeros(2, 2)
-    else
-        temp = @MMatrix zeros(3, 3)
-        pk_stress = @MMatrix zeros(3, 3)
-    end
-    one = @views I(dof)
-    factor::Float64 = 0
+                                 stress_integral::Array{Float64,3}) where {D}
+    pk_stress = MMatrix{D,D,Float64}(undef)
     for iID in nodes
-        stress_integral[iID, :, :] .= 0.0
-        @views for (jID, nID) in enumerate(nlist[iID])
+        integral = zero(SMatrix{D,D,Float64,D * D})
+        for (jID, nID) in enumerate(nlist[iID])
             if bond_damage[iID][jID] == 0
                 continue
             end
-            @views temp = (one - bond_geometry[iID][jID] * bond_geometry[iID][jID]') ./
-                          (bond_length[iID][jID] * bond_length[iID][jID])
+            bond = bond_geometry[iID][jID]
+            temp = (I - bond * bond') ./ (bond_length[iID][jID] * bond_length[iID][jID])
 
-            @views factor = volume[nID] *
-                            omega[iID][jID] *
-                            bond_damage[iID][jID] *
-                            (0.5 / weighted_volume[iID] + 0.5 / weighted_volume[nID])
-            @views compute_Piola_Kirchhoff_stress!(pk_stress, bond_stresses[iID][jID],
-                                                   deformation_gradient[iID][jID])
-            @views stress_integral[iID, :,
-                                   :] += factor .* pk_stress * temp
+            factor = volume[nID] *
+                     omega[iID][jID] *
+                     bond_damage[iID][jID] *
+                     (0.5 / weighted_volume[iID] + 0.5 / weighted_volume[nID])
+            compute_Piola_Kirchhoff_stress!(pk_stress, bond_stresses[iID][jID],
+                                            deformation_gradient[iID][jID])
+            integral += factor .* SMatrix(pk_stress) * temp
+        end
+        for j in 1:D, i in 1:D
+            stress_integral[iID, i, j] = integral[i, j]
         end
     end
     return stress_integral
@@ -325,39 +319,28 @@ end
 
 function compute_bond_forces(nodes::AbstractVector{Int64},
                              nlist::Union{BondScalarState{Int64},SubArray},
-                             bond_geometry,
+                             bond_geometry::BondVectorState{Float64,D},
                              bond_length,
                              bond_stress,
-                             integral_nodal_stress,
+                             integral_nodal_stress::Array{Float64,3},
                              weighted_volume,
                              gradient_weights,
                              omega,
                              bond_damage,
-                             bond_forces)
-    force = zeros(Float64, size(integral_nodal_stress, 2))
-    weights = similar(force)
+                             bond_forces) where {D}
     for iID in nodes
+        integral = node_tensor(integral_nodal_stress, iID, Val(D))
         for (jID, nID) in enumerate(nlist[iID])
             if bond_damage[iID][jID] == 0
                 continue
             end
-
-            # bond_forces[iID][jID, :] =
-            #     integral_nodal_stress[iID, :, :] * gradient_weights[iID][jID, :]
-
-            weights .= gradient_weights[iID][jID]
-            mul!(force,
-                 integral_nodal_stress[iID, :, :],
-                 weights)
-            @views bond_forces[iID][jID] = force +
-                                           bond_damage[iID][jID] * omega[iID][jID] /
-                                           (weighted_volume[iID] * bond_length[iID][jID] *
-                                            bond_length[iID][jID]) .*
-                                           bond_stress[iID][jID] *
-                                           bond_geometry[iID][jID]
-
-            #
-            #mul!(bond_forces[iID][jID, :], integral_nodal_stress[iID, :, :], gradient_weights[iID][jID, :])
+            force = integral * SVector{D,Float64}(gradient_weights[iID][jID])
+            bond_forces[iID][jID] = force +
+                                    bond_damage[iID][jID] * omega[iID][jID] /
+                                    (weighted_volume[iID] * bond_length[iID][jID] *
+                                     bond_length[iID][jID]) .*
+                                    bond_stress[iID][jID] *
+                                    bond_geometry[iID][jID]
         end
     end
     return bond_forces

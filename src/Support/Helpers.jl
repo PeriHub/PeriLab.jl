@@ -25,6 +25,8 @@ export check_inf_or_nan
 export compute_geometry
 export find_active_nodes
 export compute_label
+export node_tensor
+export with_dof
 export find_inverse_bond_index!
 export get_active_update_nodes
 export find_indices
@@ -581,6 +583,16 @@ function get_active_update_nodes(active::AbstractVector{Bool},
     end
     return view(index, 1:count)
 end
+
+"The D×D tensor of node `iID` of a node tensor field, as an `SMatrix` (no allocation)."
+@inline function node_tensor(A::AbstractArray{Float64,3}, iID::Int64, ::Val{D}) where {D}
+    return SMatrix{D,D,Float64,D * D}(ntuple(k -> @inbounds(A[iID, (k - 1) % D + 1,
+                                                              (k - 1) ÷ D + 1]),
+                                             Val(D * D)))
+end
+
+"Calls `f(Val(dof))`: a function barrier that makes the dof a compile-time constant."
+with_dof(f) = Data_Manager.get_dof() == 2 ? f(Val(2)) : f(Val(3))
 
 const COMPUTE_LABELS = Dict{String,String}()
 

@@ -213,7 +213,8 @@ function compute_slave_force_density(id_s, id_m, contact_force)
     compute_force_density(id_s, id_m, contact_force)
 end
 
-function compute_force_density(id_1::Int64, id_2::Int64, contact_force::Vector{Float64})
+function compute_force_density(id_1::Int64, id_2::Int64,
+                               contact_force::AbstractVector{Float64})
     mapping::Dict{Int64,Int64} = Data_Manager.get_exchange_id_to_local_id()
 
     if isnothing(get(mapping, id_1, nothing))

@@ -6,7 +6,7 @@ module Material_Basis
 using LinearAlgebra
 using LoopVectorization
 using StaticArrays
-using ......Helpers: get_MMatrix, determinant, invert, smat,
+using ......Helpers: get_MMatrix, determinant, invert, smat, with_dof,
                      mat_mul!, matrix_to_voigt, voigt_to_matrix
 using ......Data_Manager
 using ......ParameterSpec: value
@@ -25,35 +25,51 @@ export init_local_damping_due_to_damage
 export local_damping_due_to_damage
 function local_damping_due_to_damage(nodes::AbstractVector{Int64},
                                      params, dt)
-    damage = Data_Manager.get_field("Damage", "NP1")
-    nlist = Data_Manager.get_nlist()
-    density = Data_Manager.get_field("Density")
+    # function barrier on the dof: the fields below get concrete types
+    with_dof(D -> _local_damping_due_to_damage!(nodes, params, dt, D))
+end
 
-    deformed_bond_lengthN = Data_Manager.get_field("Deformed Bond Length", "N")
-    deformed_bond_lengthNP1 = Data_Manager.get_field("Deformed Bond Length", "NP1")
-    deformend_bond_geometry = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
-    local_damping = params.damping_coefficient
-    force_densities = Data_Manager.get_field("Force Densities", "NP1")
-    volume = Data_Manager.get_field("Volume")
-    E = params.representative_youngs_modulus
-    constant = Data_Manager.get_field("Bond Based Constant")
-    t = zeros(Float64, Data_Manager.get_dof())
+function _local_damping_due_to_damage!(nodes::AbstractVector{Int64}, params, dt,
+                                       ::Val{D}) where {D}
+    damage = Data_Manager.get_field("Damage", "NP1")::NodeScalarField{Float64}
+    nlist = Data_Manager.get_nlist()::BondScalarState{Int64}
+    density = Data_Manager.get_field("Density")::NodeScalarField{Float64}
 
-    for iID in nodes
+    deformed_bond_lengthN = Data_Manager.get_field("Deformed Bond Length",
+                                                   "N")::BondScalarState{Float64}
+    deformed_bond_lengthNP1 = Data_Manager.get_field("Deformed Bond Length",
+                                                     "NP1")::BondScalarState{Float64}
+    deformend_bond_geometry = Data_Manager.get_field("Deformed Bond Geometry",
+                                                     "NP1")::BondVectorState{Float64,D}
+    local_damping::Float64 = params.damping_coefficient
+    force_densities = Data_Manager.get_field("Force Densities",
+                                             "NP1")::NodeVectorField{Float64}
+    volume = Data_Manager.get_field("Volume")::NodeScalarField{Float64}
+    E::Float64 = params.representative_youngs_modulus
+    constant = Data_Manager.get_field("Bond Based Constant")::NodeScalarField{Float64}
+
+    @inbounds for iID in nodes
         v0 = sqrt(E / density[iID])
-        for (jID, nID) in enumerate(nlist[iID])
+        neighbors = nlist[iID]
+        lengthN = deformed_bond_lengthN[iID]
+        lengthNP1 = deformed_bond_lengthNP1[iID]
+        bonds = deformend_bond_geometry[iID]
+        for jID in eachindex(neighbors)
+            nID = neighbors[jID]
             avg_damage = 0.5 * (damage[iID] - damage[nID])
 
             t = local_damping *
                 E *
                 constant[iID] *
                 avg_damage *
-                (deformed_bond_lengthNP1[iID][jID] - deformed_bond_lengthN[iID][jID]) /
-                (dt * v0) * deformend_bond_geometry[iID][jID] /
-                deformed_bond_lengthNP1[iID][jID]
+                (lengthNP1[jID] - lengthN[jID]) /
+                (dt * v0) * bonds[jID] /
+                lengthNP1[jID]
 
-            force_densities[iID, :] += t * volume[nID]
-            force_densities[nID, :] -= t * volume[iID]
+            for d in 1:D
+                force_densities[iID, d] += t[d] * volume[nID]
+                force_densities[nID, d] -= t[d] * volume[iID]
+            end
         end
     end
 end
@@ -357,36 +373,36 @@ function distribute_forces!(force_densities::Matrix{Float64},
                             volume::NodeScalarField{Float64},
                             bond_damage::BondScalarState{Float64},
                             displacements::Matrix{Float64},
-                            bond_norm::BondVectorState{Float64})
+                            bond_norm::BondVectorState{Float64,D}) where {D}
     @inbounds @fastmath for iID in nodes
-        bond_mod = copy(bond_norm[iID])
-        if length(nlist_filtered_ids[iID]) > 0
-            for neighborID in nlist_filtered_ids[iID]
-                if dot((displacements[nlist[iID][neighborID], :] - displacements[iID, :]),
-                       bond_norm[iID][neighborID]) > 0
-                    bond_mod[neighborID] = zero(bond_mod[neighborID])
-                else
-                    bond_mod[neighborID] = abs.(bond_norm[iID][neighborID])
-                end
-                # the nested copy shared its vectors with "Bond Norm", which was therefore
-                # overwritten as well (kept as is)
-                bond_norm[iID][neighborID] = bond_mod[neighborID]
+        # the filtered bonds are rewritten in "Bond Norm" itself (as before), so the
+        # distribution below reads the updated norms directly
+        norms = bond_norm[iID]
+        neighbors = nlist[iID]
+        for neighborID in nlist_filtered_ids[iID]
+            relative_displacement = SVector{D,Float64}(ntuple(d -> displacements[neighbors[neighborID],
+                                                                                 d] -
+                                                                   displacements[iID, d],
+                                                              Val(D)))
+            if dot(relative_displacement, norms[neighborID]) > 0
+                norms[neighborID] = zero(norms[neighborID])
+            else
+                norms[neighborID] = abs.(norms[neighborID])
             end
         end
 
-        @views @inbounds @fastmath for jID in axes(nlist[iID], 1)
-            @views @inbounds @fastmath for m in axes(force_densities[iID, :], 1)
-                #temp = bond_damage[iID][jID] * bond_force[iID][jID, m]
-                force_densities[iID,
-                                m] += bond_damage[iID][jID] *
-                                      bond_force[iID][jID][m] *
-                                      volume[nlist[iID][jID]] *
-                                      bond_mod[jID][m]
-                force_densities[nlist[iID][jID],
-                                m] -= bond_damage[iID][jID] *
-                                      bond_force[iID][jID][m] *
-                                      volume[iID] *
-                                      bond_mod[jID][m]
+        forces = bond_force[iID]
+        damage = bond_damage[iID]
+        for jID in eachindex(neighbors)
+            for m in 1:D
+                force_densities[iID, m] += damage[jID] *
+                                           forces[jID][m] *
+                                           volume[neighbors[jID]] *
+                                           norms[jID][m]
+                force_densities[neighbors[jID], m] -= damage[jID] *
+                                                      forces[jID][m] *
+                                                      volume[iID] *
+                                                      norms[jID][m]
             end
         end
     end
@@ -506,7 +522,7 @@ end
 # returns
 - `strain::Matrix{Float64}`: Strain
 """
-function get_strain(stress_NP1::Matrix{Float64},
+function get_strain(stress_NP1::AbstractMatrix{Float64},
                     hooke_matrix::AbstractMatrix{Float64})
     strain_voigt = hooke_matrix' * matrix_to_voigt(stress_NP1)
     # hooke_matrix is a compliance matrix here (see calculate_strain), so this product

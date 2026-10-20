@@ -108,6 +108,21 @@ function init_aniso_crit_values(aniso::AnisotropicDamageParams, block_id::Int64,
 end
 
 """
+    init_inverse_bond_id()
+
+Creates (once) the bond field "Inverse Bond ID", the bond-indexed inverse neighborhood
+list (see `find_inverse_bond_index!`), and returns it.
+"""
+function init_inverse_bond_id()
+    Data_Manager.has_key("Inverse Bond ID") &&
+        return Data_Manager.get_field("Inverse Bond ID")
+    inverse_bond_id = Data_Manager.create_constant_bond_scalar_state("Inverse Bond ID",
+                                                                     Int64)
+    return find_inverse_bond_index!(inverse_bond_id, Data_Manager.get_nlist(),
+                                    Data_Manager.get_inverse_nlist())
+end
+
+"""
     critical_value_lookup(critical_value, inter_block_damage::Bool, block::Int64)
 
 Returns `(iID, neighborID) -> critical value` of a bond: the `Critical_Value` node field
@@ -132,7 +147,7 @@ for file in find_registered_modules(@__DIR__, "register_damage")
 end
 
 using LoopVectorization
-using .....Helpers: find_inverse_bond_id
+using .....Helpers: find_inverse_bond_id, find_inverse_bond_index!
 export fields_for_local_synchronization
 export compute_model
 export init_interface_crit_values

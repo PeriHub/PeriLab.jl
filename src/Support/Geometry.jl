@@ -9,7 +9,7 @@ using Rotations
 using LoopVectorization: @avx, @fastmath, @simd
 using ...Data_Manager
 using ...PeriLabExceptions: @abort
-using ...Helpers: invert, smat, sub_in_place!, div_in_place!, tensor_buffer
+using ...Helpers: invert, smat, sub_in_place!, div_in_place!, tensor_buffer, node_tensor
 export bond_geometry!
 export compute_shape_tensors!
 export compute_deformation_gradients!
@@ -247,11 +247,7 @@ function compute_deformation_gradients!(deformation_gradient::NodeTensorField{Fl
         @fastmath for k in eachindex(X)
             A += (x[k] * X[k]') .* volume[neighbors[k]] .* w[k] .* d[k]
         end
-        Kinv = SMatrix{D,D,Float64,D * D}(ntuple(k -> inverse_shape_tensor[iID,
-                                                                           (k - 1) % D + 1,
-                                                                           (k - 1) ÷ D + 1],
-                                                 Val(D * D)))
-        F = A * Kinv
+        F = A * node_tensor(inverse_shape_tensor, iID, Val(D))
         for j in 1:D, i in 1:D
             deformation_gradient[iID, i, j] = F[i, j]
         end
@@ -457,24 +453,24 @@ end
 function compute_bond_level_deformation_gradient(nodes,
                                                  nlist,
                                                  dof,
-                                                 bond_geometry,
+                                                 bond_geometry::BondVectorState{Float64,D},
                                                  bond_length,
                                                  bond_deformation,
                                                  deformation_gradient,
-                                                 ba_deformation_gradient)
-    mean_deformation_gradient = @MMatrix zeros(dof, dof)
+                                                 ba_deformation_gradient) where {D}
     for iID in nodes
+        F_i = node_tensor(deformation_gradient, iID, Val(D))
         for (jID, nID) in enumerate(nlist[iID])
-            @views mean_deformation_gradient = 0.5 .* (deformation_gradient[iID, :, :] +
-                                                deformation_gradient[nID, :, :])
-
-            @views ba_deformation_gradient[iID][jID] = mean_deformation_gradient +
-                                                       (bond_deformation[iID][jID] .-
-                                                        mean_deformation_gradient *
-                                                        bond_geometry[iID][jID]) *
-                                                       bond_geometry[iID][jID]' /
-                                                       (bond_length[iID][jID] *
-                                                        bond_length[iID][jID])
+            mean_deformation_gradient = 0.5 .*
+                                        (F_i +
+                                         node_tensor(deformation_gradient, nID, Val(D)))
+            ba_deformation_gradient[iID][jID] = mean_deformation_gradient +
+                                                (bond_deformation[iID][jID] .-
+                                                 mean_deformation_gradient *
+                                                 bond_geometry[iID][jID]) *
+                                                bond_geometry[iID][jID]' /
+                                                (bond_length[iID][jID] *
+                                                 bond_length[iID][jID])
 
             #@inbounds @fastmath for m ∈ axes(ba_deformation_gradient[iID], 2)
             #    @inbounds @fastmath for n ∈ axes(ba_deformation_gradient[iID], 3)

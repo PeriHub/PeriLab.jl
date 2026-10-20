@@ -35,15 +35,13 @@ Example:
 """
 function compute_model(nodes::AbstractVector{Int64}, p::ThermalDecompositionParams,
                        degradation, block::Int64, time::Float64, dt::Float64)
-    nlist = Data_Manager.get_nlist()
-    inverse_nlist = Data_Manager.get_inverse_nlist()
-    bond_damage = Data_Manager.get_bond_damage("NP1")
-    temperature = Data_Manager.get_field("Temperature", "NP1")
-    active = Data_Manager.get_field("Active")
-    number_of_neighbors = Data_Manager.get_field("Number of Neighbors")
-
+    nlist = Data_Manager.get_nlist()::BondScalarState{Int64}
+    inverse_nlist = Data_Manager.get_inverse_nlist()::Vector{Dict{Int64,Int64}}
+    bond_damage = Data_Manager.get_bond_damage("NP1")::BondScalarState{Float64}
+    temperature = Data_Manager.get_field("Temperature", "NP1")::NodeScalarField{Float64}
+    active = Data_Manager.get_field("Active")::NodeScalarField{Bool}
+    number_of_neighbors = Data_Manager.get_field("Number of Neighbors")::NodeScalarField{Int64}
     decomp_temp = p.decomposition_temperature
-    nn::Int64 = 1
 
     for iID in nodes
         if !active[iID]
@@ -51,10 +49,9 @@ function compute_model(nodes::AbstractVector{Int64}, p::ThermalDecompositionPara
         end
         if temperature[iID] >= decomp_temp
             active[iID] = false
-            nlist_temp = nlist[iID]
-            nn = number_of_neighbors[iID]
-            for jID in 1:nn
-                @views neighborID = nlist_temp[jID]
+            neighbors = nlist[iID]
+            for jID in 1:number_of_neighbors[iID]
+                neighborID = neighbors[jID]
                 bond_damage[iID][jID] = 0.0
                 if haskey(inverse_nlist[neighborID], iID)
                     bond_damage[neighborID][inverse_nlist[neighborID][iID]] = 0.0

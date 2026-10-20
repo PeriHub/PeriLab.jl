@@ -155,8 +155,12 @@ function compute_stresses_ba(nodes, nlist, dof::Int64, p::CorrespondenceElasticP
                              stress_N, stress_NP1)
     @views mapping = get_mapping(dof)
     sNP1 = tensor_buffer(stress_NP1)
+    # without dependent tables the moduli are constant: the Hooke matrix stored at init
+    hooke_field = Data_Manager.get_field("Material Gradient")::NodeTensorField{Float64}
+    constant_moduli = isempty(material.tables)
     for iID in nodes
-        @views hookeMatrix = hooke_matrix(material, dof, iID)
+        hookeMatrix = constant_moduli ? view(hooke_field, iID, :, :) :
+                      hooke_matrix(material, dof, iID)
         @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
             fast_mul!(sNP1, hookeMatrix, strain_increment[iID][jID], stress_N[iID][jID],
                       mapping)

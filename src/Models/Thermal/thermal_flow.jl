@@ -8,7 +8,7 @@ using StaticArrays
 using TimerOutputs: @timeit
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
-using .....Helpers: rotate_second_order_tensor2x2, rotate_second_order_tensor3x3
+using .....Helpers: node_tensor
 export compute_model
 export init_model
 export fields_for_local_synchronization
@@ -111,7 +111,7 @@ function compute_model(nodes::AbstractVector{Int64}, p::ThermalFlowParams, therm
     rotation::Bool = Data_Manager.get_element_rotation()
     rotation_tensor = nothing
     if rotation
-        rotation_tensor = Data_Manager.get_field("Rotation Tensor")
+        rotation_tensor = Data_Manager.get_field("Rotation Tensor")::Array{Float64,3}
     end
     apply_print_bed = false
 
@@ -184,39 +184,46 @@ function compute_heat_flow_state_correspondence!(nodes::AbstractVector{Int64},
                                                  dof::Int64,
                                                  nlist::BondScalarState{Int64},
                                                  lambda::Union{Matrix{Float64},MMatrix},
-                                                 rotation_tensor,
+                                                 rotation_tensor::Union{Nothing,
+                                                                        Array{Float64,3}},
                                                  bond_damage::BondScalarState{Float64},
-                                                 undeformed_bond::BondVectorState{Float64},
+                                                 undeformed_bond::BondVectorState{Float64,
+                                                                                  D},
                                                  Kinv::Array{Float64,3},
                                                  temperature::NodeScalarField{Float64},
                                                  volume::NodeScalarField{Float64},
-                                                 heat_flow::NodeScalarField{Float64})
-    nablaT = @MVector zeros(Float64, dof)
-    H = @MVector zeros(Float64, dof)
-    # dense copy of the bond, so that the product below stays the BLAS one
-    xi = zeros(Float64, dof)
-    for iID in nodes
-        H .= 0
-        for (jID, neighborID) in enumerate(nlist[iID])
+                                                 heat_flow::NodeScalarField{Float64}) where {D}
+    conductivity = SMatrix{D,D,Float64,D * D}(lambda)
+    @inbounds for iID in nodes
+        neighbors = nlist[iID]
+        bonds = undeformed_bond[iID]
+        damage = bond_damage[iID]
+        H = zero(SVector{D,Float64})
+        for jID in eachindex(neighbors)
+            neighborID = neighbors[jID]
             temp_state = (temperature[neighborID] - temperature[iID]) *
                          volume[neighborID] *
-                         bond_damage[iID][jID]
-            H .+= temp_state .* undeformed_bond[iID][jID]
+                         damage[jID]
+            H += temp_state * bonds[jID]
         end
-        nablaT = Kinv[iID, :, :] * H
-
-        if isnothing(rotation_tensor)
-            q = lambda * nablaT
-        else
-            q = rotate_second_order_tensor(rotation_tensor[iID, :, :], lamba[:, :], false)
-        end
-        for (jID, neighborID) in enumerate(nlist[iID])
-            xi .= undeformed_bond[iID][jID]
-            temp = Kinv[iID, :, :] * xi
-            heat_flow[iID] -= dot(temp, q) * volume[neighborID]
-            heat_flow[neighborID] += dot(temp, q) * volume[iID]
+        K = node_tensor(Kinv, iID, Val(D))
+        nablaT = K * H
+        q = rotated_conductivity(conductivity, rotation_tensor, iID) * nablaT
+        for jID in eachindex(neighbors)
+            neighborID = neighbors[jID]
+            flow = dot(K * bonds[jID], q)
+            heat_flow[iID] -= flow * volume[neighborID]
+            heat_flow[neighborID] += flow * volume[iID]
         end
     end
+end
+
+# the conductivity in the global frame: R Λ Rᵀ (as rotate_second_order_tensor2x2/3x3)
+rotated_conductivity(conductivity, ::Nothing, iID::Int64) = conductivity
+function rotated_conductivity(conductivity::SMatrix{D,D,Float64},
+                              rotation_tensor::Array{Float64,3}, iID::Int64) where {D}
+    R = node_tensor(rotation_tensor, iID, Val(D))
+    return R * conductivity * R'
 end
 
 """

@@ -172,21 +172,20 @@ function calculate_Q(accuracy_order::Int64,
                      horizon::Union{Int64,Float64},
                      Q::Vector{Float64})
     counter = 0
-    # static size from the bond (length(bond_geometry) == dof), keeps prod_Q type stable
-    p = zeros(MVector{length(bond_geometry),Int64})
+    # the exponents as an immutable SVector: no heap allocation per bond
     for this_order in 1:accuracy_order
-        for p[1] in this_order:-1:0
+        for p1 in this_order:-1:0
             if dof == 3
-                for p[2] in (this_order - p[1]):-1:0
-                    p[3] = this_order - p[1] - p[2]
+                for p2 in (this_order - p1):-1:0
                     # Calculate the product for Q[counter]
                     counter += 1
-                    Q[counter] = prod_Q(bond_geometry, horizon, p, Q[counter])
+                    Q[counter] = prod_Q(bond_geometry, horizon,
+                                        SVector(p1, p2, this_order - p1 - p2), Q[counter])
                 end
             else
-                p[2] = this_order - p[1]
                 counter += 1
-                Q[counter] = prod_Q(bond_geometry, horizon, p, Q[counter])
+                Q[counter] = prod_Q(bond_geometry, horizon, SVector(p1, this_order - p1),
+                                    Q[counter])
             end
         end
     end

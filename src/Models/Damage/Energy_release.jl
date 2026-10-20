@@ -11,17 +11,16 @@ using ......Data_Manager
 using ......Helpers:
                      rotate,
                      fastdot,
-                     sub_in_place!,
                      div_in_place!,
                      mul_in_place!,
-                     find_inverse_bond_index!
+                     with_dof
 
 export compute_model
 export init_model
 export fields_for_local_synchronization
 
 using ......ParameterSpec: @params, register_damage
-using ..Damage: critical_value_lookup
+using ..Damage: critical_value_lookup, init_inverse_bond_id
 @params struct CriticalEnergyParams
     only_tension::Bool = opt("Only Tension"; default = true)
     thickness::Float64 = opt("Thickness"; default = 1.0, min = 0, quantity = :length)
@@ -52,11 +51,7 @@ end
 # function barrier: `crit_of` has a concrete closure type here, the dof becomes `D`
 function _critical_energy!(nodes::AbstractVector{Int64}, tension::Bool,
                            crit_of::F) where {F}
-    if Data_Manager.get_dof() == 2
-        _critical_energy!(nodes, tension, crit_of, Val(2))
-    else
-        _critical_energy!(nodes, tension, crit_of, Val(3))
-    end
+    with_dof(D -> _critical_energy!(nodes, tension, crit_of, D))
 end
 
 function _critical_energy!(nodes::AbstractVector{Int64}, tension::Bool, crit_of::F,
@@ -72,34 +67,41 @@ function _critical_energy!(nodes::AbstractVector{Int64}, tension::Bool, crit_of:
                                            "NP1")::BondVectorState{Float64,D}
     deformed_bond_length = Data_Manager.get_field("Deformed Bond Length",
                                                   "NP1")::BondScalarState{Float64}
-    bond_displacements = Data_Manager.get_field("Bond Displacements")::BondVectorState{Float64,
-                                                                                       D}
     quad_horizons = Data_Manager.get_field("Quad Horizon")::NodeScalarField{Float64}
     inverse_bond_id = Data_Manager.get_field("Inverse Bond ID")::BondScalarState{Int64}
 
-    sub_in_place!(bond_displacements, deformed_bond, undeformed_bond)
-
     @inbounds for iID in nodes
-        @fastmath for jID in eachindex(nlist[iID])
-            relative_displacement = bond_displacements[iID][jID]
+        # the bond views of the node, built once instead of per bond
+        neighbors = nlist[iID]
+        deformed = deformed_bond[iID]
+        undeformed = undeformed_bond[iID]
+        deformed_length = deformed_bond_length[iID]
+        undeformed_length = undeformed_bond_length[iID]
+        inverse_ids = inverse_bond_id[iID]
+        forces = bond_forces[iID]
+        energy = bond_energy[iID]
+        damage = bond_damage[iID]
+        quad_horizon = quad_horizons[iID]
+        @fastmath for jID in eachindex(neighbors)
+            relative_displacement = deformed[jID] - undeformed[jID]
             norm_displacement = dot(relative_displacement, relative_displacement)
-            if norm_displacement == 0 || (tension &&
-                deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0)
+            if norm_displacement == 0 ||
+               (tension && deformed_length[jID] - undeformed_length[jID] < 0)
                 continue
             end
             # the bond may not exist at the neighbor, due to different horizons
-            inverse_neighborID = inverse_bond_id[iID][jID]
+            inverse_neighborID = inverse_ids[jID]
             inverse_neighborID == 0 && continue
-            neighborID = nlist[iID][jID]
+            neighborID = neighbors[jID]
 
-            force_difference = bond_forces[iID][jID] -
-                               bond_forces[neighborID][inverse_neighborID]
+            force_difference = forces[jID] - bond_forces[neighborID][inverse_neighborID]
             product = abs(dot(force_difference, relative_displacement))
             relative_displacement = abs.(relative_displacement)
             projected = (product / norm_displacement) * relative_displacement
-            bond_energy[iID][jID] = 0.25 * dot(projected, relative_displacement)
-            if bond_energy[iID][jID] > crit_of(iID, neighborID) * quad_horizons[iID]
-                bond_damage[iID][jID] = 0.0
+            bond_energy_j = 0.25 * dot(projected, relative_displacement)
+            energy[jID] = bond_energy_j
+            if bond_energy_j > crit_of(iID, neighborID) * quad_horizon
+                damage[jID] = 0.0
                 update_list[iID] = true
             end
         end
@@ -151,18 +153,12 @@ function init_model(nodes::AbstractVector{Int64}, p::CriticalEnergyParams, damag
                     block::Int64)
     dof = Data_Manager.get_dof()
     quad_horizons = Data_Manager.create_constant_node_scalar_field("Quad Horizon", Float64)
-    Data_Manager.create_constant_bond_vector_state("Bond Displacements", Float64, dof)
     horizon = Data_Manager.get_field("Horizon")
     thickness::Float64 = p.thickness
     mesh_scaling = Data_Manager.get_horizon_mesh_scaling()
     bond_energy = Data_Manager.create_constant_bond_scalar_state("Bond Energy",
                                                                  Float64)
-    if !Data_Manager.has_key("Inverse Bond ID")
-        inverse_bond_id = Data_Manager.create_constant_bond_scalar_state("Inverse Bond ID",
-                                                                         Int64)
-        find_inverse_bond_index!(inverse_bond_id, Data_Manager.get_nlist(),
-                                 Data_Manager.get_inverse_nlist())
-    end
+    init_inverse_bond_id()
     for iID in nodes
         quad_horizons[iID] = get_quad_horizon(horizon[iID], dof, thickness,
                                               sum(inv, mesh_scaling))

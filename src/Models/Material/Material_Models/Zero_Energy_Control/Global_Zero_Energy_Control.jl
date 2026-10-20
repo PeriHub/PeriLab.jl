@@ -7,7 +7,7 @@ module Global_Zero_Energy_Control
 using StaticArrays: MMatrix, MVector, SMatrix, SVector
 using LoopVectorization
 using ....Data_Manager
-using ....Helpers: get_fourth_order
+using ....Helpers: get_fourth_order, node_tensor, with_dof
 using ...Material_Basis: hooke_matrix
 using ....Geometry: rotation_tensor
 using .....ParameterSpec: model_parts
@@ -77,11 +77,7 @@ function _compute_control!(nodes::AbstractVector{Int64},
                            time::Float64,
                            dt::Float64)
     # function barrier on the dof: the fields below get concrete types
-    if Data_Manager.get_dof() == 2
-        _compute_control!(nodes, apply_zero_energy, Val(2))
-    else
-        _compute_control!(nodes, apply_zero_energy, Val(3))
-    end
+    with_dof(D -> _compute_control!(nodes, apply_zero_energy, D))
 end
 
 function _compute_control!(nodes::AbstractVector{Int64}, apply_zero_energy::Bool,
@@ -148,13 +144,6 @@ function zero_energy_mode_forces!(nodes::AbstractVector{Int64},
             f[jID] -= w[jID] * (Z * (F * X[jID] - x[jID]))
         end
     end
-end
-
-# the D×D tensor of node `iID` of a node tensor field
-@inline function node_tensor(A::NodeTensorField{Float64}, iID::Int64, ::Val{D}) where {D}
-    return SMatrix{D,D,Float64,D * D}(ntuple(k -> @inbounds(A[iID, (k - 1) % D + 1,
-                                                              (k - 1) ÷ D + 1]),
-                                             Val(D * D)))
 end
 
 """
