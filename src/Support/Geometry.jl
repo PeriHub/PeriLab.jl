@@ -228,30 +228,33 @@ function compute_deformation_gradients!(deformation_gradient::NodeTensorField{Fl
                                         volume::NodeScalarField{Float64},
                                         omega::BondScalarState{Float64},
                                         bond_damage::BondScalarState{Float64},
-                                        deformed_bond::BondVectorState{Float64},
-                                        undeformed_bond::BondVectorState{Float64},
-                                        inverse_shape_tensor::NodeTensorField{Float64})
-    if dof == 2
-        temp = @MMatrix zeros(2, 2)
-    else
-        temp = @MMatrix zeros(3, 3)
-    end
-    for iID in nodes
+                                        deformed_bond::BondVectorState{Float64,D},
+                                        undeformed_bond::BondVectorState{Float64,D},
+                                        inverse_shape_tensor::NodeTensorField{Float64}) where {D}
+    @inbounds for iID in nodes
         if deformed_bond[iID] == undeformed_bond[iID]
-            @inbounds for i in 1:dof, j in 1:dof
+            for i in 1:D, j in 1:D
                 deformation_gradient[iID, i, j] = (i == j) ? 1.0 : 0.0
             end
-
             continue
         end
-        @views compute_deformation_gradient!(temp,
-                                             bond_damage[iID],
-                                             deformed_bond[iID],
-                                             undeformed_bond[iID],
-                                             volume[nlist[iID]],
-                                             omega[iID])
-        dg = @view deformation_gradient[iID, :, :]
-        @views mul!(dg, temp, inverse_shape_tensor[iID, :, :])
+        x = deformed_bond[iID]
+        X = undeformed_bond[iID]
+        neighbors = nlist[iID]
+        w = omega[iID]
+        d = bond_damage[iID]
+        A = zero(SMatrix{D,D,Float64,D * D})
+        @fastmath for k in eachindex(X)
+            A += (x[k] * X[k]') .* volume[neighbors[k]] .* w[k] .* d[k]
+        end
+        Kinv = SMatrix{D,D,Float64,D * D}(ntuple(k -> inverse_shape_tensor[iID,
+                                                                           (k - 1) % D + 1,
+                                                                           (k - 1) ÷ D + 1],
+                                                 Val(D * D)))
+        F = A * Kinv
+        for j in 1:D, i in 1:D
+            deformation_gradient[iID, i, j] = F[i, j]
+        end
     end
 end
 

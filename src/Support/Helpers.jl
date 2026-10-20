@@ -25,6 +25,7 @@ export check_inf_or_nan
 export compute_geometry
 export find_active_nodes
 export compute_label
+export find_inverse_bond_index!
 export get_active_update_nodes
 export find_indices
 export find_inverse_bond_id
@@ -824,6 +825,22 @@ function find_inverse_bond_id(nlist::BondScalarState{Int64})
         end
     end
     return inverse_nlist
+end
+
+"""
+	find_inverse_bond_index!(inverse_bond_id, nlist, inverse_nlist)
+
+Bond-indexed form of `inverse_nlist`: `inverse_bond_id[iID][jID]` is the index of
+`iID` in the neighborhood of its `jID`-th neighbor, 0 if the neighbor has no bond
+back (different horizons). A bond loop reads it instead of two dictionary lookups.
+"""
+function find_inverse_bond_index!(inverse_bond_id::BondScalarState{Int64},
+                                  nlist::BondScalarState{Int64},
+                                  inverse_nlist::Vector{Dict{Int64,Int64}})
+    for iID in eachindex(nlist), (jID, neighborID) in enumerate(nlist[iID])
+        inverse_bond_id[iID][jID] = get(inverse_nlist[neighborID], iID, 0)
+    end
+    return inverse_bond_id
 end
 
 function invert(A::AbstractMatrix{Float64},

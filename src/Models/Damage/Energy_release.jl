@@ -13,7 +13,8 @@ using ......Helpers:
                      fastdot,
                      sub_in_place!,
                      div_in_place!,
-                     mul_in_place!
+                     mul_in_place!,
+                     find_inverse_bond_index!
 
 export compute_model
 export init_model
@@ -48,86 +49,56 @@ function compute_model(nodes::AbstractVector{Int64}, p::CriticalEnergyParams, da
     return _critical_energy!(nodes, p.only_tension, crit_of)
 end
 
-# function barrier: `crit_of` has a concrete closure type here
+# function barrier: `crit_of` has a concrete closure type here, the dof becomes `D`
 function _critical_energy!(nodes::AbstractVector{Int64}, tension::Bool,
                            crit_of::F) where {F}
-    dof = Data_Manager.get_dof()
-    nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
-    update_list::NodeScalarField{Bool} = Data_Manager.get_field("Update")
-    bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
+    if Data_Manager.get_dof() == 2
+        _critical_energy!(nodes, tension, crit_of, Val(2))
+    else
+        _critical_energy!(nodes, tension, crit_of, Val(3))
+    end
+end
 
-    bond_energy::BondScalarState{Float64} = Data_Manager.get_field("Bond Energy")
-    undeformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Bond Geometry")
-    undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
-    bond_forces::BondVectorField{Float64} = Data_Manager.get_field("Bond Forces")
-    deformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
-                                                                     "NP1")
-    deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
-                                                                            "NP1")
-    bond_displacements::BondVectorField{Float64} = Data_Manager.get_field("Bond Displacements")
-    quad_horizons::NodeScalarField{Float64} = Data_Manager.get_field("Quad Horizon")
-    inverse_nlist::Vector{Dict{Int64,Int64}} = Data_Manager.get_inverse_nlist()
-
-    temp_vector::Vector{Float64} = zeros(Float64, dof)
+function _critical_energy!(nodes::AbstractVector{Int64}, tension::Bool, crit_of::F,
+                           ::Val{D}) where {F,D}
+    nlist = Data_Manager.get_nlist()::BondScalarState{Int64}
+    update_list = Data_Manager.get_field("Update")::NodeScalarField{Bool}
+    bond_damage = Data_Manager.get_bond_damage("NP1")::BondScalarState{Float64}
+    bond_energy = Data_Manager.get_field("Bond Energy")::BondScalarState{Float64}
+    undeformed_bond = Data_Manager.get_field("Bond Geometry")::BondVectorState{Float64,D}
+    undeformed_bond_length = Data_Manager.get_field("Bond Length")::BondScalarState{Float64}
+    bond_forces = Data_Manager.get_field("Bond Forces")::BondVectorState{Float64,D}
+    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry",
+                                           "NP1")::BondVectorState{Float64,D}
+    deformed_bond_length = Data_Manager.get_field("Deformed Bond Length",
+                                                  "NP1")::BondScalarState{Float64}
+    bond_displacements = Data_Manager.get_field("Bond Displacements")::BondVectorState{Float64,
+                                                                                       D}
+    quad_horizons = Data_Manager.get_field("Quad Horizon")::NodeScalarField{Float64}
+    inverse_bond_id = Data_Manager.get_field("Inverse Bond ID")::BondScalarState{Int64}
 
     sub_in_place!(bond_displacements, deformed_bond, undeformed_bond)
 
-    _critical_energy_bonds!(nodes, tension, crit_of, nlist, update_list, bond_damage,
-                            bond_energy, undeformed_bond_length, bond_forces,
-                            deformed_bond_length, bond_displacements, quad_horizons,
-                            inverse_nlist, temp_vector)
-end
-
-# bond loop behind a function barrier, the vector states are only typed up to their dof
-function _critical_energy_bonds!(nodes::AbstractVector{Int64}, tension::Bool,
-                                 crit_of::F,
-                                 nlist::BondScalarState{Int64},
-                                 update_list::NodeScalarField{Bool},
-                                 bond_damage::BondScalarState{Float64},
-                                 bond_energy::BondScalarState{Float64},
-                                 undeformed_bond_length::BondScalarState{Float64},
-                                 bond_forces::BondVectorState{Float64},
-                                 deformed_bond_length::BondScalarState{Float64},
-                                 bond_displacements::BondVectorState{Float64},
-                                 quad_horizons::NodeScalarField{Float64},
-                                 inverse_nlist::Vector{Dict{Int64,Int64}},
-                                 temp_vector::Vector{Float64}) where {F}
-    norm_displacement::Float64 = 0.0
-    product::Float64 = 0.0
-
-    for iID in nodes
-        @fastmath @inbounds for jID in eachindex(nlist[iID])
+    @inbounds for iID in nodes
+        @fastmath for jID in eachindex(nlist[iID])
             relative_displacement = bond_displacements[iID][jID]
             norm_displacement = dot(relative_displacement, relative_displacement)
             if norm_displacement == 0 || (tension &&
                 deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0)
                 continue
             end
+            # the bond may not exist at the neighbor, due to different horizons
+            inverse_neighborID = inverse_bond_id[iID][jID]
+            inverse_neighborID == 0 && continue
+            neighborID = nlist[iID][jID]
 
-            neighborID::Int64 = nlist[iID][jID]
-            if !haskey(inverse_nlist[neighborID], iID)
-                continue
-            end
-            inverse_neighborID::Int64 = inverse_nlist[neighborID][iID]
-
-            # check if the bond also exist at other node, due to different horizons
-            # try
-            #     neighbor_bond_force .= bond_forces[neighborID][inverse_nlist[neighborID][iID]]
-            # catch e
-            #     # Handle the case when the key doesn't exist
-            # end
-
-            bond_force = bond_forces[iID][jID]
-            neighbor_bond_force = bond_forces[neighborID][inverse_neighborID]
-            temp_vector .= bond_force .- neighbor_bond_force
-
-            product = abs(dot(temp_vector, relative_displacement))
+            force_difference = bond_forces[iID][jID] -
+                               bond_forces[neighborID][inverse_neighborID]
+            product = abs(dot(force_difference, relative_displacement))
             relative_displacement = abs.(relative_displacement)
-            mul!(temp_vector, product / norm_displacement, relative_displacement)
-            product = dot(temp_vector, relative_displacement)
-            bond_energy[iID][jID] = 0.25 * product
-            product = crit_of(iID, neighborID) * quad_horizons[iID]
-            if bond_energy[iID][jID] > product
+            projected = (product / norm_displacement) * relative_displacement
+            bond_energy[iID][jID] = 0.25 * dot(projected, relative_displacement)
+            if bond_energy[iID][jID] > crit_of(iID, neighborID) * quad_horizons[iID]
                 bond_damage[iID][jID] = 0.0
                 update_list[iID] = true
             end
@@ -186,6 +157,12 @@ function init_model(nodes::AbstractVector{Int64}, p::CriticalEnergyParams, damag
     mesh_scaling = Data_Manager.get_horizon_mesh_scaling()
     bond_energy = Data_Manager.create_constant_bond_scalar_state("Bond Energy",
                                                                  Float64)
+    if !Data_Manager.has_key("Inverse Bond ID")
+        inverse_bond_id = Data_Manager.create_constant_bond_scalar_state("Inverse Bond ID",
+                                                                         Int64)
+        find_inverse_bond_index!(inverse_bond_id, Data_Manager.get_nlist(),
+                                 Data_Manager.get_inverse_nlist())
+    end
     for iID in nodes
         quad_horizons[iID] = get_quad_horizon(horizon[iID], dof, thickness,
                                               sum(inv, mesh_scaling))

@@ -714,6 +714,8 @@ function write_nodal_results_in_exodus(exo::ExodusDatabase,
     # The vector is allocated as Float64 and filled by broadcast, which also converts
     # integer fields; write_values has no Int method.
     n_file_nodes = exodus_num_nodes(exo)
+    # one buffer for all variables of the step
+    var = zeros(Float64, n_file_nodes)
 
     for varname in keys(output)
         field = Data_Manager.get_field(output[varname]["fieldname"],
@@ -722,12 +724,12 @@ function write_nodal_results_in_exodus(exo::ExodusDatabase,
 
         # exo, timestep::Integer, id::Integer, var_index::Integer, vector
         # => https://github.com/cmhamel/Exodus.jl/blob/master/src/Variables.jl
-        var = zeros(Float64, n_file_nodes)
+        n_write < n_file_nodes && fill!(var, 0.0)
         if haskey(output[varname], "dof")
-            var[1:n_write] .= field[1:n_write, output[varname]["dof"]]
+            @views var[1:n_write] .= field[1:n_write, output[varname]["dof"]]
         else
-            var[1:n_write] .= field[1:n_write, output[varname]["i_dof"],
-                                    output[varname]["j_dof"]]
+            @views var[1:n_write] .= field[1:n_write, output[varname]["i_dof"],
+                                           output[varname]["j_dof"]]
         end
         # interface does not work with Int yet 28//08//2023
         write_values(exo, NodalVariable, step, varname, var)

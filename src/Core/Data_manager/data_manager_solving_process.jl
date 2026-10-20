@@ -47,19 +47,19 @@ end
 Switches the fields from NP1 to N. This is more efficient than copying the data from one field the other.
 
 """
-function switch_NP1_to_N() ##TODO check type stability
-    active::Vector = _get_field("Active")
-    if haskey(data["NP1_to_N"], "Bond Damage")
-        field_NP1 = get_field("Bond Damage", "NP1")
-        field_N = get_field("Bond Damage", "N")
+function switch_NP1_to_N()
+    active = _get_field("Active")::Vector{Bool}
+    np1_to_n = data["NP1_to_N"]::Dict{String,NP1_to_N}
+    if haskey(np1_to_n, "Bond Damage")
+        field_NP1 = get_field("Bond Damage", "NP1")::BondScalarState{Float64}
+        field_N = get_field("Bond Damage", "N")::BondScalarState{Float64}
         switch_bonds!(field_N, field_NP1)
     end
 
-    for key::String in keys(data["NP1_to_N"])
+    for (key, entry) in np1_to_n
         key == "Bond Damage" && continue
-        swap_n_np1!(data["NP1_to_N"][key])
-        field_NP1 = get_field(key, "NP1")
-        _fill_field_barrier(field_NP1, active, data["NP1_to_N"][key])
+        swap_n_np1!(entry)
+        _fill_field_barrier(get_field(key, "NP1"), active, entry)
     end
 end
 

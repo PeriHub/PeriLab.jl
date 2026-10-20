@@ -155,13 +155,13 @@ function initialize_data()
     data["field_names"] = Vector{String}([])
     data["fields_to_synch"] = Dict{String,Any}()
     data["Stiffness Matrix"] = PD_matrix
-    data["local_fields_to_synch"] = Dict("Material Model" => Dict(),
-                                         "Damage Model" => Dict(),
-                                         "Thermal Model" => Dict(),
-                                         "Pre Calculation Model" => Dict(),
-                                         "Degradation Model" => Dict(),
-                                         "Additive Model" => Dict(),
-                                         "Surface Correction" => Dict())
+    data["local_fields_to_synch"] = Dict(model => Dict{String,Any}()
+                                         for model in ("Material Model", "Damage Model",
+                                             "Thermal Model",
+                                             "Pre Calculation Model",
+                                             "Degradation Model",
+                                             "Additive Model",
+                                             "Surface Correction"))
     data["filedirectory"] = ""
     data["inverse_nlist"] = []
     data["bond_ptr"] = Vector{Int64}()
@@ -630,7 +630,7 @@ end
 	Get the fields to synchronize
 """
 function get_local_synch_fields(model::String)
-    return data["local_fields_to_synch"][model]
+    return data["local_fields_to_synch"][model]::Dict{String,Any}
 end
 
 """

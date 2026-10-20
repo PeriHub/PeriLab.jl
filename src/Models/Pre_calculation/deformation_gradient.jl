@@ -48,14 +48,16 @@ Compute the deformation gradient.
 """
 function compute_model(nodes::AbstractVector{Int64}, p::DeformationGradientParams,
                        pre_calculation, block::Int64, time::Float64, dt::Float64)
-    nlist = Data_Manager.get_nlist()
-    volume = Data_Manager.get_field("Volume")
-    omega = Data_Manager.get_field("Influence Function")
-    bond_damage = Data_Manager.get_bond_damage("NP1")
-    undeformed_bond = Data_Manager.get_field("Bond Geometry")
-    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
-    deformation_gradient = Data_Manager.get_field("Deformation Gradient")
-    inverse_shape_tensor = Data_Manager.get_field("Inverse Shape Tensor")
+    nlist = Data_Manager.get_nlist()::BondScalarState{Int64}
+    volume = Data_Manager.get_field("Volume")::NodeScalarField{Float64}
+    omega = Data_Manager.get_field("Influence Function")::BondScalarState{Float64}
+    bond_damage = Data_Manager.get_bond_damage("NP1")::BondScalarState{Float64}
+    # a 2D or 3D union each: the kernel call splits into static calls
+    undeformed_bond = Data_Manager.get_field("Bond Geometry")::BondVectorField{Float64}
+    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry",
+                                           "NP1")::BondVectorField{Float64}
+    deformation_gradient = Data_Manager.get_field("Deformation Gradient")::NodeTensorField{Float64}
+    inverse_shape_tensor = Data_Manager.get_field("Inverse Shape Tensor")::NodeTensorField{Float64}
     dof = Data_Manager.get_dof()
     compute_deformation_gradients!(deformation_gradient,
                                    nodes,
