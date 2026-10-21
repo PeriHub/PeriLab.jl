@@ -3,70 +3,61 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Deformation_Gradient
-using DataStructures: OrderedDict
 
 using .......Data_Manager
 using .......Geometry: compute_deformation_gradients!
-export pre_calculation_name
 export init_model
-export compute
+export compute_model
 
-"""
-    pre_calculation_name()
-
-Gives the pre_calculation name. It is needed for comparison with the yaml input deck.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the Pre_Calculation.
-
-Example:
-```julia
-println(pre_calculation_name())
-"Deformation Gradient"
-```
-"""
-function pre_calculation_name()
-    return "Deformation Gradient"
+using ......ParameterSpec: @params, register_pre_calculation
+"Switch only: this pre-calculation has no parameters."
+@params struct DeformationGradientParams
 end
+__init__() = register_pre_calculation("Deformation Gradient", DeformationGradientParams)
 
 """
-    init_model(nodes, parameter)
+    init_model(nodes, p, pre_calculation, block)
 
 Inits the deformation gradient calculation.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `parameter::Dict(String, Any)`: Dictionary with parameter.
+- `p::DeformationGradientParams`: The model parameters.
+- `pre_calculation`: `nothing` (pre-calculations have no shared parameters).
+- `block::Int64`: The current block.
 
 """
-function init_model(nodes::AbstractVector{Int64},
-                    parameter::Union{Dict,OrderedDict},
-                    block::Int64)
+function init_model(nodes::AbstractVector{Int64}, p::DeformationGradientParams,
+                    pre_calculation, block::Int64)
     dof = Data_Manager.get_dof()
     Data_Manager.create_constant_node_tensor_field("Deformation Gradient", Float64, dof)
 end
 
 """
-    compute(nodes::AbstractVector{Int64})
+    compute_model(nodes, p, pre_calculation, block, time, dt)
 
 Compute the deformation gradient.
 
 # Arguments
 - `nodes`: List of nodes.
+- `p::DeformationGradientParams`: The model parameters.
+- `pre_calculation`: `nothing` (pre-calculations have no shared parameters).
+- `block::Int64`: The current block.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
 """
-function compute(nodes::AbstractVector{Int64},
-                 parameter::Union{Dict,OrderedDict},
-                 block::Int64)
-    nlist = Data_Manager.get_nlist()
-    volume = Data_Manager.get_field("Volume")
-    omega = Data_Manager.get_field("Influence Function")
-    bond_damage = Data_Manager.get_bond_damage("NP1")
-    undeformed_bond = Data_Manager.get_field("Bond Geometry")
-    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
-    deformation_gradient = Data_Manager.get_field("Deformation Gradient")
-    inverse_shape_tensor = Data_Manager.get_field("Inverse Shape Tensor")
+function compute_model(nodes::AbstractVector{Int64}, p::DeformationGradientParams,
+                       pre_calculation, block::Int64, time::Float64, dt::Float64)
+    nlist = Data_Manager.get_nlist()::BondScalarState{Int64}
+    volume = Data_Manager.get_field("Volume")::NodeScalarField{Float64}
+    omega = Data_Manager.get_field("Influence Function")::BondScalarState{Float64}
+    bond_damage = Data_Manager.get_bond_damage("NP1")::BondScalarState{Float64}
+    # a 2D or 3D union each: the kernel call splits into static calls
+    undeformed_bond = Data_Manager.get_field("Bond Geometry")::BondVectorField{Float64}
+    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry",
+                                           "NP1")::BondVectorField{Float64}
+    deformation_gradient = Data_Manager.get_field("Deformation Gradient")::NodeTensorField{Float64}
+    inverse_shape_tensor = Data_Manager.get_field("Inverse Shape Tensor")::NodeTensorField{Float64}
     dof = Data_Manager.get_dof()
     compute_deformation_gradients!(deformation_gradient,
                                    nodes,

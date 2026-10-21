@@ -15,11 +15,11 @@ end
     @test PeriLab.parse_commandline([]) ==
           Dict("dry_run" => false, "reload" => false, "examples" => false,
                "verbose" => false, "output_dir" => "", "filenames" => [], "silent" => false,
-               "debug" => false)
+               "debug" => false, "no_strict" => false)
     @test PeriLab.parse_commandline(["Test.yaml", "-r", "-v", "-d", "-s", "-o", "folder"]) ==
           Dict("dry_run" => false, "reload" => true, "examples" => false, "verbose" => true,
                "output_dir" => "folder", "filenames" => ["Test.yaml"], "silent" => true,
-               "debug" => true)
+               "debug" => true, "no_strict" => false)
 end
 
 @testset "ut_main" begin

@@ -16,9 +16,8 @@ import .Bond_Filter: apply_bond_filters
 # include("gcode.jl")
 using ..Helpers: fastdot, get_nearest_neighbors, find_inverse_bond_id
 using ..Logging_Module: print_table
-using ..Parameter_Handling: get_mesh_name, get_header, get_node_sets,
-                            get_external_topology_name, get_horizon, get_angles,
-                            get_mesh_scaling
+using ..InputDeck: BlockParams, block_by_id, block_angles, PeriLabInput,
+                   SurfaceExtrusionParams, mesh_scaling
 using ..Geometry: bond_geometry!
 
 #export load_mesh_and_distribute
@@ -44,25 +43,23 @@ function csv_reader(filename::String)
                     ignorerepeated = true,
                     header = header,
                     skipto = header_line + 1,
-                    comment = "#",)
+                    comment = "#")
 end
 
 include("Mesh_Import/Mesh_Import.jl")
 using .Mesh_Import: read_mesh
 
 """
-    init_data(params::Dict, path::String, comm::MPI.Comm)
+    init_data(input::PeriLabInput, path::String, comm::MPI.Comm)
 
 Initializes the data for the mesh.
 
 # Arguments
-- `params::Dict`: The parameters for the simulation.
+- `input::PeriLabInput`: The typed input deck.
 - `path::String`: The path to the mesh file.
 - `comm::MPI.Comm`: The MPI communicator.
-# Returns
-- `params::Dict`: The parameters for the simulation.
 """
-function init_data(params::Dict,
+function init_data(input::PeriLabInput,
                    path::String,
                    comm::MPI.Comm)
     @timeit "init_data - mesh_data.jl" begin
@@ -80,7 +77,7 @@ function init_data(params::Dict,
                                              dof,
                                              nsets,
                                              topology,
-                                             element_distribution=load_and_evaluate_mesh(params,
+                                             element_distribution=load_and_evaluate_mesh(input,
                                                                                          path,
                                                                                          size)
             if !isnothing(element_distribution)
@@ -113,9 +110,11 @@ function init_data(params::Dict,
             overlap_map = broadcast_value(comm, overlap_map)
             distribution = broadcast_value(comm, distribution)
             nsets = broadcast_value(comm, nsets)
-            nlist = broadcast_value(comm, nlist)
             nlist_filtered_ids = broadcast_value(comm, nlist_filtered_ids)
         end
+        # the rows (global ids) of this rank's nodes; only the root holds the whole list
+        local_rows = size > 1 ? send_rows_from_root_to_core_i(comm, nlist, distribution) :
+                     nlist[distribution[rank]]
         num_controller::Int64 = send_single_value_from_vector(comm, 0, ntype["controllers"],
                                                               Int64)
         num_responder::Int64 = send_single_value_from_vector(comm, 0, ntype["responder"],
@@ -124,7 +123,7 @@ function init_data(params::Dict,
         Data_Manager.set_overlap_map(overlap_map)
         Data_Manager.set_num_controller(num_controller)
         Data_Manager.set_num_responder(num_responder)
-        Data_Manager.set_horizon_mesh_scaling(get_mesh_scaling(params))
+        Data_Manager.set_horizon_mesh_scaling(mesh_scaling(input.sections.discretization))
         @debug "Get node sets"
         define_nsets(nsets)
         # defines the order of the global nodes to the local core nodes
@@ -143,17 +142,23 @@ function init_data(params::Dict,
         @timeit "distribute_neighborhoodlist_to_cores" distribute_neighborhoodlist_to_cores(comm,
                                                                                             nlist,
                                                                                             distribution,
-                                                                                            false)
+                                                                                            false;
+                                                                                            local_rows)
+        if size > 1
+            create_bond_overlap_map!(overlap_map, Data_Manager.get_nlist(), distribution,
+                                     rank)
+        end
 
         if !isnothing(nlist_filtered_ids)
             create_and_distribute_bond_norm(comm,
+                                            local_rows,
                                             nlist_filtered_ids,
                                             distribution,
                                             bond_norm,
                                             dof)
         end
 
-        contact_basis(params, mesh, comm, rank)
+        contact_basis(input, mesh, comm, rank)
 
         get_bond_geometry() # gives the initial length and bond damage
         Data_Manager.set_fem(fem_active)
@@ -172,21 +177,20 @@ function init_data(params::Dict,
     nlist = Data_Manager.get_nlist()
     Data_Manager.set_inverse_nlist(find_inverse_bond_id(nlist))
     mesh = nothing
-    return params
+    return nothing
 end
 
 """
-	set_angles(params::Dict, block_nodes::Dict)
+	set_angles(blocks::Dict{String,BlockParams})
 
-Sets the density of the nodes in the dictionary.
+Sets the node angles from the block angles of the input deck.
 
 # Arguments
-- `params::Dict`: The parameters
-- `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
+- `blocks::Dict{String,BlockParams}`: The blocks of the input deck
 """
-function set_angles(params::Dict)
+function set_angles(blocks::Dict{String,BlockParams})
     block_ids = Data_Manager.get_field("Block_Id")
-    blocks = unique(block_ids)
+    mesh_block_ids = unique(block_ids)
     mesh_angles = false
     if "Angles" in Data_Manager.get_all_field_keys()
         Data_Manager.set_rotation(true)
@@ -198,8 +202,8 @@ function set_angles(params::Dict)
 
     block_rotation = false
     dof = Data_Manager.get_dof()
-    for block in blocks
-        if get_angles(params, block, dof) !== nothing
+    for block in mesh_block_ids
+        if block_angles(block_by_id(blocks, block)..., dof) !== nothing
             block_rotation = true
             break
         end
@@ -212,7 +216,7 @@ function set_angles(params::Dict)
         angles = Data_Manager.create_constant_node_vector_field("Angles", Float64, dof)
 
         for iID in 1:Data_Manager.get_nnodes()
-            angles_global = get_angles(params, block_ids[iID], dof)
+            angles_global = block_angles(block_by_id(blocks, block_ids[iID])..., dof)
             if isnothing(angles_global)
                 angles_global = 0.0
             end
@@ -222,19 +226,21 @@ function set_angles(params::Dict)
 end
 
 """
-    create_and_distribute_bond_norm(comm::MPI.Comm, nlist_filtered_ids::BondScalarState{Int64}, distribution::Vector{Int64}, bond_norm::Vector{Float64}, dof::Int64)
+    create_and_distribute_bond_norm(comm::MPI.Comm, nlist::NestedNeighborhoodList, nlist_filtered_ids::NestedNeighborhoodList, distribution::Vector{Int64}, bond_norm::Vector{Float64}, dof::Int64)
 
 Create and distribute the bond norm
 
 # Arguments
 - `comm::MPI.Comm`: MPI communicator
-- `nlist_filtered_ids::BondScalarState{Int64}`: The filtered neighborhood list
+- `nlist::NestedNeighborhoodList`: The global neighborhood list
+- `nlist_filtered_ids::NestedNeighborhoodList`: The filtered neighborhood list
 - `distribution::Vector{Int64}`: The distribution
 - `bond_norm::Vector{Float64}`: The bond norm
 - `dof::Int64`: The degree of freedom
 """
 function create_and_distribute_bond_norm(comm::MPI.Comm,
-                                         nlist_filtered_ids::BondScalarState{Int64},
+                                         local_rows::NestedNeighborhoodList,
+                                         nlist_filtered_ids::NestedNeighborhoodList,
                                          distribution::Vector{Vector{Int64}},
                                          bond_norm::Vector{Any},
                                          dof::Int64)
@@ -245,14 +251,16 @@ function create_and_distribute_bond_norm(comm::MPI.Comm,
                                          nlist_filtered_ids,
                                          distribution,
                                          true)
-    copyto!.(bond_norm_field, bond_norm)
+    # the local rows hold the bonds to neighbors on this rank (see the neighborhood list)
+    local_nodes = distribution[MPI.Comm_rank(comm) + 1]
+    on_rank = Set(local_nodes)
+    for (iID, node) in enumerate(local_nodes)
+        bond_norm_field[iID] .= bond_norm[node][[nID in on_rank for nID in local_rows[iID]]]
+    end
 end
 
-function contact_basis(params::Dict, mesh::DataFrame, comm,
-                       rank::Int64)
-    if !haskey(params, "Contact")
-        return
-    end
+function contact_basis(input::PeriLabInput, mesh::DataFrame, comm, rank::Int64)
+    input.contact === nothing && return
     ## All coordinates and block Ids are stored at all cores. Reason is, that you might need them for self contact, etc.
     if rank == 1
         mesh_id = ["x", "y"]
@@ -370,9 +378,10 @@ Distributes the neighborhood list to the cores.
 - `distribution Array{Int64}`: global nodes distribution at cores
 """
 function distribute_neighborhoodlist_to_cores(comm::MPI.Comm,
-                                              nlist::BondScalarState{Int64},
+                                              nlist,
                                               distribution::Vector{Vector{Int64}},
-                                              filtered::Bool)
+                                              filtered::Bool;
+                                              local_rows = nlist[distribution[MPI.Comm_rank(comm) + 1]])
     send_msg = 0
     if filtered
         length_nlist = Data_Manager.create_constant_node_scalar_field("Number of Filtered Neighbors",
@@ -387,17 +396,55 @@ function distribute_neighborhoodlist_to_cores(comm::MPI.Comm,
     end
     length_nlist .= send_vector_from_root_to_core_i(comm, send_msg, length_nlist,
                                                     distribution)
+    local_nlist = get_local_neighbors(Data_Manager.get_local_nodes, copy(local_rows))
     if filtered
-        nlist_core = Data_Manager.create_constant_bond_scalar_state("FilteredNeighborhoodlist",
-                                                                    Int64)
+        # bond indices with other lengths than "Number of Neighbors", so it cannot share
+        # the CSR offsets of the bond fields and stays nested
+        Data_Manager.create_field!("FilteredNeighborhoodlist", local_nlist,
+                                   "FilteredNeighborhoodlist")
     else
+        # responder rows only hold the neighbors known on this rank; the bond structure
+        # (CSR offsets of all bond fields) follows the local list
+        length_nlist .= length.(local_nlist)
         nlist_core = Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist",
                                                                     Int64)
+        for (id, neighbors) in enumerate(local_nlist)
+            nlist_core[id] .= neighbors
+        end
     end
-
-    nlist_core .= nlist[distribution[rank+1][:]]
-    nlist_core .= get_local_neighbors(Data_Manager.get_local_nodes, nlist_core)
     nlist = 0
+end
+
+"""
+    create_bond_overlap_map!(overlap_map, nlist, distribution, rank)
+
+Adds the flat bond indices exchanged between the ranks to the overlap map. A responder row
+only holds the bonds to neighbors that exist on its rank, in the order of the global
+neighborhood list. The owner of the node holds the full row, so for every rank it sends
+exactly these bonds (`"Bond Controller"`), and the responder receives its whole rows
+(`"Bond Responder"`). Indices refer to `flatview` of a bond field.
+
+# Arguments
+- `overlap_map`: local overlap map, extended in place
+- `nlist::BondScalarState{Int64}`: local neighborhood list
+- `distribution::Vector{Vector{Int64}}`: global node ids of all ranks
+- `rank::Int64`: this rank, starting at 1
+"""
+function create_bond_overlap_map!(overlap_map, nlist::BondScalarState{Int64},
+                                  distribution::Vector{Vector{Int64}}, rank::Int64)
+    ptr = Data_Manager.get_bond_ptr()
+    global_ids = distribution[rank]
+    for (jrank, maps) in overlap_map[rank]
+        jrank == rank && continue
+        on_jrank = Set(distribution[jrank])
+        maps["Bond Controller"] = Int64[ptr[iID] + jID - 1
+                                        for iID in maps["Controller"]
+                                        for (jID, nID) in enumerate(nlist[iID])
+                                        if global_ids[nID] in on_jrank]
+        maps["Bond Responder"] = Int64[bond for iID in maps["Responder"]
+                                       for bond in ptr[iID]:(ptr[iID + 1] - 1)]
+    end
+    return overlap_map
 end
 
 """
@@ -499,11 +546,11 @@ function distribution_to_cores(comm::MPI.Comm,
                                                              distribution)
             else
                 datafield[:,
-                localDof] = send_vector_from_root_to_core_i(comm,
-                                                                         send_msg,
-                                                                         datafield[:,
-                                                                         localDof],
-                                                                         distribution)
+                          localDof] = send_vector_from_root_to_core_i(comm,
+                                                                      send_msg,
+                                                                      datafield[:,
+                                                                                localDof],
+                                                                      distribution)
             end
         end
     end
@@ -663,12 +710,12 @@ function check_types_in_dataframe(mesh::DataFrame)
 end
 
 """
-    load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
+    load_and_evaluate_mesh(input::PeriLabInput, path::String, ranksize::Int64)
 
 Load and evaluate the mesh data.
 
 # Arguments
-- `params::Dict`: The input parameters.
+- `input::PeriLabInput`: The typed input deck.
 - `path::String`: The path to the mesh file.
 - `ranksize::Int64`: The number of ranks.
 # Returns
@@ -682,29 +729,22 @@ Load and evaluate the mesh data.
 - `topology::Int64`::Array{Int64,nelement:nodes}`: The topology of elements.
 - `el_distribution::Array{Int64,1}`: The distribution of the finite elements.
 """
-function load_and_evaluate_mesh(params::Dict,
+function load_and_evaluate_mesh(input::PeriLabInput,
                                 path::String,
                                 ranksize::Int64)
-    if params["Discretization"]["Type"] == "Abaqus"
-        @timeit "read_mesh" mesh, nsets=read_mesh(params, path)
-    elseif params["Discretization"]["Type"] == "Gmsh"
-        @timeit "read_mesh" mesh=read_mesh(params, path)
-        nsets = get_node_sets(params, path, mesh)
-    elseif params["Discretization"]["Type"] == "Gcode"
-        filename = joinpath(path, get_mesh_name(params))
-        txt_file = replace(filename, ".gcode" => ".txt")
-        if !params["Discretization"]["Gcode"]["Overwrite Mesh"] && isfile(txt_file)
-            params["Discretization"]["Type"] == "Text File"
-        end
-        @timeit "read_mesh" mesh = read_mesh(params, path)
-        nsets = get_node_sets(params, path, mesh)
+    discretization = input.sections.discretization
+    if discretization.type == "Abaqus"
+        @timeit "read_mesh" mesh, nsets=read_mesh(input, path)
     else
+        # Gmsh, Gcode, Text File, Exodus. (For Gcode the old code compared
+        # Type == "Text File" instead of assigning it, so an existing .txt mesh
+        # is never reused; that behaviour is kept.)
         @debug "Read node sets"
-        @timeit "read_mesh" mesh=read_mesh(params, path)
-        nsets = get_node_sets(params, path, mesh)
+        @timeit "read_mesh" mesh=read_mesh(input, path)
+        nsets = read_node_sets(discretization, path, mesh)
     end
     nnodes = size(mesh, 1) + 1
-    mesh, surface_ns = extrude_surface_mesh(mesh, params)
+    mesh, surface_ns = extrude_surface_mesh(mesh, discretization.surface_extrusion)
     if !isnothing(surface_ns)
         for (key, values) in surface_ns
             nsets[key] = Vector{Int64}(values .+ nnodes)
@@ -714,37 +754,39 @@ function load_and_evaluate_mesh(params::Dict,
     check_types_in_dataframe(mesh)
 
     external_topology = nothing
-    if !isnothing(get_external_topology_name(params, path))
-        external_topology = read_external_topology(joinpath(path,
-                                                            get_external_topology_name(params,
-                                                                                       path)))
+    topology_file = external_topology_file(discretization, path)
+    if !isnothing(topology_file)
+        external_topology = read_external_topology(joinpath(path, topology_file))
     end
     if !isnothing(external_topology)
         @info "External topology files was read."
     end
     dof::Int64 = set_dof(mesh)
-    @timeit "neighborhoodlist" nlist, _=create_neighborhoodlist(mesh, params, dof)
+    @timeit "neighborhoodlist" nlist, _=create_neighborhoodlist(mesh, input.sections.blocks,
+                                                                mesh_scaling(discretization),
+                                                                dof)
     @debug "Finished init Neighborhoodlist"
     @timeit "apply_bond_filters" nlist, nlist_filtered_ids,
                                  bond_norm=apply_bond_filters(nlist,
                                                               mesh,
-                                                              params,
+                                                              discretization.bond_filters,
                                                               dof)
     topology = nothing
     if !isnothing(external_topology)
         @info "Create a consistent neighborhood list with external topology definition."
         nlist,
         topology = create_consistent_neighborhoodlist(external_topology,
-                                                      params["Discretization"]["Input External Topology"],
+                                                      something(discretization.input_external_topology.add_neighbor_search,
+                                                                false),
                                                       nlist,
                                                       dof)
     end
     @debug "Start distribution"
-    if haskey(params["Discretization"], "Distribution Type")
+    if discretization.distribution_type !== nothing
         @timeit "node_distribution" distribution, ptc,
                                     ntype=node_distribution(nlist,
                                                             ranksize,
-                                                            params["Discretization"]["Distribution Type"])
+                                                            discretization.distribution_type)
     else
         @timeit "node_distribution" distribution, ptc,
                                     ntype=node_distribution(nlist,
@@ -752,7 +794,7 @@ function load_and_evaluate_mesh(params::Dict,
     end
 
     el_distribution = nothing
-    if haskey(params, "FEM") && !isnothing(external_topology)
+    if input.sections.fem !== nothing && !isnothing(external_topology)
         @debug "Start element distribution"
         el_distribution = element_distribution(topology, ptc, ranksize)
     end
@@ -774,13 +816,10 @@ function load_and_evaluate_mesh(params::Dict,
 end
 
 function create_consistent_neighborhoodlist(external_topology::DataFrame,
-                                            params::Dict,
-                                            nlist::BondScalarState{Int64},
+                                            add_neighbor_search::Bool,
+                                            nlist::NestedNeighborhoodList,
                                             dof::Int64)
-    pd_neighbors::Bool = false
-    if haskey(params, "Add Neighbor Search")
-        pd_neighbors = params["Add Neighbor Search"]
-    end
+    pd_neighbors::Bool = add_neighbor_search
     number_of_elements = length(external_topology[:, 1])
     topology::Vector{Vector{Int64}} = []
     for i_el in 1:number_of_elements
@@ -816,33 +855,35 @@ function create_consistent_neighborhoodlist(external_topology::DataFrame,
 end
 
 """
-    create_neighborhoodlist(mesh::DataFrame, params::Dict, dof::Int64)
+    create_neighborhoodlist(mesh::DataFrame, blocks::Dict{String,BlockParams}, scaling::Vector{Float64}, dof::Int64)
 
 Create the neighborhood list of the mesh elements.
 
 # Arguments
 - `mesh::DataFrame`: The input mesh data represented as a DataFrame.
-- `params::Dict`: The input parameters.
+- `blocks::Dict{String,BlockParams}`: The blocks of the input deck (horizon per block).
+- `scaling::Vector{Float64}`: Horizon scaling per direction.
 - `dof::Int64`: The degrees of freedom (DOF) for the mesh elements.
 # Returns
 - `nlist::Array{Array{Int64,1},1}`: The neighborhood list of the mesh elements.
 """
-function create_neighborhoodlist(mesh::DataFrame, params::Dict, dof::Int64)
+function create_neighborhoodlist(mesh::DataFrame, blocks::Dict{String,BlockParams},
+                                 scaling::Vector{Float64}, dof::Int64)
     coor = names(mesh)
-    return neighbors(mesh, params, coor[1:dof])
+    return neighbors(mesh, blocks, scaling, coor[1:dof])
 end
 
 """
-    get_number_of_neighbornodes(nlist::BondScalarState{Int64})
+    get_number_of_neighbornodes(nlist::NestedNeighborhoodList)
 
 Get the number of neighbors for each node.
 
 # Arguments
-- `nlist::BondScalarState{Int64}`: The neighborhood list of the mesh elements.
+- `nlist::NestedNeighborhoodList`: The neighborhood list of the mesh elements.
 # Returns
 - `length_nlist::Vector{Int64}`: The number of neighbors for each node.
 """
-function get_number_of_neighbornodes(nlist::BondScalarState{Int64}, filtered::Bool)
+function get_number_of_neighbornodes(nlist::NestedNeighborhoodList, filtered::Bool)
     len = length(nlist)
     length_nlist = zeros(Int64, len)
     for id in 1:len
@@ -861,7 +902,7 @@ Create the distribution of the finite elements. Is needed to avoid multiple elem
 
 # Arguments
 - `topology::Vector{Vector{Int64}}`: The topology list of the mesh elements.
-- `nlist::BondScalarState{Int64}`: The neighborhood list of the mesh elements.
+- `nlist::NestedNeighborhoodList`: The neighborhood list of the mesh elements.
 - `size::Int64`: The number of ranks.
 # Returns
 - `distribution::Vector{Vector{Int64}}`: The distribution of the nodes.
@@ -908,12 +949,12 @@ function element_distribution(topology::Vector{Vector{Int64}},
 end
 
 """
-    node_distribution(nlist::BondScalarState{Int64}, size::Int64)
+    node_distribution(nlist::NestedNeighborhoodList, size::Int64)
 
 Create the distribution of the nodes.
 
 # Arguments
-- `nlist::BondScalarState{Int64}`: The neighborhood list of the mesh elements.
+- `nlist::NestedNeighborhoodList`: The neighborhood list of the mesh elements.
 - `size::Int64`: The number of ranks.
 - `distribution_type::String`: The distribution type.
 # Returns
@@ -921,7 +962,7 @@ Create the distribution of the nodes.
 - `ptc::Vector{Int64}`: Defines at which core / rank each node lies.
 - `ntype::Dict`: The type of the nodes.
 """
-function node_distribution(nlist::BondScalarState{Int64},
+function node_distribution(nlist::NestedNeighborhoodList,
                            size::Int64,
                            distribution_type::String = "Neighbor based")
     nnodes = length(nlist)
@@ -1025,20 +1066,20 @@ function create_overlap_map(distribution::Vector{Vector{Int64}},
 end
 
 """
-    create_distribution_node_based(nnodes::Int64,nlist::BondScalarState{Int64}, size::Int64)
+    create_distribution_node_based(nnodes::Int64,nlist::NestedNeighborhoodList, size::Int64)
 
 Calculate the initial size of each chunk for a nearly equal number of nodes vs. cores this algorithm might lead to the problem, that the last core is not equally loaded
 
 # Arguments
 - `nnodes::Int64`: The number of nodes.
-- `nlist::BondScalarState{Int64}`: The neighborhood list.
+- `nlist::NestedNeighborhoodList`: The neighborhood list.
 - `size::Int64`: The number of cores.
 # Returns
 - `distribution::Array{Int64,1}`: The distribution of the nodes.
 - `point_to_core::Array{Int64,1}`: The number of nodes in each rank.
 """
 function create_distribution_node_based(nnodes::Int64,
-                                        nlist::BondScalarState{Int64},
+                                        nlist::NestedNeighborhoodList,
                                         size::Int64)
     if size > nnodes
         @abort "Number of cores $size exceeds number of nodes $nnodes."
@@ -1093,20 +1134,20 @@ function create_distribution_node_based(nnodes::Int64,
 end
 
 """
-    create_distribution_neighbor_based(nnodes::Int64,nlist::BondScalarState{Int64}, size::Int64)
+    create_distribution_neighbor_based(nnodes::Int64,nlist::NestedNeighborhoodList, size::Int64)
 
 Calculate the initial size of each chunk for a nearly equal number of nodes vs. cores this algorithm might lead to the problem, that the last core is not equally loaded
 
 # Arguments
 - `nnodes::Int64`: The number of nodes.
-- `nlist::BondScalarState{Int64}`: The neighborhood list.
+- `nlist::NestedNeighborhoodList`: The neighborhood list.
 - `size::Int64`: The number of cores.
 # Returns
 - `distribution::Array{Int64,1}`: The distribution of the nodes.
 - `point_to_core::Array{Int64,1}`: The number of nodes in each rank.
 """
 function create_distribution_neighbor_based(nnodes::Int64,
-                                            nlist::BondScalarState{Int64},
+                                            nlist::NestedNeighborhoodList,
                                             size::Int64)
     if size > nnodes
         @abort "Number of cores $size exceeds number of nodes $nnodes."
@@ -1197,20 +1238,21 @@ function create_distribution(nnodes::Int64, size::Int64)
 end
 
 """
-    neighbors(mesh, params::Dict, coor)
+    neighbors(mesh, blocks::Dict{String,BlockParams}, scaling::Vector{Float64}, coor)
 
 Compute the neighbor list for each node in a mesh based on their proximity using a BallTree data structure.
 
 # Arguments
 - `mesh`: A mesh data structure containing the coordinates and other information.
-- `params`: paramss needed for computing the neighbor list.
+- `blocks::Dict{String,BlockParams}`: The blocks of the input deck (horizon per block).
+- `scaling::Vector{Float64}`: Horizon scaling per direction.
 - `coor`: A vector of coordinate names along which to compute the neighbor list.
 
 # Returns
 An array of neighbor lists, where each element represents the neighbors of a node in the mesh.
 """
-function neighbors(mesh::DataFrame, params::Dict,
-                   coor::Union{Vector{Int64},Vector{String}})
+function neighbors(mesh::DataFrame, blocks::Dict{String,BlockParams},
+                   scaling::Vector{Float64}, coor::Union{Vector{Int64},Vector{String}})
     @info "Init Neighborhoodlist"
     nnodes = length(mesh[!, coor[1]])
     dof = length(coor)
@@ -1222,14 +1264,11 @@ function neighbors(mesh::DataFrame, params::Dict,
     end
     block_ids = unique(mesh[!, "block_id"])
     # TODO include mesh horizon
-    radius = zeros(Float64, nnodes)
-    for iID in 1:nnodes
-        radius[iID] = get_horizon(params, mesh[!, "block_id"][iID])
-    end
-    mesh_scaling = get_mesh_scaling(params)
+    horizon = Dict(id => block_by_id(blocks, id)[2].horizon for id in block_ids)
+    radius = [horizon[id] for id in mesh[!, "block_id"]]
 
     return get_nearest_neighbors(1:nnodes, dof, data, data, radius, neighborList;
-                                 mesh_scaling = mesh_scaling)
+                                 mesh_scaling = scaling)
 end
 
 """
@@ -1251,23 +1290,22 @@ function create_global_to_local_mapping(distribution)
 end
 
 """
-    extrude_surface_mesh(mesh::DataFrame)
+    extrude_surface_mesh(mesh::DataFrame, extrusion::Union{Nothing,SurfaceExtrusionParams})
 
 extrude the mesh at the surface of the block
 
 # Arguments
 - `mesh::DataFrame`: The input mesh data represented as a DataFrame.
-- `params::Dict`: The input parameters.
+- `extrusion::Union{Nothing,SurfaceExtrusionParams}`: The `Surface Extrusion` section, or `nothing`.
 """
-function extrude_surface_mesh(mesh::DataFrame, params::Dict)
-    if !("Surface Extrusion" in keys(params["Discretization"]))
-        return mesh, nothing
-    end
-    direction = params["Discretization"]["Surface Extrusion"]["Direction"]
-    step_x = params["Discretization"]["Surface Extrusion"]["Step_X"]
-    step_y = params["Discretization"]["Surface Extrusion"]["Step_Y"]
-    step_z = params["Discretization"]["Surface Extrusion"]["Step_Z"]
-    number = params["Discretization"]["Surface Extrusion"]["Number"]
+function extrude_surface_mesh(mesh::DataFrame,
+                              extrusion::Union{Nothing,SurfaceExtrusionParams})
+    extrusion === nothing && return mesh, nothing
+    direction = extrusion.direction
+    step_x = extrusion.step_x
+    step_y = extrusion.step_y
+    step_z = extrusion.step_z
+    number = extrusion.number
 
     # Finding min and max values for each dimension
     min_x, max_x = extrema(mesh.x)

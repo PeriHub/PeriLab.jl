@@ -6,12 +6,14 @@
 
 @testset "contact_initialize_data" begin
     PeriLab.Data_Manager.initialize_data()
-    params = Dict()
-    PeriLab.Solver_Manager.Model_Factory.Contact.Penalty_Model.init_contact_model(params)
-    @test params["Contact Stiffness"] == 1e8
-    params["Friction Coefficient"] = -3
-    @test_logs (:error,
-                "The Friction Coefficient must be greater or equal zero.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.Model_Factory.Contact.Penalty_Model.init_contact_model(params)
-    end
+    contact = typed_contact(Dict("C" => Dict{String,Any}("Type" => "Penalty Contact",
+                                                         "Contact Radius" => 0.005,
+                                                         "Contact Groups" => Dict{String,Any}("g" => Dict{String,Any}("Master Block ID" => 2,
+                                                                                                                      "Slave Block ID" => 1,
+                                                                                                                      "Search Radius" => 0.01)))))
+    model = contact.models["C"]
+    PM = PeriLab.Solver_Manager.Model_Factory.Contact.Penalty_Model
+    @test model.model isa PM.PenaltyContactParams
+    @test isnothing(PM.init_contact_model(model.model, model))
+    @test model.model.contact_stiffness == 1e8
 end

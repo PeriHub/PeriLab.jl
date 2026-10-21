@@ -17,9 +17,9 @@ Modules = [IO]
 Order   = [:function, :type]
 ```
 
-## Parameter_Handling
+## InputDeck
 
 ```@autodocs
-Modules = [Parameter_Handling]
+Modules = [InputDeck]
 Order   = [:function, :type]
 ```

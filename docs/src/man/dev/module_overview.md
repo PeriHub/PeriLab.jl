@@ -25,7 +25,8 @@ The module hierarchy below lists the submodules in more detail.
     - Data_Manager
     - Logging_Module
     - MPI_Communication
-    - Parameter_Handling
+    - ParameterSpec
+    - InputDeck
     - IO
     - Solver_Manager
         - Material_Basis

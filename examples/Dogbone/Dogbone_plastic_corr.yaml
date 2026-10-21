@@ -23,7 +23,7 @@ PeriLab:
         Accuracy Order: 2
         Bulk Modulus: 2.5e+3
         Shear Modulus: 1.15e3
-        Yield Stress: 2000
+        # Yield Stress: 2000 # used with Correspondence Plastic
     Damage Models:
       Damage:
         Critical Value: 0.01

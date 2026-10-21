@@ -111,7 +111,7 @@ PeriLab:
         Symmetry: "isotropic plane stress"
         Young's Modulus: 7.0e+5
         Poisson's Ratio: 0.33
-        Yield Stress: 50
+        # Yield Stress: 50 # used with Correspondence Plastic
         Bond Associated: true
         Accuracy Order: 2
   Solver:

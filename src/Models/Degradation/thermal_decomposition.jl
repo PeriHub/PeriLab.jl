@@ -7,58 +7,41 @@ module Thermal_Decomposition
 using .......Data_Manager
 
 export compute_model
-export degradation_name
 export init_model
 export fields_for_local_synchronization
 
-"""
-    degradation_name()
-
-Gives the degradation name. It is needed for comparison with the yaml input deck.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the bond-based degradation model.
-
-Example:
-```julia
-println(degradation_name())
-"Bond-based Corrosion"
-```
-"""
-function degradation_name()
-    return "Thermal Decomposition"
+using ......ParameterSpec: @params, register_degradation
+@params struct ThermalDecompositionParams
+    decomposition_temperature::Float64 = req("Decomposition Temperature";
+                                             quantity = :temperature)
 end
+__init__() = register_degradation("Thermal Decomposition", ThermalDecompositionParams)
 
 """
-    compute_model(nodes, degradation_parameter, block::Int64, time, dt)
+    compute_model(nodes, p, degradation, block, time, dt)
 
 Calculates the bond-based degradation model. This template has to be copied, the file renamed and edited by the user to create a new degradation. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `degradation parameter::Dict(String, Any)`: Dictionary with degradation parameter.
+- `p::ThermalDecompositionParams`: The model parameters.
+- `degradation`: `nothing` (degradation models have no shared parameters).
+- `block::Int64`: The current block.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
 ```julia
   ```
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       degradation_parameter::Dict,
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
-    nlist = Data_Manager.get_nlist()
-    inverse_nlist = Data_Manager.get_inverse_nlist()
-    bond_damage = Data_Manager.get_bond_damage("NP1")
-    temperature = Data_Manager.get_field("Temperature", "NP1")
-    active = Data_Manager.get_field("Active")
-    number_of_neighbors = Data_Manager.get_field("Number of Neighbors")
-
-    decomp_temp = degradation_parameter["Decomposition Temperature"]
-    nn::Int64 = 1
+function compute_model(nodes::AbstractVector{Int64}, p::ThermalDecompositionParams,
+                       degradation, block::Int64, time::Float64, dt::Float64)
+    nlist = Data_Manager.get_nlist()::BondScalarState{Int64}
+    inverse_nlist = Data_Manager.get_inverse_nlist()::Vector{Dict{Int64,Int64}}
+    bond_damage = Data_Manager.get_bond_damage("NP1")::BondScalarState{Float64}
+    temperature = Data_Manager.get_field("Temperature", "NP1")::NodeScalarField{Float64}
+    active = Data_Manager.get_field("Active")::NodeScalarField{Bool}
+    number_of_neighbors = Data_Manager.get_field("Number of Neighbors")::NodeScalarField{Int64}
+    decomp_temp = p.decomposition_temperature
 
     for iID in nodes
         if !active[iID]
@@ -66,10 +49,9 @@ function compute_model(nodes::AbstractVector{Int64},
         end
         if temperature[iID] >= decomp_temp
             active[iID] = false
-            nlist_temp = nlist[iID]
-            nn = number_of_neighbors[iID]
-            for jID in 1:nn
-                @views neighborID = nlist_temp[jID]
+            neighbors = nlist[iID]
+            for jID in 1:number_of_neighbors[iID]
+                neighborID = neighbors[jID]
                 bond_damage[iID][jID] = 0.0
                 if haskey(inverse_nlist[neighborID], iID)
                     bond_damage[neighborID][inverse_nlist[neighborID][iID]] = 0.0
@@ -80,19 +62,19 @@ function compute_model(nodes::AbstractVector{Int64},
 end
 
 """
-    init_model(nodes, block::Int64, degradation_parameter)
+    init_model(nodes, p, degradation, block)
 
 Inits the bond-based degradation model. This template has to be copied, the file renamed and edited by the user to create a new degradation. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `degradation parameter::Dict(String, Any)`: Dictionary with degradation parameter.
+- `p::ThermalDecompositionParams`: The model parameters.
+- `degradation`: `nothing` (degradation models have no shared parameters).
 - `block::Int64`: The current block.
 
 """
-function init_model(nodes::AbstractVector{Int64},
-                    degradation_parameter::Dict,
-                    block::Int64)
+function init_model(nodes::AbstractVector{Int64}, p::ThermalDecompositionParams,
+                    degradation, block::Int64)
 end
 
 """

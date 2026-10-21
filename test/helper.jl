@@ -16,6 +16,21 @@ export run_and_compare
 export run_mpi_test
 export push_test!
 
+# CSR bond field from nested vectors, for kernels typed with the Data_Manager bond aliases
+bond_field(x) = PeriLab.Data_Manager.VectorOfVectors(x)
+# vector state: the bond values become SVectors
+function bond_field(x::AbstractVector{<:AbstractVector{<:AbstractVector{T}}}) where {T}
+    D = length(first(first(filter(!isempty, x))))
+    S = PeriLab.Data_Manager.SVector{D,T}
+    return PeriLab.Data_Manager.VectorOfVectors([S[S(v) for v in row] for row in x])
+end
+# tensor state: the bond values become SMatrices
+function bond_field(x::AbstractVector{<:AbstractVector{<:AbstractMatrix{T}}}) where {T}
+    D = size(first(first(filter(!isempty, x))), 1)
+    S = PeriLab.Data_Manager.SMatrix{D,D,T,D * D}
+    return PeriLab.Data_Manager.VectorOfVectors([S[S(v) for v in row] for row in x])
+end
+
 function run_perilab(filename, cores, compare, folder_name = ""; silent = true,
                      reload = false, compare_csv = false)
     if cores == 1
@@ -39,7 +54,7 @@ function run_perilab(filename, cores, compare, folder_name = ""; silent = true,
         if cores == 1
             same = exodiff(filename * ".e",
                            "./Reference/" * filename * ".e";
-                           command_file = folder_name * ".cmd",)
+                           command_file = folder_name * ".cmd")
         else
             same = exodiff(filename * ".e",
                            "./Reference/" * filename * ".e",
@@ -137,3 +152,88 @@ function check_test_json(cores)
         end
     end
 end
+
+"""
+    typed_section(T, raw)
+
+Converts and validates `raw` as `T` (an `@params` struct or `Dict{String,<@params>}`)
+the way the input reader does; aborts on input errors.
+"""
+function typed_section(T, raw)
+    ctx = PeriLab.ParameterSpec.ParseContext()
+    value = PeriLab.ParameterSpec.convert_value(T, raw, "test", ctx)
+    PeriLab.ParameterSpec.report!(ctx)
+    return value
+end
+
+"""
+    typed_input(sections)
+
+A typed `PeriLabInput` from a minimal valid deck with `sections` merged in.
+"""
+function typed_input(sections::AbstractDict)
+    deck = Dict{String,Any}("Discretization" => Dict{String,Any}("Type" => "Text File",
+                                             "Input Mesh File" => "mesh.txt"),
+                            "Blocks" => Dict{String,Any}("block_1" =>
+                                                 Dict{String,Any}("Block ID" => 1,
+                                                                  "Density" => 1.0,
+                                                                  "Horizon" => 1.0)),
+                            "Models" => Dict{String,Any}(),
+                            "Solver" => Dict{String,Any}("Initial Time" => 0.0,
+                                             "Final Time" => 1.0,
+                                             "Verlet" => Dict{String,Any}()))
+    merge!(deck, Dict{String,Any}(string(k) => v for (k, v) in sections))
+    input, ctx = PeriLab.InputDeck.read_input(deck)
+    PeriLab.ParameterSpec.report!(ctx)
+    return input
+end
+
+"""
+    typed_contact(raw)
+
+The typed `Contact` section from its raw dict; aborts on input errors.
+"""
+function typed_contact(raw::AbstractDict)
+    ctx = PeriLab.ParameterSpec.ParseContext()
+    value = PeriLab.InputDeck.parse_contact(Dict{String,Any}(string(k) => v
+                                                             for (k, v) in raw),
+                                            "Contact", ctx)
+    PeriLab.ParameterSpec.report!(ctx)
+    return value
+end
+
+"""
+    typed_block_material(raw; dof)
+
+A `BlockMaterial` from a raw material block (with `"Material Model"`), parsed the
+way the input reader does; aborts on input errors.
+"""
+function typed_block_material(raw::AbstractDict;
+                              dof::Int64 = PeriLab.Data_Manager.get_dof())
+    ctx = PeriLab.ParameterSpec.ParseContext()
+    dict = Dict{String,Any}(string(k) => v for (k, v) in raw)
+    wb = PeriLab.ParameterSpec.parse_model(:material, dict, "test", ctx;
+                                           name_key = "Material Model")
+    PeriLab.ParameterSpec.report!(ctx)
+    return PeriLab.Solver_Manager.Model_Factory.Material.block_material(wb, dof)
+end
+
+"""
+    typed_model(category, raw; name_key)
+
+The model of `category` parsed from a raw model block the way the input reader
+does (`WithBase` for categories with a base part); aborts on input errors.
+"""
+function typed_model(category::Symbol, raw::AbstractDict; name_key::String)
+    ctx = PeriLab.ParameterSpec.ParseContext()
+    model = PeriLab.ParameterSpec.parse_model(category,
+                                              Dict{String,Any}(string(k) => v
+                                                               for (k, v) in raw),
+                                              "test", ctx; name_key = name_key)
+    PeriLab.ParameterSpec.report!(ctx)
+    return model
+end
+
+# licensed models: without a license a deck naming them cannot be validated
+PeriLab.ParameterSpec.register_unavailable!(:additive, "Simple")
+ut_license_error(e) = endswith(e.message, "requires a license that is not available")

@@ -6,13 +6,29 @@ module Correspondence_UMAT
 using StaticArrays
 
 using ......Data_Manager
+using .......ParameterSpec: @params, register_material
+import .......ParameterSpec: key_patterns
 using ......PeriLabExceptions: @abort
 using ......Helpers: voigt_to_matrix, matrix_to_voigt, matrix_to_engineering_voigt
-using .....Material_Basis: get_Hooke_matrix, get_all_elastic_moduli
+using .....Material_Basis: hooke_matrix
 export fe_support
 export init_model
-export correspondence_name
 export fields_for_local_synchronization
+
+@params struct CorrespondenceUMATParams
+    file::String = req("File"; description = "UMAT library, relative to the input deck")
+    number_of_properties::Int64 = req("Number of Properties"; min = 1,
+                                      description = "number of Property_N values passed to the UMAT")
+    number_of_state_variables::Union{Nothing,Int64} = opt("Number of State Variables";
+                                                          default = nothing, min = 0)
+    predefined_field_names::Union{Nothing,String} = opt("Predefined Field Names";
+                                                        default = nothing)
+    umat_material_name::Union{Nothing,String} = opt("UMAT Material Name"; default = nothing)
+    umat_name::Union{Nothing,String} = opt("UMAT name"; default = nothing,
+                                           description = "not used: PeriLab calls the routine umat_ of the library")
+end
+key_patterns(::Type{CorrespondenceUMATParams}) = [r"^Property_\d+$" => Float64]
+__init__() = register_material("Correspondence UMAT", CorrespondenceUMATParams)
 
 global umat_file_path = ""
 
@@ -38,71 +54,9 @@ function fe_support()
     return true
 end
 
-"""
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
-
-Initializes the material model.
-
-# Arguments
-  - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-"""
-function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
-    # set to 1 to avoid a later check if the state variable field exists or not
-    num_state_vars::Int64 = 1
-    if !haskey(material_parameter, "File")
-        @abort "UMAT file is not defined."
-        return 1
-    end
-    directory = Data_Manager.get_directory()
-    material_parameter["File"] = joinpath(pwd(), directory, material_parameter["File"])
-    global umat_file_path = material_parameter["File"]
-    if !isfile(material_parameter["File"])
-        @abort "File $(material_parameter["File"]) does not exist, please check name and directory."
-        return 1
-    end
-    if haskey(material_parameter, "Number of State Variables")
-        num_state_vars = material_parameter["Number of State Variables"]
-    end
-    # State variables are used to transfer additional information to the next step
-    if num_state_vars == 1
-        Data_Manager.create_constant_node_scalar_field("State Variables", Float64)
-    else
-        Data_Manager.create_constant_node_vector_field("State Variables", Float64,
-                                                       num_state_vars)
-    end
-
-    if !haskey(material_parameter, "Number of Properties")
-        @abort "Number of Properties must be at least equal 1"
-        return 1
-    end
-    # properties include the material properties, etc.
-    num_props = material_parameter["Number of Properties"]
-    properties = Data_Manager.create_constant_free_size_field("Properties", Float64,
-                                                              (num_props, 1))
-
-    for iID in 1:num_props
-        if !haskey(material_parameter, "Property_$iID")
-            @warn "Property_$iID is missing. Make sure that all properties are defined."
-            properties[iID] = 0.0
-        else
-            properties[iID] = material_parameter["Property_$iID"]
-        end
-    end
-
-    if !haskey(material_parameter, "UMAT Material Name")
-        @warn "No UMAT Material Name is defined. Please check if you use it as method to check different material in your UMAT."
-        material_parameter["UMAT Material Name"] = ""
-    end
-    if length(material_parameter["UMAT Material Name"]) > 80
-        @abort "Due to old Fortran standards only a name length of 80 is supported"
-    end
-
-    if !haskey(material_parameter, "UMAT name")
-        material_parameter["UMAT name"] = "UMAT"
-    end
-
+# fields of a UMAT material (shared by the dict and the typed init)
+function _init_umat_fields!(nodes::AbstractVector{Int64},
+                            predefined_field_names::Union{Nothing,String})
     dof = Data_Manager.get_dof()
     sse = Data_Manager.create_constant_node_scalar_field("Specific Elastic Strain Energy",
                                                          Float64)
@@ -132,8 +86,8 @@ function init_model(nodes::AbstractVector{Int64},
     # is already initialized if thermal problems are adressed
     Data_Manager.create_node_scalar_field("Temperature", Float64)
     deltaT = Data_Manager.create_constant_node_scalar_field("Delta Temperature", Float64)
-    if haskey(material_parameter, "Predefined Field Names")
-        field_names = split(material_parameter["Predefined Field Names"], " ")
+    if predefined_field_names !== nothing
+        field_names = split(predefined_field_names, " ")
         n_fields = length(field_names)
         if n_fields == 1
             fields = Data_Manager.create_constant_node_scalar_field("Predefined Fields",
@@ -165,47 +119,85 @@ function init_model(nodes::AbstractVector{Int64},
     zStiff = Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",
                                                             Float64,
                                                             dof)
-    get_all_elastic_moduli(material_parameter)
-    symmetry::String = get(material_parameter, "Symmetry", "default")
+end
 
+"""
+    init_model(nodes, p, material, block)
+
+Initializes the model fields of `nodes`.
+
+# Arguments
+- `nodes::AbstractVector{Int64}`: The block nodes.
+- `p`: The model parameters (the model's `@params` struct).
+- `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
+"""
+function init_model(nodes::AbstractVector{Int64}, p::CorrespondenceUMATParams, material,
+                    block::Int64)
+    num_state_vars::Int64 = something(p.number_of_state_variables, 1)
+    file = joinpath(pwd(), Data_Manager.get_directory(), p.file)
+    global umat_file_path = file
+    if !isfile(file)
+        @abort "File $file does not exist, please check name and directory."
+        return 1
+    end
+    if num_state_vars == 1
+        Data_Manager.create_constant_node_scalar_field("State Variables", Float64)
+    else
+        Data_Manager.create_constant_node_vector_field("State Variables", Float64,
+                                                       num_state_vars)
+    end
+    properties = Data_Manager.create_constant_free_size_field("Properties", Float64,
+                                                              (p.number_of_properties, 1))
+    for iID in 1:p.number_of_properties
+        if !haskey(material.extras, "Property_$iID")
+            @warn "Property_$iID is missing. Make sure that all properties are defined."
+            properties[iID] = 0.0
+        else
+            properties[iID] = material.extras["Property_$iID"]
+        end
+    end
+    if p.umat_material_name === nothing
+        @warn "No UMAT Material Name is defined. Please check if you use it as method to check different material in your UMAT."
+    elseif length(p.umat_material_name) > 80
+        @abort "Due to old Fortran standards only a name length of 80 is supported"
+    end
+    _init_umat_fields!(nodes, p.predefined_field_names)
+    scaled = _state_scaled(material)
+    DDSDDE = Data_Manager.get_field("Material Gradient")
+    dof = Data_Manager.get_dof()
     for iID in nodes
-        @views DDSDDE[iID, :,
-                      :] = get_Hooke_matrix(material_parameter,
-                                            symmetry,
-                                            dof,
-                                            iID)
+        @views DDSDDE[iID, :, :] = hooke_matrix(scaled, dof, iID)
     end
 end
 
-"""
-    correspondence_name()
-
-Gives the correspondence material name. It is needed for comparison with the yaml input deck.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the material.
-
-Example:
-```julia
-println(correspondence_name())
-"Material Template"
-```
-"""
-function correspondence_name()
-    return "Correspondence UMAT"
+# moduli scaled by the state variable named by State Factor ID (the legacy init re-ran
+# get_all_elastic_moduli after creating the State Variables field)
+function _state_scaled(material)
+    id = material.base.state_factor_id
+    (id === nothing || material.moduli === nothing) && return material
+    factor = Data_Manager.get_field("State Variables")[:, id]
+    m = material.moduli
+    moduli = (bulk_modulus = m.bulk_modulus .* factor,
+              youngs_modulus = m.youngs_modulus .* factor,
+              shear_modulus = m.shear_modulus .* factor,
+              poissons_ratio = m.poissons_ratio)
+    Data_Manager.get_field("Bulk_Modulus") .= moduli.bulk_modulus
+    Data_Manager.get_field("Young's_Modulus") .= moduli.youngs_modulus
+    Data_Manager.get_field("Shear_Modulus") .= moduli.shear_modulus
+    return (base = material.base, moduli = moduli, hooke_symmetry = material.hooke_symmetry)
 end
 
+
 """
-    compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
+    compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, p, material, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
 
 Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
-- `iID::Int64`: Node ID.
+- `nodes::AbstractVector{Int64}`: The nodes.
 - `dof::Int64`: Degrees of freedom
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `p`: The model parameters.
+- `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 - `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
@@ -219,17 +211,17 @@ Example:
 ```julia
 ```
 """
-function compute_stresses(nodes::AbstractVector{Int64},
-                          dof::Int64,
-                          material_parameter::Dict,
-                          time::Float64,
+function _umat_stresses!(nodes::AbstractVector{Int64},
+                         dof::Int64,
+                         nstatev::Int64,
+                         nprops::Int64,
+                         cmname::String,
+                         time::Float64,
                           dt::Float64,
                           strain_increment::AbstractArray{Float64,3},
                           stress_N::AbstractArray{Float64,3},
                           stress_NP1::AbstractArray{Float64,3})
     # the notation from the Abaqus Fortran subroutine is used.
-    nstatev = material_parameter["Number of State Variables"]
-    nprops = material_parameter["Number of Properties"]
     props = Data_Manager.get_field("Properties")
 
     statev = Data_Manager.get_field("State Variables")
@@ -259,7 +251,7 @@ function compute_stresses(nodes::AbstractVector{Int64},
     end
 
     # only 80 characters are supported
-    CMNAME::Cstring = malloc_cstring(material_parameter["UMAT Material Name"])
+    CMNAME::Cstring = malloc_cstring(cmname)
     coords = Data_Manager.get_field("Coordinates")
     zStiff = Data_Manager.get_field("Zero Energy Stiffness")
     Kinv = Data_Manager.get_field("Inverse Shape Tensor")
@@ -350,6 +342,58 @@ function compute_stresses(nodes::AbstractVector{Int64},
         DFGRD0 = DFGRD1
     end
 end
+
+"""
+    compute_stresses(nodes, dof, p, material, time, dt, strain_increment, stress_N, stress_NP1)
+
+Computes the stresses of `nodes`.
+
+# Arguments
+- `nodes::AbstractVector{Int64}`: The block nodes.
+- `dof::Int64`: Degrees of freedom.
+- `p`: The model parameters (the model's `@params` struct).
+- `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+- `strain_increment`: Strain increment.
+- `stress_N`: Stress of step N.
+- `stress_NP1`: Stress of step N+1, updated in place.
+"""
+compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, p::CorrespondenceUMATParams,
+                 material, time::Float64, dt::Float64,
+                 strain_increment::AbstractArray{Float64,3},
+                 stress_N::AbstractArray{Float64,3}, stress_NP1::AbstractArray{Float64,3}) = _umat_stresses!(nodes,
+                                                                                                             dof,
+                                                                                                             something(p.number_of_state_variables,
+                                                                                                                       1),
+                                                                                                             p.number_of_properties,
+                                                                                                             something(p.umat_material_name,
+                                                                                                                       ""),
+                                                                                                             time,
+                                                                                                             dt,
+                                                                                                             strain_increment,
+                                                                                                             stress_N,
+                                                                                                             stress_NP1)
+"""
+    compute_stresses_ba(nodes, nlist, dof, p, material, time, dt, strain_increment, stress_N, stress_NP1)
+
+Computes the bond-associated stresses of `nodes`.
+
+# Arguments
+- `nodes::AbstractVector{Int64}`: The block nodes.
+- `nlist`: The neighborhood list.
+- `dof::Int64`: Degrees of freedom.
+- `p`: The model parameters (the model's `@params` struct).
+- `material::BlockMaterial`: The typed block material (base, moduli, symmetry).
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+- `strain_increment`: Strain increment.
+- `stress_N`: Stress of step N.
+- `stress_NP1`: Stress of step N+1, updated in place.
+"""
+compute_stresses_ba(nodes, nlist, dof::Int64, p::CorrespondenceUMATParams, material,
+                    time::Float64, dt::Float64, strain_increment, stress_N, stress_NP1) = @abort "Correspondence UMAT not yet implemented for bond associated."
+
 
 """
     UMAT_interface(filename::String, STRESS::Vector{Float64}, STATEV::Vector{Float64}, DDSDDE::Matrix{Float64}, SSE::Float64, SPD::Float64, SCD::Float64, RPL::Float64, DDSDDT::Vector{Float64}, DRPLDE::Vector{Float64}, DRPLDT::Float64, STRAN::Vector{Float64}, DSTRAN::Vector{Float64}, TIME::Vector{Float64}, DTIME::Float64, TEMP::Float64, DTEMP::Float64, PREDEF::Vector{Float64}, DPRED::Vector{Float64}, CMNAME::Cstring, NDI::Int64, NSHR::Int64, NTENS::Int64, NSTATEV::Int64, PROPS::Vector{Float64}, NPROPS::Int64, COORDS::Vector{Float64}, DROT::Matrix{Float64}, PNEWDT::Float64, CELENT::Float64, DFGRD0::Matrix{Float64}, DFGRD1::Matrix{Float64}, NOEL::Int64, NPT::Int64, LAYER::Int64, KSPT::Int64, JSTEP::Int64, KINC::Int64)
@@ -510,20 +554,6 @@ function UMAT_interface(STRESS::Vector{Float64},
           KSPT,
           JSTEP,
           KINC)
-end
-
-function compute_stresses_ba(nodes,
-                             nlist,
-                             dof::Int64,
-                             material_parameter::Dict,
-                             time::Float64,
-                             dt::Float64,
-                             strain_increment::Union{AbstractArray{Float64,3},
-                                                     Vector{Float64}},
-                             stress_N::Union{SubArray,Array{Float64,3},Vector{Float64}},
-                             stress_NP1::Union{AbstractArray{Float64,3},
-                                               Vector{Float64}})
-    @abort "$(correspondence_name()) not yet implemented for bond associated."
 end
 
 """

@@ -9,7 +9,7 @@ RuntimeGeneratedFunctions.init(@__MODULE__)
 export init_influence_function
 
 """
-    init_influence_function(nodes::AbstractVector{Int64}, params::Dict)
+    init_influence_function(nodes::AbstractVector{Int64}, expr_str::Union{Nothing,String})
 
 Initializes the influence function field based on the user-specified
 parameter "Influence Function". Supports:
@@ -18,17 +18,13 @@ parameter "Influence Function". Supports:
     e.g. "1/xi^2", "exp(-xi/3)", "xiX^2 + xiY^2"
 """
 function init_influence_function(nodes::AbstractVector{Int64},
-                                 params::Dict)
-    if !haskey(params, "Influence Function")
-        return
-    end
+                                 expr_str::Union{Nothing,String})
+    expr_str === nothing && return
 
     bond_geometry = Data_Manager.get_field("Bond Geometry")  # BondVectorState
     bond_length = Data_Manager.get_field("Bond Length")  # BondScalarState
     omega = Data_Manager.get_field("Influence Function")     # BondScalarState
     dof = Data_Manager.get_dof()  # or however dof is determined in your codebase
-
-    expr_str = params["Influence Function"]
 
     # --- 1) Predefined, fast-path implementations ---
     if expr_str == "1/xi^2"

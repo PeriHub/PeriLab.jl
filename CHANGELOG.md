@@ -8,6 +8,41 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0] - unreleased
+
+### Added
+
+- Typed input: every key of the input deck is declared with type, default, range and description; the deck is validated before the run starts and all problems are reported at once, with suggestions for misspelled keys
+- Strict validation: unknown keys are errors; `--no_strict` on the command line or `Strict Validation: false` in the deck reports them as warnings
+- `PeriLab.describe(name)` prints the keys of a section or model, `PeriLab.describe(name; template = true)` a YAML block to copy into an input deck
+- `PeriLab.to_json_schema(PeriLab.InputDeck.PeriLabInput)`: JSON Schema of the input deck, e.g. for editor completion
+- Input reference pages generated from the declarations (`PeriLab.generate_parameter_docs`)
+- A docstring above an `@params` field is its description
+- `Fallback` in a solver section: a step the solver cannot compute (Static without convergence, Linear Static Matrix Based when damage starts) is recomputed by the fallback solver, which runs to the final time of the step. Outputs keep their time interval over the switch; `Fallback Output Frequency` and `Fallback Number of Output Steps` in an output set the frequency for the fallback steps
+
+### Changed
+
+- Input decks with keys PeriLab does not know (misspelled, or not used by the chosen model, e.g. `Yield Stress` for an elastic material or `Only Surface Contact Nodes` in a contact model instead of `Contact: Globals`) now abort; use `--no_strict` to run them with warnings
+- `Bond Associated Deformation Gradient` in the pre calculation models is no longer supported; use `Bond Associated Correspondence`
+- Model modules get their parameters as a typed struct instead of a dict: each module declares its keys with `@params` and registers them in `__init__()` (`register_material`, `register_damage`, `register_thermal`, `register_additive`, `register_degradation`, `register_pre_calculation`, `register_contact`); the input deck uses the registered name. User and licensed modules have to be ported, see the templates and the developer documentation
+- Contact models declare their own keys; `Contact Stiffness` and `Friction Coefficient` belong to the penalty contact model
+- PeriLab finds a model module by its `register_*` call; the name functions (`material_name()`, `damage_name()`, `thermal_model_name()`, `degradation_name()`, `additive_name()`, `pre_calculation_name()`, `correspondence_name()`, `contact_model_name()`) are removed
+- All model categories call their models the same way: `init_model(nodes, p, ctx, block)` and `compute_model(nodes, p, ctx, block, time, dt)`; material models get `block` in `init_model`, additive and degradation models get `nothing` as `ctx`, pre-calculations get their parameters and `compute` is renamed to `compute_model`
+- A material model runs in the correspondence formulation if it is defined in the Correspondence module, not if its name contains "Correspondence"; combining correspondence and other material models with `+` aborts with a message (it failed at run time before)
+- Parameters are read from the typed input instead of `Data_Manager` getters (the `properties` API is removed)
+- An active `Flaw Function` without size, magnitude or location, and integers out of range, are input errors
+- A stiffness-matrix symmetry (anisotropic, orthotropic, transverse isotropic) with a model that is not a correspondence model, and a 3D `Rectangular_Plane` bond filter without Z components, abort with a message (they failed at run time before)
+- Bond filters register themselves with `register_bond_filter(name, run; required)` in `__init__()` instead of defining `bond_filter_name()`; an unknown filter `Type` is an input error (it was skipped with a warning, together with all following filters)
+- Values with a fixed set of choices are compared exactly, including upper and lower case: `Output File Type` must be `Exodus` or `CSV`, a boundary condition `Type` `Initial`, `Dirichlet` or `Neumann` (an unknown BC type became `Dirichlet` before)
+- Mesh importers (`read_mesh(input::PeriLabInput, filename)`) and bond filters (`run(..., filter::BondFilterParams, ...)`) get the typed input; own importers and filters with the old `Dict` signature fail with a `MethodError` and have to be ported
+- `Data_Manager.initialize_data()` removes all fields, so a field of an earlier run in the same Julia session is no longer found
+- Solvers register their options with `register_solver(name, Params)` in `__init__()`, like the models; `solver_name()` in solver modules is removed. A new `one_of` field kind selects the solver section, so the registered solvers appear in the schema, `describe` and the input reference
+- Solver modules implement `init_solver(options, params, models, bcs, block_nodes)` (returns a `TimeWindow` and the solver state) and `run_solver(run::SolverRun, ctx::SolverContext)`; the `solver_options` dict and the 10-argument `run_solver` are removed. `Solver_Manager.init` returns a `SolverRun`, `Model_Factory.init_models` and `calculate_stresses` take the active models and `CalculationOptions`
+- An empty solver section (`Verlet:` without keys) uses the solver's defaults
+- All solvers run on one shared time loop; solver modules implement `prepare_solver(run, ctx)` and `time_step!(ws, run, ctx, clock)` instead of `run_solver`, which remains possible for solvers with their own time control
+- Static writes the step that reaches `Maximum Damage` before cancelling; Newmark, Verlet Matrix Based and Linear Static Matrix Based apply `Maximum Damage`, pass the maximum damage to the output (`write_after_damage`) and cancel on every MPI rank
+- Linear Static Matrix Based fails a step that starts damage: the run is cancelled, or continued by the `Fallback` solver
+
 ## [2.2.5] - 2026-09-21
 
 ### Added

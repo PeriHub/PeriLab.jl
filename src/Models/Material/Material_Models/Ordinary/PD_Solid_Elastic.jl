@@ -5,19 +5,24 @@
 module PD_Solid_Elastic
 
 using TimerOutputs: @timeit
+using Polyester: @batch
 using ......Data_Manager
-using ....Material_Basis: get_symmetry
-using ......Helpers: add_in_place!
+using ......ParameterSpec: @params, register_material
+using ......Helpers: add_in_place!, MINBATCH
 using StaticArrays
 using ..Ordinary:
                   compute_weighted_volume!, compute_dilatation!, calculate_symmetry_params,
                   get_bond_forces!
 export fe_support
 export init_model
-export material_name
 export compute_model
 export init_model
 export fields_for_local_synchronization
+
+"Parameters of PD Solid Elastic beyond the shared material keys (none)."
+@params struct PDSolidElasticParams
+end
+__init__() = register_material("PD Solid Elastic", PDSolidElasticParams)
 """
   fe_support()
 
@@ -39,16 +44,18 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(nodes::AbstractVector{Int64}, p, material, block::Int64)
 
 Initializes the material model.
 
 # Arguments
   - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `p`: Model parameters; `material::BlockMaterial`: typed block material (`material.base`, `material.moduli`, `material.symmetry`).
 """
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
+                    p::PDSolidElasticParams,
+                    material,
+                    block::Int64)
     Data_Manager.create_constant_node_scalar_field("Weighted Volume", Float64)
     Data_Manager.create_constant_node_scalar_field("Dilatation", Float64)
 
@@ -56,15 +63,6 @@ function init_model(nodes::AbstractVector{Int64},
                                                                                 Float64)
     bond_force_isotropic_part = Data_Manager.create_constant_bond_scalar_state("Bond Forces Isotropic",
                                                                                Float64)
-end
-
-"""
-    material_name()
-
-Returns the name of the material model.
-"""
-function material_name()
-    return "PD Solid Elastic"
 end
 
 """
@@ -84,18 +82,19 @@ function fields_for_local_synchronization(model::String)
 end
 
 """
-    compute_model(nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
+    compute_model(nodes::AbstractVector{Int64}, p, material, time::Float64, dt::Float64)
 
 Computes the forces.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes.
-- `material_parameter::Dict`: The material parameter.
+- `p`: Model parameters; `material::BlockMaterial`: typed block material.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict,
+                       p::PDSolidElasticParams,
+                       material,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
@@ -106,14 +105,14 @@ function compute_model(nodes::AbstractVector{Int64},
     nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
     volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
 
-    deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
+    deformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
                                                                      "NP1")
     deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
                                                                             "NP1")
     bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
     omega::BondScalarState{Float64} = Data_Manager.get_field("Influence Function")
     undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
-    bond_force::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
+    bond_force::BondVectorField{Float64} = Data_Manager.get_field("Bond Forces")
     temp::BondScalarState{Float64} = Data_Manager.get_field("Temporary Bond Field")
 
     bond_force_deviatoric_part::BondScalarState{Float64} = Data_Manager.get_field("Bond Forces Deviatoric")
@@ -140,10 +139,9 @@ function compute_model(nodes::AbstractVector{Int64},
                                              weighted_volume,
                                              omega,
                                              theta)
-    shear_modulus::Union{Float64,Vector{Float64}} = material_parameter["Shear Modulus"]
-    bulk_modulus::Union{Float64,Vector{Float64}} = material_parameter["Bulk Modulus"]
-
-    symmetry::String = get_symmetry(material_parameter)
+    shear_modulus = material.moduli.shear_modulus
+    bulk_modulus = material.moduli.bulk_modulus
+    symmetry::String = material.symmetry
     @timeit "elastic" elastic!(nodes,
                                undeformed_bond_length,
                                deformed_bond_length,
@@ -156,7 +154,7 @@ function compute_model(nodes::AbstractVector{Int64},
                                bulk_modulus,
                                bond_force_deviatoric_part,
                                bond_force_isotropic_part)
-    add_in_place!(temp, bond_force_deviatoric_part, bond_force_isotropic_part)
+    add_in_place!(temp, bond_force_deviatoric_part, bond_force_isotropic_part, nodes)
     @timeit "get_bond_forces!" get_bond_forces!(nodes, temp, deformed_bond,
                                                 deformed_bond_length,
                                                 bond_force, temp)
@@ -197,11 +195,7 @@ function elastic!(nodes::AbstractVector{Int64},
                   bulk_modulus::Vector{Float64},
                   bond_force_deviatoric_part::BondScalarState{Float64},
                   bond_force_isotropic_part::BondScalarState{Float64})
-    kappa::Float64 = 0
-    gamma::Float64 = 0
-    alpha::Float64 = 0
-
-    for iID in nodes
+    @batch minbatch=MINBATCH for iID in nodes
         # Calculate alpha and beta
         if weighted_volume[iID] == 0
             continue
@@ -212,7 +206,7 @@ function elastic!(nodes::AbstractVector{Int64},
                                           shear_modulus[iID],
                                           bulk_modulus[iID])
 
-        deviatoric_deformation::Float64 = 0.0
+        deviatoric_deformation = 0.0
         @inbounds @simd for jID in eachindex(deformed_bond_length[iID])
             deviatoric_deformation = deformed_bond_length[iID][jID] -
                                      undeformed_bond_length[iID][jID] -
@@ -243,21 +237,17 @@ function elastic!(nodes::AbstractVector{Int64},
                   bulk_modulus::Float64,
                   bond_force_deviatoric_part::BondScalarState{Float64},
                   bond_force_isotropic_part::BondScalarState{Float64})
-    kappa::Float64 = 0
-    gamma::Float64 = 0
-    alpha::Float64 = 0
-
     alpha, gamma,
     kappa = calculate_symmetry_params(symmetry, shear_modulus,
                                       bulk_modulus)
 
-    for iID in nodes
+    @batch minbatch=MINBATCH for iID in nodes
         # Calculate alpha and beta
         if weighted_volume[iID] == 0
             continue
         end
 
-        deviatoric_deformation::Float64 = 0.0
+        deviatoric_deformation = 0.0
         @inbounds @simd for jID in eachindex(deformed_bond_length[iID])
             deviatoric_deformation = deformed_bond_length[iID][jID] -
                                      undeformed_bond_length[iID][jID] -

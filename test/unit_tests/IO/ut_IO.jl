@@ -27,25 +27,35 @@ PeriLab.Data_Manager.create_constant_node_scalar_field("Block_Id", Int64)
 block_Id = PeriLab.Data_Manager.get_field("Block_Id")
 PeriLab.Data_Manager.create_node_vector_field("Displacements", Float64, 2)
 PeriLab.Data_Manager.create_node_vector_field("Forces", Float64, 6)
+# init_write_results reads the neighborhood list (bond export)
+nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors", Int64)
+nn .= 1
+nlist = PeriLab.Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
+for i in 1:nnodes
+    nlist[i] .= mod1(i + 1, nnodes)
+end
 
 block_list = ["block_1", "block_2"]
 PeriLab.Data_Manager.set_block_name_list(block_list)
 PeriLab.Data_Manager.set_block_id_list([1, 2])
 
-params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => filename1,
-                                                  "Flush File" => false,
-                                                  "Output Variables" => Dict("Forces" => true)),
-                                "Output2" => Dict("Output Filename" => filename2,
-                                                  "Flush File" => false,
-                                                  "Output Variables" => Dict("Displacements" => true,
-                                                                             "Forces" => true)),
-                                "Output3" => Dict("Output Filename" => filename3,
-                                                  "Output File Type" => "CSV",
-                                                  "Output Variables" => Dict("External_Displacement" => true))),
-              "Compute Class Parameters" => Dict("External_Displacement" => Dict("Block" => "block_1",
-                                                                                 "Calculation Type" => "Maximum",
-                                                                                 "Compute Class" => "Block_Data",
-                                                                                 "Variable" => "Displacements")))
+params = typed_input(Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 1,
+                                                              "Output Filename" => filename1,
+                                                              "Flush File" => false,
+                                                              "Output Variables" => Dict("Forces" => true)),
+                                            "Output2" => Dict("Output Frequency" => 1,
+                                                              "Output Filename" => filename2,
+                                                              "Flush File" => false,
+                                                              "Output Variables" => Dict("Displacements" => true,
+                                                                                         "Forces" => true)),
+                                            "Output3" => Dict("Output Frequency" => 1,
+                                                              "Output Filename" => filename3,
+                                                              "Output File Type" => "CSV",
+                                                              "Output Variables" => Dict("External_Displacement" => true))),
+                          "Compute Class Parameters" => Dict("External_Displacement" => Dict("Block" => "block_1",
+                                                                                             "Calculation Type" => "Maximum",
+                                                                                             "Compute Class" => "Block_Data",
+                                                                                             "Variable" => "Displacements"))))
 coordinates[1, 1] = 0
 coordinates[1, 2] = 0
 coordinates[2, 1] = 1
@@ -177,21 +187,19 @@ end
     # rm(filename3 * ".csv")
 end
 
-# @testset "ut_show_block_summary" begin
-#     PeriLab.Data_Manager.set_block_name_list([1])
-#     solver_options = Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)
-#     params = Dict("Blocks" => Dict("block_1" => Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)))
-#     PeriLab.IO.show_block_summary(solver_options, params, "test.log", comm)
-# end
-
 @testset "ut_init_orientations" begin
     angles = PeriLab.Data_Manager.create_constant_node_scalar_field("Angles", Float64;
                                                                     default_value = 90)
     PeriLab.Data_Manager.set_rotation(true)
     PeriLab.Data_Manager.create_constant_node_scalar_field("Block_Id", Int64;
                                                            default_value = 1)
-    PeriLab.IO.init_orientations(Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1),
-                                                       "block_2" => Dict("Block ID" => 2))))
+    PeriLab.IO.init_orientations(typed_section(Dict{String,PeriLab.InputDeck.BlockParams},
+                                               Dict("block_1" => Dict("Block ID" => 1,
+                                                                      "Density" => 1.0,
+                                                                      "Horizon" => 1.0),
+                                                    "block_2" => Dict("Block ID" => 2,
+                                                                      "Density" => 1.0,
+                                                                      "Horizon" => 1.0))))
     orientations = PeriLab.Data_Manager.get_field("Orientations")
     @test isapprox(orientations[1, 1], 0; atol = 0.00001)
     @test isapprox(orientations[1, 2], 1; atol = 0.00001)
@@ -233,7 +241,10 @@ end
                                                            default_value = 1)
 
     PeriLab.Data_Manager.set_rotation(true)
-    PeriLab.IO.init_orientations(Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1))))
+    PeriLab.IO.init_orientations(typed_section(Dict{String,PeriLab.InputDeck.BlockParams},
+                                               Dict("block_1" => Dict("Block ID" => 1,
+                                                                      "Density" => 1.0,
+                                                                      "Horizon" => 1.0))))
     orientations = PeriLab.Data_Manager.get_field("Orientations")
     @test isapprox(orientations[1, 1], 0; atol = 0.00001)
     @test isapprox(orientations[1, 2], 0; atol = 0.00001)
@@ -264,22 +275,17 @@ end
     block_Id .+= 1
     block_Id[end] = 2
     PeriLab.Data_Manager.set_block_name_list(["block_1", "block_2"])
-    solver_options = Dict("Models" => ["Material",
-                              "Damage",
-                              "Additive",
-                              "Thermal",
-                              "Degradation"])
-    params = Dict("Blocks" => Dict("block_1" => Dict("Material Models" => true,
-                                                     "Damage Models" => true,
-                                                     "Additive Models" => true,
-                                                     "Thermal Models" => true,
-                                                     "Degradation Models" => true),
-                                   "block_2" => Dict("Material Models" => true,
-                                                     "Damage Models" => false,
-                                                     "Additive Models" => false,
-                                                     "Thermal Models" => false,
-                                                     "Degradation Models" => false)))
-    PeriLab.IO.show_block_summary(solver_options,
+    models = ["Material", "Damage", "Additive", "Thermal", "Degradation"]
+    params = typed_section(Dict{String,PeriLab.InputDeck.BlockParams},
+                           Dict("block_1" => Dict("Block ID" => 1, "Density" => 1.0,
+                                                  "Horizon" => 1.0, "Material Model" => "m",
+                                                  "Damage Model" => "d",
+                                                  "Additive Model" => "a",
+                                                  "Thermal Model" => "t",
+                                                  "Degradation Model" => "g"),
+                                "block_2" => Dict("Block ID" => 2, "Density" => 1.0,
+                                                  "Horizon" => 1.0, "Material Model" => "m")))
+    PeriLab.IO.show_block_summary(models,
                                   params,
                                   "",
                                   false,
@@ -289,4 +295,24 @@ end
 @testset "ut_clearNP1" begin
     @test PeriLab.IO.clearNP1("ForceNP1") == "Force"
     @test PeriLab.IO.clearNP1("Force") == "Force"
+end
+
+@testset "contact basis follows input.contact" begin
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_dof(2)
+    mesh = PeriLab.IO.DataFrame(x = [0.0, 1.0], y = [0.0, 0.0], block_id = [1, 2])
+    blocks = Dict("block_1" => Dict("Block ID" => 1, "Density" => 1.0, "Horizon" => 1.0),
+                  "block_2" => Dict("Block ID" => 2, "Density" => 1.0, "Horizon" => 1.0))
+    no_contact = typed_input(Dict("Blocks" => blocks))
+    PeriLab.IO.contact_basis(no_contact, mesh, comm, 1)
+    @test isempty(PeriLab.Data_Manager.get_all_positions())          # default: not set
+    group = Dict{String,Any}("Master Block ID" => 1, "Slave Block ID" => 2,
+                             "Search Radius" => 0.01)
+    contact = Dict("cm" => Dict{String,Any}("Type" => "Penalty Contact",
+                                            "Contact Radius" => 0.005,
+                                            "Contact Groups" => Dict("cg" => group)))
+    with_contact = typed_input(Dict("Blocks" => blocks, "Contact" => contact))
+    PeriLab.IO.contact_basis(with_contact, mesh, comm, 1)
+    @test PeriLab.Data_Manager.get_all_positions() == [0.0 0.0; 1.0 0.0]
+    @test PeriLab.Data_Manager.get_all_blocks() == [1, 2]
 end

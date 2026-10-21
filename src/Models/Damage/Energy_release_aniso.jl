@@ -3,224 +3,102 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Critical_Energy_Aniso
-using TimerOutputs: @timeit
-using LinearAlgebra: mul!, dot
+using LinearAlgebra: dot
 using StaticArrays
 
 using ......Data_Manager
 using ......PeriLabExceptions: @abort
-using ......Helpers:
-                     rotate,
-                     fastdot,
-                     sub_in_place!,
-                     div_in_place!,
-                     mul_in_place!,
-                     interpol_data,
-                     is_dependent
+using ......Helpers: node_tensor, with_dof
+using ..Damage: init_inverse_bond_id
 
 export compute_model
-export damage_name
 export init_model
 export fields_for_local_synchronization
-"""
-    damage_name()
 
-Gives the damage name. It is needed for comparison with the yaml input deck.
-
-# Returns
-- `name::String`: The name of the damage.
-
-Example:
-```julia
-println(damage_name())
-"Critical Energy"
-```
-"""
-function damage_name()
-    return "Critical Energy Anisotropic"
+using ......ParameterSpec: @params, register_damage
+@params struct CriticalEnergyAnisotropicParams
+    only_tension::Bool = opt("Only Tension"; default = false)
+    thickness::Float64 = opt("Thickness"; default = 1.0, min = 0, quantity = :length)
 end
-
+__init__() = register_damage("Critical Energy Anisotropic", CriticalEnergyAnisotropicParams)
 """
-    compute_model(nodes, damage_parameter, block, time, dt)
+    compute_model(nodes, p, damage, block, time, dt)
 
 Calculates the elastic energy of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
 [WillbergC2019](@cite), [FosterJT2011](@cite)
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `p::CriticalEnergyAnisotropicParams`: The model parameters.
+- `damage::BlockDamage`: The typed damage model of the block (`damage.base`: Critical Value, Interblock Damage, Anisotropic Damage).
 - `block::Int64`: Block number.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-Example:
-```julia
-```
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       damage_parameter::Dict,
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
-    @timeit "init fields" begin
-        dof::Int64 = Data_Manager.get_dof()
-        nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
-        block_ids::NodeScalarField{Int64} = Data_Manager.get_field("Block_Id")
-        update_list::NodeScalarField{Bool} = Data_Manager.get_field("Update")
-        bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
-        undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
-        undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
-        bond_forces::BondVectorState{Float64} = Data_Manager.get_field("Bond Forces")
-        deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
-                                                                         "NP1")
-        deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
-                                                                                "NP1")
-        bond_displacements::BondVectorState{Float64} = Data_Manager.get_field("Bond Displacements")
-        critical_field::Bool = Data_Manager.has_key("Critical_Value")
-        critical_energy::Union{Float64,
-                               Vector{Float64}} = critical_field ?
-                                                  Data_Manager.get_field("Critical_Value")::Vector{Float64} :
-                                                  Float64(damage_parameter["Critical Value"])
-        quad_horizons::NodeScalarField{Float64} = Data_Manager.get_field("Quad Horizon")
-        inverse_nlist::Vector{Dict{Int64,Int64}} = Data_Manager.get_inverse_nlist()
-        rotation_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Rotation Tensor")
-        aniso_crit_values::Dict{Int64,Any} = Data_Manager.get_aniso_crit_values()
-    end
-
-    @timeit "init params" begin
-        dependend_value, dependent_field = is_dependent("Critical Value", damage_parameter)
-        rotation::Bool = Data_Manager.get_rotation()
-        tension::Bool = get(damage_parameter, "Only Tension", false)
-        inter_block_damage::Bool = haskey(damage_parameter, "Interblock Damage")
-        if inter_block_damage
-            inter_critical_energy = Data_Manager.get_crit_values_matrix()
-        end
-        warning_flag = true
-        critical_energy_value = 0.0
-    end
-
-    @timeit "preallocate" begin
-        rotated_bond = zeros(Float64, dof)
-        bond_norm_all = zeros(Float64, dof)
-        condition = zeros(Bool, dof)
-        temp = zeros(Float64, dof)
-        temp2 = zeros(Float64, dof)
-        deformed_buf = zeros(Float64, dof)
-        relative_disp_buf = zeros(Float64, dof)
-        bond_force_buf = zeros(Float64, dof)
-        neighbor_force_buf = zeros(Float64, dof)
-        bond_force_delta = zeros(Float64, dof)
-        projected_force = zeros(Float64, dof)
-        bond_energy = 0.0
-        norm_displacement = 0.0
-        product = 0.0
-    end
-
-    @timeit "sub_in_place" sub_in_place!(bond_displacements, deformed_bond, undeformed_bond)
-
-    for iID in nodes
-        bond_displacement = bond_displacements[iID]
-        bond_force_vec = bond_forces[iID]
-        quad_horizon = quad_horizons[iID]
-        rotation_temp = view(rotation_tensor,iID,:,:)
-        crit_vals = aniso_crit_values[block_ids[iID]]
-
-        @timeit "jID loop" begin
-            @fastmath @inbounds for (jID, neighborID) in enumerate(nlist[iID])
-                @timeit "relative disp" relative_disp_buf.=bond_displacement[jID]
-
-                @timeit "norm disp" norm_displacement=dot(relative_disp_buf,
-                                                          relative_disp_buf)
-
-                @timeit "tension check" begin
-                    if norm_displacement == 0 || (tension &&
-                        deformed_bond_length[iID][jID] -
-                        undeformed_bond_length[iID][jID] < 0)
-                        continue
-                    end
-                end
-
-                @timeit "check_keys" begin
-                    if !haskey(inverse_nlist[neighborID], iID)
-                        continue
-                    end
-                end
-
-                @timeit "neighbor bond force" begin
-                    inID = inverse_nlist[neighborID][iID]
-                    neighbor_force_buf .= bond_forces[neighborID][inID]
-                    bond_force_buf .= bond_force_vec[jID]
-                    bond_force_delta .= bond_force_buf .- neighbor_force_buf
-                    product = dot(bond_force_delta, relative_disp_buf)
-                    mul!(projected_force, product / norm_displacement, relative_disp_buf)
-                    product = fastdot(projected_force, relative_disp_buf, true)
-                    bond_energy = 0.25 * product
-                end
-
-                @timeit "critical energy" begin
-                    if critical_field
-                        critical_energy_value = critical_energy[iID]
-                    elseif inter_block_damage
-                        critical_energy_value = inter_critical_energy[block_ids[iID],
-                        block_ids[neighborID],
-                        block]
-                        param_name = "Interblock Critical Value " *
-                                     string(block_ids[iID]) * "_" *
-                                     string(block_ids[neighborID])
-                        dependend_value,
-                        dependent_field = is_dependent(param_name,
-                                                       damage_parameter)
-                        if dependend_value
-                            critical_energy_value = interpol_data(dependent_field[iID],
-                                                                  damage_parameter[param_name]["Data"],
-                                                                  warning_flag)
-                        end
-                    elseif dependend_value
-                        critical_energy_value = interpol_data(dependent_field[iID],
-                                                              damage_parameter["Critical Value"]["Data"],
-                                                              warning_flag)
-                    else
-                        critical_energy_value = critical_energy
-                    end
-                end
-
-                @timeit "rotated bond" begin
-                    deformed_buf .= deformed_bond[iID][jID]
-                    if !rotation
-                        rotated_bond .= deformed_buf
-                    else
-                        mul!(rotated_bond, rotation_temp, deformed_buf)
-                    end
-                end
-
-                len = deformed_bond_length[iID][jID]::Float64
-                div_in_place!(bond_norm_all, rotated_bond, len, true)
-
-                mul!(temp, bond_energy, bond_norm_all)
-
-                mul!(temp2, crit_vals, quad_horizon)
-
-                condition .= temp .> temp2
-
-                mul_in_place!(temp, bond_norm_all, condition)
-
-                update_bond_damage!(bond_damage, iID, jID, temp)
-
-                @inbounds for c in condition
-                    if c
-                        update_list[iID] = true
-                        break
-                    end
-                end
-            end  # jID loop
-        end  # jID loop timeit
-    end  # iID loop
+function compute_model(nodes::AbstractVector{Int64}, p::CriticalEnergyAnisotropicParams,
+                       damage, block::Int64, time::Float64, dt::Float64)
+    return _critical_energy_aniso!(nodes, p.only_tension)
 end
 
-@inline function update_bond_damage!(bond_damage::BondScalarState{Float64}, iID::Int64,
-                                     jID::Int64, temp::Vector{Float64})
-    bond_damage[iID][jID] -= sum(temp)
-    if bond_damage[iID][jID] < 0
-        bond_damage[iID][jID] = 0.0
+function _critical_energy_aniso!(nodes::AbstractVector{Int64}, tension::Bool)
+    # function barrier on the dof: the fields below get concrete types
+    with_dof(D -> _critical_energy_aniso!(nodes, tension, D))
+end
+
+function _critical_energy_aniso!(nodes::AbstractVector{Int64}, tension::Bool,
+                                 ::Val{D}) where {D}
+    nlist = Data_Manager.get_nlist()::BondScalarState{Int64}
+    block_ids = Data_Manager.get_field("Block_Id")::NodeScalarField{Int64}
+    update_list = Data_Manager.get_field("Update")::NodeScalarField{Bool}
+    bond_damage = Data_Manager.get_bond_damage("NP1")::BondScalarState{Float64}
+    undeformed_bond = Data_Manager.get_field("Bond Geometry")::BondVectorState{Float64,D}
+    undeformed_bond_length = Data_Manager.get_field("Bond Length")::BondScalarState{Float64}
+    bond_forces = Data_Manager.get_field("Bond Forces")::BondVectorState{Float64,D}
+    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry",
+                                           "NP1")::BondVectorState{Float64,D}
+    deformed_bond_length = Data_Manager.get_field("Deformed Bond Length",
+                                                  "NP1")::BondScalarState{Float64}
+    quad_horizons = Data_Manager.get_field("Quad Horizon")::NodeScalarField{Float64}
+    inverse_bond_id = Data_Manager.get_field("Inverse Bond ID")::BondScalarState{Int64}
+    rotation_tensor = Data_Manager.get_field("Rotation Tensor")::NodeTensorField{Float64}
+    aniso_crit_values = Data_Manager.get_aniso_crit_values()::Dict{Int64,Any}
+    rotation = Data_Manager.get_rotation()
+
+    @inbounds for iID in nodes
+        # the bond views of the node, built once instead of per bond
+        neighbors = nlist[iID]
+        deformed = deformed_bond[iID]
+        undeformed = undeformed_bond[iID]
+        deformed_length = deformed_bond_length[iID]
+        undeformed_length = undeformed_bond_length[iID]
+        inverse_ids = inverse_bond_id[iID]
+        forces = bond_forces[iID]
+        damage = bond_damage[iID]
+        R = node_tensor(rotation_tensor, iID, Val(D))
+        critical = SVector{D,Float64}(aniso_crit_values[block_ids[iID]]::Vector{Float64}) *
+                   quad_horizons[iID]
+        @fastmath for jID in eachindex(neighbors)
+            relative_displacement = deformed[jID] - undeformed[jID]
+            norm_displacement = dot(relative_displacement, relative_displacement)
+            if norm_displacement == 0 ||
+               (tension && deformed_length[jID] - undeformed_length[jID] < 0)
+                continue
+            end
+            # the bond may not exist at the neighbor, due to different horizons
+            inverse_neighborID = inverse_ids[jID]
+            inverse_neighborID == 0 && continue
+
+            force_difference = forces[jID] - bond_forces[neighbors[jID]][inverse_neighborID]
+            product = dot(force_difference, relative_displacement)
+            projected_force = (product / norm_displacement) * relative_displacement
+            bond_energy = 0.25 * sum(abs.(projected_force) .* abs.(relative_displacement))
+
+            rotated_bond = rotation ? R * deformed[jID] : deformed[jID]
+            bond_norm = abs.(rotated_bond) / deformed_length[jID]
+            exceeded = bond_energy * bond_norm .> critical
+            damage[jID] = max(damage[jID] - sum(bond_norm .* exceeded), 0.0)
+            any(exceeded) && (update_list[iID] = true)
+        end
     end
 end
 
@@ -259,24 +137,28 @@ function get_quad_horizon(horizon::Float64, dof::Int64, thickness::Float64)
     return Float64(4 / (pi * horizon^4))
 end
 
-function init_model(nodes::AbstractVector{Int64},
-                    damage_parameter::Dict,
-                    block::Int64)
+"""
+    init_model(nodes, p, damage, block)
+
+Creates the fields of the model and the quadric horizons of the block nodes; needs
+`Anisotropic Damage` and the Angles field.
+"""
+function init_model(nodes::AbstractVector{Int64}, p::CriticalEnergyAnisotropicParams,
+                    damage, block::Int64)
+    if damage.base.anisotropic_damage === nothing
+        @abort "Critical Energy Anisotropic requires Anisotropic Damage."
+    end
     dof = Data_Manager.get_dof()
     quad_horizon = Data_Manager.create_constant_node_scalar_field("Quad Horizon", Float64)
-    Data_Manager.create_constant_bond_vector_state("Bond Displacements", Float64, dof)
+    init_inverse_bond_id()
     horizon = Data_Manager.get_field("Horizon")
-    thickness::Float64 = get(damage_parameter, "Thickness", 1)
+    thickness::Float64 = p.thickness
     for iID in nodes
         quad_horizon[iID] = get_quad_horizon(horizon[iID], dof, thickness)
     end
 
-    if haskey(damage_parameter, "Anisotropic Damage")
-        rotation::Bool = Data_Manager.get_rotation()
-        if !rotation
-            @abort "Anisotropic damage requires Angles field"
-            return nothing
-        end
+    if !Data_Manager.get_rotation()
+        @abort "Anisotropic damage requires Angles field"
     end
 end
 end

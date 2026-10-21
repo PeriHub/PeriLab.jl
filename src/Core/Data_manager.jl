@@ -5,20 +5,24 @@
 module Data_Manager
 using MPI
 using SparseArrays
+using ArraysOfArrays: VectorOfArrays, VectorOfVectors, flatview, internal_element_ptr
+using StaticArrays: StaticArray, SVector, SMatrix
 using DataStructures: OrderedDict
 using ...PeriLabExceptions: @abort
+using ...ParameterSpec: Table1D, bind_table!
 
 ##########################
 # Variables
 ##########################
 
-const fields = Dict()
 const data = Dict()
 #####################
 
 struct DataField{T,D}
     name::String
-    data::D
+    # `Any` keeps immutable field types (CSR bond fields) boxed once at creation, so
+    # `get_field` returns that box instead of allocating a new one on every call
+    data::Any
 end
 
 mutable struct PD_matrix
@@ -44,7 +48,7 @@ mutable struct NP1_to_N{T}
     value::T
 end
 
-fieldmanager = FieldManager(Dict{String,DataField}())
+const fieldmanager = FieldManager(Dict{String,DataField}())
 #####
 
 include("./Data_manager/data_manager_checkpoint.jl")
@@ -57,6 +61,14 @@ include("./Data_manager/data_manager_status_vars.jl")
 include("./Data_manager/data_manager_utilities.jl")
 export add_active_model
 export fem_active
+export set_fem_params
+export get_fem_params
+export bind_dependent_tables!
+export BlockModels
+export set_block_models
+export get_block_models
+export set_surface_correction
+export get_surface_correction
 export initialize_data
 export get_active_models
 export get_all_field_keys
@@ -81,8 +93,6 @@ export get_nsets
 export get_nnodes
 export get_num_elements
 export get_pre_calculation_order
-export get_properties
-export get_property
 export get_rank
 export get_num_responder
 export get_max_rank
@@ -90,7 +100,6 @@ export get_cancel
 export get_output_frequency
 export get_element_rotation
 export get_horizon_mesh_scaling
-export init_properties
 export remove_active_model
 export set_accuracy_order
 export set_bc_free_dof
@@ -108,7 +117,6 @@ export set_nset
 export set_num_elements
 export set_num_responder
 # export set_pre_calculation_order
-export set_property
 export set_rank
 export set_max_rank
 export set_cancel
@@ -121,8 +129,10 @@ export set_horizon_mesh_scaling
 	initialize_data()
 
 Initialize all parameter in the Data_Manager and sets them to the default values.
+Removes all fields, so that no field of an earlier run is left.
 """
 function initialize_data()
+    empty!(fieldmanager.fields)
     data["current_time"] = 0.0
 
     data["step"] = 0
@@ -139,22 +149,22 @@ function initialize_data()
     data["distribution"] = []
     data["crit_values_matrix"] = fill(-1, (1, 1, 1))
     data["aniso_crit_values"] = Dict()
-    data["properties"] = OrderedDict()
     data["glob_to_loc"] = Dict()
     #data["field_array_type"] = Dict()
     data["field_types"] = Dict()
     data["field_names"] = Vector{String}([])
-    data["fields_to_synch"] = Dict()
+    data["fields_to_synch"] = Dict{String,Any}()
     data["Stiffness Matrix"] = PD_matrix
-    data["local_fields_to_synch"] = Dict("Material Model" => Dict(),
-                                         "Damage Model" => Dict(),
-                                         "Thermal Model" => Dict(),
-                                         "Pre Calculation Model" => Dict(),
-                                         "Degradation Model" => Dict(),
-                                         "Additive Model" => Dict(),
-                                         "Surface Correction" => Dict())
+    data["local_fields_to_synch"] = Dict(model => Dict{String,Any}()
+                                         for model in ("Material Model", "Damage Model",
+                                             "Thermal Model",
+                                             "Pre Calculation Model",
+                                             "Degradation Model",
+                                             "Additive Model",
+                                             "Surface Correction"))
     data["filedirectory"] = ""
     data["inverse_nlist"] = []
+    data["bond_ptr"] = Vector{Int64}()
     data["model_modules"] = OrderedDict{String,Module}()
     data["analysis_models"] = Dict()
     data["nsets"] = Dict{String,Vector{Int64}}()
@@ -167,6 +177,9 @@ function initialize_data()
         "Bond Associated Correspondence"
     ]
     data["coupling_dict"] = Dict{Int64,Int64}()
+    data["FEM Parameters"] = nothing
+    data["Block Models"] = Dict{Int64,BlockModels}()
+    data["Surface Correction"] = nothing
     data["output_frequency"] = []
     data["accuracy_order"] = 1
     data["rank"] = 0
@@ -191,7 +204,7 @@ function initialize_data()
     data["Contact Dictionary"] = Dict()
     data["Global Contact IDs"] = Vector{Int64}([])
     data["Local Contact IDs"] = Dict{Int64,Int64}()
-    data["Contact Properties"] = Dict()
+    data["Contact Properties"] = nothing
     data["Contact block IDs"] = Dict()
     data["Exchange id to local id"] = Dict{Int64,Int64}()
     data["Contact Search Step"] = Dict{Any,Int64}()
@@ -202,9 +215,6 @@ function initialize_data()
     data["matrix_exists"] = false
     data["Reduced PD Nodes"] = Vector{Int64}([])
     data["Horizon Mesh Scaling"] = Vector{Float64}([])
-    fields[Int64] = Dict()
-    fields[Float64] = Dict()
-    fields[Bool] = Dict()
 end
 ###################################
 
@@ -285,28 +295,116 @@ function set_comm(comm::MPI.Comm)
 end
 
 """
-	check_property(block_id::Int64, property::String)
-
-Checks if the specified `property` exists for the given `block_id`.
-
-# Arguments
-- `block_id::Int64`: The ID of the block.
-- `property::String`: The name of the property to check.
-# Returns
-- `Bool`: `true` if the property exists, `false` otherwise.
-"""
-function check_property(block_id::Int64, property::String)
-    haskey(data["properties"][block_id], property) &&
-        !isempty(data["properties"][block_id][property])
-end
-
-"""
 fem_active()
 
 Returns if FEM is active (true) or not (false).
 """
 function fem_active()
     return data["fem_option"]
+end
+
+"""
+	set_fem_params(fem)
+
+Stores the typed `FEM` section (`FEMParams`, or `nothing` without FEM).
+"""
+function set_fem_params(fem)
+    data["FEM Parameters"] = fem
+end
+
+"""
+	get_fem_params()
+
+The typed `FEM` section stored by `set_fem_params`.
+"""
+function get_fem_params()
+    return data["FEM Parameters"]
+end
+
+"""
+    BlockModels
+
+The typed models of one block, `nothing` where the block has none of a category.
+`pre_calculation` lists the active pre-calculations in run order (empty: none).
+Surface correction is global (`input.sections.surface_correction`), not per block.
+"""
+# untyped fields on purpose: the models are boxed once here, reading a field from the
+# (never inferred) BlockModels then returns the box instead of copying the struct
+struct BlockModels
+    material::Any
+    damage::Any
+    thermal::Any
+    additive::Any
+    degradation::Any
+    pre_calculation::Vector{String}
+end
+
+function BlockModels(; material = nothing, damage = nothing, thermal = nothing,
+                     additive = nothing, degradation = nothing,
+                     pre_calculation::Vector{String} = String[])
+    return BlockModels(material, damage, thermal, additive, degradation, pre_calculation)
+end
+
+# a block without models; never mutated
+const NO_BLOCK_MODELS = BlockModels()
+
+"""
+	set_block_models(block, models)
+
+Stores the typed models (`BlockModels`) of a block.
+"""
+set_block_models(block::Int64, models::BlockModels) = (data["Block Models"][block] = models)
+
+"""
+	get_block_models(block)
+
+The typed models of a block (`NO_BLOCK_MODELS` if it has none).
+"""
+function get_block_models(block::Int64)
+    get(data["Block Models"]::Dict{Int64,BlockModels}, block,
+        NO_BLOCK_MODELS)
+end
+
+# node field a dependent value reads (the NP1 state if the field has one)
+function _dependent_field(name::String)
+    haskey(data["NP1_to_N"], name) && return get_field(name, "NP1")
+    has_key(name) && return get_field(name)
+    return nothing
+end
+
+"""
+	bind_dependent_tables!(tables)
+
+Binds every table to its node field (call before each compute: the N/NP1 switch
+replaces the arrays). Aborts if a field is missing.
+"""
+function bind_dependent_tables!(tables::Vector{Table1D})
+    for table in tables
+        field = _dependent_field(table.field_name)
+        if !(field isa Vector{Float64})
+            @abort "Field \"$(table.field_name)\" required by $(table.source) does not exist or is not a per-node Vector{Float64}."
+        end
+        bind_table!(table, field)
+    end
+    return tables
+end
+
+"""
+	set_surface_correction(sc)
+
+Stores the typed `Surface Correction` section (or `nothing`).
+"""
+function set_surface_correction(sc)
+    data["Surface Correction"] = sc
+end
+
+"""
+	get_surface_correction()
+
+The typed `Surface Correction` section stored by `set_surface_correction`.
+"""
+function get_surface_correction()
+    return data["Surface Correction"]
 end
 
 """
@@ -532,7 +630,7 @@ end
 	Get the fields to synchronize
 """
 function get_local_synch_fields(model::String)
-    return data["local_fields_to_synch"][model]
+    return data["local_fields_to_synch"][model]::Dict{String,Any}
 end
 
 """
@@ -542,63 +640,6 @@ return the order of the pre calculation.
 """
 function get_pre_calculation_order()
     return data["pre_calculation_order"]
-end
-
-"""
-	get_properties(block_id::Int64, property::String)
-
-This function retrieves the value of a specified `property` for a given `block_id` if it exists in the properties dictionary.
-
-# Arguments
-- `block_id`::Int64: The identifier of the block for which to retrieve the property.
-- `property`::String: The dictionary entrycontaining the properties for the blocks.
-
-# Returns
-- `property_value`::Any: The value associated with the specified `property` for the given `block_id`.
-- `Dict()`: An empty dictionary if the specified `property` does not exist for the given `block_id`.
-
-# Example
-```julia
-block_properties = Dict(
-	1 => Dict("color" => "red", "size" => 10),
-	2 => Dict("color" => "blue", "height" => 20)
-)
-
-# Retrieve the 'color' property for block 1
-color_value = get_properties(1, "color")  # Returns "red"
-
-# Try to retrieve a non-existent property for block 2
-non_existent_value = get_properties(2, "width")  # Returns an empty dictionary
-```
-"""
-function get_properties(block_id::Int64, property::String)::Dict{String,Any}
-    if check_property(block_id, property)
-        return convert(Dict{String,Any}, data["properties"][block_id][property]) # TODO check why it is needed!
-    end
-    return Dict{String,Any}()::Dict{String,Any}
-end
-
-"""
-	get_property(block_id::Int64, property::String, value_name::String)
-
-This function retrieves a specific `value_name` associated with a specified `property` for a given `block_id` if it exists in the properties dictionary.
-
-# Arguments
-- `block_id`::Int64: The identifier of the block for which to retrieve the property.
-- `property`::String: The String property type (e.g. Material model) for the blocks.
-- `value_name`::String: The name of the value within the specified `property`.
-
-# Returns
-- `value`::Any: The value associated with the specified `value_name` within the `property` for the given `block_id`.
-- `nothing`: If the specified `block_id`, `property`, or `value_name` does not exist in the dictionary.
-"""
-function get_property(block_id::Int64, property::String,
-                      value_name::String)
-    if check_property(block_id, property) &&
-       haskey(data["properties"][block_id][property], value_name)
-        return data["properties"][block_id][property][value_name]
-    end
-    return nothing
 end
 
 """
@@ -731,27 +772,6 @@ end
 function loc_to_glob(iD::Int64)
     return data["distribution"][iD]
 end
-"""
-	init_properties()
-
-This function initializes the properties dictionary. Order of dictionary defines, in which order the models are called later on.
-
-# Returns
-- `keys(properties[1])`: The keys of the properties dictionary in defined order for the Model_Factory.jl.
-"""
-function init_properties()
-    block_id_list = get_block_id_list()
-    for iblock in block_id_list
-        data["properties"][iblock] = OrderedDict{String,Dict{String,Any}}()
-
-        for prop_name in ["Additive Model", "Damage Model", "Pre Calculation Model",
-            "Thermal Model", "Degradation Model", "Material Model"]
-            data["properties"][iblock][prop_name] = Dict{String,Any}()
-        end
-    end
-    return collect(keys(data["properties"][block_id_list[1]]))
-end
-
 """
 	remove_active_model(module_name::Module)
 
@@ -957,67 +977,6 @@ end
 # end
 
 """
-	set_property(block_id, property, value_name, value)
-
-Sets the value of a specified `property` for a given `block_id`.
-
-# Arguments
-- `block_id`::Int64: The identifier of the block for which to set the property.
-- `property`::String: The name of the property.
-- `value_name`::String: The name of the value within the specified `property`.
-- `value`::Any: The value to set for the specified `value_name`.
-"""
-function set_property(block_id::Int64, property::String, value_name::String,
-                      value::T) where {T}
-    prop_dict = get!(data["properties"][block_id], property, Dict{String,Any}())
-    prop_dict[value_name] = value
-end
-
-function set_property(property::String, value_name::String, value::T) where {T}
-    for block_id in eachindex(data["properties"])
-        set_property(block_id, property, value_name, value)
-    end
-end
-
-"""
-	set_properties(block_id, property, values)
-
-Sets the values of a specified `property` for a given `block_id`.
-
-# Arguments
-- `block_id`::Int64: The identifier of the block for which to set the property.
-- `property`::String: The name of the property.
-- `values`::Any: The values to set for the specified `property`.
-"""
-function set_properties(block_id::Int64, property::String, values::T) where {T}
-    if values isa Dict{String,Any}
-        data["properties"][block_id][property] = values
-    else
-        data["properties"][block_id][property] = convert(Dict{String,Any}, values)
-    end
-end
-
-"""
-	set_properties(property, values)
-
-Sets the values of a specified `property` for a all `blocks`. E.g. for FEM, because it corresponds not to a block yet,
-
-# Arguments
-- `property`::String: The name of the property.
-- `values`::Any: The values to set for the specified `property`.
-"""
-function set_properties(property::String, values::T) where {T}
-    for id in eachindex(data["properties"])
-        # Typ-sichere Zuweisung
-        if values isa Dict{String,Any}
-            data["properties"][id][property] = values
-        else
-            data["properties"][id][property] = convert(Dict{String,Any}, values)
-        end
-    end
-end
-
-"""
 	set_rank(value::Int64)
 
 Sets the rank globally.
@@ -1181,8 +1140,10 @@ function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
         if dof == 0
             dof = length(field[1, :, :])
         end
-        data["fields_to_synch"][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
-                                                         "download_from_cores" => download_from_cores,
+        data["fields_to_synch"][name] = Dict{String,Any}("upload_to_cores" =>
+                                                             upload_to_cores,
+                                                         "download_from_cores" =>
+                                                             download_from_cores,
                                                          "dof" => dof,
                                                          "time" => "Constant")
     elseif name * "NP1" in get_all_field_keys()
@@ -1190,8 +1151,10 @@ function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
         if dof == 0
             dof = length(field[1, :, :])
         end
-        data["fields_to_synch"][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
-                                                         "download_from_cores" => download_from_cores,
+        data["fields_to_synch"][name] = Dict{String,Any}("upload_to_cores" =>
+                                                             upload_to_cores,
+                                                         "download_from_cores" =>
+                                                             download_from_cores,
                                                          "dof" => length(field[1, :, :]),
                                                          "time" => "NP1")
     end
@@ -1217,8 +1180,10 @@ function set_local_synch(model, name, download_from_cores, upload_to_cores, dof 
         if dof == 0
             dof = length(field[1, :, :])
         end
-        data["local_fields_to_synch"][model][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
-                                                                      "download_from_cores" => download_from_cores,
+        data["local_fields_to_synch"][model][name] = Dict{String,Any}("upload_to_cores" =>
+                                                                          upload_to_cores,
+                                                                      "download_from_cores" =>
+                                                                          download_from_cores,
                                                                       "dof" => dof,
                                                                       "time" => "Constant")
     elseif name * "NP1" in get_all_field_keys()
@@ -1226,11 +1191,14 @@ function set_local_synch(model, name, download_from_cores, upload_to_cores, dof 
         if dof == 0
             dof = length(field[1, :, :])
         end
-        data["local_fields_to_synch"][model][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
-                                                                      "download_from_cores" => download_from_cores,
-                                                                      "dof" => length(field[1,
-                                                                                            :,
-                                                                                            :]),
+        data["local_fields_to_synch"][model][name] = Dict{String,Any}("upload_to_cores" =>
+                                                                          upload_to_cores,
+                                                                      "download_from_cores" =>
+                                                                          download_from_cores,
+                                                                      "dof" =>
+                                                                          length(field[1,
+                                                                                       :,
+                                                                                       :]),
                                                                       "time" => "NP1")
     end
 end

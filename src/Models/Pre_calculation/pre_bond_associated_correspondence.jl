@@ -3,52 +3,40 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Pre_Bond_Associated_Correspondence
-using DataStructures: OrderedDict
 
 using .......Data_Manager
 using .......Geometry: compute_weighted_deformation_gradient
 using LoopVectorization
-using StaticArrays: @MVector
+using StaticArrays: @MVector, MVector, SVector
 export fields_for_local_synchronization
-export pre_calculation_name
 export init_model
-export compute
+export compute_model
+
+using ......ParameterSpec: @params, register_pre_calculation
+"Switch only: this pre-calculation has no parameters."
+@params struct BondAssociatedCorrespondenceParams
+end
+function __init__()
+    register_pre_calculation("Bond Associated Correspondence",
+                             BondAssociatedCorrespondenceParams)
+end
 
 using .......Helpers: invert, qdim
 
 """
-    pre_calculation_name()
-
-Gives the pre_calculation name. It is needed for comparison with the yaml input deck.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the Pre_Calculation.
-
-Example:
-```julia
-println(pre_calculation_name())
-"Bond Associated Correspondence"
-```
-"""
-function pre_calculation_name()
-    return "Bond Associated Correspondence"
-end
-
-"""
-    init_model(nodes, parameter)
+    init_model(nodes, p, pre_calculation, block)
 
 Inits the bond deformation gradient calculation.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `parameter::Dict(String, Any)`: Dictionary with parameter.
+- `p::BondAssociatedCorrespondenceParams`: The model parameters.
+- `pre_calculation`: `nothing` (pre-calculations have no shared parameters).
+- `block::Int64`: The current block.
 
 """
-function init_model(nodes::AbstractVector{Int64},
-                    parameter::Union{Dict,OrderedDict},
-                    block::Int64)
+function init_model(nodes::AbstractVector{Int64}, p::BondAssociatedCorrespondenceParams,
+                    pre_calculation, block::Int64)
     dof = Data_Manager.get_dof()
     Data_Manager.create_constant_bond_tensor_state("Bond Associated Deformation Gradient",
                                                    Float64, dof)
@@ -73,17 +61,21 @@ function init_model(nodes::AbstractVector{Int64},
 end
 
 """
-    compute(nodes)
+    compute_model(nodes, p, pre_calculation, block, time, dt)
 
 Compute the bond deformation gradient.
 
 # Arguments
 - `nodes`: List of nodes.
+- `p::BondAssociatedCorrespondenceParams`: The model parameters.
+- `pre_calculation`: `nothing` (pre-calculations have no shared parameters).
+- `block::Int64`: The current block.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
 """
 
-function compute(nodes::AbstractVector{Int64},
-                 parameter::Union{Dict,OrderedDict},
-                 block::Int64)
+function compute_model(nodes::AbstractVector{Int64}, p::BondAssociatedCorrespondenceParams,
+                       pre_calculation, block::Int64, time::Float64, dt::Float64)
     dof = Data_Manager.get_dof()
     nlist = Data_Manager.get_nlist()
     volume = Data_Manager.get_field("Volume")
@@ -150,7 +142,7 @@ accuracy_order::Int64 - needs a number of bonds which are linear independent
 
 function calculate_Q_old(accuracy_order::Int64,
                          dof::Int64,
-                         bond_geometry::Vector{Float64},
+                         bond_geometry::AbstractVector{Float64},
                          horizon::Union{Int64,Float64})
     Q = ones(Float64, qdim(accuracy_order, dof))  # Initialize Q with ones
     counter = 0
@@ -176,24 +168,24 @@ end
 
 function calculate_Q(accuracy_order::Int64,
                      dof::Int64,
-                     bond_geometry::Vector{Float64},
+                     bond_geometry::AbstractVector{Float64},
                      horizon::Union{Int64,Float64},
                      Q::Vector{Float64})
     counter = 0
-    p = @MVector zeros(Int64, dof)
+    # the exponents as an immutable SVector: no heap allocation per bond
     for this_order in 1:accuracy_order
-        for p[1] in this_order:-1:0
+        for p1 in this_order:-1:0
             if dof == 3
-                for p[2] in (this_order - p[1]):-1:0
-                    p[3] = this_order - p[1] - p[2]
+                for p2 in (this_order - p1):-1:0
                     # Calculate the product for Q[counter]
                     counter += 1
-                    Q[counter] = prod_Q(bond_geometry, horizon, p, Q[counter])
+                    Q[counter] = prod_Q(bond_geometry, horizon,
+                                        SVector(p1, p2, this_order - p1 - p2), Q[counter])
                 end
             else
-                p[2] = this_order - p[1]
                 counter += 1
-                Q[counter] = prod_Q(bond_geometry, horizon, p, Q[counter])
+                Q[counter] = prod_Q(bond_geometry, horizon, SVector(p1, this_order - p1),
+                                    Q[counter])
             end
         end
     end
@@ -233,8 +225,11 @@ function compute_Lagrangian_gradient_weights(nodes::AbstractVector{Int64},
             QTQ!(M, omega[iID][jID], bond_damage[iID][jID], volume[nID], Q)
         end
 
-        @views Minv = invert(M,
-                             "In compute_Lagrangian_gradient_weights the matrix M is singular and cannot be inverted. To many bond damages or a to small horizon might cause this.")
+        # in place: `invert` is not type stable, rebinding `Minv` made the bond loop
+        # below dispatch dynamically
+        copyto!(Minv,
+                invert(M,
+                       "In compute_Lagrangian_gradient_weights the matrix M is singular and cannot be inverted. To many bond damages or a to small horizon might cause this."))
 
         @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
             Q = calculate_Q(accuracy_order, dof, bond_geometry[iID][jID], horizon[iID], Q)
@@ -271,15 +266,23 @@ function compute_gradient_weights!(gradient_weights,
                                    Q,
                                    iID,
                                    jID)
-    for idof in 1:dof # Eq (3) flowing
-        gradient_weights[iID][jID][idof] = 0
-        @inbounds @fastmath for m in axes(Minv, 2)
-            gradient_weights[iID][jID][idof] += omega[iID][jID] * bond_damage[iID][jID] /
-                                                horizon[iID] *
-                                                Minv[idof, m] *
-                                                Q[m]
-        end
-    end
+    gradient_weights[iID][jID] = gradient_weight(eltype(gradient_weights[iID]),
+                                                 omega[iID][jID], bond_damage[iID][jID],
+                                                 horizon[iID], Minv, Q)
+end
+
+function gradient_weight(::Type{SVector{D,T}}, omega, bond_damage, horizon, Minv,
+                         Q) where {D,T}
+    return SVector{D,T}(ntuple(Val(D)) do idof # Eq (3) flowing
+                            weight = zero(T)
+                            @inbounds @fastmath for m in axes(Minv, 2)
+                                weight += omega * bond_damage /
+                                          horizon *
+                                          Minv[idof, m] *
+                                          Q[m]
+                            end
+                            weight
+                        end)
 end
 
 """

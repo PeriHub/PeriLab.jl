@@ -6,12 +6,18 @@ module OneD_Bond_Based_Elastic
 using LoopVectorization
 
 using .......Data_Manager
+using ......ParameterSpec: @params, register_material
 using .......PeriLabExceptions: @abort
 
 export init_model
 export fe_support
-export material_name
 export compute_model
+
+@params struct OneDBondbasedElasticParams
+    id1::Int64 = req("Id1"; min = 1)
+    id2::Int64 = req("Id2"; min = 1)
+end
+__init__() = register_material("1D Bond-based Elastic", OneDBondbasedElasticParams)
 
 """
   fe_support()
@@ -34,41 +40,35 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict{String, Any})
+  init_model(nodes::AbstractVector{Int64}, p, material, block::Int64)
 
 Initializes the material model.
 
 # Arguments
   - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `p`: Model parameters; `material::BlockMaterial`: typed block material (`material.base`, `material.moduli`, `material.symmetry`).
 """
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
+                    p::OneDBondbasedElasticParams,
+                    material,
+                    block::Int64)
     constant = Data_Manager.create_constant_bond_scalar_state("Visual", Float64)
 end
 
 """
-    material_name()
-
-Returns the name of the material model.
-"""
-function material_name()
-    return "1D Bond-based Elastic"
-end
-
-"""
-    compute_model(nodes::AbstractVector{Int64}, material_parameter::Dict{String, Any}, time::Float64, dt::Float64)
+    compute_model(nodes::AbstractVector{Int64}, p, material, time::Float64, dt::Float64)
 
 Calculate the elastic bond force for each node.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `p`: Model parameters; `material::BlockMaterial`: typed block material (`material.base`, `material.moduli`, `material.symmetry`).
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict,
+                       p::OneDBondbasedElasticParams,
+                       material,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
@@ -79,11 +79,11 @@ function compute_model(nodes::AbstractVector{Int64},
     bond_damage = Data_Manager.get_bond_damage("NP1")
     bond_force = Data_Manager.get_field("Bond Forces")
     coor = Data_Manager.get_field("Coordinates")
-    E = material_parameter["Young's Modulus"]
+    E = material.moduli.youngs_modulus
     nlist = Data_Manager.get_nlist()
     # only one core
-    id1 = material_parameter["Id1"]
-    id2 = material_parameter["Id2"]
+    id1 = p.id1
+    id2 = p.id2
     idx = findfirst(==(id2), nlist[id1])
     bond_damage[id1][idx] = 0
     idx = findfirst(==(id1), nlist[id2])

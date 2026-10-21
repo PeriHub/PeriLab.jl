@@ -6,8 +6,8 @@
 #include("../../../../src/PeriLab.jl")
 #import .PeriLab
 
-@test PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion.thermal_model_name() ==
-      "Thermal Expansion"
+@test parentmodule(PeriLab.ParameterSpec.lookup_model(:thermal, "Thermal Expansion")) ===
+      PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion
 
 @testset "ut_thermal_deformation" begin
     nnodes = 2
@@ -36,49 +36,42 @@
     deformed_bond_length_NP1 = PeriLab.Data_Manager.create_bond_scalar_state("Deformed Bond Length",
                                                                              Float64)
 
-    undeformed_bond[1][1][1] = 0
-    undeformed_bond[1][1][2] = 1
+    undeformed_bond[1][1] = [0, 1]
     undeformed_bond_length[1][1] = 1
-    undeformed_bond[1][2][1] = 1
-    undeformed_bond[1][2][2] = 1
+    undeformed_bond[1][2] = [1, 1]
     undeformed_bond_length[1][2] = sqrt(2)
 
-    undeformed_bond[2][1][1] = -1
-    undeformed_bond[2][1][2] = -1
+    undeformed_bond[2][1] = [-1, -1]
     undeformed_bond_length[2][1] = sqrt(2)
-    undeformed_bond[2][2][1] = 10
-    undeformed_bond[2][2][2] = -10
+    undeformed_bond[2][2] = [10, -10]
     undeformed_bond_length[2][2] = sqrt(200)
-    undeformed_bond[2][3][1] = 0.1
-    undeformed_bond[2][3][2] = 0
+    undeformed_bond[2][3] = [0.1, 0]
     undeformed_bond_length[2][3] = 0.1
 
-    deformed_bond_NP1[1][1][1] = 0
-    deformed_bond_NP1[1][1][2] = 1
+    deformed_bond_NP1[1][1] = [0, 1]
     deformed_bond_length_NP1[1][1] = 1
-    deformed_bond_NP1[1][2][1] = 1
-    deformed_bond_NP1[1][2][2] = 1
+    deformed_bond_NP1[1][2] = [1, 1]
     deformed_bond_length_NP1[1][2] = sqrt(2)
 
-    deformed_bond_NP1[2][1][1] = -1
-    deformed_bond_NP1[2][1][2] = -1
+    deformed_bond_NP1[2][1] = [-1, -1]
     deformed_bond_length_NP1[2][1] = sqrt(2)
-    deformed_bond_NP1[2][2][1] = 10
-    deformed_bond_NP1[2][2][2] = -10
+    deformed_bond_NP1[2][2] = [10, -10]
     deformed_bond_length_NP1[2][2] = sqrt(200)
-    deformed_bond_NP1[2][3][1] = 0.1
-    deformed_bond_NP1[2][3][2] = 0
+    deformed_bond_NP1[2][3] = [0.1, 0]
     deformed_bond_length_NP1[2][3] = 0.1
 
     nodes = Vector{Int64}(1:nnodes)
-    thermal_parameter = Dict("Thermal Expansion Coefficient" => 1.0,
-                             "Reference Temperature" => 0.0)
+    th = typed_model(:thermal,
+                     Dict("Thermal Model" => "Thermal Expansion",
+                          "Thermal Expansion Coefficient" => 1.0,
+                          "Reference Temperature" => 0.0);
+                     name_key = "Thermal Model")
 
     temperature_NP1 .= 0
     PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion.compute_model(nodes,
-                                                                                 thermal_parameter,
-                                                                                 1, 1.0,
-                                                                                 1.0)
+                                                                                 th.model,
+                                                                                 th, 1,
+                                                                                 1.0, 1.0)
 
     for iID in nodes
         for jID in nn[iID]

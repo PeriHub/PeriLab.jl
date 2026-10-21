@@ -12,30 +12,21 @@ using StaticArrays
 using TimerOutputs: @timeit
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
-using ...Pre_Calculation.Deformation_Gradient: compute
+using ...Pre_Calculation: Deformation_Gradient
 export fields_for_local_synchronization
 export compute_model
-export thermal_model_name
 export init_model
-"""
-	thermal_model_name()
 
-Gives the expansion model name. It is needed for comparison with the yaml input deck.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the thermal expansion model.
-
-Example:
-```julia
-"Thermal Expansion"
-```
-"""
-function thermal_model_name()
-    return "Thermal Expansion"
+using ......ParameterSpec: @params, register_thermal
+@params struct ThermalExpansionParams
+    thermal_expansion_coefficient::Union{Float64,
+                                         Vector{Float64}} = req("Thermal Expansion Coefficient";
+                                                                description = "a number, or one value per direction")
+    reference_temperature::Union{Nothing,Float64} = opt("Reference Temperature";
+                                                        default = nothing,
+                                                        description = "0 if missing (with a warning)")
 end
-
+__init__() = register_thermal("Thermal Expansion", ThermalExpansionParams)
 function thermal_expansion_matrix(alpha::T,
                                   ::Val{2}) where {T<:Union{Float64,Vector{Float64}}}
     if length(alpha) == 1
@@ -63,54 +54,54 @@ function thermal_expansion_matrix(alpha::T,
 end
 
 """
-    init_model(nodes, thermal_parameter)
+    init_model(nodes, p, thermal, block)
 
 Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `thermal parameter::Dict(String, Any)`: Dictionary with thermal parameter.
+- `p`: The model parameters.
+- `thermal::WithBase`: The typed thermal model of the block.
 - `block::Int64`: The current block.
 
 """
-function init_model(nodes::AbstractVector{Int64},
-                    thermal_parameter::Dict)
-    if !haskey(thermal_parameter, "Reference Temperature")
+function init_model(nodes::AbstractVector{Int64}, p::ThermalExpansionParams, thermal,
+                    block::Int64)
+    if p.reference_temperature === nothing
         @warn "No reference temperature defined. Assuming 0"
     end
 end
 
 """
-    compute_model(nodes, thermal_parameter, block::Int64, time, dt)
+    compute_model(nodes, p, thermal, block, time, dt)
 
 Calculates the thermal expansion of the material.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
+- `p::ThermalExpansionParams`: The model parameters.
+- `thermal::WithBase`: The typed thermal model of the block.
+- `block::Int64`: The current block.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
 ```julia
 ```
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       thermal_parameter::Dict,
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
+function compute_model(nodes::AbstractVector{Int64}, p::ThermalExpansionParams, thermal,
+                       block::Int64, time::Float64, dt::Float64)
     temperature_NP1::NodeScalarField{Float64} = Data_Manager.get_field("Temperature",
                                                                        "NP1")
     dof::Int64 = Data_Manager.get_dof()
     alpha::Union{Float64,
-                 Vector{Float64}} = thermal_parameter["Thermal Expansion Coefficient"]
+                 Vector{Float64}} = p.thermal_expansion_coefficient
 
     @timeit "thermal_expansion_matrix" alpha_mat=thermal_expansion_matrix(alpha,
                                                                           Val(dof))
-    ref_temp::Float64 = get(thermal_parameter, "Reference Temperature", 0.0)
+    ref_temp::Float64 = something(p.reference_temperature, 0.0)
 
-    undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
+    undeformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Bond Geometry")
     undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
-    deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
+    deformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
                                                                      "NP1")
     deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
                                                                             "NP1")
@@ -127,7 +118,10 @@ function compute_model(nodes::AbstractVector{Int64},
 
     if Data_Manager.has_key("Deformation Gradient")
         #TODO all forces computed are from the original configuration
-        @timeit "Deformation_Gradient" compute(nodes, Dict(), block)
+        p_gradient = Deformation_Gradient.DeformationGradientParams()
+        @timeit "Deformation_Gradient" Deformation_Gradient.compute_model(nodes, p_gradient,
+                                                                          nothing, block,
+                                                                          time, dt)
     end
 end
 
@@ -149,7 +143,7 @@ Apply thermal expansion corrections to deformed bonds and bond lengths.
 - `undeformed_bond_length`: Array of undeformed bond lengths
 - `dof`: Degrees of freedom
 """
-function apply_thermal_expansion!(deformed_bond::BondVectorState{Float64},
+function apply_thermal_expansion!(deformed_bond::BondVectorState{Float64,D},
                                   deformed_bond_length::BondScalarState{Float64},
                                   nodes::AbstractVector{Int64},
                                   temperature_NP1::NodeScalarField{Float64},
@@ -157,7 +151,7 @@ function apply_thermal_expansion!(deformed_bond::BondVectorState{Float64},
                                   alpha_mat::AbstractMatrix{Float64},
                                   undeformed_bond::BondVectorState{Float64},
                                   undeformed_bond_length::BondScalarState{Float64},
-                                  dof::Int64)
+                                  dof::Int64) where {D}
     # Precompute average thermal expansion coefficient
     avg_alpha = sum(alpha_mat) / dof
 
@@ -171,10 +165,9 @@ function apply_thermal_expansion!(deformed_bond::BondVectorState{Float64},
 
         # Apply thermal expansion to bond vectors
         @inbounds @fastmath @views for jID in eachindex(undeformed_bond[iID])
-            for j in 1:dof
-                deformed_bond[iID][jID][j] -= temp_diff * alpha_mat[j, j] *
-                                              undeformed_bond[iID][jID][j]
-            end
+            xi = undeformed_bond[iID][jID]
+            deformed_bond[iID][jID] -= SVector(ntuple(j -> temp_diff * alpha_mat[j, j] *
+                                                           xi[j], Val(D)))
         end
 
         # Apply thermal expansion to bond lengths

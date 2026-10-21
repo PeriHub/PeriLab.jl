@@ -6,19 +6,15 @@ module Material_Basis
 using LinearAlgebra
 using LoopVectorization
 using StaticArrays
-using ......Helpers: get_MMatrix, determinant, invert, smat, interpol_data,
-                     get_dependent_value_with_ID,
+using ......Helpers: get_MMatrix, determinant, invert, smat, with_dof,
                      mat_mul!, matrix_to_voigt, voigt_to_matrix
 using ......Data_Manager
+using ......ParameterSpec: value
 using ......PeriLabExceptions: @abort
-export get_value
-export get_all_elastic_moduli
-export get_Hooke_matrix
+export hooke_matrix
 export distribute_forces!
 export local_damping_due_to_damage
 export flaw_function
-export check_symmetry
-export get_symmetry
 export get_von_mises_yield_stress
 export compute_deviatoric_and_spherical_stresses
 export get_strain
@@ -29,55 +25,62 @@ export init_local_damping_due_to_damage
 export local_damping_due_to_damage
 function local_damping_due_to_damage(nodes::AbstractVector{Int64},
                                      params, dt)
-    damage = Data_Manager.get_field("Damage", "NP1")
-    nlist = Data_Manager.get_nlist()
-    density = Data_Manager.get_field("Density")
+    # function barrier on the dof: the fields below get concrete types
+    with_dof(D -> _local_damping_due_to_damage!(nodes, params, dt, D))
+end
 
-    deformed_bond_lengthN = Data_Manager.get_field("Deformed Bond Length", "N")
-    deformed_bond_lengthNP1 = Data_Manager.get_field("Deformed Bond Length", "NP1")
-    deformend_bond_geometry = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
-    local_damping = params["Damping coefficient"]
-    force_densities = Data_Manager.get_field("Force Densities", "NP1")
-    volume = Data_Manager.get_field("Volume")
-    E = params["Representative Young's modulus"]
-    constant = Data_Manager.get_field("Bond Based Constant")
-    t = zeros(Float64, Data_Manager.get_dof())
+function _local_damping_due_to_damage!(nodes::AbstractVector{Int64}, params, dt,
+                                       ::Val{D}) where {D}
+    damage = Data_Manager.get_field("Damage", "NP1")::NodeScalarField{Float64}
+    nlist = Data_Manager.get_nlist()::BondScalarState{Int64}
+    density = Data_Manager.get_field("Density")::NodeScalarField{Float64}
 
-    for iID in nodes
+    deformed_bond_lengthN = Data_Manager.get_field("Deformed Bond Length",
+                                                   "N")::BondScalarState{Float64}
+    deformed_bond_lengthNP1 = Data_Manager.get_field("Deformed Bond Length",
+                                                     "NP1")::BondScalarState{Float64}
+    deformend_bond_geometry = Data_Manager.get_field("Deformed Bond Geometry",
+                                                     "NP1")::BondVectorState{Float64,D}
+    local_damping::Float64 = params.damping_coefficient
+    force_densities = Data_Manager.get_field("Force Densities",
+                                             "NP1")::NodeVectorField{Float64}
+    volume = Data_Manager.get_field("Volume")::NodeScalarField{Float64}
+    E::Float64 = params.representative_youngs_modulus
+    constant = Data_Manager.get_field("Bond Based Constant")::NodeScalarField{Float64}
+
+    @inbounds for iID in nodes
         v0 = sqrt(E / density[iID])
-        for (jID, nID) in enumerate(nlist[iID])
+        neighbors = nlist[iID]
+        lengthN = deformed_bond_lengthN[iID]
+        lengthNP1 = deformed_bond_lengthNP1[iID]
+        bonds = deformend_bond_geometry[iID]
+        for jID in eachindex(neighbors)
+            nID = neighbors[jID]
             avg_damage = 0.5 * (damage[iID] - damage[nID])
 
             t = local_damping *
                 E *
                 constant[iID] *
                 avg_damage *
-                (deformed_bond_lengthNP1[iID][jID] - deformed_bond_lengthN[iID][jID]) /
-                (dt * v0) * deformend_bond_geometry[iID][jID] /
-                deformed_bond_lengthNP1[iID][jID]
+                (lengthNP1[jID] - lengthN[jID]) /
+                (dt * v0) * bonds[jID] /
+                lengthNP1[jID]
 
-            force_densities[iID, :] += t * volume[nID]
-            force_densities[nID, :] -= t * volume[iID]
+            for d in 1:D
+                force_densities[iID, d] += t[d] * volume[nID]
+                force_densities[nID, d] -= t[d] * volume[iID]
+            end
         end
     end
 end
 
 function init_local_damping_due_to_damage(nodes::AbstractVector{Int64},
-                                          material_parameter,
-                                          damage_parameter)
-    if !haskey(damage_parameter["Local Damping"], "Representative Young's modulus")
-        @abort "Representative Young's modulus is missing."
-        return
-    end
-    if !haskey(damage_parameter["Local Damping"], "Damping coefficient")
-        @abort "Damping coefficient is missing."
-        return
-    end
-    @info "Local damping is active with damping coefficient $(damage_parameter["Local Damping"]["Damping coefficient"])"
+                                          symmetry::String,
+                                          local_damping)
+    @info "Local damping is active with damping coefficient $(local_damping.damping_coefficient)"
     constant = Data_Manager.create_constant_node_scalar_field("Bond Based Constant",
                                                               Float64)
     horizon = Data_Manager.get_field("Horizon")
-    symmetry::String = get_symmetry(material_parameter)
     compute_bond_based_constants(nodes, symmetry, constant, horizon)
 end
 
@@ -94,209 +97,41 @@ function compute_bond_based_constants(nodes::AbstractVector{Int64}, symmetry, co
     end
 end
 
-function get_value(parameter::Union{Dict{Any,Any},Dict{String,Any}},
-                   any_field_allocated::Bool,
-                   key::String,
-                   field_allocated::Bool)
-    if field_allocated
-        return Data_Manager.get_field(replace(key, " " => "_"))
-    end
-    if any_field_allocated
-        if haskey(parameter, key)
-            return Data_Manager.create_constant_node_scalar_field(replace(key, " " => "_"),
-                                                                  Float64;
-                                                                  default_value = parameter[key])
-        else
-            return Data_Manager.create_constant_node_scalar_field(replace(key, " " => "_"),
-                                                                  Float64)
-        end
-    elseif haskey(parameter, key)
-        return parameter[key]
-    end
+const _HOOKE_BASE_FIELDS = Dict("Young's Modulus X" => :youngs_modulus_x,
+                                "Young's Modulus Y" => :youngs_modulus_y,
+                                "Young's Modulus Z" => :youngs_modulus_z,
+                                "Poisson's Ratio XY" => :poissons_ratio_xy,
+                                "Poisson's Ratio YZ" => :poissons_ratio_yz,
+                                "Poisson's Ratio XZ" => :poissons_ratio_xz,
+                                "Shear Modulus XY" => :shear_modulus_xy,
+                                "Shear Modulus YZ" => :shear_modulus_yz,
+                                "Shear Modulus XZ" => :shear_modulus_xz)
 
-    return Float64(0.0)
+@inline _at(x::Real, ::Int64) = x
+@inline _at(x::AbstractVector, id::Int64) = x[id]
+
+# constant of a typed block material at node `id`
+function _typed_constant(material, key::String, id::Int64)
+    key == "Poisson's Ratio" && return _at(material.moduli.poissons_ratio, id)
+    key == "Young's Modulus" && return _at(material.moduli.youngs_modulus, id)
+    key == "Shear Modulus" && return _at(material.moduli.shear_modulus, id)
+    startswith(key, "C") && return getfield(material.base, Symbol(lowercase(key)))
+    return value(getfield(material.base, _HOOKE_BASE_FIELDS[key]), id)
 end
 
 """
-	get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}})
+	hooke_matrix(material, dof, ID = 1)
 
-Returns the elastic moduli of the material.
-
-# Arguments
-- `parameter::Union{Dict{Any,Any},Dict{String,Any}}`: The material parameter.
+Hooke matrix of a typed block material (`BlockMaterial`) at node `ID`. Dependent
+constants must be bound (`Material.bind_material!`).
 """
-function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}})
-    state_factor_defined = haskey(parameter, "State Factor ID")
-
-    if haskey(parameter, "Computed") &&
-       !(state_factor_defined && Data_Manager.has_key("State Variables"))
-        if parameter["Computed"]
-            return
-        end
-    end
-
-    bond_based = occursin("Bond-based", parameter["Material Model"])
-    if bond_based
-        bond_based = !occursin("Unified Bond-based", parameter["Material Model"])
-    end
-    bulk_field = Data_Manager.has_key("Bulk_Modulus")
-    youngs_field = Data_Manager.has_key("Young's_Modulus")
-    poissons_field = Data_Manager.has_key("Poisson's_Ratio")
-    shear_field = Data_Manager.has_key("Shear_Modulus")
-
-    any_field_allocated = bulk_field | youngs_field | poissons_field | shear_field |
-                          state_factor_defined
-
-    bulk = haskey(parameter, "Bulk Modulus") | bulk_field
-    youngs = haskey(parameter, "Young's Modulus") | youngs_field
-    shear = haskey(parameter, "Shear Modulus") | shear_field
-    poissons = haskey(parameter, "Poisson's Ratio") | poissons_field
-
-    K = get_value(parameter, any_field_allocated, "Bulk Modulus", bulk_field)
-    E = get_value(parameter,
-                  any_field_allocated,
-                  "Young's Modulus",
-                  youngs_field)
-    G = get_value(parameter, any_field_allocated, "Shear Modulus", shear_field)
-
-    nu = get_value(parameter,
-                   any_field_allocated,
-                   "Poisson's Ratio",
-                   poissons_field)
-
-    if bond_based
-        nu_fixed = Data_Manager.get_dof() == 2 ? 1 / 3 : 1 / 4
-        if nu != 0.0 && nu != nu_fixed
-            @warn "Chosen Bond-based model only supports a fixed Poisson's ratio of " *
-                  string(nu_fixed)
-        end
-        nu = nu_fixed
-        poissons = true
-    end
-    if haskey(parameter, "Symmetry")
-        symmetry = lowercase(parameter["Symmetry"])
-        if occursin("anisotropic", symmetry)
-            for iID in 1:6
-                for jID in iID:6
-                    if !haskey(parameter, "C" * string(iID) * string(jID))
-                        @abort "C" * string(iID) * string(jID) * " not defined"
-                        return
-                    end
-                end
-            end
-            return
-        elseif occursin("transverse isotropic", symmetry)
-            E_x = haskey(parameter, "Young's Modulus X")
-            E_y = haskey(parameter, "Young's Modulus Y")
-            nu_xy = haskey(parameter, "Poisson's Ratio XY")
-            nu_yz = haskey(parameter, "Poisson's Ratio YZ")
-            g_xy = haskey(parameter, "Shear Modulus XY")
-            g_yz = haskey(parameter, "Shear Modulus YZ")
-            if occursin("plane strain", symmetry)
-                if !E_x || !E_y || !nu_xy || !nu_yz || !g_xy
-                    @abort "Transverse isotropic material requires Young's Modulus X, Y, Poisson's Ratio XY, YZ, Shear Modulus XY"
-                end
-            elseif occursin("plane stress", symmetry)
-                if !E_x || !E_y || !nu_xy || !g_xy
-                    @abort "Transverse isotropic material requires Young's Modulus X, Y, Poisson's Ratio XY, Shear Modulus XY"
-                end
-            else
-                if !E_x || !E_y || !nu_xy || !nu_yz || !g_xy || !g_yz
-                    @abort "Transverse isotropic material requires Young's Modulus X, Y, Poisson's Ratio XY, YZ, Shear Modulus XY, YZ"
-                end
-            end
-            return
-        elseif occursin("orthotropic", symmetry)
-            E_x = haskey(parameter, "Young's Modulus X")
-            E_y = haskey(parameter, "Young's Modulus Y")
-            E_z = haskey(parameter, "Young's Modulus Z")
-            nu_xy = haskey(parameter, "Poisson's Ratio XY")
-            nu_yz = haskey(parameter, "Poisson's Ratio YZ")
-            nu_xz = haskey(parameter, "Poisson's Ratio XZ")
-            g_xy = haskey(parameter, "Shear Modulus XY")
-            g_yz = haskey(parameter, "Shear Modulus YZ")
-            g_zx = haskey(parameter, "Shear Modulus XZ")
-            if !E_x || !E_y || !E_z || !nu_xy || !nu_yz || !nu_xz || !g_xy || !g_yz || !g_zx
-                @abort "Orthotropic material requires Young's Modulus X, Y, Z, Poisson's Ratio XY, YZ, XZ, Shear Modulus XY, YZ, XZ"
-            end
-            return
-        end
-    else
-        @warn "Material symmetry is not defined, assuming isotropic material"
-        parameter["Symmetry"] = "isotropic"
-    end
-
-    # tbd non isotropic material check
-    if bulk + youngs + shear + poissons < 2
-        @abort "Minimum of two parameters are needed for isotropic material"
-    elseif bulk + youngs + shear + poissons > 2
-        @warn "Only two parameters are needed for isotropic material, ignoring additional parameters"
-    end
-
-    if bulk && poissons
-        E = 3 .* K .* (1 .- 2 .* nu)
-        G = 3 .* K .* (1 .- 2 .* nu) ./ (2 .+ 2 .* nu)
-    end
-    if shear && poissons
-        E = 2 .* G .* (1 .+ nu)
-        K = 2 .* G .* (1 .+ nu) ./ (3 .- 6 .* nu)
-    end
-    if bulk && shear
-        E = 9 .* K .* G ./ (3 .* K .+ G)
-        nu = (3 .* K .- 2 .* G) ./ (6 .* K .+ 2 .* G)
-    end
-    if youngs && shear
-        K = E .* G ./ (9 .* G .- 3 .* E)
-        nu = E ./ (2 .* G) .- 1
-    end
-
-    if youngs && bulk
-        G = 3 .* K .* E ./ (9 .* K .- E)
-        nu = (3 .* K .- E) ./ (6 .* K)
-    end
-    if youngs && poissons
-        K = E ./ (3 .- 6 .* nu)
-        G = E ./ (2 .+ 2 .* nu)
-    end
-
-    if state_factor_defined && Data_Manager.has_key("State Variables")
-        state_factor = Data_Manager.get_field("State Variables")[:,
-                                                                 parameter["State Factor ID"]]
-        K .*= state_factor
-        E .*= state_factor
-        G .*= state_factor
-    end
-
-    parameter["Bulk Modulus"] = K
-    parameter["Young's Modulus"] = E
-    parameter["Shear Modulus"] = G
-    parameter["Poisson's Ratio"] = nu
-    parameter["Computed"] = true
-    if any_field_allocated
-        Data_Manager.get_field("Bulk_Modulus") .= K
-        Data_Manager.get_field("Young's_Modulus") .= E
-        Data_Manager.get_field("Shear_Modulus") .= G
-        Data_Manager.get_field("Poisson's_Ratio") .= nu
-    end
+function hooke_matrix(material, dof::Int64, ID::Int64 = 1)
+    return _hooke_matrix((key, id) -> _typed_constant(material, key, id),
+                         material.hooke_symmetry, dof, ID)
 end
 
-"""
-	get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int64=1)
-
-Returns the Hooke matrix of the material.
-
-# Arguments
-- `parameter::Union{Dict{Any,Any},Dict{String,Any}}`: The material parameter.
-- `symmetry::String`: The symmetry of the material.
-- `dof::Int64`: The degree of freedom.
-- `ID::Int64=1`: ID of the point. Needed for point wise defined material properties.
-# Returns
-- `matrix::Matrix{Float64}`: The Hooke matrix.
-"""
-function get_Hooke_matrix(parameter::Dict,
-                          symmetry::String,
-                          dof::Int64,
-                          ID::Int64 = 1)
+# formulas of the Hooke matrix; c(key, id) returns a constant at node id
+function _hooke_matrix(c, symmetry::String, dof::Int64, ID::Int64)
     """https://www.efunda.com/formulae/solid_mechanics/mat_mechanics/hooke_plane_stress.cfm
         https://de.wikipedia.org/wiki/Transversale_Isotropie"""
 
@@ -305,8 +140,7 @@ function get_Hooke_matrix(parameter::Dict,
         aniso_matrix = get_MMatrix(36)
         for iID in 1:6
             for jID in iID:6
-                value = get_dependent_value_with_ID("C" * string(iID) * string(jID),
-                                                    parameter)
+                value = c("C" * string(iID) * string(jID), 1)
                 aniso_matrix[iID, jID] = value
                 aniso_matrix[jID, iID] = value
             end
@@ -315,15 +149,15 @@ function get_Hooke_matrix(parameter::Dict,
     elseif occursin("orthotropic", symmetry)
         aniso_matrix = get_MMatrix(36)
 
-        E_x = get_dependent_value_with_ID("Young's Modulus X", parameter, ID)
-        E_y = get_dependent_value_with_ID("Young's Modulus Y", parameter, ID)
-        E_z = get_dependent_value_with_ID("Young's Modulus Z", parameter, ID)
-        nu_xy = get_dependent_value_with_ID("Poisson's Ratio XY", parameter, ID)
-        nu_yz = get_dependent_value_with_ID("Poisson's Ratio YZ", parameter, ID)
-        nu_xz = get_dependent_value_with_ID("Poisson's Ratio XZ", parameter, ID)
-        g_xy = get_dependent_value_with_ID("Shear Modulus XY", parameter, ID)
-        g_yz = get_dependent_value_with_ID("Shear Modulus YZ", parameter, ID)
-        g_xz = get_dependent_value_with_ID("Shear Modulus XZ", parameter, ID)
+        E_x = c("Young's Modulus X", ID)
+        E_y = c("Young's Modulus Y", ID)
+        E_z = c("Young's Modulus Z", ID)
+        nu_xy = c("Poisson's Ratio XY", ID)
+        nu_yz = c("Poisson's Ratio YZ", ID)
+        nu_xz = c("Poisson's Ratio XZ", ID)
+        g_xy = c("Shear Modulus XY", ID)
+        g_yz = c("Shear Modulus YZ", ID)
+        g_xz = c("Shear Modulus XZ", ID)
 
         nu_yx = nu_xy * E_y / E_x
         nu_zy = nu_yz * E_z / E_y
@@ -354,12 +188,12 @@ function get_Hooke_matrix(parameter::Dict,
         if dof == 3
             aniso_matrix = get_MMatrix(36)
 
-            E_x = get_dependent_value_with_ID("Young's Modulus X", parameter, ID)
-            E_y = get_dependent_value_with_ID("Young's Modulus Y", parameter, ID)
-            nu_xy = get_dependent_value_with_ID("Poisson's Ratio XY", parameter, ID)
-            nu_yz = get_dependent_value_with_ID("Poisson's Ratio YZ", parameter, ID)
-            g_xy = get_dependent_value_with_ID("Shear Modulus XY", parameter, ID)
-            g_yz = get_dependent_value_with_ID("Shear Modulus YZ", parameter, ID)
+            E_x = c("Young's Modulus X", ID)
+            E_y = c("Young's Modulus Y", ID)
+            nu_xy = c("Poisson's Ratio XY", ID)
+            nu_yz = c("Poisson's Ratio YZ", ID)
+            g_xy = c("Shear Modulus XY", ID)
+            g_yz = c("Shear Modulus YZ", ID)
 
             nu_yx = nu_xy * E_y / E_x
 
@@ -389,11 +223,11 @@ function get_Hooke_matrix(parameter::Dict,
         elseif occursin("plane strain", symmetry)
             aniso_matrix = get_MMatrix(9)
 
-            E_x = get_dependent_value_with_ID("Young's Modulus X", parameter, ID)
-            E_y = get_dependent_value_with_ID("Young's Modulus Y", parameter, ID)
-            nu_xy = get_dependent_value_with_ID("Poisson's Ratio XY", parameter, ID)
-            nu_yz = get_dependent_value_with_ID("Poisson's Ratio YZ", parameter, ID)
-            g_xy = get_dependent_value_with_ID("Shear Modulus XY", parameter, ID)
+            E_x = c("Young's Modulus X", ID)
+            E_y = c("Young's Modulus Y", ID)
+            nu_xy = c("Poisson's Ratio XY", ID)
+            nu_yz = c("Poisson's Ratio YZ", ID)
+            g_xy = c("Shear Modulus XY", ID)
 
             nu_yx = nu_xy * E_y / E_x
             D = (1 + nu_yz) * (1 - nu_yz - 2 * nu_xy * nu_yx)
@@ -410,10 +244,10 @@ function get_Hooke_matrix(parameter::Dict,
         elseif occursin("plane stress", symmetry)
             aniso_matrix = get_MMatrix(9)
 
-            E_x = get_dependent_value_with_ID("Young's Modulus X", parameter, ID)
-            E_y = get_dependent_value_with_ID("Young's Modulus Y", parameter, ID)
-            nu_xy = get_dependent_value_with_ID("Poisson's Ratio XY", parameter, ID)
-            g_xy = get_dependent_value_with_ID("Shear Modulus XY", parameter, ID)
+            E_x = c("Young's Modulus X", ID)
+            E_y = c("Young's Modulus Y", ID)
+            nu_xy = c("Poisson's Ratio XY", ID)
+            g_xy = c("Shear Modulus XY", ID)
 
             nu_yx = nu_xy * E_y / E_x
 
@@ -431,14 +265,10 @@ function get_Hooke_matrix(parameter::Dict,
         end
     end
 
-    iID = ID
-    if parameter["Poisson's Ratio"] isa Float64
-        iID = 1
-    end
     if occursin("isotropic", symmetry)
-        nu = parameter["Poisson's Ratio"][iID]
-        E = parameter["Young's Modulus"][iID]
-        G = parameter["Shear Modulus"][iID]
+        nu = c("Poisson's Ratio", ID)
+        E = c("Young's Modulus", ID)
+        G = c("Shear Modulus", ID)
         temp = E / ((1 + nu) * (1 - 2 * nu))
 
         if dof == 3
@@ -480,9 +310,9 @@ function get_Hooke_matrix(parameter::Dict,
         matrix = get_MMatrix(9)
 
         @warn "material model defintion is missing; assuming isotropic plane stress "
-        nu = parameter["Poisson's Ratio"][iID]
-        E = parameter["Young's Modulus"][iID]
-        G = parameter["Shear Modulus"][iID]
+        nu = c("Poisson's Ratio", ID)
+        E = c("Young's Modulus", ID)
+        G = c("Shear Modulus", ID)
         matrix[1, 1] = E / (1 - nu * nu)
         matrix[1, 2] = E * nu / (1 - nu * nu)
         matrix[2, 1] = E * nu / (1 - nu * nu)
@@ -518,14 +348,14 @@ function get_2D_Hooke_matrix(aniso_matrix::MMatrix{T}, symmetry::String,
 end
 
 """
-	distribute_forces!(nodes::AbstractVector{Int64}, nlist::BondScalarState{Int64}, nlist_filtered_ids::BondScalarState{Int64}, bond_force::Vector{Matrix{Float64}}, volume::NodeScalarField{Float64}, bond_damage::BondScalarState{Float64}, displacements::Matrix{Float64}, bond_norm::Vector{Matrix{Float64}}, force_densities::Matrix{Float64})
+	distribute_forces!(nodes::AbstractVector{Int64}, nlist::BondScalarState{Int64}, nlist_filtered_ids::NestedNeighborhoodList, bond_force::Vector{Matrix{Float64}}, volume::NodeScalarField{Float64}, bond_damage::BondScalarState{Float64}, displacements::Matrix{Float64}, bond_norm::Vector{Matrix{Float64}}, force_densities::Matrix{Float64})
 
 Distribute the forces on the nodes
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes.
 - `nlist::BondScalarState{Int64}`: The neighbor list.
-- `nlist_filtered_ids::BondScalarState{Int64},`:  The filtered neighbor list.
+- `nlist_filtered_ids::NestedNeighborhoodList,`:  The filtered neighbor list.
 - `bond_force::Vector{Matrix{Float64}}`: The bond forces.
 - `volume::NodeScalarField{Float64}`: The volumes.
 - `bond_damage::BondScalarState{Float64}`: The bond damage.
@@ -538,38 +368,41 @@ Distribute the forces on the nodes
 function distribute_forces!(force_densities::Matrix{Float64},
                             nodes::AbstractVector{Int64},
                             nlist::BondScalarState{Int64},
-                            nlist_filtered_ids::BondScalarState{Int64},
+                            nlist_filtered_ids::NestedNeighborhoodList,
                             bond_force::BondVectorState{Float64},
                             volume::NodeScalarField{Float64},
                             bond_damage::BondScalarState{Float64},
                             displacements::Matrix{Float64},
-                            bond_norm::BondVectorState{Float64})
+                            bond_norm::BondVectorState{Float64,D}) where {D}
     @inbounds @fastmath for iID in nodes
-        bond_mod = copy(bond_norm[iID])
-        if length(nlist_filtered_ids[iID]) > 0
-            for neighborID in nlist_filtered_ids[iID]
-                if dot((displacements[nlist[iID][neighborID], :] - displacements[iID, :]),
-                       bond_norm[iID][neighborID]) > 0
-                    bond_mod[neighborID] .= 0
-                else
-                    bond_mod[neighborID] .= abs.(bond_norm[iID][neighborID])
-                end
+        # the filtered bonds are rewritten in "Bond Norm" itself (as before), so the
+        # distribution below reads the updated norms directly
+        norms = bond_norm[iID]
+        neighbors = nlist[iID]
+        for neighborID in nlist_filtered_ids[iID]
+            relative_displacement = SVector{D,Float64}(ntuple(d -> displacements[neighbors[neighborID],
+                                                                                 d] -
+                                                                   displacements[iID, d],
+                                                              Val(D)))
+            if dot(relative_displacement, norms[neighborID]) > 0
+                norms[neighborID] = zero(norms[neighborID])
+            else
+                norms[neighborID] = abs.(norms[neighborID])
             end
         end
 
-        @views @inbounds @fastmath for jID in axes(nlist[iID], 1)
-            @views @inbounds @fastmath for m in axes(force_densities[iID, :], 1)
-                #temp = bond_damage[iID][jID] * bond_force[iID][jID, m]
-                force_densities[iID,
-                                m] += bond_damage[iID][jID] *
-                                      bond_force[iID][jID][m] *
-                                      volume[nlist[iID][jID]] *
-                                      bond_mod[jID][m]
-                force_densities[nlist[iID][jID],
-                                m] -= bond_damage[iID][jID] *
-                                      bond_force[iID][jID][m] *
-                                      volume[iID] *
-                                      bond_mod[jID][m]
+        forces = bond_force[iID]
+        damage = bond_damage[iID]
+        for jID in eachindex(neighbors)
+            for m in 1:D
+                force_densities[iID, m] += damage[jID] *
+                                           forces[jID][m] *
+                                           volume[neighbors[jID]] *
+                                           norms[jID][m]
+                force_densities[neighbors[jID], m] -= damage[jID] *
+                                                      forces[jID][m] *
+                                                      volume[iID] *
+                                                      norms[jID][m]
             end
         end
     end
@@ -619,128 +452,27 @@ function distribute_forces!(force_densities::Matrix{Float64},
     return nothing
 end
 
-"""
-	check_symmetry(block::Int64)
-
-Check if the symmetry information is present in the material dictionary.
-
-# Arguments
-- `block::Int64`: The block id.
-# Returns
-- `true`: If the symmetry information is present.
-"""
-function check_symmetry(block::Int64)
-    prop = Data_Manager.get_properties(block, "Material Model")
-    dof = Data_Manager.get_dof()
-    if haskey(prop, "Symmetry")
-        symmetry = prop["Symmetry"]
-        if dof == 2
-            if !occursin("plane strain", symmetry) && !occursin("plane stress", symmetry)
-                @abort "Model definition is missing; plane stress or plane strain has to be defined for 2D"
-                return
-            end
-        end
-        if dof == 3
-            if occursin("plane strain", symmetry)
-                @warn "Plane strain symmetry is not supported for 3D, going to ignore it"
-                Data_Manager.set_property(block, "Material Model", "Symmetry",
-                                          replace(symmetry, r"plane strain$" => ""))
-            end
-            if occursin("plane stress", symmetry)
-                @warn "Plane stress symmetry is not supported for 3D, going to ignore it"
-                Data_Manager.set_property(block, "Material Model", "Symmetry",
-                                          replace(symmetry, r"plane stress$" => ""))
-            end
-        end
-    end
+function flaw_function(::Nothing, coor::AbstractVector{<:Real},
+                       stress::Union{Int64,Float64})
+    Float64(stress)
 end
 
-"""
-	flaw_function(params::Dict, coor::Union{Vector{Int64},Vector{Float64}}, stress::Float64)
-
-Allows the modification of the yield stress at a specific position. This is typically used as starting point for plastic deformation.
-
-# Arguments
-- `params::Dict`: A dictionary containing material information.
-- `coor::Union{Vector{Int64},Vector{Float64}, SubArray}`: Coordinate of the current point.
-- `stress::Float64`: stresses to be modified.
-
-# Returns
-- `stress`::Float64: the modified stresses.
-"""
-function flaw_function(params::Dict,
-                       coor::AbstractVector{<:Real},
+# flaw function of a block material (`FlawFunctionParams`); the input check makes
+# sure an active one has a positive size and magnitude and a location
+function flaw_function(flaw, coor::AbstractVector{<:Real},
                        stress::T)::Float64 where {T<:Union{Int64,Float64}}
-    flaw = get(params, "Flaw Function", nothing)
-    isnothing(flaw) && return stress
-
-    if !haskey(flaw, "Active")
-        @abort "Flaw Function needs an entry ''Active''."
-    end
-    if !haskey(flaw, "Function")
-        @abort "Flaw Function needs an entry ''Function''."
-    end
-
-    flaw["Active"]::Bool || return stress
-
-    if flaw["Function"] != "Pre-defined"
-        @abort "Flaw Function ''$(flaw["Function"])'' is not implemented, " *
-               "only ''Pre-defined'' is supported."
-    end
-
-    flaw_size::Float64 = flaw["Flaw Size"]
-    flaw_magnitude::Float64 = flaw["Flaw Magnitude"]
-
-    if !(0 < flaw_magnitude <= 1)
-        @abort "Flaw Magnitude should be between 0 and 1"
-    end
-    if flaw_size <= 0
-        @abort "Flaw Size must be positive."
-    end
-
-    # Squared distance without building a location vector: no allocation, no sqrt that
-    # would only be squared again.
-    dx = Float64(coor[1]) - Float64(flaw["Flaw Location X"])
-    dy = Float64(coor[2]) - Float64(flaw["Flaw Location Y"])
+    flaw.active || return stress
+    flaw_size::Float64 = flaw.flaw_size
+    flaw_magnitude::Float64 = flaw.flaw_magnitude
+    dx = Float64(coor[1]) - flaw.flaw_location_x
+    dy = Float64(coor[2]) - flaw.flaw_location_y
     distance_squared = dx * dx + dy * dy
-
     if length(coor) == 3
-        dz = Float64(coor[3]) - Float64(get(flaw, "Flaw Location Z", 0.0))
+        dz = Float64(coor[3]) - something(flaw.flaw_location_z, 0.0)
         distance_squared += dz * dz
     end
-
     return stress *
            (1 - flaw_magnitude * exp(-distance_squared / (flaw_size * flaw_size)))
-end
-"""
-	get_symmetry(material::Dict)
-
-Return the symmetry information from the given material dictionary.
-
-# Arguments
-- `material::Dict`: A dictionary containing material information.
-
-# Returns
-- If the key "Symmetry" is present in the dictionary, the corresponding value is returned.
-- If the key is not present, the default value "3D" is returned.
-
-# Example
-```julia
-material_dict = Dict("Symmetry" => "Cubic", "Color" => "Red")
-symmetry = get_sym(material_dict)
-```
-"""
-function get_symmetry(material::Dict)
-    if !haskey(material, "Symmetry")
-        return "3D"
-    end
-    if occursin("plane strain", lowercase(material["Symmetry"]))
-        return "plane strain"
-    end
-    if occursin("plane stress", lowercase(material["Symmetry"]))
-        return "plane stress"
-    end
-    return "3D"
 end
 
 """
@@ -790,7 +522,7 @@ end
 # returns
 - `strain::Matrix{Float64}`: Strain
 """
-function get_strain(stress_NP1::Matrix{Float64},
+function get_strain(stress_NP1::AbstractMatrix{Float64},
                     hooke_matrix::AbstractMatrix{Float64})
     strain_voigt = hooke_matrix' * matrix_to_voigt(stress_NP1)
     # hooke_matrix is a compliance matrix here (see calculate_strain), so this product
@@ -818,8 +550,9 @@ end
 function apply_pointwise_E(nodes::AbstractVector{Int64}, E::Union{Int64,Float64},
                            bond_force::BondVectorState{Float64})
     @inbounds @fastmath for i in nodes
-        @views @inbounds @fastmath for bf in bond_force[i]
-            bf .*= E
+        bf = bond_force[i]
+        @inbounds @fastmath for j in eachindex(bf)
+            bf[j] = bf[j] * E
         end
     end
 end
@@ -828,21 +561,9 @@ function apply_pointwise_E(nodes::AbstractVector{Int64},
                            E::Union{SubArray,Vector{Float64},Vector{Int64}},
                            bond_force::BondVectorState{Float64})
     @inbounds @fastmath for i in nodes
-        @views @inbounds @fastmath for bf in bond_force[i]
-            bf .*= E[i]
-        end
-    end
-end
-
-function apply_pointwise_E(nodes::AbstractVector{Int64},
-                           bond_force::BondVectorState{Float64}, dependent_field)
-    warning_flag = true
-    @inbounds @fastmath for i in nodes
-        E_int = interpol_data(dependent_field[i],
-                              damage_parameter["Young's Modulus"]["Data"],
-                              warning_flag)
-        @views @inbounds @fastmath for bf in bond_force[i]
-            bf .*= E_int
+        bf = bond_force[i]
+        @inbounds @fastmath for j in eachindex(bf)
+            bf[j] = bf[j] * E[i]
         end
     end
 end

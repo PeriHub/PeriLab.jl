@@ -5,68 +5,62 @@
 module Thermal_template
 export compute_model
 export init_model
-export thermal_model_name
 export fields_for_local_synchronization
 
 using .....Data_Manager
+using ......ParameterSpec: @params, register_thermal
 
 """
-    thermal_model_name()
+    ThermalTemplateParams
 
-Gives the thermal model name. It is needed for comparison with the yaml input deck.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the thermal flow model.
-
-Example:
-```julia
-println(flow_name())
-"Thermal Template"
-```
+Declare the YAML keys your thermal model needs beyond the shared thermal keys
+(Thermal Conductivity is in `thermal.base`). Register it under your model name by
+uncommenting `__init__` (the template stays unregistered so that a copy never
+collides with it).
 """
-function thermal_model_name()
-    return "Thermal Template"
+@params struct ThermalTemplateParams
 end
 
+# __init__() = register_thermal("Thermal Template", ThermalTemplateParams)
+
 """
-    compute_model(nodes, thermal_parameter, time, dt)
+    compute_model(nodes, p, thermal, block, time, dt)
 
 Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
+- `p::ThermalTemplateParams`: The model parameters.
+- `thermal::WithBase`: The typed thermal model of the block.
+- `block::Int64`: The current block.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
 ```julia
 ```
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict,
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
-    @info "Please write a thermal model name in thermal_name()."
+function compute_model(nodes::AbstractVector{Int64}, p::ThermalTemplateParams, thermal,
+                       block::Int64, time::Float64, dt::Float64)
+    @info "Register your model name with register_thermal in __init__()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_model(nodes, thermal_parameter, time, dt) function."
-    @info "The datamanager and thermal_parameter holds all you need to solve your problem on thermal flow level."
+    @info "Fill the compute_model(nodes, p, thermal, block, time, dt) function."
+    @info "The Data_Manager, p and thermal hold all you need to solve your problem on thermal flow level."
     @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
 end
 
 """
-    init_model(nodes, thermal_parameter)
+    init_model(nodes, p, thermal, block)
 
 Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `thermal parameter::Dict(String, Any)`: Dictionary with thermal parameter.
+- `p::ThermalTemplateParams`: The model parameters.
+- `thermal::WithBase`: The typed thermal model of the block.
+- `block::Int64`: The current block.
 
 """
-function init_model(nodes::AbstractVector{Int64},
-                    thermal_parameter::Dict)
+function init_model(nodes::AbstractVector{Int64}, p::ThermalTemplateParams, thermal,
+                    block::Int64)
 end
 
 """

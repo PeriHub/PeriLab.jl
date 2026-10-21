@@ -4,7 +4,6 @@
 
 module Verlet_Solver
 using LinearAlgebra
-using ProgressBars: set_multiline_postfix, set_postfix
 using Printf
 using LoopVectorization
 using Logging
@@ -13,68 +12,66 @@ using TimerOutputs: @timeit
 using ...Data_Manager
 using ...PeriLabExceptions: @abort
 using ...Helpers#: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
-using ...Parameter_Handling:
-                             get_initial_time,
-                             get_fixed_dt,
-                             get_final_time,
-                             get_numerical_damping,
-                             get_safety_factor,
-                             get_max_damage
+using ...ParameterSpec: @params, register_solver
+using ...InputDeck: SolverParams, SolverOptions, CalculationOptions, start_time, end_time
+using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, synchronise_field,
+                       compute_parabolic_problems_before_model_evaluation,
+                       compute_parabolic_problems_after_model_evaluation
+
+@params struct VerletParams <: SolverOptions
+    safety_factor::Float64 = opt("Safety Factor"; default = 1.0, min = 0)
+    fixed_dt::Float64 = opt("Fixed dt"; default = -1.0, quantity = :time)
+    numerical_damping::Float64 = opt("Numerical Damping"; default = 0.0, min = 0)
+end
+__init__() = register_solver("Verlet", VerletParams)
 using ...MPI_Communication: find_and_set_core_value_min, find_and_set_core_value_max
 using ..Model_Factory: compute_models, compute_crititical_time_step
-using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann
+using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, BoundaryCondition
 using ...Logging_Module: print_table
 include("../../Compute/compute_field_values.jl")
 export init_solver
-export run_solver
-
-function solver_name()
-    return "Verlet"
-end
+import ..Solver_Common: prepare_solver, time_step!
 
 """
-	init_solver(params::Dict, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+	init_solver(options::VerletParams, params::SolverParams, models::Vector{String}, bcs::Dict{String,BoundaryCondition}, block_nodes::Dict{Int64,Vector{Int64}})
 
 Initialize the Verlet solver for a simulation.
 
 This function sets up the Verlet solver for a simulation by initializing various parameters and calculating the time step based on provided parameters or critical time step calculations.
 
 # Arguments
-- `params::Dict`: A dictionary containing simulation parameters.
-- `bcs::Dict{Any,Any}`: Boundary conditions
+- `options::VerletParams`: The Verlet options of the step.
+- `params::SolverParams`: The solver parameters of the current step.
+- `models::Vector{String}`: The model categories of the step.
+- `bcs::Dict{String,BoundaryCondition}`: Boundary conditions
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
-- `mechanical::Bool`: If `true`, mechanical properties are considered in the calculation.
-- `thermo::Bool`: If `true`, thermodynamic properties are considered in the calculation.
 
 # Returns
-A tuple `(initial_time, dt, nsteps, numerical_damping)` where:
-- `initial_time::Float64`: The initial time for the simulation.
-- `dt::Float64`: The time step for the simulation.
-- `nsteps::Int64`: The number of time integration steps.
-- `numerical_damping::Float64`: The numerical damping factor.
-- `max_damage::Float64`: The maximum damage in the simulation.
+- `TimeWindow`: initial and final time, time step and number of steps.
+- `nothing`: Verlet has no derived state.
 
 # Dependencies
 This function may depend on the following functions:
-- `get_initial_time`, `get_final_time`, `get_safety_factor`, `get_fixed_dt`: Used to retrieve simulation parameters.
+- `start_time` and the fields of `params` (final time, safety factor, fixed time step): The simulation parameters.
 - `compute_crititical_time_step`: Used to calculate the critical time step if `dt` is not fixed.
 - `get_integration_steps`: Used to determine the number of integration steps and adjust the time step.
 - `find_and_set_core_value_min` and `find_and_set_core_value_max`: Used to set core values in a distributed computing environment.
 """
-function init_solver(solver_options::Dict{Any,Any},
-                     params::Dict,
-                     bcs::Dict{Any,Any},
+function init_solver(options::VerletParams,
+                     params::SolverParams,
+                     models::Vector{String},
+                     bcs::Dict{String,BoundaryCondition},
                      block_nodes::Dict{Int64,Vector{Int64}})
     # @info "======================="
     # @info "==== Verlet Solver ===="
     # @info "======================="
 
-    mechanical = "Material" in solver_options["Models"]
-    thermal = "Thermal" in solver_options["Models"]
-    initial_time = get_initial_time(params)
-    final_time = get_final_time(params)
-    safety_factor = get_safety_factor(params)
-    fixed_dt = get_fixed_dt(params)
+    mechanical = "Material" in models
+    thermal = "Thermal" in models
+    initial_time = start_time(params, Data_Manager.get_current_time())
+    final_time = end_time(params, Data_Manager.get_current_time())
+    safety_factor = options.safety_factor
+    fixed_dt = options.fixed_dt
     min_dt = compute_crititical_time_step(block_nodes, mechanical, thermal)
     if fixed_dt == -1.0
         nsteps, dt = get_integration_steps(initial_time, final_time, safety_factor * min_dt)
@@ -85,8 +82,8 @@ function init_solver(solver_options::Dict{Any,Any},
     comm = Data_Manager.get_comm()
     dt = find_and_set_core_value_min(comm, dt)
     nsteps = find_and_set_core_value_max(comm, nsteps)
-    numerical_damping = get_numerical_damping(params)
-    max_damage = get_max_damage(params)
+    numerical_damping = options.numerical_damping
+    max_damage = params.maximum_damage
 
     if Data_Manager.get_rank() == 0
         data = ["Verlet Solver" "" "" ""
@@ -111,13 +108,7 @@ function init_solver(solver_options::Dict{Any,Any},
     if fixed_dt > min_dt
         @warn "Fixed time increment is larger than minimal time increment. This could lead to instability."
     end
-    solver_options["Initial Time"] = initial_time
-    solver_options["Final Time"] = final_time
-    solver_options["dt"] = dt
-    solver_options["Number of Steps"] = nsteps
-    solver_options["Numerical Damping"] = numerical_damping
-    solver_options["Maximum Damage"] = max_damage
-    solver_options["Solver specifics"] = Dict()
+    return TimeWindow(initial_time, final_time, dt, nsteps), nothing
 end
 
 """
@@ -149,248 +140,166 @@ function get_integration_steps(initial_time::Float64, end_time::Float64, dt::Flo
 end
 
 """
-	run_solver(
-		solver_options::Dict{Any,Any},
-		block_nodes::Dict{Int64,Vector{Int64}},
-		bcs::Dict{Any,Any},
-		outputs::Dict{Int64,Dict{}},
-		result_files::Vector{Any},
-		synchronise_field,
-		write_results,
-		silent::Bool
-	)
+    VerletWorkspace
 
-Run the Verlet solver for a simulation based on the strategy provided in [BobaruF2016](@cite) and  [LittlewoodDJ2023](@cite).
-
-This function performs the Verlet solver simulation, updating various data fields and properties over a specified number of time steps.
-
-# Arguments
-- `solver_options::Dict{String,Any}`: A dictionary containing solver options and parameters.
-- `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
-- `bcs::Dict{Any,Any}`: A dictionary containing boundary conditions.
-- `outputs::Dict{Int64,Dict{}}`: A dictionary for output settings.
-- `result_files::Vector{Any}`: A vector of result files.
-- `synchronise_field`: A function for synchronization.
-- `write_results`: A function to write simulation results.
-- `silent::Bool`: A boolean flag to suppress progress bars.
-
-# Returns
-- `result_files`: A vector of updated result files.
-
-# Dependencies
-This function depends on various data fields and properties from the `Data_Manager` module, as well as several helper functions. It also relies on solver options and boundary conditions provided in the input parameters.
-
-# Function Workflow
-1. Initialize simulation parameters and data fields.
-2. Perform Verlet integration over a specified number of time steps.
-3. Update data fields and properties based on the solver options.
-4. Write simulation results using the `write_results` function.
+Fields Verlet reads in every step.
 """
-function run_solver(solver_options::Dict{Any,Any},
-                    block_nodes::Dict{Int64,Vector{Int64}},
-                    bcs::Dict{Any,Any},
-                    outputs::Dict{Int64,Dict{}},
-                    result_files::Vector{Dict},
-                    synchronise_field::Function,
-                    write_results::Function,
-                    compute_parabolic_problems_before_model_evaluation::Function,
-                    compute_parabolic_problems_after_model_evaluation::Function,
-                    silent::Bool)
-    atexit(() -> Data_Manager.set_cancel(true))
+struct VerletWorkspace
+    volume::Vector{Float64}
+    density::Vector{Float64}
+    coor::Matrix{Float64}
+    active_list::Vector{Bool}
+    fem_option::Bool
+    fe_nodes::Vector{Bool}
+    numerical_damping::Float64
+end
 
-    @info "Run Verlet Solver"
-    volume = Data_Manager.get_field("Volume")
-    active_list = Data_Manager.get_field("Active")
-    density = Data_Manager.get_field("Density")
-    coor = Data_Manager.get_field("Coordinates")
-    comm = Data_Manager.get_comm()
+"""
+    prepare_solver(run::SolverRun{VerletParams}, ctx::SolverContext)
 
-    if "Material" in solver_options["Models"]
-        external_forces = Data_Manager.get_field("External Forces")
-        external_force_densities = Data_Manager.get_field("External Force Densities")
-    end
-
+Fetches the fields the Verlet steps read.
+"""
+function prepare_solver(run::SolverRun{VerletParams}, ctx::SolverContext)
     fem_option = Data_Manager.fem_active()
-    if fem_option
-        lumped_mass = Data_Manager.get_field("Lumped Mass Matrix")
-        fe_nodes = Data_Manager.get_field("FE Nodes")
-    end
+    return VerletWorkspace(Data_Manager.get_field("Volume"),
+                           Data_Manager.get_field("Density"),
+                           Data_Manager.get_field("Coordinates"),
+                           Data_Manager.get_field("Active"),
+                           fem_option,
+                           fem_option ? Data_Manager.get_field("FE Nodes") : Bool[],
+                           run.params.options.numerical_damping)
+end
 
-    dt::Float64 = solver_options["dt"]
-    nsteps::Int64 = solver_options["Number of Steps"]
-    time::Float64 = solver_options["Initial Time"]
-    final_time::Float64 = solver_options["Final Time"]
-    step_time::Float64 = 0
-    max_cancel_damage::Float64 = solver_options["Maximum Damage"]
-    numerical_damping::Float64 = solver_options["Numerical Damping"]
-    max_damage::Float64 = 0
-    damage_init::Bool = false
-    rank = Data_Manager.get_rank()
-    mpi_active = Data_Manager.get_mpi_active()
-    iter = progress_bar(rank, nsteps, silent)
+"""
+    time_step!(ws::VerletWorkspace, run::SolverRun{VerletParams}, ctx::SolverContext, clock::StepClock)
 
-    @inbounds @fastmath for idt in iter
-        Data_Manager.set_iteration(idt)
-        @timeit "Verlet" begin
-            if "Material" in solver_options["Models"]
-                uNP1::NodeVectorField{Float64} = Data_Manager.get_field("Displacements",
-                                                                        "NP1")
+One explicit Verlet step following [BobaruF2016](@cite) and [LittlewoodDJ2023](@cite):
+velocities and displacements, Dirichlet conditions, models, stresses and forces.
+Writing results, the damage limit, `NP1 → N` and the time are done by the shared loop.
+"""
+function time_step!(ws::VerletWorkspace, run::SolverRun{VerletParams}, ctx::SolverContext,
+                    clock::StepClock)
+    block_nodes = ctx.block_nodes
+    bcs = ctx.bcs
+    time = clock.time
+    step_time = clock.step_time
+    dt = clock.dt
+    volume = ws.volume
+    density = ws.density
+    coor = ws.coor
+    active_list = ws.active_list
+    fe_nodes = ws.fe_nodes
+    fem_option = ws.fem_option
+    numerical_damping = ws.numerical_damping
+    @inbounds @fastmath begin
+        if "Material" in run.models
+            uNP1::NodeVectorField{Float64} = Data_Manager.get_field("Displacements",
+                                                                    "NP1")
 
-                uN::NodeVectorField{Float64} = Data_Manager.get_field("Displacements",
-                                                                      "N")
-                vN::NodeVectorField{Float64} = Data_Manager.get_field("Velocity", "N")
-                vNP1::NodeVectorField{Float64} = Data_Manager.get_field("Velocity",
-                                                                        "NP1")
-                aN::NodeVectorField{Float64} = Data_Manager.get_field("Acceleration", "N")
-                aNP1::NodeVectorField{Float64} = Data_Manager.get_field("Acceleration",
-                                                                        "NP1")
-            end
-            deformed_coorNP1::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
-                                                                                "NP1")
-            if "Damage" in solver_options["Models"]
-                damage = Data_Manager.get_damage("NP1")
-            end
-            active_nodes = Data_Manager.get_field("Active Nodes")
-            active_nodes::Vector{Int64} = find_active_nodes(active_list,
-                                                            active_nodes,
-                                                            1:Data_Manager.get_nnodes())
-
-            # one step more, because of init step (time = 0)
-
-            update_velocity_and_position!(dt,
-                                          numerical_damping,
-                                          active_nodes,
-                                          "Material" in solver_options["Models"],
-                                          bcs,
-                                          time,
-                                          step_time)
-
-            compute_parabolic_problems_before_model_evaluation(active_nodes,
-                                                               solver_options)
-            # if "Degradation" in solver_options["Models"]
-            #     concentrationNP1[active_nodes] = concentrationN[active_nodes] +
-            #                                      delta_concentration[active_nodes]
-            # end
-            apply_bc_dirichlet(["Displacements", "Temperature"],
-                               bcs,
-                               time,
-                               step_time) #-> Dirichlet
-            #needed because of optional deformation_gradient, Deformed bonds, etc.
-            # all points to guarantee that the neighbors have coor as coordinates if they are not active
-
-            update_deformed_coordinates!(deformed_coorNP1, coor, active_nodes,
-                                         "Material" in solver_options["Models"])
-
-            @timeit "upload_to_cores" Data_Manager.synch_manager(synchronise_field,
-                                                                 "upload_to_cores")
-            # synch
-
-            @timeit "compute_models" compute_models(block_nodes,
-                                                    dt,
-                                                    time,
-                                                    solver_options["Models"],
-                                                    synchronise_field)
-            # update the current active nodes; might have been changed by the additive models
-
-            if "Material" in solver_options["Models"]
-                # TODO rename function -> missleading, because strains are also covered. Has to be something like a factory class
-                @timeit "calculate_stresses" calculate_stresses(block_nodes,
-                                                                solver_options["Calculation"])
-            end
-
-            @timeit "download_from_cores" Data_Manager.synch_manager(synchronise_field,
-                                                                     "download_from_cores")
-            # synch
-            @timeit "apply_bc_dirichlet" apply_bc_dirichlet(["Forces", "Force Densities"],
-                                                            bcs,
-                                                            time,
-                                                            step_time) #-> Dirichlet
-            # @timeit "apply_bc_neumann" apply_bc_neumann(bcs, time) #-> von neumann
-            active_nodes = get_field("Active Nodes")
-            active_nodes = find_active_nodes(active_list, active_nodes,
-                                             1:Data_Manager.get_nnodes())
-            if "Material" in solver_options["Models"]
-                force_densities = Data_Manager.get_field("Force Densities", "NP1")
-                check_inf_or_nan(force_densities, "Force Densities")
-
-                if fem_option
-                    # edit external force densities won't work so easy, because the corresponded volume is in detJ
-                    # force density is for FEM part force
-                    active_nodes = Data_Manager.get_field("Active Nodes")
-                    active_nodes = find_active_nodes(fe_nodes,
-                                                     active_nodes,
-                                                     1:Data_Manager.get_nnodes())
-
-                    compute_forces_add!(volume, density, active_nodes,
-                                        "Material" in solver_options["Models"])
-
-                    active_nodes = Data_Manager.get_field("Active Nodes")
-                    active_nodes = find_active_nodes(fe_nodes,
-                                                     active_nodes,
-                                                     1:Data_Manager.get_nnodes(),
-                                                     false)
-                end
-                @timeit "compute_forces!" begin
-                    compute_forces!(volume, density, active_nodes,
-                                    "Material" in solver_options["Models"])
-                end
-            end
-
-            compute_parabolic_problems_after_model_evaluation(active_nodes, solver_options,
-                                                              dt)
-
-            # if "Degradation" in solver_options["Models"]
-            #     delta_concentration[active_nodes] = -concentration_fluxNP1[active_nodes] .*
-            #                                         dt
-            # end
-            if "Damage" in solver_options["Models"] #TODO gather value
-                max_damage = maximum(damage[active_nodes])
-                if max_damage > max_cancel_damage
-                    @info "Simulation cancelled, max. damage reached!"
-                    Data_Manager.set_cancel(true)
-                end
-                if !damage_init && max_damage > 0
-                    damage_init = true
-                    if !mpi_active && !silent
-                        set_multiline_postfix(iter,
-                                              "Damage initated in step $idt [$time s]!")
-                    end
-                end
-            end
-            @timeit "write_results" result_files=write_results(result_files, time,
-                                                               max_damage, outputs)
-            # for file in result_files
-            #     flush(file)
-            # end
-            if Data_Manager.get_cancel()
-                if rank == 0 && !silent
-                    set_multiline_postfix(iter, "Simulation canceled!")
-                end
-                break
-            end
-            @timeit "switch_NP1_to_N" Data_Manager.switch_NP1_to_N()
-
-            time += dt
-            step_time += dt
-            Data_Manager.set_current_time(time)
-
-            if idt % ceil(nsteps / 100) == 0 || idt == 1 || idt == nsteps + 1
-                @info "Step: $idt / $(nsteps+1) [$(@sprintf("%.3e", time)) s]"
-            end
-            if rank == 0 && !silent
-                set_postfix(iter, t = @sprintf("%.3e", time))
-            end
-
-            # barrier(comm)
+            uN::NodeVectorField{Float64} = Data_Manager.get_field("Displacements",
+                                                                  "N")
+            vN::NodeVectorField{Float64} = Data_Manager.get_field("Velocity", "N")
+            vNP1::NodeVectorField{Float64} = Data_Manager.get_field("Velocity",
+                                                                    "NP1")
+            aN::NodeVectorField{Float64} = Data_Manager.get_field("Acceleration", "N")
+            aNP1::NodeVectorField{Float64} = Data_Manager.get_field("Acceleration",
+                                                                    "NP1")
         end
+        deformed_coorNP1::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
+                                                                            "NP1")
+        active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
+        active_nodes = find_active_nodes(active_list,
+                                         active_nodes,
+                                         1:Data_Manager.get_nnodes())
+
+        # one step more, because of init step (time = 0)
+
+        update_velocity_and_position!(dt,
+                                      numerical_damping,
+                                      active_nodes,
+                                      "Material" in run.models,
+                                      bcs,
+                                      time,
+                                      step_time)
+
+        compute_parabolic_problems_before_model_evaluation(active_nodes, run)
+        # if "Degradation" in run.models
+        #     concentrationNP1[active_nodes] = concentrationN[active_nodes] +
+        #                                      delta_concentration[active_nodes]
+        # end
+        apply_bc_dirichlet(["Displacements", "Temperature"],
+                           bcs,
+                           time,
+                           step_time) #-> Dirichlet
+        #needed because of optional deformation_gradient, Deformed bonds, etc.
+        # all points to guarantee that the neighbors have coor as coordinates if they are not active
+
+        update_deformed_coordinates!(deformed_coorNP1, coor, active_nodes,
+                                     "Material" in run.models)
+
+        @timeit "upload_to_cores" Data_Manager.synch_manager(synchronise_field,
+                                                             "upload_to_cores")
+        # synch
+
+        @timeit "compute_models" compute_models(block_nodes,
+                                                dt,
+                                                time,
+                                                run.models,
+                                                synchronise_field)
+        # update the current active nodes; might have been changed by the additive models
+
+        if "Material" in run.models
+            # TODO rename function -> missleading, because strains are also covered. Has to be something like a factory class
+            @timeit "calculate_stresses" calculate_stresses(block_nodes,
+                                                            run.calculation)
+        end
+
+        @timeit "download_from_cores" Data_Manager.synch_manager(synchronise_field,
+                                                                 "download_from_cores")
+        # synch
+        @timeit "apply_bc_dirichlet" apply_bc_dirichlet(["Forces", "Force Densities"],
+                                                        bcs,
+                                                        time,
+                                                        step_time) #-> Dirichlet
+        # @timeit "apply_bc_neumann" apply_bc_neumann(bcs, time) #-> von neumann
+        active_nodes = get_field("Active Nodes")::Vector{Int64}
+        active_nodes = find_active_nodes(active_list, active_nodes,
+                                         1:Data_Manager.get_nnodes())
+        if "Material" in run.models
+            force_densities = Data_Manager.get_field("Force Densities", "NP1")
+            check_inf_or_nan(force_densities, "Force Densities")
+
+            if fem_option
+                # edit external force densities won't work so easy, because the corresponded volume is in detJ
+                # force density is for FEM part force
+                active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
+                active_nodes = find_active_nodes(fe_nodes,
+                                                 active_nodes,
+                                                 1:Data_Manager.get_nnodes())
+
+                compute_forces_add!(volume, density, active_nodes,
+                                    "Material" in run.models)
+
+                active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
+                active_nodes = find_active_nodes(fe_nodes,
+                                                 active_nodes,
+                                                 1:Data_Manager.get_nnodes(),
+                                                 false)
+            end
+            @timeit "compute_forces!" begin
+                compute_forces!(volume, density, active_nodes,
+                                "Material" in run.models)
+            end
+        end
+
+        compute_parabolic_problems_after_model_evaluation(active_nodes, run, dt)
     end
-    Data_Manager.set_current_time(final_time)
-    return result_files
+    return nothing
 end
 
 function update_velocity_and_position!(dt::Float64,
                                        numerical_damping::Float64,
-                                       active_nodes::Vector{Int},
+                                       active_nodes::AbstractVector{Int},
                                        has_material::Bool,
                                        bcs,
                                        time::Float64,
@@ -427,7 +336,7 @@ function update_velocity_and_position!(dt::Float64,
 end
 
 function compute_forces!(volume::Vector{Float64}, density::Vector{Float64},
-                         active_nodes::Vector{Int}, has_material::Bool)
+                         active_nodes::AbstractVector{Int}, has_material::Bool)
     if !has_material
         return nothing
     end
