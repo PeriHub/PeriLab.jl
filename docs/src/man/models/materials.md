@@ -114,7 +114,7 @@ In order to compile the UMAT subroutine you need to install gfortran. Have a loo
 After installation you can compile the Fortran subroutine with the following command:
 
 ```shell
-gfortran -shared -fPIC -o libusermat.so base.f
+gfortran -shared -fPIC -ffixed-form -ffixed-line-length-132 -fno-range-check -o libusermat.so base.f
 ```
 
 ## Model merging

@@ -792,11 +792,6 @@ function read_mesh(input::PeriLabInput, filename::String)
     commands_dict["Stop"] = gcode.stop_command
     commands_dict["End"] = gcode.end_command
 
-    if !isnothing(commands_dict["Start"])
-        if isnothing(commands_dict["Stop"])
-            @abort "Start command is set but no stop command"
-        end
-    end
     if !isnothing(commands_dict["Stop"])
         if isnothing(commands_dict["Start"])
             @abort "Stop command is set but no start command"
@@ -841,7 +836,7 @@ function read_mesh(input::PeriLabInput, filename::String)
     txt_file = replace(filename, ".gcode" => ".txt")
     write(txt_file,
           "header: x y z block_id volume Activation_Time Angles_x Angles_y Angles_z\n")
-    CSV.write(txt_file, pd_mesh["mesh_df"]; delim = ' ', append = true)
+    CSV.write(txt_file, pd_mesh["mesh_df"]; delim = (' '), append = true)
 
     @info "Finished reading mesh data"
 
