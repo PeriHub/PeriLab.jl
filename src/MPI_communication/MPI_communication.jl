@@ -134,13 +134,11 @@ function synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof
         push!(received, (recv_index, buffer))
     end
     send_requests = MPI.Request[]
-    send_buffers = Any[] # alive until Waitall
     for jcore in 1:ncores
         jcore == MPI.Comm_rank(comm) + 1 && continue
         send_index = maps[jcore]["Responder"]
         isempty(send_index) && continue
         buffer = dof == 1 ? vector[send_index] : vector[send_index, :]
-        push!(send_buffers, buffer)
         push!(send_requests, MPI.Isend(buffer, comm; dest = jcore - 1, tag = 0))
     end
     MPI.Waitall(recv_requests)
@@ -188,13 +186,11 @@ function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof
         push!(received, (recv_index, buffer))
     end
     send_requests = MPI.Request[]
-    send_buffers = Any[] # alive until Waitall
     for jcore in 1:ncores
         jcore == MPI.Comm_rank(comm) + 1 && continue
         send_index = maps[jcore]["Controller"]
         isempty(send_index) && continue
         buffer = dof == 1 ? vector[send_index] : vector[send_index, :]
-        push!(send_buffers, buffer)
         push!(send_requests, MPI.Isend(buffer, comm; dest = jcore - 1, tag = 0))
     end
     MPI.Waitall(recv_requests)
@@ -249,13 +245,11 @@ function synch_controller_bonds_to_responder_flattened(comm::MPI.Comm,
         push!(received, (recv_bonds, buffer))
     end
     send_requests = MPI.Request[]
-    send_buffers = Any[] # alive until Waitall
     for jcore in 1:ncores
         jcore == MPI.Comm_rank(comm) + 1 && continue
         send_bonds = maps[jcore]["Bond Controller"]
         isempty(send_bonds) && continue
         buffer = collect(bond_values_view(view(flat, send_bonds)))
-        push!(send_buffers, buffer)
         push!(send_requests, MPI.Isend(buffer, comm; dest = jcore - 1, tag = 0))
     end
     MPI.Waitall(recv_requests)
@@ -319,7 +313,6 @@ function send_rows_from_root_to_core_i(comm::MPI.Comm, rows,
     rank = MPI.Comm_rank(comm)
     if rank == 0
         requests = MPI.Request[]
-        buffers = Vector{Int64}[] # alive until Waitall
         for jrank in 1:(MPI.Comm_size(comm) - 1)
             local_rows = view(rows, distribution[jrank + 1])
             lengths = length.(local_rows)
@@ -329,7 +322,6 @@ function send_rows_from_root_to_core_i(comm::MPI.Comm, rows,
                 copyto!(values, pos, row, 1, length(row))
                 pos += length(row)
             end
-            push!(buffers, lengths, values)
             push!(requests, MPI.Isend(lengths, comm; dest = jrank, tag = 1))
             push!(requests, MPI.Isend(values, comm; dest = jrank, tag = 2))
         end

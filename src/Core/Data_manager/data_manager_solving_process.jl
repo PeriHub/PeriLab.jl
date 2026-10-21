@@ -82,6 +82,9 @@ function reset_NP1()
         key == "Bond Damage" && continue
         _fill_field_barrier(get_field(key, "NP1"), active, data["NP1_to_N"][key])
     end
+    # restored bonds are not flagged by the damage models; the next step must recompute
+    # every node (e.g. the shape tensor, see ONLY_FLAGGED_BONDS_CHANGED)
+    has_key("Update") && (_get_field("Update") .= true)
     return nothing
 end
 

@@ -324,14 +324,13 @@ The underlying validate+download+verify round trip is unaffected by
 many call sites there are, each asking for their own type -- filtering
 happens only at the `include_string` step, not the network fetch.
 
-- Neither `LICENSE_SERVER_URL` nor `LICENSE_KEY` set: silently
-  returns `Any[]`. No license server configured means no licensed modules,
-  not an error -- this is what makes licensing fully optional.
-- Exactly one of them set, or `CONTENT_SIGNING_SECRET` missing while the
-  other two are set: that's a misconfiguration, not "no license" --
-  throws rather than silently disabling the integrity check or
-  half-loading.
-- All three set: the actual validate+download+verify round trip runs at
+- `LICENSE_KEY` not set: silently returns `Any[]`. No license key means no
+  licensed modules, not an error -- this is what makes licensing fully
+  optional. `LICENSE_SERVER_URL` defaults to the PeriHub license server.
+- `LICENSE_KEY` set but `CONTENT_SIGNING_SECRET` missing: that's a
+  misconfiguration, not "no license" -- throws rather than silently
+  disabling the integrity check.
+- Both set: the actual validate+download+verify round trip runs at
   most once per process no matter how many call sites there are.
 
 Set `force_refresh=true` to bypass the cache (e.g. to pick up a renewed
@@ -369,7 +368,7 @@ function licensed_modules(target_module::Module,
     end
 
     if isempty(secret)
-        @abort "LICENSE_KEY are set but " *
+        @abort "LICENSE_KEY is set but " *
                "CONTENT_SIGNING_SECRET is not -- refusing to load licensed " *
                "modules without a way to verify their integrity."
     end

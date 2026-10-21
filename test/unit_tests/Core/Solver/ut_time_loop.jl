@@ -69,7 +69,8 @@ function utl_data()
     empty!(UTLoopSolver.WORKSPACES)
 end
 
-function utl_run(solver::Dict{String,Any}; models = ["Material"], extra = Dict{String,Any}(),
+function utl_run(solver::Dict{String,Any}; models = ["Material"],
+                 extra = Dict{String,Any}(),
                  times = Dict{String,Any}("Initial Time" => 0.0, "Final Time" => 1.0))
     ctx = PeriLab.ParameterSpec.ParseContext()
     deck = merge(times, Dict{String,Any}("UT Loop" => solver), extra)
@@ -170,9 +171,20 @@ end
     @test UTL_DM.get_field("A", "N") == [3.0, 3.0]
 end
 
+@testset "reset_NP1 flags all nodes for the update pass" begin
+    UTL_DM.initialize_data()
+    UTL_DM.set_num_controller(2)
+    UTL_DM.set_dof(2)
+    UTL_DM.create_constant_node_scalar_field("Active", Bool; default_value = true)
+    UTL_DM.create_constant_node_scalar_field("Update", Bool) .= false
+    UTL_DM.reset_NP1()
+    @test UTL_DM.get_field("Update") == [true, true]
+end
+
 function utl_fallback(steps; fail_at = 0)
-    return Dict{String,Any}("Fallback" => Dict{String,Any}("UT Loop" => Dict{String,Any}("Steps" => steps,
-                                                                                        "Fail At" => fail_at)))
+    return Dict{String,Any}("Fallback" => Dict{String,Any}("UT Loop" =>
+                                                 Dict{String,Any}("Steps" => steps,
+                                                                  "Fail At" => fail_at)))
 end
 
 @testset "a failed step continues with the fallback solver" begin
@@ -182,9 +194,10 @@ end
         run = utl_run(Dict{String,Any}("Fail At" => 3); extra = utl_fallback(2))
         UTL_SM.solver(run,
                       utl_ctx(writes;
-                              fallback_output_frequency = (n, dt, fallback_dt) -> push!(frequencies,
-                                                                                         (n, dt,
-                                                                                          fallback_dt))))
+                              fallback_output_frequency = (n, dt,
+                                                           fallback_dt) -> push!(frequencies,
+                                                                                 (n, dt,
+                                                                                  fallback_dt))))
         first_run, fallback = UTLoopSolver.WORKSPACES
         @test length(first_run.clocks) == 3
         @test [c.time for c in fallback.clocks] ≈ [0.5, 0.75, 1.0]
@@ -209,7 +222,8 @@ end
 @testset "a failing fallback cancels" begin
     utl_with_solver() do
         writes = Tuple{Float64,Float64}[]
-        UTL_SM.solver(utl_run(Dict{String,Any}("Fail At" => 2); extra = utl_fallback(4; fail_at = 1)),
+        UTL_SM.solver(utl_run(Dict{String,Any}("Fail At" => 2);
+                              extra = utl_fallback(4; fail_at = 1)),
                       utl_ctx(writes))
         @test length(UTLoopSolver.WORKSPACES) == 2
         @test first.(writes) ≈ [0.0]

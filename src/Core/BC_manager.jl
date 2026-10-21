@@ -110,16 +110,8 @@ function check_valid_bcs(bcs_in::Dict{String,BoundaryConditionParams},
             type = "Dirichlet"
             @warn "Missing boundary condition type for $name. Assuming Dirichlet."
         end
-        time = nothing
-        for data_entry in Data_Manager.get_all_field_keys()
-            if bc.variable * "NP1" == data_entry
-                time = "NP1"
-                break
-            elseif bc.variable == data_entry
-                time = "Constant"
-                break
-            end
-        end
+        time = Data_Manager.has_key(bc.variable * "NP1") ? "NP1" :
+               Data_Manager.has_key(bc.variable) ? "Constant" : nothing
         if time === nothing
             @abort "Boundary condition $name is not valid: Variable $(bc.variable) not found. Please check if the physical model is activated."
             return
