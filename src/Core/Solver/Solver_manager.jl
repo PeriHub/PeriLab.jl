@@ -79,7 +79,10 @@ function init(input::PeriLabInput, step_id::Int64)
     end
     Data_Manager.create_constant_node_scalar_field("Active Nodes", Int64)
     Data_Manager.create_constant_node_scalar_field("Update Nodes", Int64)
-    Data_Manager.create_constant_node_scalar_field("Update", Bool; default_value = true)
+    # every node counts as changed at the start of a solver step, e.g. after a solver switch
+    Data_Manager.create_constant_node_scalar_field("Update", Bool;
+                                                   default_value = true) .= true
+    Model_Factory.Pre_Calculation.ONLY_FLAGGED_BONDS_CHANGED[] = false
     density = set_density(blocks, block_nodes_with_neighbors, density) # includes the neighbors
     horizon = set_horizon(blocks, block_nodes_with_neighbors, horizon) # includes the neighbors
     set_angles(blocks, block_nodes_with_neighbors) # includes the Neighbors
@@ -119,7 +122,8 @@ function init(input::PeriLabInput, step_id::Int64)
         active = Data_Manager.create_constant_node_scalar_field("Active", Bool;
                                                                 default_value = true)
     end
-    solver_run = create_run(solver_params, models, all_models, calculation, bcs, block_nodes)
+    solver_run = create_run(solver_params, models, all_models, calculation, bcs,
+                            block_nodes)
 
     if Data_Manager.fem_active()
         @timeit "init_FEM" FEM.init_FEM(input.sections.fem,
@@ -268,6 +272,5 @@ function remove_models(models::Vector{String})
         end
     end
 end
-
 
 end

@@ -66,7 +66,8 @@ function init_model(nodes::AbstractVector{Int64}, p::PDSolidPlasticParams, mater
 end
 
 "Yield value per node from the (possibly field dependent) yield stress."
-function set_yield_value!(yield, nodes::AbstractVector{Int64}, yield_stress, symmetry::String,
+function set_yield_value!(yield, nodes::AbstractVector{Int64}, yield_stress,
+                          symmetry::String,
                           horizon)
     if symmetry == "3D"
         for iID in nodes
@@ -169,7 +170,7 @@ function compute_model(nodes::AbstractVector{Int64},
                                                                  bond_damage,
                                                                  deviatoric_plastic_extension_state,
                                                                  bond_force_deviatoric_part)
-    add_in_place!(temp, bond_force_deviatoric_part, bond_force_isotropic_part)
+    add_in_place!(temp, bond_force_deviatoric_part, bond_force_isotropic_part, nodes)
     @timeit "get_bond_forces" get_bond_forces!(nodes,
                                                temp,
                                                deformed_bond,

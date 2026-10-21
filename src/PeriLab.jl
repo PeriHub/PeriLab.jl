@@ -471,14 +471,15 @@ function run(filename::String;
                     @info sort(fields)
                 end
                 solver_context = Solver_Manager.SolverContext(block_nodes, bcs, outputs,
-                                                              result_files, IO.write_results,
+                                                              result_files,
+                                                              IO.write_results,
                                                               silent,
                                                               (nsteps, dt,
                                                                fallback_dt) -> IO.set_fallback_output_frequency(input,
-                                                                                                                 nsteps,
-                                                                                                                 step_id,
-                                                                                                                 dt,
-                                                                                                                 fallback_dt))
+                                                                                                                nsteps,
+                                                                                                                step_id,
+                                                                                                                dt,
+                                                                                                                fallback_dt))
                 if dry_run
                     nsteps = solver_run.time.nsteps
                     elapsed_time = @elapsed begin
@@ -508,6 +509,9 @@ function run(filename::String;
 
         catch e
             exit_code = 1
+            # an @abort inside a Threads.@threads loop arrives wrapped
+            e isa CompositeException && (e = first(e.exceptions))
+            e isa TaskFailedException && (e = e.task.exception)
             if e isa InterruptException
                 @info "PeriLab was interrupted"
             elseif !isa(e, PeriLabError)

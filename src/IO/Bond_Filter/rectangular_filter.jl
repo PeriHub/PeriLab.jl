@@ -4,6 +4,7 @@
 
 module Rectangular_Plane_Filter
 using LinearAlgebra
+using StaticArrays: SVector
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
 using .....InputDeck: BondFilterParams, register_bond_filter
@@ -31,10 +32,10 @@ Check if a line segment intersects an infinite plane.
 - `Bool`: True if the line segment intersects the plane, False otherwise.
 - `Vector{Float64}` or `undef`: The intersection point, or undef if no intersection.
 """
-function bond_intersect_infinite_plane(p0::Vector{Float64},
-                                       p1::Vector{Float64},
-                                       lower_left_corner::Vector{Float64},
-                                       normal::Vector{Float64})
+function bond_intersect_infinite_plane(p0::AbstractVector{Float64},
+                                       p1::AbstractVector{Float64},
+                                       lower_left_corner::AbstractVector{Float64},
+                                       normal::AbstractVector{Float64})
     denominator = dot((p1 - p0), normal)
     if abs(denominator) < TOLERANCE
         return false, undef
@@ -61,15 +62,13 @@ Check if a point (intersection with the infinite plane) lies within the rectangl
 # Returns
 - `Bool`: True if the point is inside the rectangle, False otherwise.
 """
-function bond_intersect_rectangle_plane(x::Union{Vector{Float64},Vector{Int64}},
-                                        lower_left_corner::Union{Vector{Float64},
-                                                                 Vector{Int64}},
-                                        bottom_unit_vector::Union{Vector{Float64},
-                                                                  Vector{Int64}},
-                                        normal::Union{Vector{Float64},Vector{Int64}},
+function bond_intersect_rectangle_plane(x::AbstractVector{<:Real},
+                                        lower_left_corner::AbstractVector{<:Real},
+                                        bottom_unit_vector::AbstractVector{<:Real},
+                                        normal::AbstractVector{<:Real},
                                         side_length::Real,
                                         bottom_length::Real)
-    dr::Vector{Float64} = x - lower_left_corner
+    dr = x - lower_left_corner
     bb::Float64 = dot(dr, bottom_unit_vector)
     if 0.0 <= bb && bb / bottom_length <= 1.0
         if length(normal) == 2
@@ -124,30 +123,39 @@ function run_bond_filter(nnodes::Int64,
     end
     normal = normal ./ norm(normal)
     bottom_unit_vector = bottom_unit_vector ./ norm(bottom_unit_vector)
-    bottom_length = filter.bottom_length
-    side_length = filter.side_length
-    filter_flag::Vector{Vector{Bool}} = fill([], nnodes)
-    for iID in 1:nnodes
-        filter_flag[iID] = fill(true, length(nlist[iID]))
+    filter_flag = dof == 2 ?
+                  filter_flags(nnodes, data, nlist, Val(2), normal, lower_left_corner,
+                               bottom_unit_vector, filter.side_length,
+                               filter.bottom_length) :
+                  filter_flags(nnodes, data, nlist, Val(3), normal, lower_left_corner,
+                               bottom_unit_vector, filter.side_length, filter.bottom_length)
+    return filter_flag, normal
+end
+
+# function barrier on the dof: points and plane as SVector, no allocation per bond
+function filter_flags(nnodes::Int64, data::Matrix{Float64}, nlist::NestedNeighborhoodList,
+                      ::Val{D}, normal, lower_left_corner, bottom_unit_vector,
+                      side_length, bottom_length) where {D}
+    n = SVector{D,Float64}(normal)
+    corner = SVector{D,Float64}(lower_left_corner)
+    bottom = SVector{D,Float64}(bottom_unit_vector)
+    filter_flag = Vector{Vector{Bool}}(undef, nnodes)
+    Threads.@threads for iID in 1:nnodes
+        p0 = SVector{D,Float64}(ntuple(k -> data[k, iID], Val(D)))
+        flags = fill(true, length(nlist[iID]))
         for (jID, neighborID) in enumerate(nlist[iID])
-            intersect_inf_plane,
-            x = bond_intersect_infinite_plane(data[:, iID],
-                                              data[:, neighborID],
-                                              lower_left_corner,
-                                              normal)
+            p1 = SVector{D,Float64}(ntuple(k -> data[k, neighborID], Val(D)))
+            intersect_inf_plane, x = bond_intersect_infinite_plane(p0, p1, corner, n)
             bond_intersect = false
             if intersect_inf_plane
-                bond_intersect = bond_intersect_rectangle_plane(x,
-                                                                lower_left_corner,
-                                                                bottom_unit_vector,
-                                                                normal,
-                                                                side_length,
-                                                                bottom_length)
+                bond_intersect = bond_intersect_rectangle_plane(x, corner, bottom, n,
+                                                                side_length, bottom_length)
             end
-            filter_flag[iID][jID] = !(intersect_inf_plane && bond_intersect)
+            flags[jID] = !(intersect_inf_plane && bond_intersect)
         end
+        filter_flag[iID] = flags
     end
-    return filter_flag, normal
+    return filter_flag
 end
 
 end # module

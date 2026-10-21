@@ -56,6 +56,10 @@ function switch_NP1_to_N()
         switch_bonds!(field_N, field_NP1)
     end
 
+    # TODO performance: every NP1 field is refilled after the swap, also the ones the next
+    # step overwrites completely (e.g. deformed bond geometry). Only accumulated fields and
+    # fields read before written need it; this needs a per field decision. Note that the
+    # node damage NP1 restarts from the fill value, so the damage index runs on all nodes.
     for (key, entry) in np1_to_n
         key == "Bond Damage" && continue
         swap_n_np1!(entry)

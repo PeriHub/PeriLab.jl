@@ -165,6 +165,16 @@ function check_contact(contact::ContactInput, time::Float64, dt::Float64)
                                   dt)
 end
 
+# The update pass recomputes the nodes the damage model flags only if the damage model runs
+# before the pre calculations (the model order depends on the solver steps).
+function damage_before_pre_calculation()
+    for name in keys(Data_Manager.get_active_models())
+        name == "Damage Model" && return true
+        name == "Pre Calculation Model" && return false
+    end
+    return false
+end
+
 """
 	compute_models(block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field)
 
@@ -191,6 +201,7 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
     # TODO check if pre calculation should run block wise. For mixed model applications it makes sense.
     # TODO add for pre calculation a whole model option, to get the neighbors as well, e.g. for bond associated
     # TODO check for loop order?
+    Pre_Calculation.ONLY_FLAGGED_BONDS_CHANGED[] = damage_before_pre_calculation()
     for (active_model_name, active_model) in pairs(Data_Manager.get_active_models())
         #synchronise_field(Data_Manager.local_synch_fiels(active_model_name))
         if active_model_name == "Damage Model"
@@ -234,6 +245,7 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
             end
         end
     end
+    Pre_Calculation.ONLY_FLAGGED_BONDS_CHANGED[] = false
 
     # Why not update_list.=false? -> avoid neighbors in MPI
     update_list = Data_Manager.get_field("Update")::Vector{Bool}
@@ -271,6 +283,7 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
                                             update_nodes,
                                             active_nodes,
                                             active_model_name)
+            isempty(update_nodes) && continue
 
             # active or all, or does it not matter?
 

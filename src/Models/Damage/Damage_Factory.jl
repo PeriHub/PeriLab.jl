@@ -5,6 +5,7 @@
 module Damage
 
 using TimerOutputs: @timeit
+using Polyester: @batch
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
 using ....ModuleLoader: find_registered_modules
@@ -147,7 +148,7 @@ for file in find_registered_modules(@__DIR__, "register_damage")
 end
 
 using LoopVectorization
-using .....Helpers: find_inverse_bond_id, find_inverse_bond_index!
+using .....Helpers: find_inverse_bond_id, find_inverse_bond_index!, MINBATCH
 export fields_for_local_synchronization
 export compute_model
 export init_interface_crit_values
@@ -238,7 +239,7 @@ function compute_index(damage::NodeScalarField{Float64},
                        volume::NodeScalarField{Float64},
                        nlist::BondScalarState{Int64},
                        bond_damage::BondScalarState{Float64})::Nothing
-    @inbounds @fastmath for iID in nodes
+    @batch minbatch=MINBATCH for iID in nodes
         undamaged_volume = 0.0  # More explicit than zero(Float64)
         totalDamage = 0.0
 
@@ -255,9 +256,9 @@ function compute_index(damage::NodeScalarField{Float64},
 
         # More explicit type handling
         current_damage = damage[iID]
-        threshold = current_damage * undamaged_volume
+        threshold = @fastmath current_damage * undamaged_volume
         if threshold < totalDamage
-            damage[iID] = totalDamage / undamaged_volume
+            damage[iID] = @fastmath totalDamage / undamaged_volume
         end
     end
     return nothing

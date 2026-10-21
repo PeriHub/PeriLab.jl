@@ -6,9 +6,10 @@ module Critical_Energy
 
 using StaticArrays
 using LinearAlgebra: mul!, dot
+using Polyester: @batch
 
 using ......Data_Manager
-using ......Helpers:
+using ......Helpers: MINBATCH,
                      rotate,
                      fastdot,
                      div_in_place!,
@@ -70,7 +71,7 @@ function _critical_energy!(nodes::AbstractVector{Int64}, tension::Bool, crit_of:
     quad_horizons = Data_Manager.get_field("Quad Horizon")::NodeScalarField{Float64}
     inverse_bond_id = Data_Manager.get_field("Inverse Bond ID")::BondScalarState{Int64}
 
-    @inbounds for iID in nodes
+    @batch minbatch=MINBATCH for iID in nodes
         # the bond views of the node, built once instead of per bond
         neighbors = nlist[iID]
         deformed = deformed_bond[iID]
@@ -82,7 +83,7 @@ function _critical_energy!(nodes::AbstractVector{Int64}, tension::Bool, crit_of:
         energy = bond_energy[iID]
         damage = bond_damage[iID]
         quad_horizon = quad_horizons[iID]
-        @fastmath for jID in eachindex(neighbors)
+        @inbounds @fastmath for jID in eachindex(neighbors)
             relative_displacement = deformed[jID] - undeformed[jID]
             norm_displacement = dot(relative_displacement, relative_displacement)
             if norm_displacement == 0 ||
@@ -100,6 +101,11 @@ function _critical_energy!(nodes::AbstractVector{Int64}, tension::Bool, crit_of:
             projected = (product / norm_displacement) * relative_displacement
             bond_energy_j = 0.25 * dot(projected, relative_displacement)
             energy[jID] = bond_energy_j
+            # TODO: broken bonds are flagged again every step (their zero energy forces keep
+            # the energy above the limit), so their nodes are recomputed in every update pass.
+            # A `damage[jID] > 0 &&` guard saves ~10% for correspondence, but changes bond
+            # associated results: there a node also depends on the weighted volume of its
+            # neighbors, whose changes are not flagged.
             if bond_energy_j > crit_of(iID, neighborID) * quad_horizon
                 damage[jID] = 0.0
                 update_list[iID] = true

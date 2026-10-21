@@ -15,7 +15,7 @@
 #   Instead, module content is verified against CONTENT_SIGNING_SECRET: a
 #   SEPARATE secret this client deployment genuinely holds (set as a
 #   runtime env var by whoever provisions this container, same as
-#   LICENSE_SERVER_URL -- not the customer's own PERIHUB_LICENSE_KEY). The
+#   LICENSE_SERVER_URL -- not the customer's own LICENSE_KEY). The
 #   server signs each module's content with the same secret and returns the
 #   signature in the X-Content-Signature response header; this loader
 #   recomputes it locally and compares before ever calling include_string.
@@ -48,7 +48,7 @@
 #     If BOTH local and server env vars happen to be set, local mode wins.
 #     Setting only one of LICENSED_MODULES_CONFIG/LICENSED_MODULES_DIR is
 #     treated as a misconfiguration and throws.
-#     SERVER MODE -- if LICENSE_SERVER_URL/PERIHUB_LICENSE_KEY/
+#     SERVER MODE -- if LICENSE_SERVER_URL/LICENSE_KEY/
 #     CONTENT_SIGNING_SECRET are set (and local mode isn't configured),
 #     modules are fetched, verified, and include_string'd as described
 #     under INTEGRITY MODEL above. The network round trip is cached for
@@ -294,7 +294,7 @@ const _WARNED_NOT_CONFIGURED = Ref(false)
     licensed_modules(target_module::Module, wanted_type=nothing;
                       force_refresh::Bool=false, machine_id=gethostname())
 
-Reads `LICENSE_SERVER_URL`, `PERIHUB_LICENSE_KEY`, and
+Reads `LICENSE_SERVER_URL`, `LICENSE_KEY`, and
 `CONTENT_SIGNING_SECRET` from `ENV` and `include_string`s licensed modules
 into `target_module`. This is the entry point feature modules (Additive,
 a gcode/mesh-input module, ...) should call -- no need to redefine the
@@ -324,7 +324,7 @@ The underlying validate+download+verify round trip is unaffected by
 many call sites there are, each asking for their own type -- filtering
 happens only at the `include_string` step, not the network fetch.
 
-- Neither `LICENSE_SERVER_URL` nor `PERIHUB_LICENSE_KEY` set: silently
+- Neither `LICENSE_SERVER_URL` nor `LICENSE_KEY` set: silently
   returns `Any[]`. No license server configured means no licensed modules,
   not an error -- this is what makes licensing fully optional.
 - Exactly one of them set, or `CONTENT_SIGNING_SECRET` missing while the
@@ -354,26 +354,22 @@ function licensed_modules(target_module::Module,
         return _licensed_modules_local(target_module, wanted_type, local_config, local_dir)
     end
 
-    url = get(ENV, "LICENSE_SERVER_URL", "")
-    key = get(ENV, "PERIHUB_LICENSE_KEY", "")
+    url = get(ENV, "LICENSE_SERVER_URL", "https://perihub-license.nimbus-extern.dlr.de")
+    key = get(ENV, "LICENSE_KEY", "")
     secret = get(ENV, "CONTENT_SIGNING_SECRET", "")
 
-    if isempty(url) && isempty(key)
+    if isempty(key)
         lock(_CACHE_LOCK) do
             if !_WARNED_NOT_CONFIGURED[]
-                @info "LICENSE_SERVER_URL/PERIHUB_LICENSE_KEY not set -- skipping licensed modules"
+                @info "LICENSE_KEY not set -- skipping licensed modules"
                 _WARNED_NOT_CONFIGURED[] = true
             end
         end
         return Any[]
     end
 
-    if isempty(url) || isempty(key)
-        @abort "Only one of LICENSE_SERVER_URL/PERIHUB_LICENSE_KEY is set -- " *
-               "set both to enable licensed modules, or neither to disable them."
-    end
     if isempty(secret)
-        @abort "LICENSE_SERVER_URL/PERIHUB_LICENSE_KEY are set but " *
+        @abort "LICENSE_KEY are set but " *
                "CONTENT_SIGNING_SECRET is not -- refusing to load licensed " *
                "modules without a way to verify their integrity."
     end

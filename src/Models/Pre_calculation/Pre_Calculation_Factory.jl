@@ -9,6 +9,10 @@ using ....Data_Manager
 using ....Helpers: compute_label
 using ....ModuleLoader: find_registered_modules
 using .....ParameterSpec
+# true during the first model pass of `compute_models`: there only the nodes flagged "Update"
+# can have changed bonds since their last computation, the damage models flag them and the
+# update pass recomputes them. Not true in the other solver paths.
+const ONLY_FLAGGED_BONDS_CHANGED = Ref(false)
 for file in find_registered_modules(@__DIR__, "register_pre_calculation")
     include(file)
 end

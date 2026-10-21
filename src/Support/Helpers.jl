@@ -17,6 +17,9 @@ using Unitful: ustrip
 using CDDLib
 using Polyhedra: MixedMatHRep, polyhedron, vrep, hrep
 using Base.Threads: @threads
+using Polyester: @batch
+# minimum nodes per thread of the threaded node loops; smaller blocks run serially
+const MINBATCH = 64
 using ..Data_Manager
 using ..PeriLabExceptions: @abort
 using TimerOutputs: @timeit
@@ -29,6 +32,7 @@ export node_tensor
 export with_dof
 export find_inverse_bond_index!
 export get_active_update_nodes
+export MINBATCH
 export find_indices
 export find_inverse_bond_id
 export get_block_nodes
@@ -217,10 +221,10 @@ function get_nearest_neighbors(nodes,
     end
     initialize_grid!(nhs, coords_sys)
     initialize_grid!(nhs, coords_nb)
-    list_empty = true
 
-    for iID in nodes
-        neighbors = []
+    # the grid is only read, every node fills its own list
+    Threads.@threads for iID in nodes
+        neighbors = Int64[]
         foreach_neighbor(coords_sys,# System coordinates -> must be transpose for the datamanager definition
                          coords_nb,# Potential neighbor coordinates -> must be transpose for the datamanager definition
                          nhs,
@@ -232,12 +236,11 @@ function get_nearest_neighbors(nodes,
                               L
             if i != j || diffent_lists
                 push!(neighbors, j)
-                list_empty = false
             end
         end
         neighborList[iID] = neighbors
     end
-    return neighborList, list_empty
+    return neighborList, all(iID -> isempty(neighborList[iID]), nodes)
 end
 
 function find_point_in_polygon(point, coor, topo)
@@ -462,6 +465,18 @@ end
 function add_in_place!(C::BondScalarState{T}, A::BondScalarState{T},
                        B::BondScalarState{T}) where {T<:Union{Int64,Float64,Bool}}
     flatview(C) .= flatview(A) .+ flatview(B)
+end
+# only the bonds of `nodes`
+function add_in_place!(C::BondScalarState{T}, A::BondScalarState{T}, B::BondScalarState{T},
+                       nodes::AbstractVector{Int64}) where {T<:Union{Int64,Float64,Bool}}
+    @batch minbatch=MINBATCH for iID in nodes
+        c = C[iID]
+        a = A[iID]
+        b = B[iID]
+        @inbounds for jID in eachindex(c)
+            c[jID] = a[jID] + b[jID]
+        end
+    end
 end
 function div_in_place!(C::BondScalarState{T}, A::BondScalarState{T},
                        B::BondScalarState{T}) where {T<:Union{Int64,Float64,Bool}}

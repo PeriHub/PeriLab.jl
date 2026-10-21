@@ -52,7 +52,7 @@ end
 # would undo the withenv below; run from an empty directory
 @testset "licensed additive models load without a license" begin
     cd(mktempdir()) do
-        withenv("LICENSE_SERVER_URL" => nothing, "PERIHUB_LICENSE_KEY" => nothing,
+        withenv("LICENSE_SERVER_URL" => nothing, "LICENSE_KEY" => nothing,
                 "LICENSED_MODULES_CONFIG" => nothing, "LICENSED_MODULES_DIR" => nothing) do
             @test isempty(UT_MF.Additive.load_licensed_models())
         end
@@ -180,10 +180,11 @@ end
 end
 
 @testset "licensed additive models load only for additive decks" begin
-    # a half-configured license aborts when licensed modules are loaded
+    # a license key without CONTENT_SIGNING_SECRET aborts when licensed modules are loaded;
+    # the unreachable server makes sure the test never contacts the real one
     cd(mktempdir()) do
         withenv("LICENSE_SERVER_URL" => "http://localhost:1",
-                "PERIHUB_LICENSE_KEY" => nothing,
+                "LICENSE_KEY" => "ut-dummy-key", "CONTENT_SIGNING_SECRET" => nothing,
                 "LICENSED_MODULES_CONFIG" => nothing, "LICENSED_MODULES_DIR" => nothing) do
             mechanical = Dict("PeriLab" =>
                                   Dict("Models" => Dict("Material Models" => Dict())))

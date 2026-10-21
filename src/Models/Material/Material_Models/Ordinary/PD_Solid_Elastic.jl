@@ -5,9 +5,10 @@
 module PD_Solid_Elastic
 
 using TimerOutputs: @timeit
+using Polyester: @batch
 using ......Data_Manager
 using ......ParameterSpec: @params, register_material
-using ......Helpers: add_in_place!
+using ......Helpers: add_in_place!, MINBATCH
 using StaticArrays
 using ..Ordinary:
                   compute_weighted_volume!, compute_dilatation!, calculate_symmetry_params,
@@ -153,7 +154,7 @@ function compute_model(nodes::AbstractVector{Int64},
                                bulk_modulus,
                                bond_force_deviatoric_part,
                                bond_force_isotropic_part)
-    add_in_place!(temp, bond_force_deviatoric_part, bond_force_isotropic_part)
+    add_in_place!(temp, bond_force_deviatoric_part, bond_force_isotropic_part, nodes)
     @timeit "get_bond_forces!" get_bond_forces!(nodes, temp, deformed_bond,
                                                 deformed_bond_length,
                                                 bond_force, temp)
@@ -194,11 +195,7 @@ function elastic!(nodes::AbstractVector{Int64},
                   bulk_modulus::Vector{Float64},
                   bond_force_deviatoric_part::BondScalarState{Float64},
                   bond_force_isotropic_part::BondScalarState{Float64})
-    kappa::Float64 = 0
-    gamma::Float64 = 0
-    alpha::Float64 = 0
-
-    for iID in nodes
+    @batch minbatch=MINBATCH for iID in nodes
         # Calculate alpha and beta
         if weighted_volume[iID] == 0
             continue
@@ -209,7 +206,7 @@ function elastic!(nodes::AbstractVector{Int64},
                                           shear_modulus[iID],
                                           bulk_modulus[iID])
 
-        deviatoric_deformation::Float64 = 0.0
+        deviatoric_deformation = 0.0
         @inbounds @simd for jID in eachindex(deformed_bond_length[iID])
             deviatoric_deformation = deformed_bond_length[iID][jID] -
                                      undeformed_bond_length[iID][jID] -
@@ -240,21 +237,17 @@ function elastic!(nodes::AbstractVector{Int64},
                   bulk_modulus::Float64,
                   bond_force_deviatoric_part::BondScalarState{Float64},
                   bond_force_isotropic_part::BondScalarState{Float64})
-    kappa::Float64 = 0
-    gamma::Float64 = 0
-    alpha::Float64 = 0
-
     alpha, gamma,
     kappa = calculate_symmetry_params(symmetry, shear_modulus,
                                       bulk_modulus)
 
-    for iID in nodes
+    @batch minbatch=MINBATCH for iID in nodes
         # Calculate alpha and beta
         if weighted_volume[iID] == 0
             continue
         end
 
-        deviatoric_deformation::Float64 = 0.0
+        deviatoric_deformation = 0.0
         @inbounds @simd for jID in eachindex(deformed_bond_length[iID])
             deviatoric_deformation = deformed_bond_length[iID][jID] -
                                      undeformed_bond_length[iID][jID] -

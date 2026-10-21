@@ -92,6 +92,9 @@ function _compute_control!(nodes::AbstractVector{Int64}, apply_zero_energy::Bool
     hooke_matrix = Data_Manager.get_field("Material Gradient")::NodeTensorField{Float64}
     zStiff = Data_Manager.get_field("Zero Energy Stiffness")::NodeTensorField{Float64}
 
+    # TODO performance: Z = C Kinv is rebuilt for all nodes every step, but only changes with
+    # Kinv (bond damage). Build it in init and then only for the nodes flagged "Update",
+    # like the shape tensor; UMATs and rotations (angles) need the full update.
     if apply_zero_energy
         if Data_Manager.get_rotation()
             angles = Data_Manager.get_field("Angles")::NodeVectorField{Float64}

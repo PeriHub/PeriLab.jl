@@ -7,9 +7,11 @@ using LinearAlgebra: mul!, norm
 using StaticArrays
 using Rotations
 using LoopVectorization: @avx, @fastmath, @simd
+using Polyester: @batch
 using ...Data_Manager
 using ...PeriLabExceptions: @abort
-using ...Helpers: invert, smat, sub_in_place!, div_in_place!, tensor_buffer, node_tensor
+using ...Helpers: invert, smat, sub_in_place!, div_in_place!, tensor_buffer, node_tensor,
+                  MINBATCH
 export bond_geometry!
 export compute_shape_tensors!
 export compute_deformation_gradients!
@@ -56,7 +58,7 @@ function bond_geometry!(undeformed_bond::BondVectorState{Float64},
                         nodes::AbstractVector{Int64},
                         nlist::BondScalarState{Int64},
                         coor::AbstractMatrix{Float64})
-    for iID in nodes
+    @batch minbatch=MINBATCH for iID in nodes
         calculate_bond_length!(undeformed_bond[iID],
                                undeformed_bond_length[iID],
                                iID,
@@ -68,7 +70,7 @@ end
 @inline function calculate_bond_length!(bond_vectors::AbstractVector{SVector{D,Float64}},
                                         bond_norm::AbstractVector{Float64},
                                         iID::Int64,
-                                        coor::Matrix{Float64},
+                                        coor::AbstractMatrix{Float64},
                                         nlist::AbstractVector{Int64}) where {D}
     @inbounds @fastmath for (m, nID) in enumerate(nlist)
         bond = SVector{D,Float64}(ntuple(n -> coor[nID, n] - coor[iID, n], Val(D)))

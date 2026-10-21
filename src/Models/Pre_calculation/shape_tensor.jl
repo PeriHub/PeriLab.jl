@@ -5,7 +5,8 @@
 module Shape_Tensor
 
 using ......Data_Manager
-using ......Helpers: find_active_nodes
+using ......Helpers: find_active_nodes, get_active_update_nodes
+import ..ONLY_FLAGGED_BONDS_CHANGED
 using ......Geometry: compute_shape_tensors!
 export init_model
 export compute_model
@@ -76,9 +77,17 @@ function compute_model(nodes::AbstractVector{Int64}, p::ShapeTensorParams, pre_c
     undeformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Bond Geometry")
     shape_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Shape Tensor")
     inverse_shape_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Inverse Shape Tensor")
-    # update_list = Data_Manager.get_field("Update")
-    # active_nodes = Data_Manager.get_field("Active Nodes")
-    # active_nodes = find_active_nodes(update_list, active_nodes, nodes)
+    # K only changes with the bond damage, so in the first pass of `compute_models` only the
+    # flagged nodes (e.g. all at the first step) are computed. Additive and degradation models
+    # change bonds without the flag.
+    active_models = Data_Manager.get_active_models()
+    if ONLY_FLAGGED_BONDS_CHANGED[] && !haskey(active_models, "Additive Model") &&
+       !haskey(active_models, "Degradation Model")
+        nodes = get_active_update_nodes(Data_Manager.get_field("Active")::Vector{Bool},
+                                        Data_Manager.get_field("Update")::Vector{Bool},
+                                        nodes,
+                                        Data_Manager.get_field("Update Nodes")::Vector{Int64})
+    end
 
     compute_shape_tensors!(shape_tensor,
                            inverse_shape_tensor,

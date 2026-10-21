@@ -110,9 +110,11 @@ function init_data(input::PeriLabInput,
             overlap_map = broadcast_value(comm, overlap_map)
             distribution = broadcast_value(comm, distribution)
             nsets = broadcast_value(comm, nsets)
-            nlist = broadcast_value(comm, nlist)
             nlist_filtered_ids = broadcast_value(comm, nlist_filtered_ids)
         end
+        # the rows (global ids) of this rank's nodes; only the root holds the whole list
+        local_rows = size > 1 ? send_rows_from_root_to_core_i(comm, nlist, distribution) :
+                     nlist[distribution[rank]]
         num_controller::Int64 = send_single_value_from_vector(comm, 0, ntype["controllers"],
                                                               Int64)
         num_responder::Int64 = send_single_value_from_vector(comm, 0, ntype["responder"],
@@ -140,7 +142,8 @@ function init_data(input::PeriLabInput,
         @timeit "distribute_neighborhoodlist_to_cores" distribute_neighborhoodlist_to_cores(comm,
                                                                                             nlist,
                                                                                             distribution,
-                                                                                            false)
+                                                                                            false;
+                                                                                            local_rows)
         if size > 1
             create_bond_overlap_map!(overlap_map, Data_Manager.get_nlist(), distribution,
                                      rank)
@@ -148,7 +151,7 @@ function init_data(input::PeriLabInput,
 
         if !isnothing(nlist_filtered_ids)
             create_and_distribute_bond_norm(comm,
-                                            nlist,
+                                            local_rows,
                                             nlist_filtered_ids,
                                             distribution,
                                             bond_norm,
@@ -236,7 +239,7 @@ Create and distribute the bond norm
 - `dof::Int64`: The degree of freedom
 """
 function create_and_distribute_bond_norm(comm::MPI.Comm,
-                                         nlist::NestedNeighborhoodList,
+                                         local_rows::NestedNeighborhoodList,
                                          nlist_filtered_ids::NestedNeighborhoodList,
                                          distribution::Vector{Vector{Int64}},
                                          bond_norm::Vector{Any},
@@ -252,7 +255,7 @@ function create_and_distribute_bond_norm(comm::MPI.Comm,
     local_nodes = distribution[MPI.Comm_rank(comm) + 1]
     on_rank = Set(local_nodes)
     for (iID, node) in enumerate(local_nodes)
-        bond_norm_field[iID] .= bond_norm[node][[nID in on_rank for nID in nlist[node]]]
+        bond_norm_field[iID] .= bond_norm[node][[nID in on_rank for nID in local_rows[iID]]]
     end
 end
 
@@ -375,9 +378,10 @@ Distributes the neighborhood list to the cores.
 - `distribution Array{Int64}`: global nodes distribution at cores
 """
 function distribute_neighborhoodlist_to_cores(comm::MPI.Comm,
-                                              nlist::NestedNeighborhoodList,
+                                              nlist,
                                               distribution::Vector{Vector{Int64}},
-                                              filtered::Bool)
+                                              filtered::Bool;
+                                              local_rows = nlist[distribution[MPI.Comm_rank(comm) + 1]])
     send_msg = 0
     if filtered
         length_nlist = Data_Manager.create_constant_node_scalar_field("Number of Filtered Neighbors",
@@ -392,8 +396,7 @@ function distribute_neighborhoodlist_to_cores(comm::MPI.Comm,
     end
     length_nlist .= send_vector_from_root_to_core_i(comm, send_msg, length_nlist,
                                                     distribution)
-    local_nlist = get_local_neighbors(Data_Manager.get_local_nodes,
-                                      nlist[distribution[rank+1]])
+    local_nlist = get_local_neighbors(Data_Manager.get_local_nodes, copy(local_rows))
     if filtered
         # bond indices with other lengths than "Number of Neighbors", so it cannot share
         # the CSR offsets of the bond fields and stays nested
