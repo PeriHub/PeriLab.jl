@@ -16,8 +16,10 @@ RUN apt-get update \
 
 ENV JULIA_CPU_TARGET="generic"
 
-RUN julia --project -e 'using Pkg; Pkg.add("JuliaC")'
-RUN julia --project -e 'import JuliaC; JuliaC.main(["--output-exe", "PeriLab", "--bundle", "build", "."])'
+# JuliaC lives in the default environment, so it is not compiled into the PeriLab image
+RUN julia -e 'using Pkg; Pkg.add("JuliaC")'
+RUN julia --project -e 'using Pkg; Pkg.instantiate()'
+RUN julia -e 'import JuliaC; JuliaC.main(["--output-exe", "PeriLab", "--bundle", "build", "."])'
 # --trim=safe --experimental
 
 #TODO: use alpine
