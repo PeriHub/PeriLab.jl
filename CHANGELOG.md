@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - Strict validation: unknown keys are errors; `--no_strict` on the command line or `Strict Validation: false` in the deck reports them as warnings
 - `PeriLab.describe(name)` prints the keys of a section or model, `PeriLab.describe(name; template = true)` a YAML block to copy into an input deck
 - `PeriLab.to_json_schema(PeriLab.InputDeck.PeriLabInput)`: JSON Schema of the input deck, e.g. for editor completion
+- `PeriLab --json_schema` prints the input deck's JSON Schema; the API serves it as `GET /schema`. Fields PeriLab evaluates as Julia are flagged `x-perilab-eval`, enum spellings are listed as `examples`
 - Input reference pages generated from the declarations (`PeriLab.generate_parameter_docs`)
 - A docstring above an `@params` field is its description
 - `Fallback` in a solver section: a step the solver cannot compute (Static without convergence, Linear Static Matrix Based when damage starts) is recomputed by the fallback solver, which runs to the final time of the step. Outputs keep their time interval over the switch; `Fallback Output Frequency` and `Fallback Number of Output Steps` in an output set the frequency for the fallback steps

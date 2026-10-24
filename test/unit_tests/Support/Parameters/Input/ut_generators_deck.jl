@@ -290,3 +290,9 @@ end
     ht = only(filter(c -> c["if"]["properties"]["Thermal Model"]["const"] == "Heat Transfer", thermal))
     @test ht["then"]["properties"]["Environmental Temperature"]["x-perilab-eval"] == true
 end
+
+@testset "print_json_schema" begin
+    io = IOBuffer()
+    PeriLab.print_json_schema(io)
+    @test haskey(JSON3.read(String(take!(io)))["properties"], "PeriLab")
+end
