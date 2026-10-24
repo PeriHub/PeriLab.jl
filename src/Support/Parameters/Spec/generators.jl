@@ -10,7 +10,8 @@ const _GLOBALS_SCHEMA = Dict{String,Any}("type" => "object")
     type_schema(T)
 
 JSON Schema of a declared field type. `Dependent` is a number or a data file
-path; enums are strings (their spellings match loosely, so no JSON `enum`).
+path; enums are strings (their spellings match loosely, so no JSON enum; the
+spellings are listed as examples).
 """
 function type_schema(T)
     T === Float64 && return Dict{String,Any}("type" => "number")
@@ -33,8 +34,8 @@ function type_schema(T)
     end
     T isa Union && return type_schema(_nonnothing(T))
     if T isa DataType && T <: Enum
-        spellings = vcat(string.(instances(T)), collect(keys(enum_aliases(T))))
-        return Dict{String,Any}("type" => "string",
+        spellings = vcat(collect(string.(instances(T))), collect(keys(enum_aliases(T))))
+        return Dict{String,Any}("type" => "string", "examples" => spellings,
                                 "description" => "one of: " * join(spellings, ", ") *
                                                  " (case, spaces and punctuation are ignored)")
     end
@@ -93,6 +94,7 @@ function field_schema(fs::FieldSpec)
     end
     text = filter(!isempty, [fs.description, get(s, "description", ""), _quantity_text(fs.quantity)])
     isempty(text) || (s["description"] = join(text, "; "))
+    fs.evaluated && (s["x-perilab-eval"] = true)
     return s
 end
 

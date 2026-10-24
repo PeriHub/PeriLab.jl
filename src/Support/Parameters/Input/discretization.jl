@@ -24,7 +24,7 @@ end
     start_command::Union{Nothing,String} = opt("Start Command"; default = nothing)
     stop_command::Union{Nothing,String} = opt("Stop Command"; default = nothing)
     end_command::Union{Nothing,String} = opt("End Command"; default = nothing)
-    blocks::Union{Nothing,Dict{String,String}} = opt("Blocks"; default = nothing)
+    blocks::Union{Nothing,Dict{String,String}} = opt("Blocks"; default = nothing, evaluated = true)
 end
 
 @params struct BondFilterParams
@@ -55,9 +55,11 @@ end
     node_sets::Dict{String,Union{Int64,String}} = opt("Node Sets";
                                                       default = Dict{String,
                                                                      Union{Int64,String}}(),
-                                                      description = "Node id, list of ids, or file")
+                                                      description = "Node id, list of ids, or file",
+                                                      evaluated = true)
     distribution_type::Union{Nothing,String} = opt("Distribution Type"; default = nothing)
-    influence_function::Union{Nothing,String} = opt("Influence Function"; default = nothing)
+    influence_function::Union{Nothing,String} = opt("Influence Function"; default = nothing,
+                                                    evaluated = true)
     surface_extrusion::Union{Nothing,SurfaceExtrusionParams} = opt("Surface Extrusion";
                                                                    default = nothing)
     bond_filters::Dict{String,BondFilterParams} = opt("Bond Filters";

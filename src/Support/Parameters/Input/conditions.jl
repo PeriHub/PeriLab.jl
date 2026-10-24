@@ -5,7 +5,8 @@
 @params struct BoundaryConditionParams
     variable::String = req("Variable")
     node_set::String = req("Node Set"; description = "Node set name; several joined with +")
-    value::Union{Float64,String} = req("Value"; description = "Number or expression, e.g. \"10*t\"")
+    value::Union{Float64,String} = req("Value"; description = "Number or expression, e.g. \"10*t\"",
+                                       evaluated = true)
     type::Union{Nothing,String} = opt("Type"; default = nothing,
                                       allowed = ["Initial", "Dirichlet", "Neumann"])
     coordinate::Union{Nothing,String} = opt("Coordinate"; default = nothing)
@@ -18,7 +19,7 @@ end
     calculation_type::Union{Nothing,String} = opt("Calculation Type"; default = nothing)
     block::Union{Nothing,String} = opt("Block"; default = nothing)
     node_set::Union{Nothing,String} = opt("Node Set"; default = nothing)
-    equation::Union{Nothing,String} = opt("Equation"; default = nothing)
+    equation::Union{Nothing,String} = opt("Equation"; default = nothing, evaluated = true)
     x::Union{Nothing,Float64} = opt("X"; default = nothing)
     y::Union{Nothing,Float64} = opt("Y"; default = nothing)
     z::Union{Nothing,Float64} = opt("Z"; default = nothing)

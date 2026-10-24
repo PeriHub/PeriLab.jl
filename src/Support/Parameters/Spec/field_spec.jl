@@ -22,6 +22,7 @@ struct FieldDecl
     quantity::Union{Nothing,Symbol}
     description::String
     category::Union{Nothing,Symbol}
+    evaluated::Bool
 end
 
 _bound(::Nothing) = nothing
@@ -30,26 +31,29 @@ _allowed(::Nothing) = nothing
 _allowed(values) = Vector{Any}(collect(values))
 
 """
-    req(yaml_key; min, max, allowed, quantity, description)
+    req(yaml_key; min, max, allowed, quantity, description, evaluated)
 
 A required parameter. `quantity` (e.g. `:stress`) is documentation only;
-PeriLab has no fixed unit system.
+PeriLab has no fixed unit system. `evaluated = true` marks a string PeriLab
+evaluates as Julia (an expression); the schema flags it with `x-perilab-eval`
+so front ends can guard it.
 """
 function req(alias::AbstractString; min = nothing, max = nothing, allowed = nothing,
-             quantity = nothing, description::AbstractString = "")
+             quantity = nothing, description::AbstractString = "", evaluated::Bool = false)
     return FieldDecl(String(alias), true, NO_DEFAULT, _bound(min), _bound(max),
-                     _allowed(allowed), quantity, String(description), nothing)
+                     _allowed(allowed), quantity, String(description), nothing, evaluated)
 end
 
 """
-    opt(yaml_key; default, min, max, allowed, quantity, description)
+    opt(yaml_key; default, min, max, allowed, quantity, description, evaluated)
 
 An optional parameter; `default` is required.
 """
 function opt(alias::AbstractString; default = NO_DEFAULT, min = nothing, max = nothing,
-             allowed = nothing, quantity = nothing, description::AbstractString = "")
+             allowed = nothing, quantity = nothing, description::AbstractString = "",
+             evaluated::Bool = false)
     return FieldDecl(String(alias), false, default, _bound(min), _bound(max),
-                     _allowed(allowed), quantity, String(description), nothing)
+                     _allowed(allowed), quantity, String(description), nothing, evaluated)
 end
 
 """
@@ -70,9 +74,10 @@ struct FieldSpec
     quantity::Union{Nothing,Symbol}
     description::String
     category::Union{Nothing,Symbol}
+    evaluated::Bool
 end
 
 function FieldSpec(name::Symbol, type, decl::FieldDecl; default = decl.default)
     return FieldSpec(name, type, decl.alias, decl.required, default, decl.min, decl.max,
-                     decl.allowed, decl.quantity, decl.description, decl.category)
+                     decl.allowed, decl.quantity, decl.description, decl.category, decl.evaluated)
 end
