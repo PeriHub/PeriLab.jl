@@ -37,6 +37,30 @@ Write descriptions for a user filling in a form:
 
 See the templates under `src/Models/*/…_template` for every category.
 
+A key that is read only for some values of another key of the same entry
+declares that with `when`:
+
+    opt("Young's Modulus X"; quantity = :stress,
+        when = Dict("Symmetry" => ["orthotropic", "transverse isotropic"]))
+
+The key is read only if every listed key has one of the listed values (exact,
+case-insensitive). A listed key that is not set counts with its default; without
+a default the condition holds. The pseudo key `"\$solver"` stands for the solver
+chosen in the same `Solver` / `Multistep Solver` step. Every listed key needs a
+fixed set of values: `allowed`, an `@enum` type, or `schema_choices(T)` for
+values PeriLab matches loosely or takes from a registry (the bond filter types,
+`Symmetry`). The JSON Schema emits the condition as `x-perilab-when`, the input
+reference as "only with …"; parsing ignores it. Rules that depend on a key being
+*set* ("ignored when Fixed dt is set") stay in the description.
+
+Keys required only for some value of another key go into
+`conditional_required(T)`, as `Dict("Type" => ["Rectangular_Plane"]) => [keys...]`;
+the schema adds an `if`/`then` per entry to the struct's `allOf`. `check!` still
+enforces them when the deck is read.
+
+Fields are listed in declaration order (schema, `describe`, input reference):
+declare the required keys first, then the common ones, then rare or expert keys.
+
 A solver is registered the same way. Its options struct is a subtype of
 `SolverOptions`, and the input deck names the solver by its key inside
 `Solver` (or a `Multistep Solver` step):

@@ -102,7 +102,6 @@ PeriLab:
       Final Time: 0.0002
       Number of Steps: 7
       Static:
-        NLSolve: true
         Maximum number of iterations: 200
         Show solver iteration: true
         Residual tolerance: 1e-7

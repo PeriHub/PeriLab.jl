@@ -156,8 +156,11 @@ end
     with_ut_drives() do
         s = PS.json_schema(UTTrip)
         @test s["required"] == ["Distance"]
-        @test s["properties"]["Car"] == PS.json_schema(UTCar)
-        @test s["properties"]["Boat"] == PS.json_schema(UTBoat)
+        # an empty sub-section (null) means the model's defaults
+        @test s["properties"]["Car"] == merge(PS.json_schema(UTCar),
+                                              Dict("type" => ["object", "null"]))
+        @test s["properties"]["Boat"] == merge(PS.json_schema(UTBoat),
+                                               Dict("type" => ["object", "null"]))
         @test s["oneOf"] == Any[Dict{String,Any}("required" => ["Boat"]),
                                 Dict{String,Any}("required" => ["Car"])]
         @test !haskey(s["properties"], "")

@@ -56,7 +56,6 @@ PeriLab:
     Initial Time: 0.0
     Final Time: 5.0e-6
     Linear Static Matrix Based:
-      Safety Factor: 1.0
   Outputs:
     Output1:
       Output Filename: "linear_static_matrix_based_solver_3D"

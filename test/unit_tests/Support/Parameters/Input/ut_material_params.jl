@@ -119,7 +119,7 @@ end
                                                 "Number of State Variables" => 0,
                                                 "UMAT Material Name" => "test"), props))
     @test isempty(ctx.errors)
-    @test m.model.number_of_properties == 27 && m.model.umat_name === nothing
+    @test m.model.number_of_properties == 27
     m, ctx = ut_material(Dict("Material Model" => "Correspondence VUMAT", "File" => "a.so",
                               "Number of Properties" => 3, "Property_3" => "abc",
                               "Propery_2" => 1.0))

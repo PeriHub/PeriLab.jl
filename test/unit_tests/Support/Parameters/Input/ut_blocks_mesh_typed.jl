@@ -56,7 +56,7 @@ end
 end
 
 @testset "gcode block ids" begin
-    gcode(blocks) = Dict{String,Any}("Overwrite Mesh" => true, "Sampling" => 1.0,
+    gcode(blocks) = Dict{String,Any}("Sampling" => 1.0,
                                      "Width" => 1.0, "Height" => 1.0, "Blocks" => blocks)
     g, ctx = ut_bm(ID.GcodeParams, gcode(Dict{Any,Any}(2 => "z > 1", 1 => "z <= 1")))
     @test isempty(ctx.errors)
@@ -64,8 +64,8 @@ end
     g, ctx = ut_bm(ID.GcodeParams, gcode(Dict{Any,Any}("top" => "z > 1")))
     @test ctx.errors[1].path == "X.Blocks.top"
     @test ctx.errors[1].message == "expected a block id (integer) as key"
-    g, _ = ut_bm(ID.GcodeParams, Dict{String,Any}("Overwrite Mesh" => true, "Sampling" => 1.0,
-                                                  "Width" => 1.0, "Height" => 1.0))
+    g, _ = ut_bm(ID.GcodeParams, Dict{String,Any}("Sampling" => 1.0, "Width" => 1.0,
+                                                  "Height" => 1.0))
     @test ID.gcode_block_ids(g) === nothing
 end
 

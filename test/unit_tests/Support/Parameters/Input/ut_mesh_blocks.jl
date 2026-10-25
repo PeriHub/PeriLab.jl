@@ -30,8 +30,7 @@ end
                                                                     "Step_Y" => 0.1,
                                                                     "Step_Z" => 0,
                                                                     "Number" => 3),
-                            "Gcode" => Dict{String,Any}("Overwrite Mesh" => true,
-                                                        "Sampling" => 0.5, "Width" => 1,
+                            "Gcode" => Dict{String,Any}("Sampling" => 0.5, "Width" => 1,
                                                         "Height" => 0.2,
                                                         "Blocks" => Dict{String,Any}("1" => "block_1")),
                             "Bond Filters" => Dict{String,Any}("bf_1" => Dict{String,Any}("Type" => "Rectangular_Plane",
@@ -50,7 +49,7 @@ end
     @test d.horizon_mesh_scaling_x === 1.5 && d.horizon_mesh_scaling_y === nothing
     @test d.input_external_topology.add_neighbor_search === true
     @test d.surface_extrusion.step_z === 0.0 && d.surface_extrusion.number === 3
-    @test d.gcode.scale === 1.0 && d.gcode.blocks == Dict("1" => "block_1")
+    @test d.gcode.blocks == Dict("1" => "block_1")
     @test d.bond_filters["bf_1"].allow_contact && d.bond_filters["bf_1"].normal_z === nothing
 end
 

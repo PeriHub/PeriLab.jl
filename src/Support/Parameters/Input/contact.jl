@@ -29,10 +29,10 @@ end
 @params "Contact model between pairs of blocks" struct ContactBaseParams
     "Distance below which two nodes are in contact and repel each other"
     contact_radius::Float64 = req("Contact Radius"; min = 0, quantity = :length)
-    "Selects the contact stiffness for \"plane stress\", \"plane strain\" or 3D (any other value)"
-    symmetry::String = opt("Symmetry"; default = "3D")
     "Named pairs of blocks this contact model acts on"
     contact_groups::Dict{String,ContactGroupParams} = req("Contact Groups")
+    "Selects the contact stiffness for \"plane stress\", \"plane strain\" or 3D (any other value)"
+    symmetry::String = opt("Symmetry"; default = "3D")
 end
 
 """

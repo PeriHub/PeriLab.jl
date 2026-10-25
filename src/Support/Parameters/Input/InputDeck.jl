@@ -16,6 +16,7 @@ using ..ParameterSpec: @params, req, opt, one_of, ParseContext, add_error!, join
                        parse_section
 import ..ParameterSpec: check!
 using ..PeriLabExceptions: @abort
+using DataStructures: OrderedDict
 
 include("discretization.jl")
 include("blocks.jl")

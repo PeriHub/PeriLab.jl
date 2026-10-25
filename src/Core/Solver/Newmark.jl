@@ -11,37 +11,21 @@ using TimerOutputs: @timeit
 using ...Data_Manager
 using ...Helpers: check_inf_or_nan, find_active_nodes
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof, BoundaryCondition
-using ...ParameterSpec: @params, register_solver, ParseContext, add_error!
-import ...ParameterSpec: check!
+using ...ParameterSpec: @params, register_solver
 using ...InputDeck: SolverParams, SolverOptions, start_time, end_time
 using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, synchronise_field,
                        compute_parabolic_problems_before_model_evaluation,
                        compute_parabolic_problems_after_model_evaluation
 
 @params "Implicit Newmark time integration with the stiffness matrix of correspondence materials" struct NewmarkParams <: SolverOptions
-    "Not used by this solver"
-    safety_factor::Float64 = opt("Safety Factor"; default = 1.0, min = 0)
-    "Not used by this solver; the time step follows from Number of Steps"
-    fixed_dt::Float64 = opt("Fixed dt"; default = -1.0, quantity = :time)
-    "Not used by this solver"
-    numerical_damping::Float64 = opt("Numerical Damping"; default = 0.0, min = 0)
     "Rebuilds the stiffness matrix in every step, e.g. for damage or large deformations; otherwise the initial matrix is reused"
     matrix_update::Bool = opt("Matrix Update"; default = false)
     "Newmark parameter weighting the accelerations in the velocity update (often called gamma); 0.5 adds no numerical damping"
     newmark_delta::Float64 = opt("Newmark Delta"; default = 0.5)
     "Newmark parameter weighting the accelerations in the displacement update (often called beta); 0.25 (0.5 + delta)^2 if not given"
     newmark_alpha::Union{Nothing,Float64} = opt("Newmark Alpha"; default = nothing)
-    "Not supported by this solver; use Verlet Matrix Based for model reduction"
-    model_reduction::Bool = opt("Model Reduction"; default = false)
 end
 __init__() = register_solver("Newmark", NewmarkParams)
-
-function check!(p::NewmarkParams, path::String, ctx::ParseContext)
-    p.model_reduction &&
-        add_error!(ctx, path,
-                   "\"Model Reduction\" is not supported by the Newmark solver; use \"Verlet Matrix Based\" with a \"Model Reduction\" section")
-    return nothing
-end
 using ..Model_Factory: compute_stiff_matrix_compatible_models,
                        compute_matrix_based_bond_forces
 

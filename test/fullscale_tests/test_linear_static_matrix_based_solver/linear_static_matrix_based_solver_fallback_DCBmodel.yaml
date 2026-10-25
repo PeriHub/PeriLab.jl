@@ -108,7 +108,6 @@ PeriLab:
     Material Models: true
     Damage Models: true
     Linear Static Matrix Based:
-      Safety Factor: 1.0
     Fallback:
       Verlet:
         Safety Factor: 0.9

@@ -18,7 +18,7 @@ end
     @test s.options isa ID.SolverOptions
     @test s.options isa PeriLab.Solver_Manager.Static_Solver.StaticParams
     @test ID.solver_name(s) == "Static" && ID.solver_name(s.options) == "Static"
-    @test s.options.safety_factor === 1.0 && s.options.m === 3
+    @test s.options.fixed_dt === -1.0 && s.options.m === 3
     names = [ID.solver_name(ut_st_solver(Dict{String,Any}("Initial Time" => 0.0,
                                                           "Final Time" => 1.0,
                                                           key => Dict{String,Any}())))

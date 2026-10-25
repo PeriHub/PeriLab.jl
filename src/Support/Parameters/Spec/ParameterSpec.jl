@@ -14,6 +14,7 @@ module ParameterSpec
 
 using ..PeriLabExceptions: @abort
 using Dierckx: Spline1D, evaluate
+using DataStructures: OrderedDict
 
 include("errors.jl")
 include("dependent.jl")

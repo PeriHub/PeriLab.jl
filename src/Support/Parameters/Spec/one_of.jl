@@ -15,7 +15,7 @@ the model's defaults.
 """
 function one_of(category::Symbol; description::AbstractString = "")
     return FieldDecl("", true, NO_DEFAULT, nothing, nothing, nothing, nothing,
-                     String(description), category, false)
+                     String(description), category, false, nothing)
 end
 
 "`:ut_drive` → \"ut drive\", used in messages."

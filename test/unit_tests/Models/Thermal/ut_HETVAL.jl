@@ -44,7 +44,7 @@ end
     test_1[1] = 7.3
     test_2 = PeriLab.Data_Manager.create_constant_node_scalar_field("test_field_3", Float64)
     test_2 .= 3
-    th = hetval(Dict("File" => file, "HETVAL name" => "test_sub", "Property_1" => 2,
+    th = hetval(Dict("File" => file, "Property_1" => 2,
                      "Property_2" => 2, "Property_3" => 2.4,
                      "Predefined Field Names" => "test_field_2 test_field_3"))
     HV.init_model(Vector{Int64}(1:nodes), th.model, th, 1)
@@ -56,12 +56,10 @@ end
     @test fields[2, 1] == test_1[2]
     @test fields[1, 2] == test_2[1]
     @test fields[2, 2] == test_2[2]
-    @test th.model.hetval_name == "test_sub"
     th = hetval(Dict("File" => file, "Property_1" => 2, "Property_2" => 2,
                      "Property_3" => 2.4,
                      "Predefined Field Names" => "test_field_2 test_field_3"))
     HV.init_model(Vector{Int64}(1:nodes), th.model, th, 1)
-    @test th.model.hetval_name == "HETVAL"
 end
 @testset "ut_malloc_cstring" begin
     CMNAME = PeriLab.Solver_Manager.Model_Factory.Thermal.HETVAL.malloc_cstring("HETVAL_TEST")

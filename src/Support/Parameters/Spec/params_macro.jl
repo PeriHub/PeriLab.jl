@@ -2,7 +2,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-export @params, params_description, derive, check!, key_patterns
+export @params, params_description, derive, check!, key_patterns, schema_choices,
+       conditional_required
 
 const _SELF = @__MODULE__
 
@@ -51,6 +52,24 @@ as `regex => type` pairs. Matching keys in a model block are type-checked and
 are not reported as unknown; their values are not stored in the struct.
 """
 key_patterns(::Type) = Pair{Regex,Any}[]
+
+"""
+    schema_choices(::Type{T})
+
+Values the JSON Schema offers as `enum` for string keys of `T` that are not
+checked against a fixed `allowed` list (names from a registry, values matched
+loosely), as `YAML key => values`.
+"""
+schema_choices(::Type) = Dict{String,Vector{String}}()
+
+"""
+    conditional_required(::Type{T})
+
+Keys of `T` required only for some values of a sibling key, as
+`Dict(sibling => values) => keys`. The JSON Schema adds one `if`/`then` per
+entry; enforcing them is up to `check!`.
+"""
+conditional_required(::Type) = Pair{Dict{String,Vector{Any}},Vector{String}}[]
 
 const _SCALAR_UNION_MEMBERS = (Nothing, Int64, Float64, String, Bool)
 

@@ -38,12 +38,11 @@ end
 
 @testset "Static, matrix based, Newmark and model reduction options" begin
     s, ctx = ut_solver(Dict{String,Any}("Initial Time" => 0.0, "Final Time" => 1.0,
-                                        "Static" => Dict{String,Any}("NLSolve" => true,
-                                                                     "Fixed dt" => 0.1,
+                                        "Static" => Dict{String,Any}("Fixed dt" => 0.1,
                                                                      "Residual scaling" => 70000)))
     @test isempty(ctx.errors)
     @test s.options.residual_scaling === 70000.0 && s.options.m === 15
-    @test s.options.maximum_number_of_iterations === 100 && s.options.nlsolve === true
+    @test s.options.maximum_number_of_iterations === 100
     @test s.options.fixed_dt === 0.1
     s, ctx = ut_solver(Dict{String,Any}("Initial Time" => 0.0, "Final Time" => 1.0,
                                         "Verlet Matrix Based" => Dict{String,Any}("Model Reduction" => Dict{String,Any}("Type" => "Craig Bampton",
@@ -84,10 +83,11 @@ end
                                         "Verlet Matrix Based" => Dict{String,Any}("Model Reduction" => false)))
     @test isempty(ctx.errors)
     @test s.options.model_reduction === nothing
+    # solvers that never read a key do not declare it
     s, ctx = ut_solver(Dict{String,Any}("Initial Time" => 0.0, "Final Time" => 1.0,
                                         "Newmark" => Dict{String,Any}("Model Reduction" => false)))
-    @test isempty(ctx.errors)
-    @test s.options.model_reduction === false
+    @test ctx.errors[1].path == "Solver.Newmark.\"Model Reduction\""
+    @test startswith(ctx.errors[1].message, "unknown key")
 end
 
 @testset "misspelled solver" begin

@@ -10,11 +10,9 @@ PeriLab:
     Type: "Gcode"
     Input Mesh File: Zugstab_small.gcode
     Gcode:
-      Overwrite Mesh: True
       Sampling: 6.0 # 1.5
       Width: 0.4
       Height: 0.4
-      Scale: 1.0
       Start Command: "TYPE:Solid infill,TYPE:Perimeter"
       Stop Command: "TYPE:Custom,TYPE:Skirt/Brim"
       Blocks:

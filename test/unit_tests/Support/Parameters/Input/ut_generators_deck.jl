@@ -9,6 +9,12 @@ const GID = PeriLab.InputDeck
 const UT_SCHEMA = PeriLab.to_json_schema(GID.PeriLabInput)
 const UT_DECK = UT_SCHEMA["properties"]["PeriLab"]
 
+# the `allOf` case for `key` = `name` (model cases and conditional keys share allOf)
+function ut_case(cases, key, name)
+    is_case(c) = get(get(c["if"]["properties"], key, Dict()), "const", nothing) == name
+    return only(filter(is_case, cases))
+end
+
 @testset "deck schema" begin
     @test UT_SCHEMA["\$schema"] == "https://json-schema.org/draft/2020-12/schema"
     @test UT_SCHEMA["required"] == ["PeriLab"]
@@ -24,12 +30,10 @@ end
     entry = models["Material Models"]["additionalProperties"]
     @test "Material Model" in entry["required"]
     @test haskey(entry["properties"], "Symmetry")                  # base part
-    plastic = only(filter(c -> c["if"]["properties"]["Material Model"]["const"] ==
-                               "Correspondence Plastic", entry["allOf"]))
+    plastic = ut_case(entry["allOf"], "Material Model", "Correspondence Plastic")
     @test haskey(plastic["then"]["properties"], "Yield Stress")
     @test "Yield Stress" in plastic["then"]["required"]
-    umat = only(filter(c -> c["if"]["properties"]["Material Model"]["const"] ==
-                            "Correspondence UMAT", entry["allOf"]))
+    umat = ut_case(entry["allOf"], "Material Model", "Correspondence UMAT")
     @test haskey(umat["then"]["patternProperties"], "^Property_\\d+\$")
     @test haskey(models["Damage Models"]["additionalProperties"]["properties"],
                  "Critical Value")
@@ -47,8 +51,7 @@ end
     entry = contact["additionalProperties"]
     @test "Type" in entry["required"]
     @test haskey(entry["properties"], "Contact Groups")             # shared keys
-    penalty = only(filter(c -> c["if"]["properties"]["Type"]["const"] == "Penalty Contact",
-                          entry["allOf"]))
+    penalty = ut_case(entry["allOf"], "Type", "Penalty Contact")
     @test haskey(penalty["then"]["properties"], "Contact Stiffness")
 end
 
@@ -144,6 +147,7 @@ function ut_is_type(t, x)
     t == "array" ? x isa AbstractVector :
     t == "string" ? x isa AbstractString :
     t == "boolean" ? x isa Bool :
+    t == "null" ? x === nothing :
     t == "integer" ?
     ((x isa Integer && !(x isa Bool)) || (x isa AbstractFloat && isinteger(x))) :
     t == "number" ? (x isa Real && !(x isa Bool)) : false
@@ -287,7 +291,7 @@ end
     @test d["Gcode"]["properties"]["Blocks"]["x-perilab-eval"] == true
     @test !haskey(d["Input Mesh File"], "x-perilab-eval")
     thermal = p["Models"]["properties"]["Thermal Models"]["additionalProperties"]["allOf"]
-    ht = only(filter(c -> c["if"]["properties"]["Thermal Model"]["const"] == "Heat Transfer", thermal))
+    ht = ut_case(thermal, "Thermal Model", "Heat Transfer")
     @test ht["then"]["properties"]["Environmental Temperature"]["x-perilab-eval"] == true
 end
 
@@ -323,6 +327,7 @@ function ut_undescribed!(bad, s, path)
     ut_undescribed!(bad, get(s, "additionalProperties", nothing), path * " → <entry>")
     ut_undescribed!(bad, get(s, "items", nothing), path * " → <item>")
     for case in get(s, "allOf", Any[])
+        haskey(case["then"], "properties") || continue        # conditional required keys
         name = only(values(case["if"]["properties"]))["const"]
         ut_undescribed!(bad, case["then"], path * " → <" * name * ">")
     end
@@ -336,10 +341,124 @@ end
     p = UT_DECK["properties"]
     @test !isempty(p["Blocks"]["additionalProperties"]["description"])
     @test !isempty(p["Solver"]["properties"]["Static"]["description"])
-    plastic = only(filter(c -> c["if"]["properties"]["Material Model"]["const"] ==
-                               "Correspondence Plastic",
-                          p["Models"]["properties"]["Material Models"]["additionalProperties"]["allOf"]))
+    plastic = ut_case(p["Models"]["properties"]["Material Models"]["additionalProperties"]["allOf"],
+                      "Material Model", "Correspondence Plastic")
     @test !isempty(plastic["then"]["description"])
     @test occursin(PeriLab.ParameterSpec.params_description(GID.SolverParams),
                    ut_describe("Solver"))
+end
+
+# every object schema in `s` (sections, entries, items, allOf branches) with its path
+function ut_objects!(found, s, path)
+    s isa AbstractDict || return found
+    haskey(s, "properties") && push!(found, path => s)
+    for (key, p) in get(s, "properties", Dict())
+        ut_objects!(found, p, path * " → " * key)
+    end
+    ut_objects!(found, get(s, "additionalProperties", nothing), path * " → <entry>")
+    ut_objects!(found, get(s, "items", nothing), path * " → <item>")
+    for (i, case) in enumerate(get(s, "allOf", Any[]))
+        ut_objects!(found, case["then"], path * " → <case $i>")
+    end
+    return found
+end
+
+const UT_OBJECTS = ut_objects!(Pair{String,Any}[], UT_SCHEMA, "PeriLab input deck")
+
+@testset "no key is declared only to be ignored" begin
+    bad = [path * " → " * key for (path, s) in UT_OBJECTS
+           for (key, p) in s["properties"]
+           if occursin(r"not used"i, get(p, "description", ""))]
+    isempty(bad) || @info "keys described as not used:\n" * join(bad, "\n")
+    @test isempty(bad)
+end
+
+@testset "x-perilab-when refers to sibling choices" begin
+    solvers = PeriLab.ParameterSpec.registered_names(:solver)
+    # the values a condition key can take: its enum, or the spellings of a Julia enum
+    choices(p) = haskey(p, "enum") ? p["enum"] :
+                 haskey(p, "examples") && get(p, "type", "") == "string" ? p["examples"] :
+                 nothing
+    n = 0
+    for (path, s) in UT_OBJECTS, (key, p) in s["properties"]
+        haskey(p, "x-perilab-when") || continue
+        for (sibling, values) in p["x-perilab-when"]
+            n += 1
+            allowed = sibling == "\$solver" ? solvers :
+                      choices(get(s["properties"], sibling, Dict()))
+            ok = allowed !== nothing &&
+                 all(v -> any(a -> lowercase(a) == lowercase(v), allowed), values)
+            ok ||
+                @error "$path → $key: x-perilab-when $sibling => $values, choices $allowed"
+            @test ok
+        end
+    end
+    @test n > 40
+    solver = UT_DECK["properties"]["Solver"]["properties"]
+    @test solver["Number of Steps"]["x-perilab-when"]["\$solver"] ==
+          ["Static", "Newmark", "Linear Static Matrix Based", "Verlet Matrix Based"]
+    bond_filter = UT_DECK["properties"]["Discretization"]["properties"]["Bond Filters"]["additionalProperties"]
+    @test bond_filter["properties"]["Type"]["enum"] == ["Disk", "Rectangular_Plane"]
+    @test bond_filter["properties"]["Radius"]["x-perilab-when"] == Dict("Type" => ["Disk"])
+    @test bond_filter["properties"]["Side Length"]["x-perilab-when"] ==
+          Dict("Type" => ["Rectangular_Plane"])
+end
+
+@testset "properties follow the declaration order" begin
+    PS = PeriLab.ParameterSpec
+    structs = [m.sig.parameters[2].var.ub
+               for m in methods(PS.is_params)
+               if m.sig.parameters[2] isa UnionAll && m.sig.parameters[2].var.ub !== Any]
+    @test length(structs) > 50
+    for T in structs
+        expected = String[]
+        for fs in PS.parameter_spec(T)
+            fs.category === nothing ? push!(expected, fs.alias) :
+            append!(expected, PS.registered_names(fs.category))
+        end
+        keys_ = filter(!=("Globals"), collect(keys(PS.json_schema(T)["properties"])))
+        keys_ == expected || @error "$T: $keys_ != $expected"
+        @test keys_ == expected
+    end
+    @test collect(keys(UT_DECK["properties"]))[1:4] ==
+          ["Discretization", "Blocks", "Models", "Contact"]
+    material = UT_DECK["properties"]["Models"]["properties"]["Material Models"]["additionalProperties"]
+    @test first(keys(material["properties"])) == "Material Model"
+end
+
+@testset "keys required in some location are required there" begin
+    # keys an object (or one of its allOf branches) requires
+    required(s) = union(get(s, "required", String[]),
+                        [k for c in get(s, "allOf", Any[])
+                         for k in get(c["then"], "required", String[])])
+    bad = String[]
+    for (path, s) in UT_OBJECTS, (key, p) in s["properties"]
+        occursin(r"required (in|there)", get(p, "description", "")) || continue
+        any(o -> haskey(last(o)["properties"], key) && key in required(last(o)),
+            UT_OBJECTS) ||
+            push!(bad, path * " → " * key)
+    end
+    isempty(bad) || @info "required in the text only:\n" * join(bad, "\n")
+    @test isempty(bad)
+    p = UT_DECK["properties"]
+    @test p["Solver"]["required"] == ["Final Time", "Initial Time"]
+    @test p["Multistep Solver"]["additionalProperties"]["required"] == ["Step ID"]
+    bond_filter = p["Discretization"]["properties"]["Bond Filters"]["additionalProperties"]
+    rectangle = ut_case(bond_filter["allOf"], "Type", "Rectangular_Plane")
+    @test "Side Length" in rectangle["then"]["required"]
+    @test ut_valid(bond_filter,
+                   Dict{String,Any}("Type" => "Disk", "Normal X" => 0.0, "Normal Y" => 1.0,
+                                    "Normal Z" => 0.0, "Center X" => 0.0, "Center Y" => 0.0,
+                                    "Center Z" => 0.0, "Radius" => 1.0))
+    @test !ut_valid(bond_filter,
+                    Dict{String,Any}("Type" => "Rectangular_Plane", "Normal X" => 0.0,
+                                     "Normal Y" => 1.0))
+    compute = p["Compute Class Parameters"]["additionalProperties"]
+    @test !ut_valid(compute,
+                    Dict{String,Any}("Compute Class" => "Block_Data",
+                                     "Variable" => "Forces"))
+    material = p["Models"]["properties"]["Material Models"]["additionalProperties"]
+    elastic = Dict{String,Any}("Material Model" => "Correspondence Elastic",
+                               "Symmetry" => "orthotropic", "Young's Modulus X" => 1.0)
+    @test !ut_valid(material, elastic)
 end

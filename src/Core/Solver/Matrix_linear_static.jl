@@ -22,12 +22,6 @@ using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, StepFail
                        compute_parabolic_problems_after_model_evaluation
 
 @params "Linear static solver with the stiffness matrix of correspondence materials" struct LinearStaticMatrixParams <: SolverOptions
-    "Not used by this solver"
-    safety_factor::Float64 = opt("Safety Factor"; default = 1.0, min = 0)
-    "Not used by this solver; the load steps follow from Number of Steps"
-    fixed_dt::Float64 = opt("Fixed dt"; default = -1.0, quantity = :time)
-    "Not used by this solver"
-    numerical_damping::Float64 = opt("Numerical Damping"; default = 0.0, min = 0)
     "Rebuilds the stiffness matrix in every step, e.g. for damage; otherwise the initial matrix is reused"
     matrix_update::Bool = opt("Matrix Update"; default = false)
 end

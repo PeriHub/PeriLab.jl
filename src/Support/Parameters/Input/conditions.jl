@@ -18,25 +18,55 @@
     step_id::Union{Nothing,Int64,String} = opt("Step ID"; default = nothing)
 end
 
+const _BLOCK_DATA = Dict("Compute Class" => ["Block_Data"])
+const _NODE_SET_DATA = Dict("Compute Class" => ["Node_Set_Data"])
+const _NEAREST_POINT_DATA = Dict("Compute Class" => ["Nearest_Point_Data"])
+
 @params "A global value computed from a field over a block, a node set or the node nearest to a point, for the outputs" struct ComputeClassParams
-    "Where the value is taken: \"Block_Data\", \"Node_Set_Data\" or \"Nearest_Point_Data\""
-    compute_class::String = req("Compute Class")
+    "Where the value is taken: a block, a node set or the node nearest to a point"
+    compute_class::String = req("Compute Class";
+                                allowed = [
+                                    "Block_Data",
+                                    "Node_Set_Data",
+                                    "Nearest_Point_Data"
+                                ])
     "Field the value is computed from, e.g. \"Forces\" or \"Displacements\""
     variable::String = req("Variable")
-    "Reduction over the nodes: \"Sum\", \"Maximum\", \"Minimum\" or \"Average\"; without it a node set exports every node separately"
-    calculation_type::Union{Nothing,String} = opt("Calculation Type"; default = nothing)
-    "Block name (Block_Data)"
-    block::Union{Nothing,String} = opt("Block"; default = nothing)
-    "Node set name (Node_Set_Data)"
-    node_set::Union{Nothing,String} = opt("Node Set"; default = nothing)
+    "Reduction over the nodes; without it a node set exports every node separately"
+    calculation_type::Union{Nothing,String} = opt("Calculation Type"; default = nothing,
+                                                  allowed = ["Sum", "Maximum", "Minimum",
+                                                  "Average"])
+    "Block name"
+    block::Union{Nothing,String} = opt("Block"; default = nothing, when = _BLOCK_DATA)
+    "Node set name"
+    node_set::Union{Nothing,String} = opt("Node Set"; default = nothing, when = _NODE_SET_DATA)
+    "x coordinate of the point"
+    x::Union{Nothing,Float64} = opt("X"; default = nothing, when = _NEAREST_POINT_DATA)
+    "y coordinate of the point"
+    y::Union{Nothing,Float64} = opt("Y"; default = nothing, when = _NEAREST_POINT_DATA)
+    "z coordinate of the point (3D)"
+    z::Union{Nothing,Float64} = opt("Z"; default = nothing, when = _NEAREST_POINT_DATA)
     "Expression in x applied to the computed value x, e.g. \"-x\" or \"x/2\""
     equation::Union{Nothing,String} = opt("Equation"; default = nothing, evaluated = true)
-    "x coordinate of the point (Nearest_Point_Data)"
-    x::Union{Nothing,Float64} = opt("X"; default = nothing)
-    "y coordinate of the point (Nearest_Point_Data)"
-    y::Union{Nothing,Float64} = opt("Y"; default = nothing)
-    "z coordinate of the point (Nearest_Point_Data, 3D)"
-    z::Union{Nothing,Float64} = opt("Z"; default = nothing)
+end
+
+function ParameterSpec.conditional_required(::Type{ComputeClassParams})
+    return [Dict("Compute Class" => Any["Block_Data"]) => ["Block"],
+        Dict("Compute Class" => Any["Node_Set_Data"]) => ["Node Set"],
+        Dict("Compute Class" => Any["Nearest_Point_Data"]) => ["X", "Y"]]
+end
+
+function check!(c::ComputeClassParams, path::String, ctx::ParseContext)
+    value = Dict(fs.alias => getfield(c, fs.name)
+                 for fs in ParameterSpec.parameter_spec(ComputeClassParams))
+    for (condition, keys) in ParameterSpec.conditional_required(ComputeClassParams)
+        c.compute_class in condition["Compute Class"] || continue
+        missing_keys = [key for key in keys if value[key] === nothing]
+        isempty(missing_keys) ||
+            add_error!(ctx, path,
+                       "\"$(c.compute_class)\" requires $(join(missing_keys, ", "))")
+    end
+    return nothing
 end
 
 function check!(bc::BoundaryConditionParams, path::String, ctx::ParseContext)

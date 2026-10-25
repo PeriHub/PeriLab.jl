@@ -17,27 +17,21 @@ function ut_mr(dict)
 end
 
 @testset "reduction blocks forms" begin
-    @test UT_MR.parse_reduction_blocks(ut_mr(Dict{String,Any}("Type" => "Guyan",
+    @test UT_MR.parse_reduction_blocks(ut_mr(Dict{String,Any}("Type" => "Static Condensation",
                                                               "Reduction Blocks" => 2))) == [2]
-    @test UT_MR.parse_reduction_blocks(ut_mr(Dict{String,Any}("Type" => "Guyan",
+    @test UT_MR.parse_reduction_blocks(ut_mr(Dict{String,Any}("Type" => "Static Condensation",
                                                               "Reduction Blocks" => "2, 3"))) ==
           [2, 3]
-    @test UT_MR.parse_reduction_blocks(ut_mr(Dict{String,Any}("Type" => "Guyan"))) === nothing
+    @test UT_MR.parse_reduction_blocks(ut_mr(Dict{String,Any}("Type" => "Static Condensation"))) ===
+          nothing
 end
 
-@testset "Newmark model reduction is rejected clearly" begin
+@testset "Newmark has no model reduction" begin
     ctx = PS.ParseContext()
     PS.parse_section(ID.SolverParams,
                      Dict{String,Any}("Initial Time" => 0.0, "Final Time" => 1.0,
                                       "Newmark" => Dict{String,Any}("Model Reduction" => true)),
                      "Solver", ctx)
-    @test ctx.errors[1].path == "Solver.Newmark"
-    @test ctx.errors[1].message ==
-          "\"Model Reduction\" is not supported by the Newmark solver; use \"Verlet Matrix Based\" with a \"Model Reduction\" section"
-    ctx = PS.ParseContext()
-    PS.parse_section(ID.SolverParams,
-                     Dict{String,Any}("Initial Time" => 0.0, "Final Time" => 1.0,
-                                      "Newmark" => Dict{String,Any}("Model Reduction" => false)),
-                     "Solver", ctx)
-    @test isempty(ctx.errors)
+    @test ctx.errors[1].path == "Solver.Newmark.\"Model Reduction\""
+    @test startswith(ctx.errors[1].message, "unknown key")
 end

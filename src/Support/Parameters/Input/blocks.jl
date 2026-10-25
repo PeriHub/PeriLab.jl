@@ -9,27 +9,27 @@
     density::Float64 = req("Density"; min = 0, quantity = :density)
     "Radius of the neighborhood in which a node interacts with other nodes"
     horizon::Float64 = req("Horizon"; min = 0, quantity = :length)
-    "Heat capacity per unit mass; required with thermal models"
-    specific_heat_capacity::Union{Nothing,Float64} = opt("Specific Heat Capacity";
-                                                         default = nothing, min = 0)
     "Name of an entry in Material Models"
     material_model::Union{Nothing,String} = opt("Material Model"; default = nothing)
     "Name of an entry in Damage Models; no damage if not given"
     damage_model::Union{Nothing,String} = opt("Damage Model"; default = nothing)
     "Name of an entry in Thermal Models"
     thermal_model::Union{Nothing,String} = opt("Thermal Model"; default = nothing)
+    "Heat capacity per unit mass; required with thermal models"
+    specific_heat_capacity::Union{Nothing,Float64} = opt("Specific Heat Capacity";
+                                                         default = nothing, min = 0)
     "Name of an entry in Additive Models"
     additive_model::Union{Nothing,String} = opt("Additive Model"; default = nothing)
+    "Name of an entry in Degradation Models"
+    degradation_model::Union{Nothing,String} = opt("Degradation Model"; default = nothing)
     "Name of an entry in Pre Calculation Models"
     pre_calculation_model::Union{Nothing,String} = opt("Pre Calculation Model";
                                                        default = nothing)
-    "Name of an entry in Degradation Models"
-    degradation_model::Union{Nothing,String} = opt("Degradation Model"; default = nothing)
     "Rotation of the block's material axes about x, in degrees; the only angle in 2D (rotation in the x-y plane); overrides angles from the mesh"
     angle_x::Union{Nothing,Float64} = opt("Angle X"; default = nothing)
-    "Rotation of the block's material axes about y, in degrees (3D, required there with Angle X)"
+    "Rotation of the block's material axes about y, in degrees (3D; give it together with Angle X)"
     angle_y::Union{Nothing,Float64} = opt("Angle Y"; default = nothing)
-    "Rotation of the block's material axes about z, in degrees (3D, required there with Angle X)"
+    "Rotation of the block's material axes about z, in degrees (3D; give it together with Angle X)"
     angle_z::Union{Nothing,Float64} = opt("Angle Z"; default = nothing)
     "Lists the block as FEM in the block summary of the log; the FEM nodes themselves come from the external topology"
     fem::Union{Nothing,Bool} = opt("FEM"; default = nothing)

@@ -13,8 +13,8 @@ using ....ModuleLoader: find_registered_modules
 using .....ParameterSpec: @params, Dependent, register_base!, WithBase, Composite,
                           ParseContext, add_error!, join_path, Table1D, dependent_tables,
                           value, model_parts, model_module,
-                          model_function
-import .....ParameterSpec: check!
+                          model_function, parameter_spec
+import .....ParameterSpec: check!, schema_choices, conditional_required
 
 @params "Lowers the yield stress around a point to seed localization (Correspondence Plastic)" struct FlawFunctionParams
     "Switches the flaw on"
@@ -37,20 +37,64 @@ import .....ParameterSpec: check!
 end
 
 # an active flaw function needs its size, magnitude and location (Z is 0 if missing)
+const _FLAW_KEYS = ["Flaw Size", "Flaw Magnitude", "Flaw Location X", "Flaw Location Y"]
+
+function conditional_required(::Type{FlawFunctionParams})
+    return [Dict("Active" => Any[true]) => _FLAW_KEYS]
+end
+
 function check!(p::FlawFunctionParams, path::String, ctx::ParseContext)
     p.active || return nothing
-    required = (p.flaw_size => "Flaw Size", p.flaw_magnitude => "Flaw Magnitude",
-                p.flaw_location_x => "Flaw Location X",
-                p.flaw_location_y => "Flaw Location Y")
-    missing_keys = [alias for (value, alias) in required if value === nothing]
+    value = Dict(fs.alias => getfield(p, fs.name)
+                 for fs in parameter_spec(FlawFunctionParams))
+    missing_keys = [alias for alias in _FLAW_KEYS if value[alias] === nothing]
     if !isempty(missing_keys)
         add_error!(ctx, path, "an active Flaw Function needs $(join(missing_keys, ", "))")
         return nothing
     end
-    for (value, alias) in required[1:2]
-        value > 0 || add_error!(ctx, join_path(path, alias), "must be positive")
+    for alias in ("Flaw Size", "Flaw Magnitude")
+        value[alias] > 0 || add_error!(ctx, join_path(path, alias), "must be positive")
     end
     return nothing
+end
+
+# every Symmetry value PeriLab distinguishes; it matches them case-insensitively by substring
+const SYMMETRIES = [base * plane
+                    for base in ("isotropic", "orthotropic", "transverse isotropic",
+                                 "anisotropic")
+                    for plane in ("", " plane stress", " plane strain")]
+
+const _ISOTROPIC_KEYS = ["Young's Modulus", "Poisson's Ratio", "Bulk Modulus", "Shear Modulus"]
+
+"""
+    symmetry_keys(symmetry)
+
+YAML keys of the stiffness-matrix constants `symmetry` requires; empty for an
+isotropic material (two of the isotropic constants).
+"""
+function symmetry_keys(symmetry::AbstractString)
+    s = lowercase(symmetry)
+    occursin("anisotropic", s) && return ["C$i$j" for i in 1:6 for j in i:6]
+    plane = occursin("plane stress", s) || occursin("plane strain", s)
+    if occursin("transverse isotropic", s)
+        keys = ["Young's Modulus X", "Young's Modulus Y", "Poisson's Ratio XY"]
+        occursin("plane stress", s) || push!(keys, "Poisson's Ratio YZ")
+        push!(keys, "Shear Modulus XY")
+        plane || push!(keys, "Shear Modulus YZ")
+        return keys
+    end
+    occursin("orthotropic", s) &&
+        return ["Young's Modulus X", "Young's Modulus Y", "Young's Modulus Z",
+                "Poisson's Ratio XY", "Poisson's Ratio YZ", "Poisson's Ratio XZ",
+                "Shear Modulus XY", "Shear Modulus YZ", "Shear Modulus XZ"]
+    return String[]
+end
+
+# `when` of an elastic constant: the Symmetry values that read it
+function _read_by(key::String)
+    return Dict("Symmetry" => key in _ISOTROPIC_KEYS ?
+                              filter(s -> isempty(symmetry_keys(s)), SYMMETRIES) :
+                              filter(s -> key in symmetry_keys(s), SYMMETRIES))
 end
 
 """
@@ -62,90 +106,123 @@ framework. Which elastic constants are needed depends on the model and the
 symmetry; they are completed at initialisation.
 """
 @params "Material model of the blocks that use this entry: elastic constants, symmetry and options shared by all material models" struct MaterialBaseParams
-    "Material symmetry and 2D assumption, e.g. \"isotropic plane strain\", \"isotropic plane stress\", \"orthotropic\", \"transverse isotropic\" or \"anisotropic\"; selects which elastic constants are needed"
+    "Material symmetry and 2D assumption (plane stress or plane strain); selects which elastic constants are needed. Isotropic if not given"
     symmetry::Union{Nothing,String} = opt("Symmetry"; default = nothing)
     "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed"
     youngs_modulus::Union{Nothing,Float64} = opt("Young's Modulus"; default = nothing,
-                                                 min = 0,
-                                                 quantity = :stress)
+                                                 min = 0, quantity = :stress,
+                                                 when = _read_by("Young's Modulus"))
     "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed"
     poissons_ratio::Union{Nothing,Float64} = opt("Poisson's Ratio"; default = nothing,
-                                                 min = -1, max = 0.5)
+                                                 min = -1, max = 0.5,
+                                                 when = _read_by("Poisson's Ratio"))
     "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed"
     bulk_modulus::Union{Nothing,Float64} = opt("Bulk Modulus"; default = nothing, min = 0,
-                                               quantity = :stress)
+                                               quantity = :stress,
+                                               when = _read_by("Bulk Modulus"))
     "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed"
     shear_modulus::Union{Nothing,Float64} = opt("Shear Modulus"; default = nothing, min = 0,
-                                                quantity = :stress)
-    "Young's modulus along the material x axis (orthotropic, transverse isotropic); a number or a table over a node field"
+                                                quantity = :stress,
+                                                when = _read_by("Shear Modulus"))
+    "Young's modulus along the material x axis; a number or a table over a node field"
     youngs_modulus_x::Union{Nothing,Dependent} = opt("Young's Modulus X"; default = nothing,
-                                                     min = 0, quantity = :stress)
-    "Young's modulus along the material y axis (orthotropic, transverse isotropic); a number or a table over a node field"
+                                                     min = 0, quantity = :stress,
+                                                     when = _read_by("Young's Modulus X"))
+    "Young's modulus along the material y axis; a number or a table over a node field"
     youngs_modulus_y::Union{Nothing,Dependent} = opt("Young's Modulus Y"; default = nothing,
-                                                     min = 0, quantity = :stress)
-    "Young's modulus along the material z axis (orthotropic, transverse isotropic); a number or a table over a node field"
+                                                     min = 0, quantity = :stress,
+                                                     when = _read_by("Young's Modulus Y"))
+    "Young's modulus along the material z axis; a number or a table over a node field"
     youngs_modulus_z::Union{Nothing,Dependent} = opt("Young's Modulus Z"; default = nothing,
-                                                     min = 0, quantity = :stress)
-    "Poisson's ratio in the material xy plane (orthotropic, transverse isotropic); a number or a table over a node field"
+                                                     min = 0, quantity = :stress,
+                                                     when = _read_by("Young's Modulus Z"))
+    "Poisson's ratio in the material xy plane; a number or a table over a node field"
     poissons_ratio_xy::Union{Nothing,Dependent} = opt("Poisson's Ratio XY";
-                                                      default = nothing)
-    "Poisson's ratio in the material yz plane (orthotropic, transverse isotropic); a number or a table over a node field"
+                                                      default = nothing,
+                                                      when = _read_by("Poisson's Ratio XY"))
+    "Poisson's ratio in the material yz plane; a number or a table over a node field"
     poissons_ratio_yz::Union{Nothing,Dependent} = opt("Poisson's Ratio YZ";
-                                                      default = nothing)
-    "Poisson's ratio in the material xz plane (orthotropic, transverse isotropic); a number or a table over a node field"
+                                                      default = nothing,
+                                                      when = _read_by("Poisson's Ratio YZ"))
+    "Poisson's ratio in the material xz plane; a number or a table over a node field"
     poissons_ratio_xz::Union{Nothing,Dependent} = opt("Poisson's Ratio XZ";
-                                                      default = nothing)
-    "Shear modulus in the material xy plane (orthotropic, transverse isotropic); a number or a table over a node field"
+                                                      default = nothing,
+                                                      when = _read_by("Poisson's Ratio XZ"))
+    "Shear modulus in the material xy plane; a number or a table over a node field"
     shear_modulus_xy::Union{Nothing,Dependent} = opt("Shear Modulus XY"; default = nothing,
-                                                     min = 0, quantity = :stress)
-    "Shear modulus in the material yz plane (orthotropic, transverse isotropic); a number or a table over a node field"
+                                                     min = 0, quantity = :stress,
+                                                     when = _read_by("Shear Modulus XY"))
+    "Shear modulus in the material yz plane; a number or a table over a node field"
     shear_modulus_yz::Union{Nothing,Dependent} = opt("Shear Modulus YZ"; default = nothing,
-                                                     min = 0, quantity = :stress)
-    "Shear modulus in the material xz plane (orthotropic, transverse isotropic); a number or a table over a node field"
+                                                     min = 0, quantity = :stress,
+                                                     when = _read_by("Shear Modulus YZ"))
+    "Shear modulus in the material xz plane; a number or a table over a node field"
     shear_modulus_xz::Union{Nothing,Dependent} = opt("Shear Modulus XZ"; default = nothing,
-                                                     min = 0, quantity = :stress)
-    "Entry 11 of the stiffness matrix in Voigt notation (anisotropic)"
-    c11::Union{Nothing,Float64} = opt("C11"; default = nothing, quantity = :stress)
-    "Entry 12 of the stiffness matrix in Voigt notation (anisotropic)"
-    c12::Union{Nothing,Float64} = opt("C12"; default = nothing, quantity = :stress)
-    "Entry 13 of the stiffness matrix in Voigt notation (anisotropic)"
-    c13::Union{Nothing,Float64} = opt("C13"; default = nothing, quantity = :stress)
-    "Entry 14 of the stiffness matrix in Voigt notation (anisotropic)"
-    c14::Union{Nothing,Float64} = opt("C14"; default = nothing, quantity = :stress)
-    "Entry 15 of the stiffness matrix in Voigt notation (anisotropic)"
-    c15::Union{Nothing,Float64} = opt("C15"; default = nothing, quantity = :stress)
-    "Entry 16 of the stiffness matrix in Voigt notation (anisotropic)"
-    c16::Union{Nothing,Float64} = opt("C16"; default = nothing, quantity = :stress)
-    "Entry 22 of the stiffness matrix in Voigt notation (anisotropic)"
-    c22::Union{Nothing,Float64} = opt("C22"; default = nothing, quantity = :stress)
-    "Entry 23 of the stiffness matrix in Voigt notation (anisotropic)"
-    c23::Union{Nothing,Float64} = opt("C23"; default = nothing, quantity = :stress)
-    "Entry 24 of the stiffness matrix in Voigt notation (anisotropic)"
-    c24::Union{Nothing,Float64} = opt("C24"; default = nothing, quantity = :stress)
-    "Entry 25 of the stiffness matrix in Voigt notation (anisotropic)"
-    c25::Union{Nothing,Float64} = opt("C25"; default = nothing, quantity = :stress)
-    "Entry 26 of the stiffness matrix in Voigt notation (anisotropic)"
-    c26::Union{Nothing,Float64} = opt("C26"; default = nothing, quantity = :stress)
-    "Entry 33 of the stiffness matrix in Voigt notation (anisotropic)"
-    c33::Union{Nothing,Float64} = opt("C33"; default = nothing, quantity = :stress)
-    "Entry 34 of the stiffness matrix in Voigt notation (anisotropic)"
-    c34::Union{Nothing,Float64} = opt("C34"; default = nothing, quantity = :stress)
-    "Entry 35 of the stiffness matrix in Voigt notation (anisotropic)"
-    c35::Union{Nothing,Float64} = opt("C35"; default = nothing, quantity = :stress)
-    "Entry 36 of the stiffness matrix in Voigt notation (anisotropic)"
-    c36::Union{Nothing,Float64} = opt("C36"; default = nothing, quantity = :stress)
-    "Entry 44 of the stiffness matrix in Voigt notation (anisotropic)"
-    c44::Union{Nothing,Float64} = opt("C44"; default = nothing, quantity = :stress)
-    "Entry 45 of the stiffness matrix in Voigt notation (anisotropic)"
-    c45::Union{Nothing,Float64} = opt("C45"; default = nothing, quantity = :stress)
-    "Entry 46 of the stiffness matrix in Voigt notation (anisotropic)"
-    c46::Union{Nothing,Float64} = opt("C46"; default = nothing, quantity = :stress)
-    "Entry 55 of the stiffness matrix in Voigt notation (anisotropic)"
-    c55::Union{Nothing,Float64} = opt("C55"; default = nothing, quantity = :stress)
-    "Entry 56 of the stiffness matrix in Voigt notation (anisotropic)"
-    c56::Union{Nothing,Float64} = opt("C56"; default = nothing, quantity = :stress)
-    "Entry 66 of the stiffness matrix in Voigt notation (anisotropic)"
-    c66::Union{Nothing,Float64} = opt("C66"; default = nothing, quantity = :stress)
+                                                     min = 0, quantity = :stress,
+                                                     when = _read_by("Shear Modulus XZ"))
+    "Entry 11 of the stiffness matrix in Voigt notation"
+    c11::Union{Nothing,Float64} = opt("C11"; default = nothing, quantity = :stress,
+                                      when = _read_by("C11"))
+    "Entry 12 of the stiffness matrix in Voigt notation"
+    c12::Union{Nothing,Float64} = opt("C12"; default = nothing, quantity = :stress,
+                                      when = _read_by("C12"))
+    "Entry 13 of the stiffness matrix in Voigt notation"
+    c13::Union{Nothing,Float64} = opt("C13"; default = nothing, quantity = :stress,
+                                      when = _read_by("C13"))
+    "Entry 14 of the stiffness matrix in Voigt notation"
+    c14::Union{Nothing,Float64} = opt("C14"; default = nothing, quantity = :stress,
+                                      when = _read_by("C14"))
+    "Entry 15 of the stiffness matrix in Voigt notation"
+    c15::Union{Nothing,Float64} = opt("C15"; default = nothing, quantity = :stress,
+                                      when = _read_by("C15"))
+    "Entry 16 of the stiffness matrix in Voigt notation"
+    c16::Union{Nothing,Float64} = opt("C16"; default = nothing, quantity = :stress,
+                                      when = _read_by("C16"))
+    "Entry 22 of the stiffness matrix in Voigt notation"
+    c22::Union{Nothing,Float64} = opt("C22"; default = nothing, quantity = :stress,
+                                      when = _read_by("C22"))
+    "Entry 23 of the stiffness matrix in Voigt notation"
+    c23::Union{Nothing,Float64} = opt("C23"; default = nothing, quantity = :stress,
+                                      when = _read_by("C23"))
+    "Entry 24 of the stiffness matrix in Voigt notation"
+    c24::Union{Nothing,Float64} = opt("C24"; default = nothing, quantity = :stress,
+                                      when = _read_by("C24"))
+    "Entry 25 of the stiffness matrix in Voigt notation"
+    c25::Union{Nothing,Float64} = opt("C25"; default = nothing, quantity = :stress,
+                                      when = _read_by("C25"))
+    "Entry 26 of the stiffness matrix in Voigt notation"
+    c26::Union{Nothing,Float64} = opt("C26"; default = nothing, quantity = :stress,
+                                      when = _read_by("C26"))
+    "Entry 33 of the stiffness matrix in Voigt notation"
+    c33::Union{Nothing,Float64} = opt("C33"; default = nothing, quantity = :stress,
+                                      when = _read_by("C33"))
+    "Entry 34 of the stiffness matrix in Voigt notation"
+    c34::Union{Nothing,Float64} = opt("C34"; default = nothing, quantity = :stress,
+                                      when = _read_by("C34"))
+    "Entry 35 of the stiffness matrix in Voigt notation"
+    c35::Union{Nothing,Float64} = opt("C35"; default = nothing, quantity = :stress,
+                                      when = _read_by("C35"))
+    "Entry 36 of the stiffness matrix in Voigt notation"
+    c36::Union{Nothing,Float64} = opt("C36"; default = nothing, quantity = :stress,
+                                      when = _read_by("C36"))
+    "Entry 44 of the stiffness matrix in Voigt notation"
+    c44::Union{Nothing,Float64} = opt("C44"; default = nothing, quantity = :stress,
+                                      when = _read_by("C44"))
+    "Entry 45 of the stiffness matrix in Voigt notation"
+    c45::Union{Nothing,Float64} = opt("C45"; default = nothing, quantity = :stress,
+                                      when = _read_by("C45"))
+    "Entry 46 of the stiffness matrix in Voigt notation"
+    c46::Union{Nothing,Float64} = opt("C46"; default = nothing, quantity = :stress,
+                                      when = _read_by("C46"))
+    "Entry 55 of the stiffness matrix in Voigt notation"
+    c55::Union{Nothing,Float64} = opt("C55"; default = nothing, quantity = :stress,
+                                      when = _read_by("C55"))
+    "Entry 56 of the stiffness matrix in Voigt notation"
+    c56::Union{Nothing,Float64} = opt("C56"; default = nothing, quantity = :stress,
+                                      when = _read_by("C56"))
+    "Entry 66 of the stiffness matrix in Voigt notation"
+    c66::Union{Nothing,Float64} = opt("C66"; default = nothing, quantity = :stress,
+                                      when = _read_by("C66"))
     "Column of the state variables that scales the isotropic elastic constants node by node, e.g. for a degradation computed in a UMAT"
     state_factor_id::Union{Nothing,Int64} = opt("State Factor ID"; default = nothing,
                                                 min = 1)
@@ -162,47 +239,29 @@ symmetry; they are completed at initialisation.
                                                            default = nothing)
 end
 
-const _ORTHOTROPIC_KEYS = ((:youngs_modulus_x, "Young's Modulus X"),
-                           (:youngs_modulus_y, "Young's Modulus Y"),
-                           (:youngs_modulus_z, "Young's Modulus Z"),
-                           (:poissons_ratio_xy, "Poisson's Ratio XY"),
-                           (:poissons_ratio_yz, "Poisson's Ratio YZ"),
-                           (:poissons_ratio_xz, "Poisson's Ratio XZ"),
-                           (:shear_modulus_xy, "Shear Modulus XY"),
-                           (:shear_modulus_yz, "Shear Modulus YZ"),
-                           (:shear_modulus_xz, "Shear Modulus XZ"))
-
-function _transverse_keys(symmetry::String)
-    keys = [(:youngs_modulus_x, "Young's Modulus X"),
-        (:youngs_modulus_y, "Young's Modulus Y"),
-        (:poissons_ratio_xy, "Poisson's Ratio XY")]
-    occursin("plane stress", symmetry) ||
-        push!(keys, (:poissons_ratio_yz, "Poisson's Ratio YZ"))
-    push!(keys, (:shear_modulus_xy, "Shear Modulus XY"))
-    if !occursin("plane strain", symmetry) && !occursin("plane stress", symmetry)
-        push!(keys, (:shear_modulus_yz, "Shear Modulus YZ"))
-    end
-    return keys
-end
-
 # stiffness-matrix materials must define all their constants
 function check!(p::MaterialBaseParams, path::String, ctx::ParseContext)
     p.symmetry === nothing && return nothing
-    symmetry = lowercase(p.symmetry)
-    required = if occursin("anisotropic", symmetry)
-        [(Symbol("c$i$j"), "C$i$j") for i in 1:6 for j in i:6]
-    elseif occursin("transverse isotropic", symmetry)
-        _transverse_keys(symmetry)
-    elseif occursin("orthotropic", symmetry)
-        collect(_ORTHOTROPIC_KEYS)
-    else
-        Tuple{Symbol,String}[]
-    end
-    missing_keys = [alias for (field, alias) in required if getfield(p, field) === nothing]
+    field = Dict(fs.alias => fs.name for fs in parameter_spec(MaterialBaseParams))
+    missing_keys = [key
+                    for key in symmetry_keys(p.symmetry)
+                    if getfield(p, field[key]) === nothing]
     isempty(missing_keys) ||
         add_error!(ctx, join_path(path, "Symmetry"),
                    "\"$(p.symmetry)\" requires $(join(missing_keys, ", "))")
     return nothing
+end
+
+schema_choices(::Type{<:MaterialBaseParams}) = Dict("Symmetry" => SYMMETRIES)
+
+function conditional_required(::Type{<:MaterialBaseParams})
+    cases = Pair{Dict{String,Vector{Any}},Vector{String}}[]
+    for keys in unique(symmetry_keys.(SYMMETRIES))
+        isempty(keys) && continue
+        values = Any[s for s in SYMMETRIES if symmetry_keys(s) == keys]
+        push!(cases, Dict("Symmetry" => values) => keys)
+    end
+    return cases
 end
 
 # registration runs at load time, never during precompilation

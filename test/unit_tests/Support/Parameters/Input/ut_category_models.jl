@@ -67,7 +67,6 @@ const TH_PATH = "Models.\"Thermal Models\".Th"
     @test input.thermals["Th"].model.reference_temperature === nothing
     input, _ = ut_thermal(Dict("Thermal Model" => "HETVAL", "File" => "h.so",
                                "Property_1" => 2.0))
-    @test input.thermals["Th"].model.hetval_name == "HETVAL"
     @test input.thermals["Th"].model.number_of_state_variables == 1
 end
 

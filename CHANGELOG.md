@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file.
 - `PeriLab.to_json_schema(PeriLab.InputDeck.PeriLabInput)`: JSON Schema of the input deck, e.g. for editor completion
 - `PeriLab --json_schema` prints the input deck's JSON Schema; the API serves it as `GET /schema`. Fields PeriLab evaluates as Julia are flagged `x-perilab-eval`, enum spellings are listed as `examples`
 - Input reference pages generated from the declarations (`PeriLab.generate_parameter_docs`)
+- JSON Schema for front ends: keys are listed in declaration order (most important first); `x-perilab-when` marks keys that are read only for some values of a sibling key (e.g. `Young's Modulus X` only for orthotropic and transverse isotropic `Symmetry`, `Number of Steps` only for some solvers, `{"$solver": [...]}`), declared with `when` in `opt` / `req`; keys required only for some value of a sibling (bond filter keys per `Type`, compute class keys, stiffness constants per `Symmetry`, an active `Flaw Function`) are `if`/`then` cases; `Solver` requires `Initial Time` and `Final Time`, a `Multistep Solver` step `Step ID`; `Symmetry`, `Discretization` `Type` and the bond filter `Type` list their values as `enum`
 - A docstring above an `@params` field is its description
 - Section and model descriptions: `@params "Description" struct ...` describes a section or model; the JSON Schema, `describe` and the generated input reference show it. Every section, model and key of the input deck now has a description, and a unit test keeps it that way
 - `Fallback` in a solver section: a step the solver cannot compute (Static without convergence, Linear Static Matrix Based when damage starts) is recomputed by the fallback solver, which runs to the final time of the step. Outputs keep their time interval over the switch; `Fallback Output Frequency` and `Fallback Number of Output Steps` in an output set the frequency for the fallback steps
@@ -44,6 +45,9 @@ All notable changes to this project will be documented in this file.
 - All solvers run on one shared time loop; solver modules implement `prepare_solver(run, ctx)` and `time_step!(ws, run, ctx, clock)` instead of `run_solver`, which remains possible for solvers with their own time control
 - Static writes the step that reaches `Maximum Damage` before cancelling; Newmark, Verlet Matrix Based and Linear Static Matrix Based apply `Maximum Damage`, pass the maximum damage to the output (`write_after_damage`) and cancel on every MPI rank
 - Linear Static Matrix Based fails a step that starts damage: the run is cancelled, or continued by the `Fallback` solver
+- Solver options that a solver never read (e.g. `Safety Factor` for Newmark and Static) are removed; decks that still set them get an unknown-key warning
+- `Compute Class`, `Calculation Type` and model reduction `Type` only accept their fixed values (an unknown value failed or was ignored at run time); a compute class without the `Block`, `Node Set` or `X`/`Y` its class needs is an input error
+- Keys that were never read are removed: `UMAT name`, `VUMAT name`, `HETVAL name` (PeriLab always calls `umat_`, `vumat_`, `hetval_`) and `Overwrite Mesh` and `Scale` in `Gcode`
 
 ## [2.2.5] - 2026-09-21
 

@@ -33,19 +33,27 @@ function _model_entry_schema(category::Symbol, name_key::String)
     base = ParameterSpec.base_model(category)
     entry = base === nothing ?
             Dict{String,Any}("type" => "object",
-                             "properties" => Dict{String,Any}("Globals" => Dict{String,Any}("type" => "object"))) :
+                             "properties" => OrderedDict{String,Any}("Globals" => Dict{String,Any}("type" => "object"))) :
             ParameterSpec.json_schema(base)
     delete!(entry, "additionalProperties")      # model keys come from the matching model
     entry["description"] = _category_description(category)
     names = ParameterSpec.registered_names(category)
-    entry["properties"][name_key] = Dict{String,Any}("type" => "string",
-                                                     "description" => "Model of this entry; combine several models with +; one of: " *
-                                                                      join(names, ", "))
+    # the key naming the model comes first
+    name_schema = Dict{String,Any}("type" => "string",
+                                   "description" => "Model of this entry; combine several models with +; one of: " *
+                                                    join(names, ", "))
+    entry["properties"] = merge(OrderedDict{String,Any}(name_key => name_schema),
+                                entry["properties"])
     entry["required"] = sort!(unique([get(entry, "required", String[]); name_key]))
     cases = Any[]
     for (name, T) in ParameterSpec.registered_models(category)
         model = ParameterSpec.json_schema(T)
-        then = Dict{String,Any}("properties" => merge(entry["properties"], model["properties"]),
+        # name key, the model's own keys, then the shared keys
+        props = merge(OrderedDict{String,Any}(name_key => name_schema), model["properties"])
+        for (k, v) in entry["properties"]
+            haskey(props, k) || (props[k] = v)
+        end
+        then = Dict{String,Any}("properties" => props,
                                 "additionalProperties" => false,
                                 "description" => ParameterSpec.params_description(T))
         haskey(model, "required") && (then["required"] = model["required"])
@@ -56,14 +64,14 @@ function _model_entry_schema(category::Symbol, name_key::String)
               Dict{String,Any}("if" => Dict{String,Any}("properties" => Dict{String,Any}(name_key => Dict{String,Any}("const" => name))),
                                "then" => then))
     end
-    isempty(cases) || (entry["allOf"] = cases)
+    isempty(cases) || (entry["allOf"] = [get(entry, "allOf", Any[]); cases])
     return entry
 end
 
 function _pre_calculation_switches_schema()
-    props = Dict{String,Any}(name => Dict{String,Any}("type" => "boolean",
-                                                      "description" => ParameterSpec.params_description(T))
-                             for (name, T) in ParameterSpec.registered_models(:pre_calculation))
+    props = OrderedDict{String,Any}(name => Dict{String,Any}("type" => "boolean",
+                                                             "description" => ParameterSpec.params_description(T))
+                                    for (name, T) in ParameterSpec.registered_models(:pre_calculation))
     for (old, new) in DEPRECATED_PRE_CALCULATIONS
         props[old] = Dict{String,Any}("type" => "boolean", "const" => false,
                                       "description" => "deprecated, use \"$new\"")
@@ -85,7 +93,7 @@ shared keys).
 function to_json_schema(::Type{PeriLabInput})
     deck = ParameterSpec.json_schema(PeriLabSections)
     props = deck["properties"]
-    models = Dict{String,Any}()
+    models = OrderedDict{String,Any}()
     for (section, category, name_key) in MODEL_SECTIONS
         models[section] = Dict{String,Any}("type" => "object",
                                            "description" => _SECTION_DESCRIPTIONS[section],
@@ -102,15 +110,26 @@ function to_json_schema(::Type{PeriLabInput})
                                        "description" => "Material, damage, thermal, additive and degradation models and pre-calculations that blocks refer to by name")
     props["Contact"] = Dict{String,Any}("type" => "object",
                                         "description" => "Contact between blocks, one entry per contact model, plus global contact settings",
-                                        "properties" => Dict{String,Any}("Globals" => ParameterSpec.json_schema(ContactGlobalsParams)),
+                                        "properties" => OrderedDict{String,Any}("Globals" => ParameterSpec.json_schema(ContactGlobalsParams)),
                                         "additionalProperties" => _model_entry_schema(:contact,
                                                                                          "Type"))
     props["Globals"] = Dict{String,Any}("type" => "object")
+    solver = props["Solver"]
+    solver["required"] = sort!(unique([get(solver, "required", String[]);
+                                       "Initial Time"; "Final Time"]))
+    step = props["Multistep Solver"]["additionalProperties"]
+    step["required"] = sort!(unique([get(step, "required", String[]); "Step ID"]))
+    # Models and Contact come after Blocks
+    order = collect(keys(props))
+    filter!(k -> !(k in ("Models", "Contact")), order)
+    pos = findfirst(==("Blocks"), order)
+    order = [order[1:pos]; "Models"; "Contact"; order[(pos + 1):end]]
+    deck["properties"] = OrderedDict{String,Any}(k => props[k] for k in order)
     deck["required"] = sort!(unique([get(deck, "required", String[]); "Models"]))
     return Dict{String,Any}("\$schema" => "https://json-schema.org/draft/2020-12/schema",
                             "title" => "PeriLab input deck", "type" => "object",
                             "description" => "PeriLab input deck",
-                            "properties" => Dict{String,Any}("PeriLab" => deck),
+                            "properties" => OrderedDict{String,Any}("PeriLab" => deck),
                             "required" => ["PeriLab"])
 end
 
@@ -275,7 +294,7 @@ describe(name::AbstractString; template::Bool = false) = describe(stdout, name;
 export generate_parameter_docs
 
 const _DOCS_HEADER = "<!-- generated by PeriLab.generate_parameter_docs; do not edit -->\n\n"
-const _QUANTITY_NOTE = "Quantities name what a value measures; PeriLab has no fixed units, use them in your consistent unit system.\n\n"
+const _QUANTITY_NOTE = "Quantities name what a value measures; PeriLab has no fixed units, use them in your consistent unit system. A key described \"only with Key: a, b\" is read only if the key next to it has one of these values (\"solver\": the solver of the step).\n\n"
 
 function _docs_section(io::IO, title::String, T, level::String)
     println(io, level, " ", title, "\n")

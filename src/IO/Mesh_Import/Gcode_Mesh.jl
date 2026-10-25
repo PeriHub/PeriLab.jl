@@ -782,7 +782,6 @@ function read_mesh(input::PeriLabInput, filename::String)
     gcode = input.sections.discretization.gcode
     gcode === nothing && @abort "Discretization type \"Gcode\" needs a \"Gcode\" section"
     sampling = gcode.sampling
-    scale = gcode.scale
     width = gcode.width
     height = gcode.height
     blocks = gcode_block_ids(gcode)
@@ -799,7 +798,7 @@ function read_mesh(input::PeriLabInput, filename::String)
     end
 
     @info "Read gcode file $filename"
-    @info "Params: Sampling $sampling, width $width and scale $scale "
+    @info "Params: Sampling $sampling, width $width "
 
     pd_mesh = Dict{String,Any}()
     pd_mesh["sampling"] = sampling

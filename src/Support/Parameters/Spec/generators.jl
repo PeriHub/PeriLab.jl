@@ -97,6 +97,7 @@ function field_schema(fs::FieldSpec)
     text = filter(!isempty, [fs.description, generated, _quantity_text(fs.quantity)])
     isempty(text) || (s["description"] = join(text, "; "))
     fs.evaluated && (s["x-perilab-eval"] = true)
+    fs.when === nothing || (s["x-perilab-when"] = fs.when)
     return s
 end
 
@@ -105,17 +106,18 @@ end
 
 JSON Schema object of the `@params` struct `T`: its description
 (`params_description`), its YAML keys with types, defaults, bounds, allowed
-values and descriptions; `required` lists the
+values and descriptions, in field order; `required` lists the
 required keys; indexed keys (`key_patterns`) become `patternProperties`.
 """
 function json_schema(T)
-    props = Dict{String,Any}("Globals" => copy(_GLOBALS_SCHEMA))
+    props = OrderedDict{String,Any}()
     required = String[]
     choices = Any[]
     for fs in parameter_spec(T)
         if fs.category !== nothing
             for (name, S) in registered_models(fs.category)
                 props[name] = json_schema(S)
+                props[name]["type"] = ["object", "null"]     # `Verlet:` without keys: defaults
                 push!(choices, Dict{String,Any}("required" => [name]))
             end
             continue
@@ -123,18 +125,36 @@ function json_schema(T)
         props[fs.alias] = field_schema(fs)
         fs.required && push!(required, fs.alias)
     end
+    for (alias, values) in schema_choices(T)
+        props[alias]["enum"] = values
+    end
+    props["Globals"] = copy(_GLOBALS_SCHEMA)
     schema = Dict{String,Any}("type" => "object", "properties" => props,
                               "additionalProperties" => false)
     description = params_description(T)
     isempty(description) || (schema["description"] = description)
     isempty(required) || (schema["required"] = sort!(required))
     isempty(choices) || (schema["oneOf"] = choices)
+    cases = Any[_required_case(condition, needed)
+                for (condition, needed) in conditional_required(T)]
+    isempty(cases) || (schema["allOf"] = cases)
     patterns = key_patterns(T)
     if !isempty(patterns)
         schema["patternProperties"] = Dict{String,Any}(first(p).pattern => type_schema(last(p))
                                                        for p in patterns)
     end
     return schema
+end
+
+# `if` every key of `condition` is given with one of its values, `then` `required` are required
+function _required_case(condition::AbstractDict, required::Vector{String})
+    props = OrderedDict{String,Any}(k => length(vs) == 1 ?
+                                         Dict{String,Any}("const" => only(vs)) :
+                                         Dict{String,Any}("enum" => collect(vs))
+                                    for (k, vs) in condition)
+    return Dict{String,Any}("if" => Dict{String,Any}("properties" => props,
+                                                     "required" => collect(keys(condition))),
+                            "then" => Dict{String,Any}("required" => required))
 end
 
 "Readable name of a declared field type (docs and `describe`)."
@@ -181,7 +201,13 @@ end
 One row of strings per YAML key of `T`: key, type, required, default, range,
 quantity, description.
 """
-parameter_rows(T) = [_row(fs) for fs in parameter_spec(T)]
+function parameter_rows(T)
+    choices = schema_choices(T)
+    rows = [_row(fs) for fs in parameter_spec(T)]
+    return [haskey(choices, r.key) ?
+            merge(r, (range = "one of: " * join(choices[r.key], ", "),)) : r
+            for r in rows]
+end
 
 function _row(fs::FieldSpec)
     if fs.category !== nothing
@@ -194,7 +220,15 @@ function _row(fs::FieldSpec)
             required = fs.required ? "required" : "optional",
             default = _default_text(fs), range = _range_text(fs),
             quantity = fs.quantity === nothing ? "" : string(fs.quantity),
-            description = fs.description)
+            description = join(filter(!isempty, [fs.description, _when_text(fs)]), "; "))
+end
+
+# "only with Type: Disk" for a field with `when`
+function _when_text(fs::FieldSpec)
+    fs.when === nothing && return ""
+    conditions = [(k == "\$solver" ? "solver" : k) * ": " * join(vs, ", ")
+                  for (k, vs) in sort!(collect(fs.when); by = first)]
+    return "only with " * join(conditions, " and ")
 end
 
 function _params_type(T)

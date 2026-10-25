@@ -110,7 +110,6 @@ PeriLab:
       Material Models: true
       # Damage Models: true
       Newmark:
-        Safety Factor: 1.0
     Step 2:
       Step ID: 2
       Final Time: 0.00009

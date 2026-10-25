@@ -6,9 +6,10 @@
     discretization::DiscretizationParams = req("Discretization")
     "Blocks of the mesh, one entry per name"
     blocks::Dict{String,BlockParams} = req("Blocks")
-    fem::Union{Nothing,FEMParams} = opt("FEM"; default = nothing)
-    surface_correction::Union{Nothing,SurfaceCorrectionParams} = opt("Surface Correction";
-                                                                     default = nothing)
+    "Boundary and initial conditions, one entry per name"
+    boundary_conditions::Dict{String,BoundaryConditionParams} = opt("Boundary Conditions";
+                                                                    default = Dict{String,
+                                                                                   BoundaryConditionParams}())
     "Single solver step; use either this or Multistep Solver"
     solver::Union{Nothing,SolverParams} = opt("Solver"; default = nothing)
     "Several solver steps run one after another, one entry per name, each with its own Step ID"
@@ -16,14 +17,13 @@
                                                       default = Dict{String,SolverParams}())
     "Result files, one entry per name"
     outputs::Dict{String,OutputParams} = opt("Outputs"; default = Dict{String,OutputParams}())
-    "Boundary and initial conditions, one entry per name"
-    boundary_conditions::Dict{String,BoundaryConditionParams} = opt("Boundary Conditions";
-                                                                    default = Dict{String,
-                                                                                   BoundaryConditionParams}())
     "Global values for the outputs, one entry per name; the name is used in Output Variables"
     compute_class_parameters::Dict{String,ComputeClassParams} = opt("Compute Class Parameters";
                                                                     default = Dict{String,
                                                                                    ComputeClassParams}())
+    fem::Union{Nothing,FEMParams} = opt("FEM"; default = nothing)
+    surface_correction::Union{Nothing,SurfaceCorrectionParams} = opt("Surface Correction";
+                                                                     default = nothing)
     "Unknown keys are errors; false reports them as warnings"
     strict_validation::Bool = opt("Strict Validation"; default = true)
 end

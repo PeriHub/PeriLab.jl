@@ -6,7 +6,7 @@
     SolverOptions
 
 Options section of one solver. A solver module declares
-`@params struct MyParams <: SolverOptions` (by convention with `safety_factor`,
+`@params struct MyParams <: SolverOptions` (explicit solvers by convention with `safety_factor`,
 `fixed_dt` (-1 if not given) and `numerical_damping`) and registers it with
 `register_solver(name, MyParams)` in its `__init__()`; the input deck names the
 solver by that key inside `Solver` or a `Multistep Solver` step.
@@ -26,6 +26,8 @@ end
 
 "Used for `Solver` and for every step of `Multistep Solver`."
 @params "Time range, solver and the model categories evaluated in a solver step" struct SolverParams
+    "Number of the step in a Multistep Solver (required there); steps run in ascending order and boundary conditions refer to it"
+    step_id::Union{Nothing,Int64} = opt("Step ID"; default = nothing)
     "Start time of the step (required in Solver); a step of a Multistep Solver starts at the current time if this is not given or earlier"
     initial_time::Union{Nothing,Float64} = opt("Initial Time"; default = nothing,
                                                quantity = :time)
@@ -34,32 +36,33 @@ end
     "Duration of the step, added to the current time; used if Final Time is not given"
     additional_time::Union{Nothing,Float64} = opt("Additional Time"; default = nothing,
                                                   quantity = :time)
-    "Number of time steps for solvers without a stable time step (Static, Newmark, matrix-based); ignored by Verlet and when Fixed dt is set. 1 if not given"
-    number_of_steps::Union{Nothing,Int64} = opt("Number of Steps"; default = nothing, min = 1)
-    "Stops the step once the maximum damage of any node exceeds this value"
-    maximum_damage::Float64 = opt("Maximum Damage"; default = Inf)
-    "Number of the step in a Multistep Solver (required there); steps run in ascending order and boundary conditions refer to it"
-    step_id::Union{Nothing,Int64} = opt("Step ID"; default = nothing)
-    "Evaluates the additive models of the blocks"
-    additive_models::Bool = opt("Additive Models"; default = false)
-    "Evaluates the degradation models of the blocks"
-    degradation_models::Bool = opt("Degradation Models"; default = false)
-    "Evaluates the damage models of the blocks"
-    damage_models::Bool = opt("Damage Models"; default = false)
+    "The solver of this step"
+    options::SolverOptions = one_of(:solver)
+    "Number of time steps; ignored when Fixed dt is set. 1 if not given"
+    number_of_steps::Union{Nothing,Int64} = opt("Number of Steps"; default = nothing, min = 1,
+                                                when = Dict("\$solver" => ["Static", "Newmark",
+                                                "Linear Static Matrix Based",
+                                                "Verlet Matrix Based"]))
     "Evaluates the material models of the blocks"
     material_models::Bool = opt("Material Models"; default = true)
+    "Evaluates the damage models of the blocks"
+    damage_models::Bool = opt("Damage Models"; default = false)
     "Evaluates the thermal models of the blocks"
     thermal_models::Bool = opt("Thermal Models"; default = false)
     "Evaluates the pre-calculations of the blocks"
     pre_calculation_models::Bool = opt("Pre Calculation Models"; default = true)
+    "Evaluates the additive models of the blocks"
+    additive_models::Bool = opt("Additive Models"; default = false)
+    "Evaluates the degradation models of the blocks"
+    degradation_models::Bool = opt("Degradation Models"; default = false)
+    "Stops the step once the maximum damage of any node exceeds this value"
+    maximum_damage::Float64 = opt("Maximum Damage"; default = Inf)
     "Computes the Cauchy stress of non-correspondence materials (correspondence materials always do), e.g. for output"
     calculate_cauchy::Bool = opt("Calculate Cauchy"; default = false)
     "Computes the von Mises stress, e.g. for output"
     calculate_von_mises_stress::Bool = opt("Calculate von Mises stress"; default = false)
     "Computes the strain of non-correspondence materials from the stress, e.g. for output"
     calculate_strain::Bool = opt("Calculate Strain"; default = false)
-    "The solver of this step"
-    options::SolverOptions = one_of(:solver)
     fallback::Union{Nothing,FallbackParams} = opt("Fallback"; default = nothing)
 end
 

@@ -17,8 +17,6 @@ import ......ParameterSpec: check!, key_patterns
     "Material name passed to the HETVAL (at most 80 characters)"
     hetval_material_name::Union{Nothing,String} = opt("HETVAL Material Name";
                                                       default = nothing)
-    "Not used: PeriLab calls the routine hetval_ of the library"
-    hetval_name::String = opt("HETVAL name"; default = "HETVAL")
     "Node fields passed to the HETVAL as predefined fields, separated by spaces; Volume if not given"
     predefined_field_names::Union{Nothing,String} = opt("Predefined Field Names";
                                                         default = nothing)

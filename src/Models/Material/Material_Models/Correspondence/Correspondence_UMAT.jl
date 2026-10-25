@@ -28,8 +28,6 @@ export fields_for_local_synchronization
                                                         default = nothing)
     "Material name passed to the UMAT (at most 80 characters)"
     umat_material_name::Union{Nothing,String} = opt("UMAT Material Name"; default = nothing)
-    "Not used: PeriLab calls the routine umat_ of the library"
-    umat_name::Union{Nothing,String} = opt("UMAT name"; default = nothing)
 end
 key_patterns(::Type{CorrespondenceUMATParams}) = [r"^Property_\d+$" => Float64]
 __init__() = register_material("Correspondence UMAT", CorrespondenceUMATParams)
