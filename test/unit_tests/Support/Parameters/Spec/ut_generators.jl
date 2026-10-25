@@ -96,3 +96,16 @@ end
     @test !haskey(s, "default")
     @test only(GPS.parameter_rows(UTGenInf)).default == "Inf"
 end
+
+GPS.@params struct UTGenEval
+    expr::Union{Nothing,String} = opt("Expr"; default = nothing, evaluated = true)
+    plain::Union{Nothing,String} = opt("Plain"; default = nothing)
+    mode::UTGenMode = opt("Mode"; default = UTGenFast)
+end
+
+@testset "eval marker and enum examples" begin
+    p = GPS.json_schema(UTGenEval)["properties"]
+    @test p["Expr"]["x-perilab-eval"] == true
+    @test !haskey(p["Plain"], "x-perilab-eval")
+    @test issubset(["UTGenFast", "UTGenSlow"], p["Mode"]["examples"])
+end

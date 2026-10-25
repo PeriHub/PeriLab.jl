@@ -13,13 +13,17 @@ with:
     GET  /jobs/{id}/log?tail=200     (see output)
     GET  /jobs/{id}/files            (list results)
     GET  /jobs/{id}/files/{path}     (download a result file)
+    GET  /schema                   (JSON Schema of the input deck)
 """
 
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import shutil
+import subprocess
+from functools import lru_cache
 from pathlib import Path
 from typing import List, Optional
 
@@ -107,6 +111,25 @@ def health():
 def version():
     """Return the periLab runtime version this API serves."""
     return {"perilab_version": _parse_perilab_version()}
+
+
+@lru_cache(maxsize=1)
+def _schema() -> dict:
+    """The binary is fixed per container, so its schema is computed once (failures are not cached)."""
+    result = subprocess.run(
+        [PERILAB_BIN, "--json_schema"], capture_output=True, text=True, check=True, timeout=600
+    )
+    return json.loads(result.stdout)
+
+
+@app.get("/schema", operation_id="schema")
+def schema():
+    """JSON Schema of the input deck accepted by the PeriLab binary this API serves."""
+    try:
+        return _schema()
+    except (OSError, subprocess.SubprocessError, json.JSONDecodeError) as error:
+        detail = getattr(error, "stderr", None) or str(error)
+        raise HTTPException(status_code=503, detail=f"PeriLab could not produce its schema: {detail}")
 
 
 # --------------------------------------------------------------------------- #

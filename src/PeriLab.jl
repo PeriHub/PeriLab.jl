@@ -55,6 +55,7 @@ using ArgParse
 using Dates
 using LibGit2
 using StyledStrings
+import JSON3
 
 using .Data_Manager
 using .PeriLabExceptions: @abort, PeriLabError
@@ -169,6 +170,9 @@ function parse_commandline(ARGS)
         "--no_strict"
         help = "report unknown input keys as warnings instead of errors"
         action = :store_true
+        "--json_schema"
+        help = "print the JSON Schema of the input deck and exit"
+        action = :store_true
         "filenames"
         nargs = '*'
         help = "filenames"
@@ -176,6 +180,17 @@ function parse_commandline(ARGS)
     end
 
     return parse_args(ARGS, s)
+end
+
+"""
+	print_json_schema(io::Base.IO = stdout)
+
+Write the JSON Schema of the input deck (`to_json_schema(PeriLabInput)`) to `io`.
+Used by `PeriLab --json_schema` and the API's `GET /schema`.
+"""
+function print_json_schema(io::Base.IO = stdout)
+    JSON3.write(io, to_json_schema(InputDeck.PeriLabInput))
+    println(io)
 end
 
 """
@@ -187,6 +202,10 @@ This function serves as the entry point for the PeriLab application. It calls th
 """
 function (@main)(ARGS)
     parsed_args = parse_commandline(ARGS)
+    if parsed_args["json_schema"]
+        print_json_schema()
+        return 0
+    end
     MPI.Init()
     comm = MPI.COMM_WORLD
     rank = MPI.Comm_rank(comm)

@@ -275,3 +275,24 @@ end
           occursin("## Solver → Newmark", sections)
     @test occursin("| <solver> | one of: Linear Static Matrix Based", sections)
 end
+
+@testset "evaluated keys are marked" begin
+    p = UT_DECK["properties"]
+    @test p["Boundary Conditions"]["additionalProperties"]["properties"]["Value"]["x-perilab-eval"] == true
+    @test p["Compute Class Parameters"]["additionalProperties"]["properties"]["Equation"]["x-perilab-eval"] ==
+          true
+    d = p["Discretization"]["properties"]
+    @test d["Influence Function"]["x-perilab-eval"] == true
+    @test d["Node Sets"]["x-perilab-eval"] == true
+    @test d["Gcode"]["properties"]["Blocks"]["x-perilab-eval"] == true
+    @test !haskey(d["Input Mesh File"], "x-perilab-eval")
+    thermal = p["Models"]["properties"]["Thermal Models"]["additionalProperties"]["allOf"]
+    ht = only(filter(c -> c["if"]["properties"]["Thermal Model"]["const"] == "Heat Transfer", thermal))
+    @test ht["then"]["properties"]["Environmental Temperature"]["x-perilab-eval"] == true
+end
+
+@testset "print_json_schema" begin
+    io = IOBuffer()
+    PeriLab.print_json_schema(io)
+    @test haskey(JSON3.read(String(take!(io)))["properties"], "PeriLab")
+end
