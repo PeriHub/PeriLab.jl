@@ -16,16 +16,23 @@ using .....ParameterSpec: @params, Dependent, register_base!, WithBase, Composit
                           model_function
 import .....ParameterSpec: check!
 
-@params struct FlawFunctionParams
+@params "Lowers the yield stress around a point to seed localization (Correspondence Plastic)" struct FlawFunctionParams
+    "Switches the flaw on"
     active::Bool = req("Active")
+    "Shape of the flaw: a Gaussian dip of the yield stress"
     function_name::String = req("Function"; allowed = ["Pre-defined"])
+    "Width of the Gaussian dip around the flaw location"
     flaw_size::Union{Nothing,Float64} = opt("Flaw Size"; default = nothing, min = 0,
                                             quantity = :length)
+    "Relative reduction of the yield stress at the flaw location"
     flaw_magnitude::Union{Nothing,Float64} = opt("Flaw Magnitude"; default = nothing,
                                                  min = 0,
                                                  max = 1)
+    "x coordinate of the flaw center"
     flaw_location_x::Union{Nothing,Float64} = opt("Flaw Location X"; default = nothing)
+    "y coordinate of the flaw center"
     flaw_location_y::Union{Nothing,Float64} = opt("Flaw Location Y"; default = nothing)
+    "z coordinate of the flaw center (3D); 0 if not given"
     flaw_location_z::Union{Nothing,Float64} = opt("Flaw Location Z"; default = nothing)
 end
 
@@ -54,65 +61,102 @@ own keys): symmetry, elastic constants, and options shared by the material
 framework. Which elastic constants are needed depends on the model and the
 symmetry; they are completed at initialisation.
 """
-@params struct MaterialBaseParams
-    symmetry::Union{Nothing,String} = opt("Symmetry"; default = nothing,
-                                          description = "e.g. isotropic, isotropic plane strain, isotropic plane stress, orthotropic, anisotropic")
+@params "Material model of the blocks that use this entry: elastic constants, symmetry and options shared by all material models" struct MaterialBaseParams
+    "Material symmetry and 2D assumption, e.g. \"isotropic plane strain\", \"isotropic plane stress\", \"orthotropic\", \"transverse isotropic\" or \"anisotropic\"; selects which elastic constants are needed"
+    symmetry::Union{Nothing,String} = opt("Symmetry"; default = nothing)
+    "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed"
     youngs_modulus::Union{Nothing,Float64} = opt("Young's Modulus"; default = nothing,
                                                  min = 0,
                                                  quantity = :stress)
+    "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed"
     poissons_ratio::Union{Nothing,Float64} = opt("Poisson's Ratio"; default = nothing,
                                                  min = -1, max = 0.5)
+    "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed"
     bulk_modulus::Union{Nothing,Float64} = opt("Bulk Modulus"; default = nothing, min = 0,
                                                quantity = :stress)
+    "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed"
     shear_modulus::Union{Nothing,Float64} = opt("Shear Modulus"; default = nothing, min = 0,
                                                 quantity = :stress)
+    "Young's modulus along the material x axis (orthotropic, transverse isotropic); a number or a table over a node field"
     youngs_modulus_x::Union{Nothing,Dependent} = opt("Young's Modulus X"; default = nothing,
                                                      min = 0, quantity = :stress)
+    "Young's modulus along the material y axis (orthotropic, transverse isotropic); a number or a table over a node field"
     youngs_modulus_y::Union{Nothing,Dependent} = opt("Young's Modulus Y"; default = nothing,
                                                      min = 0, quantity = :stress)
+    "Young's modulus along the material z axis (orthotropic, transverse isotropic); a number or a table over a node field"
     youngs_modulus_z::Union{Nothing,Dependent} = opt("Young's Modulus Z"; default = nothing,
                                                      min = 0, quantity = :stress)
+    "Poisson's ratio in the material xy plane (orthotropic, transverse isotropic); a number or a table over a node field"
     poissons_ratio_xy::Union{Nothing,Dependent} = opt("Poisson's Ratio XY";
                                                       default = nothing)
+    "Poisson's ratio in the material yz plane (orthotropic, transverse isotropic); a number or a table over a node field"
     poissons_ratio_yz::Union{Nothing,Dependent} = opt("Poisson's Ratio YZ";
                                                       default = nothing)
+    "Poisson's ratio in the material xz plane (orthotropic, transverse isotropic); a number or a table over a node field"
     poissons_ratio_xz::Union{Nothing,Dependent} = opt("Poisson's Ratio XZ";
                                                       default = nothing)
+    "Shear modulus in the material xy plane (orthotropic, transverse isotropic); a number or a table over a node field"
     shear_modulus_xy::Union{Nothing,Dependent} = opt("Shear Modulus XY"; default = nothing,
                                                      min = 0, quantity = :stress)
+    "Shear modulus in the material yz plane (orthotropic, transverse isotropic); a number or a table over a node field"
     shear_modulus_yz::Union{Nothing,Dependent} = opt("Shear Modulus YZ"; default = nothing,
                                                      min = 0, quantity = :stress)
+    "Shear modulus in the material xz plane (orthotropic, transverse isotropic); a number or a table over a node field"
     shear_modulus_xz::Union{Nothing,Dependent} = opt("Shear Modulus XZ"; default = nothing,
                                                      min = 0, quantity = :stress)
+    "Entry 11 of the stiffness matrix in Voigt notation (anisotropic)"
     c11::Union{Nothing,Float64} = opt("C11"; default = nothing, quantity = :stress)
+    "Entry 12 of the stiffness matrix in Voigt notation (anisotropic)"
     c12::Union{Nothing,Float64} = opt("C12"; default = nothing, quantity = :stress)
+    "Entry 13 of the stiffness matrix in Voigt notation (anisotropic)"
     c13::Union{Nothing,Float64} = opt("C13"; default = nothing, quantity = :stress)
+    "Entry 14 of the stiffness matrix in Voigt notation (anisotropic)"
     c14::Union{Nothing,Float64} = opt("C14"; default = nothing, quantity = :stress)
+    "Entry 15 of the stiffness matrix in Voigt notation (anisotropic)"
     c15::Union{Nothing,Float64} = opt("C15"; default = nothing, quantity = :stress)
+    "Entry 16 of the stiffness matrix in Voigt notation (anisotropic)"
     c16::Union{Nothing,Float64} = opt("C16"; default = nothing, quantity = :stress)
+    "Entry 22 of the stiffness matrix in Voigt notation (anisotropic)"
     c22::Union{Nothing,Float64} = opt("C22"; default = nothing, quantity = :stress)
+    "Entry 23 of the stiffness matrix in Voigt notation (anisotropic)"
     c23::Union{Nothing,Float64} = opt("C23"; default = nothing, quantity = :stress)
+    "Entry 24 of the stiffness matrix in Voigt notation (anisotropic)"
     c24::Union{Nothing,Float64} = opt("C24"; default = nothing, quantity = :stress)
+    "Entry 25 of the stiffness matrix in Voigt notation (anisotropic)"
     c25::Union{Nothing,Float64} = opt("C25"; default = nothing, quantity = :stress)
+    "Entry 26 of the stiffness matrix in Voigt notation (anisotropic)"
     c26::Union{Nothing,Float64} = opt("C26"; default = nothing, quantity = :stress)
+    "Entry 33 of the stiffness matrix in Voigt notation (anisotropic)"
     c33::Union{Nothing,Float64} = opt("C33"; default = nothing, quantity = :stress)
+    "Entry 34 of the stiffness matrix in Voigt notation (anisotropic)"
     c34::Union{Nothing,Float64} = opt("C34"; default = nothing, quantity = :stress)
+    "Entry 35 of the stiffness matrix in Voigt notation (anisotropic)"
     c35::Union{Nothing,Float64} = opt("C35"; default = nothing, quantity = :stress)
+    "Entry 36 of the stiffness matrix in Voigt notation (anisotropic)"
     c36::Union{Nothing,Float64} = opt("C36"; default = nothing, quantity = :stress)
+    "Entry 44 of the stiffness matrix in Voigt notation (anisotropic)"
     c44::Union{Nothing,Float64} = opt("C44"; default = nothing, quantity = :stress)
+    "Entry 45 of the stiffness matrix in Voigt notation (anisotropic)"
     c45::Union{Nothing,Float64} = opt("C45"; default = nothing, quantity = :stress)
+    "Entry 46 of the stiffness matrix in Voigt notation (anisotropic)"
     c46::Union{Nothing,Float64} = opt("C46"; default = nothing, quantity = :stress)
+    "Entry 55 of the stiffness matrix in Voigt notation (anisotropic)"
     c55::Union{Nothing,Float64} = opt("C55"; default = nothing, quantity = :stress)
+    "Entry 56 of the stiffness matrix in Voigt notation (anisotropic)"
     c56::Union{Nothing,Float64} = opt("C56"; default = nothing, quantity = :stress)
+    "Entry 66 of the stiffness matrix in Voigt notation (anisotropic)"
     c66::Union{Nothing,Float64} = opt("C66"; default = nothing, quantity = :stress)
+    "Column of the state variables that scales the isotropic elastic constants node by node, e.g. for a degradation computed in a UMAT"
     state_factor_id::Union{Nothing,Int64} = opt("State Factor ID"; default = nothing,
-                                                min = 1,
-                                                description = "index of the state variable that scales the elastic constants")
+                                                min = 1)
+    "Polynomial order of the bond-associated correspondence formulation"
     accuracy_order::Union{Nothing,Int64} = opt("Accuracy Order"; default = nothing, min = 1)
+    "Stabilization against zero-energy modes of correspondence materials, e.g. \"Global\""
     zero_energy_control::Union{Nothing,String} = opt("Zero Energy Control";
-                                                     default = nothing,
-                                                     description = "zero energy control model, e.g. Global")
+                                                     default = nothing)
+    "Uses the bond-associated correspondence formulation, which evaluates the deformation gradient per bond instead of per node"
     bond_associated::Bool = opt("Bond Associated"; default = false)
+    "Uses the small-strain tensor instead of the Green-Lagrange strain in correspondence materials"
     linear_strain::Bool = opt("Linear Strain"; default = false)
     flaw_function::Union{Nothing,FlawFunctionParams} = opt("Flaw Function";
                                                            default = nothing)

@@ -20,7 +20,7 @@ by uncommenting `__init__` (the template stays unregistered so that a copy never
 collides with it). Licensed modules register the same way; they are loaded before
 the input deck is read (`Additive.load_licensed_models`).
 """
-@params struct AdditiveTemplateParams
+@params "Template of an additive model; copy it to add a new additive model" struct AdditiveTemplateParams
 end
 
 # __init__() = register_additive("Additive Template", AdditiveTemplateParams)

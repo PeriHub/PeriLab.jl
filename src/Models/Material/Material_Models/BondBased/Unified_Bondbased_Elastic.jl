@@ -24,7 +24,7 @@ export fe_support
 export compute_model
 
 "Parameters of Unified Bond-based Elastic beyond the shared material keys (none)."
-@params struct UnifiedBondbasedElasticParams
+@params "Unified bond-based elastic material after Guan et al. (2024), simplified: no rigid body rotation and no surface correction" struct UnifiedBondbasedElasticParams
 end
 __init__() = register_material("Unified Bond-based Elastic", UnifiedBondbasedElasticParams)
 

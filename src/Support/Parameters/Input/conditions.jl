@@ -2,26 +2,40 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-@params struct BoundaryConditionParams
+@params "Prescribes a field, e.g. displacements, forces or temperature, on node sets" struct BoundaryConditionParams
+    "Field to prescribe, e.g. \"Displacements\", \"Forces\", \"Force Densities\" or \"Temperature\""
     variable::String = req("Variable")
-    node_set::String = req("Node Set"; description = "Node set name; several joined with +")
-    value::Union{Float64,String} = req("Value"; description = "Number or expression, e.g. \"10*t\"",
-                                       evaluated = true)
+    "Node set name from Discretization; several joined with +"
+    node_set::String = req("Node Set")
+    "Number or expression in t (time), st (time within the solver step) and x, y, z (coordinates), e.g. \"10*t\""
+    value::Union{Float64,String} = req("Value"; evaluated = true)
+    "Initial: set once at the start; Dirichlet: set in every step; Neumann: added to the field in every step. Dirichlet if not given"
     type::Union{Nothing,String} = opt("Type"; default = nothing,
                                       allowed = ["Initial", "Dirichlet", "Neumann"])
+    "Component of a vector field the condition acts on: x, y or z"
     coordinate::Union{Nothing,String} = opt("Coordinate"; default = nothing)
+    "Solver steps of a Multistep Solver the condition is active in: one id or a comma-separated list; all steps if not given"
     step_id::Union{Nothing,Int64,String} = opt("Step ID"; default = nothing)
 end
 
-@params struct ComputeClassParams
+@params "A global value computed from a field over a block, a node set or the node nearest to a point, for the outputs" struct ComputeClassParams
+    "Where the value is taken: \"Block_Data\", \"Node_Set_Data\" or \"Nearest_Point_Data\""
     compute_class::String = req("Compute Class")
+    "Field the value is computed from, e.g. \"Forces\" or \"Displacements\""
     variable::String = req("Variable")
+    "Reduction over the nodes: \"Sum\", \"Maximum\", \"Minimum\" or \"Average\"; without it a node set exports every node separately"
     calculation_type::Union{Nothing,String} = opt("Calculation Type"; default = nothing)
+    "Block name (Block_Data)"
     block::Union{Nothing,String} = opt("Block"; default = nothing)
+    "Node set name (Node_Set_Data)"
     node_set::Union{Nothing,String} = opt("Node Set"; default = nothing)
+    "Expression in x applied to the computed value x, e.g. \"-x\" or \"x/2\""
     equation::Union{Nothing,String} = opt("Equation"; default = nothing, evaluated = true)
+    "x coordinate of the point (Nearest_Point_Data)"
     x::Union{Nothing,Float64} = opt("X"; default = nothing)
+    "y coordinate of the point (Nearest_Point_Data)"
     y::Union{Nothing,Float64} = opt("Y"; default = nothing)
+    "z coordinate of the point (Nearest_Point_Data, 3D)"
     z::Union{Nothing,Float64} = opt("Z"; default = nothing)
 end
 

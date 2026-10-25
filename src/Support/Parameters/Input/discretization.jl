@@ -2,72 +2,113 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-@params struct ExternalTopologyParams
-    file::String = req("File"; description = "File with the external element topology")
+@params "Finite element topology read from a separate file, for FEM or coupled FEM/PD meshes" struct ExternalTopologyParams
+    "File with one element per line, listing the node numbers of the element"
+    file::String = req("File")
+    "Keeps the peridynamic neighbors of nodes in finite elements in addition to the element neighbors"
     add_neighbor_search::Union{Nothing,Bool} = opt("Add Neighbor Search"; default = nothing)
 end
 
-@params struct SurfaceExtrusionParams
+@params "Adds two blocks of regularly spaced nodes on both sides of the mesh, e.g. as load introduction" struct SurfaceExtrusionParams
+    "Axis along which the mesh is extended on both sides"
     direction::String = req("Direction"; allowed = ["X", "Y", "Z"])
+    "Node spacing along the extrusion direction"
     step_x::Float64 = req("Step_X"; quantity = :length)
+    "Node spacing across the extrusion direction in the x-y plane"
     step_y::Float64 = req("Step_Y"; quantity = :length)
+    "Node spacing of the added nodes in z (3D only)"
     step_z::Float64 = req("Step_Z"; quantity = :length)
+    "Number of node layers added on each side"
     number::Int64 = req("Number"; min = 0)
 end
 
-@params struct GcodeParams
+@params "Generates the mesh from a G-code file by sampling the printed paths" struct GcodeParams
+    "Not used"
     overwrite_mesh::Bool = req("Overwrite Mesh")
+    "Distance between two nodes along a printed path"
     sampling::Float64 = req("Sampling"; min = 0, quantity = :length)
+    "Width of the printed strand; with sampling and height it sets the node volume"
     width::Float64 = req("Width"; min = 0, quantity = :length)
+    "Layer height of the printed strand; with sampling and width it sets the node volume"
     height::Float64 = req("Height"; min = 0, quantity = :length)
+    "Not used; only written to the log"
     scale::Float64 = opt("Scale"; default = 1.0)
+    "Comma-separated G-code commands that switch node generation on; without it every extruding move creates nodes"
     start_command::Union{Nothing,String} = opt("Start Command"; default = nothing)
+    "Comma-separated G-code commands that switch node generation off; needs a start command"
     stop_command::Union{Nothing,String} = opt("Stop Command"; default = nothing)
+    "G-code command that ends reading the file"
     end_command::Union{Nothing,String} = opt("End Command"; default = nothing)
+    "Block id => condition on the node position x, y, z (e.g. \"z > 2.0\"); a node gets the last block whose condition holds, block 1 otherwise"
     blocks::Union{Nothing,Dict{String,String}} = opt("Blocks"; default = nothing, evaluated = true)
 end
 
-@params struct BondFilterParams
+@params "Removes the bonds crossing a disk or rectangle, e.g. to model a pre-crack" struct BondFilterParams
+    "Shape of the filter: \"Disk\" or \"Rectangular_Plane\""
     type::String = req("Type")
+    "x component of the normal of the filter plane"
     normal_x::Float64 = req("Normal X")
+    "y component of the normal of the filter plane"
     normal_y::Float64 = req("Normal Y")
+    "z component of the normal of the filter plane (3D only)"
     normal_z::Union{Nothing,Float64} = opt("Normal Z"; default = nothing)
+    "x coordinate of the lower left corner of the rectangle (Rectangular_Plane)"
     lower_left_corner_x::Union{Nothing,Float64} = opt("Lower Left Corner X"; default = nothing)
+    "y coordinate of the lower left corner of the rectangle (Rectangular_Plane)"
     lower_left_corner_y::Union{Nothing,Float64} = opt("Lower Left Corner Y"; default = nothing)
+    "z coordinate of the lower left corner of the rectangle (Rectangular_Plane, 3D only)"
     lower_left_corner_z::Union{Nothing,Float64} = opt("Lower Left Corner Z"; default = nothing)
+    "x component of the direction of the rectangle's bottom edge (Rectangular_Plane)"
     bottom_unit_vector_x::Union{Nothing,Float64} = opt("Bottom Unit Vector X"; default = nothing)
+    "y component of the direction of the rectangle's bottom edge (Rectangular_Plane)"
     bottom_unit_vector_y::Union{Nothing,Float64} = opt("Bottom Unit Vector Y"; default = nothing)
+    "z component of the direction of the rectangle's bottom edge (Rectangular_Plane, 3D only)"
     bottom_unit_vector_z::Union{Nothing,Float64} = opt("Bottom Unit Vector Z"; default = nothing)
+    "x coordinate of the disk center (Disk)"
     center_x::Union{Nothing,Float64} = opt("Center X"; default = nothing)
+    "y coordinate of the disk center (Disk)"
     center_y::Union{Nothing,Float64} = opt("Center Y"; default = nothing)
+    "z coordinate of the disk center (Disk, 3D only)"
     center_z::Union{Nothing,Float64} = opt("Center Z"; default = nothing)
+    "Radius of the disk (Disk)"
     radius::Union{Nothing,Float64} = opt("Radius"; default = nothing, min = 0)
+    "Length of the rectangle along the bottom unit vector (Rectangular_Plane)"
     bottom_length::Union{Nothing,Float64} = opt("Bottom Length"; default = nothing, min = 0)
+    "Length of the rectangle perpendicular to the bottom edge (Rectangular_Plane)"
     side_length::Union{Nothing,Float64} = opt("Side Length"; default = nothing, min = 0)
+    "Keeps the filtered bonds as contact bonds so the two sides cannot penetrate each other"
     allow_contact::Bool = opt("Allow Contact"; default = false)
 end
 
-@params struct DiscretizationParams
-    type::String = req("Type"; description = "Mesh format, e.g. \"Text File\" or \"Exodus\"")
+@params "Mesh input: the point cloud or mesh file, node sets, bond filters and the neighbor search" struct DiscretizationParams
+    "Mesh format, e.g. \"Text File\", \"Exodus\", \"Abaqus\" or \"Gcode\""
+    type::String = req("Type")
+    "Mesh file, relative to the input deck"
     input_mesh_file::String = req("Input Mesh File")
     input_external_topology::Union{Nothing,ExternalTopologyParams} = opt("Input External Topology";
                                                                          default = nothing)
+    "Named node sets: a node id, ids separated by spaces, a range \"1:10\", a .txt file with node ids, a condition on x, y, z (e.g. \"x < 0.1\") or \"All\"; Exodus meshes bring their own node sets"
     node_sets::Dict{String,Union{Int64,String}} = opt("Node Sets";
                                                       default = Dict{String,
                                                                      Union{Int64,String}}(),
-                                                      description = "Node id, list of ids, or file",
                                                       evaluated = true)
+    "How nodes are split across MPI ranks: \"Neighbor based\", \"Node based\", or any other value for an even split by node number"
     distribution_type::Union{Nothing,String} = opt("Distribution Type"; default = nothing)
+    "Weight of each bond as a function of its length xi (or xiX, xiY, xiZ), e.g. \"1/xi^2\"; all bonds weigh 1 if not given"
     influence_function::Union{Nothing,String} = opt("Influence Function"; default = nothing,
                                                     evaluated = true)
     surface_extrusion::Union{Nothing,SurfaceExtrusionParams} = opt("Surface Extrusion";
                                                                    default = nothing)
+    "Named bond filters"
     bond_filters::Dict{String,BondFilterParams} = opt("Bond Filters";
                                                       default = Dict{String,BondFilterParams}())
+    "Factor on the horizon in x for the neighbor search, for elliptic neighborhoods"
     horizon_mesh_scaling_x::Union{Nothing,Float64} = opt("Horizon Mesh Scaling X";
                                                          default = nothing)
+    "Factor on the horizon in y for the neighbor search, for elliptic neighborhoods"
     horizon_mesh_scaling_y::Union{Nothing,Float64} = opt("Horizon Mesh Scaling Y";
                                                          default = nothing)
+    "Factor on the horizon in z for the neighbor search, for elliptic neighborhoods"
     horizon_mesh_scaling_z::Union{Nothing,Float64} = opt("Horizon Mesh Scaling Z";
                                                          default = nothing)
     gcode::Union{Nothing,GcodeParams} = opt("Gcode"; default = nothing)

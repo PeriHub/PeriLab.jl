@@ -22,8 +22,10 @@ export fields_for_local_synchronization
 
 using ......ParameterSpec: @params, register_damage
 using ..Damage: critical_value_lookup, init_inverse_bond_id
-@params struct CriticalEnergyParams
+@params "Breaks a bond once its energy exceeds the critical energy release rate" struct CriticalEnergyParams
+    "Breaks bonds only under tension, not under compression"
     only_tension::Bool = opt("Only Tension"; default = true)
+    "Out-of-plane thickness of a 2D model, used to convert the energy release rate to a bond energy"
     thickness::Float64 = opt("Thickness"; default = 1.0, min = 0, quantity = :length)
 end
 __init__() = register_damage("Critical Energy", CriticalEnergyParams)

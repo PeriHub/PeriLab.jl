@@ -11,7 +11,7 @@ export fields_for_local_synchronization
 
 using ......ParameterSpec: @params, register_pre_calculation
 "Switch only: this pre-calculation has no parameters."
-@params struct PreCalculationTemplateParams
+@params "Template of a pre-calculation; copy it to add a new pre-calculation" struct PreCalculationTemplateParams
 end
 # __init__() = register_pre_calculation("pre_calculation Template", PreCalculationTemplateParams)
 """

@@ -12,7 +12,7 @@ export fe_support
 export compute_model
 
 "Parameters of Rigid beyond the shared material keys (none)."
-@params struct RigidParams
+@params "Rigid body: no internal forces and no deformation" struct RigidParams
 end
 __init__() = register_material("Rigid", RigidParams)
 

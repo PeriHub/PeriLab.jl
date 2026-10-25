@@ -30,9 +30,12 @@ using .Model_reduction: init_reduce_model, ReducedState, setup_reduced_state,
                         n_modal, physical_part, modal_part,
                         pull_from_nodes!, add_from_nodes!, push_to_nodes!, ModelReductionParams
 
-@params struct VerletMatrixParams <: SolverOptions
+@params "Explicit Verlet time integration with the stiffness matrix of correspondence materials, optionally with model reduction" struct VerletMatrixParams <: SolverOptions
+    "Factor on the stable time step; values below 1 add a safety margin"
     safety_factor::Float64 = opt("Safety Factor"; default = 1.0, min = 0)
+    "Time step to use instead of the stable time step; -1: compute it from the stable time step and the safety factor"
     fixed_dt::Float64 = opt("Fixed dt"; default = -1.0, quantity = :time)
+    "Damps the velocity: the velocity of the previous step is scaled by one minus this value"
     numerical_damping::Float64 = opt("Numerical Damping"; default = 0.0, min = 0)
     model_reduction::Union{Nothing,ModelReductionParams} = opt("Model Reduction";
                                                                default = nothing)

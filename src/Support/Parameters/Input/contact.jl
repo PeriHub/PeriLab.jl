@@ -7,23 +7,31 @@
 # (`ContactBaseParams`) and the keys of the model named in `Type`, which the
 # contact model module registers with `register_contact`.
 
-@params struct ContactGlobalsParams
+@params "Contact search settings shared by all contact models" struct ContactGlobalsParams
+    "Steps between two global contact searches; in between only the pairs found last are updated"
     global_search_frequency::Int64 = opt("Global Search Frequency"; default = 1, min = 1)
+    "Uses only free surface nodes of the contact blocks as contact nodes, instead of all nodes"
     only_surface_contact_nodes::Bool = opt("Only Surface Contact Nodes"; default = true)
 end
 
-@params struct ContactGroupParams
+@params "A pair of blocks that can come into contact" struct ContactGroupParams
+    "Block id of the master side"
     master_block_id::Int64 = req("Master Block ID"; min = 1)
+    "Block id of the slave side"
     slave_block_id::Int64 = req("Slave Block ID"; min = 1)
+    "Distance within which the global search collects candidate contact pairs; larger than the contact radius"
     search_radius::Float64 = req("Search Radius"; min = 0, quantity = :length)
+    "Steps between two global contact searches of this group; overrides the value in Contact Globals"
     global_search_frequency::Union{Nothing,Int64} = opt("Global Search Frequency";
                                                         default = nothing, min = 1)
 end
 
-@params struct ContactBaseParams
+@params "Contact model between pairs of blocks" struct ContactBaseParams
+    "Distance below which two nodes are in contact and repel each other"
     contact_radius::Float64 = req("Contact Radius"; min = 0, quantity = :length)
-    symmetry::String = opt("Symmetry"; default = "3D",
-                           description = "\"plane stress\", \"plane strain\" or 3D (anything else)")
+    "Selects the contact stiffness for \"plane stress\", \"plane strain\" or 3D (any other value)"
+    symmetry::String = opt("Symmetry"; default = "3D")
+    "Named pairs of blocks this contact model acts on"
     contact_groups::Dict{String,ContactGroupParams} = req("Contact Groups")
 end
 

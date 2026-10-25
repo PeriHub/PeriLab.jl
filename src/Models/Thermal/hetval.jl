@@ -9,16 +9,19 @@ export fields_for_local_synchronization
 
 using ......ParameterSpec: @params, register_thermal, ParseContext, add_error!, join_path
 import ......ParameterSpec: check!, key_patterns
-@params struct HETVALParams
-    file::String = req("File"; description = "HETVAL library, relative to the input deck")
+@params "User-defined heat generation from an Abaqus HETVAL subroutine" struct HETVALParams
+    "HETVAL library, relative to the input deck"
+    file::String = req("File")
+    "Size of the state variable field passed to the HETVAL"
     number_of_state_variables::Int64 = opt("Number of State Variables"; default = 1, min = 1)
+    "Material name passed to the HETVAL (at most 80 characters)"
     hetval_material_name::Union{Nothing,String} = opt("HETVAL Material Name";
                                                       default = nothing)
-    hetval_name::String = opt("HETVAL name"; default = "HETVAL",
-                              description = "not used: PeriLab calls the routine hetval_ of the library")
+    "Not used: PeriLab calls the routine hetval_ of the library"
+    hetval_name::String = opt("HETVAL name"; default = "HETVAL")
+    "Node fields passed to the HETVAL as predefined fields, separated by spaces; Volume if not given"
     predefined_field_names::Union{Nothing,String} = opt("Predefined Field Names";
-                                                        default = nothing,
-                                                        description = "space separated node field names")
+                                                        default = nothing)
 end
 key_patterns(::Type{HETVALParams}) = [r"^Property_\d+$" => Float64]
 function check!(p::HETVALParams, path::String, ctx::ParseContext)

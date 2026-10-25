@@ -20,7 +20,7 @@ export init_model
 export fields_for_local_synchronization
 
 "Parameters of PD Solid Elastic beyond the shared material keys (none)."
-@params struct PDSolidElasticParams
+@params "Linear elastic ordinary state-based material" struct PDSolidElasticParams
 end
 __init__() = register_material("PD Solid Elastic", PDSolidElasticParams)
 """

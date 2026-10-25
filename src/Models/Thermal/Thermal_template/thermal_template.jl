@@ -18,7 +18,7 @@ Declare the YAML keys your thermal model needs beyond the shared thermal keys
 uncommenting `__init__` (the template stays unregistered so that a copy never
 collides with it).
 """
-@params struct ThermalTemplateParams
+@params "Template of a thermal model; copy it to add a new thermal model" struct ThermalTemplateParams
 end
 
 # __init__() = register_thermal("Thermal Template", ThermalTemplateParams)

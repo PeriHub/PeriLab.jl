@@ -18,13 +18,13 @@ export compute_model
 export init_model
 
 using ......ParameterSpec: @params, register_thermal
-@params struct ThermalExpansionParams
+@params "Thermal strain from the change of temperature" struct ThermalExpansionParams
+    "Thermal strain per temperature change: one value, or one per direction"
     thermal_expansion_coefficient::Union{Float64,
-                                         Vector{Float64}} = req("Thermal Expansion Coefficient";
-                                                                description = "a number, or one value per direction")
+                                         Vector{Float64}} = req("Thermal Expansion Coefficient")
+    "Temperature without thermal strain; 0 if not given"
     reference_temperature::Union{Nothing,Float64} = opt("Reference Temperature";
-                                                        default = nothing,
-                                                        description = "0 if missing (with a warning)")
+                                                        default = nothing)
 end
 __init__() = register_thermal("Thermal Expansion", ThermalExpansionParams)
 function thermal_expansion_matrix(alpha::T,

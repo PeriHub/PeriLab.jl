@@ -85,12 +85,11 @@ end
     b, ctx = ut_section(ID.BlockParams,
                         Dict{String,Any}("Block ID" => 1, "Density" => 2700,
                                          "Horizon" => 2, "Material Model" => "Steel",
-                                         "Degradation Model" => "deg", "FEM" => true,
-                                         "Step ID" => "1,2"))
+                                         "Degradation Model" => "deg", "FEM" => true))
     @test isempty(ctx.errors)
     @test b.block_id === 1 && b.density === 2700.0 && b.horizon === 2.0
     @test b.material_model == "Steel" && b.damage_model === nothing
-    @test b.degradation_model == "deg" && b.fem === true && b.step_id == "1,2"
+    @test b.degradation_model == "deg" && b.fem === true
     b, ctx = ut_section(ID.BlockParams,
                         Dict{String,Any}("Block ID" => 1, "Density" => 1.0, "Horizon" => -1.0))
     @test ctx.errors[1].message == "-1.0 is below minimum 0"

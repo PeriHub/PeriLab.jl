@@ -19,6 +19,7 @@ All notable changes to this project will be documented in this file.
 - `PeriLab --json_schema` prints the input deck's JSON Schema; the API serves it as `GET /schema`. Fields PeriLab evaluates as Julia are flagged `x-perilab-eval`, enum spellings are listed as `examples`
 - Input reference pages generated from the declarations (`PeriLab.generate_parameter_docs`)
 - A docstring above an `@params` field is its description
+- Section and model descriptions: `@params "Description" struct ...` describes a section or model; the JSON Schema, `describe` and the generated input reference show it. Every section, model and key of the input deck now has a description, and a unit test keeps it that way
 - `Fallback` in a solver section: a step the solver cannot compute (Static without convergence, Linear Static Matrix Based when damage starts) is recomputed by the fallback solver, which runs to the final time of the step. Outputs keep their time interval over the switch; `Fallback Output Frequency` and `Fallback Number of Output Steps` in an output set the frequency for the fallback steps
 
 ### Changed

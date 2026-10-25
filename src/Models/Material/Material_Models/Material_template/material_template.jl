@@ -19,9 +19,13 @@ export fields_for_local_synchronization
 Declare the YAML keys your material needs beyond the shared material keys
 (Symmetry, Young's Modulus, … are already available). Example:
 
-    my_parameter::Float64 = req("My Parameter"; min = 0, description = "...")
+    "What the value controls, shown as tooltip and in the input reference"
+    my_parameter::Float64 = req("My Parameter"; min = 0)
+
+Describe the model itself with a string after `@params`:
+`@params "Physics the model represents" struct ...`.
 """
-@params struct MaterialTemplateParams
+@params "Template of a material model; copy it to add a new material model" struct MaterialTemplateParams
 end
 # Register under the name the input deck uses by uncommenting:
 # __init__() = register_material("Material Template", MaterialTemplateParams)

@@ -109,3 +109,27 @@ end
     @test !haskey(p["Plain"], "x-perilab-eval")
     @test issubset(["UTGenFast", "UTGenSlow"], p["Mode"]["examples"])
 end
+
+GPS.@params "Inner section" struct UTGenDescribedInner
+    x::Int64 = opt("X"; default = 1)
+end
+
+GPS.@params "A section with a description" struct UTGenDescribed
+    "Depth of the section"
+    depth::Int64 = req("Depth")
+    inner::Union{Nothing,UTGenInner} = opt("Inner"; default = nothing)
+    "Replaces the description of the nested section"
+    other::Union{Nothing,UTGenDescribedInner} = opt("Other"; default = nothing)
+end
+
+@testset "section descriptions" begin
+    @test GPS.params_description(UTGenDescribed) == "A section with a description"
+    @test GPS.params_description(UTGenInner) == ""
+    s = GPS.json_schema(UTGenDescribed)
+    @test s["description"] == "A section with a description"
+    @test !haskey(GPS.json_schema(UTGenInner), "description")
+    @test !haskey(s["properties"]["Inner"], "description")
+    @test s["properties"]["Other"]["description"] ==
+          "Replaces the description of the nested section"
+    @test GPS.json_schema(UTGenDescribedInner)["description"] == "Inner section"
+end

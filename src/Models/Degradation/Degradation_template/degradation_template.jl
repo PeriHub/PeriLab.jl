@@ -19,7 +19,7 @@ Declare the YAML keys your degradation model needs. Register it under your model
 name by uncommenting `__init__` (the template stays unregistered so that a copy
 never collides with it).
 """
-@params struct DegradationTemplateParams
+@params "Template of a degradation model; copy it to add a new degradation model" struct DegradationTemplateParams
 end
 
 # __init__() = register_degradation("Degradation Template", DegradationTemplateParams)

@@ -10,7 +10,7 @@ export init_model
 
 using ......ParameterSpec: @params, register_pre_calculation
 "Switch only: this pre-calculation has no parameters."
-@params struct AxisSymmetricParams
+@params "Axisymmetric model (not implemented yet: computes nothing)" struct AxisSymmetricParams
 end
 __init__() = register_pre_calculation("Axis Symmetric", AxisSymmetricParams)
 

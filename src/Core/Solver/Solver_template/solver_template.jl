@@ -15,9 +15,12 @@ import ..Solver_Common: prepare_solver, time_step!
 The keys of the solver's section in the input deck, e.g.
 `Solver: {Final Time: 1.0, Solver Template: {Safety Factor: 0.9}}`.
 """
-@params struct SolverTemplateParams <: SolverOptions
+@params "Template of a solver; copy it to add a new solver" struct SolverTemplateParams <: SolverOptions
+    "Factor on the stable time step; values below 1 add a safety margin"
     safety_factor::Float64 = opt("Safety Factor"; default = 1.0, min = 0)
+    "Time step to use instead of the stable time step; -1: compute it from the stable time step and the safety factor"
     fixed_dt::Float64 = opt("Fixed dt"; default = -1.0, quantity = :time)
+    "Damps the velocity: the velocity of the previous step is scaled by one minus this value"
     numerical_damping::Float64 = opt("Numerical Damping"; default = 0.0, min = 0)
 end
 

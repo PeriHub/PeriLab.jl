@@ -18,9 +18,12 @@ using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, synchron
                        compute_parabolic_problems_before_model_evaluation,
                        compute_parabolic_problems_after_model_evaluation
 
-@params struct VerletParams <: SolverOptions
+@params "Explicit Verlet time integration with the stable time step; for dynamic problems" struct VerletParams <: SolverOptions
+    "Factor on the stable time step; values below 1 add a safety margin"
     safety_factor::Float64 = opt("Safety Factor"; default = 1.0, min = 0)
+    "Time step to use instead of the stable time step; -1: compute it from the stable time step and the safety factor"
     fixed_dt::Float64 = opt("Fixed dt"; default = -1.0, quantity = :time)
+    "Damps the velocity: the velocity of the previous step is scaled by one minus this value"
     numerical_damping::Float64 = opt("Numerical Damping"; default = 0.0, min = 0)
 end
 __init__() = register_solver("Verlet", VerletParams)

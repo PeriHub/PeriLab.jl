@@ -12,14 +12,28 @@ warnings instead of errors.
 
 A model module declares its own keys and registers them under its model name, e.g.
 
-    @params struct MyMaterialParams
+    @params "Elastic-plastic material with a constant yield stress" struct MyMaterialParams
         "Stress at which the material starts to yield"
         yield_stress::Dependent = req("Yield Stress"; min = 0, quantity = :stress)
     end
     __init__() = register_material("My Material", MyMaterialParams)
 
 A docstring above a field is its description (the same as
-`description = "..."`; giving both is an error).
+`description = "..."`; giving both is an error). The string between `@params`
+and `struct` describes the section or model itself (`params_description(T)`).
+Both end up in the JSON Schema (`description`), in `describe` and in the
+generated input reference; PeriHub shows them as tooltips. Every section, model
+and key needs one, a unit test (`ut_generators_deck.jl`) fails otherwise.
+
+Write descriptions for a user filling in a form:
+
+- one or two sentences on what the value controls or what the model represents,
+  starting with a verb or a noun phrase ("Stops the step once …", "Linear
+  elastic correspondence material based on the deformation gradient");
+- do not repeat the key, the quantity, the allowed values, the default or the
+  range, the schema shows them already; give a unit only where `quantity`
+  cannot express it (degrees, counts) and a default only where it needs
+  explaining ("-1: compute it from the stable time step").
 
 See the templates under `src/Models/*/…_template` for every category.
 
@@ -27,7 +41,8 @@ A solver is registered the same way. Its options struct is a subtype of
 `SolverOptions`, and the input deck names the solver by its key inside
 `Solver` (or a `Multistep Solver` step):
 
-    @params struct MySolverParams <: SolverOptions
+    @params "Explicit solver with my time step control" struct MySolverParams <: SolverOptions
+        "Factor on the stable time step"
         safety_factor::Float64 = opt("Safety Factor"; default = 1.0, min = 0)
     end
     __init__() = register_solver("My Solver", MySolverParams)

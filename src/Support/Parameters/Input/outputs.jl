@@ -2,28 +2,37 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-@params struct OutputParams
+@params "A result file with the fields and compute classes to write and when to write them" struct OutputParams
+    "Name of the result file without extension"
     output_filename::String = req("Output Filename")
+    "File format; CSV holds only the compute class values"
     output_file_type::String = opt("Output File Type"; default = "Exodus",
                                    allowed = ["Exodus", "CSV"])
-    output_frequency::Union{Nothing,Int64,String} = opt("Output Frequency"; default = nothing,
-                                                        description = "Every n-th step; per step as \"n1 n2\"")
+    "Writes every n-th step; per solver step as \"n1 n2\"; Number of Output Steps takes precedence"
+    output_frequency::Union{Nothing,Int64,String} = opt("Output Frequency"; default = nothing)
+    "Number of outputs, evenly spread over the solver steps; per solver step as \"n1 n2\""
     number_of_output_steps::Union{Nothing,Int64,String} = opt("Number of Output Steps";
                                                               default = nothing)
+    "Writes every n-th step of a fallback solver; per solver step as \"n1 n2\""
     fallback_output_frequency::Union{Nothing,Int64,String} = opt("Fallback Output Frequency";
-                                                                 default = nothing,
-                                                                 description = "Every n-th step of a fallback solver; per step as \"n1 n2\"")
+                                                                 default = nothing)
+    "Number of outputs over the steps of a fallback solver; per solver step as \"n1 n2\""
     fallback_number_of_output_steps::Union{Nothing,Int64,String} = opt("Fallback Number of Output Steps";
-                                                                       default = nothing,
-                                                                       description = "Outputs over the steps of a fallback solver")
+                                                                       default = nothing)
+    "Field and compute class names to write (true) or skip (false)"
     output_variables::Dict{String,Bool} = req("Output Variables")
+    "Closes the file after every output so it can be read while the simulation runs"
     flush_file::Bool = opt("Flush File"; default = true)
+    "Starts writing only once damage has occurred"
     write_after_damage::Bool = opt("Write After Damage"; default = false)
+    "No output before this time"
     start_time::Float64 = opt("Start Time"; default = 0.0, quantity = :time)
+    "No output after this time"
     end_time::Float64 = opt("End Time"; default = Inf, quantity = :time)
+    "Writes the bonds as line elements so bond fields can be visualized; switched on automatically when a bond field is requested"
     bond_export::Bool = opt("Bond Export"; default = false)
-    bond_blocks::Union{Nothing,Int64,String} = opt("Bond Blocks"; default = nothing,
-                                                   description = "Block id or list, e.g. \"1 3\"")
+    "Blocks whose bonds are exported: a block id or ids separated by spaces, e.g. \"1 3\"; all blocks if not given"
+    bond_blocks::Union{Nothing,Int64,String} = opt("Bond Blocks"; default = nothing)
 end
 
 function check!(p::OutputParams, path::String, ctx::ParseContext)

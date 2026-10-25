@@ -11,7 +11,8 @@ export init_model
 export fields_for_local_synchronization
 
 using ......ParameterSpec: @params, register_damage
-@params struct CriticalStretchParams
+@params "Breaks a bond once its stretch exceeds the critical value" struct CriticalStretchParams
+    "Breaks bonds only under tension, not under compression"
     only_tension::Bool = opt("Only Tension"; default = true)
 end
 __init__() = register_damage("Critical Stretch", CriticalStretchParams)

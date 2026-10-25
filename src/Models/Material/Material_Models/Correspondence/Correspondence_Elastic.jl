@@ -14,7 +14,7 @@ export init_model
 export fields_for_local_synchronization
 
 "Parameters of Correspondence Elastic beyond the shared material keys (none)."
-@params struct CorrespondenceElasticParams
+@params "Linear elastic correspondence material based on the deformation gradient" struct CorrespondenceElasticParams
 end
 __init__() = register_material("Correspondence Elastic", CorrespondenceElasticParams)
 

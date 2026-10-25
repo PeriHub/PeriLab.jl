@@ -2,12 +2,20 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-export @params, derive, check!, key_patterns
+export @params, params_description, derive, check!, key_patterns
 
 const _SELF = @__MODULE__
 
 "`true` for structs declared with `@params`."
 is_params(::Type) = false
+
+"""
+    params_description(T) -> String
+
+Description of the section or model declared by the `@params` struct `T`
+(`@params "Description" struct T ... end`); empty if none was given.
+"""
+params_description(::Type) = ""
 
 """
     parameter_spec(T) -> Vector{FieldSpec}
@@ -161,7 +169,7 @@ function _field_usage(name, fname)
 end
 
 """
-    @params struct Name
+    @params "Description of the section" struct Name
         field::Type = req("YAML key"; min, max, allowed, quantity, description)
         field::Type = opt("YAML key"; default, min, max, allowed, quantity, description)
         "Description of the next field"
@@ -170,11 +178,24 @@ end
 
 Declares a parameter struct. Generates the plain immutable struct (type
 parameters are added for `Dependent` fields so that every instance is a
-concrete type) and its `parameter_spec`. A docstring above a field is its
+concrete type), its `parameter_spec` and its `params_description` (the string
+before `struct`, optional). A docstring above a field is its
 `description` and stays the field's documentation; giving both is an error.
 Invalid declarations raise a `ParamsDefinitionError` naming the struct and field.
 """
+macro params(description::AbstractString, structdef)
+    return _params(String(strip(description)), structdef)
+end
+
 macro params(structdef)
+    return _params("", structdef)
+end
+
+macro params(args...)
+    return _definition_error("@params: write `@params struct Name ... end` or `@params \"Description\" struct Name ... end`")
+end
+
+function _params(description::String, structdef)
     if !(structdef isa Expr && structdef.head === :struct)
         return _definition_error("@params must be applied to a struct definition")
     end
@@ -241,6 +262,7 @@ macro params(structdef)
                                                          Any[$(entries...)])
                    $(_SELF).parameter_spec(::Type{<:$name}) = $specname
                    $(_SELF).is_params(::Type{<:$name}) = true
+                   $(_SELF).params_description(::Type{<:$name}) = $description
                    nothing
                end)
 end

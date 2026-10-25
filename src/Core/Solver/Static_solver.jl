@@ -19,19 +19,31 @@ using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, StepFail
                        compute_parabolic_problems_before_model_evaluation,
                        compute_parabolic_problems_after_model_evaluation
 
-@params struct StaticParams <: SolverOptions
+@params "Quasi-static solver: finds the equilibrium of each step with a nonlinear solver (NLsolve, Anderson acceleration)" struct StaticParams <: SolverOptions
+    "Not used by this solver"
     safety_factor::Float64 = opt("Safety Factor"; default = 1.0, min = 0)
+    "Time step; -1: the step is split into Number of Steps increments"
     fixed_dt::Float64 = opt("Fixed dt"; default = -1.0, quantity = :time)
+    "Not used by this solver"
     numerical_damping::Float64 = opt("Numerical Damping"; default = 0.0, min = 0)
+    "Convergence limit on the change of the displacements between two iterations"
     solution_tolerance::Float64 = opt("Solution tolerance"; default = 1e-7, min = 0)
+    "Convergence limit on the scaled force residual"
     residual_tolerance::Float64 = opt("Residual tolerance"; default = 1e-7, min = 0)
+    "Iterations per step before the step counts as failed"
     maximum_number_of_iterations::Int64 = opt("Maximum number of iterations"; default = 100,
                                               min = 1)
+    "Prints the iterations of the nonlinear solver"
     show_solver_iteration::Bool = opt("Show solver iteration"; default = false)
+    "Divisor of the force residual before it is compared with the residual tolerance"
     residual_scaling::Float64 = opt("Residual scaling"; default = 1e6)
+    "Number of previous iterations used by the Anderson acceleration"
     m::Int64 = opt("m"; default = 15, min = 1)
+    "Start guess of the displacements: per direction a value at the minimum and one at the maximum coordinate, separated by spaces, interpolated linearly; zero if not given"
     linear_start_value::Union{Nothing,String} = opt("Linear Start Value"; default = nothing)
+    "Not used by this solver"
     nlsolve::Union{Nothing,Bool} = opt("NLSolve"; default = nothing)
+    "Not used by this solver"
     solver_type::Union{Nothing,String} = opt("Solver Type"; default = nothing)
 end
 __init__() = register_solver("Static", StaticParams)

@@ -14,16 +14,20 @@ using .....ParameterSpec: @params, Dependent, Constant, register_base!, ParseCon
                           model_module, model_function
 import .....ParameterSpec: check!
 
-@params struct AnisotropicDamageParams
+@params "Direction-dependent critical values for Critical Energy Anisotropic, along the material axes" struct AnisotropicDamageParams
+    "Critical bond energy for the bond share along the material x axis"
     critical_value_x::Float64 = req("Critical Value X")
+    "Critical bond energy for the bond share along the material y axis"
     critical_value_y::Float64 = req("Critical Value Y")
-    critical_value_z::Union{Nothing,Float64} = opt("Critical Value Z"; default = nothing,
-                                                   description = "defaults to Critical Value Y")
+    "Critical bond energy for the bond share along the material z axis (3D); the y value if not given"
+    critical_value_z::Union{Nothing,Float64} = opt("Critical Value Z"; default = nothing)
 end
 
-@params struct LocalDampingParams
+@params "Damps the waves released when bonds break (local damping after Silling)" struct LocalDampingParams
+    "Young's modulus that sets the wave speed of the damping"
     representative_youngs_modulus::Float64 = req("Representative Young's modulus"; min = 0,
                                                  quantity = :stress)
+    "Strength of the damping; 0 switches it off"
     damping_coefficient::Float64 = req("Damping coefficient"; min = 0)
 end
 
@@ -33,11 +37,12 @@ end
 Keys every damage model may use (read from the same YAML block as the model's
 own keys).
 """
-@params struct DamageBaseParams
+@params "Damage model of the blocks that use this entry: the failure limit of a bond and options shared by all damage models" struct DamageBaseParams
+    "Failure limit of a bond: the critical stretch or the critical energy release rate, depending on the model; a number or a table over a node field"
     critical_value::Dependent = req("Critical Value"; min = 0)
+    "Critical values of bonds between two blocks, as \"Interblock Critical Value i_j\" entries for bonds from block i to block j"
     interblock_damage::Union{Nothing,Dict{String,Float64}} = opt("Interblock Damage";
-                                                                 default = nothing,
-                                                                 description = "Interblock Critical Value <block>_<block> entries")
+                                                                 default = nothing)
     anisotropic_damage::Union{Nothing,AnisotropicDamageParams} = opt("Anisotropic Damage";
                                                                      default = nothing)
     local_damping::Union{Nothing,LocalDampingParams} = opt("Local Damping";

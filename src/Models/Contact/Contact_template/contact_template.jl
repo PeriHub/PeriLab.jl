@@ -16,12 +16,16 @@ export compute_contact_model
 Declare the YAML keys your contact model needs beyond the shared contact keys
 (Contact Radius, Symmetry, Contact Groups are in `contact.base`). Example:
 
-    my_parameter::Float64 = req("My Parameter"; min = 0, description = "...")
+    "What the value controls, shown as tooltip and in the input reference"
+    my_parameter::Float64 = req("My Parameter"; min = 0)
+
+Describe the model itself with a string after `@params`:
+`@params "Physics the model represents" struct ...`.
 
 Register it under the name the input deck uses (`Type`) by uncommenting
 `__init__` (the template stays unregistered so that a copy never collides with it).
 """
-@params struct ContactTemplateParams
+@params "Template of a contact model; copy it to add a new contact model" struct ContactTemplateParams
 end
 
 # __init__() = register_contact("Contact Template", ContactTemplateParams)

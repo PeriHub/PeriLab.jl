@@ -15,7 +15,7 @@ export fe_support
 export compute_model
 
 "Parameters of Bond-based Elastic beyond the shared material keys (none)."
-@params struct BondbasedElasticParams
+@params "Linear elastic bond-based material; the Poisson's ratio is fixed by the formulation" struct BondbasedElasticParams
 end
 __init__() = register_material("Bond-based Elastic", BondbasedElasticParams)
 

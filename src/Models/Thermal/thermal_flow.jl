@@ -18,15 +18,18 @@ import ......ParameterSpec: check!
 
 @enum ThermalFlowType BondBased Correspondence
 
-@params struct ThermalFlowParams
-    type::ThermalFlowType = opt("Type"; default = BondBased,
-                                description = "Bond based or Correspondence")
+@params "Heat conduction between nodes" struct ThermalFlowParams
+    "Formulation of the heat flow: per bond, or from the temperature gradient as in correspondence materials"
+    type::ThermalFlowType = opt("Type"; default = BondBased)
+    "Temperature of a heated print bed below the part (3D); needs Thermal Conductivity Print Bed"
     print_bed_temperature::Union{Nothing,Float64} = opt("Print Bed Temperature";
                                                         default = nothing)
+    "Thermal conductivity between the print bed and the nodes above it"
     thermal_conductivity_print_bed::Union{Nothing,
                                           Float64} = opt("Thermal Conductivity Print Bed";
                                                          default = nothing,
                                                          min = 0)
+    "Height of the print bed; must be below the lowest node"
     print_bed_z_coordinate::Float64 = opt("Print Bed Z Coordinate"; default = 0.0)
 end
 

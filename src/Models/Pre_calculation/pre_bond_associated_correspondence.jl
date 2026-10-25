@@ -14,7 +14,7 @@ export compute_model
 
 using ......ParameterSpec: @params, register_pre_calculation
 "Switch only: this pre-calculation has no parameters."
-@params struct BondAssociatedCorrespondenceParams
+@params "Computes the shape tensor and deformation gradient of each bond for bond-associated correspondence materials" struct BondAssociatedCorrespondenceParams
 end
 function __init__()
     register_pre_calculation("Bond Associated Correspondence",

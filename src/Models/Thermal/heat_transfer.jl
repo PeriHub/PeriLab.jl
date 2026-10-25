@@ -9,11 +9,12 @@ export compute_model
 export init_model
 
 using ......ParameterSpec: @params, register_thermal
-@params struct HeatTransferParams
+@params "Heat exchange of surface nodes with the environment (convection)" struct HeatTransferParams
+    "Heat flow per surface area and temperature difference between surface and environment"
     heat_transfer_coefficient::Float64 = req("Heat Transfer Coefficient"; min = 0)
-    environmental_temperature::Union{Float64,String} = req("Environmental Temperature";
-                                                           description = "a number, or an expression in the time t",
-                                                           evaluated = true)
+    "Temperature of the surrounding medium: a number, or an expression in the time t"
+    environmental_temperature::Union{Float64,String} = req("Environmental Temperature"; evaluated = true)
+    "Recomputes the surface in every step, so cracks and added material exchange heat too"
     allow_surface_change::Bool = opt("Allow Surface Change"; default = true)
 end
 __init__() = register_thermal("Heat Transfer", HeatTransferParams)

@@ -216,6 +216,10 @@ end
                     x::Float64 = req("X"; description = "Neighborhood radius")
                 end),
               "UTBad11: field `x` has a docstring and a description; keep one"),
+             (:(PS.@params "Section" "Section" struct UTBad12
+                    x::Float64 = req("X")
+                end),
+              "@params: write `@params struct Name ... end`"),
              (:(PS.@params x = 1),
               "@params must be applied to a struct definition")]
     for (ex, expected) in cases

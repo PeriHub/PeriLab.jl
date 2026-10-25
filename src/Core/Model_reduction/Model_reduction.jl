@@ -7,12 +7,15 @@ using TimerOutputs: @timeit
 using ...Data_Manager
 using ....ParameterSpec: @params
 
-@params struct ModelReductionParams
+@params "Condenses the nodes of selected blocks out of the system to reduce its size" struct ModelReductionParams
+    "Reduction method: \"Static Condensation\" (Guyan) or \"Craig Bampton\""
     type::String = req("Type")
+    "Number of vibration modes kept for the condensed nodes (Craig Bampton)"
     number_of_modes::Int64 = opt("Number of Modes"; default = 1, min = 1)
+    "Keeps the force computation of the nodes outside the reduction blocks; false treats all remaining nodes through the reduced matrix"
     material_point_region::Bool = opt("Material Point Region"; default = true)
-    reduction_blocks::Union{Nothing,Int64,String} = opt("Reduction Blocks"; default = nothing,
-                                                        description = "Block id or list, e.g. \"2, 3\"")
+    "Blocks whose nodes are condensed: a block id or ids separated by commas or spaces, e.g. \"2, 3\"; no reduction if not given"
+    reduction_blocks::Union{Nothing,Int64,String} = opt("Reduction Blocks"; default = nothing)
 end
 using SparseArrays
 using ....ModuleLoader: find_module_files, create_module_specifics

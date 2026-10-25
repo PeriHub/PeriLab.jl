@@ -34,7 +34,7 @@ end
     @test haskey(models["Damage Models"]["additionalProperties"]["properties"],
                  "Critical Value")
     switches = models["Pre Calculation Global"]
-    @test switches["properties"]["Shape Tensor"] == Dict("type" => "boolean")
+    @test switches["properties"]["Shape Tensor"]["type"] == "boolean"
     @test haskey(switches["properties"], "Bond Associated Deformation Gradient")
     @test switches["additionalProperties"] == false
     @test models["Pre Calculation Models"]["additionalProperties"] == switches
@@ -294,5 +294,52 @@ end
 @testset "print_json_schema" begin
     io = IOBuffer()
     PeriLab.print_json_schema(io)
-    @test haskey(JSON3.read(String(take!(io)))["properties"], "PeriLab")
+    schema = JSON3.read(String(take!(io)))
+    @test haskey(schema["properties"], "PeriLab")
+    solver = schema["properties"]["PeriLab"]["properties"]["Solver"]
+    @test !isempty(solver["description"])
+    @test !isempty(solver["properties"]["Verlet"]["description"])
+end
+
+# the description without the generated "quantity: ..." and "one of: ..." parts
+function ut_own_description(s)
+    parts = split(get(s, "description", ""), "; ")
+    return strip(join(filter(p -> !startswith(p, "quantity: ") && !startswith(p, "one of: "),
+                             parts), "; "))
+end
+
+# paths of sections without a description and of keys without an own description
+function ut_undescribed!(bad, s, path)
+    s isa AbstractDict || return bad
+    if haskey(s, "properties")
+        isempty(strip(get(s, "description", ""))) && push!(bad, path)
+        for (key, p) in s["properties"]
+            key == "Globals" && continue
+            haskey(p, "properties") || isempty(ut_own_description(p)) &&
+                                       push!(bad, path * " → " * key)
+            ut_undescribed!(bad, p, path * " → " * key)
+        end
+    end
+    ut_undescribed!(bad, get(s, "additionalProperties", nothing), path * " → <entry>")
+    ut_undescribed!(bad, get(s, "items", nothing), path * " → <item>")
+    for case in get(s, "allOf", Any[])
+        name = only(values(case["if"]["properties"]))["const"]
+        ut_undescribed!(bad, case["then"], path * " → <" * name * ">")
+    end
+    return bad
+end
+
+@testset "every section and key has a description" begin
+    bad = unique!(ut_undescribed!(String[], UT_SCHEMA, "PeriLab input deck"))
+    isempty(bad) || @info "undescribed in the JSON schema:\n" * join(bad, "\n")
+    @test isempty(bad)
+    p = UT_DECK["properties"]
+    @test !isempty(p["Blocks"]["additionalProperties"]["description"])
+    @test !isempty(p["Solver"]["properties"]["Static"]["description"])
+    plastic = only(filter(c -> c["if"]["properties"]["Material Model"]["const"] ==
+                               "Correspondence Plastic",
+                          p["Models"]["properties"]["Material Models"]["additionalProperties"]["allOf"]))
+    @test !isempty(plastic["then"]["description"])
+    @test occursin(PeriLab.ParameterSpec.params_description(GID.SolverParams),
+                   ut_describe("Solver"))
 end

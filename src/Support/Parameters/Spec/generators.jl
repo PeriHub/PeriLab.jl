@@ -92,7 +92,9 @@ function field_schema(fs::FieldSpec)
         v = _json_value(fs.default)
         v === nothing || (s["default"] = v)
     end
-    text = filter(!isempty, [fs.description, get(s, "description", ""), _quantity_text(fs.quantity)])
+    # a nested section brings its own description; the field's replaces it
+    generated = _params_type(fs.type) === nothing ? get(s, "description", "") : ""
+    text = filter(!isempty, [fs.description, generated, _quantity_text(fs.quantity)])
     isempty(text) || (s["description"] = join(text, "; "))
     fs.evaluated && (s["x-perilab-eval"] = true)
     return s
@@ -101,8 +103,9 @@ end
 """
     json_schema(T)
 
-JSON Schema object of the `@params` struct `T`: its YAML keys with types,
-defaults, bounds, allowed values and descriptions; `required` lists the
+JSON Schema object of the `@params` struct `T`: its description
+(`params_description`), its YAML keys with types, defaults, bounds, allowed
+values and descriptions; `required` lists the
 required keys; indexed keys (`key_patterns`) become `patternProperties`.
 """
 function json_schema(T)
@@ -122,6 +125,8 @@ function json_schema(T)
     end
     schema = Dict{String,Any}("type" => "object", "properties" => props,
                               "additionalProperties" => false)
+    description = params_description(T)
+    isempty(description) || (schema["description"] = description)
     isempty(required) || (schema["required"] = sort!(required))
     isempty(choices) || (schema["oneOf"] = choices)
     patterns = key_patterns(T)

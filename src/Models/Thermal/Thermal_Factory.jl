@@ -18,7 +18,8 @@ using .....ParameterSpec: @params, register_base!, WithBase, model_parts, model_
 Keys every thermal model may use: `Thermal Conductivity` (read by the critical
 time step for any thermal model, and by Thermal Flow).
 """
-@params struct ThermalBaseParams
+@params "Thermal model of the blocks that use this entry, with the keys shared by all thermal models" struct ThermalBaseParams
+    "Thermal conductivity of the material; required by Thermal Flow and used for the stable time step"
     thermal_conductivity::Union{Nothing,Float64} = opt("Thermal Conductivity";
                                                        default = nothing, min = 0)
 end

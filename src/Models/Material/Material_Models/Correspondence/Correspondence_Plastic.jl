@@ -15,7 +15,8 @@ export fe_support
 export init_model
 export fields_for_local_synchronization
 
-@params struct CorrespondencePlasticParams
+@params "Elastic-plastic correspondence material with von Mises yield criterion" struct CorrespondencePlasticParams
+    "Von Mises stress at which the material yields; a number or a table over a node field"
     yield_stress::Dependent = req("Yield Stress"; min = 0, quantity = :stress)
 end
 __init__() = register_material("Correspondence Plastic", CorrespondencePlasticParams)

@@ -13,8 +13,10 @@ using StaticArrays: SVector
 export init_contact_model
 export compute_contact_model
 
-@params struct PenaltyContactParams
+@params "Contact by a repulsive penalty force between nodes closer than the contact radius, with optional friction" struct PenaltyContactParams
+    "Factor on the penalty stiffness that pushes nodes in contact apart"
     contact_stiffness::Float64 = opt("Contact Stiffness"; default = 1e8, min = 0)
+    "Coulomb friction coefficient between the contact surfaces"
     friction_coefficient::Float64 = opt("Friction Coefficient"; default = 0.0, min = 0)
 end
 

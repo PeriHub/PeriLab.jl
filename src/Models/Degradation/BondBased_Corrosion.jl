@@ -10,7 +10,7 @@ export init_model
 export fields_for_local_synchronization
 
 using ......ParameterSpec: @params, register_degradation
-@params struct BondbasedCorrosionParams
+@params "Bond-based corrosion model (not implemented yet: computes nothing)" struct BondbasedCorrosionParams
 end
 __init__() = register_degradation("Bond-based Corrosion", BondbasedCorrosionParams)
 

@@ -11,7 +11,8 @@ export init_model
 export fields_for_local_synchronization
 
 using ......ParameterSpec: @params, register_degradation
-@params struct ThermalDecompositionParams
+@params "Removes nodes and their bonds once the temperature reaches the decomposition temperature" struct ThermalDecompositionParams
+    "Temperature at which a node decomposes"
     decomposition_temperature::Float64 = req("Decomposition Temperature";
                                              quantity = :temperature)
 end

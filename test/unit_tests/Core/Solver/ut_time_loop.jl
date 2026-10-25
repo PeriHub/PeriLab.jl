@@ -12,11 +12,16 @@ using PeriLab.Solver_Manager: TimeWindow, SolverRun, SolverContext, StepClock, S
 import PeriLab.Solver_Manager: prepare_solver, time_step!
 const DM = PeriLab.Data_Manager
 
-@params struct UTLoopParams <: SolverOptions
+@params "Solver of the time loop tests" struct UTLoopParams <: SolverOptions
+    "Number of steps"
     steps::Int64 = opt("Steps"; default = 4, min = 1)
+    "Step that fails"
     fail_at::Int64 = opt("Fail At"; default = 0)
+    "Step that cancels the run"
     cancel_at::Int64 = opt("Cancel At"; default = 0)
+    "Step that reports damage"
     damage_at::Int64 = opt("Damage At"; default = 0)
+    "Adds the load of every step"
     accumulate::Bool = opt("Accumulate"; default = false)
 end
 

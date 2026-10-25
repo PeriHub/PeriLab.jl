@@ -35,7 +35,8 @@ end
 end
 
 # a contact model declares its own keys; the shared keys come from the base part
-PeriLab.ParameterSpec.@params struct UTContactModelParams
+PeriLab.ParameterSpec.@params "Contact model of the tests" struct UTContactModelParams
+    "Value of the test contact model"
     ut_value::Float64 = req("UT Value"; min = 0)
 end
 PeriLab.ParameterSpec.register_contact("UT Contact", UTContactModelParams)

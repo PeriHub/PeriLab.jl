@@ -13,8 +13,10 @@ export init_model
 export fe_support
 export compute_model
 
-@params struct OneDBondbasedElasticParams
+@params "One-dimensional bond-based elastic test model that removes the bond between two given nodes" struct OneDBondbasedElasticParams
+    "First node of the removed bond (single core only)"
     id1::Int64 = req("Id1"; min = 1)
+    "Second node of the removed bond (single core only)"
     id2::Int64 = req("Id2"; min = 1)
 end
 __init__() = register_material("1D Bond-based Elastic", OneDBondbasedElasticParams)

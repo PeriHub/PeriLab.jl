@@ -15,17 +15,21 @@ export fe_support
 export init_model
 export fields_for_local_synchronization
 
-@params struct CorrespondenceUMATParams
-    file::String = req("File"; description = "UMAT library, relative to the input deck")
-    number_of_properties::Int64 = req("Number of Properties"; min = 1,
-                                      description = "number of Property_N values passed to the UMAT")
+@params "Correspondence material defined by an Abaqus UMAT subroutine; its properties are given as Property_1 … Property_N" struct CorrespondenceUMATParams
+    "UMAT library, relative to the input deck"
+    file::String = req("File")
+    "Number of Property_N values passed to the UMAT"
+    number_of_properties::Int64 = req("Number of Properties"; min = 1)
+    "Size of the state variable field passed to the UMAT"
     number_of_state_variables::Union{Nothing,Int64} = opt("Number of State Variables";
                                                           default = nothing, min = 0)
+    "Node fields passed to the UMAT as predefined fields, separated by spaces"
     predefined_field_names::Union{Nothing,String} = opt("Predefined Field Names";
                                                         default = nothing)
+    "Material name passed to the UMAT (at most 80 characters)"
     umat_material_name::Union{Nothing,String} = opt("UMAT Material Name"; default = nothing)
-    umat_name::Union{Nothing,String} = opt("UMAT name"; default = nothing,
-                                           description = "not used: PeriLab calls the routine umat_ of the library")
+    "Not used: PeriLab calls the routine umat_ of the library"
+    umat_name::Union{Nothing,String} = opt("UMAT name"; default = nothing)
 end
 key_patterns(::Type{CorrespondenceUMATParams}) = [r"^Property_\d+$" => Float64]
 __init__() = register_material("Correspondence UMAT", CorrespondenceUMATParams)

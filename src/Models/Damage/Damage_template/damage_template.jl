@@ -20,7 +20,7 @@ Declare the YAML keys your damage model needs beyond the shared damage keys
 `damage.base`). Register it under your model name by uncommenting `__init__` (the
 template stays unregistered so that a copy never collides with it).
 """
-@params struct DamageTemplateParams
+@params "Template of a damage model; copy it to add a new damage model" struct DamageTemplateParams
 end
 
 # __init__() = register_damage("Damage Template", DamageTemplateParams)

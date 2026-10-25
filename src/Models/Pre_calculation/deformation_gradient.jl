@@ -11,7 +11,7 @@ export compute_model
 
 using ......ParameterSpec: @params, register_pre_calculation
 "Switch only: this pre-calculation has no parameters."
-@params struct DeformationGradientParams
+@params "Computes the deformation gradient of each node from its bonds" struct DeformationGradientParams
 end
 __init__() = register_pre_calculation("Deformation Gradient", DeformationGradientParams)
 

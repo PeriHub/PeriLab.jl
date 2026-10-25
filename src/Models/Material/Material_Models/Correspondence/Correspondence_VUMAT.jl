@@ -15,15 +15,18 @@ export fe_support
 export init_model
 export fields_for_local_synchronization
 
-@params struct CorrespondenceVUMATParams
-    file::String = req("File"; description = "VUMAT library, relative to the input deck")
-    number_of_properties::Int64 = req("Number of Properties"; min = 1,
-                                      description = "number of Property_N values passed to the VUMAT")
+@params "Correspondence material defined by an Abaqus VUMAT subroutine; its properties are given as Property_1 … Property_N" struct CorrespondenceVUMATParams
+    "VUMAT library, relative to the input deck"
+    file::String = req("File")
+    "Number of Property_N values passed to the VUMAT"
+    number_of_properties::Int64 = req("Number of Properties"; min = 1)
+    "Size of the state variable field passed to the VUMAT"
     number_of_state_variables::Union{Nothing,Int64} = opt("Number of State Variables";
                                                           default = nothing, min = 0)
+    "Material name passed to the VUMAT (at most 80 characters)"
     vumat_material_name::Union{Nothing,String} = opt("VUMAT Material Name"; default = nothing)
-    vumat_name::Union{Nothing,String} = opt("VUMAT name"; default = nothing,
-                                           description = "not used: PeriLab calls the routine vumat_ of the library")
+    "Not used: PeriLab calls the routine vumat_ of the library"
+    vumat_name::Union{Nothing,String} = opt("VUMAT name"; default = nothing)
 end
 key_patterns(::Type{CorrespondenceVUMATParams}) = [r"^Property_\d+$" => Float64]
 __init__() = register_material("Correspondence VUMAT", CorrespondenceVUMATParams)

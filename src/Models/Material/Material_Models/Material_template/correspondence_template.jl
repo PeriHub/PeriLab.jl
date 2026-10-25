@@ -21,7 +21,7 @@ name by uncommenting `__init__`. Put the copy in `Material_Models/Correspondence
 models defined there run in the correspondence formulation. The template stays
 unregistered so that a copy never collides with it.
 """
-@params struct CorrespondenceTemplateParams
+@params "Template of a correspondence material; copy it to add a new correspondence material" struct CorrespondenceTemplateParams
 end
 
 # __init__() = register_material("Correspondence Template", CorrespondenceTemplateParams)
