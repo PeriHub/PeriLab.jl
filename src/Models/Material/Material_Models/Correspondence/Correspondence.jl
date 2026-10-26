@@ -18,7 +18,6 @@ include("../Material_template/correspondence_template.jl")
 
 using LinearAlgebra
 using StaticArrays: SVector
-a = using LoopVectorization
 using Rotations
 include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence

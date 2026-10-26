@@ -152,7 +152,6 @@ for file in find_registered_modules(@__DIR__, "register_damage")
     include(file)
 end
 
-using LoopVectorization
 using .....Helpers: find_inverse_bond_id, find_inverse_bond_index!, MINBATCH
 export fields_for_local_synchronization
 export compute_model

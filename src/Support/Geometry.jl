@@ -6,7 +6,6 @@ module Geometry
 using LinearAlgebra: mul!, norm
 using StaticArrays
 using Rotations
-using LoopVectorization: @avx, @fastmath, @simd
 using Polyester: @batch
 using ...Data_Manager
 using ...PeriLabExceptions: @abort

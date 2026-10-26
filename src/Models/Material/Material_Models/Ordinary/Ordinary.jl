@@ -5,7 +5,6 @@
 module Ordinary
 
 using LinearAlgebra
-using LoopVectorization
 using Polyester: @batch
 
 using .....Data_Manager

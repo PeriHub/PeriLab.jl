@@ -5,7 +5,6 @@
 module Global_Zero_Energy_Control
 
 using StaticArrays: MMatrix, MVector, SMatrix, SVector
-using LoopVectorization
 using ....Data_Manager
 using ....Helpers: get_fourth_order, node_tensor, with_dof
 using ...Material_Basis: hooke_matrix

@@ -11,7 +11,6 @@ It is simplified. Rigid body motion is not considered )omega_{ij} = 0 as well as
 """
 
 #
-using LoopVectorization
 using StaticArrays: SVector, setindex
 
 using .....Data_Manager

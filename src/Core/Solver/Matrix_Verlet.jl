@@ -7,7 +7,6 @@ using LinearAlgebra
 using SparseArrays
 using TimerOutputs
 using Printf
-using LoopVectorization
 using PrettyTables
 using Logging
 using LinearAlgebra: lu
@@ -23,14 +22,17 @@ using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, synchron
                        compute_parabolic_problems_after_model_evaluation
 using ...MPI_Communication: find_and_set_core_value_min, find_and_set_core_value_max
 using ..Model_Factory: compute_models, compute_crititical_time_step
-using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof, BoundaryCondition
+using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof,
+                             BoundaryCondition
 using ...Logging_Module: print_table
 include("../Model_reduction/Model_reduction.jl")
 using .Model_reduction: init_reduce_model, ReducedState, setup_reduced_state,
                         n_modal, physical_part, modal_part,
-                        pull_from_nodes!, add_from_nodes!, push_to_nodes!, ModelReductionParams
+                        pull_from_nodes!, add_from_nodes!, push_to_nodes!,
+                        ModelReductionParams
 
-@params "Explicit Verlet time integration with the stiffness matrix of correspondence materials, optionally with model reduction" struct VerletMatrixParams <: SolverOptions
+@params "Explicit Verlet time integration with the stiffness matrix of correspondence materials, optionally with model reduction" struct VerletMatrixParams <:
+                                                                                                                                         SolverOptions
     "Factor on the stable time step; values below 1 add a safety margin"
     safety_factor::Float64 = opt("Safety Factor"; default = 1.0, min = 0)
     "Time step to use instead of the stable time step; -1: compute it from the stable time step and the safety factor"
@@ -46,7 +48,6 @@ using ..Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
                                      compute_model
 export init_solver
 import ..Solver_Common: prepare_solver, time_step!
-
 
 """
     init_solver(options::VerletMatrixParams, params::SolverParams, models::Vector{String}, bcs::Dict{String,BoundaryCondition}, block_nodes::Dict{Int64,Vector{Int64}})

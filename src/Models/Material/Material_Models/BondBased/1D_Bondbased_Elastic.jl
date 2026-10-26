@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module OneD_Bond_Based_Elastic
-using LoopVectorization
 
 using .......Data_Manager
 using ......ParameterSpec: @params, register_material

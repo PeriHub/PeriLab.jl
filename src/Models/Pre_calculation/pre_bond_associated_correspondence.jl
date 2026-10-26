@@ -6,7 +6,6 @@ module Pre_Bond_Associated_Correspondence
 
 using .......Data_Manager
 using .......Geometry: compute_weighted_deformation_gradient
-using LoopVectorization
 using StaticArrays: @MVector, MVector, SVector
 export fields_for_local_synchronization
 export init_model

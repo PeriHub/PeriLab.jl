@@ -4,8 +4,8 @@
 
 module Correspondence_matrix_based
 using LinearAlgebra
-using LoopVectorization: @turbo
 using SparseArrays
+using StaticArrays: SMatrix
 using TimerOutputs: @timeit
 using ...Data_Manager
 using ...PeriLabExceptions: @abort
@@ -42,24 +42,25 @@ end
 # Tensor computation kernels
 # =============================================================================
 
+# CB[m, n, q] = Σ_{o,p} C[m, n, o, p] B[o, p, q], i.e. the product of C as an
+# (N² × N²) matrix with B as an (N² × N) matrix
 function contraction!(C::Array{Float64,4}, B::Array{Float64,3}, dof::Int64,
                       CB::AbstractArray{Float64,3})
-    fill!(CB, 0.0)
     if dof == 2
-        @turbo for q in 1:2, p in 1:2, o in 1:2
-            B_opq = B[o, p, q]
-            for n in 1:2, m in 1:2
-                CB[m, n, q] += C[m, n, o, p] * B_opq
-            end
-        end
+        _contraction!(C, B, CB, Val(2))
     elseif dof == 3
-        @turbo for q in 1:3, p in 1:3, o in 1:3
-            B_opq = B[o, p, q]
-            for n in 1:3, m in 1:3
-                CB[m, n, q] += C[m, n, o, p] * B_opq
-            end
-        end
+        _contraction!(C, B, CB, Val(3))
     end
+end
+
+function _contraction!(C, B, CB, ::Val{N}) where {N}
+    Cm = SMatrix{N * N,N * N}(ntuple(i -> @inbounds(C[i]), Val(N^4)))
+    Bm = SMatrix{N * N,N}(ntuple(i -> @inbounds(B[i]), Val(N^3)))
+    R = Cm * Bm
+    @inbounds for q in 1:N, n in 1:N, m in 1:N
+        CB[m, n, q] = R[m + N * (n - 1), q]
+    end
+    return nothing
 end
 
 function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::AbstractVector{Float64},

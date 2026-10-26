@@ -4,7 +4,6 @@
 module Material_Basis
 
 using LinearAlgebra
-using LoopVectorization
 using StaticArrays
 using ......Helpers: get_MMatrix, determinant, invert, smat, with_dof,
                      mat_mul!, matrix_to_voigt, voigt_to_matrix

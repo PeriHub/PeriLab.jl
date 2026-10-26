@@ -5,7 +5,6 @@
 module Verlet_Solver
 using LinearAlgebra
 using Printf
-using LoopVectorization
 using Logging
 using TimerOutputs: @timeit
 
@@ -18,7 +17,8 @@ using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, synchron
                        compute_parabolic_problems_before_model_evaluation,
                        compute_parabolic_problems_after_model_evaluation
 
-@params "Explicit Verlet time integration with the stable time step; for dynamic problems" struct VerletParams <: SolverOptions
+@params "Explicit Verlet time integration with the stable time step; for dynamic problems" struct VerletParams <:
+                                                                                                  SolverOptions
     "Factor on the stable time step; values below 1 add a safety margin"
     safety_factor::Float64 = opt("Safety Factor"; default = 1.0, min = 0)
     "Time step to use instead of the stable time step; -1: compute it from the stable time step and the safety factor"

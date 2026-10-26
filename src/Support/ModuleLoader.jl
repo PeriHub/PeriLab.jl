@@ -75,7 +75,7 @@ using ..PeriLabExceptions: @abort
 using DotEnv
 DotEnv.load!()
 
-import HTTP
+import Downloads
 import YAML
 import JSON3
 import SHA
@@ -530,21 +530,35 @@ function _fetch_and_verify_all(license_server_url::AbstractString,
     return entries
 end
 
+# HTTP request; errors on a non-2xx status. Returns the response and its body.
+function _request(url::AbstractString; method = "GET", headers = Pair{String,String}[],
+                  body = nothing)
+    output = IOBuffer()
+    resp = Downloads.request(url; method = method, headers = headers, output = output,
+                             input = body === nothing ? nothing : IOBuffer(body))
+    200 <= resp.status < 300 ||
+        @abort "$method $url failed with HTTP status $(resp.status)"
+    return resp, take!(output)
+end
+
 function _validate(license_server_url::AbstractString, license_key::AbstractString,
                    machine_id::AbstractString)
     body = JSON3.write(Dict("license_key" => license_key, "machine_id" => machine_id))
-    resp = HTTP.post(rstrip(license_server_url, '/') * "/api/v1/validate",
-                     ["Content-Type" => "application/json"], body)
-    return JSON3.read(resp.body)
+    _, response = _request(rstrip(license_server_url, '/') * "/api/v1/validate";
+                           method = "POST",
+                           headers = ["Content-Type" => "application/json"], body = body)
+    return JSON3.read(response)
 end
 
 function _fetch_module_source(license_server_url::AbstractString,
                               download_token::AbstractString,
                               module_name::AbstractString)
-    resp = HTTP.get(rstrip(license_server_url, '/') * "/api/v1/modules/" * module_name,
-                    ["Authorization" => "Bearer " * download_token])
-    signature = HTTP.header(resp, "X-Content-Signature", "")
-    return String(resp.body), signature
+    resp, source = _request(rstrip(license_server_url, '/') * "/api/v1/modules/" *
+                            module_name;
+                            headers = ["Authorization" => "Bearer " * download_token])
+    i = findfirst(h -> lowercase(first(h)) == "x-content-signature", resp.headers)
+    signature = i === nothing ? "" : last(resp.headers[i])
+    return String(source), signature
 end
 
 function _detect_module_name(source::AbstractString)

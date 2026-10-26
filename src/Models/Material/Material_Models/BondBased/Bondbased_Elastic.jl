@@ -8,7 +8,6 @@ using .......Data_Manager
 using ......ParameterSpec: @params, register_material
 using .......PeriLabExceptions: @abort
 using ....Material_Basis: apply_pointwise_E, compute_bond_based_constants
-using LoopVectorization
 using TimerOutputs: @timeit
 export init_model
 export fe_support

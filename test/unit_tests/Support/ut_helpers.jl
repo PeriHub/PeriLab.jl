@@ -165,6 +165,18 @@ end
     end
 end
 
+@testset "PeriLab.Helpers.find_point_in_polygon" begin
+    coor = [0.0 0.0; 1.0 0.0; 0.2 1.0; 1.2 1.0]   # skewed quad, tensor-grid order
+    topo = collect(1:4)
+    @test PeriLab.Helpers.find_point_in_polygon([0.6, 0.5], coor, topo)   # interior
+    @test PeriLab.Helpers.find_point_in_polygon([0.0, 0.0], coor, topo)   # corner
+    @test PeriLab.Helpers.find_point_in_polygon([0.5, 0.0], coor, topo)   # edge
+    @test !PeriLab.Helpers.find_point_in_polygon([0.05, 0.9], coor, topo)
+    @test !PeriLab.Helpers.find_point_in_polygon([1.5, 0.5], coor, topo)
+    @test PeriLab.Helpers.get_centroid(PeriLab.Helpers.get_ring(coor, topo), 2) ==
+          (0.6, 0.5)
+end
+
 @testset "ut_create_permutation" begin
     nnodes = 3
     dof = 2

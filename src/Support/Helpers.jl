@@ -5,15 +5,12 @@
 module Helpers
 
 using PointNeighbors: GridNeighborhoodSearch, initialize_grid!, foreach_neighbor
-using Meshes: Ring, Point, centroid, Hexahedron
 #using Tensors
 using ProgressBars: ProgressBar
 using LinearAlgebra: Adjoint, dot, det, norm, pinv, eigvals, inv, normalize, cross, diagm,
                      cholesky
 using StaticArrays: MMatrix, MVector, SMatrix, @SMatrix, SVector, @SVector
 using ArraysOfArrays: flatview
-using LoopVectorization
-using Unitful: ustrip
 using CDDLib
 using Polyhedra: MixedMatHRep, polyhedron, vrep, hrep
 using Base.Threads: @threads
@@ -243,66 +240,60 @@ function get_nearest_neighbors(nodes,
     return neighborList, all(iID -> isempty(neighborList[iID]), nodes)
 end
 
-function find_point_in_polygon(point, coor, topo)
-    return Point(point[1], point[2]) in get_ring(coor, topo)
+# Element corners are in tensor-grid order: corner 1 + bx + 2by (+ 4bz) sits at (bx, by, bz).
+# The Kuhn simplices (one per axis order) run from corner 1 to the last corner and tile the
+# element exactly if its faces are planar.
+const _KUHN_2D = ((1, 2), (2, 1))
+const _KUHN_3D = ((1, 2, 4), (1, 4, 2), (2, 1, 4), (2, 4, 1), (4, 1, 2), (4, 2, 1))
+
+# inside or on the simplex v0 + edges: barycentric coordinates in [0, 1] up to round-off
+function _in_simplex(p::SVector{N}, v0::SVector{N}, edges::SMatrix{N,N}) where {N}
+    abs(det(edges)) <= eps() * maximum(abs, edges)^N && return false
+    λ = edges \ (p - v0)
+    return all(>=(-1e-10), λ) && sum(λ) <= 1 + 1e-10
 end
+
+function _in_element(point, coor, topo, ::Val{N}, kuhn) where {N}
+    p = SVector{N}(ntuple(i -> Float64(point[i]), N))
+    corner(k) = SVector{N}(ntuple(i -> Float64(coor[topo[k], i]), N))
+    v0 = corner(1)
+    for order in kuhn
+        offsets = cumsum(SVector(order))
+        edges = SMatrix{N,N}(hcat(ntuple(j -> corner(1 + offsets[j]) - v0, N)...))
+        _in_simplex(p, v0, edges) && return true
+    end
+    return false
+end
+
+find_point_in_polygon(point, coor, topo) = _in_element(point, coor, topo, Val(2), _KUHN_2D)
 
 function find_point_in_hexagon(point::Vector{Float64}, coor::Matrix{Float64},
                                topo::Vector{Int64})
-    return Point(point[1], point[2], point[3]) in get_hexagon(coor, topo)
+    return _in_element(point, coor, topo, Val(3), _KUHN_3D)
 end
 
 """
 	get_hexagon(coor::Union{Matrix{Float64},Matrix{Int64}}, topo::Vector{Int64})
 
-# Description
-This function gives the hexahedron model back to compute centroids of this surface and check if a point lies inside. The el_topology has to be transformed from PeriLab notation, to avoid overlapping.
-
-# Arguments
-- `coor::Union{Matrix{Float64},Matrix{Int64}}`: Coordinates.
-- `topo::Vector{Int64}`: el_topology of an element.
-# Returns
-- `Hexahedron`: eight point hexahedron.
-
+Corner coordinates (8 × 3) of a hexahedral element, used to compute its centroid.
 """
 function get_hexagon(coor::Matrix{T}, topo::Vector{Int64}) where {T<:Union{Int64,Float64}}
-    return Hexahedron(Point(coor[topo[1], 1], coor[topo[1], 2], coor[topo[1], 3]),
-                      Point(coor[topo[2], 1], coor[topo[2], 2], coor[topo[2], 3]),
-                      Point(coor[topo[4], 1], coor[topo[4], 2], coor[topo[4], 3]),
-                      Point(coor[topo[3], 1], coor[topo[3], 2], coor[topo[3], 3]),
-                      Point(coor[topo[5], 1], coor[topo[5], 2], coor[topo[5], 3]),
-                      Point(coor[topo[6], 1], coor[topo[6], 2], coor[topo[6], 3]),
-                      Point(coor[topo[8], 1], coor[topo[8], 2], coor[topo[8], 3]),
-                      Point(coor[topo[7], 1], coor[topo[7], 2], coor[topo[7], 3]))
+    return coor[topo[1:8], 1:3]
 end
 
 """
 	get_ring(coor::Union{Matrix{Float64},Matrix{Int64}}, topo::Vector{Int64})
 
-# Description
-This function gives the ring model back to compute centroids of this surface and check if a point lies inside. The el_topology has to be transformed from PeriLab notation, to avoid overlapping.
-
-# Arguments
-- `coor::Union{Matrix{Float64},Matrix{Int64}}`: Coordinates.
-- `topo::Vector{Int64}`: el_topology of an element.
-# Returns
-- `Ring`: four point closed surface.
-
+Corner coordinates (4 × 2) of a quadrilateral element, used to compute its centroid.
 """
 function get_ring(coor::Matrix{T}, topo::Vector{Int64}) where {T<:Union{Int64,Float64}}
-    return Ring(Point(coor[topo[1], 1], coor[topo[1], 2]),
-                Point(coor[topo[2], 1], coor[topo[2], 2]),
-                Point(coor[topo[4], 1], coor[topo[4], 2]),
-                Point(coor[topo[3], 1], coor[topo[3], 2]))
+    return coor[topo[1:4], 1:2]
 end
 
-function get_centroid(el, dof)
-    c = centroid(el)
-    if dof == 2
-        return ustrip(c.coords.x), ustrip(c.coords.y)
-    else
-        return ustrip(c.coords.x), ustrip(c.coords.y), ustrip(c.coords.z)
-    end
+# mean of the element corners
+function get_centroid(corners::AbstractMatrix, dof)
+    Tuple(sum(corners[:, k]) / size(corners, 1)
+          for k in 1:dof)
 end
 """
 	create_centroid_and_search_radius(coor::Union{Matrix{Float64},Matrix{Int64}},

@@ -6,7 +6,6 @@ module Static_Solver
 using LinearAlgebra
 using NLsolve
 using Printf
-using LoopVectorization
 using Logging
 using TimerOutputs: @timeit
 
@@ -19,7 +18,8 @@ using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, StepFail
                        compute_parabolic_problems_before_model_evaluation,
                        compute_parabolic_problems_after_model_evaluation
 
-@params "Quasi-static solver: finds the equilibrium of each step with a nonlinear solver (NLsolve, Anderson acceleration)" struct StaticParams <: SolverOptions
+@params "Quasi-static solver: finds the equilibrium of each step with a nonlinear solver (NLsolve, Anderson acceleration)" struct StaticParams <:
+                                                                                                                                  SolverOptions
     "Time step; -1: the step is split into Number of Steps increments"
     fixed_dt::Float64 = opt("Fixed dt"; default = -1.0, quantity = :time)
     "Convergence limit on the change of the displacements between two iterations"
@@ -41,7 +41,8 @@ end
 __init__() = register_solver("Static", StaticParams)
 # using ...MPI_Communication: barrier
 using ..Model_Factory
-using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof, BoundaryCondition
+using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof,
+                             BoundaryCondition
 using ...Logging_Module: print_table
 
 export init_solver
@@ -105,14 +106,16 @@ function init_solver(options::StaticParams,
     static = options
     solver_specifics = Dict("Solution tolerance" => static.solution_tolerance,
                             "Residual tolerance" => static.residual_tolerance,
-                            "Maximum number of iterations" => static.maximum_number_of_iterations,
+                            "Maximum number of iterations" =>
+                                static.maximum_number_of_iterations,
                             "Show solver iteration" => static.show_solver_iteration,
                             "Residual scaling" => static.residual_scaling,
                             "m" => static.m,
-                            "Linear Start Value" => static.linear_start_value === nothing ?
-                                                    zeros(2 * dof) :
-                                                    parse.(Float64,
-                                                           split(static.linear_start_value)))
+                            "Linear Start Value" =>
+                                static.linear_start_value === nothing ?
+                                zeros(2 * dof) :
+                                parse.(Float64,
+                                       split(static.linear_start_value)))
 
     residual = Data_Manager.create_constant_node_vector_field("Residual", Float64, dof)
 
@@ -233,7 +236,7 @@ function time_step!(ws::StaticWorkspace, run::SolverRun{StaticParams}, ctx::Solv
                   show_trace = ws.show_trace & !ctx.silent,
                   extended_trace = false,
                   method = :anderson,
-                  m = ws.m,)
+                  m = ws.m)
     compute_parabolic_problems_after_model_evaluation(active_nodes, run, dt)
     ws.start_u = copy(ws.uNP1)
     if !sol.x_converged && !sol.f_converged
@@ -279,8 +282,8 @@ function residual!(residual,
     # bc_dof = setdiff(1:length(uNP1), bc_free_dof)
 
     @views deformed_coorNP1[active_nodes,
-    :] = coor[active_nodes, :] .+
-                                               uNP1[active_nodes, :]
+                            :] = coor[active_nodes, :] .+
+                                 uNP1[active_nodes, :]
 
     force_densities[:, :] .= 0 # TODO check where to put it for iterative solver
     forces = Data_Manager.get_field("Forces", "NP1")
