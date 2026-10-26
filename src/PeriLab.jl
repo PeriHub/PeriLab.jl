@@ -203,7 +203,10 @@ This function serves as the entry point for the PeriLab application. It calls th
 function (@main)(ARGS)
     parsed_args = parse_commandline(ARGS)
     if parsed_args["json_schema"]
-        print_json_schema()
+        # the licensed models register their parameters when loaded; invokelatest
+        # because their types and methods are defined at runtime
+        Solver_Manager.Model_Factory.Additive.load_licensed_models()
+        Base.invokelatest(print_json_schema)
         return 0
     end
     MPI.Init()

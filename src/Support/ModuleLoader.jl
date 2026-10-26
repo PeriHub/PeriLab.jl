@@ -353,7 +353,7 @@ function licensed_modules(target_module::Module,
         return _licensed_modules_local(target_module, wanted_type, local_config, local_dir)
     end
 
-    url = get(ENV, "LICENSE_SERVER_URL", "https://perihub-license.nimbus-extern.dlr.de")
+    url = license_server_url()
     key = get(ENV, "LICENSE_KEY", "")
     secret = get(ENV, "CONTENT_SIGNING_SECRET", "")
 
@@ -489,6 +489,15 @@ function _licensed_modules_local(target_module::Module,
     return module_list
 end
 
+const DEFAULT_LICENSE_SERVER_URL = "https://perihub-license.nimbus-extern.dlr.de"
+
+# LICENSE_SERVER_URL, or the PeriHub server if unset or empty (CI passes an undefined
+# secret as an empty string)
+function license_server_url()
+    url = get(ENV, "LICENSE_SERVER_URL", "")
+    return isempty(url) ? DEFAULT_LICENSE_SERVER_URL : url
+end
+
 function _fetch_and_verify_all(license_server_url::AbstractString,
                                license_key::AbstractString,
                                content_signing_secret::AbstractString,
@@ -534,8 +543,13 @@ end
 function _request(url::AbstractString; method = "GET", headers = Pair{String,String}[],
                   body = nothing)
     output = IOBuffer()
-    resp = Downloads.request(url; method = method, headers = headers, output = output,
-                             input = body === nothing ? nothing : IOBuffer(body))
+    resp = try
+        Downloads.request(url; method = method, headers = headers, output = output,
+                          input = body === nothing ? nothing : IOBuffer(body))
+    catch e
+        e isa Downloads.RequestError || rethrow()
+        @abort "$method $url failed: $(e.message)"
+    end
     200 <= resp.status < 300 ||
         @abort "$method $url failed with HTTP status $(resp.status)"
     return resp, take!(output)

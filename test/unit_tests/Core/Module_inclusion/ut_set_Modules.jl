@@ -178,10 +178,26 @@ end
                          end
                          """)
         found = PeriLab.ModuleLoader.find_registered_modules(dir, "register_damage";
-                                                            exclude = [joinpath(dir,
-                                                                                "Skipped")])
+                                                             exclude = [joinpath(dir,
+                                                                                 "Skipped")])
         @test sort(found) == sort([registered, template])
         @test PeriLab.ModuleLoader.find_registered_modules(joinpath(dir, "missing"),
                                                            "register_damage") == String[]
     end
+end
+
+@testset "ut_license_server_url" begin
+    ML = PeriLab.ModuleLoader
+    withenv("LICENSE_SERVER_URL" => nothing) do
+        @test ML.license_server_url() == ML.DEFAULT_LICENSE_SERVER_URL
+    end
+    # an undefined CI secret arrives as an empty string
+    withenv("LICENSE_SERVER_URL" => "") do
+        @test ML.license_server_url() == ML.DEFAULT_LICENSE_SERVER_URL
+    end
+    withenv("LICENSE_SERVER_URL" => "http://localhost:1") do
+        @test ML.license_server_url() == "http://localhost:1"
+    end
+    # connection errors abort with the URL instead of a raw Downloads.RequestError
+    @test_throws PeriLab.PeriLabError ML._request("http://localhost:1/api/v1/validate")
 end
