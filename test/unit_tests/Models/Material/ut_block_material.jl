@@ -119,6 +119,17 @@ end
     end
 end
 
+@testset "Symmetry is matched case-insensitively" begin
+    raw = Dict("Material Model" => "PD Solid Elastic",
+               "Symmetry" => "Isotropic Plane Strain",
+               "Bulk Modulus" => 10.0, "Shear Modulus" => 5.0)
+    m = typed_block_material(raw; dof = 3)
+    @test m.base.symmetry == "isotropic plane strain"
+    @test m.symmetry == "3D"
+    @test m.hooke_symmetry == "isotropic "
+    @test typed_block_material(raw; dof = 2).symmetry == "plane strain"
+end
+
 @testset "model_parts of a single model" begin
     ut_reset(3)
     m = typed_block_material(Dict("Material Model" => "PD Solid Elastic",

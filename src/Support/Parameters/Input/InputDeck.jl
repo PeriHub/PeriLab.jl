@@ -14,7 +14,7 @@ module InputDeck
 using ..ParameterSpec
 using ..ParameterSpec: @params, req, opt, one_of, ParseContext, add_error!, join_path,
                        parse_section
-import ..ParameterSpec: check!
+import ..ParameterSpec: check!, derive
 using ..PeriLabExceptions: @abort
 using DataStructures: OrderedDict
 
@@ -33,13 +33,15 @@ function __init__()
 end
 
 export read_input, PeriLabInput, SolverParams, SolverOptions, FallbackParams,
-       solver_name, CalculationOptions, calculation_options, start_time, end_time, model_options, solver_steps,
+       solver_name, CalculationOptions, calculation_options, start_time, end_time,
+       model_options, solver_steps,
        solver_step,
        BlockParams, DiscretizationParams, GcodeParams, BondFilterParams,
        register_bond_filter, bond_filter,
        SurfaceExtrusionParams, ExternalTopologyParams, block_by_id, block_angles,
        block_names_and_ids, mesh_scaling, gcode_block_ids, OutputParams, ComputeClassParams,
-       check_for_duplicates, output_filenames, output_frequencies, fallback_output_frequencies, output_fieldnames,
+       check_for_duplicates, output_filenames, output_frequencies,
+       fallback_output_frequencies, output_fieldnames,
        compute_names, active_computes,
        BoundaryConditionParams, bc_node_set_names, bc_step_ids,
        ContactInput, ContactBaseParams, ContactGroupParams, ContactGlobalsParams,

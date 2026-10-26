@@ -35,6 +35,11 @@ end
     symmetry::String = opt("Symmetry"; default = "3D")
 end
 
+# compared exactly by the contact models, so stored lowercase
+function derive(p::ContactBaseParams)
+    return ContactBaseParams(p.contact_radius, p.contact_groups, lowercase(p.symmetry))
+end
+
 """
     ContactInput
 
@@ -78,7 +83,8 @@ function parse_contact(raw, path::String, ctx::ParseContext)
             continue
         end
         model = ParameterSpec.parse_model(:contact,
-                                          Dict{String,Any}(string(k) => v for (k, v) in entry),
+                                          Dict{String,Any}(string(k) => v
+                                                           for (k, v) in entry),
                                           model_path, ctx; name_key = "Type")
         if model === nothing
             ok = false
@@ -113,5 +119,7 @@ function contact_blocks(contact::ContactInput)
 end
 
 "Global search frequency of a contact group; falls back to `Globals`."
-contact_search_frequency(group::ContactGroupParams, globals::ContactGlobalsParams) = something(group.global_search_frequency,
-                                                                                               globals.global_search_frequency)
+function contact_search_frequency(group::ContactGroupParams, globals::ContactGlobalsParams)
+    something(group.global_search_frequency,
+              globals.global_search_frequency)
+end

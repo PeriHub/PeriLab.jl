@@ -14,7 +14,8 @@ using .....ParameterSpec: @params, Dependent, register_base!, WithBase, Composit
                           ParseContext, add_error!, join_path, Table1D, dependent_tables,
                           value, model_parts, model_module,
                           model_function, parameter_spec
-import .....ParameterSpec: check!, schema_choices, conditional_required, required_groups
+import .....ParameterSpec: check!, derive, schema_choices, conditional_required,
+                           required_groups
 using .....ParameterSpec: required_group, registered_names
 
 @params "Lowers the yield stress around a point to seed localization (Correspondence Plastic)" struct FlawFunctionParams
@@ -62,10 +63,15 @@ end
 # every Symmetry value PeriLab distinguishes; it matches them case-insensitively by substring
 const SYMMETRIES = [base * plane
                     for base in ("isotropic", "orthotropic", "transverse isotropic",
-                                 "anisotropic")
+                        "anisotropic")
                     for plane in ("", " plane stress", " plane strain")]
 
-const _ISOTROPIC_KEYS = ["Young's Modulus", "Poisson's Ratio", "Bulk Modulus", "Shear Modulus"]
+const _ISOTROPIC_KEYS = [
+    "Young's Modulus",
+    "Poisson's Ratio",
+    "Bulk Modulus",
+    "Shear Modulus"
+]
 
 """
     symmetry_keys(symmetry)
@@ -86,16 +92,17 @@ function symmetry_keys(symmetry::AbstractString)
     end
     occursin("orthotropic", s) &&
         return ["Young's Modulus X", "Young's Modulus Y", "Young's Modulus Z",
-                "Poisson's Ratio XY", "Poisson's Ratio YZ", "Poisson's Ratio XZ",
-                "Shear Modulus XY", "Shear Modulus YZ", "Shear Modulus XZ"]
+            "Poisson's Ratio XY", "Poisson's Ratio YZ", "Poisson's Ratio XZ",
+            "Shear Modulus XY", "Shear Modulus YZ", "Shear Modulus XZ"]
     return String[]
 end
 
 # `when` of an elastic constant: the Symmetry values that read it
 function _read_by(key::String)
-    return Dict("Symmetry" => key in _ISOTROPIC_KEYS ?
-                              filter(s -> isempty(symmetry_keys(s)), SYMMETRIES) :
-                              filter(s -> key in symmetry_keys(s), SYMMETRIES))
+    return Dict("Symmetry" =>
+                    key in _ISOTROPIC_KEYS ?
+                    filter(s -> isempty(symmetry_keys(s)), SYMMETRIES) :
+                    filter(s -> key in symmetry_keys(s), SYMMETRIES))
 end
 
 """
@@ -253,6 +260,13 @@ function check!(p::MaterialBaseParams, path::String, ctx::ParseContext)
     return nothing
 end
 
+# Symmetry is matched by substring; stored lowercase so no consumer has to care about case
+function derive(p::MaterialBaseParams)
+    p.symmetry === nothing && return p
+    return MaterialBaseParams((f === :symmetry ? lowercase(p.symmetry) : getfield(p, f)
+                               for f in fieldnames(MaterialBaseParams))...)
+end
+
 schema_choices(::Type{<:MaterialBaseParams}) = Dict("Symmetry" => SYMMETRIES)
 
 function conditional_required(::Type{<:MaterialBaseParams})
@@ -266,8 +280,10 @@ function conditional_required(::Type{<:MaterialBaseParams})
 end
 
 "Bond-based models (not Unified Bond-based) fix Poisson's ratio."
-is_bond_based(name::AbstractString) = occursin("Bond-based", name) &&
-                                      !occursin("Unified Bond-based", name)
+function is_bond_based(name::AbstractString)
+    occursin("Bond-based", name) &&
+        !occursin("Unified Bond-based", name)
+end
 
 # isotropic materials (Symmetry isotropic or not given) of a single registered model
 # need two elastic constants, bond-based ones one besides Poisson's ratio; composite
@@ -277,12 +293,13 @@ function required_groups(::Type{<:MaterialBaseParams})
     names = registered_names(:material)
     when(models) = Dict{String,Vector{Any}}("Symmetry" => isotropic,
                                             "Material Model" => Any[models...])
-    return [required_group(_ISOTROPIC_KEYS; min = 2,
-                           when = when(filter(!is_bond_based, names)),
-                           note = "isotropic, not bond-based", from_mesh = true),
-            required_group(filter(!=("Poisson's Ratio"), _ISOTROPIC_KEYS);
-                           when = when(filter(is_bond_based, names)),
-                           note = "isotropic, bond-based", from_mesh = true)]
+    return [
+        required_group(_ISOTROPIC_KEYS; min = 2,
+                       when = when(filter(!is_bond_based, names)),
+                       note = "isotropic, not bond-based", from_mesh = true),
+        required_group(filter(!=("Poisson's Ratio"), _ISOTROPIC_KEYS);
+                       when = when(filter(is_bond_based, names)),
+                       note = "isotropic, bond-based", from_mesh = true)]
 end
 
 # registration runs at load time, never during precompilation
@@ -431,10 +448,9 @@ function elastic_moduli(base::MaterialBaseParams, bond_based::Bool, dof::Int64)
         poissons = true
     end
     if base.symmetry !== nothing
-        symmetry = lowercase(base.symmetry)
-        if occursin("anisotropic", symmetry) ||
-           occursin("transverse isotropic", symmetry) ||
-           occursin("orthotropic", symmetry)
+        if occursin("anisotropic", base.symmetry) ||
+           occursin("transverse isotropic", base.symmetry) ||
+           occursin("orthotropic", base.symmetry)
             return nothing
         end
     else
