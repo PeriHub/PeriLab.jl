@@ -28,15 +28,18 @@ end
     ParseContext(; directory = "", strict = true)
 
 State shared while reading an input deck: the deck's directory (for relative
-data file paths), strict mode, and all problems found so far.
+data file paths), strict mode, all problems found so far, and the node fields
+the mesh defines (columns of a text mesh, e.g. `Bulk_Modulus`; `nothing` if
+they are not known before the mesh is read; see `check_required_groups!`).
 """
 mutable struct ParseContext
     directory::String
     strict::Bool
     errors::Vector{InputError}
+    node_fields::Union{Nothing,Set{String}}
 end
 function ParseContext(; directory::AbstractString = "", strict::Bool = true)
-    return ParseContext(String(directory), strict, InputError[])
+    return ParseContext(String(directory), strict, InputError[], Set{String}())
 end
 
 function add_error!(ctx::ParseContext, path::AbstractString, msg::AbstractString)

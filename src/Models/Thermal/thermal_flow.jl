@@ -14,7 +14,7 @@ export init_model
 export fields_for_local_synchronization
 
 using ......ParameterSpec: @params, register_thermal, ParseContext, add_error!, join_path
-import ......ParameterSpec: check!
+import ......ParameterSpec: check!, conditional_required
 
 @enum ThermalFlowType BondBased Correspondence
 
@@ -34,6 +34,11 @@ const _BOND_BASED = Dict("Type" => ["BondBased"])
     "Height of the print bed; must be below the lowest node"
     print_bed_z_coordinate::Float64 = opt("Print Bed Z Coordinate"; default = 0.0,
                                           when = _BOND_BASED)
+end
+
+function conditional_required(::Type{ThermalFlowParams})
+    return [Dict{String,Vector{Any}}("Print Bed Temperature" => Any[]) =>
+                ["Thermal Conductivity Print Bed"]]
 end
 
 function check!(p::ThermalFlowParams, path::String, ctx::ParseContext)

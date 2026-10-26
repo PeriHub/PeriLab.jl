@@ -12,9 +12,9 @@ const _EXODUS = Dict("Output File Type" => ["Exodus"])
                                    allowed = ["Exodus", "CSV"])
     "Field and compute class names to write (true) or skip (false)"
     output_variables::Dict{String,Bool} = req("Output Variables")
-    "Writes every n-th step; per solver step as \"n1 n2\"; Number of Output Steps takes precedence"
+    "Writes every n-th step; per solver step as \"n1 n2\"; give this or Number of Output Steps, which takes precedence"
     output_frequency::Union{Nothing,Int64,String} = opt("Output Frequency"; default = nothing)
-    "Number of outputs, evenly spread over the solver steps; per solver step as \"n1 n2\""
+    "Number of outputs, evenly spread over the solver steps; per solver step as \"n1 n2\"; give this or Output Frequency; wins if both are given"
     number_of_output_steps::Union{Nothing,Int64,String} = opt("Number of Output Steps";
                                                               default = nothing)
     "No output before this time"
@@ -31,19 +31,16 @@ const _EXODUS = Dict("Output File Type" => ["Exodus"])
     bond_blocks::Union{Nothing,Int64,
                        String} = opt("Bond Blocks"; default = nothing,
                                      when = _EXODUS)
-    "Writes every n-th step of a fallback solver; per solver step as \"n1 n2\""
+    "Writes every n-th step of a fallback solver; per solver step as \"n1 n2\"; Fallback Number of Output Steps takes precedence; without either the output keeps its interval in time"
     fallback_output_frequency::Union{Nothing,Int64,String} = opt("Fallback Output Frequency";
                                                                  default = nothing)
-    "Number of outputs over the steps of a fallback solver; per solver step as \"n1 n2\""
+    "Number of outputs over the steps of a fallback solver; per solver step as \"n1 n2\"; wins over Fallback Output Frequency"
     fallback_number_of_output_steps::Union{Nothing,Int64,String} = opt("Fallback Number of Output Steps";
                                                                        default = nothing)
 end
 
-function check!(p::OutputParams, path::String, ctx::ParseContext)
-    if p.output_frequency === nothing && p.number_of_output_steps === nothing
-        add_error!(ctx, path, "\"Output Frequency\" or \"Number of Output Steps\" is required")
-    end
-    return nothing
+function ParameterSpec.required_groups(::Type{OutputParams})
+    return [ParameterSpec.required_group(["Output Frequency", "Number of Output Steps"])]
 end
 """
     check_for_duplicates(filenames)

@@ -211,6 +211,7 @@ way the input reader does; aborts on input errors.
 function typed_block_material(raw::AbstractDict;
                               dof::Int64 = PeriLab.Data_Manager.get_dof())
     ctx = PeriLab.ParameterSpec.ParseContext()
+    ctx.node_fields = nothing   # node fields come from Data_Manager; elastic_moduli checks them
     dict = Dict{String,Any}(string(k) => v for (k, v) in raw)
     wb = PeriLab.ParameterSpec.parse_model(:material, dict, "test", ctx;
                                            name_key = "Material Model")

@@ -33,7 +33,7 @@ end
                                                quantity = :time)
     "End time of the step (required in Solver); a step of a Multistep Solver may give Additional Time instead"
     final_time::Union{Nothing,Float64} = opt("Final Time"; default = nothing, quantity = :time)
-    "Duration of the step, added to the current time; used if Final Time is not given"
+    "Duration of the step, added to the current time; give this or Final Time, which takes precedence"
     additional_time::Union{Nothing,Float64} = opt("Additional Time"; default = nothing,
                                                   quantity = :time)
     "The solver of this step"
@@ -66,11 +66,8 @@ end
     fallback::Union{Nothing,FallbackParams} = opt("Fallback"; default = nothing)
 end
 
-function check!(p::SolverParams, path::String, ctx::ParseContext)
-    if p.final_time === nothing && p.additional_time === nothing
-        add_error!(ctx, path, "\"Final Time\" or \"Additional Time\" is required")
-    end
-    return nothing
+function ParameterSpec.required_groups(::Type{SolverParams})
+    return [ParameterSpec.required_group(["Final Time", "Additional Time"])]
 end
 
 "Registered name of the solver whose options are `o`."

@@ -11,7 +11,8 @@ const UT_DECK = UT_SCHEMA["properties"]["PeriLab"]
 
 # the `allOf` case for `key` = `name` (model cases and conditional keys share allOf)
 function ut_case(cases, key, name)
-    is_case(c) = get(get(c["if"]["properties"], key, Dict()), "const", nothing) == name
+    is_case(c) = get(get(get(get(c, "if", Dict()), "properties", Dict()), key, Dict()),
+                     "const", nothing) == name
     return only(filter(is_case, cases))
 end
 
@@ -160,6 +161,8 @@ function ut_valid(schema::AbstractDict, x)::Bool
     if haskey(schema, "allOf")
         all(s -> ut_valid(s, x), schema["allOf"]) || return false
     end
+    haskey(schema, "anyOf") && !any(s -> ut_valid(s, x), schema["anyOf"]) && return false
+    haskey(schema, "not") && ut_valid(schema["not"], x) && return false
     if haskey(schema, "if") && ut_valid(schema["if"], x) && haskey(schema, "then")
         ut_valid(schema["then"], x) || return false
     end
@@ -210,7 +213,8 @@ end
     @test !ut_valid(entry, merge(plastic, Dict{String,Any}("Bogus" => 1)))
     @test !ut_valid(entry, merge(plastic, Dict{String,Any}("Yeild Stress" => 1)))
     umat = Dict{String,Any}("Material Model" => "Correspondence UMAT", "File" => "u.so",
-                            "Number of Properties" => 1, "Property_1" => 2.0)
+                            "Number of Properties" => 1, "Property_1" => 2.0,
+                            "Young's Modulus" => 1.0, "Poisson's Ratio" => 0.3)
     @test ut_valid(entry, umat)
     composite = merge(plastic,
                       Dict{String,Any}("Material Model" => "Correspondence Elastic + Correspondence Plastic"))
@@ -327,7 +331,7 @@ function ut_undescribed!(bad, s, path)
     ut_undescribed!(bad, get(s, "additionalProperties", nothing), path * " → <entry>")
     ut_undescribed!(bad, get(s, "items", nothing), path * " → <item>")
     for case in get(s, "allOf", Any[])
-        haskey(case["then"], "properties") || continue        # conditional required keys
+        haskey(get(case, "then", Dict()), "properties") || continue   # required keys only
         name = only(values(case["if"]["properties"]))["const"]
         ut_undescribed!(bad, case["then"], path * " → <" * name * ">")
     end
@@ -358,7 +362,7 @@ function ut_objects!(found, s, path)
     ut_objects!(found, get(s, "additionalProperties", nothing), path * " → <entry>")
     ut_objects!(found, get(s, "items", nothing), path * " → <item>")
     for (i, case) in enumerate(get(s, "allOf", Any[]))
-        ut_objects!(found, case["then"], path * " → <case $i>")
+        ut_objects!(found, get(case, "then", nothing), path * " → <case $i>")
     end
     return found
 end
@@ -430,7 +434,7 @@ end
     # keys an object (or one of its allOf branches) requires
     required(s) = union(get(s, "required", String[]),
                         [k for c in get(s, "allOf", Any[])
-                         for k in get(c["then"], "required", String[])])
+                         for k in get(get(c, "then", Dict()), "required", String[])])
     bad = String[]
     for (path, s) in UT_OBJECTS, (key, p) in s["properties"]
         occursin(r"required (in|there)", get(p, "description", "")) || continue
@@ -461,4 +465,59 @@ end
     elastic = Dict{String,Any}("Material Model" => "Correspondence Elastic",
                                "Symmetry" => "orthotropic", "Young's Modulus X" => 1.0)
     @test !ut_valid(material, elastic)
+end
+
+@testset "required groups in the schema" begin
+    p = UT_DECK["properties"]
+    branches(keys...) = Any[Dict{String,Any}("required" => [k]) for k in keys]
+    # outputs: one of the two
+    output = p["Outputs"]["additionalProperties"]
+    g = only(output["x-perilab-required-groups"])
+    @test g["keys"] == ["Output Frequency", "Number of Output Steps"]
+    @test g["min"] == 1 && g["max"] === nothing
+    @test Dict("anyOf" => branches("Output Frequency", "Number of Output Steps")) in
+          output["allOf"]
+    # multistep solver steps: Final Time or Additional Time
+    step = p["Multistep Solver"]["additionalProperties"]
+    @test only(step["x-perilab-required-groups"])["keys"] == ["Final Time", "Additional Time"]
+    @test Dict("anyOf" => branches("Final Time", "Additional Time")) in step["allOf"]
+    @test haskey(step, "oneOf")                    # the solver choice stays separate
+    verlet = Dict{String,Any}("Step ID" => 1, "Verlet" => Dict{String,Any}())
+    @test !ut_valid(step, verlet)
+    @test ut_valid(step, merge(verlet, Dict{String,Any}("Additional Time" => 1.0)))
+    # deck root: exactly one of Solver, Multistep Solver
+    g = only(UT_DECK["x-perilab-required-groups"])
+    @test g["keys"] == ["Solver", "Multistep Solver"] && g["min"] == 1 && g["max"] == 1
+    @test Dict("oneOf" => branches("Solver", "Multistep Solver")) in UT_DECK["allOf"]
+    # materials: two of four isotropic constants, one of three for bond-based models
+    material = p["Models"]["properties"]["Material Models"]["additionalProperties"]
+    general, bond = material["x-perilab-required-groups"]
+    @test general["min"] == 2 && length(general["keys"]) == 4
+    @test bond["min"] == 1 && !("Poisson's Ratio" in bond["keys"])
+    @test nothing in general["when"]["Symmetry"] && "isotropic plane strain" in general["when"]["Symmetry"]
+    @test !("orthotropic" in general["when"]["Symmetry"])
+    @test "PD Solid Elastic" in general["when"]["Material Model"] &&
+          "Bond-based Elastic" in bond["when"]["Material Model"]
+    elastic = only(filter(c -> length(get(get(c, "then", Dict()), "anyOf", [])) == 6,
+                          material["allOf"]))
+    @test elastic["if"]["required"] == ["Material Model"]   # Symmetry not given: isotropic
+    @test "isotropic" in elastic["if"]["properties"]["Symmetry"]["enum"]
+    @test any(c -> haskey(c["if"]["properties"], "Symmetry") && !haskey(c["then"], "anyOf"),
+              material["allOf"])                  # the stiffness-matrix cases are kept
+    solid = Dict{String,Any}("Material Model" => "PD Solid Elastic", "Bulk Modulus" => 1.0)
+    @test !ut_valid(material, solid)
+    @test ut_valid(material, merge(solid, Dict{String,Any}("Shear Modulus" => 1.0)))
+    @test ut_valid(material, Dict{String,Any}("Material Model" => "Bond-based Elastic",
+                                              "Bulk Modulus" => 1.0))
+    # thermal flow: the print bed needs its conductivity
+    thermal = p["Models"]["properties"]["Thermal Models"]["additionalProperties"]
+    flow = ut_case(thermal["allOf"], "Thermal Model", "Thermal Flow")["then"]
+    @test Dict("if" => Dict("required" => ["Print Bed Temperature"]),
+               "then" => Dict("required" => ["Thermal Conductivity Print Bed"])) in flow["allOf"]
+    # docs
+    rows = Dict(r.key => r for r in PeriLab.ParameterSpec.parameter_rows(GID.OutputParams))
+    @test rows["Output Frequency"].required ==
+          "required: one of Output Frequency, Number of Output Steps"
+    rows = Dict(r.key => r for r in PeriLab.ParameterSpec.parameter_rows(GID.PeriLabSections))
+    @test rows["Solver"].required == "required: exactly one of Solver, Multistep Solver"
 end

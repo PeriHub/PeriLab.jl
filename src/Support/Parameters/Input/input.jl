@@ -12,7 +12,7 @@
                                                                                    BoundaryConditionParams}())
     "Single solver step; use either this or Multistep Solver"
     solver::Union{Nothing,SolverParams} = opt("Solver"; default = nothing)
-    "Several solver steps run one after another, one entry per name, each with its own Step ID"
+    "Several solver steps run one after another, one entry per name, each with its own Step ID; use either this or Solver"
     multistep_solver::Dict{String,SolverParams} = opt("Multistep Solver";
                                                       default = Dict{String,SolverParams}())
     "Result files, one entry per name"
@@ -28,12 +28,13 @@
     strict_validation::Bool = opt("Strict Validation"; default = true)
 end
 
+function ParameterSpec.required_groups(::Type{PeriLabSections})
+    return [ParameterSpec.required_group(["Solver", "Multistep Solver"]; max = 1)]
+end
+
 function check!(p::PeriLabSections, path::String, ctx::ParseContext)
     isempty(p.blocks) && add_error!(ctx, join_path(path, "Blocks"),
                                     "at least one block is required")
-    if p.solver === nothing && isempty(p.multistep_solver)
-        add_error!(ctx, path, "\"Solver\" or \"Multistep Solver\" is required")
-    end
     if p.solver !== nothing
         solver_path = join_path(path, "Solver")
         for (key, value) in (("Initial Time", p.solver.initial_time),
@@ -164,6 +165,23 @@ function parse_pre_calculation_switches(raw, path::String, ctx::ParseContext)
 end
 
 """
+    mesh_node_fields(d, directory)
+
+Node fields the mesh of `d` defines before it is read: the header columns of a
+text mesh (e.g. `Bulk_Modulus`); `nothing` for Exodus meshes, whose nodal
+variables are only known once the mesh is read.
+"""
+function mesh_node_fields(d::DiscretizationParams, directory::AbstractString)
+    d.type == "Exodus" && return nothing
+    file = joinpath(directory, d.input_mesh_file)
+    (d.type == "Text File" && isfile(file)) || return Set{String}()
+    for line in eachline(file)
+        contains(line, "header:") && return Set{String}(split(line)[2:end])
+    end
+    return Set{String}()
+end
+
+"""
     read_input(deck, directory = ""; strict = true) -> (input, ctx)
 
 Reads the content of the `PeriLab:` key of an input deck. `directory` is the
@@ -177,6 +195,8 @@ function read_input(deck::AbstractDict, directory::AbstractString = ""; strict::
     # misspellings of them ("contact", "Contacts") errors with suggestions
     sections = parse_section(PeriLabSections, Dict{String,Any}(string(k) => v for (k, v) in deck),
                              "", ctx; known_extra = _SPECIAL_KEYS)
+    sections === nothing ||
+        (ctx.node_fields = mesh_node_fields(sections.discretization, directory))
     contact = haskey(deck, "Contact") ? parse_contact(deck["Contact"], "Contact", ctx) :
               nothing
     models = get(deck, "Models", nothing)

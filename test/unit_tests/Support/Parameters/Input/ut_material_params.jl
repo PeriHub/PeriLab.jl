@@ -5,8 +5,9 @@
 const MPS = PeriLab.ParameterSpec
 const MAT = PeriLab.Solver_Manager.Model_Factory.Material
 
-function ut_material(dict; directory = "")
+function ut_material(dict; directory = "", node_fields = Set{String}())
     ctx = MPS.ParseContext(directory = directory)
+    ctx.node_fields = node_fields
     m = MPS.parse_model(:material, Dict{String,Any}(dict), "Models.\"Material Models\".M",
                         ctx; name_key = "Material Model")
     return m, ctx
@@ -52,7 +53,8 @@ end
 end
 
 @testset "PD Solid Plastic requires Yield Stress" begin
-    m, ctx = ut_material(Dict("Material Model" => "PD Solid Plastic", "Bulk Modulus" => 1.0))
+    m, ctx = ut_material(Dict("Material Model" => "PD Solid Plastic", "Bulk Modulus" => 1.0,
+                              "Shear Modulus" => 1.0))
     @test m === nothing
     @test only(ctx.errors).message == "missing (required by PD Solid Plastic)"
     @test only(ctx.errors).path == "Models.\"Material Models\".M.\"Yield Stress\""
@@ -112,7 +114,9 @@ const CORR = MAT.Correspondence
 end
 
 @testset "UMAT properties" begin
-    props = Dict("Property_$i" => Float64(i) for i in 1:27)
+    props = Dict{String,Any}("Property_$i" => Float64(i) for i in 1:27)
+    props["Young's Modulus"] = 1.0
+    props["Poisson's Ratio"] = 0.3
     m, ctx = ut_material(merge(Dict{String,Any}("Material Model" => "Correspondence UMAT",
                                                 "File" => "libusertest.so",
                                                 "Number of Properties" => 27,
@@ -121,6 +125,7 @@ end
     @test isempty(ctx.errors)
     @test m.model.number_of_properties == 27
     m, ctx = ut_material(Dict("Material Model" => "Correspondence VUMAT", "File" => "a.so",
+                              "Young's Modulus" => 1.0, "Poisson's Ratio" => 0.3,
                               "Number of Properties" => 3, "Property_3" => "abc",
                               "Propery_2" => 1.0))
     @test length(ctx.errors) == 2
@@ -128,7 +133,8 @@ end
     p = "Models.\"Material Models\".M"
     @test msgs["$p.Property_3"] == "expected a number, got \"abc\""
     @test startswith(msgs["$p.Propery_2"], "unknown key")
-    m, ctx = ut_material(Dict("Material Model" => "Correspondence UMAT", "File" => "a.so"))
+    m, ctx = ut_material(Dict("Material Model" => "Correspondence UMAT", "File" => "a.so",
+                              "Young's Modulus" => 1.0, "Poisson's Ratio" => 0.3))
     @test only(ctx.errors).message == "missing (required by Correspondence UMAT)"
 end
 
@@ -168,3 +174,30 @@ end
     @test isempty(ctx.errors)
 end
 
+
+@testset "isotropic elastic constants are counted when the deck is read" begin
+    two = "two of \"Young's Modulus\", \"Poisson's Ratio\", \"Bulk Modulus\", \"Shear Modulus\" are required"
+    one = "\"Young's Modulus\", \"Bulk Modulus\" or \"Shear Modulus\" is required"
+    errors(dict; kw...) = [e.message for e in last(ut_material(dict; kw...)).errors]
+    solid = Dict("Material Model" => "PD Solid Elastic")
+    @test errors(merge(solid, Dict("Bulk Modulus" => 1.0))) == [two]
+    @test errors(merge(solid, Dict("Symmetry" => "Isotropic Plane Strain", "Bulk Modulus" => 1.0))) ==
+          [two]
+    @test isempty(errors(merge(solid, Dict("Bulk Modulus" => 1.0, "Shear Modulus" => 1.0))))
+    @test isempty(errors(merge(solid,
+                               Dict("Bulk Modulus" => 1.0, "Shear Modulus" => 1.0,
+                                    "Young's Modulus" => 1.0))))   # more: a warning later
+    @test errors(Dict("Material Model" => "Unified Bond-based Elastic", "Bulk Modulus" => 1.0)) ==
+          [two]
+    # bond-based models fix Poisson's ratio
+    @test isempty(errors(Dict("Material Model" => "Bond-based Elastic", "Bulk Modulus" => 1.0)))
+    @test errors(Dict("Material Model" => "Bond-based Elastic", "Poisson's Ratio" => 0.25)) ==
+          [one]
+    # a node field of the mesh counts; unknown node fields (Exodus) are not checked
+    @test isempty(errors(merge(solid, Dict("Shear Modulus" => 1.0));
+                         node_fields = Set(["Bulk_Modulus"])))
+    @test isempty(errors(solid; node_fields = nothing))
+    # stiffness-matrix symmetries have their own rules; composites are checked at init
+    @test !(two in errors(merge(solid, Dict("Symmetry" => "orthotropic"))))
+    @test !(two in errors(Dict("Material Model" => "PD Solid Elastic + Bond-based Elastic")))
+end

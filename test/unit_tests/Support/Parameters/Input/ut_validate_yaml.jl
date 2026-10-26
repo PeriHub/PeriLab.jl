@@ -10,7 +10,8 @@ function ut_valid_params()
                                                     "Blocks" => Dict{Any,Any}("block_1" => Dict{Any,Any}("Block ID" => 1,
                                                                                                          "Density" => 1.0,
                                                                                                          "Horizon" => 1.0)),
-                                                    "Models" => Dict{Any,Any}("Material Models" => Dict{Any,Any}("mat_1" => Dict{Any,Any}("Material Model" => "Bond-based Elastic"))),
+                                                    "Models" => Dict{Any,Any}("Material Models" => Dict{Any,Any}("mat_1" => Dict{Any,Any}("Material Model" => "Bond-based Elastic",
+                                                                                                                                        "Bulk Modulus" => 1.0))),
                                                     "Solver" => Dict{Any,Any}("Initial Time" => 0.0,
                                                                               "Final Time" => 1.0,
                                                                               "Verlet" => Dict{Any,Any}())))
@@ -42,6 +43,7 @@ end
               Material Models:
                 mat_1:
                   Material Model: Bond-based Elastic
+                  Bulk Modulus: 1.0
             Solver:
               Initial Time: 0.0
               Final Time: 1.0

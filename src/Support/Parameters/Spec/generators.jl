@@ -107,7 +107,9 @@ end
 JSON Schema object of the `@params` struct `T`: its description
 (`params_description`), its YAML keys with types, defaults, bounds, allowed
 values and descriptions, in field order; `required` lists the
-required keys; indexed keys (`key_patterns`) become `patternProperties`.
+required keys; indexed keys (`key_patterns`) become `patternProperties`;
+`conditional_required` and `required_groups` become `allOf` entries, the groups
+also `x-perilab-required-groups`.
 """
 function json_schema(T)
     props = OrderedDict{String,Any}()
@@ -135,9 +137,13 @@ function json_schema(T)
     isempty(description) || (schema["description"] = description)
     isempty(required) || (schema["required"] = sort!(required))
     isempty(choices) || (schema["oneOf"] = choices)
-    cases = Any[_required_case(condition, needed)
-                for (condition, needed) in conditional_required(T)]
+    groups = required_groups(T)
+    cases = Any[[_required_case(condition, needed)
+                 for (condition, needed) in conditional_required(T)];
+                [_group_case(g) for g in groups]]
     isempty(cases) || (schema["allOf"] = cases)
+    isempty(groups) ||
+        (schema["x-perilab-required-groups"] = Any[_group_json(g) for g in groups])
     patterns = key_patterns(T)
     if !isempty(patterns)
         schema["patternProperties"] = Dict{String,Any}(first(p).pattern => type_schema(last(p))
@@ -146,15 +152,68 @@ function json_schema(T)
     return schema
 end
 
-# `if` every key of `condition` is given with one of its values, `then` `required` are required
+# schema of a `conditional_required` / `required_groups` condition: every key has
+# one of its values (`nothing`: or is not given; no values: is given with any value)
+function _condition_schema(condition::AbstractDict)
+    props = OrderedDict{String,Any}()
+    required = String[]
+    for (k, vs) in condition
+        given = filter(!isnothing, vs)
+        isempty(given) ||
+            (props[k] = length(given) == 1 ? Dict{String,Any}("const" => only(given)) :
+                        Dict{String,Any}("enum" => collect(given)))
+        nothing in vs || push!(required, k)
+    end
+    s = Dict{String,Any}()
+    isempty(props) || (s["properties"] = props)
+    isempty(required) || (s["required"] = required)
+    return s
+end
+
+# `if` `condition` holds, `then` `required` are required
 function _required_case(condition::AbstractDict, required::Vector{String})
-    props = OrderedDict{String,Any}(k => length(vs) == 1 ?
-                                         Dict{String,Any}("const" => only(vs)) :
-                                         Dict{String,Any}("enum" => collect(vs))
-                                    for (k, vs) in condition)
-    return Dict{String,Any}("if" => Dict{String,Any}("properties" => props,
-                                                     "required" => collect(keys(condition))),
+    return Dict{String,Any}("if" => _condition_schema(condition),
                             "then" => Dict{String,Any}("required" => required))
+end
+
+# the `k`-element subsets of `xs`, in order
+function _subsets(xs::Vector{String}, k::Int)
+    k == 0 && return [String[]]
+    length(xs) < k && return Vector{String}[]
+    return [[[xs[1]; s] for s in _subsets(xs[2:end], k - 1)]; _subsets(xs[2:end], k)]
+end
+
+_any_of(keys, k) = Any[Dict{String,Any}("required" => s) for s in _subsets(keys, k)]
+
+# a required group: exactly one -> oneOf; else anyOf of the `min`-subsets, and
+# `not` anyOf of the `max + 1`-subsets; inside `if`/`then` for a `when`
+function _group_case(g)
+    s = if g.min == 1 && g.max == 1
+        Dict{String,Any}("oneOf" => _any_of(g.keys, 1))
+    else
+        s = Dict{String,Any}("anyOf" => _any_of(g.keys, g.min))
+        g.max === nothing || g.max >= length(g.keys) ||
+            (s["not"] = Dict{String,Any}("anyOf" => _any_of(g.keys, g.max + 1)))
+        s
+    end
+    g.when === nothing && return s
+    return Dict{String,Any}("if" => _condition_schema(g.when), "then" => s)
+end
+
+# "exactly one of A, B", "two of A, B, C" (+ the note)
+function _group_text(g)
+    text = (g.min == g.max ? "exactly " : "") * _count_word(g.min) * " of " *
+           join(g.keys, ", ")
+    return g.note === nothing ? text : text * " ($(g.note))"
+end
+
+# the `x-perilab-required-groups` entry: the group as data, for consumers that
+# do not evaluate the anyOf branches; `when` as declared (null: key not given)
+function _group_json(g)
+    entry = Dict{String,Any}("keys" => g.keys, "min" => g.min, "max" => g.max,
+                             "description" => "give " * _group_text(g))
+    g.when === nothing || (entry["when"] = g.when)
+    return entry
 end
 
 "Readable name of a declared field type (docs and `describe`)."
@@ -203,7 +262,13 @@ quantity, description.
 """
 function parameter_rows(T)
     choices = schema_choices(T)
+    groups = Dict{String,Vector{String}}()
+    for g in required_groups(T), key in g.keys
+        push!(get!(groups, key, String[]), "required: " * _group_text(g))
+    end
     rows = [_row(fs) for fs in parameter_spec(T)]
+    rows = [haskey(groups, r.key) && r.required == "optional" ?
+            merge(r, (required = join(groups[r.key], "; "),)) : r for r in rows]
     return [haskey(choices, r.key) ?
             merge(r, (range = "one of: " * join(choices[r.key], ", "),)) : r
             for r in rows]

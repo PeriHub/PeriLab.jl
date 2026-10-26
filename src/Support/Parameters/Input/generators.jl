@@ -56,7 +56,9 @@ function _model_entry_schema(category::Symbol, name_key::String)
         then = Dict{String,Any}("properties" => props,
                                 "additionalProperties" => false,
                                 "description" => ParameterSpec.params_description(T))
-        haskey(model, "required") && (then["required"] = model["required"])
+        for key in ("required", "allOf", "x-perilab-required-groups")
+            haskey(model, key) && (then[key] = model[key])
+        end
         patterns = merge(get(entry, "patternProperties", Dict{String,Any}()),
                          get(model, "patternProperties", Dict{String,Any}()))
         isempty(patterns) || (then["patternProperties"] = patterns)
@@ -189,7 +191,7 @@ function _describe_table(io::IO, T, indent::String)
     width = maximum(length(r.key) for r in rows)
     for r in rows
         info = filter(!isempty,
-                      [r.type, r.required == "required" ? "required" : "default " * r.default,
+                      [r.type, startswith(r.required, "required") ? r.required : "default " * r.default,
                        r.range, r.quantity, r.description])
         println(io, indent, rpad(r.key, width), "  ", join(info, "; "))
     end

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 export @params, params_description, derive, check!, key_patterns, schema_choices,
-       conditional_required
+       conditional_required, required_groups, required_group, check_required_groups!
 
 const _SELF = @__MODULE__
 
@@ -70,6 +70,28 @@ Keys of `T` required only for some values of a sibling key, as
 entry; enforcing them is up to `check!`.
 """
 conditional_required(::Type) = Pair{Dict{String,Vector{Any}},Vector{String}}[]
+
+"""
+    required_groups(::Type{T})
+
+Groups of YAML keys of `T` of which at least `min` and at most `max` (`nothing`:
+any number) must be given, as `required_group`s. `when` (`key => values`, like
+`conditional_required`; `nothing` among the values: the key is not given; no
+values: the key is given) limits a group to some decks and may name keys read
+next to `T`, e.g. the model name. Checked when `T` is read
+(`check_required_groups!`) and exported to the JSON Schema. With `from_mesh`
+the keys may also come from node fields of the mesh (see `check_required_groups!`).
+"""
+required_groups(::Type) = []
+
+"A `required_groups` entry; `note` names the case in docs, e.g. \"bond-based models\"."
+function required_group(keys::Vector{String}; min::Int = 1,
+                        max::Union{Nothing,Int} = nothing,
+                        when::Union{Nothing,Dict{String,Vector{Any}}} = nothing,
+                        note::Union{Nothing,String} = nothing, from_mesh::Bool = false)
+    return (keys = keys, min = min, max = max, when = when, note = note,
+            from_mesh = from_mesh)
+end
 
 const _SCALAR_UNION_MEMBERS = (Nothing, Int64, Float64, String, Bool)
 

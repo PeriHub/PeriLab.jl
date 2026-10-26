@@ -14,7 +14,8 @@ using .....ParameterSpec: @params, Dependent, register_base!, WithBase, Composit
                           ParseContext, add_error!, join_path, Table1D, dependent_tables,
                           value, model_parts, model_module,
                           model_function, parameter_spec
-import .....ParameterSpec: check!, schema_choices, conditional_required
+import .....ParameterSpec: check!, schema_choices, conditional_required, required_groups
+using .....ParameterSpec: required_group, registered_names
 
 @params "Lowers the yield stress around a point to seed localization (Correspondence Plastic)" struct FlawFunctionParams
     "Switches the flaw on"
@@ -108,19 +109,19 @@ symmetry; they are completed at initialisation.
 @params "Material model of the blocks that use this entry: elastic constants, symmetry and options shared by all material models" struct MaterialBaseParams
     "Material symmetry and 2D assumption (plane stress or plane strain); selects which elastic constants are needed. Isotropic if not given"
     symmetry::Union{Nothing,String} = opt("Symmetry"; default = nothing)
-    "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed"
+    "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed (bond-based models fix Poisson's ratio and need one of the others); a text mesh column (e.g. Bulk_Modulus) gives it per node"
     youngs_modulus::Union{Nothing,Float64} = opt("Young's Modulus"; default = nothing,
                                                  min = 0, quantity = :stress,
                                                  when = _read_by("Young's Modulus"))
-    "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed"
+    "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed (bond-based models fix Poisson's ratio and need one of the others); a text mesh column (e.g. Bulk_Modulus) gives it per node"
     poissons_ratio::Union{Nothing,Float64} = opt("Poisson's Ratio"; default = nothing,
                                                  min = -1, max = 0.5,
                                                  when = _read_by("Poisson's Ratio"))
-    "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed"
+    "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed (bond-based models fix Poisson's ratio and need one of the others); a text mesh column (e.g. Bulk_Modulus) gives it per node"
     bulk_modulus::Union{Nothing,Float64} = opt("Bulk Modulus"; default = nothing, min = 0,
                                                quantity = :stress,
                                                when = _read_by("Bulk Modulus"))
-    "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed"
+    "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed (bond-based models fix Poisson's ratio and need one of the others); a text mesh column (e.g. Bulk_Modulus) gives it per node"
     shear_modulus::Union{Nothing,Float64} = opt("Shear Modulus"; default = nothing, min = 0,
                                                 quantity = :stress,
                                                 when = _read_by("Shear Modulus"))
@@ -262,6 +263,26 @@ function conditional_required(::Type{<:MaterialBaseParams})
         push!(cases, Dict("Symmetry" => values) => keys)
     end
     return cases
+end
+
+"Bond-based models (not Unified Bond-based) fix Poisson's ratio."
+is_bond_based(name::AbstractString) = occursin("Bond-based", name) &&
+                                      !occursin("Unified Bond-based", name)
+
+# isotropic materials (Symmetry isotropic or not given) of a single registered model
+# need two elastic constants, bond-based ones one besides Poisson's ratio; composite
+# model names match neither and are checked by elastic_moduli
+function required_groups(::Type{<:MaterialBaseParams})
+    isotropic = Any[nothing; _read_by("Young's Modulus")["Symmetry"]]
+    names = registered_names(:material)
+    when(models) = Dict{String,Vector{Any}}("Symmetry" => isotropic,
+                                            "Material Model" => Any[models...])
+    return [required_group(_ISOTROPIC_KEYS; min = 2,
+                           when = when(filter(!is_bond_based, names)),
+                           note = "isotropic, not bond-based", from_mesh = true),
+            required_group(filter(!=("Poisson's Ratio"), _ISOTROPIC_KEYS);
+                           when = when(filter(is_bond_based, names)),
+                           note = "isotropic, bond-based", from_mesh = true)]
 end
 
 # registration runs at load time, never during precompilation
@@ -474,8 +495,7 @@ ratio).
 """
 function block_material(wb::WithBase, dof::Int64)
     model_name = wb.name
-    bond_based = occursin("Bond-based", model_name) &&
-                 !occursin("Unified Bond-based", model_name)
+    bond_based = is_bond_based(model_name)
     correspondence = correspondence_model(wb.model, model_name)
     moduli = elastic_moduli(wb.base, bond_based, dof)
     if moduli === nothing && !correspondence

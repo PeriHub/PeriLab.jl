@@ -13,7 +13,9 @@ function ut_deck()
                                                                                        "Density" => 1.0,
                                                                                        "Horizon" => 1.0,
                                                                                        "Material Model" => "Mat")),
-                            "Models" => Dict{String,Any}("Material Models" => Dict{String,Any}("Mat" => Dict{String,Any}("Material Model" => "PD Solid Elastic"))),
+                            "Models" => Dict{String,Any}("Material Models" => Dict{String,Any}("Mat" => Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                                                                                                         "Bulk Modulus" => 1.0,
+                                                                                                                         "Shear Modulus" => 1.0))),
                             "Solver" => Dict{String,Any}("Initial Time" => 0.0,
                                                          "Final Time" => 1.0,
                                                          "Verlet" => Dict{String,Any}()))
@@ -65,6 +67,50 @@ end
     input, ctx = ID.read_input(deck)
     @test ctx.errors[1].path == "\"Multistep Solver\".Step_1.\"Step ID\""
     @test ctx.errors[1].message == "missing (required in a multistep solver step)"
+end
+
+@testset "required groups" begin
+    deck = ut_deck()
+    deck["Multistep Solver"] = Dict{String,Any}("S" => Dict{String,Any}("Step ID" => 1,
+                                                                        "Final Time" => 1.0,
+                                                                        "Verlet" => Dict{String,Any}()))
+    _, ctx = ID.read_input(deck)
+    @test only(ctx.errors).path == ""
+    @test only(ctx.errors).message == "give only one of \"Solver\" or \"Multistep Solver\""
+    delete!(deck, "Solver")
+    @test isempty(last(ID.read_input(deck)).errors)
+    delete!(deck["Multistep Solver"]["S"], "Final Time")
+    _, ctx = ID.read_input(deck)
+    @test only(ctx.errors).path == "\"Multistep Solver\".S"
+    @test only(ctx.errors).message == "\"Final Time\" or \"Additional Time\" is required"
+    deck["Multistep Solver"]["S"]["Additional Time"] = 1.0
+    @test isempty(last(ID.read_input(deck)).errors)
+    deck = ut_deck()
+    deck["Outputs"] = Dict{String,Any}("O" => Dict{String,Any}("Output Filename" => "o",
+                                                               "Output Variables" => Dict{String,Any}("Displacements" => true)))
+    _, ctx = ID.read_input(deck)
+    @test only(ctx.errors).path == "Outputs.O"
+    @test only(ctx.errors).message ==
+          "\"Output Frequency\" or \"Number of Output Steps\" is required"
+    deck["Outputs"]["O"]["Number of Output Steps"] = 10
+    @test isempty(last(ID.read_input(deck)).errors)
+end
+
+@testset "a text mesh header gives node fields" begin
+    mktempdir() do dir
+        write(joinpath(dir, "m.txt"), "# comment\nheader: x y block_id volume Bulk_Modulus\n0 0 1 1 1\n")
+        deck = ut_deck()
+        delete!(deck["Models"]["Material Models"]["Mat"], "Bulk Modulus")
+        _, ctx = ID.read_input(deck, dir)
+        @test isempty(ctx.errors)
+        @test ctx.node_fields == Set(["x", "y", "block_id", "volume", "Bulk_Modulus"])
+        _, ctx = ID.read_input(deck)            # no mesh file: no node fields
+        @test only(ctx.errors).path == "Models.\"Material Models\".Mat"
+        deck["Discretization"]["Type"] = "Exodus"
+        _, ctx = ID.read_input(deck)            # nodal variables unknown: not checked
+        @test isempty(ctx.errors)
+        @test ctx.node_fields === nothing
+    end
 end
 
 @testset "Contact, Globals and Strict Validation keys" begin

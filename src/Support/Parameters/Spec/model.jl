@@ -136,13 +136,19 @@ function _parse_model(category::Symbol, dict::Union{Nothing,AbstractDict}, path:
     base_part = nothing
     if base !== nothing
         base_part = build(base, dict, path, ctx; owner = "every $category model")
-        base_part === nothing || check!(base_part, path, ctx)
+        if base_part !== nothing
+            check_required_groups!(base, dict, path, ctx)
+            check!(base_part, path, ctx)
+        end
         base_part = base_part === nothing ? nothing : derive(base_part)
     end
     parts = Any[]
     for (name, T) in zip(names, types)
         part = build(T, dict, path, ctx; owner = name)
-        part === nothing || check!(part, path, ctx)
+        if part !== nothing
+            check_required_groups!(T, dict, path, ctx)
+            check!(part, path, ctx)
+        end
         push!(parts, part === nothing ? nothing : derive(part))
     end
     known = Set{String}([name_key])

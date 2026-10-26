@@ -61,6 +61,8 @@ end
 
 @testset "non-strict mode downgrades unknown material keys" begin
     input, ctx = MMID.read_input(ut_material_deck(Dict{String,Any}("Mat" => Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                                                                             "Bulk Modulus" => 1.0,
+                                                                                             "Shear Modulus" => 1.0,
                                                                                              "my new parameter" => 1))),
                                  strict = false)
     @test input isa MMID.PeriLabInput
