@@ -13,6 +13,7 @@ module Gcode_Mesh
 using LinearAlgebra
 using Rotations
 using CSV, DataFrames
+using ...IO: csv_reader
 using NearestNeighbors
 using ....Helpers: sub_in_place!, normalize_in_place!, progress_bar
 using ....Data_Manager
@@ -781,6 +782,11 @@ have to re-parse the gcode unless the user asks for it.
 function read_mesh(input::PeriLabInput, filename::String)
     gcode = input.sections.discretization.gcode
     gcode === nothing && @abort "Discretization type \"Gcode\" needs a \"Gcode\" section"
+    txt_file = replace(filename, ".gcode" => ".txt")
+    if !gcode.overwrite_mesh && isfile(txt_file)
+        @info "Read existing mesh $txt_file instead of the gcode file"
+        return csv_reader(txt_file)
+    end
     sampling = gcode.sampling
     width = gcode.width
     height = gcode.height
@@ -832,7 +838,6 @@ function read_mesh(input::PeriLabInput, filename::String)
     @info "Number of points: $(size(pd_mesh["mesh_df"],1))"
     @info "Printing time: $(maximum(pd_mesh["mesh_df"].Activation_Time)) seconds"
 
-    txt_file = replace(filename, ".gcode" => ".txt")
     write(txt_file,
           "header: x y z block_id volume Activation_Time Angles_x Angles_y Angles_z\n")
     CSV.write(txt_file, pd_mesh["mesh_df"]; delim = (' '), append = true)

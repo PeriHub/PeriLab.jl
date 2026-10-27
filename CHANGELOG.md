@@ -47,7 +47,8 @@ All notable changes to this project will be documented in this file.
 - Linear Static Matrix Based fails a step that starts damage: the run is cancelled, or continued by the `Fallback` solver
 - Solver options that a solver never read (e.g. `Safety Factor` for Newmark and Static) are removed; decks that still set them get an unknown-key warning
 - `Compute Class`, `Calculation Type` and model reduction `Type` only accept their fixed values (an unknown value failed or was ignored at run time); a compute class without the `Block`, `Node Set` or `X`/`Y` its class needs is an input error
-- Keys that were never read are removed: `UMAT name`, `VUMAT name`, `HETVAL name` (PeriLab always calls `umat_`, `vumat_`, `hetval_`) and `Overwrite Mesh` and `Scale` in `Gcode`
+- Keys that were never read are removed: `UMAT name`, `VUMAT name`, `HETVAL name` (PeriLab always calls `umat_`, `vumat_`, `hetval_`) and `Scale` in `Gcode`
+- `Overwrite Mesh` in `Gcode` is optional (default `true`); with `false` an existing `.txt` mesh from a previous run is read instead of the G-code
 
 ## [2.2.5] - 2026-09-21
 

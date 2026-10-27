@@ -736,9 +736,7 @@ function load_and_evaluate_mesh(input::PeriLabInput,
     if discretization.type == "Abaqus"
         @timeit "read_mesh" mesh, nsets=read_mesh(input, path)
     else
-        # Gmsh, Gcode, Text File, Exodus. (For Gcode the old code compared
-        # Type == "Text File" instead of assigning it, so an existing .txt mesh
-        # is never reused; that behaviour is kept.)
+        # Gmsh, Gcode, Text File, Exodus
         @debug "Read node sets"
         @timeit "read_mesh" mesh=read_mesh(input, path)
         nsets = read_node_sets(discretization, path, mesh)

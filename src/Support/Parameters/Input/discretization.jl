@@ -23,6 +23,8 @@ end
 end
 
 @params "Generates the mesh from a G-code file by sampling the printed paths" struct GcodeParams
+    "Regenerate the mesh from the G-code; if false and the .txt mesh written by a previous run exists next to the G-code file, that mesh is read instead"
+    overwrite_mesh::Bool = opt("Overwrite Mesh"; default = true)
     "Distance between two nodes along a printed path"
     sampling::Float64 = req("Sampling"; min = 0, quantity = :length)
     "Width of the printed strand; with sampling and height it sets the node volume"
@@ -36,7 +38,8 @@ end
     "G-code command that ends reading the file"
     end_command::Union{Nothing,String} = opt("End Command"; default = nothing)
     "Block id => condition on the node position x, y, z (e.g. \"z > 2.0\"); a node gets the last block whose condition holds, block 1 otherwise"
-    blocks::Union{Nothing,Dict{String,String}} = opt("Blocks"; default = nothing, evaluated = true)
+    blocks::Union{Nothing,Dict{String,String}} = opt("Blocks"; default = nothing,
+                                                     evaluated = true)
 end
 
 const _DISK = Dict("Type" => ["Disk"])
@@ -60,13 +63,16 @@ const _RECTANGLE = Dict("Type" => ["Rectangular_Plane"])
     "Radius of the disk"
     radius::Union{Nothing,Float64} = opt("Radius"; default = nothing, min = 0, when = _DISK)
     "x coordinate of the lower left corner of the rectangle"
-    lower_left_corner_x::Union{Nothing,Float64} = opt("Lower Left Corner X"; default = nothing,
+    lower_left_corner_x::Union{Nothing,Float64} = opt("Lower Left Corner X";
+                                                      default = nothing,
                                                       when = _RECTANGLE)
     "y coordinate of the lower left corner of the rectangle"
-    lower_left_corner_y::Union{Nothing,Float64} = opt("Lower Left Corner Y"; default = nothing,
+    lower_left_corner_y::Union{Nothing,Float64} = opt("Lower Left Corner Y";
+                                                      default = nothing,
                                                       when = _RECTANGLE)
     "z coordinate of the lower left corner of the rectangle (3D only)"
-    lower_left_corner_z::Union{Nothing,Float64} = opt("Lower Left Corner Z"; default = nothing,
+    lower_left_corner_z::Union{Nothing,Float64} = opt("Lower Left Corner Z";
+                                                      default = nothing,
                                                       when = _RECTANGLE)
     "x component of the direction of the rectangle's bottom edge"
     bottom_unit_vector_x::Union{Nothing,Float64} = opt("Bottom Unit Vector X";
@@ -106,7 +112,8 @@ const _MESH_TYPES = ["Text File", "Exodus", "Abaqus", "Gmsh", "Gcode"]
                                                                "Gcode"]))
     "Named bond filters"
     bond_filters::Dict{String,BondFilterParams} = opt("Bond Filters";
-                                                      default = Dict{String,BondFilterParams}())
+                                                      default = Dict{String,
+                                                                     BondFilterParams}())
     gcode::Union{Nothing,GcodeParams} = opt("Gcode"; default = nothing,
                                             when = Dict("Type" => ["Gcode"]))
     "Weight of each bond as a function of its length xi (or xiX, xiY, xiZ), e.g. \"1/xi^2\"; all bonds weigh 1 if not given"
@@ -114,8 +121,9 @@ const _MESH_TYPES = ["Text File", "Exodus", "Abaqus", "Gmsh", "Gcode"]
                                                     evaluated = true)
     surface_extrusion::Union{Nothing,SurfaceExtrusionParams} = opt("Surface Extrusion";
                                                                    default = nothing)
-    input_external_topology::Union{Nothing,ExternalTopologyParams} = opt("Input External Topology";
-                                                                         default = nothing)
+    input_external_topology::Union{Nothing,
+                                   ExternalTopologyParams} = opt("Input External Topology";
+                                                                 default = nothing)
     "Factor on the horizon in x for the neighbor search, for elliptic neighborhoods"
     horizon_mesh_scaling_x::Union{Nothing,Float64} = opt("Horizon Mesh Scaling X";
                                                          default = nothing)
@@ -131,8 +139,9 @@ end
 
 "Horizon scaling per direction, 1.0 where not given."
 function mesh_scaling(d::DiscretizationParams)
-    return [something(d.horizon_mesh_scaling_x, 1.0), something(d.horizon_mesh_scaling_y, 1.0),
-            something(d.horizon_mesh_scaling_z, 1.0)]
+    return [something(d.horizon_mesh_scaling_x, 1.0),
+        something(d.horizon_mesh_scaling_y, 1.0),
+        something(d.horizon_mesh_scaling_z, 1.0)]
 end
 
 function check!(g::GcodeParams, path::String, ctx::ParseContext)
@@ -148,7 +157,8 @@ end
 "Gcode block assignment: block id => condition, or `nothing`."
 function gcode_block_ids(g::GcodeParams)
     g.blocks === nothing && return nothing
-    return Dict{Int64,String}(parse(Int64, key) => condition for (key, condition) in g.blocks)
+    return Dict{Int64,String}(parse(Int64, key) => condition
+                              for (key, condition) in g.blocks)
 end
 
 "A registered bond filter: the YAML keys its Type needs and the function that applies it."
