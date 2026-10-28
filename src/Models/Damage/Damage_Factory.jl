@@ -32,6 +32,9 @@ Initialize damage model fields
 function init_fields()
     dof = Data_Manager.get_dof()
     Data_Manager.create_node_scalar_field("Damage", Float64)
+    # energy released by bond failure (critical energy models); created here, because the
+    # damage models of later solver steps are initialized after the output
+    Data_Manager.create_constant_node_scalar_field("Dissipated Energy", Float64)
 
     anisotropic_damage = false
 

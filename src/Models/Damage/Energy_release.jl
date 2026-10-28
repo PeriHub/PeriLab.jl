@@ -85,6 +85,13 @@ function compute_model(nodes::AbstractVector{Int64},
     inverse_nlist::Vector{Dict{Int64,Int64}} = Data_Manager.get_inverse_nlist()
 
     critical_value_fn = get_dependent_value("Critical Value", damage_parameter)
+    # optional bond length dependence of the critical bond energy, w_c ~ (delta/xi)^p, scaled
+    # with (dof + 1 - p)/(dof + 1) so that the energy released per crack area stays G (p < dof + 1)
+    length_exponent::Float64 = get(damage_parameter, "Bond Length Exponent", 0.0)
+    length_scaling::Float64 = (dof + 1 - length_exponent) / (dof + 1)
+    horizon::NodeScalarField{Float64} = Data_Manager.get_field("Horizon")
+    volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
+    dissipated_energy::NodeScalarField{Float64} = Data_Manager.get_field("Dissipated Energy")
 
     tension::Bool = get(damage_parameter, "Only Tension", true)
     inter_block_damage::Bool = Data_Manager.haskey(damage_parameter, "Interblock Damage")
@@ -136,7 +143,7 @@ function compute_model(nodes::AbstractVector{Int64},
                 critical_energy_value = critical_energy[iID]
             elseif inter_block_damage
                 critical_energy_value = inter_critical_energy[block_ids[iID],
-                neighbor_block_id, block]
+                                                              neighbor_block_id, block]
 
                 # param_name = "Interblock Critical Value " * string(block_ids[iID]) * "_" *
                 #              string(block_ids[neighborID])
@@ -153,7 +160,13 @@ function compute_model(nodes::AbstractVector{Int64},
             end
 
             product = critical_energy_value * quad_horizons[iID]
-            if bond_energy[iID][jID] > product
+            if length_exponent != 0
+                product *= length_scaling *
+                           (horizon[iID] / undeformed_bond_length[iID][jID])^length_exponent
+            end
+            if bond_energy[iID][jID] > product && bond_damage[iID][jID] > 0
+                dissipated_energy[iID] += bond_energy[iID][jID] * volume[iID] *
+                                          volume[neighborID]
                 bond_damage[iID][jID] = 0.0
                 update_list[iID] = true
             end
@@ -178,7 +191,11 @@ end
 """
     get_quad_horizon(horizon::Float64, dof::Int64)
 
-Get the quadric of the horizon.
+Get the quadric of the horizon. The bond energy w is the half bond (one node) share, i.e.
+sum_j w_ij V_j is the strain energy density and a bond pair stores 2w. A straight crack is
+crossed per unit area by the bonds with int_0^delta 2 xi^2 dxi = 2 delta^3/3 (2D, per thickness),
+so the critical half bond energy is w_c = 3 G/(4 delta^3 t). The former 2D value 3/(pi delta^3 t)
+dissipated 4/pi G.
 
 # Arguments
 - `horizon::Float64`: The horizon of the block.
@@ -191,7 +208,7 @@ function get_quad_horizon(horizon::Float64, dof::Int64, thickness::Float64,
                           mesh_scaling_sum::Float64)
     avg_horizon = horizon / 3 * mesh_scaling_sum
     if dof == 2
-        return Float64(3 / (pi * avg_horizon^3 * thickness))
+        return Float64(3 / (4 * avg_horizon^3 * thickness))
     end
     #TODO: Use average horizon
     return Float64(4 / (pi * avg_horizon^4))
@@ -208,6 +225,7 @@ function init_model(nodes::AbstractVector{Int64},
     mesh_scaling = Data_Manager.get_horizon_mesh_scaling()
     bond_energy = Data_Manager.create_constant_bond_scalar_state("Bond Energy",
                                                                  Float64)
+    Data_Manager.create_constant_node_scalar_field("Dissipated Energy", Float64)
     for iID in nodes
         quad_horizons[iID] = get_quad_horizon(horizon[iID], dof, thickness,
                                               sum(inv, mesh_scaling))

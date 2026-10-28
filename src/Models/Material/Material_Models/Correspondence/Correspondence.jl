@@ -228,11 +228,49 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
                                                        stress_NP1,
                                                        bond_force)
 
+    force_filter::Bool = Data_Manager.has_key("Anisotropic Force Filter")
+
     @timeit "zero energy" Zero_Energy_Control.compute_zero_energy_control(nodes,
                                                                           material_parameter,
                                                                           block,
                                                                           time,
                                                                           dt)
+    if force_filter
+        @timeit "anisotropic bond damage" filter_failed_axes!(nodes, bond_force,
+                                                              bond_damage)
+    end
+end
+
+"""
+    filter_failed_axes!(nodes, bond_force, bond_damage)
+
+Anisotropic bond damage: removes the bond force components along the failed material
+axes, f = (I - sum_k chi_k a_k a_k^T) f. The axes a_k are the columns of the rotation
+tensor. The scalar bond damage still scales the force as before.
+"""
+function filter_failed_axes!(nodes::AbstractVector{Int64},
+                             bond_force::BondVectorState{Float64},
+                             bond_damage::BondScalarState{Float64})
+    axis_failed::BondVectorState{Bool} = Data_Manager.get_field("Anisotropic Axis Failure")
+    rotation_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Rotation Tensor")
+    dof = Data_Manager.get_dof()
+    @inbounds for iID in nodes
+        for jID in eachindex(bond_damage[iID])
+            failed = axis_failed[iID][jID]
+            any(failed) || continue
+            f = bond_force[iID][jID]
+            for k in 1:dof
+                failed[k] || continue
+                fa = 0.0
+                for m in 1:dof
+                    fa += rotation_tensor[iID, m, k] * f[m]
+                end
+                for m in 1:dof
+                    f[m] -= fa * rotation_tensor[iID, m, k]
+                end
+            end
+        end
+    end
 end
 
 """
