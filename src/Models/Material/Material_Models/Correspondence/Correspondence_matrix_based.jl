@@ -631,6 +631,8 @@ function init_model(nodes::AbstractVector{Int64}, material, block_id::Int64)
 end
 
 function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = true)
+    # the stiffness update compares the bond damage of N and NP1
+    Data_Manager.track_bond_damage_N()
     nodes = collect(1:Data_Manager.get_nnodes())
     dof::Int64 = Data_Manager.get_dof()
     nnodes = length(nodes)

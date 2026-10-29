@@ -13,49 +13,16 @@ export compute_model
 export init_model
 export fields_for_local_synchronization
 
-using ......ParameterSpec: @params, register_thermal, ParseContext, add_error!, join_path
-import ......ParameterSpec: check!, conditional_required
+using ......ParameterSpec: @params, register_thermal
 
 @enum ThermalFlowType BondBased Correspondence
-
-# the print bed only enters the bond-based heat flow
-const _BOND_BASED = Dict("Type" => ["BondBased"])
 
 @params "Heat conduction between nodes" struct ThermalFlowParams
     "Formulation of the heat flow: per bond, or from the temperature gradient as in correspondence materials"
     type::ThermalFlowType = opt("Type"; default = BondBased)
-    "Temperature of a heated print bed below the part (3D); needs Thermal Conductivity Print Bed"
-    print_bed_temperature::Union{Nothing,Float64} = opt("Print Bed Temperature";
-                                                        default = nothing, when = _BOND_BASED)
-    "Thermal conductivity between the print bed and the nodes above it"
-    thermal_conductivity_print_bed::Union{Nothing,Float64} = opt("Thermal Conductivity Print Bed";
-                                                                 default = nothing,
-                                                                 min = 0, when = _BOND_BASED)
-    "Height of the print bed; must be below the lowest node"
-    print_bed_z_coordinate::Float64 = opt("Print Bed Z Coordinate"; default = 0.0,
-                                          when = _BOND_BASED)
-end
-
-function conditional_required(::Type{ThermalFlowParams})
-    return [Dict{String,Vector{Any}}("Print Bed Temperature" => Any[]) =>
-                ["Thermal Conductivity Print Bed"]]
-end
-
-function check!(p::ThermalFlowParams, path::String, ctx::ParseContext)
-    if p.print_bed_temperature !== nothing && p.thermal_conductivity_print_bed === nothing
-        add_error!(ctx, join_path(path, "Thermal Conductivity Print Bed"),
-                   "required when Print Bed Temperature is given")
-    end
-    return nothing
 end
 
 __init__() = register_thermal("Thermal Flow", ThermalFlowParams)
-
-# the print bed only exists in 3D
-function print_bed_active(p::ThermalFlowParams, dof::Int64)
-    p.print_bed_temperature !== nothing &&
-        dof == 3
-end
 
 """
     init_model(nodes, p, thermal, block)
@@ -71,20 +38,31 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 """
 function init_model(nodes::AbstractVector{Int64}, p::ThermalFlowParams, thermal,
                     block::Int64)
-    dof = Data_Manager.get_dof()
-    if p.print_bed_temperature !== nothing
-        if dof < 3
-            @warn "Print bed temperature can only be defined for 3D problems. Its deactivated."
-        else
-            coordinates = Data_Manager.get_field("Coordinates")
-            print_bed_z_coord = p.print_bed_z_coordinate
-            if print_bed_z_coord >= minimum(coordinates[:, 3])
-                @abort "The Print Bed Z Coordinate needs to be smaller than the minimum Z coordinate."
-            end
-        end
-    end
     if thermal.base.thermal_conductivity === nothing
         @abort "Thermal Conductivity not defined."
+    end
+    p.type == BondBased || return nothing
+    weight = Data_Manager.create_constant_bond_scalar_state("Thermal Bond Weight", Float64)
+    init_bond_weights!(weight, nodes, Data_Manager.get_dof(), Data_Manager.get_nlist(),
+                       first(thermal.base.thermal_conductivity),
+                       Data_Manager.get_field("Bond Length"),
+                       Data_Manager.get_field("Horizon"), Data_Manager.get_field("Volume"))
+end
+
+"""
+    init_bond_weights!(weight, nodes, dof, nlist, lambda, undeformed_bond_length, horizon, volume)
+
+Constant part of the bond-based heat flow: `lambda kernel V_j / |xi|` with the kernel
+`6 / (pi delta^(dof+1))` [OterkusS2014b](@cite).
+"""
+function init_bond_weights!(weight, nodes::AbstractVector{Int64}, dof::Int64, nlist,
+                            lambda::Float64, undeformed_bond_length, horizon, volume)
+    for iID in nodes
+        kernel = 6.0 / (pi * horizon[iID]^(dof + 1))
+        for (jID, neighborID) in enumerate(nlist[iID])
+            weight[iID][jID] = lambda * kernel * volume[neighborID] /
+                               undeformed_bond_length[iID][jID]
+        end
     end
 end
 
@@ -108,12 +86,10 @@ function compute_model(nodes::AbstractVector{Int64}, p::ThermalFlowParams, therm
                        block::Int64, time::Float64, dt::Float64)
     dof::Int64 = Data_Manager.get_dof()
     nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
-    coordinates::NodeVectorField{Float64} = Data_Manager.get_field("Coordinates")
     bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
     heat_flow::NodeScalarField{Float64} = Data_Manager.get_field("Heat Flow", "NP1")
 
     undeformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Bond Geometry")
-    undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
     volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
     temperature::NodeScalarField{Float64} = Data_Manager.get_field("Temperature", "NP1")
     active = Data_Manager.get_field("Active")
@@ -124,41 +100,11 @@ function compute_model(nodes::AbstractVector{Int64}, p::ThermalFlowParams, therm
     if rotation
         rotation_tensor = Data_Manager.get_field("Rotation Tensor")::Array{Float64,3}
     end
-    apply_print_bed = false
-
-    t_bed::Float64 = 0.0
-    lambda_bed::Float64 = 0.0
-
-    if print_bed_active(p, dof)
-        apply_print_bed = true
-        t_bed = p.print_bed_temperature
-        lambda_bed = p.thermal_conductivity_print_bed
-    end
-
-    print_bed_z_coord = p.print_bed_z_coordinate
-
     if p.type == BondBased
-        horizon = Data_Manager.get_field("Horizon")
-        if length(lambda) > 1
-            lambda = lambda[1]
-        end
-
-        @timeit "heat_flow" compute_heat_flow_state_bond_based!(nodes,
-                                                                dof,
-                                                                nlist,
-                                                                lambda,
-                                                                apply_print_bed,
-                                                                t_bed,
-                                                                lambda_bed,
-                                                                print_bed_z_coord,
-                                                                coordinates,
-                                                                bond_damage,
-                                                                active,
-                                                                undeformed_bond_length,
-                                                                horizon,
-                                                                temperature,
-                                                                volume,
-                                                                heat_flow)
+        @timeit "heat_flow" compute_heat_flow_state_bond_based!(nodes, nlist,
+                                                                Data_Manager.get_field("Thermal Bond Weight"),
+                                                                bond_damage, active,
+                                                                temperature, heat_flow)
         return
 
     elseif p.type == Correspondence
@@ -238,79 +184,28 @@ function rotated_conductivity(conductivity::SMatrix{D,D,Float64},
 end
 
 """
-    compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64}, dof::Int64, nlist::Vector{Vector{Int64},
-      lambda::Union{Float64, Int64}, bond_damage::BondScalarState{Float64}, undeformed_bond::Vector{Matrix{Float64}}, horizon::NodeScalarField{Float64},
-      temperature::NodeScalarField{Float64}, heat_flow::NodeScalarField{Float64})
+    compute_heat_flow_state_bond_based!(nodes, nlist, weight, bond_damage, active, temperature, heat_flow)
 
-Calculate Heat Flow based on a bond-based model for thermal analysis.
-
-# Arguments
-- `nodes::AbstractVector{Int64}`: An array of node indices for which Heat Flow should be computed.
-- `dof::Int64`: The degree of freedom, either 2 or 3, indicating whether the analysis is 2D or 3D.
-- `nlist::Vector{Vector{Int64}`: A Vector representing the neighbor list for each node.
-- `lambda::Union{Float64, Int64}`: The thermal conductivity.
-- `apply_print_bed::Bool`: A boolean indicating whether the print bed should be applied to the thermal conductivity.
-- `t_bed::Float64`: The thickness of the print bed.
-- `lambda_bed::Float64`: The thermal conductivity of the print bed.
-- `bond_damage::BondScalarState{Float64}`: A Vector representing the damage state of bonds between nodes.
-- `undeformed_bond::Vector{Matrix{Float64}}`: A Vector representing the geometry of the bonds.
-- `undeformed_bond_length::BondScalarState{Float64}`: A Vector representing the undeformed bond length for each bond.
-- `horizon::NodeScalarField{Float64}`: A Vector representing the horizon for each node.
-- `temperature::NodeScalarField{Float64}`: A Vector representing the temperature at each node.
-- `heat_flow::NodeScalarField{Float64}`: A Vector where the computed Heat Flow values will be stored.
-
-## Returns
-- `heat_flow`: updated bond Heat Flow values will be stored.
-
-## Description
-This function calculates the Heat Flow between neighboring nodes based on a bond-based model for thermal analysis [OterkusS2014b](@cite). It considers various parameters, including thermal conductivity, damage state of bonds, geometry of bonds, horizons, temperature, and volume. The calculated bond Heat Flow values are stored in the `heat_flow` array.
-
+Bond-based heat flow [OterkusS2014b](@cite): `heat_flow_i -= sum_j weight_ij d_ij (T_j - T_i)`
+with the bond damage `d_ij` and the constant bond weight of `init_bond_weights!`.
 """
 function compute_heat_flow_state_bond_based!(nodes::AbstractVector{Int64},
-                                             dof::Int64,
                                              nlist::BondScalarState{Int64},
-                                             lambda::Float64,
-                                             apply_print_bed::Bool,
-                                             t_bed::Float64,
-                                             lambda_bed::Float64,
-                                             print_bed_z_coord::Float64,
-                                             coordinates::Matrix{Float64},
+                                             weight::BondScalarState{Float64},
                                              bond_damage::BondScalarState{Float64},
-                                             active::NodeScalarField{Bool},
-                                             undeformed_bond_length::BondScalarState{Float64},
-                                             horizon::NodeScalarField{Float64},
-                                             temperature::NodeScalarField{Float64},
-                                             volume::NodeScalarField{Float64},
-                                             heat_flow::NodeScalarField{Float64})
-    kernel::Float64 = 0.0
-    for iID in nodes
-        if !active[iID]
-            continue
-        end
-        if dof == 2
-            kernel = 6.0 / (pi * horizon[iID]^3)
-        else
-            kernel = 6.0 / (pi * horizon[iID]^4)
-        end
-        if apply_print_bed
-            print_bed_distance = coordinates[iID, 3] - print_bed_z_coord
-            if print_bed_distance < horizon[iID]
-                temp_state = t_bed - temperature[iID]
-                print_bed_volume = (pi * print_bed_distance^2 / 3) *
-                                   (3 * horizon[iID] - print_bed_distance) #Partial spherical volume below print bed
-                heat_flow[iID] -= lambda_bed * kernel * temp_state * print_bed_volume /
-                                  print_bed_distance
-            end
-        end
+                                             active::AbstractVector{Bool},
+                                             temperature::AbstractVector{Float64},
+                                             heat_flow::AbstractVector{Float64})
+    @inbounds for iID in nodes
+        active[iID] || continue
+        Ti = temperature[iID]
+        flow = 0.0
+        w = weight[iID]
+        d = bond_damage[iID]
         for (jID, neighborID) in enumerate(nlist[iID])
-            if bond_damage[iID][jID] == 0
-                continue
-            end
-            temp_state = bond_damage[iID][jID] *
-                         (temperature[neighborID] - temperature[iID])
-            heat_flow[iID] -= lambda * kernel * temp_state *
-                              volume[neighborID] / undeformed_bond_length[iID][jID]
+            flow += w[jID] * d[jID] * (temperature[neighborID] - Ti)
         end
+        heat_flow[iID] -= flow
     end
 end
 

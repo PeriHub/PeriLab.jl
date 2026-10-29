@@ -33,7 +33,6 @@ PeriLab:
         #Print Bed Temperature: 60.0
         #Print Bed Y Coordinate: 0.0
         Thermal Conductivity: 0.15
-        Thermal Conductivity Print Bed: 1.2
         Thermal Expansion Coefficient: 2.5e-8
         Reference Temperature: 0.0
         Thermal Model: Thermal Expansion + Thermal Flow + Heat Transfer

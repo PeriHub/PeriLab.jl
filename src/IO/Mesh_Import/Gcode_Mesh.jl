@@ -449,7 +449,8 @@ function deposit_mesh_points!(dataobject, sx::Number, sy::Number, sz::Number,
                   time_to_activation + dataobject["previous_time"],
                   roll * 180 / pi,
                   pitch * 180 / pi,
-                  yaw * 180 / pi
+                  yaw * 180 / pi,
+                  pd_mesh["extent"]...
               ])
     end
 end
@@ -811,6 +812,8 @@ function read_mesh(input::PeriLabInput, filename::String)
     pd_mesh["volume"] = sampling * width * height
     pd_mesh["previous_extruding"] = 0
     pd_mesh["width"] = width
+    # strand box in its own frame (along the path, across, up), see Heat_Transfer
+    pd_mesh["extent"] = (sampling, width, height)
     pd_mesh["remaining_distance"] = sampling / 2
     pd_mesh["blocks"] = blocks
 
@@ -822,7 +825,10 @@ function read_mesh(input::PeriLabInput, filename::String)
                                    Activation_Time = Float64[],
                                    Angles_x = Float64[],
                                    Angles_y = Float64[],
-                                   Angles_z = Float64[])
+                                   Angles_z = Float64[],
+                                   Extent_x = Float64[],
+                                   Extent_y = Float64[],
+                                   Extent_z = Float64[])
     pd_mesh["dir"] = zeros(3)
     pd_mesh["start_point"] = zeros(3)
     pd_mesh["point"] = zeros(3)
@@ -839,7 +845,7 @@ function read_mesh(input::PeriLabInput, filename::String)
     @info "Printing time: $(maximum(pd_mesh["mesh_df"].Activation_Time)) seconds"
 
     write(txt_file,
-          "header: x y z block_id volume Activation_Time Angles_x Angles_y Angles_z\n")
+          "header: x y z block_id volume Activation_Time Angles_x Angles_y Angles_z Extent_x Extent_y Extent_z\n")
     CSV.write(txt_file, pd_mesh["mesh_df"]; delim = (' '), append = true)
 
     @info "Finished reading mesh data"

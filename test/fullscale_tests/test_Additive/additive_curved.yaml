@@ -33,9 +33,9 @@ PeriLab:
       Thermal Test:
         Environmental Temperature: 298.15
         Heat Transfer Coefficient: 0.015
-        Print Bed Temperature: 298.15
+        Bed Temperature: 298.15
+        Bed Thermal Conductivity: 1.2
         Thermal Conductivity: 0.12
-        Thermal Conductivity Print Bed: 1.2
         Thermal Model: Thermal Flow + Heat Transfer
         Type: Bond based
   Outputs:

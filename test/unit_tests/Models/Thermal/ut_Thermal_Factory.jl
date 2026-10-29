@@ -41,11 +41,15 @@ end
                                                                            Float64,
                                                                            2;
                                                                            default_value = 1)
-    th = typed_model(:thermal, Dict("Thermal Model" => "Heat Transfer",
-                                    "Heat Transfer Coefficient" => 1.0,
-                                    "Environmental Temperature" => 30);
+    PeriLab.Data_Manager.create_constant_node_scalar_field("Volume", Float64;
+                                                           default_value = 1)
+    th = typed_model(:thermal,
+                     Dict("Thermal Model" => "Heat Transfer",
+                          "Heat Transfer Coefficient" => 1.0,
+                          "Environmental Temperature" => 30);
                      name_key = "Thermal Model")
     PeriLab.Data_Manager.set_block_models(1, PeriLab.Data_Manager.BlockModels(thermal = th))
     PeriLab.Solver_Manager.Model_Factory.Thermal.init_model([1], 1)
-    @test PeriLab.Data_Manager.has_key("Bond Norm")
+    @test PeriLab.Data_Manager.has_key("Bond Face")
+    @test PeriLab.Data_Manager.has_key("Extent")
 end
