@@ -156,12 +156,17 @@ function compute_parabolic_problems_before_model_evaluation(active_nodes, run::S
     temperatureN = Data_Manager.get_field("Temperature", "N")
     temperatureNP1 = Data_Manager.get_field("Temperature", "NP1")
     deltaT = Data_Manager.get_field("Delta Temperature")
-    if "Thermal" in run.models
-        temperatureNP1[active_nodes] = temperatureN[active_nodes] + deltaT[active_nodes]
-    else
-        if "Thermal" in run.all_models
-            temperatureNP1[active_nodes] = temperatureN[active_nodes]
-        end
+    start_temperature!(temperatureNP1, temperatureN, deltaT, active_nodes,
+                       "Thermal" in run.models)
+end
+
+"NP1 temperature of the active nodes: N plus the increment of the last step (if `thermal`)."
+function start_temperature!(temperatureNP1::AbstractVector{Float64},
+                            temperatureN::AbstractVector{Float64},
+                            deltaT::AbstractVector{Float64}, active_nodes,
+                            thermal::Bool)
+    @inbounds for iID in active_nodes
+        temperatureNP1[iID] = thermal ? temperatureN[iID] + deltaT[iID] : temperatureN[iID]
     end
 end
 
@@ -178,12 +183,20 @@ function compute_parabolic_problems_after_model_evaluation(active_nodes, run::So
     if "Thermal" in run.models
         check_inf_or_nan(flowNP1, "Heat Flow")
         # heat capacity check. if it is zero deltaT = 0
-        @views deltaT[active_nodes] = -flowNP1[active_nodes] .* dt ./
-                                      (density[active_nodes] .*
-                                       heat_capacity[active_nodes])
+        temperature_increment!(deltaT, flowNP1, density, heat_capacity, active_nodes, dt)
         # if fem_option && time == 0
         #     @warn "Thermal models are not supported for FEM yet."
         # end
+    end
+end
+
+function temperature_increment!(deltaT::AbstractVector{Float64},
+                                flowNP1::AbstractVector{Float64},
+                                density::AbstractVector{Float64},
+                                heat_capacity::AbstractVector{Float64}, active_nodes,
+                                dt::Float64)
+    @inbounds for iID in active_nodes
+        deltaT[iID] = -flowNP1[iID] * dt / (density[iID] * heat_capacity[iID])
     end
 end
 
@@ -277,6 +290,8 @@ function time_loop(run::SolverRun, ctx::SolverContext)
     # loads of the step start, as if it had run the whole step
     loads = Data_Manager.has_key("External Force Densities") ?
             copy(Data_Manager.get_field("External Force Densities")) : nothing
+    # the fallback restores the bond damage of a failed step from N
+    run.params.fallback === nothing || Data_Manager.track_bond_damage_N()
     while true
         @info "Run $(solver_name(run)) Solver"
         result_files, failure = run_steps(run, ctx, result_files, step_time)

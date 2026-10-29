@@ -175,6 +175,7 @@ function init_fields()
 
     nlist = Data_Manager.get_nlist()
     inverse_nlist = Data_Manager.set_inverse_nlist(find_inverse_bond_id(nlist))
+    Data_Manager.track_bond_damage_N()
 end
 
 """

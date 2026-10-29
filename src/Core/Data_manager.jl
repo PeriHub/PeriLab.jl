@@ -215,6 +215,7 @@ function initialize_data()
     data["matrix_exists"] = false
     data["Reduced PD Nodes"] = Vector{Int64}([])
     data["Horizon Mesh Scaling"] = Vector{Float64}([])
+    data["Track Bond Damage N"] = false
 end
 ###################################
 

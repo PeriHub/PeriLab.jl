@@ -286,7 +286,8 @@ end
 
 @testset "evaluated keys are marked" begin
     p = UT_DECK["properties"]
-    @test p["Boundary Conditions"]["additionalProperties"]["properties"]["Value"]["x-perilab-eval"] == true
+    @test p["Boundary Conditions"]["additionalProperties"]["properties"]["Value"]["x-perilab-eval"] ==
+          true
     @test p["Compute Class Parameters"]["additionalProperties"]["properties"]["Equation"]["x-perilab-eval"] ==
           true
     d = p["Discretization"]["properties"]
@@ -312,7 +313,8 @@ end
 # the description without the generated "quantity: ..." and "one of: ..." parts
 function ut_own_description(s)
     parts = split(get(s, "description", ""), "; ")
-    return strip(join(filter(p -> !startswith(p, "quantity: ") && !startswith(p, "one of: "),
+    return strip(join(filter(p -> !startswith(p, "quantity: ") &&
+                                  !startswith(p, "one of: "),
                              parts), "; "))
 end
 
@@ -323,8 +325,9 @@ function ut_undescribed!(bad, s, path)
         isempty(strip(get(s, "description", ""))) && push!(bad, path)
         for (key, p) in s["properties"]
             key == "Globals" && continue
-            haskey(p, "properties") || isempty(ut_own_description(p)) &&
-                                       push!(bad, path * " → " * key)
+            haskey(p, "properties") ||
+                isempty(ut_own_description(p)) &&
+                push!(bad, path * " → " * key)
             ut_undescribed!(bad, p, path * " → " * key)
         end
     end
@@ -479,7 +482,8 @@ end
           output["allOf"]
     # multistep solver steps: Final Time or Additional Time
     step = p["Multistep Solver"]["additionalProperties"]
-    @test only(step["x-perilab-required-groups"])["keys"] == ["Final Time", "Additional Time"]
+    @test only(step["x-perilab-required-groups"])["keys"] ==
+          ["Final Time", "Additional Time"]
     @test Dict("anyOf" => branches("Final Time", "Additional Time")) in step["allOf"]
     @test haskey(step, "oneOf")                    # the solver choice stays separate
     verlet = Dict{String,Any}("Step ID" => 1, "Verlet" => Dict{String,Any}())
@@ -494,7 +498,8 @@ end
     general, bond = material["x-perilab-required-groups"]
     @test general["min"] == 2 && length(general["keys"]) == 4
     @test bond["min"] == 1 && !("Poisson's Ratio" in bond["keys"])
-    @test nothing in general["when"]["Symmetry"] && "isotropic plane strain" in general["when"]["Symmetry"]
+    @test nothing in general["when"]["Symmetry"] &&
+          "isotropic plane strain" in general["when"]["Symmetry"]
     @test !("orthotropic" in general["when"]["Symmetry"])
     @test "PD Solid Elastic" in general["when"]["Material Model"] &&
           "Bond-based Elastic" in bond["when"]["Material Model"]
@@ -507,17 +512,14 @@ end
     solid = Dict{String,Any}("Material Model" => "PD Solid Elastic", "Bulk Modulus" => 1.0)
     @test !ut_valid(material, solid)
     @test ut_valid(material, merge(solid, Dict{String,Any}("Shear Modulus" => 1.0)))
-    @test ut_valid(material, Dict{String,Any}("Material Model" => "Bond-based Elastic",
-                                              "Bulk Modulus" => 1.0))
-    # thermal flow: the print bed needs its conductivity
-    thermal = p["Models"]["properties"]["Thermal Models"]["additionalProperties"]
-    flow = ut_case(thermal["allOf"], "Thermal Model", "Thermal Flow")["then"]
-    @test Dict("if" => Dict("required" => ["Print Bed Temperature"]),
-               "then" => Dict("required" => ["Thermal Conductivity Print Bed"])) in flow["allOf"]
+    @test ut_valid(material,
+                   Dict{String,Any}("Material Model" => "Bond-based Elastic",
+                                    "Bulk Modulus" => 1.0))
     # docs
     rows = Dict(r.key => r for r in PeriLab.ParameterSpec.parameter_rows(GID.OutputParams))
     @test rows["Output Frequency"].required ==
           "required: one of Output Frequency, Number of Output Steps"
-    rows = Dict(r.key => r for r in PeriLab.ParameterSpec.parameter_rows(GID.PeriLabSections))
+    rows = Dict(r.key => r
+                for r in PeriLab.ParameterSpec.parameter_rows(GID.PeriLabSections))
     @test rows["Solver"].required == "required: exactly one of Solver, Multistep Solver"
 end

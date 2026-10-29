@@ -176,6 +176,28 @@ end
     @test UTL_DM.get_field("A", "N") == [3.0, 3.0]
 end
 
+@testset "Bond Damage N is only copied if tracked" begin
+    UTL_DM.initialize_data()
+    UTL_DM.set_num_controller(2)
+    UTL_DM.set_dof(2)
+    UTL_DM.create_constant_node_scalar_field("Active", Bool; default_value = true)
+    nn = UTL_DM.create_constant_node_scalar_field("Number of Neighbors", Int64)
+    nn .= 1
+    UTL_DM.create_bond_scalar_state("Bond Damage", Float64; default_value = 1)
+    UTL_DM.get_bond_damage("NP1")[1][1] = 0.5
+    UTL_DM.switch_NP1_to_N()
+    @test UTL_DM.get_bond_damage("N")[1][1] == 1.0
+    @test UTL_DM.get_bond_damage("NP1")[1][1] == 0.5
+    UTL_DM.track_bond_damage_N()
+    @test UTL_DM.get_bond_damage("N")[1][1] == 0.5
+    UTL_DM.get_bond_damage("NP1")[1][1] = 0.0
+    UTL_DM.switch_NP1_to_N()
+    @test UTL_DM.get_bond_damage("N")[1][1] == 0.0
+    UTL_DM.get_bond_damage("NP1")[1][1] = 0.25
+    UTL_DM.reset_NP1()
+    @test UTL_DM.get_bond_damage("NP1")[1][1] == 0.0
+end
+
 @testset "reset_NP1 flags all nodes for the update pass" begin
     UTL_DM.initialize_data()
     UTL_DM.set_num_controller(2)

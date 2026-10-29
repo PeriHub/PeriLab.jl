@@ -462,6 +462,7 @@ bdnp1 = PeriLab.Data_Manager.create_bond_scalar_state("Bond Damage", Float64;
     # extra test, because Bond Damage is set to one, to avoid unneccessary operations
     bdn = PeriLab.Data_Manager.get_field("Bond Damage", "N")
     bdnp1 = PeriLab.Data_Manager.get_field("Bond Damage", "NP1")
+    PeriLab.Data_Manager.track_bond_damage_N()
     bdnp1[2][1] = 0.5
     @test bdn[2][1] == 1.0
     @test bdnp1[2][1] == 0.5

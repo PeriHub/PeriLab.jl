@@ -6,8 +6,23 @@ export switch_NP1_to_N
 export reset_NP1
 export set_NP1_to_N
 export switch_bonds!
+export track_bond_damage_N
 function switch_bonds!(field_N::BondField{E}, field_NP1::BondField{E}) where {E}
     copyto!(flatview(field_N), flatview(field_NP1))
+end
+
+"""
+    track_bond_damage_N()
+
+Keeps `Bond Damage` N equal to NP1 after every step, for the models that read N (damage
+models, the matrix based correspondence) and for a fallback solver, which restores NP1
+from N. Without it the copy of all bonds is skipped; NP1 keeps the bond damage anyway.
+"""
+function track_bond_damage_N()
+    data["Track Bond Damage N"] = true
+    haskey(data["NP1_to_N"], "Bond Damage") &&
+        switch_bonds!(get_bond_damage("N"), get_bond_damage("NP1"))
+    return nothing
 end
 
 """
@@ -50,7 +65,7 @@ Switches the fields from NP1 to N. This is more efficient than copying the data 
 function switch_NP1_to_N()
     active = _get_field("Active")::Vector{Bool}
     np1_to_n = data["NP1_to_N"]::Dict{String,NP1_to_N}
-    if haskey(np1_to_n, "Bond Damage")
+    if haskey(np1_to_n, "Bond Damage") && data["Track Bond Damage N"]::Bool
         field_NP1 = get_field("Bond Damage", "NP1")::BondScalarState{Float64}
         field_N = get_field("Bond Damage", "N")::BondScalarState{Float64}
         switch_bonds!(field_N, field_NP1)
@@ -71,11 +86,12 @@ end
     reset_NP1()
 
 Discards the NP1 state of a failed step: every NP1 field is as directly after
-`switch_NP1_to_N` (the fill value on active nodes, `Bond Damage` NP1 equal to N).
+`switch_NP1_to_N` (the fill value on active nodes, `Bond Damage` NP1 equal to N if
+tracked, see `track_bond_damage_N`).
 """
 function reset_NP1()
     active::Vector = _get_field("Active")
-    if haskey(data["NP1_to_N"], "Bond Damage")
+    if haskey(data["NP1_to_N"], "Bond Damage") && data["Track Bond Damage N"]::Bool
         switch_bonds!(get_field("Bond Damage", "NP1"), get_field("Bond Damage", "N"))
     end
     for key::String in keys(data["NP1_to_N"])

@@ -28,8 +28,8 @@ PeriLab:
         Thermal Model: "Thermal Flow+Heat Transfer"
         Type: "Bond based"
         Thermal Conductivity: 0.12
-        Thermal Conductivity Print Bed: 1.2
-        Print Bed Temperature: 298.15
+        Bed Temperature: 298.15
+        Bed Thermal Conductivity: 1.2
         Environmental Temperature: 298.15
         Heat Transfer Coefficient: 15.0e-3
   Blocks:
