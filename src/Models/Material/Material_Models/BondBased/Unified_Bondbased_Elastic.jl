@@ -11,16 +11,21 @@ It is simplified. Rigid body motion is not considered )omega_{ij} = 0 as well as
 """
 
 #
-using LoopVectorization
+using StaticArrays: SVector, setindex
 
 using .....Data_Manager
+using ......ParameterSpec: @params, register_material
 using .....PeriLabExceptions: @abort
-using ....Material_Basis: get_symmetry, apply_pointwise_E
+using ....Material_Basis: apply_pointwise_E
 
 export init_model
 export fe_support
-export material_name
 export compute_model
+
+"Parameters of Unified Bond-based Elastic beyond the shared material keys (none)."
+@params "Unified bond-based elastic material after Guan et al. (2024), simplified: no rigid body rotation and no surface correction" struct UnifiedBondbasedElasticParams
+end
+__init__() = register_material("Unified Bond-based Elastic", UnifiedBondbasedElasticParams)
 
 """
   fe_support()
@@ -43,16 +48,18 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(nodes::AbstractVector{Int64}, p, material, block::Int64)
 
 Initializes the material model.
 
 # Arguments
   - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `p`: Model parameters; `material::BlockMaterial`: typed block material (`material.base`, `material.moduli`, `material.symmetry`).
 """
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
+                    p::UnifiedBondbasedElasticParams,
+                    material,
+                    block::Int64)
     dof = Data_Manager.get_dof()
     nlist = Data_Manager.get_nlist()
     constant = Data_Manager.create_constant_bond_vector_state("Unified Bond Based Constant",
@@ -62,9 +69,9 @@ function init_model(nodes::AbstractVector{Int64},
 
     bond_length = Data_Manager.get_field("Bond Length")
     horizon = Data_Manager.get_field("Horizon")
-    symmetry::String = get_symmetry(material_parameter)
-    nu = material_parameter["Poisson's Ratio"]
-    E = material_parameter["Young's Modulus"]
+    symmetry::String = material.symmetry
+    nu = material.moduli.poissons_ratio
+    E = material.moduli.youngs_modulus
 
     # a is not explained -> EQ(41)
     # might be dx
@@ -78,72 +85,75 @@ function init_model(nodes::AbstractVector{Int64},
 
             if occursin("plane stress", symmetry)
                 #constant[iID] = 9 / (pi * horizon[iID]^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
-                constant[iID][jID][1],
-                constant[iID][jID][2] = compute_constant_2D_pstress(iID,
-                                                                    nu,
-                                                                    horizon,
-                                                                    beta,
-                                                                    I1,
-                                                                    I2)
+                constant[iID][jID] = SVector(compute_constant_2D_pstress(iID,
+                                                                         nu,
+                                                                         horizon,
+                                                                         beta,
+                                                                         I1,
+                                                                         I2))
             elseif occursin("plane strain", symmetry)
                 #constant[iID] = 48 / (5 * pi * horizon[iID]^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
-                constant[iID][jID][1],
-                constant[iID][jID][2] = compute_constant_2D_pstrain(iID,
-                                                                    nu,
-                                                                    horizon,
-                                                                    beta,
-                                                                    I1,
-                                                                    I2)
+                constant[iID][jID] = SVector(compute_constant_2D_pstrain(iID,
+                                                                         nu,
+                                                                         horizon,
+                                                                         beta,
+                                                                         I1,
+                                                                         I2))
             else
-                constant[iID][jID][1] = compute_beta_3D_1(iID, nu) * 12 /
-                                        (pi * horizon[iID]^4)
-                constant[iID][jID][2] = compute_beta_3D_2(iID, nu) * 12 /
-                                        (pi * horizon[iID]^4) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
+                constant[iID][jID] = SVector(compute_beta_3D_1(iID, nu) * 12 /
+                                             (pi * horizon[iID]^4),
+                                             compute_beta_3D_2(iID, nu) * 12 /
+                                             (pi * horizon[iID]^4)) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
             end
         end
     end
 end
 
 """
-    material_name()
-
-Returns the name of the material model.
-"""
-function material_name()
-    return "Unified Bond-based Elastic"
-end
-
-"""
-    compute_model(nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
+    compute_model(nodes::AbstractVector{Int64}, p, material, time::Float64, dt::Float64)
 
 Calculate the elastic bond force for each node.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `p`: Model parameters; `material::BlockMaterial`: typed block material (`material.base`, `material.moduli`, `material.symmetry`).
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict,
+                       p::UnifiedBondbasedElasticParams,
+                       material,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    constant = Data_Manager.get_field("Unified Bond Based Constant")
-    undeformed_bond = Data_Manager.get_field("Bond Geometry")
-    undeformed_bond_length = Data_Manager.get_field("Bond Length")
-    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry", "NP1")
-    deformed_bond_length = Data_Manager.get_field("Deformed Bond Length", "NP1")
-    bond_damage = Data_Manager.get_bond_damage("NP1")
-    bond_force = Data_Manager.get_field("Bond Forces")
-    nlist = Data_Manager.get_nlist()
-    volume = Data_Manager.get_field("Volume")
-    bb_strain = Data_Manager.get_field("Bond Based Strain")
-    E = material_parameter["Young's Modulus"]
-    symmetry::String = get_symmetry(material_parameter)
+    constant = Data_Manager.get_field("Unified Bond Based Constant")::BondVectorState{Float64,
+                                                                                      2}
+    undeformed_bond = Data_Manager.get_field("Bond Geometry")::BondVectorField{Float64}
+    undeformed_bond_length = Data_Manager.get_field("Bond Length")::BondScalarState{Float64}
+    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry",
+                                           "NP1")::BondVectorField{Float64}
+    deformed_bond_length = Data_Manager.get_field("Deformed Bond Length",
+                                                  "NP1")::BondScalarState{Float64}
+    bond_damage = Data_Manager.get_bond_damage("NP1")::BondScalarState{Float64}
+    bond_force = Data_Manager.get_field("Bond Forces")::BondVectorField{Float64}
+    nlist = Data_Manager.get_nlist()::BondScalarState{Int64}
+    volume = Data_Manager.get_field("Volume")::NodeScalarField{Float64}
+    bb_strain = Data_Manager.get_field("Bond Based Strain")::NodeTensorField{Float64}
+    E = material.moduli.youngs_modulus
+    three_d = !occursin("plane stress", material.symmetry) &&
+              !occursin("plane strain", material.symmetry)
+    unified_bond_forces!(nodes, three_d, constant, undeformed_bond, undeformed_bond_length,
+                         deformed_bond, deformed_bond_length, bond_damage, bond_force,
+                         nlist, volume, bb_strain)
+    # might be put in constants
+    apply_pointwise_E(nodes, E, bond_force)
+end
 
+function unified_bond_forces!(nodes, three_d, constant, undeformed_bond,
+                              undeformed_bond_length, deformed_bond, deformed_bond_length,
+                              bond_damage, bond_force, nlist, volume, bb_strain)
     for iID in nodes
-        if any(deformed_bond_length[iID] .== 0)
+        if any(iszero, deformed_bond_length[iID])
             @abort "Length of bond is zero due to its deformation."
             return nothing
         end
@@ -158,10 +168,10 @@ function compute_model(nodes::AbstractVector{Int64},
                                          nlist[iID],
                                          volume)
 
-        iso_strain = compression_strain(bb_strain[iID, :, :])
-        if !occursin("plane stress", symmetry) && !occursin("plane strain", symmetry)
+        iso_strain = compression_strain(view(bb_strain, iID, :, :))
+        if three_d
             compute_bb_force_3D!(bond_force[iID],
-                                 0.5 * constant[iID],
+                                 constant[iID],
                                  bond_damage[iID],
                                  deformed_bond_length[iID],
                                  undeformed_bond_length[iID],
@@ -169,7 +179,7 @@ function compute_model(nodes::AbstractVector{Int64},
                                  iso_strain)
         else
             compute_bb_force_2D!(bond_force[iID],
-                                 0.5 * constant[iID],
+                                 constant[iID],
                                  bond_damage[iID],
                                  deformed_bond_length[iID],
                                  undeformed_bond_length[iID],
@@ -179,8 +189,6 @@ function compute_model(nodes::AbstractVector{Int64},
                                  iso_strain)
         end
     end
-    # might be put in constants
-    apply_pointwise_E(nodes, E, bond_force)
 end
 
 """
@@ -210,10 +218,10 @@ function compute_bond_based_strain(bb_strain,
                 end
 
                 bb_strain[k,
-                l] += bond_damage[j] *
-                                   (deformed_bond[j][k] - undeformed_bond[j][k]) *
-                                   volume[nlist[j]] /
-                                   (undeformed_bond[j][l] * reference_volume)
+                          l] += bond_damage[j] *
+                                (deformed_bond[j][k] - undeformed_bond[j][k]) *
+                                volume[nlist[j]] /
+                                (undeformed_bond[j][l] * reference_volume)
             end
         end
     end
@@ -254,6 +262,7 @@ end
 #     return 5 * (1 - 2 * nu) / (2 * (1 + nu))
 # end
 
+# the constants enter halved (0.5 * c is exact, no scaled copy is needed)
 function compute_bb_force_3D!(bond_force,
                               constant,
                               bond_damage,
@@ -262,13 +271,15 @@ function compute_bb_force_3D!(bond_force,
                               deformed_bond,
                               iso_strain)
     @inbounds @fastmath for i in axes(bond_force, 1)
+        # axes(bond_force, 2) is 1:1, so only the first component is written (kept as is)
         @inbounds @fastmath for j in axes(bond_force, 2)
-            bond_force[i][j] = bond_damage[i] *
-                               (constant[i][1] * iso_strain +
-                                constant[i][2] *
-                                (deformed_bond_length[i] - undeformed_bond_length[i]) /
-                                undeformed_bond_length[i]) *
-                               deformed_bond[i][j] / deformed_bond_length[i]
+            bond_force[i] = setindex(bond_force[i],
+                                     bond_damage[i] *
+                                     ((0.5 * constant[i][1]) * iso_strain +
+                                      (0.5 * constant[i][2]) *
+                                      (deformed_bond_length[i] - undeformed_bond_length[i]) /
+                                      undeformed_bond_length[i]) *
+                                     deformed_bond[i][j] / deformed_bond_length[i], j)
         end
     end
 end
@@ -283,15 +294,17 @@ function compute_bb_force_2D!(bond_force,
                               bond_strain,
                               iso_strain)
     @inbounds @fastmath for i in axes(bond_force, 1)
+        # axes(bond_force, 2) is 1:1, so only the first component is written (kept as is)
         @inbounds @fastmath for j in axes(bond_force, 2)
-            bond_force[i][j] = bond_damage[i] *
-                               ((constant[i][2] *
-                                 bond_strain[j, j] *
-                                 undeformed_bond[i][j] *
-                                 undeformed_bond[i][j]) / undeformed_bond_length[i] /
-                                undeformed_bond_length[i] +
-                                constant[i][2] * iso_strain) *
-                               deformed_bond[i][j] / deformed_bond_length[i] # Eq(42)
+            bond_force[i] = setindex(bond_force[i],
+                                     bond_damage[i] *
+                                     (((0.5 * constant[i][2]) *
+                                       bond_strain[j, j] *
+                                       undeformed_bond[i][j] *
+                                       undeformed_bond[i][j]) / undeformed_bond_length[i] /
+                                      undeformed_bond_length[i] +
+                                      (0.5 * constant[i][2]) * iso_strain) *
+                                     deformed_bond[i][j] / deformed_bond_length[i], j) # Eq(42)
         end
     end
 end

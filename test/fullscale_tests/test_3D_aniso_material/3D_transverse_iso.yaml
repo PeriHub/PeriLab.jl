@@ -130,7 +130,6 @@ PeriLab:
       Number of Steps: 2
       Material Models: true
       Linear Static Matrix Based:
-        Safety Factor: 0.8
     Step 2:
       Step ID: 2
       Initial Time: 0.0

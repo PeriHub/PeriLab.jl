@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using YAML: load_file, ParserError
-using ...Parameter_Handling: validate_yaml
+using ..ParameterSpec: report!, strict_mode
+using ..InputDeck: read_input as read_typed_input
 
-export read_input_file
+export read_input_deck, validate_input
 
 """
     read_input(filename::String)
@@ -15,7 +16,7 @@ Reads the input deck from a yaml file
 # Arguments
 - `filename::String`: The name of the yaml file
 # Returns
-- `params::Dict{String,Any}`: The parameters read from the yaml file
+- The parsed yaml file (a `Dict` for a valid input deck)
 """
 function read_input(filename::String)
     try
@@ -29,17 +30,34 @@ function read_input(filename::String)
 end
 
 """
-    read_input_file(filename::String)
+    validate_input(params; directory = "", no_strict = false) -> (deck, input)
 
-Reads the input deck from a yaml file
-
-# Arguments
-- `filename::String`: The name of the yaml file
-# Returns
-- `Dict{String,Any}`: The validated parameters read from the yaml file.
+Validates a loaded input deck against the typed input declarations. Reports
+every problem at once and aborts if there is an error. Returns the
+`params["PeriLab"]` dict and the typed `PeriLabInput`.
 """
-function read_input_file(filename::String)
-    params = Dict{String,Any}()
+function validate_input(params; directory::AbstractString = "", no_strict::Bool = false)
+    if !(params isa AbstractDict) || !haskey(params, "PeriLab") || !(params["PeriLab"] isa AbstractDict) ||
+       length(params["PeriLab"]) < 2
+        @abort "Yaml file is not valid."
+        return
+    end
+    deck = params["PeriLab"]
+    input, ctx = read_typed_input(deck, directory;
+                                  strict = strict_mode(deck; no_strict_flag = no_strict))
+    report!(ctx)
+    return deck, input
+end
+
+"""
+    read_input_deck(filename; directory = dirname(filename), no_strict = false,
+                    raw_deck = nothing)
+
+Reads and validates the input deck; returns the typed `PeriLabInput`. `raw_deck` is
+the already parsed YAML of `filename`; if given, the file is not parsed again.
+"""
+function read_input_deck(filename::String; directory::AbstractString = dirname(filename),
+                         no_strict::Bool = false, raw_deck = nothing)
     if !isfile(filename)
         @abort "$(filename) can not be found. Make sure the file exist and is readable."
         return
@@ -49,5 +67,6 @@ function read_input_file(filename::String)
         return
     end
     @info "Read input file $filename"
-    return validate_yaml(read_input(filename))
+    raw = raw_deck === nothing ? read_input(filename) : raw_deck
+    return last(validate_input(raw; directory = directory, no_strict = no_strict))
 end

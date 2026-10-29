@@ -3,20 +3,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
-# Module discovery and loading, in one place: local, directory-scanned
-# modules (find_jl_files/find_module_files/create_module_specifics, moved
-# here from wherever Solver_Manager previously `include()`d them from) and
-# license-server-fetched modules (formerly LicenseModuleLoader.jl) now
-# live together as ONE importable module, since both feed the exact same
-# `Dict("File" => ..., "Module Name" => ...)` shape into
-# `create_module_specifics`.
-#
-# ADJUST THE RELATIVE IMPORT DEPTH BELOW: `using ..PeriLabExceptions: @abort`
-# assumes this file sits at the same depth in the module tree as the old
-# textually-`include()`d file did. Since that file's code became part of
-# whatever module `include()`d it, it never needed its own `using`
-# statement -- as a real, standalone module now, it does. Check the dot
-# count against where you actually place this file.
+# Module discovery and loading: local, directory-scanned modules and
+# license-server-fetched modules.
 #
 # INTEGRITY MODEL (for load_licensed_modules/licensed_modules) -- read this
 # before changing it:
@@ -27,7 +15,7 @@
 #   Instead, module content is verified against CONTENT_SIGNING_SECRET: a
 #   SEPARATE secret this client deployment genuinely holds (set as a
 #   runtime env var by whoever provisions this container, same as
-#   LICENSE_SERVER_URL -- not the customer's own PERIHUB_LICENSE_KEY). The
+#   LICENSE_SERVER_URL -- not the customer's own LICENSE_KEY). The
 #   server signs each module's content with the same secret and returns the
 #   signature in the X-Content-Signature response header; this loader
 #   recomputes it locally and compares before ever calling include_string.
@@ -60,7 +48,7 @@
 #     If BOTH local and server env vars happen to be set, local mode wins.
 #     Setting only one of LICENSED_MODULES_CONFIG/LICENSED_MODULES_DIR is
 #     treated as a misconfiguration and throws.
-#     SERVER MODE -- if LICENSE_SERVER_URL/PERIHUB_LICENSE_KEY/
+#     SERVER MODE -- if LICENSE_SERVER_URL/LICENSE_KEY/
 #     CONTENT_SIGNING_SECRET are set (and local mode isn't configured),
 #     modules are fetched, verified, and include_string'd as described
 #     under INTEGRITY MODEL above. The network round trip is cached for
@@ -73,21 +61,13 @@
 #   tests or advanced setups (e.g. more than one license server in the
 #   same process). It has no local-mode equivalent.
 #
-# `optional_local_modules(directory, specific)` wraps this module's own
-# `find_module_files` so a missing local module directory is "no local
-# modules", not an error.
+# `find_registered_modules(directory, register_function)` finds the model
+# files of a category by their `register_*` call; a missing directory has
+# none.
 #
 # Both `licensed_modules` and `find_module_files` return a `Vector{Any}` of
 # `Dict("File" => ..., "Module Name" => ...)` entries in the shape
 # `create_module_specifics` expects, so their results concatenate directly.
-#
-# Requires HTTP.jl, JSON3.jl, SHA.jl, and YAML.jl as dependencies of the
-# consuming project (only for the licensed-module half; the local-discovery
-# half has no extra dependencies beyond what PeriLab already needs).
-# YAML.jl specifically is only exercised by local dev mode, but it's an
-# unconditional `import` at the top of this file, so it must be installed
-# even if you never use local mode -- Julia resolves imports at load time,
-# not lazily per code path.
 
 module ModuleLoader
 
@@ -95,19 +75,13 @@ using ..PeriLabExceptions: @abort
 using DotEnv
 DotEnv.load!()
 
-import HTTP
+import Downloads
 import YAML
 import JSON3
 import SHA
 
-export find_module_files, create_module_specifics,
-       licensed_modules, optional_local_modules, check_license_on_startup
-
-# =========================================================================
-# Local, directory-scanned modules (moved here verbatim from wherever
-# Solver_Manager previously `include()`d them -- logic unchanged, only the
-# surrounding module wrapper and this docstring header are new).
-# =========================================================================
+export find_module_files, find_registered_modules, create_module_specifics,
+       licensed_modules
 
 """
 	find_jl_files(directory::AbstractString)
@@ -134,27 +108,13 @@ end
 ```
 """
 function find_jl_files(directory::AbstractString)
-    jl_files = Vector{String}()
     if !isdir(directory)
         @abort "$directory does not exists. Modules won't be loaded accurately."
-        return
     end
-
-    function find_jl_recursive(current_dir::AbstractString)
-        files = readdir(current_dir)
-        for file in files
-            file_path = joinpath(current_dir, file)
-            if isfile(file_path) && endswith(file, ".jl")
-                push!(jl_files, file_path)
-            elseif isdir(file_path)
-                find_jl_recursive(file_path)
-            end
-        end
-    end
-
-    find_jl_recursive(directory)
-
-    return jl_files
+    return sort!([joinpath(root, file)
+                  for (root, _, files) in walkdir(directory)
+                  for file in files
+                  if endswith(file, ".jl")])
 end
 
 """
@@ -203,6 +163,24 @@ function find_module_files(directory::AbstractString, specific::String)
         close(file)
     end
     return module_list
+end
+
+"""
+    find_registered_modules(directory, register_function; exclude = String[])
+
+The model files below `directory` that call `register_function` (e.g.
+`"register_damage"`), the call in a comment included, so that the unregistered
+templates load as well. Files and directories in `exclude` are skipped; a missing
+`directory` has no model files.
+"""
+function find_registered_modules(directory::AbstractString, register_function::String;
+                                 exclude = String[])
+    isdir(directory) || return String[]
+    call = register_function * "("
+    excluded(file) = any(e -> file == e || startswith(file, joinpath(e, "")), exclude)
+    return [file
+            for file in find_jl_files(directory)
+            if !excluded(file) && any(line -> occursin(call, line), eachline(file))]
 end
 
 """
@@ -275,11 +253,7 @@ function create_module_specifics(name::Union{String,SubString},
     return nothing
 end
 
-# =========================================================================
-# License-server-fetched modules (formerly LicenseModuleLoader.jl).
-# =========================================================================
-# --- process-wide cache -------------------------------------------------
-# The network round trip (validate + download + verify) doesn't depend on
+# Process-wide cache for license-server-fetched modules. The network round trip (validate + download + verify) doesn't depend on
 # which feature module is asking, so it happens at most once per process.
 # What DOES depend on the caller is which Julia namespace the source gets
 # include_string'd into -- create_module_specifics later does
@@ -316,95 +290,11 @@ const _WARNED_NOT_CONFIGURED = Ref(false)
 # container entrypoint shouldn't be necessary: it forces a full recompile to
 # get a fresh check, when only the cache in this module needs resetting.
 
-# Also runs `_check_license_on_startup()` -- see its docstring for why this
-# check is unconditional (not deferred until a licensed module is actually
-# needed).
-# """
-# function __init__()
-#     _FETCH_CACHE[] = nothing
-#     empty!(_INCLUDED)
-#     _WARNED_NOT_CONFIGURED[] = false
-
-#     _check_license_on_startup()
-# end
-
-"""
-    check_license_on_startup()
-
-Calls `/validate` unconditionally on every process start when a license
-server is configured -- NOT deferred until a caller actually asks
-`licensed_modules` for a specific type. Two reasons this needs to happen
-here, in `__init__`, rather than only inside `licensed_modules`:
-
-1. **Revocation must be caught promptly.** If this check only ran when a
-   run actually used a licensed feature, a long-lived or repeatedly
-   re-invoked container that never happens to touch Additive/GcodeInput
-   in a given run would keep working indefinitely on a license that's
-   since expired or been revoked -- the whole point of a server-side
-   license check is defeated if it's only sometimes exercised.
-2. **`last_seen` needs to reflect actual usage**, not just "this license
-   feature was used at least once." Without this, a license server's
-   activation-TTL cleanup (see server/app/main.py) can't distinguish an
-   actively-used deployment from an abandoned one, since `/validate` would
-   only ever be called on the (possibly rare) runs that happen to load a
-   licensed material model.
-
-This call intentionally does NOT populate `_FETCH_CACHE` -- it's a
-lightweight liveness/revocation check only (no module content is
-downloaded or verified here). `licensed_modules()` still does its own
-independent validate+fetch when a caller actually needs a module. This
-does mean two `/validate` calls happen on a run that ends up using a
-licensed module (this one, plus `licensed_modules`'s own) -- accepted as
-a minor redundancy in exchange for not caching a short-lived
-`download_token` this far ahead of when it'd actually be used, which
-could expire before anything calls `licensed_modules` in a slow-starting
-or delayed run.
-
-Behavior:
-- Local dev mode configured (`LICENSED_MODULES_CONFIG`/`LICENSED_MODULES_DIR`):
-  no server involved, nothing to check, returns immediately.
-- Neither `LICENSE_SERVER_URL` nor `PERIHUB_LICENSE_KEY` set: licensing is
-  optional, nothing to check, returns immediately.
-- Exactly one of `LICENSE_SERVER_URL`/`PERIHUB_LICENSE_KEY` set: same
-  misconfiguration handling as `licensed_modules` -- throws.
-- Both set, but the server reports the license invalid/expired/revoked/
-  over the activation limit: throws, which -- since this runs from
-  `__init__`, itself triggered by `using PeriLab` -- prevents PeriLab from
-  starting at all. This is deliberate: it's what actually stops a
-  container from running indefinitely on a bad license, rather than just
-  failing to load new licensed modules while everything already-loaded
-  keeps working.
-"""
-function check_license_on_startup()
-    local_config = get(ENV, "LICENSED_MODULES_CONFIG", "")
-    local_dir = get(ENV, "LICENSED_MODULES_DIR", "")
-    if !isempty(local_config) || !isempty(local_dir)
-        return  # local dev mode: no server involved
-    end
-
-    url = get(ENV, "LICENSE_SERVER_URL", "")
-    key = get(ENV, "PERIHUB_LICENSE_KEY", "")
-
-    if isempty(url) && isempty(key)
-        return  # licensing not configured at all: optional, nothing to check
-    end
-    if isempty(url) || isempty(key)
-        @abort "Only one of LICENSE_SERVER_URL/PERIHUB_LICENSE_KEY is set -- " *
-               "set both to enable licensing, or neither to disable it."
-    end
-
-    validation = _validate(url, key, gethostname())
-    if !validation.valid
-        @abort "PeriHub license check failed at startup: " *
-               "$(get(validation, :reason, "unknown reason"))."
-    end
-end
-
 """
     licensed_modules(target_module::Module, wanted_type=nothing;
                       force_refresh::Bool=false, machine_id=gethostname())
 
-Reads `LICENSE_SERVER_URL`, `PERIHUB_LICENSE_KEY`, and
+Reads `LICENSE_SERVER_URL`, `LICENSE_KEY`, and
 `CONTENT_SIGNING_SECRET` from `ENV` and `include_string`s licensed modules
 into `target_module`. This is the entry point feature modules (Additive,
 a gcode/mesh-input module, ...) should call -- no need to redefine the
@@ -434,14 +324,13 @@ The underlying validate+download+verify round trip is unaffected by
 many call sites there are, each asking for their own type -- filtering
 happens only at the `include_string` step, not the network fetch.
 
-- Neither `LICENSE_SERVER_URL` nor `PERIHUB_LICENSE_KEY` set: silently
-  returns `Any[]`. No license server configured means no licensed modules,
-  not an error -- this is what makes licensing fully optional.
-- Exactly one of them set, or `CONTENT_SIGNING_SECRET` missing while the
-  other two are set: that's a misconfiguration, not "no license" --
-  throws rather than silently disabling the integrity check or
-  half-loading.
-- All three set: the actual validate+download+verify round trip runs at
+- `LICENSE_KEY` not set: silently returns `Any[]`. No license key means no
+  licensed modules, not an error -- this is what makes licensing fully
+  optional. `LICENSE_SERVER_URL` defaults to the PeriHub license server.
+- `LICENSE_KEY` set but `CONTENT_SIGNING_SECRET` missing: that's a
+  misconfiguration, not "no license" -- throws rather than silently
+  disabling the integrity check.
+- Both set: the actual validate+download+verify round trip runs at
   most once per process no matter how many call sites there are.
 
 Set `force_refresh=true` to bypass the cache (e.g. to pick up a renewed
@@ -464,26 +353,22 @@ function licensed_modules(target_module::Module,
         return _licensed_modules_local(target_module, wanted_type, local_config, local_dir)
     end
 
-    url = get(ENV, "LICENSE_SERVER_URL", "")
-    key = get(ENV, "PERIHUB_LICENSE_KEY", "")
+    url = license_server_url()
+    key = get(ENV, "LICENSE_KEY", "")
     secret = get(ENV, "CONTENT_SIGNING_SECRET", "")
 
-    if isempty(url) && isempty(key)
+    if isempty(key)
         lock(_CACHE_LOCK) do
             if !_WARNED_NOT_CONFIGURED[]
-                @info "LICENSE_SERVER_URL/PERIHUB_LICENSE_KEY not set -- skipping licensed modules"
+                @info "LICENSE_KEY not set -- skipping licensed modules"
                 _WARNED_NOT_CONFIGURED[] = true
             end
         end
         return Any[]
     end
 
-    if isempty(url) || isempty(key)
-        @abort "Only one of LICENSE_SERVER_URL/PERIHUB_LICENSE_KEY is set -- " *
-               "set both to enable licensed modules, or neither to disable them."
-    end
     if isempty(secret)
-        @abort "LICENSE_SERVER_URL/PERIHUB_LICENSE_KEY are set but " *
+        @abort "LICENSE_KEY is set but " *
                "CONTENT_SIGNING_SECRET is not -- refusing to load licensed " *
                "modules without a way to verify their integrity."
     end
@@ -558,12 +443,6 @@ function _licensed_modules_local(target_module::Module,
         @abort "LICENSED_MODULES_DIR is set to '$(modules_dir)' but that directory doesn't exist"
     end
 
-    # ASSUMPTION (verify against your YAML.jl version): `YAML.load_file`
-    # returning string keys ("features", "modules", "file", "type") by
-    # default, matching the plain `features: {additive: {modules: [{file:
-    # ..., type: ...}]}}` shape in modules_config.yaml. If your YAML.jl
-    # version or config differs (e.g. returns Dict{Symbol,Any}), adjust the
-    # `get(..., "features", ...)`-style lookups below accordingly.
     data = YAML.load_file(config_path)
     features = get(data, "features", Dict())
 
@@ -610,21 +489,13 @@ function _licensed_modules_local(target_module::Module,
     return module_list
 end
 
-"""
-    optional_local_modules(directory::AbstractString, specific::String)
+const DEFAULT_LICENSE_SERVER_URL = "https://perihub-license.nimbus-extern.dlr.de"
 
-Wraps this module's own `find_module_files` so a missing local module
-directory means "no local modules" instead of an error. `find_module_files`
-(via `find_jl_files`) calls `@abort` if the directory doesn't exist;
-rather than rely on catching whatever `@abort` actually does (throw vs.
-exit is implementation-specific -- worth checking in your copy of
-PeriLab), this checks `isdir` first and skips calling it entirely.
-"""
-function optional_local_modules(directory::AbstractString, specific::String)
-    if !isdir(directory)
-        return Any[]
-    end
-    return find_module_files(directory, specific)
+# LICENSE_SERVER_URL, or the PeriHub server if unset or empty (CI passes an undefined
+# secret as an empty string)
+function license_server_url()
+    url = get(ENV, "LICENSE_SERVER_URL", "")
+    return isempty(url) ? DEFAULT_LICENSE_SERVER_URL : url
 end
 
 function _fetch_and_verify_all(license_server_url::AbstractString,
@@ -647,7 +518,8 @@ function _fetch_and_verify_all(license_server_url::AbstractString,
         source,
         signature = _fetch_module_source(license_server_url, download_token, module_name)
 
-        expected_signature = bytes2hex(_hmac_sha256(content_signing_secret, source))
+        expected_signature = bytes2hex(SHA.hmac_sha256(Vector{UInt8}(content_signing_secret),
+                                                       source))
         if isempty(signature)
             @abort "Server did not return X-Content-Signature for module '$(module_name)' -- refusing to load it"
         elseif signature != expected_signature
@@ -667,21 +539,40 @@ function _fetch_and_verify_all(license_server_url::AbstractString,
     return entries
 end
 
+# HTTP request; errors on a non-2xx status. Returns the response and its body.
+function _request(url::AbstractString; method = "GET", headers = Pair{String,String}[],
+                  body = nothing)
+    output = IOBuffer()
+    resp = try
+        Downloads.request(url; method = method, headers = headers, output = output,
+                          input = body === nothing ? nothing : IOBuffer(body))
+    catch e
+        e isa Downloads.RequestError || rethrow()
+        @abort "$method $url failed: $(e.message)"
+    end
+    200 <= resp.status < 300 ||
+        @abort "$method $url failed with HTTP status $(resp.status)"
+    return resp, take!(output)
+end
+
 function _validate(license_server_url::AbstractString, license_key::AbstractString,
                    machine_id::AbstractString)
     body = JSON3.write(Dict("license_key" => license_key, "machine_id" => machine_id))
-    resp = HTTP.post(rstrip(license_server_url, '/') * "/api/v1/validate",
-                     ["Content-Type" => "application/json"], body)
-    return JSON3.read(resp.body)
+    _, response = _request(rstrip(license_server_url, '/') * "/api/v1/validate";
+                           method = "POST",
+                           headers = ["Content-Type" => "application/json"], body = body)
+    return JSON3.read(response)
 end
 
 function _fetch_module_source(license_server_url::AbstractString,
                               download_token::AbstractString,
                               module_name::AbstractString)
-    resp = HTTP.get(rstrip(license_server_url, '/') * "/api/v1/modules/" * module_name,
-                    ["Authorization" => "Bearer " * download_token])
-    signature = HTTP.header(resp, "X-Content-Signature", "")
-    return String(resp.body), signature
+    resp, source = _request(rstrip(license_server_url, '/') * "/api/v1/modules/" *
+                            module_name;
+                            headers = ["Authorization" => "Bearer " * download_token])
+    i = findfirst(h -> lowercase(first(h)) == "x-content-signature", resp.headers)
+    signature = i === nothing ? "" : last(resp.headers[i])
+    return String(source), signature
 end
 
 function _detect_module_name(source::AbstractString)
@@ -691,27 +582,6 @@ function _detect_module_name(source::AbstractString)
         end
     end
     @abort "Downloaded module source has no top-level `module ... end` block"
-end
-
-# Hand-rolled HMAC-SHA256 (RFC 2104) built directly on SHA.sha256, rather
-# than depending on a package-specific hmac helper that may or may not be
-# exported by every SHA.jl version. Verified byte-for-byte against Python's
-# `hmac` stdlib module for the same key/message during development.
-function _hmac_sha256(key::AbstractString, message::AbstractString)
-    block_size = 64
-    key_bytes = Vector{UInt8}(codeunits(key))
-    if length(key_bytes) > block_size
-        key_bytes = SHA.sha256(key_bytes)
-    end
-    if length(key_bytes) < block_size
-        key_bytes = vcat(key_bytes, zeros(UInt8, block_size - length(key_bytes)))
-    end
-
-    o_key_pad = key_bytes .⊻ 0x5c
-    i_key_pad = key_bytes .⊻ 0x36
-
-    inner = SHA.sha256(vcat(i_key_pad, Vector{UInt8}(codeunits(message))))
-    return SHA.sha256(vcat(o_key_pad, inner))
 end
 
 end # module ModuleLoader

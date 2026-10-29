@@ -7,8 +7,8 @@
 #using .PeriLab
 
 @testset "get_name&fe_support" begin
-    @test PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.material_name() ==
-          "PD Solid Plastic"
+    @test parentmodule(PeriLab.ParameterSpec.lookup_model(:material, "PD Solid Plastic")) ===
+          PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic
     @test !(PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.fe_support())
 end
 
@@ -28,22 +28,29 @@ end
                                                                 Int64)
 
     nn .= 1
-    @test_logs (:error,
-                "Yield Stress is not defined in input deck") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(Vector{Int64}(1:nodes),
-                                                                                  Dict())
-    end
+    @test_throws PeriLab.PeriLabError typed_block_material(Dict("Material Model" => "PD Solid Plastic",
+                                                                "Bulk Modulus" => 1.0,
+                                                                "Shear Modulus" => 1.0))
 
+    material = typed_block_material(Dict("Material Model" => "PD Solid Plastic",
+                                         "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0,
+                                         "Yield Stress" => 5.3))
     PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(Vector{Int64}(1:nodes),
-                                                                              Dict("Yield Stress" => 5.3))
+                                                                              material.model,
+                                                                              material, 1)
     yield = PeriLab.Data_Manager.get_field("Yield Value")
 
     @test isapprox(yield[1], 25 * 5.3 * 5.3 / (8 * pi * 3^5))
     @test isapprox(yield[2], 25 * 5.3 * 5.3 / (8 * pi * 2^5))
 
+    PeriLab.Data_Manager.set_dof(2)
+    material = typed_block_material(Dict("Material Model" => "PD Solid Plastic",
+                                         "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0,
+                                         "Yield Stress" => 2.2,
+                                         "Symmetry" => "plane stress"))
     PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Plastic.init_model(Vector{Int64}(1:nodes),
-                                                                              Dict("Yield Stress" => 2.2,
-                                                                                   "Symmetry" => "plane stress"))
+                                                                              material.model,
+                                                                              material, 1)
     yield = PeriLab.Data_Manager.get_field("Yield Value")
 
     @test isapprox(yield[1], 225 * 2.2 * 2.2 / (24 * pi * 3^4))
@@ -67,10 +74,10 @@ end
                                                                                                                   yield_value,
                                                                                                                   lambdaNP1,
                                                                                                                   alpha,
-                                                                                                                  omega,
-                                                                                                                  bond_damage,
-                                                                                                                  deviatoric_plastic_extension_state,
-                                                                                                                  bond_force_deviatoric)
+                                                                                                                  bond_field(omega),
+                                                                                                                  bond_field(bond_damage),
+                                                                                                                  bond_field(deviatoric_plastic_extension_state),
+                                                                                                                  bond_field(bond_force_deviatoric))
     @test bond_force_deviatoric == [[0.0, 0.0], [0.0, 0.0]]
     @test deviatoric_plastic_extension_state == [[0.0, 0.0], [0.0, 0.0]]
 end

@@ -5,87 +5,96 @@
 module Static_Solver
 using LinearAlgebra
 using NLsolve
-using ProgressBars: set_multiline_postfix, set_postfix
 using Printf
-using LoopVectorization
 using Logging
 using TimerOutputs: @timeit
 
 using ...Data_Manager
 using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
-using ...Parameter_Handling:
-                             get_initial_time,
-                             get_fixed_dt,
-                             get_final_time,
-                             get_numerical_damping,
-                             get_safety_factor,
-                             get_max_damage
+using ...ParameterSpec: @params, register_solver
+using ...InputDeck: SolverParams, SolverOptions, start_time, end_time
+using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, StepFailed,
+                       synchronise_field,
+                       compute_parabolic_problems_before_model_evaluation,
+                       compute_parabolic_problems_after_model_evaluation
+
+@params "Quasi-static solver: finds the equilibrium of each step with a nonlinear solver (NLsolve, Anderson acceleration)" struct StaticParams <:
+                                                                                                                                  SolverOptions
+    "Time step; -1: the step is split into Number of Steps increments"
+    fixed_dt::Float64 = opt("Fixed dt"; default = -1.0, quantity = :time)
+    "Convergence limit on the change of the displacements between two iterations"
+    solution_tolerance::Float64 = opt("Solution tolerance"; default = 1e-7, min = 0)
+    "Convergence limit on the scaled force residual"
+    residual_tolerance::Float64 = opt("Residual tolerance"; default = 1e-7, min = 0)
+    "Iterations per step before the step counts as failed"
+    maximum_number_of_iterations::Int64 = opt("Maximum number of iterations"; default = 100,
+                                              min = 1)
+    "Prints the iterations of the nonlinear solver"
+    show_solver_iteration::Bool = opt("Show solver iteration"; default = false)
+    "Divisor of the force residual before it is compared with the residual tolerance"
+    residual_scaling::Float64 = opt("Residual scaling"; default = 1e6)
+    "Number of previous iterations used by the Anderson acceleration"
+    m::Int64 = opt("m"; default = 15, min = 1)
+    "Start guess of the displacements: per direction a value at the minimum and one at the maximum coordinate, separated by spaces, interpolated linearly; zero if not given"
+    linear_start_value::Union{Nothing,String} = opt("Linear Start Value"; default = nothing)
+end
+__init__() = register_solver("Static", StaticParams)
 # using ...MPI_Communication: barrier
 using ..Model_Factory
-using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
+using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof,
+                             BoundaryCondition
 using ...Logging_Module: print_table
 
 export init_solver
-export run_solver
-function solver_name()
-    return "Static"
-end
+import ..Solver_Common: prepare_solver, time_step!
 """
-    init_solver(params::Dict, bcs::Dict{Any,Any}, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+    init_solver(options::StaticParams, params::SolverParams, models::Vector{String}, bcs::Dict{String,BoundaryCondition}, block_nodes::Dict{Int64,Vector{Int64}})
 
 Initialize the Static solver for a simulation.
 
 This function sets up the Static solver for a simulation by initializing various parameters.
 
 # Arguments
-- `params::Dict`: A dictionary containing simulation parameters.
-- `bcs::Dict{Any,Any}`: Boundary conditions
+- `options::StaticParams`: The Static options of the step (tolerances, iterations, start values).
+- `params::SolverParams`: The solver parameters of the current step.
+- `models::Vector{String}`: The model categories of the step.
+- `bcs::Dict{String,BoundaryCondition}`: Boundary conditions
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
-- `mechanical::Bool`: If `true`, mechanical properties are considered in the calculation.
-- `thermo::Bool`: If `true`, thermodynamic properties are considered in the calculation.
 
 # Returns
-A tuple `(initial_time, dt, nsteps, numerical_damping)` where:
-- `initial_time::Float64`: The initial time for the simulation.
-- `dt::Float64`: The time step for the simulation.
-- `nsteps::Int64`: The number of time integration steps.
-- `numerical_damping::Float64`: The numerical damping factor.
-- `max_damage::Float64`: The maximum damage in the simulation.
-- `xtol::Float64`: solution tolerance; mininum step size value between two iterations
-- `ftol::Float64`: residual tolerance; mininum residual value of the function
-- `iterations::Int64`: maximum number of iterations per time step
-- `show_trace::Bool`: show the iteration steps of the solver
-
+- `TimeWindow`: initial and final time, time step and number of steps.
+- `nothing`: the run reads its settings from `options`.
 
 # Dependencies
 This function may depend on the following functions:
-- `get_initial_time`, `get_final_time`, `get_safety_factor`, `get_fixed_dt`: Used to retrieve simulation parameters.
+- `start_time` and the fields of `params` (final time, safety factor, fixed time step): The simulation parameters.
 - `get_integration_steps`: Used to determine the number of integration steps and adjust the time step.
 """
-function init_solver(solver_options::Dict{Any,Any},
-                     params::Dict,
-                     bcs::Dict{Any,Any},
+function init_solver(options::StaticParams,
+                     params::SolverParams,
+                     models::Vector{String},
+                     bcs::Dict{String,BoundaryCondition},
                      block_nodes::Dict{Int64,Vector{Int64}})
     # @info "==============================="
     # @info "==== NLsolve Static Solver ===="
     # @info "==============================="
 
-    mechanical = "Material" in solver_options["Models"]
-    thermal = "Thermal" in solver_options["Models"]
-    initial_time = get_initial_time(params)
-    final_time = get_final_time(params)
-    fixed_dt = get_fixed_dt(params)
+    mechanical = "Material" in models
+    thermal = "Thermal" in models
+    initial_time = start_time(params, Data_Manager.get_current_time())
+    final_time = end_time(params, Data_Manager.get_current_time())
+    fixed_dt = options.fixed_dt
     dof = Data_Manager.get_dof()
     if fixed_dt == -1.0
-        if haskey(params, "Number of Steps")
-            nsteps = params["Number of Steps"]
+        if params.number_of_steps !== nothing
+            nsteps = params.number_of_steps
             dt = (final_time - initial_time) / nsteps
         else
             nsteps = Int64(1)
             dt = final_time - initial_time
         end
     else
-        if haskey(params, "Number of Steps")
+        if params.number_of_steps !== nothing
             @warn "''Number of Steps'' and ''Fixed dt'' are defined. ''Fixed dt'' is used and ''Number of Steps'' from yaml is ignored."
         end
         nsteps = Int64(round((final_time - initial_time) / fixed_dt))
@@ -94,38 +103,19 @@ function init_solver(solver_options::Dict{Any,Any},
     comm = Data_Manager.get_comm()
 
     # not needed here
-    numerical_damping = get_numerical_damping(params)
-    max_damage = get_max_damage(params)
-    solver_specifics = Dict("Solution tolerance" => 1e-7,
-                            "Residual tolerance" => 1e-7,
-                            "Maximum number of iterations" => 100,
-                            "Show solver iteration" => false,
-                            "Residual scaling" => 1e6,
-                            "m" => 15,
-                            "Linear Start Value" => zeros(2 * dof))
-    if haskey(params["Static"], "Residual scaling")
-        volume = Data_Manager.get_field("Volume")
-        solver_specifics["Residual scaling"] = params["Static"]["Residual scaling"]# / minimum(volume) / minimum(volume)
-    end
-    if haskey(params["Static"], "Solution tolerance")
-        solver_specifics["Solution tolerance"] = params["Static"]["Solution tolerance"]
-    end
-    if haskey(params["Static"], "Residual tolerance")
-        solver_specifics["Residual tolerance"] = params["Static"]["Residual tolerance"]
-    end
-    if haskey(params["Static"], "Maximum number of iterations")
-        solver_specifics["Maximum number of iterations"] = params["Static"]["Maximum number of iterations"]
-    end
-    if haskey(params["Static"], "Show solver iteration")
-        solver_specifics["Show solver iteration"] = params["Static"]["Show solver iteration"]
-    end
-    if haskey(params["Static"], "m")
-        solver_specifics["m"] = params["Static"]["m"]
-    end
-    if haskey(params["Static"], "Linear Start Value")
-        solver_specifics["Linear Start Value"] = parse.(Float64,
-                                                        split(params["Static"]["Linear Start Value"]))
-    end
+    static = options
+    solver_specifics = Dict("Solution tolerance" => static.solution_tolerance,
+                            "Residual tolerance" => static.residual_tolerance,
+                            "Maximum number of iterations" =>
+                                static.maximum_number_of_iterations,
+                            "Show solver iteration" => static.show_solver_iteration,
+                            "Residual scaling" => static.residual_scaling,
+                            "m" => static.m,
+                            "Linear Start Value" =>
+                                static.linear_start_value === nothing ?
+                                zeros(2 * dof) :
+                                parse.(Float64,
+                                       split(static.linear_start_value)))
 
     residual = Data_Manager.create_constant_node_vector_field("Residual", Float64, dof)
 
@@ -172,150 +162,92 @@ function init_solver(solver_options::Dict{Any,Any},
         print_table(data)
     end
 
-    solver_options["Initial Time"] = initial_time
-    solver_options["Final Time"] = final_time
-    solver_options["dt"] = dt
-    solver_options["Number of Steps"] = nsteps
-    solver_options["Numerical Damping"] = numerical_damping
-    solver_options["Maximum Damage"] = max_damage
-    solver_options["Solver specifics"] = solver_specifics
+    return TimeWindow(initial_time, final_time, dt, nsteps), nothing
 end
 
-function run_solver(solver_options::Dict{Any,Any},
-                    block_nodes::Dict{Int64,Vector{Int64}},
-                    bcs::Dict{Any,Any},
-                    outputs::Dict{Int64,Dict{}},
-                    result_files::Vector{Dict},
-                    synchronise_field::Function,
-                    write_results::Function,
-                    compute_parabolic_problems_before_model_evaluation::Function,
-                    compute_parabolic_problems_after_model_evaluation::Function,
-                    silent::Bool)
-    atexit(() -> Data_Manager.set_cancel(true))
+"""
+    StaticWorkspace
 
-    coor = Data_Manager.get_field("Coordinates")
-    comm = Data_Manager.get_comm()
+Fields and nlsolve settings of the static solver; `start_u` is the start value
+of the next step.
+"""
+mutable struct StaticWorkspace
+    bc_free_dof::Vector{Int64}
+    scaling::Float64
+    xtol::Float64
+    ftol::Float64
+    iterations::Int64
+    show_trace::Bool
+    m::Int64
+    start_u::Matrix{Float64}
+    uNP1::Matrix{Float64}
+    forces::Matrix{Float64}
+    volume::Vector{Float64}
+    active_list::Vector{Bool}
+end
 
-    dt::Float64 = solver_options["dt"]
-    nsteps::Int64 = solver_options["Number of Steps"]
-    time::Float64 = solver_options["Initial Time"]
-    final_time::Float64 = solver_options["Final Time"]
-    step_time::Float64 = 0
-    max_cancel_damage::Float64 = solver_options["Maximum Damage"]
-    numerical_damping::Float64 = solver_options["Numerical Damping"]
-    max_damage::Float64 = 0
-    damage_init::Bool = false
-    rank = Data_Manager.get_rank()
-    iter = progress_bar(rank, nsteps, silent)
-    bc_free_dof = Data_Manager.get_bc_free_dof()
-    scaling = solver_options["Solver specifics"]["Residual scaling"]
-    xtol = solver_options["Solver specifics"]["Solution tolerance"]
-    ftol = solver_options["Solver specifics"]["Residual tolerance"]
-    iterations = solver_options["Solver specifics"]["Maximum number of iterations"]
-    show_trace = solver_options["Solver specifics"]["Show solver iteration"]
-    m = solver_options["Solver specifics"]["m"]
-    uN = Data_Manager.get_field("Displacements", "N")
-    uNP1 = Data_Manager.get_field("Displacements", "NP1")
-    resdiual = Data_Manager.get_field("Residual")
-    start_u = Data_Manager.get_field("Start_Values")
-    coor = Data_Manager.get_field("Coordinates")
-    external_forces = Data_Manager.get_field("External Forces")
-    external_force_densities = Data_Manager.get_field("External Force Densities")
-    force_densities = Data_Manager.get_field("Force Densities", "NP1")
-    forces = Data_Manager.get_field("Forces", "NP1")
-    volume = Data_Manager.get_field("Volume")
+"""
+    prepare_solver(run::SolverRun{StaticParams}, ctx::SolverContext)
+
+Fetches the fields and the nlsolve settings of the static steps.
+"""
+function prepare_solver(run::SolverRun{StaticParams}, ctx::SolverContext)
+    options = run.params.options
+    return StaticWorkspace(convert(Vector{Int64}, Data_Manager.get_bc_free_dof()),
+                           options.residual_scaling,
+                           options.solution_tolerance,
+                           options.residual_tolerance,
+                           options.maximum_number_of_iterations,
+                           options.show_solver_iteration,
+                           options.m,
+                           Data_Manager.get_field("Start_Values"),
+                           Data_Manager.get_field("Displacements", "NP1"),
+                           Data_Manager.get_field("Forces", "NP1"),
+                           Data_Manager.get_field("Volume"),
+                           Data_Manager.get_field("Active"))
+end
+
+"""
+    time_step!(ws::StaticWorkspace, run::SolverRun{StaticParams}, ctx::SolverContext, clock::StepClock)
+
+One static step: Dirichlet conditions, then the equilibrium solved with nlsolve
+(Anderson). Returns `StepFailed` if nlsolve does not converge.
+"""
+function time_step!(ws::StaticWorkspace, run::SolverRun{StaticParams}, ctx::SolverContext,
+                    clock::StepClock)
+    block_nodes = ctx.block_nodes
+    bcs = ctx.bcs
+    time = clock.time
+    step_time = clock.step_time
+    dt = clock.dt
+    apply_bc_dirichlet(["Forces", "Force Densities"], bcs, time, step_time)
     active_nodes = Data_Manager.get_field("Active Nodes")
-    active_list = Data_Manager.get_field("Active")
-    for idt in iter
-        Data_Manager.set_iteration(idt)
-        #apply_bc_dirichlet(bcs, time) #-> Dirichlet
-        apply_bc_dirichlet(["Forces", "Force Densities"],
-                           bcs,
-                           time,
-                           step_time) #-> Dirichlet
-        external_force_densities += external_forces ./ volume
-        active_nodes = Data_Manager.get_field("Active Nodes")
-        active_nodes = find_active_nodes(active_list, active_nodes,
-                                         1:Data_Manager.get_nnodes())
-
-        compute_parabolic_problems_before_model_evaluation(active_nodes,
-                                                           solver_options)
-        apply_bc_dirichlet(["Displacements", "Temperature"], bcs,
-                           time,
-                           step_time + dt) #-> Dirichlet
-
-        sol = nlsolve((residual,
-                       U) -> residual!(residual,
-                                       U,
-                                       bc_free_dof,
-                                       block_nodes,
-                                       dt,
-                                       time,
-                                       solver_options,
-                                       synchronise_field,
-                                       scaling),
-                      start_u;
-                      xtol = xtol,
-                      ftol = ftol,
-                      iterations = iterations,
-                      show_trace = show_trace & !silent,
-                      extended_trace = false,
-                      method = :anderson,
-                      m = m,)
-
-        compute_parabolic_problems_after_model_evaluation(active_nodes, solver_options, dt)
-
-        start_u = copy(uNP1)
-        if !sol.x_converged && !sol.f_converged
-            @info "Failed to converge at step $idt: maximum number of iterations reached"
-            Data_Manager.set_cancel(true)
-        end
-        # method=:newton, linsolve=KrylovJL_GMRES()
-        # method=:broyden
-        active_nodes = find_active_nodes(active_list, active_nodes,
-                                         1:Data_Manager.get_nnodes())
-
-        if "Damage" in solver_options["Models"]
-            damage = Data_Manager.get_damage("NP1")
-            max_damage = maximum(damage[active_nodes])
-            if max_damage > max_cancel_damage
-                @info "Maximum damage reached at step $idt: $max_damage"
-                Data_Manager.set_cancel(true)
-            end
-            if !damage_init && max_damage > 0
-                damage_init = true
-            end
-        end
-
-        if Data_Manager.get_cancel()
-            @info "Canceling at step $idt"
-            break
-        end
-
-        force_densities = Data_Manager.get_field("Force Densities", "NP1")
-
-        @. @views forces[active_nodes,
-        :] = force_densities[active_nodes, :] .*
-                                            volume[active_nodes]
-
-        @timeit "write_results" result_files=write_results(result_files, time,
-                                                           max_damage, outputs)
-
-        @timeit "switch_NP1_to_N" Data_Manager.switch_NP1_to_N()
-
-        time += dt
-        step_time += dt
-        Data_Manager.set_current_time(time)
-        if idt % ceil(nsteps / 100) == 0 || idt == 1 || idt == nsteps + 1
-            @info "Step: $idt / $(nsteps+1) [$(@sprintf("%.3e", time)) s]"
-        end
-        # if rank == 0 && !silent
-        #     set_postfix(iter, t=@sprintf("%.3e", time))
-        # end
-        # barrier(comm)
+    active_nodes = find_active_nodes(ws.active_list, active_nodes,
+                                     1:Data_Manager.get_nnodes())
+    compute_parabolic_problems_before_model_evaluation(active_nodes, run)
+    apply_bc_dirichlet(["Displacements", "Temperature"], bcs, time, step_time + dt)
+    sol = nlsolve((residual, U) -> residual!(residual, U, ws.bc_free_dof, block_nodes, dt,
+                                             time, run.models, synchronise_field,
+                                             ws.scaling),
+                  ws.start_u;
+                  xtol = ws.xtol,
+                  ftol = ws.ftol,
+                  iterations = ws.iterations,
+                  show_trace = ws.show_trace & !ctx.silent,
+                  extended_trace = false,
+                  method = :anderson,
+                  m = ws.m)
+    compute_parabolic_problems_after_model_evaluation(active_nodes, run, dt)
+    ws.start_u = copy(ws.uNP1)
+    if !sol.x_converged && !sol.f_converged
+        return StepFailed("no convergence after $(ws.iterations) iterations")
     end
-    Data_Manager.set_current_time(final_time)
-    return result_files
+    active_nodes = find_active_nodes(ws.active_list, active_nodes,
+                                     1:Data_Manager.get_nnodes())
+    force_densities = Data_Manager.get_field("Force Densities", "NP1")
+    @. @views ws.forces[active_nodes, :] = force_densities[active_nodes, :] *
+                                           ws.volume[active_nodes]
+    return nothing
 end
 
 function residual!(residual,
@@ -324,7 +256,7 @@ function residual!(residual,
                    block_nodes,
                    dt,
                    time,
-                   solver_options,
+                   models::Vector{String},
                    synchronise_field,
                    scaling)
     active_list = Data_Manager.get_field("Active")
@@ -350,8 +282,8 @@ function residual!(residual,
     # bc_dof = setdiff(1:length(uNP1), bc_free_dof)
 
     @views deformed_coorNP1[active_nodes,
-    :] = coor[active_nodes, :] .+
-                                               uNP1[active_nodes, :]
+                            :] = coor[active_nodes, :] .+
+                                 uNP1[active_nodes, :]
 
     force_densities[:, :] .= 0 # TODO check where to put it for iterative solver
     forces = Data_Manager.get_field("Forces", "NP1")
@@ -362,7 +294,7 @@ function residual!(residual,
     Model_Factory.compute_models(block_nodes,
                                  dt,
                                  time,
-                                 solver_options["Models"],
+                                 models,
                                  synchronise_field)
 
     Data_Manager.synch_manager(synchronise_field, "download_from_cores")

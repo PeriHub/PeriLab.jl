@@ -5,18 +5,18 @@
 module Helpers
 
 using PointNeighbors: GridNeighborhoodSearch, initialize_grid!, foreach_neighbor
-using Meshes: Ring, Point, centroid, Hexahedron
 #using Tensors
-using Dierckx: Spline1D, evaluate
 using ProgressBars: ProgressBar
 using LinearAlgebra: Adjoint, dot, det, norm, pinv, eigvals, inv, normalize, cross, diagm,
                      cholesky
 using StaticArrays: MMatrix, MVector, SMatrix, @SMatrix, SVector, @SVector
-using LoopVectorization
-using Unitful: ustrip
+using ArraysOfArrays: flatview
 using CDDLib
 using Polyhedra: MixedMatHRep, polyhedron, vrep, hrep
 using Base.Threads: @threads
+using Polyester: @batch
+# minimum nodes per thread of the threaded node loops; smaller blocks run serially
+const MINBATCH = 64
 using ..Data_Manager
 using ..PeriLabExceptions: @abort
 using TimerOutputs: @timeit
@@ -24,14 +24,17 @@ export qdim
 export check_inf_or_nan
 export compute_geometry
 export find_active_nodes
+export compute_label
+export node_tensor
+export with_dof
+export find_inverse_bond_index!
 export get_active_update_nodes
+export MINBATCH
 export find_indices
 export find_inverse_bond_id
-export find_files_with_ending
 export get_block_nodes
 export matrix_style
 export get_fourth_order
-export get_dependent_value
 export progress_bar
 export invert
 export compute_distance_and_normals
@@ -48,7 +51,6 @@ export get_ring
 export get_hexagon
 # export nearest_point_id
 export get_shared_horizon
-export matrix_style
 export matrix_to_voigt
 export matrix_to_engineering_voigt
 export voigt_to_matrix
@@ -141,22 +143,12 @@ end
 # taken from peridigm
 function compute_distance_and_normals(p1, p2)
     distance = norm(p2 - p1)
-    distance == 0 ? distance + eps() :
-    distance
     return distance, (p2 - p1) ./ distance
 end
 
-function get_surface_normals(poly)
-    return MixedMatHRep(hrep(poly)).A
-end
-
-function get_surface_offset(poly)
-    return MixedMatHRep(hrep(poly)).b
-end
-
 function get_surface_information(poly)
-    normals = get_surface_normals(poly)
-    b = get_surface_offset(poly)
+    h = MixedMatHRep(hrep(poly))
+    normals, b = h.A, h.b
     for i in eachindex(b)
         b[i] /= norm(normals[i, :])
         normals[i, :] ./= norm(normals[i, :])
@@ -226,10 +218,10 @@ function get_nearest_neighbors(nodes,
     end
     initialize_grid!(nhs, coords_sys)
     initialize_grid!(nhs, coords_nb)
-    list_empty = true
 
-    for iID in nodes
-        neighbors = []
+    # the grid is only read, every node fills its own list
+    Threads.@threads for iID in nodes
+        neighbors = Int64[]
         foreach_neighbor(coords_sys,# System coordinates -> must be transpose for the datamanager definition
                          coords_nb,# Potential neighbor coordinates -> must be transpose for the datamanager definition
                          nhs,
@@ -241,74 +233,67 @@ function get_nearest_neighbors(nodes,
                               L
             if i != j || diffent_lists
                 push!(neighbors, j)
-                list_empty = false
             end
         end
         neighborList[iID] = neighbors
     end
-    return neighborList, list_empty
+    return neighborList, all(iID -> isempty(neighborList[iID]), nodes)
 end
 
-function find_point_in_polygon(point, coor, topo)
-    return Point(point[1], point[2]) in get_ring(coor, topo)
+# Element corners are in tensor-grid order: corner 1 + bx + 2by (+ 4bz) sits at (bx, by, bz).
+# The Kuhn simplices (one per axis order) run from corner 1 to the last corner and tile the
+# element exactly if its faces are planar.
+const _KUHN_2D = ((1, 2), (2, 1))
+const _KUHN_3D = ((1, 2, 4), (1, 4, 2), (2, 1, 4), (2, 4, 1), (4, 1, 2), (4, 2, 1))
+
+# inside or on the simplex v0 + edges: barycentric coordinates in [0, 1] up to round-off
+function _in_simplex(p::SVector{N}, v0::SVector{N}, edges::SMatrix{N,N}) where {N}
+    abs(det(edges)) <= eps() * maximum(abs, edges)^N && return false
+    λ = edges \ (p - v0)
+    return all(>=(-1e-10), λ) && sum(λ) <= 1 + 1e-10
 end
+
+function _in_element(point, coor, topo, ::Val{N}, kuhn) where {N}
+    p = SVector{N}(ntuple(i -> Float64(point[i]), N))
+    corner(k) = SVector{N}(ntuple(i -> Float64(coor[topo[k], i]), N))
+    v0 = corner(1)
+    for order in kuhn
+        offsets = cumsum(SVector(order))
+        edges = SMatrix{N,N}(hcat(ntuple(j -> corner(1 + offsets[j]) - v0, N)...))
+        _in_simplex(p, v0, edges) && return true
+    end
+    return false
+end
+
+find_point_in_polygon(point, coor, topo) = _in_element(point, coor, topo, Val(2), _KUHN_2D)
 
 function find_point_in_hexagon(point::Vector{Float64}, coor::Matrix{Float64},
                                topo::Vector{Int64})
-    return Point(point[1], point[2], point[3]) in get_hexagon(coor, topo)
+    return _in_element(point, coor, topo, Val(3), _KUHN_3D)
 end
 
 """
 	get_hexagon(coor::Union{Matrix{Float64},Matrix{Int64}}, topo::Vector{Int64})
 
-# Description
-This function gives the hexahedron model back to compute centroids of this surface and check if a point lies inside. The el_topology has to be transformed from PeriLab notation, to avoid overlapping.
-
-# Arguments
-- `coor::Union{Matrix{Float64},Matrix{Int64}}`: Coordinates.
-- `topo::Vector{Int64}`: el_topology of an element.
-# Returns
-- `Hexahedron`: eight point hexahedron.
-
+Corner coordinates (8 × 3) of a hexahedral element, used to compute its centroid.
 """
 function get_hexagon(coor::Matrix{T}, topo::Vector{Int64}) where {T<:Union{Int64,Float64}}
-    return Hexahedron(Point(coor[topo[1], 1], coor[topo[1], 2], coor[topo[1], 3]),
-                      Point(coor[topo[2], 1], coor[topo[2], 2], coor[topo[2], 3]),
-                      Point(coor[topo[4], 1], coor[topo[4], 2], coor[topo[4], 3]),
-                      Point(coor[topo[3], 1], coor[topo[3], 2], coor[topo[3], 3]),
-                      Point(coor[topo[5], 1], coor[topo[5], 2], coor[topo[5], 3]),
-                      Point(coor[topo[6], 1], coor[topo[6], 2], coor[topo[6], 3]),
-                      Point(coor[topo[8], 1], coor[topo[8], 2], coor[topo[8], 3]),
-                      Point(coor[topo[7], 1], coor[topo[7], 2], coor[topo[7], 3]))
+    return coor[topo[1:8], 1:3]
 end
 
 """
 	get_ring(coor::Union{Matrix{Float64},Matrix{Int64}}, topo::Vector{Int64})
 
-# Description
-This function gives the ring model back to compute centroids of this surface and check if a point lies inside. The el_topology has to be transformed from PeriLab notation, to avoid overlapping.
-
-# Arguments
-- `coor::Union{Matrix{Float64},Matrix{Int64}}`: Coordinates.
-- `topo::Vector{Int64}`: el_topology of an element.
-# Returns
-- `Ring`: four point closed surface.
-
+Corner coordinates (4 × 2) of a quadrilateral element, used to compute its centroid.
 """
 function get_ring(coor::Matrix{T}, topo::Vector{Int64}) where {T<:Union{Int64,Float64}}
-    return Ring(Point(coor[topo[1], 1], coor[topo[1], 2]),
-                Point(coor[topo[2], 1], coor[topo[2], 2]),
-                Point(coor[topo[4], 1], coor[topo[4], 2]),
-                Point(coor[topo[3], 1], coor[topo[3], 2]))
+    return coor[topo[1:4], 1:2]
 end
 
-function get_centroid(el, dof)
-    c = centroid(el)
-    if dof == 2
-        return ustrip(c.coords.x), ustrip(c.coords.y)
-    else
-        return ustrip(c.coords.x), ustrip(c.coords.y), ustrip(c.coords.z)
-    end
+# mean of the element corners
+function get_centroid(corners::AbstractMatrix, dof)
+    Tuple(sum(corners[:, k]) / size(corners, 1)
+          for k in 1:dof)
 end
 """
 	create_centroid_and_search_radius(coor::Union{Matrix{Float64},Matrix{Int64}},
@@ -411,8 +396,8 @@ function mat_mul!(C::AbstractMatrix{T}, A::AbstractMatrix{T},
 end
 
 function add_in_place!(C::AbstractMatrix{T},
-                       A::Vector{Vector{T}},
-                       B::Vector{Vector{T}},
+                       A::AbstractVector{<:AbstractVector{T}},
+                       B::AbstractVector{<:AbstractVector{T}},
                        factor = 1) where {T<:Union{Int64,Float64}}
     m = length(A)
     n = length(A[1])
@@ -447,29 +432,14 @@ function mul_in_place!(C::Vector{T}, A::Vector{T},
         C[i] = A[i] * B[i]
     end
 end
-function mul_in_place!(C::Vector{Vector{T}},
-                       A::Vector{Vector{T}},
-                       B::Vector{T}) where {T<:Union{Int64,Float64,Bool}}
+# one node of a vector state: C[i] = A[i] * B[i] with a scalar B[i] per bond
+function mul_in_place!(C::AbstractVector{SVector{D,T}}, A::AbstractVector{SVector{D,T}},
+                       B::AbstractVector{T}) where {D,T<:Union{Int64,Float64,Bool}}
     # Check if dimensions match
     @assert length(C) == length(A) == length(B)
 
     @inbounds for i in eachindex(A)
-        @inbounds for j in eachindex(A[i])
-            C[i][j] = A[i][j] * B[i]
-        end
-    end
-end
-function mul_in_place!(D::Vector{Vector{T}},
-                       A::Vector{Vector{T}},
-                       B::Vector{Vector{T}},
-                       C::T = 1.0) where {T<:Union{Int64,Float64,Bool}}
-    # Check if dimensions match
-    @assert length(D) == length(A) == length(B)
-
-    @inbounds for i in eachindex(A)
-        @inbounds for j in eachindex(A[i])
-            D[i][j] = A[i][j] * B[i][j] * C
-        end
+        C[i] = A[i] * B[i]
     end
 end
 function sub_in_place!(C::Vector{T}, A::Vector{T}, B::Vector{T}) where {T<:Number}
@@ -479,36 +449,39 @@ function sub_in_place!(C::Vector{T}, A::Vector{T}, B::Vector{T}) where {T<:Numbe
         C[i] = A[i] - B[i]
     end
 end
-function sub_in_place!(C::Vector{Vector{T}},
-                       A::Vector{Vector{T}},
-                       B::Vector{Vector{T}}) where {T<:Union{Int64,Float64,Bool}}
-    # Check if dimensions match
-    @assert length(C) == length(A) == length(B)
-
-    @inbounds for i in eachindex(A)
-        C[i] .= A[i] .- B[i]
-    end
+# CSR bond fields share their offsets, so whole-field operations work on the flat data.
+function sub_in_place!(C::BondField{E}, A::BondField{E}, B::BondField{E}) where {E}
+    flatview(C) .= flatview(A) .- flatview(B)
 end
-function sub_in_place!(C::Vector{Vector{Vector{T}}},
-                       A::Vector{Vector{Vector{T}}},
-                       B::Vector{Vector{Vector{T}}}) where {T<:Union{Int64,Float64,Bool}}
-    # Check if dimensions match
-    @assert length(C) == length(A) == length(B)
-
-    @inbounds for i in eachindex(A)
-        @inbounds for j in eachindex(A[i])
-            C[i][j] .= A[i][j] .- B[i][j]
+function add_in_place!(C::BondScalarState{T}, A::BondScalarState{T},
+                       B::BondScalarState{T}) where {T<:Union{Int64,Float64,Bool}}
+    flatview(C) .= flatview(A) .+ flatview(B)
+end
+# only the bonds of `nodes`
+function add_in_place!(C::BondScalarState{T}, A::BondScalarState{T}, B::BondScalarState{T},
+                       nodes::AbstractVector{Int64}) where {T<:Union{Int64,Float64,Bool}}
+    @batch minbatch=MINBATCH for iID in nodes
+        c = C[iID]
+        a = A[iID]
+        b = B[iID]
+        @inbounds for jID in eachindex(c)
+            c[jID] = a[jID] + b[jID]
         end
     end
 end
-function add_in_place!(C::Vector{Vector{T}},
-                       A::Vector{Vector{T}},
-                       B::Vector{Vector{T}}) where {T<:Union{Int64,Float64,Bool}}
-    # Check if dimensions match
-    @assert length(C) == length(A) == length(B)
-
+function div_in_place!(C::BondScalarState{T}, A::BondScalarState{T},
+                       B::BondScalarState{T}) where {T<:Union{Int64,Float64,Bool}}
+    flatview(C) .= flatview(A) ./ flatview(B)
+end
+function mul_in_place!(D::BondScalarState{T}, A::BondScalarState{T}, B::BondScalarState{T},
+                       C::T = 1.0) where {T<:Union{Int64,Float64,Bool}}
+    flatview(D) .= flatview(A) .* flatview(B) .* C
+end
+# B holds one value per node
+function mul_in_place!(C::BondScalarState{T}, A::BondScalarState{T},
+                       B::AbstractVector{T}) where {T<:Union{Int64,Float64,Bool}}
     @inbounds for i in eachindex(A)
-        C[i] .= A[i] .+ B[i]
+        C[i] .= A[i] .* B[i]
     end
 end
 function div_in_place!(C::Vector{T}, A::Vector{T}, B::T,
@@ -519,16 +492,6 @@ function div_in_place!(C::Vector{T}, A::Vector{T}, B::T,
         else
             C[i] = A[i] / B
         end
-    end
-end
-function div_in_place!(C::Vector{Vector{T}},
-                       A::Vector{Vector{T}},
-                       B::Vector{Vector{T}}) where {T<:Union{Int64,Float64,Bool}}
-    # Check if dimensions match
-    @assert length(C) == length(A) == length(B)
-
-    @inbounds for i in eachindex(A)
-        C[i] .= A[i] ./ B[i]
     end
 end
 function fastdot(a::Vector{Float64}, b::Vector{Float64}, absolute = false)
@@ -542,11 +505,6 @@ function fastdot(a::Vector{Float64}, b::Vector{Float64}, absolute = false)
         end
     end
     c
-end
-function abs!(a::Vector{T}) where {T<:Union{Int64,Float64}}
-    @inbounds for i in eachindex(a)
-        a[i] = abs(a[i])
-    end
 end
 function normalize_in_place!(B::Vector{T}, A::Vector{T}) where {T<:Number}
     nrm = norm(A)
@@ -603,7 +561,7 @@ Returns the indices of `vector` that are equal to `what`.
 - `indices::Vector`: The indices of `vector` that are equal to `what`.
 """
 function find_indices(vector::Vector{T}, what::T) where {T<:Union{Int64,Float64,Bool}}
-    return findall(item -> item == what, vector)
+    return findall(==(what), vector)
 end
 
 """
@@ -632,6 +590,21 @@ function get_active_update_nodes(active::AbstractVector{Bool},
     return view(index, 1:count)
 end
 
+"The D×D tensor of node `iID` of a node tensor field, as an `SMatrix` (no allocation)."
+@inline function node_tensor(A::AbstractArray{Float64,3}, iID::Int64, ::Val{D}) where {D}
+    return SMatrix{D,D,Float64,D * D}(ntuple(k -> @inbounds(A[iID, (k - 1) % D + 1,
+                                                              (k - 1) ÷ D + 1]),
+                                             Val(D * D)))
+end
+
+"Calls `f(Val(dof))`: a function barrier that makes the dof a compile-time constant."
+with_dof(f) = Data_Manager.get_dof() == 2 ? f(Val(2)) : f(Val(3))
+
+const COMPUTE_LABELS = Dict{String,String}()
+
+"Timer label `\"compute \$name\"`, built once instead of every step."
+compute_label(name::String) = get!(() -> "compute " * name, COMPUTE_LABELS, name)
+
 function find_active_nodes(active::AbstractVector{Bool},
                            active_nodes::AbstractVector{Int64},
                            nodes::AbstractVector{Int64},
@@ -647,23 +620,6 @@ function find_active_nodes(active::AbstractVector{Bool},
 end
 
 """
-	find_files_with_ending(folder_path::AbstractString, file_ending::AbstractString)
-
-Returns a list of files in `folder_path` that end with `file_ending`.
-
-# Arguments
-- `folder_path::AbstractString`: The path to the folder.
-- `file_ending::AbstractString`: The ending of the files.
-# Returns
-- `file_list::Vector{String}`: The list of files that end with `file_ending`.
-"""
-function find_files_with_ending(folder_path::AbstractString, file_ending::AbstractString)
-    file_list = filter(x -> isfile(joinpath(folder_path, x)) && endswith(x, file_ending),
-                       readdir(folder_path))
-    return file_list
-end
-
-"""
 	check_inf_or_nan(array, msg)
 
 Checks if the sum of an array is finite and has only numbers. If not, an error is raised.
@@ -676,9 +632,10 @@ Checks if the sum of an array is finite and has only numbers. If not, an error i
 """
 function check_inf_or_nan(array::AbstractArray{T},
                           msg::String) where {T<:Union{Int64,Float64}}
-    if isnan(sum(array))
+    total = sum(array)
+    if isnan(total)
         @abort "Field ''$msg'' has NaN elements."
-    elseif !isfinite(sum(array))
+    elseif !isfinite(total)
         @abort "Field ''$msg'' is infinite."
     end
 end
@@ -888,83 +845,20 @@ function find_inverse_bond_id(nlist::BondScalarState{Int64})
     return inverse_nlist
 end
 
-function get_dependent_value_with_ID(field_name::String,
-                                     parameter::Dict,
-                                     iID::Int64 = 1)
-    return get_dependent_value(field_name, parameter)(iID)
-end
-
-function is_dependent(field_name::String, damage_parameter::Dict)
-    if haskey(damage_parameter, field_name) && damage_parameter[field_name] isa Dict
-        if !Data_Manager.has_key(damage_parameter[field_name]["Field"] * "NP1")
-            @abort "$(damage_parameter[field_name]["Field"]) does not exist for value interpolation."
-            return
-        end
-        field = Data_Manager.get_field(damage_parameter[field_name]["Field"], "NP1")
-        return true, field
-    end
-    return false, nothing
-end
-
-function interpolation(x::Union{Vector{Float64},Vector{Int64}},
-                       y::Union{Vector{Float64},Vector{Int64}})
-    k = 3
-    if length(x) <= k
-        k = length(x) - 1
-    end
-    return Dict("spl" => Spline1D(x, y, k = k), "min" => minimum(x), "max" => maximum(x))
-end
-
-function interpol_data(x::Union{Vector{Float64},Vector{Int64},Float64,Int64},
-                       values::Dict{String,Any},
-                       warning_flag::Bool = true)
-    if warning_flag
-        if values["min"] > minimum(x)
-            @warn "Interpolation value is below interpolation range. Using minimum value of dataset."
-        end
-        if values["max"] < maximum(x)
-            @warn "Interpolation value is above interpolation range. Using maximum value of dataset."
-        end
-        warning_flag = false
-    end
-    return evaluate(values["spl"], x)
-end
-
-abstract type AbstractDependentValue end
-
-# Case 1: constant parameter (not field-dependent)
-struct ConstantValue <: AbstractDependentValue
-    value::Float64
-end
-(cv::ConstantValue)(iID::Int64) = cv.value
-
-# Case 2: field-dependent, interpolated per node
-struct InterpolatedValue{F,D} <: AbstractDependentValue
-    field::F                      # e.g. Data_Manager field (NP1)
-    data::D                       # parameter[field_name]["Data"]
-    warning_flag::Base.RefValue{Bool}
-end
-function (iv::InterpolatedValue)(iID::Int64)
-    val = interpol_data(iv.field[iID], iv.data, iv.warning_flag[])
-    iv.warning_flag[] = false      # only warn once, on first call
-    return val
-end
-
 """
-    get_dependent_value(field_name, parameter) -> AbstractDependentValue
+	find_inverse_bond_index!(inverse_bond_id, nlist, inverse_nlist)
 
-Call once per field before a loop. Returns a callable `f(iID)` that
-gives either the constant value or the interpolated field value.
+Bond-indexed form of `inverse_nlist`: `inverse_bond_id[iID][jID]` is the index of
+`iID` in the neighborhood of its `jID`-th neighbor, 0 if the neighbor has no bond
+back (different horizons). A bond loop reads it instead of two dictionary lookups.
 """
-function get_dependent_value(field_name::String, parameter::Dict)
-    dependent_value, dependent_field = is_dependent(field_name, parameter)
-    if dependent_value
-        return InterpolatedValue(dependent_field,
-                                 parameter[field_name]["Data"],
-                                 Ref(true))
-    else
-        return ConstantValue(parameter[field_name])
+function find_inverse_bond_index!(inverse_bond_id::BondScalarState{Int64},
+                                  nlist::BondScalarState{Int64},
+                                  inverse_nlist::Vector{Dict{Int64,Int64}})
+    for iID in eachindex(nlist), (jID, neighborID) in enumerate(nlist[iID])
+        inverse_bond_id[iID][jID] = get(inverse_nlist[neighborID], iID, 0)
     end
+    return inverse_bond_id
 end
 
 function invert(A::AbstractMatrix{Float64},
@@ -1119,6 +1013,26 @@ end
     end
 end
 
+# scratch matrix for one bond tensor of `field`
+tensor_buffer(::BondTensorState{T,D,L}) where {T,D,L} = zeros(MMatrix{D,D,T,L})
+
+# the bond tensors of one node, `rot` holds a rotation tensor per bond
+function rotate(bonds::AbstractVector{Int64},
+                tensors::AbstractVector{SMatrix{D,D,Float64,L}},
+                rot::AbstractVector{SMatrix{D,D,Float64,L}},
+                back::Bool) where {D,L}
+    buffer = zeros(MMatrix{D,D,Float64,L})
+    for jID in bonds
+        buffer .= tensors[jID]
+        if D == 2
+            rotate_second_order_tensor2x2(rot[jID], buffer, back)
+        else
+            rotate_second_order_tensor3x3(rot[jID], buffer, back)
+        end
+        tensors[jID] = SMatrix(buffer)
+    end
+end
+
 """
 	rotate(nodes::AbstractVector{Int64}, dof::Int64, matrix::AbstractArray{Float64,3}, angles::SubArray, back::Bool)
 
@@ -1164,21 +1078,13 @@ Rotates the second order tensor.
 function rotate_second_order_tensor2x2(R::AbstractMatrix{Float64},
                                        tensor::AbstractMatrix{Float64},
                                        back::Bool)
-    if back
-        rotation2x2!(R', tensor)
-    else
-        rotation2x2!(R, tensor)
-    end
+    rotation2x2!(back ? R' : R, tensor)
     return nothing
 end
 function rotate_second_order_tensor3x3(R::AbstractMatrix{Float64},
                                        tensor::AbstractMatrix{Float64},
                                        back::Bool)
-    if back
-        rotation3x3!(R', tensor)
-    else
-        rotation3x3!(R, tensor)
-    end
+    rotation3x3!(back ? R' : R, tensor)
     return nothing
 end
 function rotation3x3!(R::AbstractMatrix{Float64}, T::AbstractMatrix{Float64})

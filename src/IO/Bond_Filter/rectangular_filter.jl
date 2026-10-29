@@ -4,19 +4,18 @@
 
 module Rectangular_Plane_Filter
 using LinearAlgebra
+using StaticArrays: SVector
 using .....Data_Manager
-export run_bond_filter, bond_filter_name
+using .....PeriLabExceptions: @abort
+using .....InputDeck: BondFilterParams, register_bond_filter
+export run_bond_filter
 const TOLERANCE = 1.0e-14
-"""
-    get_bond_filter_name()
 
-Return the name of this bond filter.
-
-# Returns
-- `String`: The name of the bond filter.
-"""
-function bond_filter_name()
-    return "Rectangular_Plane"
+function __init__()
+    register_bond_filter("Rectangular_Plane", run_bond_filter;
+                         required = ["Lower Left Corner X", "Lower Left Corner Y",
+                             "Bottom Unit Vector X", "Bottom Unit Vector Y",
+                             "Bottom Length", "Side Length"])
 end
 
 """
@@ -33,10 +32,10 @@ Check if a line segment intersects an infinite plane.
 - `Bool`: True if the line segment intersects the plane, False otherwise.
 - `Vector{Float64}` or `undef`: The intersection point, or undef if no intersection.
 """
-function bond_intersect_infinite_plane(p0::Vector{Float64},
-                                       p1::Vector{Float64},
-                                       lower_left_corner::Vector{Float64},
-                                       normal::Vector{Float64})
+function bond_intersect_infinite_plane(p0::AbstractVector{Float64},
+                                       p1::AbstractVector{Float64},
+                                       lower_left_corner::AbstractVector{Float64},
+                                       normal::AbstractVector{Float64})
     denominator = dot((p1 - p0), normal)
     if abs(denominator) < TOLERANCE
         return false, undef
@@ -63,15 +62,13 @@ Check if a point (intersection with the infinite plane) lies within the rectangl
 # Returns
 - `Bool`: True if the point is inside the rectangle, False otherwise.
 """
-function bond_intersect_rectangle_plane(x::Union{Vector{Float64},Vector{Int64}},
-                                        lower_left_corner::Union{Vector{Float64},
-                                                                 Vector{Int64}},
-                                        bottom_unit_vector::Union{Vector{Float64},
-                                                                  Vector{Int64}},
-                                        normal::Union{Vector{Float64},Vector{Int64}},
+function bond_intersect_rectangle_plane(x::AbstractVector{<:Real},
+                                        lower_left_corner::AbstractVector{<:Real},
+                                        bottom_unit_vector::AbstractVector{<:Real},
+                                        normal::AbstractVector{<:Real},
                                         side_length::Real,
                                         bottom_length::Real)
-    dr::Vector{Float64} = x - lower_left_corner
+    dr = x - lower_left_corner
     bb::Float64 = dot(dr, bottom_unit_vector)
     if 0.0 <= bb && bb / bottom_length <= 1.0
         if length(normal) == 2
@@ -87,15 +84,15 @@ function bond_intersect_rectangle_plane(x::Union{Vector{Float64},Vector{Int64}},
 end
 
 """
-    run_bond_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::BondScalarState{Int64}, dof::Int64)
+    run_bond_filter(nnodes::Int64, data::Matrix{Float64}, filter::BondFilterParams, nlist::NestedNeighborhoodList, dof::Int64)
 
 Apply the rectangular plane filter to the neighborhood list.
 
 # Arguments
 - `nnodes::Int64`: The number of nodes.
 - `data::Matrix{Float64}`: The data.
-- `filter::Dict`: The filter.
-- `nlist::BondScalarState{Int64}`: The neighborhood list.
+- `filter::BondFilterParams`: The filter.
+- `nlist::NestedNeighborhoodList`: The neighborhood list.
 - `dof::Int64`: The degrees of freedom.
 # Returns
 - `filter_flag::Vector{Vector{Bool}}`: The filter flag.
@@ -103,46 +100,62 @@ Apply the rectangular plane filter to the neighborhood list.
 """
 function run_bond_filter(nnodes::Int64,
                          data::Matrix{Float64},
-                         filter::Dict,
-                         nlist::BondScalarState{Int64},
+                         filter::BondFilterParams,
+                         nlist::NestedNeighborhoodList,
                          dof::Int64)
-    normal = [filter["Normal X"], filter["Normal Y"]]
-    lower_left_corner = [filter["Lower Left Corner X"], filter["Lower Left Corner Y"]]
+    normal = [filter.normal_x, filter.normal_y]
+    lower_left_corner = [filter.lower_left_corner_x, filter.lower_left_corner_y]
     bottom_unit_vector = [
-        filter["Bottom Unit Vector X"],
-        filter["Bottom Unit Vector Y"]
+        filter.bottom_unit_vector_x,
+        filter.bottom_unit_vector_y
     ]
     if dof == 3
-        push!(normal, filter["Normal Z"])
-        push!(lower_left_corner, filter["Lower Left Corner Z"])
-        push!(bottom_unit_vector, filter["Bottom Unit Vector Z"])
+        z = (filter.normal_z => "Normal Z",
+             filter.lower_left_corner_z => "Lower Left Corner Z",
+             filter.bottom_unit_vector_z => "Bottom Unit Vector Z")
+        missing_keys = [key for (value, key) in z if value === nothing]
+        if !isempty(missing_keys)
+            @abort "Rectangular_Plane bond filter in 3D requires: $(join(missing_keys, ", "))"
+        end
+        push!(normal, filter.normal_z)
+        push!(lower_left_corner, filter.lower_left_corner_z)
+        push!(bottom_unit_vector, filter.bottom_unit_vector_z)
     end
     normal = normal ./ norm(normal)
     bottom_unit_vector = bottom_unit_vector ./ norm(bottom_unit_vector)
-    bottom_length = filter["Bottom Length"]
-    side_length = filter["Side Length"]
-    filter_flag::Vector{Vector{Bool}} = fill([], nnodes)
-    for iID in 1:nnodes
-        filter_flag[iID] = fill(true, length(nlist[iID]))
+    filter_flag = dof == 2 ?
+                  filter_flags(nnodes, data, nlist, Val(2), normal, lower_left_corner,
+                               bottom_unit_vector, filter.side_length,
+                               filter.bottom_length) :
+                  filter_flags(nnodes, data, nlist, Val(3), normal, lower_left_corner,
+                               bottom_unit_vector, filter.side_length, filter.bottom_length)
+    return filter_flag, normal
+end
+
+# function barrier on the dof: points and plane as SVector, no allocation per bond
+function filter_flags(nnodes::Int64, data::Matrix{Float64}, nlist::NestedNeighborhoodList,
+                      ::Val{D}, normal, lower_left_corner, bottom_unit_vector,
+                      side_length, bottom_length) where {D}
+    n = SVector{D,Float64}(normal)
+    corner = SVector{D,Float64}(lower_left_corner)
+    bottom = SVector{D,Float64}(bottom_unit_vector)
+    filter_flag = Vector{Vector{Bool}}(undef, nnodes)
+    Threads.@threads for iID in 1:nnodes
+        p0 = SVector{D,Float64}(ntuple(k -> data[k, iID], Val(D)))
+        flags = fill(true, length(nlist[iID]))
         for (jID, neighborID) in enumerate(nlist[iID])
-            intersect_inf_plane,
-            x = bond_intersect_infinite_plane(data[:, iID],
-                                              data[:, neighborID],
-                                              lower_left_corner,
-                                              normal)
+            p1 = SVector{D,Float64}(ntuple(k -> data[k, neighborID], Val(D)))
+            intersect_inf_plane, x = bond_intersect_infinite_plane(p0, p1, corner, n)
             bond_intersect = false
             if intersect_inf_plane
-                bond_intersect = bond_intersect_rectangle_plane(x,
-                                                                lower_left_corner,
-                                                                bottom_unit_vector,
-                                                                normal,
-                                                                side_length,
-                                                                bottom_length)
+                bond_intersect = bond_intersect_rectangle_plane(x, corner, bottom, n,
+                                                                side_length, bottom_length)
             end
-            filter_flag[iID][jID] = !(intersect_inf_plane && bond_intersect)
+            flags[jID] = !(intersect_inf_plane && bond_intersect)
         end
+        filter_flag[iID] = flags
     end
-    return filter_flag, normal
+    return filter_flag
 end
 
 end # module

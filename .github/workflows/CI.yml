@@ -11,6 +11,7 @@ on:
   push:
     paths:
       - "src/**"
+      - "app/**"
       - "test/**"
       - "Project.toml"
     branches:
@@ -52,7 +53,7 @@ jobs:
         uses: julia-actions/julia-runtest@v1
         env:
           LICENSE_SERVER_URL: ${{ secrets.LICENSE_SERVER_URL }}
-          PERIHUB_LICENSE_KEY: ${{ secrets.PERIHUB_LICENSE_KEY }}
+          LICENSE_KEY: ${{ secrets.LICENSE_KEY }}
           CONTENT_SIGNING_SECRET: ${{ secrets.CONTENT_SIGNING_SECRET }}
       - name: Archive Test Results
         if: failure()
@@ -65,8 +66,36 @@ jobs:
       - name: Process Coverage
         uses: julia-actions/julia-processcoverage@v1
       - name: Upload Coverage
-        uses: codecov/codecov-action@v7.0.0
+        uses: codecov/codecov-action@v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: PeriHub/PeriLab.jl
           files: lcov.info
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    if: success() && github.event_name != 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      # JuliaC peaks above the runner's 16 GB RAM; swap keeps it from being OOM-killed
+      - name: Add swap
+        run: |
+          sudo swapoff -a
+          sudo fallocate -l 24G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
+      - name: Build Docker image
+        run: |
+          # log memory/disk every 30 s so an OOM kill shows up in the log
+          (while true; do free -m | awk 'NR==2{m=$3"/"$2} NR==3{print "mem used MB:",m,"swap used MB:",$3}'; df -h / | tail -1; sleep 30; done) &
+          docker build -t perihub/perilab:nightly .
+      - name: Publish to Registry
+        run: docker push perihub/perilab:nightly

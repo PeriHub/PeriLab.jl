@@ -89,73 +89,61 @@ PeriLab:
       Calculation Type: "Maximum"
       Block: "sensor_4"
       Variable: "Displacements"
-      Compute Property: "x"
     sensor_4_uy:
       Compute Class: "Block_Data"
       Calculation Type: "Maximum"
       Block: "sensor_4"
       Variable: "Displacements"
-      Compute Property: "y"
     sensor_5_ux:
       Compute Class: "Block_Data"
       Calculation Type: "Maximum"
       Block: "sensor_5"
       Variable: "Displacements"
-      Compute Property: "x"
     sensor_5_uy:
       Compute Class: "Block_Data"
       Calculation Type: "Maximum"
       Block: "sensor_5"
       Variable: "Displacements"
-      Compute Property: "y"
     sensor_6_ux:
       Compute Class: "Block_Data"
       Calculation Type: "Maximum"
       Block: "sensor_6"
       Variable: "Displacements"
-      Compute Property: "x"
     sensor_6_uy:
       Compute Class: "Block_Data"
       Calculation Type: "Maximum"
       Block: "sensor_6"
       Variable: "Displacements"
-      Compute Property: "y"
     sensor_7_ux:
       Compute Class: "Block_Data"
       Calculation Type: "Maximum"
       Block: "sensor_7"
       Variable: "Displacements"
-      Compute Property: "x"
     sensor_7_uy:
       Compute Class: "Block_Data"
       Calculation Type: "Maximum"
       Block: "sensor_7"
       Variable: "Displacements"
-      Compute Property: "y"
     sensor_8_ux:
       Compute Class: "Block_Data"
       Calculation Type: "Maximum"
       Block: "sensor_8"
       Variable: "Displacements"
-      Compute Property: "x"
     sensor_8_uy:
       Compute Class: "Block_Data"
       Calculation Type: "Maximum"
       Block: "sensor_8"
       Variable: "Displacements"
-      Compute Property: "y"
     sensor_9_ux:
       Compute Class: "Block_Data"
       Calculation Type: "Maximum"
       Block: "sensor_9"
       Variable: "Displacements"
-      Compute Property: "x"
     sensor_9_uy:
       Compute Class: "Block_Data"
       Calculation Type: "Maximum"
       Block: "sensor_9"
       Variable: "Displacements"
-      Compute Property: "y"
   Outputs:
     Field_Exodus:
       Output File Type: "Exodus"

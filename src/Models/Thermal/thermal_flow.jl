@@ -8,70 +8,95 @@ using StaticArrays
 using TimerOutputs: @timeit
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
-using .....Helpers: rotate_second_order_tensor2x2, rotate_second_order_tensor3x3
+using .....Helpers: node_tensor
 export compute_model
-export thermal_model_name
 export init_model
 export fields_for_local_synchronization
-"""
-	thermal_model_name()
 
-Gives the model name. It is needed for comparison with the yaml input deck.
+using ......ParameterSpec: @params, register_thermal, ParseContext, add_error!, join_path
+import ......ParameterSpec: check!, conditional_required
 
-# Arguments
+@enum ThermalFlowType BondBased Correspondence
 
-# Returns
-- `name::String`: "Thermal Flow"
-"""
-function thermal_model_name()
-    return "Thermal Flow"
+# the print bed only enters the bond-based heat flow
+const _BOND_BASED = Dict("Type" => ["BondBased"])
+
+@params "Heat conduction between nodes" struct ThermalFlowParams
+    "Formulation of the heat flow: per bond, or from the temperature gradient as in correspondence materials"
+    type::ThermalFlowType = opt("Type"; default = BondBased)
+    "Temperature of a heated print bed below the part (3D); needs Thermal Conductivity Print Bed"
+    print_bed_temperature::Union{Nothing,Float64} = opt("Print Bed Temperature";
+                                                        default = nothing, when = _BOND_BASED)
+    "Thermal conductivity between the print bed and the nodes above it"
+    thermal_conductivity_print_bed::Union{Nothing,Float64} = opt("Thermal Conductivity Print Bed";
+                                                                 default = nothing,
+                                                                 min = 0, when = _BOND_BASED)
+    "Height of the print bed; must be below the lowest node"
+    print_bed_z_coordinate::Float64 = opt("Print Bed Z Coordinate"; default = 0.0,
+                                          when = _BOND_BASED)
+end
+
+function conditional_required(::Type{ThermalFlowParams})
+    return [Dict{String,Vector{Any}}("Print Bed Temperature" => Any[]) =>
+                ["Thermal Conductivity Print Bed"]]
+end
+
+function check!(p::ThermalFlowParams, path::String, ctx::ParseContext)
+    if p.print_bed_temperature !== nothing && p.thermal_conductivity_print_bed === nothing
+        add_error!(ctx, join_path(path, "Thermal Conductivity Print Bed"),
+                   "required when Print Bed Temperature is given")
+    end
+    return nothing
+end
+
+__init__() = register_thermal("Thermal Flow", ThermalFlowParams)
+
+# the print bed only exists in 3D
+function print_bed_active(p::ThermalFlowParams, dof::Int64)
+    p.print_bed_temperature !== nothing &&
+        dof == 3
 end
 
 """
-    init_model(nodes, thermal_parameter, block)
+    init_model(nodes, p, thermal, block)
 
 Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `thermal parameter::Dict(String, Any)`: Dictionary with thermal parameter.
+- `p::ThermalFlowParams`: The model parameters.
+- `thermal::WithBase`: The typed thermal model of the block (`thermal.base`: Thermal Conductivity).
 - `block::Int64`: The current block.
 
 """
-function init_model(nodes::AbstractVector{Int64},
-                    thermal_parameter::Dict)
+function init_model(nodes::AbstractVector{Int64}, p::ThermalFlowParams, thermal,
+                    block::Int64)
     dof = Data_Manager.get_dof()
-    if !haskey(thermal_parameter, "Type") || (thermal_parameter["Type"] != "Bond based" &&
-        thermal_parameter["Type"] != "Correspondence")
-        @warn "No model type has beed defined; ''Type'': ''Bond based'' or Type: ''Correspondence'; \n ''Bond based'' is set as default.'"
-        thermal_parameter["Type"] = "Bond based"
-    end
-
-    if haskey(thermal_parameter, "Print Bed Temperature")
+    if p.print_bed_temperature !== nothing
         if dof < 3
             @warn "Print bed temperature can only be defined for 3D problems. Its deactivated."
-            delete!(thermal_parameter, "Print Bed Temperature")
         else
             coordinates = Data_Manager.get_field("Coordinates")
-            print_bed_z_coord = get(thermal_parameter, "Print Bed Z Coordinate", 0.0)
+            print_bed_z_coord = p.print_bed_z_coordinate
             if print_bed_z_coord >= minimum(coordinates[:, 3])
                 @abort "The Print Bed Z Coordinate needs to be smaller than the minimum Z coordinate."
             end
         end
     end
-    if !haskey(thermal_parameter, "Thermal Conductivity")
+    if thermal.base.thermal_conductivity === nothing
         @abort "Thermal Conductivity not defined."
     end
 end
 
 """
-    compute_model(nodes, thermal_parameter, time, dt)
+    compute_model(nodes, p, thermal, block, time, dt)
 
 Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `thermal_parameter::Dict(String, Any)`: Dictionary with flow parameter.
+- `p::ThermalFlowParams`: The model parameters.
+- `thermal::WithBase`: The typed thermal model of the block (`thermal.base`: Thermal Conductivity).
 - `block::Int64`: Current block
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
@@ -79,43 +104,40 @@ Example:
 ```julia
 ```
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       thermal_parameter::Dict,
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
+function compute_model(nodes::AbstractVector{Int64}, p::ThermalFlowParams, thermal,
+                       block::Int64, time::Float64, dt::Float64)
     dof::Int64 = Data_Manager.get_dof()
     nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
     coordinates::NodeVectorField{Float64} = Data_Manager.get_field("Coordinates")
     bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
     heat_flow::NodeScalarField{Float64} = Data_Manager.get_field("Heat Flow", "NP1")
 
-    undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
+    undeformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Bond Geometry")
     undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
     volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
     temperature::NodeScalarField{Float64} = Data_Manager.get_field("Temperature", "NP1")
     active = Data_Manager.get_field("Active")
 
-    lambda::Float64 = thermal_parameter["Thermal Conductivity"]
+    lambda::Float64 = thermal.base.thermal_conductivity
     rotation::Bool = Data_Manager.get_element_rotation()
     rotation_tensor = nothing
     if rotation
-        rotation_tensor = Data_Manager.get_field("Rotation Tensor")
+        rotation_tensor = Data_Manager.get_field("Rotation Tensor")::Array{Float64,3}
     end
     apply_print_bed = false
 
     t_bed::Float64 = 0.0
     lambda_bed::Float64 = 0.0
 
-    if haskey(thermal_parameter, "Print Bed Temperature")
+    if print_bed_active(p, dof)
         apply_print_bed = true
-        t_bed = thermal_parameter["Print Bed Temperature"]
-        lambda_bed = thermal_parameter["Thermal Conductivity Print Bed"]
+        t_bed = p.print_bed_temperature
+        lambda_bed = p.thermal_conductivity_print_bed
     end
 
-    print_bed_z_coord = get(thermal_parameter, "Print Bed Z Coordinate", 0.0)
+    print_bed_z_coord = p.print_bed_z_coordinate
 
-    if thermal_parameter["Type"] == "Bond based"
+    if p.type == BondBased
         horizon = Data_Manager.get_field("Horizon")
         if length(lambda) > 1
             lambda = lambda[1]
@@ -139,7 +161,7 @@ function compute_model(nodes::AbstractVector{Int64},
                                                                 heat_flow)
         return
 
-    elseif thermal_parameter["Type"] == "Correspondence"
+    elseif p.type == Correspondence
         lambda_matrix = @MMatrix zeros(Float64, dof, dof)
         Kinv = Data_Manager.get_field("Inverse Shape Tensor")
         if length(lambda) == 1
@@ -173,36 +195,46 @@ function compute_heat_flow_state_correspondence!(nodes::AbstractVector{Int64},
                                                  dof::Int64,
                                                  nlist::BondScalarState{Int64},
                                                  lambda::Union{Matrix{Float64},MMatrix},
-                                                 rotation_tensor,
+                                                 rotation_tensor::Union{Nothing,
+                                                                        Array{Float64,3}},
                                                  bond_damage::BondScalarState{Float64},
-                                                 undeformed_bond::BondVectorState{Float64},
+                                                 undeformed_bond::BondVectorState{Float64,
+                                                                                  D},
                                                  Kinv::Array{Float64,3},
                                                  temperature::NodeScalarField{Float64},
                                                  volume::NodeScalarField{Float64},
-                                                 heat_flow::NodeScalarField{Float64})
-    nablaT = @MVector zeros(Float64, dof)
-    H = @MVector zeros(Float64, dof)
-    for iID in nodes
-        H .= 0
-        for (jID, neighborID) in enumerate(nlist[iID])
+                                                 heat_flow::NodeScalarField{Float64}) where {D}
+    conductivity = SMatrix{D,D,Float64,D * D}(lambda)
+    @inbounds for iID in nodes
+        neighbors = nlist[iID]
+        bonds = undeformed_bond[iID]
+        damage = bond_damage[iID]
+        H = zero(SVector{D,Float64})
+        for jID in eachindex(neighbors)
+            neighborID = neighbors[jID]
             temp_state = (temperature[neighborID] - temperature[iID]) *
                          volume[neighborID] *
-                         bond_damage[iID][jID]
-            H .+= temp_state .* undeformed_bond[iID][jID]
+                         damage[jID]
+            H += temp_state * bonds[jID]
         end
-        nablaT = Kinv[iID, :, :] * H
-
-        if isnothing(rotation_tensor)
-            q = lambda * nablaT
-        else
-            q = rotate_second_order_tensor(rotation_tensor[iID, :, :], lamba[:, :], false)
-        end
-        for (jID, neighborID) in enumerate(nlist[iID])
-            temp = Kinv[iID, :, :] * undeformed_bond[iID][jID]
-            heat_flow[iID] -= dot(temp, q) * volume[neighborID]
-            heat_flow[neighborID] += dot(temp, q) * volume[iID]
+        K = node_tensor(Kinv, iID, Val(D))
+        nablaT = K * H
+        q = rotated_conductivity(conductivity, rotation_tensor, iID) * nablaT
+        for jID in eachindex(neighbors)
+            neighborID = neighbors[jID]
+            flow = dot(K * bonds[jID], q)
+            heat_flow[iID] -= flow * volume[neighborID]
+            heat_flow[neighborID] += flow * volume[iID]
         end
     end
+end
+
+# the conductivity in the global frame: R Λ Rᵀ (as rotate_second_order_tensor2x2/3x3)
+rotated_conductivity(conductivity, ::Nothing, iID::Int64) = conductivity
+function rotated_conductivity(conductivity::SMatrix{D,D,Float64},
+                              rotation_tensor::Array{Float64,3}, iID::Int64) where {D}
+    R = node_tensor(rotation_tensor, iID, Val(D))
+    return R * conductivity * R'
 end
 
 """

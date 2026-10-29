@@ -151,7 +151,7 @@ Jumpstart your exploration of the PeriLab simulation core with provided examples
 PeriLab -e
 PeriLab examples/DCB/DCBmodel.yaml
 ```
->Note: More details about the main functionalities in the yaml input deck [here](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Support/Parameters/parameter_handling.jl).
+>Note: Every input key is listed in the [input reference](https://perihub.github.io/PeriLab.jl/dev/generated/input_sections/). In Julia, `PeriLab.describe("Solver")` prints the keys of a section or model, and `PeriLab.describe("Solver"; template = true)` a YAML block to start from.
 
 ### Parallel Processing with `PeriLab` (MPI)
 
@@ -166,8 +166,14 @@ julia> MPI.install_mpiexecjl()
 
 Run PeriLab with two processors:
 ```sh
-$ mpiexecjl -n 2 julia -e 'using PeriLab' examples/DCB/DCBmodel.yaml
+$ mpiexecjl -n 2 -bind-to core julia -e 'using PeriLab' examples/DCB/DCBmodel.yaml
 ```
+
+`-bind-to core` pins every rank to one core, so the operating system does not move ranks between cores or sockets. This keeps caches and memory local and can shorten runs with many ranks considerably. For ranks with several threads, reserve a core per thread, e.g. 4 ranks with 4 threads each:
+```sh
+$ mpiexecjl -n 4 -bind-to core:4 julia -t 4 -e 'using PeriLab' examples/DCB/DCBmodel.yaml
+```
+With OpenMPI the options are `--bind-to core` and `--map-by slot:PE=4`; with Slurm use `srun --cpu-bind=cores`.
 
 >Note: For HPC configurations please refer to [here](https://juliaparallel.org/MPI.jl/stable/configuration/#configure_jll_binarys).
 

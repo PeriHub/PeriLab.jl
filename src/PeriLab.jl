@@ -37,12 +37,13 @@ main("examples/Dogbone/Dogbone.yaml"; output_dir="", dry_run=false, verbose=fals
 
 module PeriLab
 include("./IO/exceptions.jl")
+include("./Support/Parameters/Spec/ParameterSpec.jl")
+include("./Support/Parameters/Input/InputDeck.jl")
 include("./Core/Data_manager.jl")
 include("./Support/Helpers.jl")
 include("./Support/Geometry.jl")
 include("./IO/logging.jl")
 include("./MPI_communication/MPI_communication.jl")
-include("./Support/Parameters/parameter_handling.jl")
 include("./Support/ModuleLoader.jl")
 include("./IO/IO.jl")
 include("./Core/Solver/Solver_manager.jl")
@@ -54,6 +55,7 @@ using ArgParse
 using Dates
 using LibGit2
 using StyledStrings
+import JSON3
 
 using .Data_Manager
 using .PeriLabExceptions: @abort, PeriLabError
@@ -61,9 +63,10 @@ import .Logging_Module
 import .IO
 using .ModuleLoader
 using .Solver_Manager
-using .Parameter_Handling: get_initial_time
+# generators (not exported; `describe` would clash with DataFrames.describe)
+using .InputDeck: to_json_schema, describe, generate_parameter_docs
 
-PERILAB_VERSION = "2.2.6"
+PERILAB_VERSION = "3.0.0"
 
 export main
 
@@ -164,6 +167,12 @@ function parse_commandline(ARGS)
         "--reload", "-r"
         help = "reload"
         action = :store_true
+        "--no_strict"
+        help = "report unknown input keys as warnings instead of errors"
+        action = :store_true
+        "--json_schema"
+        help = "print the JSON Schema of the input deck and exit"
+        action = :store_true
         "filenames"
         nargs = '*'
         help = "filenames"
@@ -171,6 +180,17 @@ function parse_commandline(ARGS)
     end
 
     return parse_args(ARGS, s)
+end
+
+"""
+	print_json_schema(io::Base.IO = stdout)
+
+Write the JSON Schema of the input deck (`to_json_schema(PeriLabInput)`) to `io`.
+Used by `PeriLab --json_schema` and the API's `GET /schema`.
+"""
+function print_json_schema(io::Base.IO = stdout)
+    JSON3.write(io, to_json_schema(InputDeck.PeriLabInput))
+    println(io)
 end
 
 """
@@ -182,31 +202,40 @@ This function serves as the entry point for the PeriLab application. It calls th
 """
 function (@main)(ARGS)
     parsed_args = parse_commandline(ARGS)
+    if parsed_args["json_schema"]
+        # the licensed models register their parameters when loaded; invokelatest
+        # because their types and methods are defined at runtime
+        Solver_Manager.Model_Factory.Additive.load_licensed_models()
+        Base.invokelatest(print_json_schema)
+        return 0
+    end
     MPI.Init()
     comm = MPI.COMM_WORLD
     rank = MPI.Comm_rank(comm)
     if rank == 0
         if parsed_args["examples"]
             get_examples()
-            return
+            return 0
         end
         if length(parsed_args["filenames"]) == 0
             @error "Please provide at least one filename, f.e. 'PeriLab example.yaml'"
-            return
+            return 1
         end
     end
     MPI.Barrier(comm)
+    exit_code = 0
     for filename in parsed_args["filenames"]
-        run(filename;
-            output_dir = parsed_args["output_dir"],
-            dry_run = parsed_args["dry_run"],
-            verbose = parsed_args["verbose"],
-            debug = parsed_args["debug"],
-            silent = parsed_args["silent"],
-            reload = parsed_args["reload"])
+        exit_code |= run(filename;
+                         output_dir = parsed_args["output_dir"],
+                         dry_run = parsed_args["dry_run"],
+                         verbose = parsed_args["verbose"],
+                         debug = parsed_args["debug"],
+                         silent = parsed_args["silent"],
+                         reload = parsed_args["reload"],
+                         no_strict = parsed_args["no_strict"])
     end
     # MPI.Finalize()
-    return
+    return exit_code
 end
 
 """
@@ -327,6 +356,7 @@ This function serves as the entry point for the PeriLab application. It calls th
 - `debug::Bool=false`: Whether to run in debug mode.
 - `silent::Bool=false`: Whether to run in silent mode.
 - `reload::Bool=false`: Whether to reload the input file.
+- `no_strict::Bool=false`: Report unknown input keys as warnings instead of errors.
 """
 function run(filename::String;
              output_dir::String = "",
@@ -334,9 +364,12 @@ function run(filename::String;
              verbose::Bool = false,
              debug::Bool = false,
              silent::Bool = false,
-             reload::Bool = false,)
+             reload::Bool = false,
+             no_strict::Bool = false)
     reset_timer!()
     t0 = time()
+    exit_code = 0
+    previous_logger = global_logger()
     @timeit "PeriLab" begin
         if !MPI.Initialized()
             MPI.Init()
@@ -394,10 +427,18 @@ function run(filename::String;
 
             Data_Manager.set_silent(silent)
             Data_Manager.set_verbose(verbose)
-            @timeit "IO.initialize_data" params,
+            # licensed models register their parameters before the input deck is read;
+            # only decks with additive models contact the license server. The deck is
+            # parsed once; a missing or non-yaml file is reported by read_input_deck
+            raw_deck = isfile(filename) && occursin("yaml", filename) ?
+                       IO.read_input(filename) : nothing
+            Solver_Manager.Model_Factory.Additive.load_licensed_models(raw_deck)
+            @timeit "IO.initialize_data" input,
                                          steps=IO.initialize_data(filename,
                                                                   filedirectory,
-                                                                  comm)
+                                                                  comm;
+                                                                  no_strict = no_strict,
+                                                                  raw_deck = raw_deck)
             Data_Manager.set_max_step(steps[end])
             for step_id in steps
                 # MPI.Barrier(comm)
@@ -410,22 +451,22 @@ function run(filename::String;
                 Data_Manager.set_cancel(false)
                 Data_Manager.set_step(step_id)
                 @info "Init Solver"
-                @timeit "IO.init orientations" IO.init_orientations(params)
+                @timeit "IO.init orientations" IO.init_orientations(input.sections.blocks)
                 @timeit "Solver_Manager.init" block_nodes,
                                               bcs,
-                                              solver_options=Solver_Manager.init(params,
-                                                                                 step_id)
-                if Data_Manager.get_current_time() >= solver_options["Final Time"]
+                                              solver_run=Solver_Manager.init(input,
+                                                                             step_id)
+                if Data_Manager.get_current_time() >= solver_run.time.final_time
                     @info "Step " * string(step_id) * " skipped."
                     continue
                 end
-                if Data_Manager.get_current_time() < solver_options["Initial Time"]
+                if Data_Manager.get_current_time() < solver_run.time.initial_time
                     @info "Initial time not reached. Skipping step " * string(step_id)
                     continue
                 end
 
-                IO.show_block_summary(solver_options,
-                                      params,
+                IO.show_block_summary(solver_run.models,
+                                      input.sections.blocks,
                                       Logging_Module.get_log_file(),
                                       silent,
                                       comm)
@@ -433,35 +474,40 @@ function run(filename::String;
                                     silent,
                                     comm)
                 @debug "Init write results"
-                reuse = solver_options["Initial Time"] != 0.0
+                reuse = solver_run.time.initial_time != 0.0
                 if step_id <= 1
                     @timeit "IO.init_write_results" result_files,
-                                                    outputs=IO.init_write_results(params,
+                                                    outputs=IO.init_write_results(input,
                                                                                   output_dir,
                                                                                   filedirectory,
                                                                                   PERILAB_VERSION,
                                                                                   qa_vector,
                                                                                   reuse)
                 end
-                IO.set_output_frequency(params,
-                                        solver_options["Number of Steps"],
+                IO.set_output_frequency(input,
+                                        solver_run.time.nsteps,
                                         step_id, reuse)
                 if verbose
                     fields = Data_Manager.get_all_field_keys()
                     @info "Found " * string(length(fields)) * " Fields"
                     @info sort(fields)
                 end
+                solver_context = Solver_Manager.SolverContext(block_nodes, bcs, outputs,
+                                                              result_files,
+                                                              IO.write_results,
+                                                              silent,
+                                                              (nsteps, dt,
+                                                               fallback_dt) -> IO.set_fallback_output_frequency(input,
+                                                                                                                nsteps,
+                                                                                                                step_id,
+                                                                                                                dt,
+                                                                                                                fallback_dt))
                 if dry_run
-                    nsteps = solver_options["Number of Steps"]
-                    solver_options["Number of Steps"] = 10
+                    nsteps = solver_run.time.nsteps
                     elapsed_time = @elapsed begin
-                        @timeit "Solver" result_files=Solver_Manager.solver(solver_options,
-                                                                            block_nodes,
-                                                                            bcs,
-                                                                            outputs,
-                                                                            result_files,
-                                                                            IO.write_results,
-                                                                            silent)
+                        @timeit "Solver" result_files=Solver_Manager.solver(Solver_Manager.with_steps(solver_run,
+                                                                                                      10),
+                                                                            solver_context)
                     end
 
                     @info "Estimated runtime: " *
@@ -473,13 +519,8 @@ function run(filename::String;
                           " [b]"
 
                 else
-                    @timeit "Solver_Manager.solver" result_files=Solver_Manager.solver(solver_options,
-                                                                                       block_nodes,
-                                                                                       bcs,
-                                                                                       outputs,
-                                                                                       result_files,
-                                                                                       IO.write_results,
-                                                                                       silent)
+                    @timeit "Solver_Manager.solver" result_files=Solver_Manager.solver(solver_run,
+                                                                                       solver_context)
                 end
                 if reload
                     @info "Writing checkpoint"
@@ -489,26 +530,33 @@ function run(filename::String;
             end
 
         catch e
+            exit_code = 1
+            # an @abort inside a Threads.@threads loop arrives wrapped
+            e isa CompositeException && (e = first(e.exceptions))
+            e isa TaskFailedException && (e = e.task.exception)
             if e isa InterruptException
                 @info "PeriLab was interrupted"
             elseif !isa(e, PeriLabError)
                 Logging_Module.print_exception(e)
                 rethrow(e)
             end
-            if size > 1
-                MPI.Abort(comm, 0)
+        finally
+            if !isnothing(result_files)
+                @debug "Close result files"
+                IO.close_result_files(result_files, outputs)
             end
-        end
-        if !isnothing(result_files)
-            @debug "Close result files"
-            IO.close_result_files(result_files, outputs)
-
-            if size > 1 && rank == 0
-                IO.merge_exodus_files(result_files, output_dir)
+            # ponytail: the other ranks may be stuck in a collective, so no merge after an error
+            if size > 1 && exit_code != 0
+                MPI.Abort(comm, exit_code)
             end
-            MPI.Barrier(comm)
-            if (size > 1 && !debug && !reload) || dry_run
-                IO.delete_files(result_files, output_dir)
+            if !isnothing(result_files)
+                if size > 1 && rank == 0
+                    IO.merge_exodus_files(result_files, output_dir)
+                end
+                MPI.Barrier(comm)
+                if (size > 1 && !debug && !reload) || dry_run
+                    IO.delete_files(result_files, output_dir)
+                end
             end
         end
     end
@@ -520,6 +568,8 @@ function run(filename::String;
     end
     @info Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
     @info "PeriLab finished in $(ceil(time() - t0))s"
+    global_logger(previous_logger)
+    return exit_code
 end
 
 end # module

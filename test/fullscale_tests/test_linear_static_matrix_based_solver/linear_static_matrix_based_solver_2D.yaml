@@ -64,7 +64,6 @@ PeriLab:
     Final Time: 5.0e-6
     Number of Steps: 10
     Linear Static Matrix Based:
-      Safety Factor: 1.0
   Outputs:
     Output1:
       Output File Type: Exodus

@@ -7,18 +7,25 @@ using Printf
 using SparseArrays
 using LinearAlgebra
 using TimerOutputs: @timeit
-using ProgressBars: set_multiline_postfix, set_postfix
 
 using ...Data_Manager
-using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar
-using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
-using ...Parameter_Handling: get_initial_time,
-                             get_fixed_dt,
-                             get_final_time,
-                             get_numerical_damping,
-                             get_safety_factor,
-                             get_max_damage,
-                             get_nsteps
+using ...Helpers: check_inf_or_nan, find_active_nodes
+using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof, BoundaryCondition
+using ...ParameterSpec: @params, register_solver
+using ...InputDeck: SolverParams, SolverOptions, start_time, end_time
+using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, synchronise_field,
+                       compute_parabolic_problems_before_model_evaluation,
+                       compute_parabolic_problems_after_model_evaluation
+
+@params "Implicit Newmark time integration with the stiffness matrix of correspondence materials" struct NewmarkParams <: SolverOptions
+    "Rebuilds the stiffness matrix in every step, e.g. for damage or large deformations; otherwise the initial matrix is reused"
+    matrix_update::Bool = opt("Matrix Update"; default = false)
+    "Newmark parameter weighting the accelerations in the velocity update (often called gamma); 0.5 adds no numerical damping"
+    newmark_delta::Float64 = opt("Newmark Delta"; default = 0.5)
+    "Newmark parameter weighting the accelerations in the displacement update (often called beta); 0.25 (0.5 + delta)^2 if not given"
+    newmark_alpha::Union{Nothing,Float64} = opt("Newmark Alpha"; default = nothing)
+end
+__init__() = register_solver("Newmark", NewmarkParams)
 using ..Model_Factory: compute_stiff_matrix_compatible_models,
                        compute_matrix_based_bond_forces
 
@@ -27,11 +34,8 @@ using ..Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
 using ..Model_Factory.Pre_Calculation.Bond_Deformation
 
 export init_solver
-export run_solver
+import ..Solver_Common: prepare_solver, time_step!
 
-function solver_name()
-    return "Newmark"
-end
 
 # ────────────────────────────────────────────────────────────
 # Cache
@@ -58,36 +62,34 @@ end
 # Init
 # ────────────────────────────────────────────────────────────
 """
-    init_solver(solver_options, params, bcs, block_nodes)
+    init_solver(options::NewmarkParams, params, models, bcs, block_nodes)
 
-Initialise Newmark-beta solver.
+Initialise Newmark-beta solver. Returns the `TimeWindow` and the state
+`(alpha = …, beta = …)`.
 
 Default: average acceleration (beta=0.5,alpha=0.25, unconditionally stable) taken from Bathe page 512.
 With numerical damping alpha: beta >= 0.5 ,alpha >= 0.25*(0.5+beta)^2
 """
-function init_solver(solver_options::Dict{Any,Any},
-                     params::Dict,
-                     bcs::Dict{Any,Any},
+function init_solver(options::NewmarkParams,
+                     params::SolverParams,
+                     models::Vector{String},
+                     bcs::Dict{String,BoundaryCondition},
                      block_nodes::Dict{Int64,Vector{Int64}})
     find_bc_free_dof(bcs)
 
     Data_Manager.create_constant_node_vector_field("Delta Displacements", Float64,
                                                    Data_Manager.get_dof())
 
-    solver_options["Initial Time"] = get_initial_time(params)
-    solver_options["Final Time"] = get_final_time(params)
-    solver_options["Number of Steps"] = get_nsteps(params)
-    solver_options["dt"] = (solver_options["Final Time"] - solver_options["Initial Time"]) /
-                           solver_options["Number of Steps"]
+    initial_time = start_time(params, Data_Manager.get_current_time())
+    final_time = end_time(params, Data_Manager.get_current_time())
+    nsteps = something(params.number_of_steps, 1)
+    dt = (final_time - initial_time) / nsteps
 
-    solver_options["Newmark Beta"] = get(params["Newmark"], "Newmark Delta", 0.5) # name is delta because of beta. Internally it is beta.
-    solver_options["Newmark Alpha"] = get(params["Newmark"], "Newmark Alpha",
-                                          0.25 * (0.5 + solver_options["Newmark Beta"])^2)
-    solver_options["Matrix Update"] = get(params["Newmark"], "Matrix Update", false)
+    beta = options.newmark_delta # name is delta because of beta. Internally it is beta.
+    alpha = something(options.newmark_alpha, 0.25 * (0.5 + beta)^2)
 
     for (block, nodes) in pairs(block_nodes)
-        model_param = Data_Manager.get_properties(block, "Material Model")
-        init_model(nodes, model_param, block)
+        init_model(nodes, Data_Manager.get_block_models(block).material, block)
     end
     @timeit "init matrix" init_matrix()
     density = Data_Manager.get_field("Density")
@@ -98,24 +100,86 @@ function init_solver(solver_options::Dict{Any,Any},
     coor = Data_Manager.get_field("Coordinates")
     Data_Manager.get_field("Deformed Coordinates", "N") .= coor
     Data_Manager.get_field("Deformed Coordinates", "NP1") .= coor
-
-    model_reduction = get(params["Newmark"], "Model Reduction", false)
-    if model_reduction
-        init_reduce_model(solver_options, block_nodes, density)
-        return
-    end
+    return TimeWindow(initial_time, final_time, dt, nsteps), (alpha = alpha, beta = beta)
 end
 
 # ────────────────────────────────────────────────────────────
 # Run
 # ────────────────────────────────────────────────────────────
 """
-    run_solver(solver_options, block_nodes, bcs, outputs, result_files,
-               synchronise_field, write_results,
-               compute_parabolic_problems_before_model_evaluation,
-               compute_parabolic_problems_after_model_evaluation, silent)
+    NewmarkWorkspace
 
-Run the Newmark-beta implicit time integration for structural dynamics.
+Newmark coefficients, mass and stiffness matrix, external loads and the solver
+cache; `K` is replaced when the matrix is updated, `active_nodes` after each step.
+"""
+mutable struct NewmarkWorkspace{TM}
+    volume::Vector{Float64}
+    coor::Matrix{Float64}
+    external_forces::Matrix{Float64}
+    external_force_densities::Matrix{Float64}
+    a0::Float64
+    a2::Float64
+    a3::Float64
+    a6::Float64
+    a7::Float64
+    matrix_update::Bool
+    nnodes::Int64
+    dof::Int64
+    nodes::Vector{Int64}
+    M::TM
+    K::AbstractMatrix{Float64}
+    non_BCs::Vector{Int64}
+    active_nodes::AbstractVector{Int64}
+    cache::NewmarkCache
+end
+
+"""
+    prepare_solver(run::SolverRun{NewmarkParams}, ctx::SolverContext)
+
+Computes the Newmark coefficients and fetches matrices and fields.
+"""
+function prepare_solver(run::SolverRun{NewmarkParams}, ctx::SolverContext)
+    dt = run.time.dt
+    nsteps = run.time.nsteps
+    beta::Float64 = run.state.beta
+    alpha::Float64 = run.state.alpha
+    matrix_update = run.params.options.matrix_update
+    nnodes = Data_Manager.get_nnodes()
+    dof = Data_Manager.get_dof()
+    nodes = collect(1:nnodes)
+    # following Bathe in notation page 512 in his FEM book. using Beta instead of delta, because delta is already the horizon
+    # Newmark coefficients
+    a0 = 1.0 / (alpha * dt^2)
+    #a1 = beta / (alpha * dt) -> not needed, because no damping matrix
+    a2 = 1.0 / (alpha * dt)
+    a3 = 1.0 / (2.0 * alpha) - 1.0
+    #a4 = beta / (alpha) - 1.0 -> not needed, because no damping matrix
+    #a5 = dt / 2.0 * (beta / alpha - 2.0)-> not needed, because no damping matrix
+    a6 = dt * (1.0 - beta)
+    a7 = beta * dt
+
+    @info "Newmark: alpha=$alpha, gamma=$beta, dt=$dt, nsteps=$nsteps, matrix update: $matrix_update"
+
+    active_nodes = Data_Manager.get_field("Active Nodes")
+    active_list = Data_Manager.get_field("Active")
+    active_nodes = find_active_nodes(active_list, active_nodes, nodes)
+
+    return NewmarkWorkspace(Data_Manager.get_field("Volume"),
+                            Data_Manager.get_field("Coordinates"),
+                            Data_Manager.get_field("External Forces"),
+                            Data_Manager.get_field("External Force Densities"),
+                            a0, a2, a3, a6, a7, matrix_update, nnodes, dof, nodes,
+                            Data_Manager.get_mass_matrix(),
+                            Data_Manager.get_stiffness_matrix(),
+                            convert(Vector{Int64}, Data_Manager.get_bc_free_dof()),
+                            active_nodes,
+                            NewmarkCache(nnodes * dof))
+end
+
+"""
+    time_step!(ws::NewmarkWorkspace, run::SolverRun{NewmarkParams}, ctx::SolverContext, clock::StepClock)
+
+One step of the Newmark-beta implicit time integration for structural dynamics.
 
 # Method
 
@@ -145,7 +209,7 @@ followed by the acceleration and velocity updates
 
 ``v_{n+1} = v_n + \\Delta t\\,(1-\\gamma)\\, a_n + \\gamma\\,\\Delta t\\, a_{n+1}``
 
-# Parameters (set in `solver_options`)
+# Parameters (`run.params.options` and `run.state`)
 
 | Parameter        | Default                | Description                          |
 |:-----------------|:-----------------------|:-------------------------------------|
@@ -163,162 +227,93 @@ stable, second-order accurate, and energy-conserving.
 Lumped diagonal mass: ``M_i = \\rho_i\\, V_i``.
 
 # Arguments
-- `solver_options::Dict{Any,Any}`:  solver configuration (dt, nsteps, beta,gamma, …)
-- `block_nodes::Dict{Int64,Vector{Int64}}`:  block → node mapping
-- `bcs::Dict{Any,Any}`:  boundary conditions (Dirichlet / Neumann)
-- `outputs::Dict{Int64,Dict{}}`:  output configuration per block
-- `result_files::Vector{Dict}`:  file handles for result output
-- `synchronise_field::Function`:  MPI field synchronisation callback
-- `write_results::Function`:  result writer callback
-- `compute_parabolic_problems_before_model_evaluation::Function`:  thermal pre-step
-- `compute_parabolic_problems_after_model_evaluation::Function`:  thermal post-step
-- `silent::Bool`:  suppress progress bar
-
-# Returns
-- `result_files::Vector{Dict}`:  updated result file handles
+- `ws::NewmarkWorkspace`:  coefficients, matrices and cache from `prepare_solver`
+- `run::SolverRun{NewmarkParams}`:  the solver step (time discretization, models, alpha and beta in `run.state`)
+- `ctx::SolverContext`:  block nodes and boundary conditions
+- `clock::StepClock`:  time and increment of the step
 
 # References
 - Newmark, N. M. (1959). "A method of computation for structural dynamics."
   *J. Eng. Mech. Div.*, 85(3), 67–94.
 - Hughes, T. J. R. (2000). *The Finite Element Method*, §9.1–9.3.
 """
+function time_step!(ws::NewmarkWorkspace, run::SolverRun{NewmarkParams}, ctx::SolverContext,
+                    clock::StepClock)
+    block_nodes = ctx.block_nodes
+    bcs = ctx.bcs
+    time = clock.time
+    step_time = clock.step_time
+    dt = clock.dt
+    volume = ws.volume
+    coor = ws.coor
+    external_forces = ws.external_forces
+    external_force_densities = ws.external_force_densities
+    a0, a2, a3, a6, a7 = ws.a0, ws.a2, ws.a3, ws.a6, ws.a7
+    matrix_update = ws.matrix_update
+    nnodes = ws.nnodes
+    dof = ws.dof
+    nodes = ws.nodes
+    M = ws.M
+    K = ws.K
+    non_BCs = ws.non_BCs
+    active_nodes = ws.active_nodes
+    cache = ws.cache
+    uN = Data_Manager.get_field("Displacements", "N")
+    uNP1 = Data_Manager.get_field("Displacements", "NP1")
+    velN = Data_Manager.get_field("Velocity", "N")
+    velNP1 = Data_Manager.get_field("Velocity", "NP1")
+    aN = Data_Manager.get_field("Acceleration", "N")
+    aNP1 = Data_Manager.get_field("Acceleration", "NP1")
+    deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
+    forces = Data_Manager.get_field("Forces", "NP1")
+    force_densities_NP1 = Data_Manager.get_field("Force Densities", "NP1")
 
-function run_solver(solver_options::Dict{Any,Any},
-                    block_nodes::Dict{Int64,Vector{Int64}},
-                    bcs::Dict{Any,Any},
-                    outputs::Dict{Int64,Dict{}},
-                    result_files::Vector{Dict},
-                    synchronise_field::Function,
-                    write_results::Function,
-                    compute_parabolic_problems_before_model_evaluation::Function,
-                    compute_parabolic_problems_after_model_evaluation::Function,
-                    silent::Bool)
-    atexit(() -> Data_Manager.set_cancel(true))
-    @info "Run Newmark-beta Solver"
+    deformed_coorNP1 .= coor
 
-    volume = Data_Manager.get_field("Volume")
-    coor = Data_Manager.get_field("Coordinates")
-    external_forces = Data_Manager.get_field("External Forces")
-    external_force_densities = Data_Manager.get_field("External Force Densities")
+    compute_parabolic_problems_before_model_evaluation(active_nodes, run)
+    apply_bc_dirichlet([
+                           "Displacements",
+                           "Forces",
+                           "Force Densities",
+                           "Temperature"
+                       ],
+                       bcs, time, step_time)
+    @. external_force_densities += external_forces / volume
+    @. deformed_coorNP1 = coor + uN
+    compute_matrix_based_bond_forces(block_nodes, time, dt) #-> für schädigung davor
+    @timeit "compute_models" compute_stiff_matrix_compatible_models(block_nodes,
+                                                                    dt, time,
+                                                                    run.models,
+                                                                    synchronise_field)
+    # Stiffness
+    if matrix_update
+        @timeit "update stiffness" begin
+            compute_matrix(collect(1:nnodes))
+            K = Data_Manager.get_stiffness_matrix()
+            cache.K_eff_lu = nothing
+        end
+    end
 
-    dt::Float64 = solver_options["dt"]
-    nsteps::Int64 = solver_options["Number of Steps"]
-    beta::Float64 = solver_options["Newmark Beta"]
-    alpha::Float64 = solver_options["Newmark Alpha"]
-    matrix_update = solver_options["Matrix Update"]
-    time::Float64 = solver_options["Initial Time"]
-    final_time::Float64 = solver_options["Final Time"]
-    step_time = 0.0
+    # Solve
+    @timeit "newmark_solve" @views newmark_step!(-K, M, non_BCs,
+                                                 uN, uNP1, velN, velNP1, aN, aNP1,
+                                                 force_densities_NP1,
+                                                 external_force_densities, cache,
+                                                 a0, a2, a3, a6, a7, nnodes, dof)
 
-    rank = Data_Manager.get_rank()
-    nnodes = Data_Manager.get_nnodes()
-    dof = Data_Manager.get_dof()
-    nodes = collect(1:nnodes)
-    # following Bathe in notation page 512 in his FEM book. using Beta instead of delta, because delta is already the horizon
-    # Newmark coefficients
-    a0 = 1.0 / (alpha * dt^2)
-    #a1 = beta / (alpha * dt) -> not needed, because no damping matrix
-    a2 = 1.0 / (alpha * dt)
-    a3 = 1.0 / (2.0 * alpha) - 1.0
-    #a4 = beta / (alpha) - 1.0 -> not needed, because no damping matrix
-    #a5 = dt / 2.0 * (beta / alpha - 2.0)-> not needed, because no damping matrix
-    a6 = dt * (1.0 - beta)
-    a7 = beta * dt
-
-    @info "Newmark: alpha=$alpha, gamma=$beta, dt=$dt, nsteps=$nsteps, matrix update: $matrix_update"
-
-    M = Data_Manager.get_mass_matrix()
+    # Post
+    deformed_coorNP1 .= coor .+ uNP1
+    @inbounds for iID in nodes, d in 1:dof
+        forces[iID, d] = force_densities_NP1[iID, d] * volume[iID]
+    end
 
     active_nodes = Data_Manager.get_field("Active Nodes")
     active_list = Data_Manager.get_field("Active")
     active_nodes = find_active_nodes(active_list, active_nodes, nodes)
-
-    K = Data_Manager.get_stiffness_matrix()
-    non_BCs = Data_Manager.get_bc_free_dof()
-
-    cache = NewmarkCache(nnodes * dof)
-    iter = progress_bar(rank, nsteps, silent)
-
-    for idt in iter
-        Data_Manager.set_iteration(idt)
-        @timeit "Newmark step" begin
-            uN = Data_Manager.get_field("Displacements", "N")
-            uNP1 = Data_Manager.get_field("Displacements", "NP1")
-            velN = Data_Manager.get_field("Velocity", "N")
-            velNP1 = Data_Manager.get_field("Velocity", "NP1")
-            aN = Data_Manager.get_field("Acceleration", "N")
-            aNP1 = Data_Manager.get_field("Acceleration", "NP1")
-            deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
-            forces = Data_Manager.get_field("Forces", "NP1")
-            force_densities_NP1 = Data_Manager.get_field("Force Densities", "NP1")
-
-            deformed_coorNP1 .= coor
-
-            compute_parabolic_problems_before_model_evaluation(active_nodes, solver_options)
-            apply_bc_dirichlet([
-                                   "Displacements",
-                                   "Forces",
-                                   "Force Densities",
-                                   "Temperature"
-                               ],
-                               bcs, time, step_time)
-            @. external_force_densities += external_forces / volume
-            @. deformed_coorNP1 = coor + uN
-            compute_matrix_based_bond_forces(block_nodes, time, dt) #-> für schädigung davor
-            @timeit "compute_models" compute_stiff_matrix_compatible_models(block_nodes,
-                                                                            dt, time,
-                                                                            solver_options["Models"],
-                                                                            synchronise_field)
-            # Stiffness
-            if matrix_update
-                @timeit "update stiffness" begin
-                    compute_matrix(collect(1:nnodes))
-                    K = Data_Manager.get_stiffness_matrix()
-                    cache.K_eff_lu = nothing
-                end
-            end
-
-            # Solve
-            @timeit "newmark_solve" @views newmark_step!(-K, M, non_BCs,
-                                                         uN, uNP1, velN, velNP1, aN, aNP1,
-                                                         force_densities_NP1,
-                                                         external_force_densities, cache,
-                                                         a0, a2, a3, a6, a7, nnodes, dof)
-
-            # Post
-            deformed_coorNP1 .= coor .+ uNP1
-            @inbounds for iID in nodes, d in 1:dof
-                forces[iID, d] = force_densities_NP1[iID, d] * volume[iID]
-            end
-
-            active_nodes = Data_Manager.get_field("Active Nodes")
-            active_list = Data_Manager.get_field("Active")
-            active_nodes = find_active_nodes(active_list, active_nodes, nodes)
-            compute_parabolic_problems_after_model_evaluation(active_nodes, solver_options,
-                                                              dt)
-
-            @timeit "write_results" result_files=write_results(result_files, time, 0.0,
-                                                               outputs)
-
-            if rank == 0 && !silent && Data_Manager.get_cancel()
-                set_multiline_postfix(iter, "Simulation canceled!")
-                break
-            end
-
-            @timeit "switch_NP1_to_N" Data_Manager.switch_NP1_to_N()
-
-            time += dt
-            step_time += dt
-            Data_Manager.set_current_time(time)
-
-            if idt % max(1, ceil(Int, nsteps / 100)) == 0
-                @info "Step: $idt / $nsteps [$(@sprintf("%.3e", time)) s]"
-            end
-            rank == 0 && !silent && set_postfix(iter, t = @sprintf("%.3e", time))
-        end
-    end
-    Data_Manager.set_current_time(final_time)
-    return result_files
+    compute_parabolic_problems_after_model_evaluation(active_nodes, run, dt)
+    ws.K = K
+    ws.active_nodes = active_nodes
+    return nothing
 end
 
 # ────────────────────────────────────────────────────────────

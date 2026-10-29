@@ -182,8 +182,8 @@ end
 
 Set all dof without displacment boundary conditions.
 
-# Returns
--
+# Arguments
+- `values::Vector{Int64}`: The dof without boundary condition.
 
 """
 function set_bc_free_dof(values::Vector{Int64})
@@ -232,7 +232,6 @@ set_num_controller(10)  # sets the number of nodes to 10
 function set_num_controller(n::Int64)
     data["num_controller"] = n
     set_nnodes()
-    return nothing
 end
 
 function set_analysis_model(what::String, block_id::Int64, model::AbstractString)

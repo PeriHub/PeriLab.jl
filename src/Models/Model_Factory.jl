@@ -9,7 +9,9 @@ using ...Data_Manager
 using ...PeriLabExceptions: @abort
 using ...Helpers:
                   check_inf_or_nan, find_active_nodes, invert,
-                  determinant, matrix_style, eigvals, get_update_nodes
+                  determinant, matrix_style, eigvals, get_update_nodes,
+                  compute_label
+using ...InputDeck: PeriLabInput, ContactInput, CalculationOptions, block_by_id
 include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("./Surface_correction/Surface_correction.jl")
 include("./Contact/Contact_Factory.jl")
@@ -18,7 +20,6 @@ include("./Degradation/Degradation_Factory.jl")
 include("./Damage/Damage_Factory.jl")
 include("./Material/Material_Factory.jl")
 include("./Thermal/Thermal_Factory.jl")
-using ...Parameter_Handling: get_model_parameter, get_heat_capacity
 using .Additive
 using .Degradation
 using .Damage
@@ -33,47 +34,80 @@ export compute_models
 export init_models
 export read_properties
 
+const _BLOCK_MODEL_FIELDS = Dict("Material Model" => :material, "Damage Model" => :damage,
+                                 "Thermal Model" => :thermal, "Additive Model" => :additive,
+                                 "Degradation Model" => :degradation)
+
+# the typed model of category `name` of a block, or `nothing`
+function typed_block_model(block::Int64, name::String)
+    models = Data_Manager.get_block_models(block)
+    if name == "Pre Calculation Model"
+        return isempty(models.pre_calculation) ? nothing : models.pre_calculation
+    end
+    return getfield(models, _BLOCK_MODEL_FIELDS[name])
+end
+has_block_model(block::Int64, name::String) = typed_block_model(block, name) !== nothing
+block_model_parameters(block::Int64, name::String) = typed_block_model(block, name)
+# local damping of a block's damage model, or `nothing`
+function block_local_damping(block::Int64)
+    return base_local_damping(Data_Manager.get_block_models(block).damage)
+end
+# function barrier: reading `base` of an untyped damage would copy it
+base_local_damping(::Nothing) = nothing
+base_local_damping(damage) = damage.base.local_damping
+# Thermal Conductivity of a block's thermal model, or `nothing`
+function block_thermal_conductivity(block::Int64)
+    thermal = Data_Manager.get_block_models(block).thermal
+    return thermal === nothing ? nothing : thermal.base.thermal_conductivity
+end
+# symmetry for the local damping; a block without material (e.g. a damage-only run) is 3D
+function local_damping_symmetry(block::Int64)
+    material = Data_Manager.get_block_models(block).material
+    return material === nothing ? "3D" : material.symmetry
+end
+
 """
-	init_models(params::Dict, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
+	init_models(input::PeriLabInput, block_nodes::Dict{Int64,Vector{Int64}}, models::Vector{String}, all_models::Vector{String}, calculation::CalculationOptions, synchronise_field)
 
 Initialize models
 
 # Arguments
-- `params::Dict`: Parameters.
+- `input::PeriLabInput`: The typed input deck.
 - `block_nodes::Dict{Int64,Vector{Int64}}`: block nodes.
-- `solver_options::Dict`: Solver options.
+- `models::Vector{String}`: Model categories of the step.
+- `all_models::Vector{String}`: Model categories of all steps.
+- `calculation::CalculationOptions`: Which stress and strain fields to create.
 """
-function init_models(params::Dict,
+function init_models(input::PeriLabInput,
                      block_nodes::Dict{Int64,Vector{Int64}},
-                     solver_options::Dict,
+                     models::Vector{String},
+                     all_models::Vector{String},
+                     calculation::CalculationOptions,
                      synchronise_field)
-    if "Pre_Calculation" in solver_options["Models"]
+    if "Pre_Calculation" in models
         @info "Check pre calculation models are initialized for material models"
         Pre_Calculation.check_dependencies(block_nodes)
-        if haskey(params["Models"], "Material Models")
-            for mat in keys(params["Models"]["Material Models"])
-                if haskey(params["Models"]["Material Models"][mat], "Accuracy Order")
-                    Data_Manager.set_accuracy_order(params["Models"]["Material Models"][mat]["Accuracy Order"])
-                end
-            end
+        for material in values(input.materials)
+            material.base.accuracy_order === nothing ||
+                Data_Manager.set_accuracy_order(material.base.accuracy_order)
         end
     end
-    for model_name in solver_options["Models"]
+    for model_name in models
         add_model(model_name)
     end
-    for model_name in solver_options["All Models"]
+    for model_name in all_models
         add_model(model_name, true)
     end
 
-    if "Additive" in solver_options["Models"] || "Thermal" in solver_options["Models"]
+    if "Additive" in models || "Thermal" in models
         heat_capacity = Data_Manager.create_constant_node_scalar_field("Specific Heat Capacity",
                                                                        Float64)
-        heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
+        heat_capacity = set_heat_capacity(input, block_nodes, heat_capacity) # includes the neighbors
     end
 
     if Data_Manager.get_step() <= 1
         for (active_model_name,
-             active_model) in pairs(Data_Manager.get_active_models(true))
+            active_model) in pairs(Data_Manager.get_active_models(true))
             @debug "Init $active_model_name fields"
             @timeit "$active_model_name model fields" active_model.init_fields()
         end
@@ -83,19 +117,16 @@ function init_models(params::Dict,
 
         model_used = false
         for block in eachindex(block_nodes)
-            if Data_Manager.check_property(block, active_model_name)
+            if has_block_model(block, active_model_name)
                 @timeit "init $active_model_name models" active_model.init_model(block_nodes[block],
                                                                                  block)
                 @timeit "init fields_for_local_synchronization $active_model_name models" active_model.fields_for_local_synchronization(active_model_name,
                                                                                                                                         block)
                 if active_model_name == "Damage Model" &&
-                   haskey(Data_Manager.get_properties(block, active_model_name),
-                          "Local Damping")
+                   block_local_damping(block) !== nothing
                     Material.init_local_damping(block_nodes[block],
-                                                Data_Manager.get_properties(block,
-                                                                            "Material Model"),
-                                                Data_Manager.get_properties(block,
-                                                                            "Damage Model"))
+                                                local_damping_symmetry(block),
+                                                block_local_damping(block))
                 end
                 model_used = true
                 # put it in Data_Manager
@@ -106,35 +137,42 @@ function init_models(params::Dict,
         end
     end
 
-    init_surface_correction(params, local_synch,
+    init_surface_correction(input.sections.surface_correction, local_synch,
                             synchronise_field)
 
-    if solver_options["Calculation"]["Calculate Cauchy"] |
-       solver_options["Calculation"]["Calculate von Mises stress"]
+    if calculation.cauchy |
+       calculation.von_mises
         Data_Manager.create_node_tensor_field("Cauchy Stress",
                                               Float64, Data_Manager.get_dof())
     end
-    if solver_options["Calculation"]["Calculate Strain"]
+    if calculation.strain
         Data_Manager.create_node_tensor_field("Strain", Float64, Data_Manager.get_dof())
     end
-    if solver_options["Calculation"]["Calculate von Mises stress"]
+    if calculation.von_mises
         Data_Manager.create_node_scalar_field("von Mises Stress", Float64)
     end
 
-    check_contact(params)
+    check_contact(input.contact)
     @info "Finalize Init Models"
 end
 
-function check_contact(params::Dict)
-    if haskey(params, "Contact")
-        return Contact.init_contact_model(params["Contact"])
-    end
+check_contact(::Nothing) = nothing
+check_contact(contact::ContactInput) = Contact.init_contact_model(contact)
+check_contact(::Nothing, time::Float64, dt::Float64) = nothing
+function check_contact(contact::ContactInput, time::Float64, dt::Float64)
+    Contact.compute_contact_model(contact,
+                                  time,
+                                  dt)
 end
-function check_contact(params::Dict, time::Float64, dt::Float64)
-    if length(params) != 0
-        return Contact.compute_contact_model(params, time,
-                                             dt)
+
+# The update pass recomputes the nodes the damage model flags only if the damage model runs
+# before the pre calculations (the model order depends on the solver steps).
+function damage_before_pre_calculation()
+    for name in keys(Data_Manager.get_active_models())
+        name == "Damage Model" && return true
+        name == "Pre Calculation Model" && return false
     end
+    return false
 end
 
 """
@@ -156,13 +194,14 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
                         synchronise_field)
     fem_option = Data_Manager.fem_active()
     if fem_option
-        fe_nodes = Data_Manager.get_field("FE Nodes")
+        fe_nodes = Data_Manager.get_field("FE Nodes")::Vector{Bool}
     end
 
-    active_list = Data_Manager.get_field("Active")
+    active_list = Data_Manager.get_field("Active")::Vector{Bool}
     # TODO check if pre calculation should run block wise. For mixed model applications it makes sense.
     # TODO add for pre calculation a whole model option, to get the neighbors as well, e.g. for bond associated
     # TODO check for loop order?
+    Pre_Calculation.ONLY_FLAGGED_BONDS_CHANGED[] = damage_before_pre_calculation()
     for (active_model_name, active_model) in pairs(Data_Manager.get_active_models())
         #synchronise_field(Data_Manager.local_synch_fiels(active_model_name))
         if active_model_name == "Damage Model"
@@ -177,7 +216,7 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
 
         for (block, nodes) in pairs(block_nodes)
             # "delete" the view of active nodes
-            active_nodes = Data_Manager.get_field("Active Nodes")
+            active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
 
             active_nodes = find_active_nodes(active_list,
                                              active_nodes,
@@ -186,7 +225,7 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
 
             if fem_option # TODO might lead to problems in 3D
                 # find all non-FEM nodes in active nodes
-                #active_nodes = Data_Manager.get_field("Active Nodes")
+                #active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
                 active_nodes = find_active_nodes(fe_nodes,
                                                  active_nodes,
                                                  nodes,
@@ -195,20 +234,21 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
                     continue
                 end
             end
-            if Data_Manager.check_property(block, active_model_name)
+            if has_block_model(block, active_model_name)
                 # synch
-                @timeit "compute $active_model_name" active_model.compute_model(active_nodes,
-                                                                                Data_Manager.get_properties(block,
-                                                                                                            active_model_name),
-                                                                                block,
-                                                                                time,
-                                                                                dt)
+                @timeit compute_label(active_model_name) active_model.compute_model(active_nodes,
+                                                                                    block_model_parameters(block,
+                                                                                                           active_model_name),
+                                                                                    block,
+                                                                                    time,
+                                                                                    dt)
             end
         end
     end
+    Pre_Calculation.ONLY_FLAGGED_BONDS_CHANGED[] = false
 
     # Why not update_list.=false? -> avoid neighbors in MPI
-    update_list = Data_Manager.get_field("Update")
+    update_list = Data_Manager.get_field("Update")::Vector{Bool}
     for (block, nodes) in pairs(block_nodes)
         update_list[nodes] .= false
     end
@@ -223,12 +263,12 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
                     "download_from_cores",
                     synchronise_field)
         for (block, nodes) in pairs(block_nodes)
-            active_nodes = Data_Manager.get_field("Active Nodes")
-            update_nodes = Data_Manager.get_field("Update Nodes")
+            active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
+            update_nodes = Data_Manager.get_field("Update Nodes")::Vector{Int64}
             active_nodes = find_active_nodes(active_list, active_nodes, nodes)
             if fem_option
                 # FEM active means FEM nodes
-                #active_nodes = Data_Manager.get_field("Active Nodes")
+                #active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
                 active_nodes = find_active_nodes(fe_nodes,
                                                  active_nodes,
                                                  nodes,
@@ -243,17 +283,18 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
                                             update_nodes,
                                             active_nodes,
                                             active_model_name)
+            isempty(update_nodes) && continue
 
             # active or all, or does it not matter?
 
-            if Data_Manager.check_property(block, active_model_name)
+            if has_block_model(block, active_model_name)
                 # TODO synch
-                @timeit "compute $active_model_name" active_model.compute_model(update_nodes,
-                                                                                Data_Manager.get_properties(block,
-                                                                                                            active_model_name),
-                                                                                block,
-                                                                                time,
-                                                                                dt)
+                @timeit compute_label(active_model_name) active_model.compute_model(update_nodes,
+                                                                                    block_model_parameters(block,
+                                                                                                           active_model_name),
+                                                                                    block,
+                                                                                    time,
+                                                                                    dt)
             end
         end
     end
@@ -264,10 +305,9 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
             nelements = Data_Manager.get_num_elements()
 
             @timeit "eval" FEM.eval_FEM(Vector{Int64}(1:nelements),
-                                        Data_Manager.get_properties(1, "FEM"),
                                         time,
                                         dt)
-            active_nodes = Data_Manager.get_field("Active Nodes")
+            active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
 
             FEM.force_densities(find_active_nodes(fe_nodes, active_nodes,
                                                   1:Data_Manager.get_nnodes(), true))
@@ -277,26 +317,24 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
     if "Material" in options
         if "Damage" in options
             for (block, nodes) in pairs(block_nodes)
-                if haskey(Data_Manager.get_properties(block, "Damage Model"),
-                          "Local Damping")
-                    active_nodes = Data_Manager.get_field("Active Nodes")
-                    if fem_option
-                        active_nodes = find_active_nodes(active_list,
-                                                         active_nodes,
-                                                         find_active_nodes(fe_nodes,
-                                                                           active_nodes,
-                                                                           nodes))
-                    else
-                        find_active_nodes(active_list, active_nodes, nodes)
-                    end
-                    @timeit "local_damping_due_to_damage" Material.compute_local_damping(active_nodes,
-                                                                                         Data_Manager.get_properties(block,
-                                                                                                                     "Damage Model")["Local Damping"],
-                                                                                         dt)
+                local_damping = block_local_damping(block)
+                local_damping === nothing && continue
+                active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
+                if fem_option
+                    active_nodes = find_active_nodes(active_list,
+                                                     active_nodes,
+                                                     find_active_nodes(fe_nodes,
+                                                                       active_nodes,
+                                                                       nodes))
+                else
+                    find_active_nodes(active_list, active_nodes, nodes)
                 end
+                @timeit "local_damping_due_to_damage" Material.compute_local_damping(active_nodes,
+                                                                                     local_damping,
+                                                                                     dt)
             end
         end
-        active_nodes = Data_Manager.get_field("Active Nodes")
+        active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
         active_nodes = find_active_nodes(active_list, active_nodes,
                                          1:Data_Manager.get_nnodes())
 
@@ -308,15 +346,14 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
     end
 
     if fem_option
-        @timeit "coupling" FEM.Coupling.compute_coupling(Data_Manager.get_properties(1,
-                                                                                     "FEM"))
+        @timeit "coupling" FEM.Coupling.compute_coupling(Data_Manager.get_fem_params())
     end
     check_contact(Data_Manager.get_contact_properties(), time, dt)
     #=
     Used for shape tensor or other fixed calculations, to avoid an update if its not needed.
     The damage update is done in the second loop.
     =#
-    update_list = Data_Manager.get_field("Update")
+    update_list = Data_Manager.get_field("Update")::Vector{Bool}
     for (block, nodes) in pairs(block_nodes)
         update_list[nodes] .= false
     end
@@ -339,8 +376,8 @@ function compute_stiff_matrix_compatible_models(block_nodes::Dict{Int64,Vector{I
                                                 time::Float64,
                                                 options::Vector{String},
                                                 synchronise_field)
-    active_list = Data_Manager.get_field("Active")
-    update_list = Data_Manager.get_field("Update")
+    active_list = Data_Manager.get_field("Active")::Vector{Bool}
+    update_list = Data_Manager.get_field("Update")::Vector{Bool}
     for (block, nodes) in pairs(block_nodes)
         update_list[nodes] .= false
     end
@@ -360,27 +397,27 @@ function compute_stiff_matrix_compatible_models(block_nodes::Dict{Int64,Vector{I
 
         for (block, nodes) in pairs(block_nodes)
             # "delete" the view of active nodes
-            active_nodes = Data_Manager.get_field("Active Nodes")
+            active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
 
             active_nodes = find_active_nodes(active_list,
                                              active_nodes,
                                              nodes,
                                              active_model_name != "Additive Model")
 
-            if Data_Manager.check_property(block, active_model_name)
+            if has_block_model(block, active_model_name)
                 # synch
-                @timeit "compute $active_model_name" active_model.compute_model(active_nodes,
-                                                                                Data_Manager.get_properties(block,
-                                                                                                            active_model_name),
-                                                                                block,
-                                                                                time,
-                                                                                dt)
+                @timeit compute_label(active_model_name) active_model.compute_model(active_nodes,
+                                                                                    block_model_parameters(block,
+                                                                                                           active_model_name),
+                                                                                    block,
+                                                                                    time,
+                                                                                    dt)
             end
         end
     end
 
     if ("Material" in options) && ("Thermal" in options)
-        active_nodes = Data_Manager.get_field("Active Nodes")
+        active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
         active_nodes = find_active_nodes(active_list, active_nodes,
                                          1:Data_Manager.get_nnodes())
         @timeit "distribute_force_densities" Material.distribute_force_densities(active_nodes)
@@ -390,28 +427,28 @@ end
 function compute_matrix_based_bond_forces(block_nodes::Dict{Int64,Vector{Int64}},
                                           time::Float64,
                                           dt::Float64)
-    active_list = Data_Manager.get_field("Active")
+    active_list = Data_Manager.get_field("Active")::Vector{Bool}
 
     # deformation
     for (block, nodes) in pairs(block_nodes)
         # "delete" the view of active nodes
-        active_nodes = Data_Manager.get_field("Active Nodes")
+        active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
 
         active_nodes = find_active_nodes(active_list,
                                          active_nodes,
                                          nodes,
                                          true)
-        material_parameter = Data_Manager.get_properties(block, "Material Model")
+        material = Data_Manager.get_block_models(block).material
 
-        if occursin("Correspondence", material_parameter["Material Model"])
+        if material.correspondence
             Pre_Calculation.compute_model(active_nodes,
-                                          Data_Manager.get_properties(block,
-                                                                      "Pre Calculation Model"),
+                                          block_model_parameters(block,
+                                                                 "Pre Calculation Model"),
                                           block,
                                           time,
                                           dt)
             @timeit "compute bond forces" Material.compute_correspondence_bond_forces(active_nodes,
-                                                                                      material_parameter,
+                                                                                      material,
                                                                                       block,
                                                                                       time,
                                                                                       dt)
@@ -420,104 +457,91 @@ function compute_matrix_based_bond_forces(block_nodes::Dict{Int64,Vector{Int64}}
 end
 
 """
-	get_block_model_definition(params::Dict, block_id_list::Int64, prop_keys::Vector{String}, properties)
+    block_typed_model(input, block_name, field, category, models)
 
-Get block model definition.
-
-Special case for pre calculation. It is set to all blocks, if no block definition is defined, but pre calculation is.
-
-# Arguments
-- `params::Dict`: Parameters.
-- `block_id_list::Vector{Int64}`: List of block id's.
-- `prop_keys::Vector{String}`: Property keys.
-- `properties`: Properties function.
-# Returns
-- `properties`: Properties function.
+The parsed model a block names in `field` (e.g. `:damage_model`), or `nothing`.
+Aborts if the name or the category's models section is missing.
 """
-function get_block_model_definition(params::Dict,
-                                    block_name_list::Vector{String},
-                                    block_id_list::Vector{Int64},
-                                    prop_keys::Vector{String},
-                                    properties,
-                                    directory::String = "",
-                                    material_model::Bool = true)
-    # properties function from Data_Manager
-
-    if haskey(params["Models"], "Pre Calculation Global")
-        for block_id in block_id_list
-            properties(block_id,
-                       "Pre Calculation Model",
-                       params["Models"]["Pre Calculation Global"])
-        end
+function block_typed_model(input::PeriLabInput, block_name::String, field::Symbol,
+                           category::String, models::AbstractDict)
+    block_params = get(input.sections.blocks, block_name, nothing)
+    name = block_params === nothing ? nothing : getfield(block_params, field)
+    name === nothing && return nothing
+    if isempty(models)
+        @abort "$category is defined in blocks, but no $(category)s definition block exists"
     end
-
-    for (block_id, block_name) in zip(block_id_list, block_name_list)
-        if !haskey(params["Blocks"], block_name)
-            continue
-        end
-        block = params["Blocks"][block_name]
-        for model in prop_keys
-            if model == "Material Model" && !material_model
-                continue
-            end
-            if haskey(block, model)
-                properties(block_id,
-                           model,
-                           get_model_parameter(params, model, block[model], directory))
-            end
-        end
+    if !haskey(models, name)
+        @abort "$category model with name $name is defined in blocks, but missing in the $(category)s definition."
     end
-    return properties
+    return models[name]
 end
 
 """
-	read_properties(params::Dict, material_model::Bool)
+	read_properties(input::PeriLabInput, material_model::Bool)
 
-Read properties of material.
+Stores the typed models every block names (material, damage, additive, degradation,
+thermal, pre-calculation) in `Data_Manager`; aborts on undefined model names.
 
 # Arguments
-- `params::Dict`: Parameters.
+- `input::PeriLabInput`: The typed input deck.
 - `material_model::Bool`: Material model.
 """
-function read_properties(params::Dict, material_model::Bool)
-    Data_Manager.init_properties()
-    block_name_list = Data_Manager.get_block_name_list()
-    block_id_list = Data_Manager.get_block_id_list()
-    prop_keys = Data_Manager.init_properties()
-    directory = Data_Manager.get_directory()
-    get_block_model_definition(params,
-                               block_name_list,
-                               block_id_list,
-                               prop_keys,
-                               Data_Manager.set_properties,
-                               directory,
-                               material_model)
-    if material_model
-        dof = Data_Manager.get_dof()
-        for block in block_id_list
-            Material.check_material_symmetry(block)
-            Material.determine_isotropic_parameter(Data_Manager.get_properties(block,
-                                                                               "Material Model"))
+function read_properties(input::PeriLabInput, material_model::Bool)
+    dof = Data_Manager.get_dof()
+    for (block_name, block) in zip(Data_Manager.get_block_name_list(),
+                                   Data_Manager.get_block_id_list())
+        material = nothing
+        if material_model
+            wb = block_typed_model(input, block_name, :material_model, "Material Model",
+                                   input.materials)
+            if wb !== nothing
+                material = Material.block_material(wb, dof)
+                Material.check_material_symmetry(material, dof)
+            end
         end
+        damage = block_typed_model(input, block_name, :damage_model, "Damage Model",
+                                   input.damages)
+        switches = block_typed_model(input, block_name, :pre_calculation_model,
+                                     "Pre Calculation Model", input.pre_calculations)
+        switches === nothing && (switches = input.pre_calculation_global)
+        models = BlockModels(material = material,
+                             damage = damage === nothing ? nothing :
+                                      Damage.block_damage(damage),
+                             thermal = block_typed_model(input, block_name, :thermal_model,
+                                                         "Thermal Model", input.thermals),
+                             additive = block_typed_model(input, block_name,
+                                                          :additive_model, "Additive Model",
+                                                          input.additives),
+                             degradation = block_typed_model(input, block_name,
+                                                             :degradation_model,
+                                                             "Degradation Model",
+                                                             input.degradations),
+                             pre_calculation = switches === nothing ? String[] :
+                                               Pre_Calculation.active_pre_calculations(switches))
+        Data_Manager.set_block_models(block, models)
     end
 end
 
 """
-	set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::NodeScalarField{Float64})
+	set_heat_capacity(input::PeriLabInput, block_nodes::Dict, heat_capacity::NodeScalarField{Float64})
 
 Sets the heat capacity of the nodes in the dictionary.
 
 # Arguments
-- `params::Dict`: The parameters
+- `input::PeriLabInput`: The typed input deck (`Specific Heat Capacity` of the blocks)
 - `block_nodes::Dict`: The block nodes
 - `heat_capacity::NodeScalarField{Float64}`: The heat capacity array
 # Returns
 - `heat_capacity::SubArray`: The heat capacity array
 """
-function set_heat_capacity(params::Dict, block_nodes::Dict,
+function set_heat_capacity(input::PeriLabInput, block_nodes::Dict,
                            heat_capacity::NodeScalarField{Float64})
     for block in eachindex(block_nodes)
-        heat_capacity[block_nodes[block]] .= get_heat_capacity(params, block)
+        name, params = block_by_id(input.sections.blocks, block)
+        if params.specific_heat_capacity === nothing
+            @abort "Specific Heat Capacity of $name is not defined"
+        end
+        heat_capacity[block_nodes[block]] .= params.specific_heat_capacity
     end
     return heat_capacity
 end
@@ -706,8 +730,7 @@ function compute_crititical_time_step(block_nodes::Dict{Int64,Vector{Int64}},
     critical_time_step::Float64 = 1.0e50
     for iblock in eachindex(block_nodes)
         if thermal
-            lambda = Data_Manager.get_property(iblock, "Thermal Model",
-                                               "Thermal Conductivity")
+            lambda = block_thermal_conductivity(iblock)
             # if Cv and lambda are not defined it is valid, because an analysis can take place, if material is still analysed
             if isnothing(lambda)
                 if !mechanical
@@ -721,42 +744,14 @@ function compute_crititical_time_step(block_nodes::Dict{Int64,Vector{Int64}},
             end
         end
         if mechanical
-            bulk_modulus = Data_Manager.get_property(iblock, "Material Model",
-                                                     "Bulk Modulus")
-            nu_xy = Data_Manager.get_property(iblock, "Material Model",
-                                              "Poisson's Ratio XY")
-            nu_yz = Data_Manager.get_property(iblock, "Material Model",
-                                              "Poisson's Ratio YZ")
-            nu_xz = Data_Manager.get_property(iblock, "Material Model",
-                                              "Poisson's Ratio XZ")
-            E_x = Data_Manager.get_property(iblock, "Material Model", "Young's Modulus X")
-            E_y = Data_Manager.get_property(iblock, "Material Model", "Young's Modulus Y")
-            E_z = Data_Manager.get_property(iblock, "Material Model", "Young's Modulus Z")
-            g_xy = Data_Manager.get_property(iblock, "Material Model", "Shear Modulus XY")
-            g_yz = Data_Manager.get_property(iblock, "Material Model", "Shear Modulus YZ")
-            c_44 = Data_Manager.get_property(iblock, "Material Model", "C44")
-            c_55 = Data_Manager.get_property(iblock, "Material Model", "C55")
-            c_66 = Data_Manager.get_property(iblock, "Material Model", "C66")
-            if !isnothing(bulk_modulus)
-                bulk_modulus = bulk_modulus
-            elseif !isnothing(nu_xy) && !isnothing(nu_yz) && !isnothing(nu_xz)
-                s11 = 1 / E_x
-                s22 = 1 / E_y
-                s33 = 1 / E_z
-                s12 = -nu_xy / E_x
-                s23 = -nu_yz / E_z
-                s13 = -nu_xz / E_z
-                bulk_modulus = 1 / (s11 + s22 + s33 + 2 * (s12 + s23 + s13))
-            elseif !isnothing(c_44) && !isnothing(c_55) && !isnothing(c_66)
-                bulk_modulus = maximum([c_44 / 2, c_55 / 2, c_66 / 2])
-                #TODO: temporary solution!!!
-            elseif !isnothing(g_xy)
-                bulk_modulus = g_xy / 2
-                #TODO: temporary solution!!!
-            else
+            material = Data_Manager.get_block_models(iblock).material
+            bulk_modulus = material === nothing ? nothing :
+                           Material.critical_bulk_modulus(material)
+            if isnothing(bulk_modulus)
                 @abort "No time step for material is determined because of missing properties."
                 return nothing
             end
+
             t = compute_mechanical_critical_time_step(block_nodes[iblock],
                                                       bulk_modulus)
             critical_time_step = test_timestep(t, critical_time_step)

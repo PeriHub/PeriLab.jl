@@ -29,11 +29,11 @@
     strainN = PeriLab.Data_Manager.create_bond_tensor_state("Strain", Float64, 2)
     strain_inc = PeriLab.Data_Manager.create_constant_bond_tensor_state("Strain Increment",
                                                                         Float64, 2)
-    deformation_gradient[1][1, :, :] = [1 0; 0 1]
-    deformation_gradient[2][1, :, :] = [0 1; 0 1]
+    deformation_gradient[1][1] = [1 0; 0 1]
+    deformation_gradient[2][1] = [0 1; 0 1]
 
-    strainN[1][1, :, :] = [-1 -1; -1 -1]
-    strainN[2][1, :, :] = [0.5 0; 0 0.5]
+    strainN[1][1] = [-1 -1; -1 -1]
+    strainN[2][1] = [0.5 0; 0 0.5]
     PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.compute_bond_strain(nodes,
                                                                                                                     nlist,
                                                                                                                     deformation_gradient,
@@ -41,10 +41,10 @@
                                                                                                                     strainN,
                                                                                                                     strain_inc)
 
-    @test strain[1][1, :, :] == [0 0; 0 0]
-    @test strain[2][1, :, :] == [-0.5 0; 0 0.5]
-    @test strain_inc[1][1, :, :] == [1 1; 1 1]
-    @test strain_inc[2][1, :, :] == [-1.0 0.0; 0.0 0.0]
+    @test strain[1][1] == [0 0; 0 0]
+    @test strain[2][1] == [-0.5 0; 0 0.5]
+    @test strain_inc[1][1] == [1 1; 1 1]
+    @test strain_inc[2][1] == [-1.0 0.0; 0.0 0.0]
 end
 
 @testset "ut_update_Green_Langrange_strain" begin
@@ -91,21 +91,18 @@ end
     PeriLab.Data_Manager.create_constant_bond_scalar_state("Influence Function", Float64)
     PeriLab.Data_Manager.create_bond_scalar_state("Bond Damage", Float64)
 
-    @test_logs (:error,
-                "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.init_model(nodes,
-                                                                                                               Dict())
-    end
-
-    material_parameter = Dict{String,Any}("Symmetry" => "isotropic")
-    PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.init_model(nodes,
-                                                                                                           material_parameter)
+    BA = PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence
+    m = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
+                                  "Symmetry" => "isotropic", "Bulk Modulus" => 1.0,
+                                  "Shear Modulus" => 1.0))
+    BA.init_model(nodes, m)
 
     @test PeriLab.Data_Manager.get_accuracy_order() == 1
 
-    material_parameter = Dict("Symmetry" => "isotropic", "Accuracy Order" => 2)
-    PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.init_model(nodes,
-                                                                                                           material_parameter)
+    m = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
+                                  "Symmetry" => "isotropic", "Bulk Modulus" => 1.0,
+                                  "Shear Modulus" => 1.0, "Accuracy Order" => 2))
+    BA.init_model(nodes, m)
 
     @test PeriLab.Data_Manager.get_accuracy_order() == 2
 end
@@ -152,14 +149,14 @@ end
     deformation_gradient = PeriLab.Data_Manager.create_constant_bond_tensor_state("Bond Deformation Gradient",
                                                                                   Float64,
                                                                                   dof)
-    deformation_gradient[1][1, :, :] = [1 0; 0 1]
-    deformation_gradient[2][1, :, :] = [1 0; 0 1]
+    deformation_gradient[1][1] = [1 0; 0 1]
+    deformation_gradient[2][1] = [1 0; 0 1]
 
     bond_stresses = PeriLab.Data_Manager.create_constant_bond_tensor_state("Bond Cauchy Stress",
                                                                            Float64,
                                                                            dof)
-    bond_stresses[1][1, :, :] = [1.0 0.0; 0.0 1.0]
-    bond_stresses[2][1, :, :] = [1.0 0.0; 0.0 1.0]
+    bond_stresses[1][1] = [1.0 0.0; 0.0 1.0]
+    bond_stresses[2][1] = [1.0 0.0; 0.0 1.0]
 
     stress_integral = PeriLab.Data_Manager.create_constant_node_tensor_field("Stress Integral",
                                                                              Float64, dof)

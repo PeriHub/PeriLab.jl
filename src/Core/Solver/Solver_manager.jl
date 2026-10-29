@@ -6,39 +6,28 @@ module Solver_Manager
 using TimerOutputs: @timeit
 using ..Data_Manager
 using ..PeriLabExceptions: @abort
-using ..Parameter_Handling:
-                            get_density,
-                            get_horizon,
-                            get_solver_name,
-                            get_model_options,
-                            get_fem_block,
-                            get_calculation_options,
-                            get_angles,
-                            get_block_names_and_ids,
-                            get_solver_params
+using ..InputDeck: PeriLabInput, SolverParams, CalculationOptions, calculation_options,
+                   solver_name, model_options, solver_step,
+                   BlockParams, block_by_id, block_angles, block_names_and_ids
 using ..Helpers
-using ..ModuleLoader: find_module_files, create_module_specifics
+using ..ModuleLoader: find_registered_modules
 include("../../Models/Material/Material_Basis.jl")
 include("../../FEM/FEM_Factory.jl")
 include("../../Models/Material/Material_Models/Zero_Energy_Control/Zero_Energy_Control.jl")
 include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
 include("../../Models/Model_Factory.jl")
 include("../BC_manager.jl")
+include("Solver_Common.jl")
+using .Solver_Common
 
-global module_list = find_module_files(@__DIR__, "solver_name")
-for mod in module_list
-    include(mod["File"])
+for file in find_registered_modules(@__DIR__, "register_solver")
+    include(file)
 end
-
-using ..MPI_Communication: synch_responder_to_controller,
-                           synch_controller_to_responder,
-                           synch_controller_bonds_to_responder,
-                           synch_controller_bonds_to_responder_flattened
 
 include("../Influence_function.jl")
 
 using .Model_Factory: init_models, read_properties
-using .Boundary_Conditions: init_BCs
+using .Boundary_Conditions: init_BCs, BoundaryCondition
 using .Verlet_Solver
 using .Linear_static_matrix_based
 using .Newmark
@@ -48,31 +37,32 @@ using .Influence_Function
 
 export init
 export solver
+export TimeWindow, SolverRun, SolverContext, with_steps, create_run, StepClock, StepFailed,
+       prepare_solver, time_step!, time_loop, run_solver
 
 """
-	init(params::Dict)
+	init(input::PeriLabInput, step_id::Int64)
 
 Initialize the solver
 
 # Arguments
-- `params::Dict`: The parameters
+- `input::PeriLabInput`: The typed input
+- `step_id::Int64`: The solver step (`-1`: single `Solver`)
 # Returns
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
-- `bcs::Dict{Any,Any}`: A dictionary containing boundary conditions.
-- `solver_options::Dict{String,Any}`: A dictionary containing solver options.
+- `bcs::Dict{String,BoundaryCondition}`: A dictionary containing boundary conditions.
+- `solver_run::SolverRun`: the initialized solver step.
 """
-function init(params::Dict,
-              step_id::Int64)
-    solver_options = Dict()
+function init(input::PeriLabInput, step_id::Int64)
     dof = Data_Manager.get_dof()
     nnodes = Data_Manager.get_nnodes()
     num_responder = Data_Manager.get_num_responder()
     block_ids = Data_Manager.get_field("Block_Id")
     block_nodes_with_neighbors = get_block_nodes(block_ids, nnodes + num_responder)
     block_nodes = get_block_nodes(block_ids, nnodes)
+    blocks = input.sections.blocks
     block_name_list,
-    block_id_list = get_block_names_and_ids(params, block_ids,
-                                            Data_Manager.get_mpi_active())
+    block_id_list = block_names_and_ids(blocks, block_ids, Data_Manager.get_mpi_active())
     Data_Manager.set_block_name_list(block_name_list)
     Data_Manager.set_block_id_list(block_id_list)
     density = Data_Manager.create_constant_node_scalar_field("Density", Float64)
@@ -85,118 +75,101 @@ function init(params::Dict,
     if Data_Manager.fem_active()
         fem_block = Data_Manager.create_constant_node_scalar_field("FEM Block", Bool;
                                                                    default_value = false)
-        fem_block = set_fem_block(params, block_nodes_with_neighbors, fem_block) # includes the neighbors
+        fem_block = set_fem_block(blocks, block_nodes_with_neighbors, fem_block) # includes the neighbors
     end
     Data_Manager.create_constant_node_scalar_field("Active Nodes", Int64)
     Data_Manager.create_constant_node_scalar_field("Update Nodes", Int64)
-    Data_Manager.create_constant_node_scalar_field("Update", Bool; default_value = true)
-    density = set_density(params, block_nodes_with_neighbors, density) # includes the neighbors
-    horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
-    set_angles(params, block_nodes_with_neighbors) # includes the Neighbors
-    solver_params = step_id == -1 ? params["Solver"] :
-                    get_solver_params(params, step_id)
-    solver_options["Models"] = get_model_options(solver_params)
-    solver_options["All Models"] = get_model_options(solver_params)
-    solver_options["Calculation"] = get_calculation_options(solver_params)
+    # every node counts as changed at the start of a solver step, e.g. after a solver switch
+    Data_Manager.create_constant_node_scalar_field("Update", Bool;
+                                                   default_value = true) .= true
+    Model_Factory.Pre_Calculation.ONLY_FLAGGED_BONDS_CHANGED[] = false
+    density = set_density(blocks, block_nodes_with_neighbors, density) # includes the neighbors
+    horizon = set_horizon(blocks, block_nodes_with_neighbors, horizon) # includes the neighbors
+    set_angles(blocks, block_nodes_with_neighbors) # includes the Neighbors
+    solver_params = solver_step(input, step_id)
+    models = model_options(solver_params)
+    all_models = copy(models)
+    calculation = calculation_options(solver_params)
     if step_id != -1
         for step in 1:Data_Manager.get_max_step()
-            step_solver_params = get_solver_params(params, step)
-            append!(solver_options["All Models"],
-                    get_model_options(step_solver_params))
-            calc_options = get_calculation_options(step_solver_params)
-            for key in keys(calc_options)
-                if calc_options[key]
-                    solver_options["Calculation"][key] = true
-                end
-            end
+            step_solver_params = solver_step(input, step)
+            append!(all_models, model_options(step_solver_params))
+            calculation = calculation | calculation_options(step_solver_params)
         end
-        solver_options["All Models"] = unique(solver_options["All Models"])
+        all_models = unique(all_models)
     end
     Data_Manager.create_constant_bond_scalar_state("Influence Function", Float64;
                                                    default_value = 1)
     for iblock in eachindex(block_nodes)
         Influence_Function.init_influence_function(block_nodes[iblock],
-                                                   params["Discretization"])
+                                                   input.sections.discretization.influence_function)
     end
     Data_Manager.create_bond_scalar_state("Bond Damage", Float64; default_value = 1)
     @debug "Read properties"
-    read_properties(params, "Material" in solver_options["Models"])
+    read_properties(input, "Material" in models)
     @debug "Init models"
-    @timeit "init_models" init_models(params,
+    @timeit "init_models" init_models(input,
                                       block_nodes,
-                                      solver_options,
+                                      models,
+                                      all_models,
+                                      calculation,
                                       synchronise_field)
     @debug "Init Boundary Conditions"
 
-    @timeit "init_BCs" bcs=init_BCs(params)
-    # get name and checks if it is there
-    solver_options["Solver"] = get_solver_name(solver_params)
-
-    @info "Init " * get_solver_name(solver_params)
-    mod = create_module_specifics(get_solver_name(solver_params),
-                                  module_list,
-                                  @__MODULE__,
-                                  "solver_name")
-
-    if isnothing(mod)
-        @info "Module list: " * string(module_list)
-        @abort "Solver module for solver " * get_solver_name(solver_params) *
-               " not found. Check if the solver name is correct and if the module file is in the Solver folder."
-        return nothing
-    end
+    @timeit "init_BCs" bcs=init_BCs(input.sections.boundary_conditions)
+    @info "Init " * solver_name(solver_params)
     if !Data_Manager.has_key("Active")
         active = Data_Manager.create_constant_node_scalar_field("Active", Bool;
                                                                 default_value = true)
     end
-    mod.init_solver(solver_options,
-                    solver_params,
-                    bcs,
-                    block_nodes)
-    Data_Manager.set_model_module(get_solver_name(solver_params), mod)
+    solver_run = create_run(solver_params, models, all_models, calculation, bcs,
+                            block_nodes)
 
     if Data_Manager.fem_active()
-        @timeit "init_FEM" FEM.init_FEM(params)
+        @timeit "init_FEM" FEM.init_FEM(input.sections.fem,
+                                        input.materials)
         @timeit "init_coupling" FEM.Coupling.init_coupling(1:Data_Manager.get_nnodes(),
-                                                           params)
+                                                           input.sections.fem)
     end
 
     #TODO: sync active with Data_Manager
 
-    remove_models(solver_options["Models"])
+    remove_models(models)
 
     @debug "Finished Init Solver"
-    return block_nodes, bcs, solver_options
+    return block_nodes, bcs, solver_run
 end
 
 """
-	set_density(params::Dict, block_nodes::Dict, density::NodeScalarField{Float64})
+	set_density(blocks::Dict{String,BlockParams}, block_nodes::Dict, density::NodeScalarField{Float64})
 
 Sets the density of the nodes in the dictionary.
 
 # Arguments
-- `params::Dict`: The parameters
+- `blocks::Dict{String,BlockParams}`: The blocks of the input deck
 - `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
 - `density::NodeScalarField{Float64}`: The density
 # Returns
 - `density::NodeScalarField{Float64}`: The density
 """
-function set_density(params::Dict, block_nodes::Dict, density::NodeScalarField{Float64})
+function set_density(blocks::Dict{String,BlockParams}, block_nodes::Dict,
+                     density::NodeScalarField{Float64})
     for block in eachindex(block_nodes)
-        density[block_nodes[block]] .= get_density(params, block)
+        density[block_nodes[block]] .= block_by_id(blocks, block)[2].density
     end
     return density
 end
 
 """
-	set_angles(params::Dict, block_nodes::Dict)
+	set_angles(blocks::Dict{String,BlockParams}, block_nodes::Dict)
 
 Sets the density of the nodes in the dictionary.
 
 # Arguments
-- `params::Dict`: The parameters
+- `blocks::Dict{String,BlockParams}`: The blocks of the input deck
 - `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
 """
-function set_angles(params::Dict, block_nodes::Dict)
+function set_angles(blocks::Dict{String,BlockParams}, block_nodes::Dict)
     mesh_angles = false
     if "Angles" in Data_Manager.get_all_field_keys()
         Data_Manager.set_rotation(true)
@@ -209,7 +182,7 @@ function set_angles(params::Dict, block_nodes::Dict)
     block_rotation = false
     dof = Data_Manager.get_dof()
     for block in eachindex(block_nodes)
-        if get_angles(params, block, dof) !== nothing
+        if block_angles(block_by_id(blocks, block)..., dof) !== nothing
             block_rotation = true
             break
         end
@@ -222,7 +195,7 @@ function set_angles(params::Dict, block_nodes::Dict)
         angles = Data_Manager.create_constant_node_vector_field("Angles", Float64, dof)
 
         for block in eachindex(block_nodes)
-            angles_global = get_angles(params, block, dof)
+            angles_global = block_angles(block_by_id(blocks, block)..., dof)
             if isnothing(angles_global)
                 angles_global = 0.0
             end
@@ -234,194 +207,69 @@ function set_angles(params::Dict, block_nodes::Dict)
 end
 
 """
-	set_fem_block(params::Dict, block_nodes::Dict, fem_block::Vector{Bool})
+	set_fem_block(blocks::Dict{String,BlockParams}, block_nodes::Dict, fem_block::Vector{Bool})
 
 Sets the fem_block of the nodes in the dictionary.
 
 # Arguments
-- `params::Dict`: The parameters
+- `blocks::Dict{String,BlockParams}`: The blocks of the input deck
 - `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
 - `fem_block::Vector{Bool}`: The fem_block
 # Returns
 - `fem_block::Vector{Bool}`: The fem_block
 """
-function set_fem_block(params::Dict, block_nodes::Dict, fem_block::Vector{Bool})
+function set_fem_block(blocks::Dict{String,BlockParams}, block_nodes::Dict,
+                       fem_block::Vector{Bool})
     for block in eachindex(block_nodes)
-        fem_block[block_nodes[block]] .= get_fem_block(params, block)
+        fem_block[block_nodes[block]] .= something(block_by_id(blocks, block)[2].fem, false)
     end
     return fem_block
 end
 
 """
-	set_horizon(params::Dict, block_nodes::Dict, horizon::NodeScalarField{Float64})
+	set_horizon(blocks::Dict{String,BlockParams}, block_nodes::Dict, horizon::NodeScalarField{Float64})
 
 Sets the horizon of the nodes in the dictionary.
 
 # Arguments
-- `params::Dict`: The parameters
+- `blocks::Dict{String,BlockParams}`: The blocks of the input deck
 - `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
 - `horizon::NodeScalarField{Float64}`: The horizon
 # Returns
 - `horizon::NodeScalarField{Float64}`: The horizon
 """
-function set_horizon(params::Dict, block_nodes::Dict, horizon::NodeScalarField{Float64})
+function set_horizon(blocks::Dict{String,BlockParams}, block_nodes::Dict,
+                     horizon::NodeScalarField{Float64})
     for block in eachindex(block_nodes)
-        horizon[block_nodes[block]] .= get_horizon(params, block)
+        horizon[block_nodes[block]] .= block_by_id(blocks, block)[2].horizon
     end
     return horizon
 end
 
 """
-	solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, silent::Bool)
+    solver(run::SolverRun, ctx::SolverContext)
 
-Runs the solver.
-
-# Arguments
-- `solver_options::Dict{String,Any}`: The solver options
-- `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes
-- `bcs::Dict{Any,Any}`: The boundary conditions
-- `outputs::Dict{Int64,Dict{}}`: A dictionary for output settings
-- `result_files::Vector{Any}`: A vector of result files
-- `write_results`: A function to write simulation results
-- `silent::Bool`: A boolean flag to suppress progress bars
-# Returns
-- `result_files`: A vector of updated result files
+Runs the solver step `run`; returns the updated result files.
 """
-function solver(solver_options::Dict{Any,Any},
-                block_nodes::Dict{Int64,Vector{Int64}},
-                bcs::Dict{Any,Any},
-                outputs::Dict{Int64,Dict{}},
-                result_files::Vector{Dict},
-                write_results,
-                silent::Bool)
-    mod = Data_Manager.get_model_module(solver_options["Solver"])::Module
-
-    mod.run_solver(solver_options,
-                   block_nodes,
-                   bcs,
-                   outputs,
-                   result_files,
-                   synchronise_field,
-                   write_results,
-                   compute_parabolic_problems_before_model_evaluation,
-                   compute_parabolic_problems_after_model_evaluation,
-                   silent)
+function solver(run::SolverRun, ctx::SolverContext)
+    # invokelatest: the solver may come from a module loaded at runtime (licensed modules)
+    return Base.invokelatest(Solver_Common.run_solver, run, ctx)
 end
 
 """
-	synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, synch_field::String, direction::String)
-
-Synchronises field.
-
-# Arguments
-- `comm`: The MPI communicator
-- `synch_fields::Dict`: A dictionary of fields
-- `overlap_map`: The overlap map
-- `get_field`: The function to get the field
-- `synch_field::String`: The field
-- `direction::String`: The direction
-# Returns
-- `nothing`
-"""
-function synchronise_field(comm,
-                           synch_fields::Dict,
-                           overlap_map,
-                           get_field,
-                           synch_field::String,
-                           direction::String)
-    # might not needed
-    @timeit "synchronise_field" begin
-        if !haskey(synch_fields, synch_field)
-            @abort "Field $synch_field does not exist in synch_field dictionary"
-            return nothing
-        end
-        if direction == "download_from_cores"
-            if synch_fields[synch_field][direction]
-                vector = get_field(synch_field, synch_fields[synch_field]["time"])
-                @timeit "synch_responder_to_controller" return synch_responder_to_controller(comm,
-                                                                                             overlap_map,
-                                                                                             vector,
-                                                                                             synch_fields[synch_field]["dof"])
-            end
-            return nothing
-        end
-        if direction == "upload_to_cores"
-            if synch_fields[synch_field][direction]
-                vector = get_field(synch_field, synch_fields[synch_field]["time"])
-                if occursin("Bond", synch_field)
-                    @timeit "synch_controller_bonds_to_responder_flattened" return synch_controller_bonds_to_responder_flattened(comm,
-                                                                                                                                 overlap_map,
-                                                                                                                                 vector,
-                                                                                                                                 synch_fields[synch_field]["dof"])
-                else
-                    @timeit "synch_controller_to_responder" return synch_controller_to_responder(comm,
-                                                                                                 overlap_map,
-                                                                                                 vector,
-                                                                                                 synch_fields[synch_field]["dof"])
-                end
-            end
-            return nothing
-        end
-        @abort "Wrong direction key word $direction in function synchronise_field; it should be download_from_cores or upload_to_cores"
-        return nothing
-    end
-end
-
-"""
-	remove_models(solver_options::Vector{String})
+	remove_models(models::Vector{String})
 
 Sets the active models to false if they are deactivated in the solver. They can be active, because they are defined as model and in the blocks.
 
 # Arguments
-- `solver_options::Vector{String}`: A dictionary of fields
+- `models::Vector{String}`: The model categories of the step
 """
-function remove_models(solver_options::Vector{String})
-    check = replace.(solver_options .* " Model", "_" => " ")
+function remove_models(models::Vector{String})
+    check = replace.(models .* " Model", "_" => " ")
     for active_model_name in keys(Data_Manager.get_active_models())
         if !(active_model_name in check)
             Data_Manager.remove_active_model(active_model_name)
         end
-    end
-end
-
-## TODO generalize this interface
-
-function compute_parabolic_problems_before_model_evaluation(active_nodes,
-                                                            solver_options)
-    if !("Thermal" in solver_options["Models"]) &&
-       !("Thermal" in solver_options["All Models"])
-        return
-    end
-    temperatureN = Data_Manager.get_field("Temperature", "N")
-    temperatureNP1 = Data_Manager.get_field("Temperature", "NP1")
-    deltaT = Data_Manager.get_field("Delta Temperature")
-    if "Thermal" in solver_options["Models"]
-        temperatureNP1[active_nodes] = temperatureN[active_nodes] + deltaT[active_nodes]
-    else
-        if "Thermal" in solver_options["All Models"]
-            temperatureNP1[active_nodes] = temperatureN[active_nodes]
-        end
-    end
-end
-function compute_parabolic_problems_after_model_evaluation(active_nodes,
-                                                           solver_options, dt)
-    if !("Thermal" in solver_options["Models"]) &&
-       !("Thermal" in solver_options["All Models"])
-        return
-    end
-    deltaT = Data_Manager.get_field("Delta Temperature")
-    flowNP1 = Data_Manager.get_field("Heat Flow", "NP1")
-    density = Data_Manager.get_field("Density")
-    heat_capacity = Data_Manager.get_field("Specific Heat Capacity")
-    if "Thermal" in solver_options["Models"]
-        check_inf_or_nan(flowNP1, "Heat Flow")
-        # heat capacity check. if it is zero deltaT = 0
-        @views deltaT[active_nodes] = -flowNP1[active_nodes] .* dt ./
-                                      (density[active_nodes] .*
-                                       heat_capacity[active_nodes])
-        # if fem_option && time == 0
-        #     @warn "Thermal models are not supported for FEM yet."
-        # end
     end
 end
 

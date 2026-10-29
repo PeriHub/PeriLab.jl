@@ -14,26 +14,25 @@ using ..Data_Manager
 using ..PeriLabExceptions: @abort
 
 include("read_inputdeck.jl")
+include("node_sets.jl")
 include("mesh_data.jl")
 include("exodus_export.jl")
 include("csv_export.jl")
 include("../Compute/compute_global_values.jl")
 using ..MPI_Communication: send_single_value_from_vector, synch_responder_to_controller,
                            synch_controller_to_responder,
-                           synch_controller_bonds_to_responder,
-                           split_vector, synch_controller_bonds_to_responder_flattened,
-                           send_vector_from_root_to_core_i, broadcast_value,
+                           synch_controller_bonds_to_responder_flattened,
+                           send_vector_from_root_to_core_i, send_rows_from_root_to_core_i,
+                           broadcast_value,
                            find_and_set_core_value_min, find_and_set_core_value_sum,
                            find_and_set_core_value_max,
                            find_and_set_core_value_avg, gather_values
 
 using ..Helpers: progress_bar
 using ..Logging_Module: get_log_stream
-using ..Parameter_Handling: get_solver_steps, get_flush_file, get_write_after_damage,
-                            get_start_time, get_end_time, get_outputs,
-                            get_output_frequencies,
-                            get_output_filenames, get_computes_names, get_computes,
-                            get_fem_block
+using ..InputDeck: solver_steps, BlockParams, PeriLabInput, output_filenames,
+                   output_frequencies, fallback_output_frequencies, output_fieldnames,
+                   active_computes, compute_names
 using ..Geometry: rotation_tensor
 
 using DataStructures
@@ -224,10 +223,9 @@ Returns the size of a single bond value, i.e. `()` for a scalar bond field, `(do
 for a vector one such as `Deformed Bond Geometry`, and `(i_dof, j_dof)` for a tensor
 one.
 
-Handles both the nested layout PeriLab uses for bond fields
-(`field[node][neighbor][...]`) and a flat one (`field[node][neighbor, ...]`). Nodes
-without neighbours are skipped, so a boundary node cannot make a vector field look
-scalar.
+Bond fields are indexed as `field[node][neighbor]`, the bond value being a number, an
+`SVector` or an `SMatrix`. Nodes without neighbours are skipped, so a boundary node cannot
+make a vector field look scalar.
 
 # Arguments
 - `datafield`: The bond field, indexed by node
@@ -237,13 +235,7 @@ scalar.
 function bond_component_size(datafield)
     for node_entry in datafield
         isempty(node_entry) && continue
-        if ndims(node_entry) == 1
-            # nested: the neighbour entry is the value itself
-            return size(first(node_entry))
-        else
-            # flat: strip the neighbour dimension
-            return size(node_entry)[2:end]
-        end
+        return size(first(node_entry))
     end
     return ()
 end
@@ -329,75 +321,77 @@ function bond_element_id_offset(element_ids::AbstractVector, n_bond_elements::In
 end
 
 """
-    get_results_mapping(params::Dict, path::String)
+    get_results_mapping(input::PeriLabInput, path::String)
 
 Gets the results mapping
 
 # Arguments
-- `params::Dict`: The parameters
+- `input::PeriLabInput`: The typed input deck
 - `path::String`: The path
 # Returns
 - `output_mapping::Dict{Int64,Dict{}}`: The results mapping
 """
-function get_results_mapping(params::Dict, path::String)
-    compute_names = get_computes_names(params)
-    outputs = get_outputs(params, Data_Manager.get_all_field_keys(), compute_names)
-    computes = get_computes(params, Data_Manager.get_all_field_keys())
+function get_results_mapping(input::PeriLabInput, path::String)
+    field_keys = Data_Manager.get_all_field_keys()
+    all_compute_names = compute_names(input.sections.compute_class_parameters)
+    computes = active_computes(input.sections.compute_class_parameters, field_keys)
     output_mapping = Dict{Int64,Dict{}}()
     nsets = Data_Manager.get_nsets()
 
-    for (id, output) in enumerate(keys(outputs))
+    for (id, (output_name, output)) in enumerate(input.sections.outputs)
         output_mapping[id] = Dict{}()
         output_mapping[id]["Fields"] = Dict{}()
 
-        fieldnames = outputs[output]["fieldnames"]
-        output_mapping[id]["flush_file"] = get_flush_file(outputs, output)
-        output_mapping[id]["write_after_damage"] = get_write_after_damage(outputs, output)
-        output_mapping[id]["start_time"] = get_start_time(outputs, output)
-        output_mapping[id]["end_time"] = get_end_time(outputs, output)
+        isempty(output.output_variables) &&
+            @warn "No output variables are defined for " * output_name * "."
+        fieldnames = output_fieldnames(output.output_variables, field_keys,
+                                       all_compute_names,
+                                       output.output_file_type)
+        output_mapping[id]["flush_file"] = output.flush_file
+        output_mapping[id]["write_after_damage"] = output.write_after_damage
+        output_mapping[id]["start_time"] = output.start_time
+        output_mapping[id]["end_time"] = output.end_time
 
-        # Bond export settings live in the raw output block of the input deck and have
-        # to be carried over, otherwise init_bond_information_export never sees them and
-        # silently exports every block.
-        output_mapping[id]["Bond Export"] = get(outputs[output], "Bond Export", false)
-        if haskey(outputs[output], "Bond Blocks")
-            output_mapping[id]["Bond Blocks"] = outputs[output]["Bond Blocks"]
+        # Bond export settings have to be carried over, otherwise
+        # init_bond_information_export never sees them and silently exports every block.
+        output_mapping[id]["Bond Export"] = output.bond_export
+        if output.bond_blocks !== nothing
+            output_mapping[id]["Bond Blocks"] = output.bond_blocks
         end
 
         for fieldname in fieldnames
             compute_name = ""
-            compute_params = Dict{}
+            compute_params = nothing
             global_var = false
             nodeset = []
             multi_ids = false
             node_ids = [-1]
 
-            for key in keys(computes)
+            for (key, compute) in computes
                 if fieldname[1] == key
-                    fieldname[1] = computes[key]["Variable"]
+                    fieldname[1] = compute.variable
                     fieldname[2] = "Constant"
                     if Data_Manager.has_key(fieldname[1] * "NP1")
                         fieldname[2] = "NP1"
                     end
                     compute_name = string(key)
-                    compute_params = computes[key]
+                    compute_params = compute
                     global_var = true
-                    if computes[key]["Compute Class"] == "Node_Set_Data"
-                        nodeset = computes[key]["Node Set"]
+                    if compute.compute_class == "Node_Set_Data"
+                        nodeset = compute.node_set
                         num_nodes = length(nsets[nodeset])
-                        if num_nodes > 1 &&
-                           !haskey(computes[key], "Calculation Type")
+                        if num_nodes > 1 && compute.calculation_type === nothing
                             if num_nodes > 10
-                                @warn "Compute $key references $num_nodes nodes and will create output entries for each of them in $output, make sure this is intendend!"
+                                @warn "Compute $key references $num_nodes nodes and will create output entries for each of them in $output_name, make sure this is intendend!"
                             end
                             multi_ids = true
                             node_ids = nsets[nodeset]
                         end
-                    elseif computes[key]["Compute Class"] == "Nearest_Point_Data"
+                    elseif compute.compute_class == "Nearest_Point_Data"
                         #find neares_point_id and reduce over cores
 
                         coor = Data_Manager.get_field("Coordinates")
-                        point = [computes[key]["X"], computes[key]["Y"], computes[key]["Z"]]
+                        point = [compute.x, compute.y, compute.z]
                         tree = KDTree(coor'; leafsize = 2)
                         nearest_point_id, nearest_point_distance = nn(tree, point)
                         if Data_Manager.get_mpi_active()
@@ -520,7 +514,7 @@ function get_results_mapping(params::Dict, path::String)
 end
 
 """
-    initialize_data(filename::String, filedirectory::String, comm::MPI.Comm)
+    initialize_data(filename, filedirectory, comm; no_strict = false, raw_deck = nothing)
 
 Initialize data.
 
@@ -528,31 +522,36 @@ Initialize data.
 - `filename::String`: The name of the input file.
 - `filedirectory::String`: The directory of the input file.
 - `comm::MPI.Comm`: The MPI communicator
+- `no_strict::Bool`: Report unknown input keys as warnings instead of errors.
+- `raw_deck`: The already parsed yaml file, if any (it is not parsed again).
 # Returns
-- `data::Dict`: The data
+- `input::PeriLabInput`: The typed input
+- `steps::Vector{Int64}`: The solver steps
 """
 function initialize_data(filename::String,
                          filedirectory::String,
-                         comm::MPI.Comm)
+                         comm::MPI.Comm;
+                         no_strict::Bool = false, raw_deck = nothing)
     Data_Manager.set_directory(filedirectory)
     @timeit "MPI init data" begin
         Data_Manager.set_rank(MPI.Comm_rank(comm))
         Data_Manager.set_max_rank(MPI.Comm_size(comm))
         Data_Manager.set_comm(comm)
     end
-    @timeit "init_data" params=init_data(read_input_file(filename),
-                                         filedirectory, comm)
-    steps = get_solver_steps(params)
-    return params, steps
+    input = read_input_deck(filename; directory = filedirectory, no_strict = no_strict,
+                            raw_deck = raw_deck)
+    @timeit "init_data" init_data(input, filedirectory, comm)
+    steps = solver_steps(input)
+    return input, steps
 end
 
 """
-    init_orientations()
+    init_orientations(blocks::Dict{String,BlockParams})
 
 Initialize orientations.
 """
-function init_orientations(params::Dict)
-    set_angles(params)
+function init_orientations(blocks::Dict{String,BlockParams})
+    set_angles(blocks)
     rotation::Bool = Data_Manager.get_rotation()
     element_rotation::Bool = Data_Manager.get_element_rotation()
 
@@ -580,12 +579,12 @@ function init_orientations(params::Dict)
 end
 
 """
-    init_write_results(params::Dict, output_dir::String, path::String, PERILAB_VERSION::String, qa_vector::Vector{String})
+    init_write_results(input::PeriLabInput, output_dir::String, path::String, PERILAB_VERSION::String, qa_vector::Vector{String}, reuse::Bool)
 
 Initialize write results.
 
 # Arguments
-- `params::Dict`: The parameters
+- `input::PeriLabInput`: The typed input deck
 - `output_dir::String`: The output directory.
 - `path::String`: The path
 - `PERILAB_VERSION::String`: The PeriLab version
@@ -594,12 +593,12 @@ Initialize write results.
 - `result_files::Array`: The result files
 - `outputs::Dict`: The outputs
 """
-function init_write_results(params::Dict,
+function init_write_results(input::PeriLabInput,
                             output_dir::String,
                             path::String,
                             PERILAB_VERSION::String,
                             qa_vector::Vector{String}, reuse::Bool)
-    filenames = get_output_filenames(params, output_dir)
+    filenames = output_filenames(input.sections.outputs, output_dir)
     if length(filenames) == 0
         @warn "No output file or output defined"
     end
@@ -646,7 +645,7 @@ function init_write_results(params::Dict,
     end
 
     nsets = Data_Manager.get_nsets()
-    outputs = get_results_mapping(params, path)
+    outputs = get_results_mapping(input, path)
 
     # Block ids of the locally owned nodes only. Ghost entries would produce bonds and
     # block members the exodus file was not initialised for.
@@ -813,34 +812,57 @@ function init_write_results(params::Dict,
 end
 
 """
-    set_output_frequency(params::Dict, nsteps::Int64, step_id::Int64)
+    set_output_frequency(input::PeriLabInput, nsteps::Int64, step_id::Int64, reuse::Bool)
 
 Sets the output frequency.
 
 # Arguments
-- `params::Dict`: The parameters
+- `input::PeriLabInput`: The typed input deck
 - `nsteps::Int64`: The number of steps
 - `step_id::Int64`: The step id
 """
-function set_output_frequency(params::Dict,
+function set_output_frequency(input::PeriLabInput,
                               nsteps::Int64,
                               step_id::Int64,
                               reuse::Bool)
-    output_frequencies = get_output_frequencies(params, nsteps, step_id)
+    frequencies = output_frequencies(input.sections.outputs, nsteps, step_id)
     if step_id <= 1 && !reuse
         output_frequency = []
-        for id in eachindex(output_frequencies)
+        for id in eachindex(frequencies)
             push!(output_frequency,
                   Dict{String,Int64}("Counter" => 0,
-                                     "Output Frequency" => output_frequencies[id],
+                                     "Output Frequency" => frequencies[id],
                                      "Step" => 1))
         end
     else
         output_frequency = Data_Manager.get_output_frequency()
-        for id in eachindex(output_frequencies)
-            output_frequency[id]["Output Frequency"] = output_frequencies[id]
+        for id in eachindex(frequencies)
+            output_frequency[id]["Output Frequency"] = frequencies[id]
             output_frequency[id]["Counter"] = 0
         end
+    end
+    Data_Manager.set_output_frequency(output_frequency)
+end
+
+"""
+    set_fallback_output_frequency(input::PeriLabInput, nsteps::Int64, step_id::Int64, dt::Float64, fallback_dt::Float64)
+
+Sets the output frequencies and counters when a fallback solver with `nsteps`
+steps of `fallback_dt` takes over from steps of `dt`; see
+`InputDeck.fallback_output_frequencies`.
+"""
+function set_fallback_output_frequency(input::PeriLabInput, nsteps::Int64, step_id::Int64,
+                                       dt::Float64, fallback_dt::Float64)
+    output_frequency = Data_Manager.get_output_frequency()
+    frequencies,
+    counters = fallback_output_frequencies(input.sections.outputs, nsteps, step_id,
+                                           Int64[o["Output Frequency"]
+                                                 for o in output_frequency],
+                                           Int64[o["Counter"] for o in output_frequency],
+                                           dt, fallback_dt)
+    for id in eachindex(output_frequency)
+        output_frequency[id]["Output Frequency"] = frequencies[id]
+        output_frequency[id]["Counter"] = counters[id]
     end
     Data_Manager.set_output_frequency(output_frequency)
 end
@@ -962,11 +984,11 @@ function get_global_values(output::Dict)
     block_ids = Data_Manager.get_block_id_list()
     block_name_list = Data_Manager.get_block_name_list()
     for varname in keys(sort!(OrderedDict(output)))
-        compute_class = output[varname]["compute_params"]["Compute Class"]
-        calculation_type = get(output[varname]["compute_params"], "Calculation Type",
-                               "Single_Point")
-        fieldname = output[varname]["compute_params"]["Variable"]
-        extra_equation = get(output[varname]["compute_params"], "Equation", nothing)
+        compute = output[varname]["compute_params"]
+        compute_class = compute.compute_class
+        calculation_type = something(compute.calculation_type, "Single_Point")
+        fieldname = compute.variable
+        extra_equation = compute.equation
         field_type = Float64
         if Data_Manager.has_key(fieldname * "NP1")
             field_type = Data_Manager.get_field_type(fieldname * "NP1")
@@ -982,10 +1004,10 @@ function get_global_values(output::Dict)
             dof = [output[varname]["i_dof"], output[varname]["j_dof"]]
         end
         if compute_class == "Block_Data"
-            if !haskey(output[varname]["compute_params"], "Block")
+            if compute.block === nothing
                 @abort "Missing Block for compute class $varname"
             end
-            block = output[varname]["compute_params"]["Block"]
+            block = compute.block
             if block in block_name_list
                 block_id = block_ids[findfirst(==(block), block_name_list)]
                 global_value,
@@ -1070,20 +1092,34 @@ function get_mpi_rank_string(rank::Int64, max_rank::Int64)
     return "0"^(max_rank_length - rank_length) * string(rank)
 end
 
+# Block summary columns that name a model of the block
+const _BLOCK_MODEL_COLUMNS = Dict("Material" => :material_model, "Damage" => :damage_model,
+                                  "Thermal" => :thermal_model,
+                                  "Additive" => :additive_model,
+                                  "Degradation" => :degradation_model)
+
+function _block_summary_cell(block::BlockParams, column::String)
+    column == "Density" && return @sprintf("%.3e", block.density)
+    column == "Horizon" && return @sprintf("%.3e", block.horizon)
+    field = get(_BLOCK_MODEL_COLUMNS, column, nothing)
+    field === nothing && return ""
+    return something(getfield(block, field), "")
+end
+
 """
-    show_block_summary(solver_options::Dict, params::Dict, log_file::String, silent::Bool, comm::MPI.Comm)
+    show_block_summary(models::Vector{String}, blocks::Dict{String,BlockParams}, log_file::String, silent::Bool, comm::MPI.Comm)
 
 Show block summary.
 
 # Arguments
-- `solver_options::Dict`: The solver options
-- `params::Dict`: The params
+- `models::Vector{String}`: The model categories of the step
+- `blocks::Dict{String,BlockParams}`: The blocks of the input deck
 - `log_file::String`: The log file
 - `silent::Bool`: The silent flag
 - `comm::MPI.Comm`: The Comm_rank
 """
-function show_block_summary(solver_options::Dict,
-                            params::Dict,
+function show_block_summary(models::Vector{String},
+                            blocks::Dict{String,BlockParams},
                             log_file::String,
                             silent::Bool,
                             comm::MPI.Comm)
@@ -1092,7 +1128,7 @@ function show_block_summary(solver_options::Dict,
 
     headers = ["Block"]
 
-    for model_name in solver_options["Models"]
+    for model_name in models
         if model_name != "Pre_Calculation"
             push!(headers, model_name)
         end
@@ -1125,20 +1161,10 @@ function show_block_summary(solver_options::Dict,
                 num_nodes = string(length(findall(x -> x == id, block_Id)))
                 push!(row, num_nodes)
             elseif name == "PD/FEM"
-                fem_block = get_fem_block(params, id)
-                if fem_block
-                    push!(row, "FEM")
-                else
-                    push!(row, "PD")
-                end
-                # elseif !(name in solver_options["Models"])
-                #     push!(row, "")
-            elseif haskey(params["Blocks"][block_name_list[id]], name * " Model")
-                push!(row, params["Blocks"][block_name_list[id]][name*" Model"])
-            elseif haskey(params["Blocks"][block_name_list[id]], name)
-                push!(row, @sprintf("%.3e", (params["Blocks"][block_name_list[id]][name])))
+                fem = something(blocks[block_name_list[id]].fem, false)
+                push!(row, fem ? "FEM" : "PD")
             else
-                push!(row, "")
+                push!(row, _block_summary_cell(blocks[block_name_list[id]], name))
             end
         end
         push!(df, row)

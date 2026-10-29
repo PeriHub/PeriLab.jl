@@ -3,51 +3,53 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Heat_Transfer
-using LinearAlgebra: dot
+using LinearAlgebra: dot, normalize
+using StaticArrays: SVector, MVector
 export compute_model
-export thermal_model_name
 export init_model
-using TimerOutputs: @timeit
-using .....Data_Manager
-using .....Helpers: normalize_in_place!
 
-const directions2D = [[1, 0], [-1, 0], [0, 1], [0, -1]]
-const directions3D = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
-const directions_free2D = fill(true, 4)
-const directions_free3D = fill(true, 6)
-"""
-    thermal_model_name()
+using ......ParameterSpec: @params, register_thermal
+@params "Heat exchange of surface nodes with the environment (convection)" struct HeatTransferParams
+    "Heat flow per surface area and temperature difference between surface and environment"
+    heat_transfer_coefficient::Float64 = req("Heat Transfer Coefficient"; min = 0)
+    "Temperature of the surrounding medium: a number, or an expression in the time t"
+    environmental_temperature::Union{Float64,String} = req("Environmental Temperature"; evaluated = true)
+    "Recomputes the surface in every step, so cracks and added material exchange heat too"
+    allow_surface_change::Bool = opt("Allow Surface Change"; default = true)
+end
+__init__() = register_thermal("Heat Transfer", HeatTransferParams)
 
-Gives the flow name. It is needed for comparison with the yaml input deck.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the thermal flow model.
-
-Example:
-```julia
-println(flow_name())
-"Thermal Template"
-```
-"""
-function thermal_model_name()
-    return "Heat Transfer"
+"Environmental temperature: a number, or an expression in the time `t` (evaluated at `time`)."
+environmental_temperature(T::Float64, time::Float64) = T
+function environmental_temperature(expression::String, time::Float64)
+    global t = time
+    return Float64(eval(Meta.parse(expression)))
 end
 
+using TimerOutputs: @timeit
+using .....Data_Manager
+using .....Helpers: node_tensor
+
+# axis directions; a direction is free if no active neighbor lies (roughly) in it
+const DIRECTIONS_2D = (SVector(1.0, 0.0), SVector(-1.0, 0.0), SVector(0.0, 1.0),
+                       SVector(0.0, -1.0))
+const DIRECTIONS_3D = (SVector(1.0, 0.0, 0.0), SVector(-1.0, 0.0, 0.0),
+                       SVector(0.0, 1.0, 0.0), SVector(0.0, -1.0, 0.0),
+                       SVector(0.0, 0.0, 1.0), SVector(0.0, 0.0, -1.0))
 """
-    init_model(nodes, thermal_parameter)
+    init_model(nodes, p, thermal, block)
 
 Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `thermal parameter::Dict(String, Any)`: Dictionary with thermal parameter.
+- `p`: The model parameters.
+- `thermal::WithBase`: The typed thermal model of the block.
 - `block::Int64`: The current block.
 
 """
-function init_model(nodes::AbstractVector{Int64},
-                    thermal_parameter::Dict)
+function init_model(nodes::AbstractVector{Int64}, p::HeatTransferParams, thermal,
+                    block::Int64)
     nlist = Data_Manager.get_nlist()
     dof = Data_Manager.get_dof()
 
@@ -59,50 +61,43 @@ function init_model(nodes::AbstractVector{Int64},
                                                                      dof; default_value = 1)
     for iID in nodes
         for (jID, neighborID) in enumerate(nlist[iID])
-            normalize_in_place!(bond_norm_field[iID][jID], undeformed_bond[iID][jID])
+            bond_norm_field[iID][jID] = normalize(undeformed_bond[iID][jID])
         end
     end
 end
 
 """
-    compute_model(nodes, thermal_parameter, time, dt)
+    compute_model(nodes, p, thermal, block, time, dt)
 
 Calculates the heat transfer to the environment. [BrighentiR2021](@cite)
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
+- `p::HeatTransferParams`: The model parameters.
+- `thermal::WithBase`: The typed thermal model of the block.
+- `block::Int64`: The current block.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 Example:
 ```julia
 ```
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       thermal_parameter::Dict,
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
+function compute_model(nodes::AbstractVector{Int64}, p::HeatTransferParams, thermal,
+                       block::Int64, time::Float64, dt::Float64)
     dof = Data_Manager.get_dof()
     volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
-    kappa::Float64 = thermal_parameter["Heat Transfer Coefficient"]
-    Tenv::Float64 = 0.0
-    if thermal_parameter["Environmental Temperature"] isa String
-        global t = time
-        Tenv = eval(Meta.parse(thermal_parameter["Environmental Temperature"]))
-    else
-        Tenv = thermal_parameter["Environmental Temperature"]
-    end
-    allow_surface_change = get(thermal_parameter, "Allow Surface Change", true)
+    kappa::Float64 = p.heat_transfer_coefficient
+    Tenv::Float64 = environmental_temperature(p.environmental_temperature, time)
+    allow_surface_change = p.allow_surface_change
     additive_enabled = haskey(Data_Manager.get_active_models(), "Additive Model")
     heat_flow::NodeScalarField{Float64} = Data_Manager.get_field("Heat Flow", "NP1")
     temperature::NodeScalarField{Float64} = Data_Manager.get_field("Temperature", "NP1")
     surface_nodes::NodeScalarField{Bool} = Data_Manager.get_field("Surface_Nodes")
     specific_volume::NodeScalarField{Float64} = Data_Manager.get_field("Specific Volume")
     active::NodeScalarField{Bool} = Data_Manager.get_field("Active")
-    bond_norm::BondVectorState{Float64} = Data_Manager.get_field("Bond Norm")
+    bond_norm::BondVectorField{Float64} = Data_Manager.get_field("Bond Norm")
     rotation_tensor = Data_Manager.get_rotation() ?
-                      Data_Manager.get_field("Rotation Tensor") : nothing
+                      Data_Manager.get_field("Rotation Tensor")::Array{Float64,3} : nothing
     specific_volume_check::NodeScalarField{Bool} = Data_Manager.get_field("Specific Volume Check")
     nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
     dx = 1.0
@@ -211,83 +206,39 @@ function calculate_specific_volume!(specific_volume::NodeScalarField{Float64},
                                     nodes::AbstractVector{Int64},
                                     nlist::Union{SubArray,BondScalarState{Int64}},
                                     active::NodeScalarField{Bool},
-                                    bond_norm::BondVectorState{Float64},
-                                    rotation_tensor::Array{Float64,3},
+                                    bond_norm::BondVectorState{Float64,D},
+                                    rotation_tensor::Union{Nothing,Array{Float64,3}},
                                     specific_volume_check::NodeScalarField{Bool},
-                                    dof::Int64)
-    if dof == 2
-        directions = directions2D
-        directions_free = directions_free2D
-    else
-        directions = directions3D
-        directions_free = directions_free3D
-    end
-    rot_directions = copy(directions)
-
+                                    dof::Int64) where {D}
+    directions = D == 2 ? DIRECTIONS_2D : DIRECTIONS_3D
     for iID in nodes
         !specific_volume_check[iID] && continue
-
-        rot_directions = [rotation_tensor[iID, :, :] * direction
-                          for direction in directions]
-
-        directions_free .= true
+        rotated = rotate_directions(directions, rotation_tensor, iID)
+        free = MVector(map(_ -> true, directions))
+        norms = bond_norm[iID]
         for (jID, neighborID) in enumerate(nlist[iID])
             !active[neighborID] && continue
-
-            for (kID, direction) in enumerate(rot_directions)
-                !directions_free[kID] && continue
-
-                if dot(bond_norm[iID][jID], direction) >= 0.6
-                    directions_free[kID] = false
+            for kID in eachindex(rotated)
+                !free[kID] && continue
+                if dot(norms[jID], rotated[kID]) >= 0.6
+                    free[kID] = false
                     break
                 end
             end
         end
         # If the up direction is not free, the specific_volume should not change
-        if dof == 3 && !directions_free[5]
+        if D == 3 && !free[5]
             specific_volume_check[iID] = false
         end
-        specific_volume[iID] = sum(directions_free)
+        specific_volume[iID] = count(free)
     end
 end
 
-function calculate_specific_volume!(specific_volume::NodeScalarField{Float64},
-                                    nodes::AbstractVector{Int64},
-                                    nlist::Union{SubArray,BondScalarState{Int64}},
-                                    active::NodeScalarField{Bool},
-                                    bond_norm::BondVectorState{Float64},
-                                    rotation_tensor::Nothing,
-                                    specific_volume_check::NodeScalarField{Bool},
-                                    dof::Int64)
-    if dof == 2
-        directions = directions2D
-        directions_free = directions_free2D
-    else
-        directions = directions3D
-        directions_free = directions_free3D
-    end
-
-    for iID in nodes
-        !specific_volume_check[iID] && continue
-        directions_free .= true
-        for (jID, neighborID) in enumerate(nlist[iID])
-            !active[neighborID] && continue
-
-            for (kID, direction) in enumerate(directions)
-                !directions_free[kID] && continue
-
-                if dot(bond_norm[iID][jID], direction) >= 0.6
-                    directions_free[kID] = false
-                    break
-                end
-            end
-        end
-        # If the up direction is not free, the specific_volume should not change
-        if dof == 3 && !directions_free[5]
-            specific_volume_check[iID] = false
-        end
-        specific_volume[iID] = sum(directions_free)
-    end
+rotate_directions(directions, ::Nothing, iID::Int64) = directions
+function rotate_directions(directions::Tuple{SVector{D,Float64},Vararg{SVector{D,Float64}}},
+                           rotation_tensor::Array{Float64,3}, iID::Int64) where {D}
+    R = node_tensor(rotation_tensor, iID, Val(D))
+    return map(direction -> R * direction, directions)
 end
 
 """

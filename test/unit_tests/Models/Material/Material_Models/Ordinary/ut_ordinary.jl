@@ -71,21 +71,21 @@
     ]
 
     volume = Float64[0.8615883,
-    0.8615883,
-    0.8615883,
-    0.8615883,
-    0.8615883,
-    0.8615883,
-    0.8615883,
-    0.8615883,
-    0.8615883]
+                     0.8615883,
+                     0.8615883,
+                     0.8615883,
+                     0.8615883,
+                     0.8615883,
+                     0.8615883,
+                     0.8615883,
+                     0.8615883]
     vec = Vector{Int64}(1:nnodes)
     PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.compute_weighted_volume!(weighted_volume,
                                                                                     vec,
-                                                                                    nlist,
-                                                                                    undeformed_bond_length,
-                                                                                    bond_damage,
-                                                                                    omega,
+                                                                                    bond_field(nlist),
+                                                                                    bond_field(undeformed_bond_length),
+                                                                                    bond_field(bond_damage),
+                                                                                    bond_field(omega),
                                                                                     volume)
 
     for iID in 1:nnodes
@@ -119,25 +119,25 @@ nlist[2][1] = 2
     vec = Vector{Int64}(1:nnodes)
     theta = zeros(Float64, 2)
     PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.compute_dilatation!(vec,
-                                                                               nlist,
-                                                                               undeformed_bond_length,
-                                                                               deformed_bond_length,
-                                                                               bond_damage,
+                                                                               bond_field(nlist),
+                                                                               bond_field(undeformed_bond_length),
+                                                                               bond_field(deformed_bond_length),
+                                                                               bond_field(bond_damage),
                                                                                volume,
                                                                                weighted_volume,
-                                                                               omega,
+                                                                               bond_field(omega),
                                                                                theta)
     @test theta[1] == 3.0
     @test theta[2] == 3.0
     weighted_volume[1] = 0
     PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.compute_dilatation!(vec,
-                                                                               nlist,
-                                                                               undeformed_bond_length,
-                                                                               deformed_bond_length,
-                                                                               bond_damage,
+                                                                               bond_field(nlist),
+                                                                               bond_field(undeformed_bond_length),
+                                                                               bond_field(deformed_bond_length),
+                                                                               bond_field(bond_damage),
                                                                                volume,
                                                                                weighted_volume,
-                                                                               omega,
+                                                                               bond_field(omega),
                                                                                theta)
     @test theta[1] == 0.0
     @test theta[2] == 3.0
@@ -168,14 +168,17 @@ end
     deformed_bond = [[fill(0.0, dof) for j in 1:n] for n in nBonds]
     deformed_bond[1][1][1] = 1
     deformed_bond[1][2][1] = 1
-    bond_force = [[fill(0.0, dof) for j in 1:n] for n in nBonds]
+    deformed_bond = bond_field(deformed_bond)
+    bond_force = bond_field([[fill(0.0, dof) for j in 1:n] for n in nBonds])
     temp = [fill(0.0, n) for n in nBonds]
     PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.get_bond_forces!(vec,
-                                                                            bond_force_length,
+                                                                            bond_field(bond_force_length),
                                                                             deformed_bond,
-                                                                            deformed_bond_length,
+                                                                            bond_field([fill(2.0,
+                                                                                             n)
+                                                                                        for n in nBonds]),
                                                                             bond_force,
-                                                                            temp)
+                                                                            bond_field(temp))
     @test bond_force == [[[0.5, 0.0], [0.5, 0.0]], [[0.0, 0.0], [0.0, 0.0]]]
     # deformed_bond_length[2][1] = 0
     # @test isnothing(

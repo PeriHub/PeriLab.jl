@@ -4,8 +4,8 @@
 
 module Correspondence_matrix_based
 using LinearAlgebra
-using LoopVectorization: @turbo
 using SparseArrays
+using StaticArrays: SMatrix
 using TimerOutputs: @timeit
 using ...Data_Manager
 using ...PeriLabExceptions: @abort
@@ -42,27 +42,29 @@ end
 # Tensor computation kernels
 # =============================================================================
 
+# CB[m, n, q] = Σ_{o,p} C[m, n, o, p] B[o, p, q], i.e. the product of C as an
+# (N² × N²) matrix with B as an (N² × N) matrix
 function contraction!(C::Array{Float64,4}, B::Array{Float64,3}, dof::Int64,
                       CB::AbstractArray{Float64,3})
-    fill!(CB, 0.0)
     if dof == 2
-        @turbo for q in 1:2, p in 1:2, o in 1:2
-            B_opq = B[o, p, q]
-            for n in 1:2, m in 1:2
-                CB[m, n, q] += C[m, n, o, p] * B_opq
-            end
-        end
+        _contraction!(C, B, CB, Val(2))
     elseif dof == 3
-        @turbo for q in 1:3, p in 1:3, o in 1:3
-            B_opq = B[o, p, q]
-            for n in 1:3, m in 1:3
-                CB[m, n, q] += C[m, n, o, p] * B_opq
-            end
-        end
+        _contraction!(C, B, CB, Val(3))
     end
 end
 
-function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64}, ::Val{2},
+function _contraction!(C, B, CB, ::Val{N}) where {N}
+    Cm = SMatrix{N * N,N * N}(ntuple(i -> @inbounds(C[i]), Val(N^4)))
+    Bm = SMatrix{N * N,N}(ntuple(i -> @inbounds(B[i]), Val(N^3)))
+    R = Cm * Bm
+    @inbounds for q in 1:N, n in 1:N, m in 1:N
+        CB[m, n, q] = R[m + N * (n - 1), q]
+    end
+    return nothing
+end
+
+function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::AbstractVector{Float64},
+                          ::Val{2},
                           B_tensor::Array{Float64,3})
     factor = 0.5
     X_x = X_ik[1]
@@ -82,7 +84,8 @@ function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
     return nothing
 end
 
-function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64}, ::Val{3},
+function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::AbstractVector{Float64},
+                          ::Val{3},
                           B_tensor::Array{Float64,3})
     factor = 0.5
     X_x = X_ik[1]
@@ -127,7 +130,7 @@ end
 function compute_stiffness_contribution!(CB_k::Array{Float64,4},
                                          k_idx::Int,
                                          D_inv_i::AbstractMatrix{Float64},
-                                         X_ij::Vector{Float64},
+                                         X_ij::AbstractVector{Float64},
                                          omega_ij::Float64,
                                          omega_ik::Float64,
                                          V_k::Float64,
@@ -212,17 +215,17 @@ function k_loop!(K_local::Matrix{Float64},
                  K_block::Matrix{Float64},
                  CB_k_i::Array{Float64,4},
                  inverse_shape_tensor::Array{Float64,3},
-                 X_ij::Vector{Float64},
+                 X_ij::AbstractVector{Float64},
                  ω_ij::Float64,
                  V_i::Float64,
                  V_j::Float64,
                  mj::Int64,
                  dof::Int64,
-                 nj::Vector{Int64},
+                 nj::AbstractVector{Int64},
                  iID::Int64,
                  volume::Vector{Float64},
-                 omega::Vector{Vector{Float64}},
-                 bond_damage::Vector{Vector{Float64}},
+                 omega::BondScalarState{Float64},
+                 bond_damage::BondScalarState{Float64},
                  row_i_base::NTuple{N,Int64},
                  row_j_base::NTuple{N,Int64}) where {N}
     omega_i = omega[iID]
@@ -256,11 +259,11 @@ end
 function precompute_CB_tensors!(CB_k::AbstractArray{Float64,4},
                                 C_tensor::Array{Float64,4},
                                 D_inv::AbstractMatrix{Float64},
-                                neighbors::Vector{Int64},
+                                neighbors::AbstractVector{Int64},
                                 volume::Vector{Float64},
-                                bond_geometry_i::Vector{Vector{Float64}},
-                                omega_i::Vector{Float64},
-                                bond_damage_i::Vector{Float64},
+                                bond_geometry_i::AbstractVector{<:AbstractVector{Float64}},
+                                omega_i::AbstractVector{Float64},
+                                bond_damage_i::AbstractVector{Float64},
                                 dof::Int64,
                                 B_ik::Array{Float64,3})
     @inbounds for (k_idx, k) in enumerate(neighbors)
@@ -277,11 +280,11 @@ function precompute_CB_all_nodes!(all_CB_tensors::Vector{Array{Float64,4}},
                                   nodes::AbstractVector{Int64},
                                   C_Voigt::Array{Float64,3},
                                   inverse_shape_tensor::Array{Float64,3},
-                                  nlist::Vector{Vector{Int64}},
+                                  nlist::BondScalarState{Int64},
                                   volume::Vector{Float64},
-                                  bond_geometry::Vector{Vector{Vector{Float64}}},
-                                  omega::Vector{Vector{Float64}},
-                                  bond_damage::Vector{Vector{Float64}},
+                                  bond_geometry::BondVectorState{Float64},
+                                  omega::BondScalarState{Float64},
+                                  bond_damage::BondScalarState{Float64},
                                   dof::Int64)
     B_temp = dof == 2 ? zeros(2, 2, 2) : zeros(3, 3, 3)
     @inbounds for i in nodes
@@ -311,7 +314,7 @@ The sparsity pattern includes all (iID, jID) pairs where jID ∈ nlist[iID],
 covering both the node itself and all its neighbors.
 
 function build_sparsity_and_map(nodes::AbstractVector{Int64},
-                                nlist::Vector{Vector{Int64}},
+                                nlist::BondScalarState{Int64},
                                 nnodes::Int,
                                 dof::Int)
     n = dof * nnodes
@@ -373,7 +376,7 @@ end
 """
 
 function build_sparsity_and_map(nodes::AbstractVector{Int64},
-                                nlist::Vector{Vector{Int64}}, nnodes::Int64,
+                                nlist::BondScalarState{Int64}, nnodes::Int64,
                                 dof::Int64)
     n = dof * nnodes
 
@@ -439,11 +442,11 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int64},
                                              C_Voigt::Array{Float64,3},
                                              inverse_shape_tensor::Array{Float64,3},
                                              number_of_neighbors::Vector{Int64},
-                                             nlist::Vector{Vector{Int64}},
+                                             nlist::BondScalarState{Int64},
                                              volume::Vector{Float64},
-                                             bond_geometry::Vector{Vector{Vector{Float64}}},
-                                             omega::Vector{Vector{Float64}},
-                                             bond_damage::Vector{Vector{Float64}},
+                                             bond_geometry::BondVectorState{Float64},
+                                             omega::BondScalarState{Float64},
+                                             bond_damage::BondScalarState{Float64},
                                              zStiff::Array{Float64,3}; sign = 1)
     nnodes::Int = maximum(nodes)
     max_neighbors = maximum(number_of_neighbors)
@@ -617,9 +620,8 @@ end
 # Public interface
 # =============================================================================
 
-function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict, block_id::Int64)
-    Zero_Energy_Control.init_model(nodes, material_parameter, block_id)
+function init_model(nodes::AbstractVector{Int64}, material, block_id::Int64)
+    Zero_Energy_Control.init_model(nodes, material, block_id)
 
     update_list = Data_Manager.get_field("Update")
     update_list .= true
@@ -859,9 +861,9 @@ function _setup_zero_energy(nodes, dof, C_voigt_trafo, inverse_shape_tensor,
                             include_zero_energy)
     use_zero_energy = false
     zStiff = nothing
-    if haskey(Data_Manager.get_properties(1, "Material Model"), "Zero Energy Control")
-        if Data_Manager.get_properties(1, "Material Model")["Zero Energy Control"] ==
-           "Global"
+    material = Data_Manager.get_block_models(1).material
+    if material !== nothing && material.base.zero_energy_control !== nothing
+        if material.base.zero_energy_control == "Global"
             use_zero_energy = include_zero_energy
             if use_zero_energy
                 zStiff = Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness",

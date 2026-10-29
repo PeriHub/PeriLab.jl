@@ -10,8 +10,8 @@
     PeriLab.Data_Manager.set_num_controller(4)
     nn = PeriLab.Data_Manager.create_constant_node_scalar_field("Number of Neighbors",
                                                                 Int64)
-    nn[1] = 2
-    nn[2] = 3
+    nn[1] = 1
+    nn[2] = 2
     nn[3] = 1
     nn[4] = 2
     nlist = PeriLab.Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist",
@@ -32,18 +32,5 @@
     active = PeriLab.Data_Manager.get_field("Active")
     for iID in 1:4
         @test active[iID] == false
-    end
-end
-
-@testset "init_additive" begin
-    PeriLab.Data_Manager.data["properties"][23] = Dict("Additive Model" => Dict("Additive Model" => "does not exist"))
-    @test_logs (:error,
-                "No additive model of name does not exist exists.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.Model_Factory.Additive.init_model(Vector{Int64}([
-                                                                                   1,
-                                                                                   2,
-                                                                                   3
-                                                                               ]),
-                                                                 23)
     end
 end

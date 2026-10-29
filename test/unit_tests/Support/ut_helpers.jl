@@ -10,35 +10,6 @@ using StaticArrays
 using Test
 using LinearAlgebra: norm
 
-@testset "get_dependent_value / _with_ID" begin
-    parameter = Dict("Yield Stress" => 5.3)
-
-    @testset "constant value" begin
-        f = PeriLab.Helpers.get_dependent_value("Yield Stress", parameter)
-
-        @test f(1) == 5.3
-        @test f(42) == 5.3          # constant: independent of the node
-    end
-
-    @testset "with_ID returns a number, not the accessor" begin
-        value = PeriLab.Helpers.get_dependent_value_with_ID("Yield Stress", parameter, 1)
-
-        @test value == 5.3
-    end
-
-    @testset "default iID" begin
-        @test PeriLab.Helpers.get_dependent_value_with_ID("Yield Stress", parameter) == 5.3
-    end
-
-    @testset "with_ID delegates to the factory" begin
-        for iID in (1, 2, 7)
-            @test PeriLab.Helpers.get_dependent_value_with_ID("Yield Stress", parameter,
-                                                              iID) ==
-                  PeriLab.Helpers.get_dependent_value("Yield Stress", parameter)(iID)
-        end
-    end
-end
-
 @testset "PeriLab.Helpers.create_centroid_and_search_radius" begin
     @testset "unit cube - centroid and circumradius" begin
         coor = [0.0 0.0 0.0
@@ -192,6 +163,18 @@ end
         @test PeriLab.Helpers.find_point_in_hexagon([-0.5, 0.5, 0.5], coor_skew,
                                                     topo_skew) == false
     end
+end
+
+@testset "PeriLab.Helpers.find_point_in_polygon" begin
+    coor = [0.0 0.0; 1.0 0.0; 0.2 1.0; 1.2 1.0]   # skewed quad, tensor-grid order
+    topo = collect(1:4)
+    @test PeriLab.Helpers.find_point_in_polygon([0.6, 0.5], coor, topo)   # interior
+    @test PeriLab.Helpers.find_point_in_polygon([0.0, 0.0], coor, topo)   # corner
+    @test PeriLab.Helpers.find_point_in_polygon([0.5, 0.0], coor, topo)   # edge
+    @test !PeriLab.Helpers.find_point_in_polygon([0.05, 0.9], coor, topo)
+    @test !PeriLab.Helpers.find_point_in_polygon([1.5, 0.5], coor, topo)
+    @test PeriLab.Helpers.get_centroid(PeriLab.Helpers.get_ring(coor, topo), 2) ==
+          (0.6, 0.5)
 end
 
 @testset "ut_create_permutation" begin
@@ -397,30 +380,6 @@ end
     @test isapprox(tensorTest, tensor)
 end
 
-@testset "ut_interpolation" begin
-    x = [0.0, 1.0, 2.0, 3.0, 4.0]
-    y = [-1.0, 0.0, 7.0, 26.0, 63.0]  # x.^3 - 1.
-    values_dict = Dict()
-    values_dict["value"] = PeriLab.Solver_Manager.Helpers.interpolation(x, y)
-    @test isapprox(PeriLab.Solver_Manager.Helpers.interpol_data([1.5, 2.5],
-                                                                values_dict["value"])[1],
-                   2.375)
-    @test isapprox(PeriLab.Solver_Manager.Helpers.interpol_data([1.5, 2.5],
-                                                                values_dict["value"])[2],
-                   14.625)
-    @test isapprox(PeriLab.Solver_Manager.Helpers.interpol_data(1.5, values_dict["value"]),
-                   2.375)
-    @test PeriLab.Solver_Manager.Helpers.interpol_data(-1, values_dict["value"]) ==
-          minimum(y)
-    @test PeriLab.Solver_Manager.Helpers.interpol_data([-1, -8], values_dict["value"]) ==
-          [minimum(y), minimum(y)]
-    @test PeriLab.Solver_Manager.Helpers.interpol_data(5, values_dict["value"]) ==
-          maximum(y)
-    x = [0.0, 1.0]
-    y = [-1.0, 0.0]
-    values_dict = Dict()
-    values_dict["value"] = PeriLab.Solver_Manager.Helpers.interpolation(x, y)
-end
 @testset "ut_find_indices" begin
     @test PeriLab.Solver_Manager.Helpers.find_indices([1, 1, 2, 3, 3, 4, 4, 4, 1], 1) ==
           [1, 2, 9]
@@ -469,7 +428,7 @@ end
                                                                 Int64)
     nn[1] = 1
     nn[2] = 2
-    nn[3] = 3
+    nn[3] = 2
     nlist = PeriLab.Data_Manager.create_constant_bond_scalar_state("Neighborhoodlist",
                                                                    Int64)
     nlist[1] = [2]
@@ -526,27 +485,6 @@ end
     A = [1 1 1; 1 1 1; 1 1 1]
     Atest = PeriLab.Solver_Manager.Helpers.matrix_style(A)
     @test sum(size(Atest)) == 6
-end
-
-@testset "ut_find_files_with_ending" begin
-    # Create a temporary test directory with sample files
-    tmpdir = mktempdir()
-    touch(joinpath(tmpdir, "file1.txt"))
-    touch(joinpath(tmpdir, "file2.txt"))
-    touch(joinpath(tmpdir, "file3.csv"))
-    touch(joinpath(tmpdir, "file4.csv"))
-    mkdir(joinpath(tmpdir, "subdir"))
-
-    # Test case 1: Find .txt files
-    @test PeriLab.Solver_Manager.Helpers.find_files_with_ending(tmpdir, ".txt") ==
-          ["file1.txt", "file2.txt"]
-
-    # Test case 2: Find .csv files
-    @test PeriLab.Solver_Manager.Helpers.find_files_with_ending(tmpdir, ".csv") ==
-          ["file3.csv", "file4.csv"]
-
-    # Clean up: Remove the temporary test directory and files
-    rm(tmpdir; recursive = true)
 end
 
 # only interface test, because the called fromVoigt function is tested in "Tensors"
@@ -656,25 +594,28 @@ end
 end
 
 @testset "ut_sub_in_place" begin
-    C = [[[0.0, 0], [0, 0]], [[0, 0], [0, 0]]]
-    A = [[[1, 2], [3, 4]], [[5, 6.1], [7, 8]]]
-    B = [[[1.0, 4], [5, 1]], [[2, 1], [1, 4]]]
+    vector_state(x) = bond_field(Vector{Vector{Vector{Float64}}}(x))
+    C = vector_state([[[0.0, 0], [0, 0]], [[0, 0], [0, 0]]])
+    A = vector_state([[[1, 2], [3, 4]], [[5, 6.1], [7, 8]]])
+    B = vector_state([[[1.0, 4], [5, 1]], [[2, 1], [1, 4]]])
     PeriLab.Solver_Manager.Helpers.sub_in_place!(C, A, B)
     @test C == [[[0, -2.0], [-2.0, 3.0]], [[3.0, 5.1], [6.0, 4.0]]]
 end
 
 @testset "ut_add_in_place" begin
-    C = [[0.0, 0], [0, 0], [0, 0], [0, 0]]
-    A = [[1, 2], [3, 4], [5, 6.1], [7, 8]]
-    B = [[1.0, 4], [5, 1], [2, 1], [1, 4]]
+    scalar_state(x) = bond_field(Vector{Vector{Float64}}(x))
+    C = scalar_state([[0.0, 0], [0, 0], [0, 0], [0, 0]])
+    A = scalar_state([[1, 2], [3, 4], [5, 6.1], [7, 8]])
+    B = scalar_state([[1.0, 4], [5, 1], [2, 1], [1, 4]])
     PeriLab.Solver_Manager.Helpers.add_in_place!(C, A, B)
     @test C == [[2.0, 6.0], [8.0, 5.0], [7.0, 7.1], [8.0, 12.0]]
 end
 
 @testset "ut_div_in_place" begin
-    C = [[0.0, 0], [0, 0], [0, 0], [0, 0]]
-    A = [[1, 2], [3, 4], [5, 6.1], [7, 8]]
-    B = [[1.0, 4], [5, 1], [2, 1], [1, 4]]
+    scalar_state(x) = bond_field(Vector{Vector{Float64}}(x))
+    C = scalar_state([[0.0, 0], [0, 0], [0, 0], [0, 0]])
+    A = scalar_state([[1, 2], [3, 4], [5, 6.1], [7, 8]])
+    B = scalar_state([[1.0, 4], [5, 1], [2, 1], [1, 4]])
     PeriLab.Solver_Manager.Helpers.div_in_place!(C, A, B)
     @test C == [[1.0, 0.5], [0.6, 4.0], [2.5, 6.1], [7.0, 2.0]]
 
@@ -685,21 +626,6 @@ end
     @test C == [-1.0, 2.0]
     PeriLab.Solver_Manager.Helpers.div_in_place!(C, A, B, true)
     @test C == [1.0, 2.0]
-end
-
-@testset "ut_is_dependent" begin
-    (fieldN, fieldNP1) = PeriLab.Data_Manager.create_node_scalar_field("Parameter", Float64)
-    params = Dict("Value" => Dict("Field" => "Parameter"))
-    @test PeriLab.Solver_Manager.Helpers.is_dependent("Value", params) ==
-          (true, fieldNP1)
-    params = Dict("Value" => 1.0)
-    @test PeriLab.Solver_Manager.Helpers.is_dependent("Value", params) ==
-          (false, nothing)
-    params = Dict("Value" => Dict("Field" => "Non_Existent"))
-    @test_logs (:error, "Non_Existent does not exist for value interpolation.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.Solver_Manager.Helpers.is_dependent("Value",
-                                                    params)
-    end
 end
 
 @testset "ut_matrix_to_voigt" begin

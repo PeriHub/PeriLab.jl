@@ -419,12 +419,8 @@ end
 Extracts the values of one bond variable in exactly the order of the bond
 connectivity.
 
-Two storage layouts are supported, decided once per field from a sample entry:
-
-- **nested** (`Vector{Vector{...}}`, what PeriLab uses for `BondScalarState` and
-  `BondVectorState`): `field[node][neighbor]` is the value itself for a scalar field
-  and a `Vector` for a vector field such as `Deformed Bond Geometry`.
-- **flat** (an `Array{T,3}` per node, `BondTensorState`): `field[node][neighbor, i, j]`.
+`field[node][neighbor]` is the bond value: a number for a scalar field, an `SVector` for a
+vector field such as `Deformed Bond Geometry` and an `SMatrix` for a tensor field.
 
 # Arguments
 - `field`: The bond field
@@ -438,31 +434,14 @@ function gather_bond_values(field, bond_block::BondBlock, dof)
     values = zeros(Float64, n)
     n == 0 && return values
 
-    # Decide the layout once instead of branching inside the loop.
-    nested = ndims(field[bond_block.nodes[1]]) == 1
-
-    if nested
-        @inbounds for k in 1:n
-            entry = field[bond_block.nodes[k]][bond_block.neighbor_index[k]]
-            if isnothing(dof)
-                values[k] = Float64(entry)
-            elseif dof isa Integer
-                values[k] = Float64(entry[dof])
-            else
-                values[k] = Float64(entry[dof[1], dof[2]])
-            end
-        end
-    else
-        @inbounds for k in 1:n
-            node_entry = field[bond_block.nodes[k]]
-            m = bond_block.neighbor_index[k]
-            if isnothing(dof)
-                values[k] = Float64(node_entry[m])
-            elseif dof isa Integer
-                values[k] = Float64(node_entry[m, dof])
-            else
-                values[k] = Float64(node_entry[m, dof[1], dof[2]])
-            end
+    @inbounds for k in 1:n
+        entry = field[bond_block.nodes[k]][bond_block.neighbor_index[k]]
+        if isnothing(dof)
+            values[k] = Float64(entry)
+        elseif dof isa Integer
+            values[k] = Float64(entry[dof])
+        else
+            values[k] = Float64(entry[dof[1], dof[2]])
         end
     end
 
@@ -735,6 +714,8 @@ function write_nodal_results_in_exodus(exo::ExodusDatabase,
     # The vector is allocated as Float64 and filled by broadcast, which also converts
     # integer fields; write_values has no Int method.
     n_file_nodes = exodus_num_nodes(exo)
+    # one buffer for all variables of the step
+    var = zeros(Float64, n_file_nodes)
 
     for varname in keys(output)
         field = Data_Manager.get_field(output[varname]["fieldname"],
@@ -743,12 +724,12 @@ function write_nodal_results_in_exodus(exo::ExodusDatabase,
 
         # exo, timestep::Integer, id::Integer, var_index::Integer, vector
         # => https://github.com/cmhamel/Exodus.jl/blob/master/src/Variables.jl
-        var = zeros(Float64, n_file_nodes)
+        n_write < n_file_nodes && fill!(var, 0.0)
         if haskey(output[varname], "dof")
-            var[1:n_write] .= field[1:n_write, output[varname]["dof"]]
+            @views var[1:n_write] .= field[1:n_write, output[varname]["dof"]]
         else
-            var[1:n_write] .= field[1:n_write, output[varname]["i_dof"],
-            output[varname]["j_dof"]]
+            @views var[1:n_write] .= field[1:n_write, output[varname]["i_dof"],
+                                           output[varname]["j_dof"]]
         end
         # interface does not work with Int yet 28//08//2023
         write_values(exo, NodalVariable, step, varname, var)

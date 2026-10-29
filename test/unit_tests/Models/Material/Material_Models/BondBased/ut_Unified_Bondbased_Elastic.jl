@@ -6,8 +6,8 @@
 #using .PeriLab
 
 @testset "material_name" begin
-    @test PeriLab.Solver_Manager.Model_Factory.Material.Unified_Bondbased_Elastic.material_name() ==
-          "Unified Bond-based Elastic"
+    @test parentmodule(PeriLab.ParameterSpec.lookup_model(:material, "Unified Bond-based Elastic")) ===
+      PeriLab.Solver_Manager.Model_Factory.Material.Unified_Bondbased_Elastic
     @test !(PeriLab.Solver_Manager.Model_Factory.Material.Unified_Bondbased_Elastic.fe_support())
 end
 @testset "compute_bond_based_strain" begin

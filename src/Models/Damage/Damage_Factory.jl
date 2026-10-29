@@ -5,16 +5,154 @@
 module Damage
 
 using TimerOutputs: @timeit
+using Polyester: @batch
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
-using ....ModuleLoader: find_module_files, create_module_specifics
-global module_list = find_module_files(@__DIR__, "damage_name")
-for mod in module_list
-    include(mod["File"])
+using ....ModuleLoader: find_registered_modules
+using .....ParameterSpec: @params, Dependent, Constant, register_base!, ParseContext,
+                          add_error!, join_path, WithBase, Table1D, dependent_tables, value,
+                          model_module, model_function
+import .....ParameterSpec: check!
+
+@params "Direction-dependent critical values for Critical Energy Anisotropic, along the material axes" struct AnisotropicDamageParams
+    "Critical bond energy for the bond share along the material x axis"
+    critical_value_x::Float64 = req("Critical Value X")
+    "Critical bond energy for the bond share along the material y axis"
+    critical_value_y::Float64 = req("Critical Value Y")
+    "Critical bond energy for the bond share along the material z axis (3D); the y value if not given"
+    critical_value_z::Union{Nothing,Float64} = opt("Critical Value Z"; default = nothing)
 end
 
-using LoopVectorization
-using .....Helpers: find_inverse_bond_id
+@params "Damps the waves released when bonds break (local damping after Silling)" struct LocalDampingParams
+    "Young's modulus that sets the wave speed of the damping"
+    representative_youngs_modulus::Float64 = req("Representative Young's modulus"; min = 0,
+                                                 quantity = :stress)
+    "Strength of the damping; 0 switches it off"
+    damping_coefficient::Float64 = req("Damping coefficient"; min = 0)
+end
+
+"""
+    DamageBaseParams
+
+Keys every damage model may use (read from the same YAML block as the model's
+own keys).
+"""
+@params "Damage model of the blocks that use this entry: the failure limit of a bond and options shared by all damage models" struct DamageBaseParams
+    "Failure limit of a bond: the critical stretch or the critical energy release rate, depending on the model; a number or a table over a node field"
+    critical_value::Dependent = req("Critical Value"; min = 0)
+    "Critical values of bonds between two blocks, as \"Interblock Critical Value i_j\" entries for bonds from block i to block j"
+    interblock_damage::Union{Nothing,Dict{String,Float64}} = opt("Interblock Damage";
+                                                                 default = nothing)
+    anisotropic_damage::Union{Nothing,AnisotropicDamageParams} = opt("Anisotropic Damage";
+                                                                     default = nothing)
+    local_damping::Union{Nothing,LocalDampingParams} = opt("Local Damping";
+                                                           default = nothing)
+end
+
+const INTERBLOCK_KEY = r"^Interblock Critical Value \d+_\d+$"
+
+function check!(p::DamageBaseParams, path::String, ctx::ParseContext)
+    p.interblock_damage === nothing && return nothing
+    for name in keys(p.interblock_damage)
+        occursin(INTERBLOCK_KEY, name) ||
+            add_error!(ctx, join_path(join_path(path, "Interblock Damage"), name),
+                       "unknown key — expected \"Interblock Critical Value <block>_<block>\"")
+    end
+    p.critical_value isa Constant ||
+        add_error!(ctx, join_path(path, "Critical Value"),
+                   "must be a number when Interblock Damage is used")
+    return nothing
+end
+
+# registration runs at load time, never during precompilation
+__init__() = register_base!(:damage, DamageBaseParams)
+
+"""
+    BlockDamage
+
+The typed damage model of a block: the shared base part, the model's own part,
+and the field-dependent tables to bind before each compute.
+"""
+# mutable only for heap identity (never mutated), see BlockMaterial
+mutable struct BlockDamage{B,M}
+    base::B
+    model::M
+    tables::Vector{Table1D}
+end
+
+function block_damage(wb::WithBase)
+    BlockDamage(wb.base, wb.model,
+                vcat(dependent_tables(wb.base),
+                     dependent_tables(wb.model)))
+end
+
+function init_interface_crit_values(damage::BlockDamage, block_id::Int64)
+    interblock = damage.base.interblock_damage
+    interblock === nothing && return
+    max_block_id = maximum(Data_Manager.get_block_id_list())
+    inter_critical_value = Data_Manager.get_crit_values_matrix()
+    if inter_critical_value == fill(-1, (1, 1, 1))
+        inter_critical_value = fill(value(damage.base.critical_value, 1),
+                                    (max_block_id, max_block_id, max_block_id))
+    end
+    for block_iId in 1:max_block_id, block_jId in 1:max_block_id
+        name = "Interblock Critical Value $(block_iId)_$block_jId"
+        haskey(interblock, name) &&
+            (inter_critical_value[block_iId, block_jId, block_id] = interblock[name])
+    end
+    Data_Manager.set_crit_values_matrix(inter_critical_value)
+end
+
+function init_aniso_crit_values(aniso::AnisotropicDamageParams, block_id::Int64,
+                                dof::Int64)
+    aniso_crit::Dict{Int64,Any} = Data_Manager.get_aniso_crit_values()
+    aniso_crit[block_id] = dof == 2 ?
+                           [aniso.critical_value_x, aniso.critical_value_y] :
+                           [aniso.critical_value_x, aniso.critical_value_y,
+        something(aniso.critical_value_z, aniso.critical_value_y)]
+    Data_Manager.set_aniso_crit_values(aniso_crit)
+end
+
+"""
+    init_inverse_bond_id()
+
+Creates (once) the bond field "Inverse Bond ID", the bond-indexed inverse neighborhood
+list (see `find_inverse_bond_index!`), and returns it.
+"""
+function init_inverse_bond_id()
+    Data_Manager.has_key("Inverse Bond ID") &&
+        return Data_Manager.get_field("Inverse Bond ID")
+    inverse_bond_id = Data_Manager.create_constant_bond_scalar_state("Inverse Bond ID",
+                                                                     Int64)
+    return find_inverse_bond_index!(inverse_bond_id, Data_Manager.get_nlist(),
+                                    Data_Manager.get_inverse_nlist())
+end
+
+"""
+    critical_value_lookup(critical_value, inter_block_damage::Bool, block::Int64)
+
+Returns `(iID, neighborID) -> critical value` of a bond: the `Critical_Value` node field
+if it exists, else the interblock matrix, else the `Critical Value` parameter. Each case
+is its own closure type, so a bond loop taking it as an argument is type stable.
+"""
+function critical_value_lookup(critical_value, inter_block_damage::Bool, block::Int64)
+    if Data_Manager.has_key("Critical_Value")
+        crit_field::NodeScalarField{Float64} = Data_Manager.get_field("Critical_Value")
+        return (iID, neighborID) -> crit_field[iID]
+    elseif inter_block_damage
+        block_ids::NodeScalarField{Int64} = Data_Manager.get_field("Block_Id")
+        crit_matrix::Array{Float64,3} = Data_Manager.get_crit_values_matrix()
+        return (iID, neighborID) -> crit_matrix[block_ids[iID], block_ids[neighborID],
+                                                block]
+    end
+    return (iID, neighborID) -> value(critical_value, iID)
+end
+
+for file in find_registered_modules(@__DIR__, "register_damage")
+    include(file)
+end
+
+using .....Helpers: find_inverse_bond_id, find_inverse_bond_index!, MINBATCH
 export fields_for_local_synchronization
 export compute_model
 export init_interface_crit_values
@@ -24,10 +162,7 @@ export init_fields
 """
     init_fields()
 
-Initialize damage model fields
-
-# Arguments
-- `params::Dict`: Parameters.
+Creates the damage field and the inverse neighbor list.
 """
 function init_fields()
     dof = Data_Manager.get_dof()
@@ -43,33 +178,27 @@ function init_fields()
 end
 
 """
-    compute_model(nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
+    compute_model(nodes, damage, block, time, dt)
 
-Computes the damage model
+Binds the damage's dependent values, computes the block's damage model and the
+damage index.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: The nodes
-- `model_param::Dict`: The model parameters
+- `damage::BlockDamage`: The typed damage model of the block
 - `block::Int64`: The block
 - `time::Float64`: The current time
 - `dt::Float64`: The time step
 """
-function compute_model(nodes::AbstractVector{Int64},
-                       model_param::Dict,
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64)
-    mod = Data_Manager.get_model_module(model_param["Damage Model"])
-
-    mod.compute_model(nodes, model_param,
-                      block, time, dt)
-
+function compute_model(nodes::AbstractVector{Int64}, damage::BlockDamage, block::Int64,
+                       time::Float64, dt::Float64)
+    Data_Manager.bind_dependent_tables!(damage.tables)
+    model_function(damage.model, Val(:compute_model))(nodes, damage.model, damage, block,
+                                                      time, dt)
     if isnothing(Data_Manager.get_filtered_nlist())
         @timeit "compute index" return damage_index(nodes)
     end
-
-    @timeit "compute index" return damage_index(nodes,
-                                                Data_Manager.get_filtered_nlist())
+    @timeit "compute index" return damage_index(nodes, Data_Manager.get_filtered_nlist())
 end
 
 """
@@ -82,12 +211,9 @@ Defines all synchronization fields for local synchronization
 - `block::Int64`: block ID
 """
 function fields_for_local_synchronization(model, block)
-    model_param = Data_Manager.get_properties(block, "Damage Model")
-    mod = Data_Manager.get_model_module(model_param["Damage Model"])
-
-    mod.fields_for_local_synchronization(model)
+    damage = Data_Manager.get_block_models(block).damage
+    model_module(damage.model).fields_for_local_synchronization(model)
 end
-
 """
     damage_index(::Union{SubArray, Vector{Int64})
 
@@ -99,7 +225,7 @@ damageIndex = sum_i (brokenBonds_i * volume_i) / volumeNeighborhood
 - `nodes::AbstractVector{Int64}`: corresponding nodes to this model
 """
 function damage_index(nodes::AbstractVector{Int64},
-                      nlist_filtered_ids::BondScalarState{Int64})
+                      nlist_filtered_ids::NestedNeighborhoodList)
     bond_damageNP1 = Data_Manager.get_bond_damage("NP1")
     for iID in nodes
         bond_damageNP1[iID][nlist_filtered_ids[iID]] .= 1
@@ -120,7 +246,7 @@ function compute_index(damage::NodeScalarField{Float64},
                        volume::NodeScalarField{Float64},
                        nlist::BondScalarState{Int64},
                        bond_damage::BondScalarState{Float64})::Nothing
-    @inbounds @fastmath for iID in nodes
+    @batch minbatch=MINBATCH for iID in nodes
         undamaged_volume = 0.0  # More explicit than zero(Float64)
         totalDamage = 0.0
 
@@ -137,116 +263,31 @@ function compute_index(damage::NodeScalarField{Float64},
 
         # More explicit type handling
         current_damage = damage[iID]
-        threshold = current_damage * undamaged_volume
+        threshold = @fastmath current_damage * undamaged_volume
         if threshold < totalDamage
-            damage[iID] = totalDamage / undamaged_volume
+            damage[iID] = @fastmath totalDamage / undamaged_volume
         end
     end
     return nothing
 end
 
 """
-    init_interface_crit_values(params::Dict, block_id::Int64)
-
-Initialize the critical values
-
-# Arguments
-- `params::Dict`: The parameters
-- `block_id::Int64`: current block
-"""
-function init_interface_crit_values(damage_parameter::Dict,
-                                    block_id::Int64)
-    if !haskey(damage_parameter, "Interblock Damage")
-        return
-    end
-    max_block_id = maximum(Data_Manager.get_block_id_list())
-    inter_critical_value = Data_Manager.get_crit_values_matrix()
-    if inter_critical_value == fill(-1, (1, 1, 1))
-        inter_critical_value = fill(Float64(damage_parameter["Critical Value"]),
-                                    (max_block_id, max_block_id, max_block_id))
-    end
-    for block_iId in 1:max_block_id
-        for block_jId in 1:max_block_id
-            critical_value_name = "Interblock Critical Value $(block_iId)_$block_jId"
-            if haskey(damage_parameter["Interblock Damage"], critical_value_name)
-                if damage_parameter["Interblock Damage"][critical_value_name] isa Number
-                    inter_critical_value[block_iId, block_jId,
-                                         block_id] = damage_parameter["Interblock Damage"][critical_value_name]
-                end
-            end
-        end
-    end
-    Data_Manager.set_crit_values_matrix(inter_critical_value)
-end
-
-"""
-    init_aniso_crit_values(params::Dict, block_id::Int64)
-
-Initialize the anisotropic critical values
-
-# Arguments
-- `params::Dict`: The parameters
-- `block_id::Int64`: current block
-"""
-function init_aniso_crit_values(damage_parameter::Dict,
-                                block_id::Int64, dof::Int64)
-    aniso_crit::Dict{Int64,Any} = Data_Manager.get_aniso_crit_values()
-
-    crit_x = damage_parameter["Anisotropic Damage"]["Critical Value X"]
-    crit_y = damage_parameter["Anisotropic Damage"]["Critical Value Y"]
-    if dof == 2
-        aniso_crit[block_id] = [crit_x, crit_y]
-    else
-        crit_z = get(damage_parameter["Anisotropic Damage"], "Critical Value Z", crit_y)
-        aniso_crit[block_id] = [crit_x, crit_y, crit_z]
-    end
-    Data_Manager.set_aniso_crit_values(aniso_crit)
-
-    # if !haskey(damage_parameter, "Anisotropic Damage")
-    #     return
-    # end
-    # aniso_crit[block_id] =  damage_parameter["Anisotropic Damage"]
-    # Data_Manager.set_aniso_crit_values(aniso_crit)
-
-    return
-end
-
-"""
     init_model(nodes::AbstractVector{Int64}, block::Int64)
 
-Initialize the damage models.
+Initializes the damage model of a block (`Data_Manager.get_block_models(block).damage`),
+its interface and anisotropic critical values.
 
 # Arguments
-- `nodes::AbstractVector{Int64}`: Nodes for the degradation model.
-- `block::Int64`: Block identifier for the degradation model.
-
-# Example
-```julia
-init_model(my_data_manager, [1, 2, 3], 1)
-```
+- `nodes::AbstractVector{Int64}`: Nodes of the block.
+- `block::Int64`: Block identifier.
 """
-function init_model(nodes::AbstractVector{Int64},
-                    block::Int64)
-    model_param = Data_Manager.get_properties(block, "Damage Model")
-    # if haskey(model_param, "Anisotropic Damage")
-    #     Data_Manager.create_bond_vector_state("Bond Damage Anisotropic", Float64, Data_Manager.get_dof(), 1)
-    # end
-    mod = create_module_specifics(model_param["Damage Model"],
-                                  module_list,
-                                  @__MODULE__,
-                                  "damage_name")
-
-    if isnothing(mod)
-        @abort "No damage model of name " * model_param["Damage Model"] * " exists."
-        return
-    end
-    Data_Manager.set_model_module(model_param["Damage Model"], mod)
-    mod.init_model(nodes, model_param, block)
-    mod.fields_for_local_synchronization("Damage Model")
-    Damage.init_interface_crit_values(model_param, block)
-
-    if haskey(model_param, "Anisotropic Damage")
-        Damage.init_aniso_crit_values(model_param, block, Data_Manager.get_dof())
-    end
+function init_model(nodes::AbstractVector{Int64}, block::Int64)
+    damage = Data_Manager.get_block_models(block).damage
+    model_module(damage.model).init_model(nodes, damage.model, damage, block)
+    model_module(damage.model).fields_for_local_synchronization("Damage Model")
+    init_interface_crit_values(damage, block)
+    damage.base.anisotropic_damage === nothing ||
+        init_aniso_crit_values(damage.base.anisotropic_damage, block,
+                               Data_Manager.get_dof())
 end
 end

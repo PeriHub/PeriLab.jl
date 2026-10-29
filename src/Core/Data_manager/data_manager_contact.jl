@@ -163,8 +163,8 @@ function set_free_contact_nodes(block::Int64, free_surface_nodes::Vector{Int64})
     data["Free Surface Nodes"][block] = free_surface_nodes
 end
 
-function set_contact_properties(params::Dict)
-    data["Contact Properties"] = params
+function set_contact_properties(contact)
+    data["Contact Properties"] = contact
 end
 
 function get_contact_dict(id::String)

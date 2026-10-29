@@ -12,7 +12,7 @@ PeriLab:
     Material Models:
       Mat_1:
         Material Model: "Correspondence Elastic"
-        Symmetry: Orthotropic
+        Symmetry: orthotropic
         Young's Modulus X: 2.5e3
         Young's Modulus Y: 2.5e3
         Young's Modulus Z: 2.5e3
@@ -25,7 +25,7 @@ PeriLab:
         Zero Energy Control: "Global"
       Mat_2:
         Material Model: "Correspondence Elastic"
-        Symmetry: Orthotropic
+        Symmetry: orthotropic
         Young's Modulus X: 2.5e3
         Young's Modulus Y: 2.5e3
         Young's Modulus Z: 2.5e3

@@ -18,6 +18,7 @@ export create_constant_bond_tensor_state
 export create_bond_tensor_state
 
 export create_constant_element_vector_field
+export get_bond_ptr
 
 export create_constant_free_size_field
 export create_free_size_field
@@ -29,8 +30,11 @@ export
        NodeField,
        BondScalarState,
        BondVectorState,
+       BondVectorField,
        BondTensorState,
        BondState,
+       BondField,
+       NestedNeighborhoodList,
        FreeSizeField
 
 """
@@ -93,7 +97,7 @@ Returns the field with the given name.
 # Returns
 - `field::Field`: The field with the given name.
 """
-function _get_field(name::String)::Union{Array,Nothing}
+function _get_field(name::String)::Union{AbstractArray,Nothing}
     try
         return fieldmanager.fields[name].data
     catch
@@ -117,9 +121,29 @@ const NodeVectorField = Matrix{T} where {T<:Union{Int64,Float64,Bool}}
 const NodeTensorField = Array{T,3} where {T<:Union{Int64,Float64,Bool}}
 const NodeField{T} = Union{NodeScalarField{T},NodeVectorField{T},NodeTensorField{T}}
 
-const BondScalarState = Vector{Vector{T}} where {T<:Union{Int64,Float64,Bool}}
-const BondVectorState = Vector{Vector{Vector{T}}} where {T<:Union{Int64,Float64,Bool}}
-const BondTensorState = Vector{Array{T,3}} where {T<:Union{Int64,Float64,Bool}}
+# One node of a CSR bond field: a contiguous view into the flat data.
+const BondView{E} = SubArray{E,1,Vector{E},Tuple{UnitRange{Int64}},true}
+# CSR bond field, flat data of element type `E` sharing the offsets `get_bond_ptr()`.
+const BondField{E} = VectorOfArrays{E,1,0,Vector{E},Vector{Int64},Vector{Tuple{}},
+                                    BondView{E}}
+
+const BondScalarState = BondField{T} where {T<:Union{Int64,Float64,Bool}}
+# Nested neighborhood lists that cannot share the CSR offsets of the bond fields: the global
+# list before it is distributed to the ranks (still edited in place by bond filters and FE
+# topology) and the filtered bond index lists of the contact bond filter. The local
+# neighborhood list on each rank is a `BondScalarState{Int64}`.
+const NestedNeighborhoodList = Vector{Vector{Int64}}
+# `D` is the dof; code that only knows `dof` at run time reaches the kernels through a
+# function barrier (an argument annotated `BondVectorState{T}` specializes on `D`).
+const BondVectorState{T,D} = BondField{SVector{D,T}} where {T<:Union{Int64,Float64,Bool},D}
+# Vector state of a 2D or 3D model. Use it for locals that hold a vector state fetched with
+# `get_field`: the union lets the compiler split kernel calls into static ones, while the
+# open `BondVectorState{T}` makes every call dynamic (and allocating).
+const BondVectorField{T} = Union{BondVectorState{T,2},BondVectorState{T,3}}
+# `D` is the dof, `L = D * D`
+const BondTensorState{T,D,L} = BondField{SMatrix{D,D,T,L}} where {T<:Union{Int64,Float64,
+                                                                           Bool},
+                                                                  D,L}
 const BondState{T} = Union{BondScalarState{T},BondVectorState{T},BondTensorState{T}}
 
 const FreeSizeField = Array{T,N} where {T<:Union{Int64,Float64,Bool},N}
@@ -250,7 +274,7 @@ function create_field!(name::String, _data, field_type::String)
         return _get_field(name)
     end
 
-    T = eltype(_data)
+    T = _vartype(_data)
     D = typeof(_data)
     fieldmanager.fields[name] = DataField{T,D}(name, _data)
 
@@ -259,6 +283,35 @@ function create_field!(name::String, _data, field_type::String)
     data["field_names"] = Vector{String}(collect(keys(data["field_types"])))
 
     return _data
+end
+
+_vartype(field) = eltype(field)
+# scalar element type, also for SVector / SMatrix bond values
+_vartype(field::VectorOfArrays) = eltype(eltype(flatview(field)))
+
+"""
+	get_bond_ptr()
+
+Returns the CSR offsets shared by all bond fields: the bonds of node `i` are the flat
+indices `ptr[i]:(ptr[i + 1] - 1)`. Built from "Number of Neighbors" on first use. The bond
+structure is fixed afterwards, a changed "Number of Neighbors" aborts.
+"""
+function get_bond_ptr()::Vector{Int64}
+    ptr::Vector{Int64} = data["bond_ptr"]
+    nbonds = _get_field("Number of Neighbors")
+    if isempty(ptr)
+        resize!(ptr, length(nbonds) + 1)
+        ptr[1] = 1
+        @inbounds for i in eachindex(nbonds)
+            ptr[i + 1] = ptr[i] + nbonds[i]
+        end
+        return ptr
+    end
+    if length(ptr) != length(nbonds) + 1 ||
+       any(i -> ptr[i + 1] - ptr[i] != nbonds[i], eachindex(nbonds))
+        @abort "\"Number of Neighbors\" changed after the first bond field was created. The bond structure must not change."
+    end
+    return ptr
 end
 
 function _create_node_scalar_field(name::String,
@@ -279,23 +332,30 @@ end
 
 function _create_bond_scalar_state(name::String,
                                    value::T) where {T<:Union{Int64,Float64,Bool}}
-    nBonds = _get_field("Number of Neighbors")
-    return create_field!(name,
-                         [fill(value, n) for n in nBonds], "BondScalarState")
+    ptr = get_bond_ptr()
+    return create_field!(name, VectorOfVectors(fill(value, ptr[end] - 1), ptr),
+                         "BondScalarState")
 end
 function _create_bond_vector_state(name::String, value::T,
                                    dof::Int64) where {T<:Union{Int64,Float64,Bool}}
     @assert dof > 1
-    nBonds = _get_field("Number of Neighbors")
-    return create_field!(name,
-                         [[fill(value, dof) for _ in 1:n] for n in nBonds],
-                         "BondVectorState")
+    return _create_bond_vector_state(name, value, Val(dof))
+end
+function _create_bond_vector_state(name::String, value::T,
+                                   ::Val{D}) where {T<:Union{Int64,Float64,Bool},D}
+    ptr = get_bond_ptr()
+    data = fill(SVector{D,T}(ntuple(_ -> value, Val(D))), ptr[end] - 1)
+    return create_field!(name, VectorOfVectors(data, ptr), "BondVectorState")
 end
 function _create_bond_tensor_state(name::String, value::T,
                                    dof::Int64) where {T<:Union{Int64,Float64,Bool}}
-    nBonds = _get_field("Number of Neighbors")
-    return create_field!(name,
-                         [fill(value, (n, dof, dof)) for n in nBonds], "BondTensorState")
+    return _create_bond_tensor_state(name, value, Val(dof))
+end
+function _create_bond_tensor_state(name::String, value::T,
+                                   ::Val{D}) where {T<:Union{Int64,Float64,Bool},D}
+    ptr = get_bond_ptr()
+    data = fill(SMatrix{D,D,T,D * D}(ntuple(_ -> value, Val(D * D))), ptr[end] - 1)
+    return create_field!(name, VectorOfVectors(data, ptr), "BondTensorState")
 end
 
 function _create_element_scalar_field(name::String,

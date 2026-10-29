@@ -3,69 +3,56 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Bond_Deformation
-using DataStructures: OrderedDict
 using .......Data_Manager
 using .......Geometry: bond_geometry!
-export pre_calculation_name
 export init_model
-export compute
+export compute_model
 export fields_for_local_synchronization
 
-"""
-    pre_calculation_name()
-
-Gives the pre_calculation name. It is needed for comparison with the yaml input deck.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the Pre_Calculation.
-
-Example:
-```julia
-println(pre_calculation_name())
-"Deformed Bond Geometry"
-```
-"""
-function pre_calculation_name()
-    return "Deformed Bond Geometry"
+using ......ParameterSpec: @params, register_pre_calculation
+"Switch only: this pre-calculation has no parameters."
+@params "Computes the deformed bond vectors and lengths" struct DeformedBondGeometryParams
 end
+__init__() = register_pre_calculation("Deformed Bond Geometry", DeformedBondGeometryParams)
 
 """
-    init_model(nodes, parameter)
+    init_model(nodes, p, pre_calculation, block)
 
 Inits the bond deformation calculation.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `parameter::Dict(String, Any)`: Dictionary with parameter.
+- `p::DeformedBondGeometryParams`: The model parameters.
+- `pre_calculation`: `nothing` (pre-calculations have no shared parameters).
+- `block::Int64`: The current block.
 
 """
-function init_model(nodes::AbstractVector{Int64},
-                    parameter::Union{Dict,OrderedDict},
-                    block::Int64)
+function init_model(nodes::AbstractVector{Int64}, p::DeformedBondGeometryParams,
+                    pre_calculation, block::Int64)
     dof = Data_Manager.get_dof()
     Data_Manager.create_bond_vector_state("Deformed Bond Geometry", Float64, dof)
     Data_Manager.create_bond_scalar_state("Deformed Bond Length", Float64)
-    Data_Manager.set_model_module("Deformed Bond Geometry", Bond_Deformation)
 end
 
 """
-    compute(nodes::AbstractVector{Int64}), parameter::Dict
+    compute_model(nodes, p, pre_calculation, block, time, dt)
 
 Compute the bond deformation.
 
 # Arguments
 - `nodes`: List of nodes.
-- `parameter::Dict(String, Any)`: Dictionary with parameter.
+- `p::DeformedBondGeometryParams`: The model parameters.
+- `pre_calculation`: `nothing` (pre-calculations have no shared parameters).
+- `block::Int64`: The current block.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
 """
-function compute(nodes::AbstractVector{Int64},
-                 parameter::Union{Dict,OrderedDict},
-                 block::Int64)
+function compute_model(nodes::AbstractVector{Int64}, p::DeformedBondGeometryParams,
+                       pre_calculation, block::Int64, time::Float64, dt::Float64)
     nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
     deformed_coor::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
                                                                      "NP1")
-    deformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
+    deformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
                                                                      "NP1")
     deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
                                                                             "NP1")

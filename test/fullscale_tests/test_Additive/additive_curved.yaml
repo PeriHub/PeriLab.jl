@@ -14,8 +14,6 @@ PeriLab:
       Thermal Model: Thermal Test
   Discretization:
     Gcode:
-      Overwrite Mesh: true
-      Scale: 1.0
       Width: 0.5
       Height: 0.5
       Sampling: 0.5

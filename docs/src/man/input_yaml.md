@@ -139,7 +139,7 @@ The information is stored in the [params dictionary](@ref "Parameters")
   - **Numerical Damping**: Numeric value representing numerical damping. (Float or Int, optional)
 - **Static**: Dictionary of Static solver parameters.
   - **Number of Steps**: Numeric value representing the number of steps. (Int, optional)
-  - **NLsolve,Solution tolerance  | Float, Residual tolerance, Maximum number of iterations, Show solver iteration, Residual scaling, Solver Type, m, Linear Start Value** Numeric values representing Static solver parameters. (Float, Bool, String or Int, optional)
+  - **Fixed dt, Solution tolerance, Residual tolerance, Maximum number of iterations, Show solver iteration, Residual scaling, m, Linear Start Value** Numeric values representing Static solver parameters. (Float, Bool, String or Int, optional)
 
 ## `Surface Correction (optional)`
 - **Type**: String defining what model is used, currently only Volume Correction is included
