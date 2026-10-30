@@ -52,7 +52,6 @@ jobs:
       - name: Run Tests
         uses: julia-actions/julia-runtest@v1
         env:
-          LICENSE_SERVER_URL: ${{ secrets.LICENSE_SERVER_URL }}
           LICENSE_KEY: ${{ secrets.LICENSE_KEY }}
           CONTENT_SIGNING_SECRET: ${{ secrets.CONTENT_SIGNING_SECRET }}
       - name: Archive Test Results
