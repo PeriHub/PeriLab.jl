@@ -31,9 +31,9 @@ using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, StepFail
                                               min = 1)
     "Prints the iterations of the nonlinear solver"
     show_solver_iteration::Bool = opt("Show solver iteration"; default = false)
-    "Divisor of the force residual before it is compared with the residual tolerance"
+    "Divisor of the force residual before it is compared with the residual tolerance; should be in the range of the Young's modulus"
     residual_scaling::Float64 = opt("Residual scaling"; default = 1e6)
-    "Number of previous iterations used by the Anderson acceleration"
+    "Number of previous iterations used by the [Anderson acceleration](https://github.com/JuliaNLSolvers/NLsolve.jl#anderson-acceleration); larger values usually converge faster but need more memory and can become unstable"
     m::Int64 = opt("m"; default = 15, min = 1)
     "Start guess of the displacements: per direction a value at the minimum and one at the maximum coordinate, separated by spaces, interpolated linearly; zero if not given"
     linear_start_value::Union{Nothing,String} = opt("Linear Start Value"; default = nothing)

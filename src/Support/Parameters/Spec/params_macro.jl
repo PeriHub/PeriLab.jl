@@ -201,8 +201,8 @@ _is_description_kw(arg) = arg isa Expr && arg.head === :kw && arg.args[1] === :d
 
 function _has_description(decl::Expr)
     return any(arg -> _is_description_kw(arg) ||
-                   (arg isa Expr && arg.head === :parameters &&
-                    any(_is_description_kw, arg.args)), decl.args[2:end])
+                      (arg isa Expr && arg.head === :parameters &&
+                       any(_is_description_kw, arg.args)), decl.args[2:end])
 end
 
 function _field_usage(name, fname)
@@ -303,7 +303,7 @@ function _params(description::String, structdef)
                                                          Any[$(entries...)])
                    $(_SELF).parameter_spec(::Type{<:$name}) = $specname
                    $(_SELF).is_params(::Type{<:$name}) = true
-                   $(_SELF).params_description(::Type{<:$name}) = $description
+                   $(_SELF).params_description(::Type{<:$name}) = $(_SELF).docs_links($description)
                    nothing
                end)
 end

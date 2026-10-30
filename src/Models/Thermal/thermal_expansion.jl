@@ -19,7 +19,7 @@ export init_model
 
 using ......ParameterSpec: @params, register_thermal
 @params "Thermal strain from the change of temperature" struct ThermalExpansionParams
-    "Thermal strain per temperature change: one value, or one per direction"
+    "[Thermal expansion](https://en.wikipedia.org/wiki/Thermal_expansion) coefficient, the thermal strain per temperature change: one value, or one per direction"
     thermal_expansion_coefficient::Union{Float64,
                                          Vector{Float64}} = req("Thermal Expansion Coefficient")
     "Temperature without thermal strain; 0 if not given"

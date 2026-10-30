@@ -93,8 +93,19 @@ struct FieldSpec
     when::Union{Nothing,Dict{String,Vector{String}}}
 end
 
+const DOCS_URL = "https://perihub.github.io/PeriLab.jl/stable/"
+
+"""
+    docs_links(description)
+
+Expands markdown links into the PeriLab docs, `[theory](@docs theory/theory_plastic/)`,
+to `DOCS_URL` links, so they work in the docs, the schema and `describe` alike.
+"""
+docs_links(s::AbstractString) = replace(s, "](@docs " => "](" * DOCS_URL)
+
 function FieldSpec(name::Symbol, type, decl::FieldDecl; default = decl.default)
     return FieldSpec(name, type, decl.alias, decl.required, default, decl.min, decl.max,
-                     decl.allowed, decl.quantity, decl.description, decl.category,
+                     decl.allowed, decl.quantity, docs_links(decl.description),
+                     decl.category,
                      decl.evaluated, decl.when)
 end

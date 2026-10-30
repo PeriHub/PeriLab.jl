@@ -1,28 +1,66 @@
 # Solver
 
-| Parameter       | Type  | Optional | Description                                                                    |
-| --------------- | ----- | -------- | ------------------------------------------------------------------------------ |
-| Material Models | Bool  | Yes      | Activates the time integration for materials and material evaluation           |
-| Damage Models   | Bool  | Yes      | Activates the damage evaluation                                                |
-| Thermal Models  | Bool  | Yes      | Activates the time integration for thermal models and thermal model evaluation |
-| Additive Models | Bool  | Yes      | Activates the additive model evaluation                                        |
-| Maximum Damage  | Float | Yes      | Defines the maximum damage in one point                                        |
-| Initial Time    | Float | No       | Defines the initial time                                                       |
-| Final Time      | Float | No       | Defines the final time                                                         |
-| Fixed dt        | Float | Yes      | Defines a fixed time step                                                      |
-| Number of Steps | Int   | Yes      | Defines a fixed number of steps                                                |
-| Verlet          | Dict  | Yes      | Defines a Verlet solver   a Static  without using the stiffness matrix                                                    |
-| Static          | Dict  | Yes      | Defines a Static solver without using the stiffness matrix                                                      |
-| Verlet Matrix Based           | Dict  | Yes      | Defines a Verlet solver using the Peridynamic stiffness matrix                                                      |
-| Newmark                            | Dict  | Yes      | Defines a Newmark using the Peridynamic stiffness matrix solver                                                      |
-| Linear Static Matrix Based           | Dict  | Yes      | Defines a linear static solver using the Peridynamic stiffness matrix                                                  |
+Keys of a `Solver` section (and of each step of a `Multistep Solver`); the solver is chosen by one of the sub-sections below:
+
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Solver"))
+```
+
+## Multistep Solver
+
+Instead of `Solver`, a `Multistep Solver` runs several steps one after another, each with its
+own time range, active models and solver. Steps run in ascending `Step ID`; a step starts at
+the current time if its `Initial Time` is not given or earlier, and `Additional Time` can be
+given instead of `Final Time`. A [boundary condition](../boundary_conditions.md) with a
+`Step ID` is active only in these steps.
+
+```yaml
+Multistep Solver:
+  Step 1:
+    Step ID: 1
+    Initial Time: 0.0
+    Final Time: 2700.0
+    Material Models: false
+    Thermal Models: true
+    Verlet:
+      Fixed dt: 1.0
+  Step 2:
+    Step ID: 2
+    Additional Time: 1.0e-4
+    Material Models: true
+    Thermal Models: false
+    Verlet:
+      Safety Factor: 0.95
+```
+
+## Fallback
+
+A step that fails (e.g. a Static step that does not converge) is discarded. With a `Fallback`
+solver, the step is recomputed by it from the last converged state, and the fallback runs to the
+final time of the solver step; without one the run is cancelled.
+
+```yaml
+Solver:
+  Initial Time: 0.0
+  Final Time: 1.0e-3
+  Static:
+    Maximum number of iterations: 50
+  Fallback:
+    Verlet:
+      Safety Factor: 0.9
+```
+
+During the fallback each output keeps the time between two outputs, so a fallback with many
+short steps does not write every step. `Fallback Output Frequency` and `Fallback Number of
+Output Steps` in an [output](../output.md) set the frequency for the fallback steps instead.
 
 ## Verlet
 
-| Parameter         | Type  | Optional | Description                                     |
-| ----------------- | ----- | -------- | ----------------------------------------------- |
-| Safety Factor     | Float | Yes      | Defines a scaling factor for the time increment |
-| Numerical Damping | Float | Yes      | Defines a damping factor                        |
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Verlet"))
+```
 
 !!! warning "Fixed dt"
     If a fixed time step is defined, the time integration can become unstable.
@@ -47,15 +85,10 @@ For the time intergration a stable increment has to be determined.
 
 ## Static
 
-| Parameter                    | Type          | Optional | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| ---------------------------- | ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Solution tolerance           | Float         | Yes      | Defines how much change between two iterations of the solution variable is allowed.                                                                                                                                                                                                                                                                                                                                                                                       |
-| Residual tolerance           | Float         | Yes      | Defines how much change between two iterations of the maximum residual variable is allowed.                                                                                                                                                                                                                                                                                                                                                                               |
-| Maximum number of iterations | Int           | Yes      | Maximum number of iteration of the solver.                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| Show solver iteration        | Bool          | Yes      | Shows additional information                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| Residual scaling             | Float         | Yes      | Scales the residual and the variable in same order. Should be in the range of the Young's modulus.                                                                                                                                                                                                                                                                                                                                                                        |
-| m                            | Int           | Yes      | Only for Anderson solver; It does not use Jacobian information or linesearch, but has a history whose size is controlled by the m parameter: $m=0$ corresponds to the simple fixed-point iteration above, and higher values use a larger history size to accelerate the iterations. Higher values of m usually increase the speed of convergence, but increase the storage and computation requirements and might lead to instabilities. $m=15$ is set as standard value. |
-| Linear Start Value           | Vector{Float} | Yes      | Defines start and end values of a linear function over the length of the model (detailed explanation in the text)                                                                                                                                                                                                                                                                                                                                                         |
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Static"))
+```
 
 The static solver from [NLsolve.jl](https://github.com/JuliaNLSolvers/NLsolve.jl) has been included. Specifically the [method = :anderson](https://github.com/JuliaNLSolvers/NLsolve.jl#anderson-acceleration) is used.
 
@@ -105,9 +138,10 @@ $$n(x,y,z (optional))=\text{max}(start_{val})-a(x,y,z (optional))\text{max}(coor
 
 ## Linear Static Matrix Based
 
-| Parameter     | Type | Optional | Description                                  |
-| ------------- | ---- | -------- | -------------------------------------------- |
-| Update Matrix | Bool | Yes      | Activates the update of the stiffness matrix |
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Linear Static Matrix Based"))
+```
 
 The solver computes the stiffness matrix of the problem [WillbergC2026](@cite). It is solved by
 
@@ -115,7 +149,7 @@ $$\mathbf{u}=\mathbf{K}_{PD}^{-1}\mathbf{F}_{external}$$
 
 The number of steps defines the virtual time step.
 
-### Update Matrix
+### Matrix Update
 
 Uses the previous time step as original configuration. This allows the analysis of geometrically non-linear deformations. It must be updated if damages or additive models are used.
 
@@ -130,17 +164,17 @@ It is the same solver as the Verlet based solver above. The main difference is, 
 !!! warning "Models"
     If update is active it is not very efficient, because the creation of new matrix is more costly than the material point approach.
 
-| Parameter       | Type | Optional | Description                                  |
-| --------------- | ---- | -------- | -------------------------------------------- |
-| Update Matrix   | Bool | Yes      | Activates the update of the stiffness matrix |
-| Model reduction | Dict | Yes      | Defines the model reduction options          |
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Verlet Matrix Based"))
+```
 
-If model reduction
+With `Model Reduction`, see also the [condensation methods](condensation.md):
 
-| Parameter        | Type          | Optional | Description                                                               |
-| ---------------- | ------------- | -------- | ------------------------------------------------------------------------- |
-| Type             | String        | No       | Defines the type of model redction (Static Condensationn)                 |
-| Redcution Blocks | String or Int | No       | Defines the blocks to be condensed; defintion are (4 or 1 2 4 or 1, 2, 4) |
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Verlet Matrix Based → Model Reduction"))
+```
 
 
 ## Computational effort
@@ -164,16 +198,15 @@ cost and is excluded from the per-step effort in the last column. For the update
 
 ## Newmark
 
-| Parameter     | Type  | Optional | Description                                  |
-| ------------- | ----- | -------- | -------------------------------------------- |
-| Update Matrix | Bool  | Yes      | Activates the update of the stiffness matrix |
-| Newmark Alpha | Float | Yes      | $\alpha = 0.25 * (0.5 + \delta)^2$ as default value. In that case the solver is stable, but it can chosen otherwise |
-| Newmark Delta | Float | Yes      | $\delta\leq 0.5$ as default value. In that case the solver is stable, but it can chosen otherwise|
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Newmark"))
+```
 
 The solver uses the Newmark solver [NewmarkNM1959](@cite).
 
 
-### Update Matrix
+### Matrix Update
 
 Uses the previous time step as original configuration. This allows the analysis of geometrically non-linear deformations. It must be updated if damages or additive models are used.
 

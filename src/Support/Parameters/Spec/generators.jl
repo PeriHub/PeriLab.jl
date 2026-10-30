@@ -20,13 +20,14 @@ function type_schema(T)
     T === String && return Dict{String,Any}("type" => "string")
     if T === Dependent
         return Dict{String,Any}("oneOf" => Any[Dict{String,Any}("type" => "number"),
-                                               Dict{String,Any}("type" => "string",
-                                                                "description" => "data file path")])
+                                    Dict{String,Any}("type" => "string",
+                                                     "description" => "data file path")])
     end
     if T === Union{Float64,Vector{Float64}}
         return Dict{String,Any}("oneOf" => Any[Dict{String,Any}("type" => "number"),
-                                               Dict{String,Any}("type" => "array",
-                                                                "items" => Dict{String,Any}("type" => "number"))])
+                                    Dict{String,Any}("type" => "array",
+                                                     "items" =>
+                                                         Dict{String,Any}("type" => "number"))])
     end
     if _is_scalar_union(T)
         types = [type_schema(m)["type"] for m in Base.uniontypes(T) if m !== Nothing]
@@ -36,14 +37,16 @@ function type_schema(T)
     if T isa DataType && T <: Enum
         spellings = vcat(collect(string.(instances(T))), collect(keys(enum_aliases(T))))
         return Dict{String,Any}("type" => "string", "examples" => spellings,
-                                "description" => "one of: " * join(spellings, ", ") *
-                                                 " (case, spaces and punctuation are ignored)")
+                                "description" =>
+                                    "one of: " * join(spellings, ", ") *
+                                    " (case, spaces and punctuation are ignored)")
     end
     if T isa DataType && T <: Vector
         return Dict{String,Any}("type" => "array", "items" => type_schema(eltype(T)))
     end
     if T isa DataType && T <: Dict
-        return Dict{String,Any}("type" => "object", "additionalProperties" => type_schema(valtype(T)))
+        return Dict{String,Any}("type" => "object",
+                                "additionalProperties" => type_schema(valtype(T)))
     end
     is_params(T) && return json_schema(T)
     throw(ArgumentError("type_schema: unsupported type $T"))
@@ -75,8 +78,10 @@ end
 _json_value(x::Union{Real,String}) = x
 _json_value(x::AbstractFloat) = isfinite(x) ? x : nothing   # JSON has no Inf / NaN
 _json_value(x::Enum) = string(x)
-_json_value(x::AbstractVector) = all(v -> _json_value(v) !== nothing, x) ?
-                                 Any[_json_value(v) for v in x] : nothing
+function _json_value(x::AbstractVector)
+    all(v -> _json_value(v) !== nothing, x) ?
+    Any[_json_value(v) for v in x] : nothing
+end
 _json_value(x) = nothing
 
 function _quantity_text(q)
@@ -146,7 +151,8 @@ function json_schema(T)
         (schema["x-perilab-required-groups"] = Any[_group_json(g) for g in groups])
     patterns = key_patterns(T)
     if !isempty(patterns)
-        schema["patternProperties"] = Dict{String,Any}(first(p).pattern => type_schema(last(p))
+        schema["patternProperties"] = Dict{String,Any}(first(p).pattern =>
+                                                           type_schema(last(p))
                                                        for p in patterns)
     end
     return schema
@@ -285,7 +291,15 @@ function _row(fs::FieldSpec)
             required = fs.required ? "required" : "optional",
             default = _default_text(fs), range = _range_text(fs),
             quantity = fs.quantity === nothing ? "" : string(fs.quantity),
-            description = join(filter(!isempty, [fs.description, _when_text(fs)]), "; "))
+            description = join(filter(!isempty, [_field_description(fs), _when_text(fs)]),
+                               "; "))
+end
+
+# a nested section without its own text is described by its struct
+function _field_description(fs::FieldSpec)
+    isempty(fs.description) || return fs.description
+    P = _params_type(fs.type)
+    return P === nothing ? "" : params_description(P)
 end
 
 # "only with Type: Disk" for a field with `when`
@@ -322,11 +336,12 @@ _md_cell(s::AbstractString) = replace(s, "|" => "\\|", "\n" => " ")
 "Markdown table of `parameter_rows`."
 function markdown_table(rows)
     lines = ["| YAML key | Type | Required | Default | Range | Quantity | Description |",
-             "|---|---|---|---|---|---|---|"]
+        "|---|---|---|---|---|---|---|"]
     for r in rows
         push!(lines,
-              "| " * join(_md_cell.([r.key, r.type, r.required, r.default, r.range,
-                                     r.quantity, r.description]), " | ") * " |")
+              "| " *
+              join(_md_cell.([r.key, r.type, r.required, r.default, r.range,
+                                 r.quantity, r.description]), " | ") * " |")
     end
     return join(lines, "\n") * "\n"
 end

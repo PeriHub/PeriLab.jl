@@ -4,6 +4,23 @@
 
 export to_json_schema
 
+# descriptions may hold markdown links (rendered in the docs, see
+# `ParameterSpec.docs_links`); plain text for the schema and `describe`:
+# `[t](url)` -> t (url); urls may hold one level of parentheses, e.g. Yield_(engineering)
+function _plain_links(s::AbstractString)
+    replace(s,
+            r"\[([^\]]*)\]\(([^()\s]*(?:\([^()\s]*\)[^()\s]*)*)\)" => s"\1 (\2)")
+end
+function _plain_descriptions!(d::AbstractDict)
+    for (k, v) in d
+        d[k] = k == "description" && v isa AbstractString ? _plain_links(v) :
+               _plain_descriptions!(v)
+    end
+    return d
+end
+_plain_descriptions!(v::AbstractVector) = (foreach(_plain_descriptions!, v); v)
+_plain_descriptions!(x) = x
+
 # model sections for the generators: those under `Models` and the contact models
 # (named entries of the top-level `Contact` section)
 const _GENERATED_MODEL_SECTIONS = (MODEL_SECTIONS..., ("Contact", :contact, "Type"))
@@ -33,15 +50,17 @@ function _model_entry_schema(category::Symbol, name_key::String)
     base = ParameterSpec.base_model(category)
     entry = base === nothing ?
             Dict{String,Any}("type" => "object",
-                             "properties" => OrderedDict{String,Any}("Globals" => Dict{String,Any}("type" => "object"))) :
+                             "properties" => OrderedDict{String,Any}("Globals" =>
+                                                         Dict{String,Any}("type" => "object"))) :
             ParameterSpec.json_schema(base)
     delete!(entry, "additionalProperties")      # model keys come from the matching model
     entry["description"] = _category_description(category)
     names = ParameterSpec.registered_names(category)
     # the key naming the model comes first
     name_schema = Dict{String,Any}("type" => "string",
-                                   "description" => "Model of this entry; combine several models with +; one of: " *
-                                                    join(names, ", "))
+                                   "description" =>
+                                       "Model of this entry; combine several models with +; one of: " *
+                                       join(names, ", "))
     entry["properties"] = merge(OrderedDict{String,Any}(name_key => name_schema),
                                 entry["properties"])
     entry["required"] = sort!(unique([get(entry, "required", String[]); name_key]))
@@ -63,7 +82,10 @@ function _model_entry_schema(category::Symbol, name_key::String)
                          get(model, "patternProperties", Dict{String,Any}()))
         isempty(patterns) || (then["patternProperties"] = patterns)
         push!(cases,
-              Dict{String,Any}("if" => Dict{String,Any}("properties" => Dict{String,Any}(name_key => Dict{String,Any}("const" => name))),
+              Dict{String,Any}("if" => Dict{String,Any}("properties" =>
+                                                    Dict{String,Any}(name_key =>
+                                                                         Dict{String,Any}("const" =>
+                                                                                       name))),
                                "then" => then))
     end
     isempty(cases) || (entry["allOf"] = [get(entry, "allOf", Any[]); cases])
@@ -72,7 +94,8 @@ end
 
 function _pre_calculation_switches_schema()
     props = OrderedDict{String,Any}(name => Dict{String,Any}("type" => "boolean",
-                                                             "description" => ParameterSpec.params_description(T))
+                                                     "description" =>
+                                                         ParameterSpec.params_description(T))
                                     for (name, T) in ParameterSpec.registered_models(:pre_calculation))
     for (old, new) in DEPRECATED_PRE_CALCULATIONS
         props[old] = Dict{String,Any}("type" => "boolean", "const" => false,
@@ -99,8 +122,9 @@ function to_json_schema(::Type{PeriLabInput})
     for (section, category, name_key) in MODEL_SECTIONS
         models[section] = Dict{String,Any}("type" => "object",
                                            "description" => _SECTION_DESCRIPTIONS[section],
-                                           "additionalProperties" => _model_entry_schema(category,
-                                                                                         name_key))
+                                           "additionalProperties" =>
+                                               _model_entry_schema(category,
+                                                                   name_key))
     end
     switches = _pre_calculation_switches_schema()
     models["Pre Calculation Global"] = switches
@@ -112,9 +136,12 @@ function to_json_schema(::Type{PeriLabInput})
                                        "description" => "Material, damage, thermal, additive and degradation models and pre-calculations that blocks refer to by name")
     props["Contact"] = Dict{String,Any}("type" => "object",
                                         "description" => "Contact between blocks, one entry per contact model, plus global contact settings",
-                                        "properties" => OrderedDict{String,Any}("Globals" => ParameterSpec.json_schema(ContactGlobalsParams)),
-                                        "additionalProperties" => _model_entry_schema(:contact,
-                                                                                         "Type"))
+                                        "properties" =>
+                                            OrderedDict{String,Any}("Globals" =>
+                                                                        ParameterSpec.json_schema(ContactGlobalsParams)),
+                                        "additionalProperties" =>
+                                            _model_entry_schema(:contact,
+                                                                "Type"))
     props["Globals"] = Dict{String,Any}("type" => "object")
     solver = props["Solver"]
     solver["required"] = sort!(unique([get(solver, "required", String[]);
@@ -128,11 +155,14 @@ function to_json_schema(::Type{PeriLabInput})
     order = [order[1:pos]; "Models"; "Contact"; order[(pos + 1):end]]
     deck["properties"] = OrderedDict{String,Any}(k => props[k] for k in order)
     deck["required"] = sort!(unique([get(deck, "required", String[]); "Models"]))
-    return Dict{String,Any}("\$schema" => "https://json-schema.org/draft/2020-12/schema",
-                            "title" => "PeriLab input deck", "type" => "object",
-                            "description" => "PeriLab input deck",
-                            "properties" => OrderedDict{String,Any}("PeriLab" => deck),
-                            "required" => ["PeriLab"])
+    return _plain_descriptions!(Dict{String,Any}("\$schema" => "https://json-schema.org/draft/2020-12/schema",
+                                                 "title" => "PeriLab input deck",
+                                                 "type" => "object",
+                                                 "description" => "PeriLab input deck",
+                                                 "properties" =>
+                                                     OrderedDict{String,Any}("PeriLab" =>
+                                                                                 deck),
+                                                 "required" => ["PeriLab"]))
 end
 
 export describe
@@ -148,7 +178,9 @@ function _named_entries(T)
 end
 
 # YAML spelling of a default value
-_yaml_value(x::AbstractFloat) = isinf(x) ? (x > 0 ? ".inf" : "-.inf") : ParameterSpec._fmt_value(x)
+function _yaml_value(x::AbstractFloat)
+    isinf(x) ? (x > 0 ? ".inf" : "-.inf") : ParameterSpec._fmt_value(x)
+end
 _yaml_value(x) = ParameterSpec._fmt_value(x)
 
 # placeholder name of one named entry, e.g. "blocks_1"
@@ -165,8 +197,9 @@ function _described(name::AbstractString)
         title = named ? "$name (section, one entry per name)" : "$name (section)"
         return (title, T, nothing, nothing, named)
     end
-    name == "Contact" && return ("Contact (section, one entry per contact model; shared keys)",
-                                 ContactBaseParams, nothing, nothing, true)
+    name == "Contact" &&
+        return ("Contact (section, one entry per contact model; shared keys)",
+                ContactBaseParams, nothing, nothing, true)
     for (section, category, name_key) in _GENERATED_MODEL_SECTIONS
         for (model, T) in ParameterSpec.registered_models(category)
             model == name || continue
@@ -175,7 +208,8 @@ function _described(name::AbstractString)
                     (name_key, "Shared $kind keys"), false)
         end
     end
-    candidates = [[fs.alias for fs in ParameterSpec.parameter_spec(PeriLabSections)
+    candidates = [[fs.alias
+                   for fs in ParameterSpec.parameter_spec(PeriLabSections)
                    if ParameterSpec._params_type(fs.type) !== nothing];
                   "Contact";
                   [first(m) for (_, c, _) in _GENERATED_MODEL_SECTIONS
@@ -191,8 +225,10 @@ function _describe_table(io::IO, T, indent::String)
     width = maximum(length(r.key) for r in rows)
     for r in rows
         info = filter(!isempty,
-                      [r.type, startswith(r.required, "required") ? r.required : "default " * r.default,
-                       r.range, r.quantity, r.description])
+                      [r.type,
+                          startswith(r.required, "required") ? r.required :
+                          "default " * r.default,
+                          r.range, r.quantity, r.description])
         println(io, indent, rpad(r.key, width), "  ", join(info, "; "))
     end
     for (alias, P) in ParameterSpec.nested_params(T)
@@ -233,10 +269,11 @@ function _template(io::IO, T, indent::String)
         default = fs.required || fs.default === nothing ||
                   (fs.default isa AbstractDict && isempty(fs.default)) ? placeholder :
                   _yaml_value(fs.default)
-        note = filter(!isempty, [fs.required ? "required" : "optional",
-                                 ParameterSpec._range_text(fs),
-                                 fs.quantity === nothing ? "" : string(fs.quantity),
-                                 fs.description])
+        note = filter(!isempty,
+                      [fs.required ? "required" : "optional",
+                          ParameterSpec._range_text(fs),
+                          fs.quantity === nothing ? "" : string(fs.quantity),
+                          fs.description])
         println(io, indent, prefix, fs.alias, ": ", default, "  # ", join(note, "; "))
     end
 end
@@ -252,6 +289,13 @@ out with their default; sections of named entries (e.g. "Blocks") get one
 placeholder entry.
 """
 function describe(io::IO, name::AbstractString; template::Bool = false)
+    buf = IOBuffer()
+    _describe(buf, name, template)
+    print(io, _plain_links(String(take!(buf))))
+    return nothing
+end
+
+function _describe(io::IO, name::AbstractString, template::Bool)
     title, T, base, model_key, named = _described(name)
     if template
         if model_key !== nothing
@@ -290,10 +334,40 @@ function describe(io::IO, name::AbstractString; template::Bool = false)
     return nothing
 end
 
-describe(name::AbstractString; template::Bool = false) = describe(stdout, name;
-                                                                  template = template)
+function describe(name::AbstractString; template::Bool = false)
+    describe(stdout, name;
+             template = template)
+end
 
-export generate_parameter_docs
+export generate_parameter_docs, parameter_table
+
+"""
+    parameter_table(name)
+
+Markdown table of the keys of a section, registered model or solver (as
+`describe`, without the shared model keys), of the shared keys of a model section
+(e.g. "Material Models"), or of a nested section, named by its path as in the
+generated pages ("Verlet Matrix Based → Model Reduction"), to embed in a docs page:
+
+    ```@eval
+    using PeriLab, Markdown
+    Markdown.parse(PeriLab.parameter_table("PD Solid Plastic"))
+    ```
+"""
+function parameter_table(name::AbstractString)
+    head, nested... = split(name, " → ")
+    i = findfirst(s -> first(s) == head, MODEL_SECTIONS)
+    solver = findfirst(m -> first(m) == head, ParameterSpec.registered_models(:solver))
+    T = i !== nothing ? ParameterSpec.base_model(MODEL_SECTIONS[i][2]) :
+        solver !== nothing ? last(ParameterSpec.registered_models(:solver)[solver]) :
+        _described(head)[2]
+    for alias in nested
+        T = last(only(filter(p -> first(p) == alias, ParameterSpec.nested_params(T))))
+    end
+    rows = T === nothing ? [] : ParameterSpec.parameter_rows(T)
+    isempty(rows) && return "No model-specific keys.\n"
+    return ParameterSpec.markdown_table(rows)
+end
 
 const _DOCS_HEADER = "<!-- generated by PeriLab.generate_parameter_docs; do not edit -->\n\n"
 const _QUANTITY_NOTE = "Quantities name what a value measures; PeriLab has no fixed units, use them in your consistent unit system. A key described \"only with Key: a, b\" is read only if the key next to it has one of these values (\"solver\": the solver of the step).\n\n"
@@ -325,7 +399,8 @@ function generate_parameter_docs(dir::AbstractString)
             T === nothing || _docs_section(io, fs.alias, T, "##")
         end
         _docs_section(io, "Contact → Globals", ContactGlobalsParams, "##")
-        println(io, "Every other entry of `Contact` is a contact model, see the input models.\n")
+        println(io,
+                "Every other entry of `Contact` is a contact model, see the input models.\n")
     end
     models_file = joinpath(dir, "input_models.md")
     open(models_file, "w") do io
@@ -340,7 +415,8 @@ function generate_parameter_docs(dir::AbstractString)
             end
         end
         println(io, "## Pre Calculation\n")
-        println(io, "`Pre Calculation Global` and each entry of `Pre Calculation Models` switch these on (`true`) or off (`false`):\n")
+        println(io,
+                "`Pre Calculation Global` and each entry of `Pre Calculation Models` switch these on (`true`) or off (`false`):\n")
         for name in ParameterSpec.registered_names(:pre_calculation)
             println(io, "- ", name)
         end

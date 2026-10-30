@@ -116,19 +116,19 @@ symmetry; they are completed at initialisation.
 @params "Material model of the blocks that use this entry: elastic constants, symmetry and options shared by all material models" struct MaterialBaseParams
     "Material symmetry and 2D assumption (plane stress or plane strain); selects which elastic constants are needed. Isotropic if not given"
     symmetry::Union{Nothing,String} = opt("Symmetry"; default = nothing)
-    "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed (bond-based models fix Poisson's ratio and need one of the others); a text mesh column (e.g. Bulk_Modulus) gives it per node"
+    "[Young's modulus](https://en.wikipedia.org/wiki/Young%27s_modulus), isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed (bond-based models fix Poisson's ratio and need one of the others); a text mesh column (e.g. Bulk_Modulus) gives it per node"
     youngs_modulus::Union{Nothing,Float64} = opt("Young's Modulus"; default = nothing,
                                                  min = 0, quantity = :stress,
                                                  when = _read_by("Young's Modulus"))
-    "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed (bond-based models fix Poisson's ratio and need one of the others); a text mesh column (e.g. Bulk_Modulus) gives it per node"
+    "[Poisson's ratio](https://en.wikipedia.org/wiki/Poisson%27s_ratio), isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed (bond-based models fix Poisson's ratio and need one of the others); a text mesh column (e.g. Bulk_Modulus) gives it per node"
     poissons_ratio::Union{Nothing,Float64} = opt("Poisson's Ratio"; default = nothing,
                                                  min = -1, max = 0.5,
                                                  when = _read_by("Poisson's Ratio"))
-    "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed (bond-based models fix Poisson's ratio and need one of the others); a text mesh column (e.g. Bulk_Modulus) gives it per node"
+    "[Bulk modulus](https://en.wikipedia.org/wiki/Bulk_modulus), isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed (bond-based models fix Poisson's ratio and need one of the others); a text mesh column (e.g. Bulk_Modulus) gives it per node"
     bulk_modulus::Union{Nothing,Float64} = opt("Bulk Modulus"; default = nothing, min = 0,
                                                quantity = :stress,
                                                when = _read_by("Bulk Modulus"))
-    "Isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed (bond-based models fix Poisson's ratio and need one of the others); a text mesh column (e.g. Bulk_Modulus) gives it per node"
+    "[Shear modulus](https://en.wikipedia.org/wiki/Shear_modulus), isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed (bond-based models fix Poisson's ratio and need one of the others); a text mesh column (e.g. Bulk_Modulus) gives it per node"
     shear_modulus::Union{Nothing,Float64} = opt("Shear Modulus"; default = nothing, min = 0,
                                                 quantity = :stress,
                                                 when = _read_by("Shear Modulus"))

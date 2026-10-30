@@ -88,23 +88,8 @@ solver with its own time control may still define
 `run_solver(run::SolverRun{MySolverParams}, ctx::SolverContext)`. See
 `src/Core/Solver/Solver_template/solver_template.jl`.
 
-A failed step is discarded. If the solver section has a `Fallback`, that solver
-recomputes the step from the last converged state and runs to the final time of
-the solver step; otherwise the run is cancelled:
-
-    Solver:
-      Final Time: 1.0e-3
-      Static:
-        Maximum number of iterations: 50
-      Fallback:
-        Verlet:
-          Safety Factor: 0.9
-
-When the fallback takes over, each output keeps the time between two outputs, so
-a fallback with many short steps does not write every step. `Fallback Output
-Frequency` and `Fallback Number of Output Steps` in an output set the frequency
-for the fallback steps instead, like `Output Frequency` and `Number of Output
-Steps` do for the solver steps.
+A step returning `StepFailed` is discarded and, with a `Fallback` solver, recomputed by
+it (see [Fallback](@ref "Fallback") in the solver options).
 
 `SolverParams` selects the solver with a `one_of` field:
 `options::SolverOptions = one_of(:solver)` holds exactly one sub-section whose
@@ -118,6 +103,20 @@ Julia session, `PeriLab.describe("Correspondence Plastic")` prints the keys of o
 model and `PeriLab.describe("Correspondence Plastic"; template = true)` a YAML block
 to start from. `PeriLab.to_json_schema(PeriLab.InputDeck.PeriLabInput)` returns a
 JSON Schema of the whole deck for editors.
+
+Descriptions may hold markdown links: `[yield stress](https://en.wikipedia.org/wiki/Yield_(engineering))`,
+or into these docs with `[J2 plasticity](@docs theory/theory_plastic/)` (expanded to the
+docs URL). They render as links in the docs; `describe` and the schema show `text (url)`.
+`@ref` does not work in descriptions, the tables are also embedded with `@eval`, whose output
+Documenter does not cross-reference.
+
+A hand-written page embeds the generated table of a model (or the shared keys of a
+model section, e.g. "Material Models") instead of repeating the keys:
+
+    ```@eval
+    using PeriLab, Markdown
+    Markdown.parse(PeriLab.parameter_table("Correspondence Plastic"))
+    ```
 
 !!! note "Good start"
     Please check some of the full scale tests. There are several yaml files with parameter definitions.

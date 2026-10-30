@@ -523,3 +523,20 @@ end
                 for r in PeriLab.ParameterSpec.parameter_rows(GID.PeriLabSections))
     @test rows["Solver"].required == "required: exactly one of Solver, Multistep Solver"
 end
+
+@testset "links in descriptions" begin
+    url = PeriLab.ParameterSpec.DOCS_URL * "theory/theory_plastic/"
+    @test PeriLab.ParameterSpec.docs_links("see [J2](@docs theory/theory_plastic/)") ==
+          "see [J2]($url)"
+    @test GID._plain_links("a [y](https://w.org/Yield_(eng)) b [c](https://x.org).") ==
+          "a y (https://w.org/Yield_(eng)) b c (https://x.org)."
+    io = IOBuffer()
+    PeriLab.describe(io, "PD Solid Plastic")
+    @test occursin("J2 plasticity ($url)", String(take!(io)))
+    @test occursin("| Yield Stress |", PeriLab.parameter_table("PD Solid Plastic"))
+    @test PeriLab.parameter_table("PD Solid Elastic") == "No model-specific keys.\n"
+    @test occursin("| Symmetry |", PeriLab.parameter_table("Material Models"))
+    @test occursin("| Safety Factor |", PeriLab.parameter_table("Verlet"))
+    @test occursin("| Reduction Blocks |",
+                   PeriLab.parameter_table("Verlet Matrix Based → Model Reduction"))
+end

@@ -1,47 +1,45 @@
 # Thermal Models
-The list shows the three main model, thermal expansion, thermal flow and heat transfer. All can use simular parameters to work.
+The main models are thermal expansion, thermal flow and heat transfer. `Specific Heat Capacity`, `Density` and `Horizon` are keys of the [block](../../generated/input_sections.md#Blocks). Every thermal model entry accepts these shared keys:
 
-
-| Thermal Model                 | Thermal Expansion | Thermal Flow | Heat Transfer |
-|-------------------------------|-------------------|--------------|---------------|
-| Type                          | ✔️ | ✔️ | ✔️ |
-| Heat Transfer Coefficient     | ✔️ | ✔️ | ✔️ |
-| Environmental Temperature     | ✔️ | ✔️ | ✔️ |
-| Reference Temperature         | ✔️ |  |  |
-| Thermal Conductivity          |                   |              | ✔️ |
-| Thermal Expansion Coefficient | ✔️ |              |               |
-| Thermal Conductivity Print Bed|                   |              | ✔️ |
-| Print Bed Temperature         |                   |              | ✔️ |
-
-There are block defined properties for needed for the thermal models.
-
-| Parameter | Unit | Description |
-|---|---|---|
-| Specific Heat Capacity |  $\left[\frac{J}{kgK}\right]$ | Specific heat capacity of the block  |
-| Density |  $\left[\frac{kg}{m^3}\right]$ | Specific heat capacity of the block
-| Horizon |  $[m]$ | Radius of the neighborhood |
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Thermal Models"))
+```
 ## Thermal Expansion
 
 Calculates the thermal expansion of the material.
 
-| Parameter | Unit | Description |
-|---|---|---|
-|Thermal Expansion Coefficient | $\left[1/K\right]$| [Thermal expansion](https://en.wikipedia.org/wiki/Thermal_expansion) can be a $3\times3$ matrix. |
-|Reference Temperature | $[°K]$ | Reference temperature for the thermal expansion coefficient.
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Thermal Expansion"))
+```
 
 !!! info "Thermal expansion"
     PeriLab supports currently only isotropic thermal expansion.
 
 ## Thermal Flow
 
-| Parameter | Unit | Description |
-|---|---|---|
-| Thermal Conductivity |  $\left[\frac{W}{mK}\right]$  | |
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Thermal Flow"))
+```
 ## Heat Transfer
 
-| Parameter | Unit | Description |
-|---|---|---|
-| Heat Transfer Coefficient |  $\left[\frac{W}{m^2K}\right]$ | Coefficient describing the heat transfer between a solid and a gas or liquid |
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Heat Transfer"))
+```
+## HETVAL
+
+User-defined heat generation from an Abaqus HETVAL subroutine, compiled into a shared library
+like a [UMAT](@ref "Compilation of the UMAT subroutine"). Its properties are given as
+`Property_1` … `Property_N`.
+
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("HETVAL"))
+```
+
 ## Model merging
 
 In PeriLab you are able to combine models with each other, by simply adding a +. Therefore, modules can be merged and double coding can be avoided. This is necessary if you want to model the heating of a model and its expansion.

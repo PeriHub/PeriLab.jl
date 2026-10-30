@@ -18,8 +18,8 @@ export init_model
 export compute_model
 export fields_for_local_synchronization
 
-@params "Elastic-plastic ordinary state-based material with von Mises yield criterion" struct PDSolidPlasticParams
-    "Von Mises stress at which the material yields; a number or a table over a node field"
+@params "Elastic-plastic ordinary state-based material with von Mises yield criterion, see [J2 plasticity](@docs theory/theory_plastic/)" struct PDSolidPlasticParams
+    "Von Mises stress at which the material yields ([yield stress](https://en.wikipedia.org/wiki/Yield_(engineering))); a number or a table over a node field"
     yield_stress::Dependent = req("Yield Stress"; min = 0, quantity = :stress)
 end
 __init__() = register_material("PD Solid Plastic", PDSolidPlasticParams)

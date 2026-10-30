@@ -26,10 +26,7 @@ The output should look like this:
 <script src="https://asciinema.org/a/649032.js" id="asciicast-649032" async="true"></script>
 ```
 
-The main functionalities for the `yaml` input deck is given in
-```
-"examples/functionalities.yaml"
-```
+`PeriLab -e` copies the examples into the current directory. The structure of the `yaml` input deck is described in [Input File](input_yaml.md).
 
 ## Using `PeriLab` with multiple processors (MPI)
 
@@ -68,10 +65,6 @@ The size can be scaled.
 
 ![](../assets/gauss_scale.png)
 
-
-## Training
-
-The training input is given under the examples folder. The documentation and a video will follow.
 
 ## Index
 ```@index

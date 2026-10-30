@@ -18,60 +18,49 @@ The models related functions can be found [here](@ref "Model Factory - Functions
 | Zero Energy Control        |                   |                  |                  | ✔️     | ✔️     |
 | C11/C12/.../C66            | (✔️)| (✔️) | (✔️) | (✔️)     | (✔️)     |
 
-| Parameter | Unit | Description |
-|---|---|---|
-| Density |  $\left[\frac{kg}{m^3}\right]$ | Specific heat capacity of the block
-| Horizon |  $[m]$ | Radius of the neighborhood |
+`Density` and `Horizon` are keys of the [block](../../generated/input_sections.md#Blocks). Every material model entry accepts these shared keys:
+
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Material Models"))
+```
 
 ## Bond-based Elastic
 
  The [Bond-based Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/BondBased/Bondbased_Elastic.jl) calculates the linear elastic behavior of a simple bond-based material. The theory of the bond-based elastic material can be found [here](@ref "Bond-based Peridynamics").
 
-| Parameter | Unit | Description |
-|---|---|---|
-|Youngs Modulus | $\left[N/m^2\right]$| [Young's modulus](https://en.wikipedia.org/wiki/Young%27s_modulus) or elasticity modulus
-|Shear Modulus | $\left[N/m^2\right]$| [Shear modulus](https://en.wikipedia.org/wiki/Shear_modulus)
-|Bulk Modulus | $\left[N/m^2\right]$| [Bulk modulus](https://en.wikipedia.org/wiki/Bulk_modulus) or compression modulus
-
-One of theses parameters have to be defined.
+It needs one of the shared keys `Young's Modulus`, `Bulk Modulus` and `Shear Modulus`.
 
 !!! info "Fixed Poisson's ratio"
     In the bond-based formulation the Poisson's ratio is fixed by [0.25 for 2D plane strain and 1/3 for 3D and 2D plane stress](https://link.springer.com/article/10.1007/s42102-019-00021-x), respectively.
+
+## Unified Bond-based Elastic
+
+The unified bond-based material after Guan et al. [GuanJ2024](@cite) allows Poisson's ratios
+other than the fixed bond-based ones; see the [theory](@ref "Unified Bond-based Peridynamics").
+The PeriLab version is simplified: no rigid body rotation and no surface correction. It needs
+two of the shared isotropic elastic keys and has no keys of its own.
 
 ## PD Solid Elastic
 
 The [PD Solid Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Ordinary/PD_Solid_Elastic.jl) module calculates the isotropic linear elastic material law for a peridynamic solid material. The underlying theory can be found [here](@ref "Ordinary state-based Peridynamics").
 
-| Parameter | Unit | Description |
-|---|---|---|
-|Youngs Modulus | $\left[N/m^2\right]$| [Young's modulus](https://en.wikipedia.org/wiki/Young%27s_modulus) or elasticity modulus
-|Shear Modulus | $\left[N/m^2\right]$| [Shear modulus](https://en.wikipedia.org/wiki/Shear_modulus)
-|Bulk Modulus | $\left[N/m^2\right]$| [Bulk modulus](https://en.wikipedia.org/wiki/Bulk_modulus) or compression modulus
-|Poissons Ratio Modulus | $\left[-\right]$| [Poisson's ratio](https://en.wikipedia.org/wiki/Poisson%27s_ratio)
-
-Two of these parameters have to be defined. The other two are determined automatically and can be used in the model if needed.
+It needs two of the shared keys `Young's Modulus`, `Poisson's Ratio`, `Bulk Modulus` and `Shear Modulus`. The other two are determined automatically and can be used in the model if needed.
 
 ## PD Solid Plastic
 
 The [PD Solid Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Ordinary/PD_Solid_Plastic.jl) material uses elastic stresses and calculate the plastic part for a peridynamic solid material. Has to be combined with a function, which provides elastic stresses.
 
-| Parameter | Unit | Description |
-|---|---|---|
-|Yield Stress | $\left[N/m^2\right]$| [Yield stress](https://en.wikipedia.org/wiki/Yield_(engineering))
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("PD Solid Plastic"))
+```
 
 
 ## Correspondence Elastic
 The [Correspondence Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence/Correspondence_Elastic.jl) module calculates the fully anisotropic linear elastic material law. The underlying correspondence theory can be found [here](@ref "Correspondence Peridynamics").
 
-| Parameter | Unit | Description |
-|---|---|---|
-|Youngs Modulus | $\left[N/m^2\right]$| [Young's modulus](https://en.wikipedia.org/wiki/Young%27s_modulus) or elasticity modulus
-|Shear Modulus | $\left[N/m^2\right]$| [Shear modulus](https://en.wikipedia.org/wiki/Shear_modulus) or elasticity modulus
-|Bulk Modulus | $\left[N/m^2\right]$| [Bulk modulus](https://en.wikipedia.org/wiki/Bulk_modulusseh) or compression modulus
-|Poissons Ratio Modulus | $\left[-\right]$| [Poisson's ratio](https://en.wikipedia.org/wiki/Poisson%27s_ratio)
-|C11, C12, ..., C66 (optional) | $\left[N/m^2\right]$| [Parameter of the Hook matrix](https://en.wikipedia.org/wiki/Hooke%27s_law#Matrix_representation_(stiffness_tensor))
-
-For Correspondence Elastic you can provide all 27 elastic parameters if you like by adding C11,...,C66.
+It uses the shared elastic keys. With an anisotropic `Symmetry` you can provide the entries C11, ..., C66 of the [Hooke matrix](https://en.wikipedia.org/wiki/Hooke%27s_law#Matrix_representation_(stiffness_tensor)).
 
 !!! tip "Isotropic elastic parameter"
     For the time step calculation two of the four isotropic elastic parameter have to be defined.
@@ -82,9 +71,10 @@ For Correspondence Elastic you can provide all 27 elastic parameters if you like
 ## Correspondence Plastic
 The [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence/Correspondence_Plastic.jl) material uses elastic stresses and calculate the plastic part. Has to be combined with a function, which provides elastic stresses.
 
-| Parameter | Unit | Description |
-|---|---|---|
-|Yield Stress | $\left[N/m^2\right]$| [Yield stress](https://en.wikipedia.org/wiki/Yield_(engineering))
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Correspondence Plastic"))
+```
 
 ## Correspondence UMAT
 The [Correspondence UMAT](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence_UMAT.jl) can be used to include Abaqus user materials.
@@ -95,15 +85,10 @@ The [Correspondence UMAT](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Mo
 You can call the user subroutine by defining path with a compiled Fotran library.
 [WillbergC2023](@cite) gives an overview about the interface for Peridigm. In PeriLab all fields in the UMAT interface are supported execpt these integer (NOEL, NPT, LAYER, KSPT, JSTEP, KINC) and float values (PNEWDT, CELENT). In the material module these values defined for the interfase and named as not_supported_int and not_supported_float, respectively.
 
-| Parameter | Type and Range | Description | Optional |
-|---|---|---|---|
-| File | String | Path and filename of the UMAT, e.g. "./src/Models/Material/UMATs/libusertest.so" | No |
-| Number of State Variables | Int $\geq$ 0 | Number of state variables; Defines the size of state variable field Data_Manager.create_constant_node_scalar_field("State Variables", Float64, num_state_vars)| yes |
-| Number of Properties | Int $\geq$ 1 | Properties of the material; Needed for the propterty field Data_Manager.create_constant_free_size_field("Properties", Float64, (num_props, 1))
- | No |
-| Property iID| Float | iID is 1...Number of Properties. It has to be in order and can be utilized in the UMAT. | No|
-|UMAT Material Name|String (maximum are 80 characters)| Defines material names defined in the UMAT to destinguash between different areas of the Fortran routine | Yes |
-|Predefined Field Names| String separated by spaces $\geq0$ | Define all the fields in the mesh file which should be used as pre-defined values. An increment field is than defined as well. E.g. Predefined Field Names: "Temperature" "Color"; Temperature and Color must exist in the mesh file. **They must be defined as Float or Int in that case**.| Yes|
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Correspondence UMAT"))
+```
 
 !!! tip "Matrix based"
     If you use the matrix based approach you can use UMATS as well. But you must provide the tangential stiffness matrix. As solver right now you can use Matrix Verlet and Linear Static Matrix Based. The material definition remains equal.
@@ -115,6 +100,21 @@ After installation you can compile the Fortran subroutine with the following com
 ```shell
 gfortran -shared -fPIC -ffixed-form -ffixed-line-length-132 -fno-range-check -o libusermat.so base.f
 ```
+
+## Correspondence VUMAT
+
+Like the [Correspondence UMAT](#Correspondence-UMAT), but for an Abaqus VUMAT (explicit)
+subroutine compiled into a shared library. Its properties are given as `Property_1` …
+`Property_N`.
+
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Correspondence VUMAT"))
+```
+
+## Rigid
+
+A rigid block: no internal forces and no deformation. It has no keys of its own.
 
 ## Model merging
 
