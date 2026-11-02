@@ -10,8 +10,8 @@ using TimerOutputs
 # const to = TimerOutput()
 
 @testset "material_name" begin
-    @test PeriLab.Solver_Manager.Model_Factory.Material.OneD_Bond_Based_Elastic.material_name() ==
-          "1D Bond-based Elastic"
+    @test parentmodule(PeriLab.ParameterSpec.lookup_model(:material, "1D Bond-based Elastic")) ===
+      PeriLab.Solver_Manager.Model_Factory.Material.OneD_Bond_Based_Elastic
     @test !(PeriLab.Solver_Manager.Model_Factory.Material.OneD_Bond_Based_Elastic.fe_support())
 end
 @testset "compute_model" begin
@@ -44,9 +44,12 @@ end
     for iID in 1:nodes
         dbdNP1[iID] .= 1 + (-1)^iID * 0.1
     end
+    material = typed_block_material(Dict("Material Model" => "1D Bond-based Elastic",
+                                         "Bulk Modulus" => 1.0, "Young's Modulus" => 1.0,
+                                         "Id1" => 1, "Id2" => 2))
     PeriLab.Solver_Manager.Model_Factory.Material.OneD_Bond_Based_Elastic.init_model(Vector{Int64}(1:nodes),
-                                                                                     Dict("Bulk Modulus" => 1.0,
-                                                                                          "Young's Modulus" => 1.0))
+                                                                                     material.model,
+                                                                                     material, 1)
     # PeriLab.Solver_Manager.Model_Factory.Material.OneD_Bond_Based_Elastic.compute_model(Vector{Int64}(1:nodes),
     #                                                                                     Dict("Bulk Modulus" => 1.0,
     #                                                                                          "Young's Modulus" => 1.0,

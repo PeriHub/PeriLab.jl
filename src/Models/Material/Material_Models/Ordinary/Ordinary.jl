@@ -5,10 +5,10 @@
 module Ordinary
 
 using LinearAlgebra
-using LoopVectorization
+using Polyester: @batch
 
 using .....Data_Manager
-using .....Helpers: div_in_place!, mul_in_place!
+using .....Helpers: mul_in_place!, MINBATCH
 
 export compute_dilatation!
 export compute_weighted_volume!
@@ -44,9 +44,9 @@ function compute_weighted_volume!(weighted_volume::NodeScalarField{Float64},
                                   bond_damage::BondScalarState{Float64},
                                   omega::BondScalarState{Float64},
                                   volume::NodeScalarField{Float64})
-    @inbounds for iID in nodes
+    @batch minbatch=MINBATCH for iID in nodes
         wv = 0.0  # Explizit Float64 statt zero(eltype(weighted_volume))
-        @fastmath for (jID, nID) in enumerate(nlist[iID])
+        @inbounds @fastmath for (jID, nID) in enumerate(nlist[iID])
             undeformed_length = undeformed_bond_length[iID][jID]
             wv += omega[iID][jID] *
                   bond_damage[iID][jID] *
@@ -84,9 +84,15 @@ function get_bond_forces!(nodes::AbstractVector{Int64},
                           deformed_bond_length::BondScalarState{Float64},
                           bond_force::BondVectorState{Float64},
                           temp::BondScalarState{Float64})
-    div_in_place!(temp, bond_force_length, deformed_bond_length)
-    for iID in nodes
-        mul_in_place!(bond_force[iID], deformed_bond[iID], temp[iID])
+    # only the block's bonds; temp may alias bond_force_length
+    @batch minbatch=MINBATCH for iID in nodes
+        t = temp[iID]
+        force_length = bond_force_length[iID]
+        bond_length = deformed_bond_length[iID]
+        @inbounds for jID in eachindex(t)
+            t[jID] = force_length[jID] / bond_length[jID]
+        end
+        mul_in_place!(bond_force[iID], deformed_bond[iID], t)
     end
 end
 
@@ -156,14 +162,14 @@ function compute_dilatation!(nodes::AbstractVector{Int64}, nlist::BondScalarStat
                              weighted_volume::NodeScalarField{Float64},
                              omega::BondScalarState{Float64},
                              theta::NodeScalarField{Float64})
-    @inbounds for iID in nodes
+    @batch minbatch=MINBATCH for iID in nodes
         if weighted_volume[iID] == zero(Float64)
             theta[iID] = zero(Float64)
             continue
         end
 
         th = zero(Float64)
-        @fastmath @simd for jID in eachindex(nlist[iID])
+        @inbounds @fastmath @simd for jID in eachindex(nlist[iID])
             th += omega[iID][jID] *
                   bond_damage[iID][jID] *
                   undeformed_bond_length[iID][jID] *

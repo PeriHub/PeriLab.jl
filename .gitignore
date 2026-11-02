@@ -10,6 +10,7 @@ Manifest.toml
 *.csv
 *.out
 *.sbatch
+*.jls
 !**/Reference/*.e*
 !**/Reference/*.csv*
 LocalPreferences.toml
@@ -23,3 +24,4 @@ scripts/3d_plate.jl
 .qodo
 test/tmp/test.jl
 CLAUDE.md
+docs/src/generated/

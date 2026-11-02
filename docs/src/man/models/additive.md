@@ -1,9 +1,7 @@
 # Additive Models
 
-| Additive Model           | Simple |
-|------------------------|:----------------:|
-| Print Temperature         | ✔️|
-
+!!! info "Licensed models"
+    The additive models are licensed modules, loaded only with a configured license. Their keys are therefore not part of the generated [input reference](../../generated/input_models.md).
 
 ## Simple
 

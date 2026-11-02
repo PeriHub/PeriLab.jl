@@ -5,13 +5,14 @@
 ### Steps
 - choose your model category
 - take the template file, rename it and copy it in the model folder
-- give you model a name, this name defines how you call your model
+- declare your model parameters and register your model under a name; this name defines how you call your model
 
 ```julia
-function damage_name()
-    return "My Model"
+@params struct MyModelParams
+    important_value::Float64 = opt("Important value"; default = 0.0,
+                                   description = "used by my model")
 end
-
+__init__() = register_damage("My Model", MyModelParams)
 ```
 
 ```yaml
@@ -31,29 +32,27 @@ end
         Important value: 200
 ```
 
-- get this value in the code
+- get this value in the code: `p` is your parameter struct, read and checked when the input deck is read (an unknown or misspelled key is an error)
 
 
 ```julia
 function init_model(nodes::AbstractVector{Int64},
-                    damage_parameter::Dict,
+                    p::MyModelParams,
+                    damage,
                     block::Int64)
 
-    println(damage_parameter["Important value"])
+    println(p.important_value)
 end
 ```
 
-- init_model is used to create model specific fields and to check if values, especially optional values exist
+- init_model is used to create model specific fields; optional values already have their default
 
 ```julia
 function init_model(nodes::AbstractVector{Int64},
-                    damage_parameter::Dict,
+                    p::MyModelParams,
+                    damage,
                     block::Int64)
-    if !inothing(get(damage_parameter, "Important value", nothing))
-        println(damage_parameter["Important value"])
-    else
-        damage_parameter["Important value"] = 0
-    end
+    println(p.important_value)
     my_constant_node_field = Data_Manager.create_constant_node_vector_field("my constant node field", Float64, 10)
     my_node_field_N, my_node_field_NP1 = Data_Manager.create_node_tensor_field("my node field", Float64, 2)
     my_constant_bond_field = Data_Manager.create_constant_bond_vector_state("my constant bond field", Float64, 10)
@@ -76,16 +75,16 @@ Data_Manager.get_all_field_keys()
 - All node fields can be exported to the result file
 ```julia
 function compute_model(nodes::AbstractVector{Int64},
-                       damage_parameter::Dict,
+                       p::MyModelParams,
+                       damage,
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
+                       dt::Float64)
     my_constant_field = Data_Manager.get_field("my constant node field")
     my_field_N = Data_Manager.get_field("my node field","N")
     my_field_NP1 = Data_Manager.get_field("my node field","NP1")
 
-    my_field_NP1 .= damage_parameter["Important value"]
+    my_field_NP1 .= p.important_value
 end
 ```
 - If N and NP1 exist only NP1 will be exported

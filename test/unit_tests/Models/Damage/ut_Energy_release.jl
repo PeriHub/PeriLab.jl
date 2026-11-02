@@ -16,7 +16,7 @@
                                                                                        2,
                                                                                        thickness,
                                                                                        3.0) ==
-          Float64(3 / (pi * horizon^3 * thickness))
+          Float64(3 / (4 * horizon^3 * thickness))
 
     horizon = 5.6
     thickness = 3.0
@@ -29,5 +29,5 @@
                                                                                        2,
                                                                                        thickness,
                                                                                        3.0) ==
-          Float64(3 / (pi * horizon^3 * thickness))
+          Float64(3 / (4 * horizon^3 * thickness))
 end

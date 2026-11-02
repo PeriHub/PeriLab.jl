@@ -2,42 +2,40 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 module Bond_Filter
-using ...Parameter_Handling: get_bond_filters
+using ....InputDeck: BondFilterParams, bond_filter
 using ....Data_Manager
-using ....PeriLabExceptions: @abort
-using ....ModuleLoader: find_module_files, create_module_specifics
+using ....ModuleLoader: find_registered_modules
 using DataFrames
 
-global module_list = find_module_files(@__DIR__, "bond_filter_name")
-for mod in module_list
-    include(mod["File"])
+for file in find_registered_modules(joinpath(@__DIR__, "Bond_Filter"),
+                                    "register_bond_filter")
+    include(file)
 end
 export apply_bond_filters
 
 """
-    apply_bond_filters(nlist::BondScalarState{Int64}, mesh::DataFrame, params::Dict, dof::Int64)
+    apply_bond_filters(nlist::NestedNeighborhoodList, mesh::DataFrame, filters::Dict{String,BondFilterParams}, dof::Int64)
 
 Apply the bond filters to the neighborhood list.
 
 # Arguments
-- `nlist::BondScalarState{Int64}`: The neighborhood list.
+- `nlist::NestedNeighborhoodList`: The neighborhood list.
 - `mesh::DataFrame`: The mesh.
-- `params::Dict`: The parameters.
+- `filters::Dict{String,BondFilterParams}`: The bond filters of the input deck.
 - `dof::Int64`: The degrees of freedom.
 # Returns
-- `nlist::BondScalarState{Int64}`: The filtered neighborhood list.
-- `nlist_filtered_ids::BondScalarState{Int64}`: The filtered neighborhood list.
+- `nlist::NestedNeighborhoodList`: The filtered neighborhood list.
+- `nlist_filtered_ids::NestedNeighborhoodList`: The filtered neighborhood list.
 """
 
-function apply_bond_filters(nlist::BondScalarState{Int64},
+function apply_bond_filters(nlist::NestedNeighborhoodList,
                             mesh::DataFrame,
-                            params::Dict,
+                            filters::Dict{String,BondFilterParams},
                             dof::Int64)
-    bond_filters = get_bond_filters(params)
     nlist_filtered_ids = nothing
     bond_norm = nothing
     contact_enabled = false
-    if bond_filters[1]
+    if !isempty(filters)
         @debug "Apply bond filters"
         coor = names(mesh)[1:dof]
         nnodes = length(mesh[!, coor[1]])
@@ -46,8 +44,8 @@ function apply_bond_filters(nlist::BondScalarState{Int64},
             data[i, :] = values(mesh[!, coor[i]])
         end
 
-        for (filter_name, filter) in bond_filters[2]
-            contact_enabled = get(filter, "Allow Contact", false)
+        for (filter_name, filter) in filters
+            contact_enabled = filter.allow_contact
             if contact_enabled
                 break
             end
@@ -61,20 +59,14 @@ function apply_bond_filters(nlist::BondScalarState{Int64},
             end
         end
 
-        for (name, filter) in bond_filters[2]
-            mod = create_module_specifics(filter["Type"],
-                                          module_list,
-                                          @__MODULE__,
-                                          "bond_filter_name")
-            if isnothing(mod)
-                @warn "$(filter["Type"]) is not defined"
-                return nlist, nlist_filtered_ids, bond_norm
-            end
-            filter_flag, normal = mod.run_bond_filter(nnodes, data, filter, nlist, dof)
+        for (name, filter) in filters
+            # the type was checked when the input deck was read
+            filter_flag, normal = bond_filter(filter.type).run(nnodes, data, filter, nlist,
+                                                               dof)
             # Theoretically all bond filter can be in contact mode from memory side
             # but only the chosen ones are stored here.
             for iID in 1:nnodes
-                if get(filter, "Allow Contact", false) &&
+                if filter.allow_contact &&
                    any(x -> x == false, filter_flag[iID])
                     indices = findall(x -> x in setdiff(nlist[iID],
                                                    nlist[iID][filter_flag[iID]]),

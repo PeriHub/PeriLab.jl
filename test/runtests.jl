@@ -18,6 +18,9 @@ MPI.Init()
     @testset "ut_perilab" begin
         include("unit_tests/ut_perilab.jl")
     end
+    @testset "ut_docs_references" begin
+        include("unit_tests/ut_docs_references.jl")
+    end
     @testset "Aqua" begin
         Aqua.test_all(PeriLab, ambiguities = false,
                       stale_deps = (ignore = [:ZipArchives, :JSON3],))
@@ -47,8 +50,11 @@ MPI.Init()
         end
         @testset "Support" begin
             @testset "Parameters" begin
-                @testset "ut_parameter_handling" begin
-                    include("unit_tests/Support/Parameters/ut_parameter_handling.jl")
+                @testset "ParameterSpec" begin
+                    include("unit_tests/Support/Parameters/Spec/spec_tests.jl")
+                end
+                @testset "InputDeck" begin
+                    include("unit_tests/Support/Parameters/Input/input_tests.jl")
                 end
             end
 
@@ -69,6 +75,9 @@ MPI.Init()
             @testset "ut_data_manager" begin
                 include("unit_tests/Core/ut_data_manager.jl")
             end
+            @testset "ut_block_models_store" begin
+                include("unit_tests/Core/ut_block_models_store.jl")
+            end
             @testset "ut_data_manager" begin
                 include("unit_tests/Core/Model_reduction/ut_Model_reduction.jl")
             end
@@ -83,6 +92,12 @@ MPI.Init()
 
                 @testset "ut_Verlet" begin
                     include("unit_tests/Core/Solver/ut_Verlet.jl")
+                end
+                @testset "ut_solver_plugin" begin
+                    include("unit_tests/Core/Solver/ut_solver_plugin.jl")
+                end
+                @testset "ut_time_loop" begin
+                    include("unit_tests/Core/Solver/ut_time_loop.jl")
                 end
             end
             @testset "Module_inclusion" begin
@@ -118,9 +133,9 @@ MPI.Init()
         end
 
         @testset "Models" begin
-            # @testset "ut_templates" begin
-            #     include("unit_tests/Models/ut_templates.jl")
-            # end
+            @testset "ut_templates" begin
+                include("unit_tests/Models/ut_templates.jl")
+            end
             @testset "Additive" begin
                 @testset "ut_Additive_Factory" begin
                     include("unit_tests/Models/Additive/ut_Additive_Factory.jl")
@@ -164,12 +179,16 @@ MPI.Init()
             @testset "ut_Model_Factory" begin
                 include("unit_tests/Models/ut_Model_Factory.jl")
             end
+            @testset "ut_block_models" begin
+                include("unit_tests/Models/ut_block_models.jl")
+            end
             @testset "ut_Pre_calculation" begin
                 include("unit_tests/Models/Pre_calculation/ut_pre_bond_associated_correspondence.jl")
             end
             @testset "ut_Damage" begin
                 include("unit_tests/Models/Damage/ut_Damage_Factory.jl")
                 include("unit_tests/Models/Damage/ut_Energy_release.jl")
+                include("unit_tests/Models/Damage/ut_block_damage.jl")
             end
             @testset "ut_Material" begin
                 @testset "ut_Material_Factory" begin
@@ -181,13 +200,15 @@ MPI.Init()
                 @testset "ut_material_basis" begin
                     include("unit_tests/Models/Material/ut_material_basis.jl")
                 end
+                @testset "ut_block_material" begin
+                    include("unit_tests/Models/Material/ut_block_material.jl")
+                end
                 @testset "ut_bond_based" begin
                     include("unit_tests/Models/Material/Material_Models/BondBased/ut_1D_Bondbased_Elastic.jl")
                     include("unit_tests/Models/Material/Material_Models/BondBased/ut_Bondbased_Elastic.jl")
                     include("unit_tests/Models/Material/Material_Models/BondBased/ut_Unified_Bondbased_Elastic.jl")
                 end
                 @testset "ut_correspondence" begin
-                    include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence.jl")
                     include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_Plastic.jl")
                     include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_UMAT.jl")
                     include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_VUMAT.jl")

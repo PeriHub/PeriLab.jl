@@ -4,6 +4,7 @@
 
 folder_name = basename(@__FILE__)[1:(end - 3)]
 cd("fullscale_tests/" * folder_name) do
-    run_perilab("reload1", 1, true, folder_name)
+    rm("restart", force = true, recursive = true)
+    run_perilab("reload1", 1, false, folder_name; reload = true)
     run_perilab("reload2", 1, true, folder_name; reload = true)
 end

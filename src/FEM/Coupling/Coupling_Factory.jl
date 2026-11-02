@@ -5,6 +5,7 @@
 module Coupling
 
 using ....Data_Manager
+using ....InputDeck: FEMParams
 using ....PeriLabExceptions: @abort
 using ....ModuleLoader: find_module_files, create_module_specifics
 
@@ -16,37 +17,27 @@ end
 export init_coupling
 export compute_coupling
 
-function init_coupling(nodes, complete_params::Dict)
+function init_coupling(nodes, fem::FEMParams)
     Data_Manager.create_constant_node_scalar_field("PD Nodes", Int64)
-    if !haskey(complete_params["FEM"], "Coupling")
-        return
-    end
-    if !haskey(complete_params["FEM"]["Coupling"], "Coupling Type")
-        @abort "''Coupling Type'' is missing and must be defined, options are Alrequin. "
-        return nothing
-    end
-    coupling_model = complete_params["FEM"]["Coupling"]["Coupling Type"]
+    fem.coupling === nothing && return
+    coupling_model = fem.coupling.coupling_type
 
     mod = create_module_specifics(coupling_model, module_list,
                                   @__MODULE__, "coupling_name")
     if isnothing(mod)
-        @abort "No material of name " * material_model * " exists."
+        @abort "No coupling model of name " * coupling_model * " exists."
         return
     end
     Data_Manager.set_model_module(coupling_model, mod)
 
     ###TODO nodes and blocks
-    mod.init_coupling_model(nodes,
-                            convert(Dict{String,Any}, complete_params["FEM"]))
+    mod.init_coupling_model(nodes, fem)
 end
 
-function compute_coupling(fem_params::Dict)
-    if !haskey(fem_params, "Coupling")
-        return
-    end
-    coupling_model = fem_params["Coupling"]["Coupling Type"]
-    mod = Data_Manager.get_model_module(coupling_model)
-    return mod.compute_coupling(fem_params)
+function compute_coupling(fem::FEMParams)
+    fem.coupling === nothing && return
+    mod = Data_Manager.get_model_module(fem.coupling.coupling_type)
+    return mod.compute_coupling(fem.coupling)
 end
 
 end

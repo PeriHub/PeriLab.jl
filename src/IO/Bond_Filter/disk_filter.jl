@@ -4,20 +4,22 @@
 
 module Disk_Filter
 using LinearAlgebra
+using StaticArrays: SVector
 using .....Data_Manager
+using .....InputDeck: BondFilterParams, register_bond_filter
 using .....PeriLabExceptions: @abort
-export run_bond_filter, bond_filter_name
+export run_bond_filter
 const TOLERANCE = 1.0e-14
-"""
-    bond_filter_name()
 
-Return the name of this bond filter.
-
-# Returns
-- `String`: The name of the bond filter.
-"""
-function bond_filter_name()
-    return "Disk"
+function __init__()
+    register_bond_filter("Disk", run_bond_filter;
+                         required = [
+                             "Center X",
+                             "Center Y",
+                             "Center Z",
+                             "Normal Z",
+                             "Radius"
+                         ])
 end
 
 """
@@ -34,10 +36,10 @@ Check if a line segment intersects a disk.
 # Returns
 - `Bool`: True if the line segment intersects the disk, False otherwise.
 """
-function bond_intersects_disc(p0::Vector{Float64},
-                              p1::Vector{Float64},
-                              center::Vector{Float64},
-                              normal::Vector{Float64},
+function bond_intersects_disc(p0::AbstractVector{Float64},
+                              p1::AbstractVector{Float64},
+                              center::AbstractVector{Float64},
+                              normal::AbstractVector{Float64},
                               radius::Float64)
     numerator = dot((center - p0), normal)
     denominator = dot((p1 - p0), normal)
@@ -62,15 +64,15 @@ function bond_intersects_disc(p0::Vector{Float64},
 end
 
 """
-    run_bond_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::BondScalarState{Int64}, dof::Int64)
+    run_bond_filter(nnodes::Int64, data::Matrix{Float64}, filter::BondFilterParams, nlist::NestedNeighborhoodList, dof::Int64)
 
 Apply the disk filter to the neighborhood list.
 
 # Arguments
 - `nnodes::Int64`: The number of nodes.
 - `data::Matrix{Float64}`: The data.
-- `filter::Dict`: The filter.
-- `nlist::BondScalarState{Int64}`: The neighborhood list.
+- `filter::BondFilterParams`: The filter.
+- `nlist::NestedNeighborhoodList`: The neighborhood list.
 - `dof::Int64`: The degrees of freedom.
 # Returns
 - `filter_flag::Vector{Vector{Bool}}`: The filter flag.
@@ -78,27 +80,29 @@ Apply the disk filter to the neighborhood list.
 """
 function run_bond_filter(nnodes::Int64,
                          data::Matrix{Float64},
-                         filter::Dict,
-                         nlist::BondScalarState{Int64},
+                         filter::BondFilterParams,
+                         nlist::NestedNeighborhoodList,
                          dof::Int64)
     if dof == 3
-        center = [filter["Center X"], filter["Center Y"], filter["Center Z"]]
-        normal = [filter["Normal X"], filter["Normal Y"], filter["Normal Z"]]
+        center = [filter.center_x, filter.center_y, filter.center_z]
+        normal = [filter.normal_x, filter.normal_y, filter.normal_z]
     else
         @abort "Disk filter only implemented for 3D, use rectangular plane filter instead"
         return nothing
     end
     normal = normal ./ norm(normal)
-    filter_flag::Vector{Vector{Bool}} = fill([], nnodes)
-    for iID in 1:nnodes
-        filter_flag[iID] = fill(true, length(nlist[iID]))
+    n = SVector{3,Float64}(normal)
+    c = SVector{3,Float64}(center)
+    radius::Float64 = filter.radius
+    filter_flag = Vector{Vector{Bool}}(undef, nnodes)
+    Threads.@threads for iID in 1:nnodes
+        p0 = SVector(data[1, iID], data[2, iID], data[3, iID])
+        flags = fill(true, length(nlist[iID]))
         for (jId, neighbor) in enumerate(nlist[iID])
-            filter_flag[iID][jId] = !bond_intersects_disc(data[:, iID],
-                                                          data[:, neighbor],
-                                                          center,
-                                                          normal,
-                                                          filter["Radius"])
+            p1 = SVector(data[1, neighbor], data[2, neighbor], data[3, neighbor])
+            flags[jId] = !bond_intersects_disc(p0, p1, c, n, radius)
         end
+        filter_flag[iID] = flags
     end
     return filter_flag, normal
 end

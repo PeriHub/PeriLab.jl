@@ -26,10 +26,7 @@ The output should look like this:
 <script src="https://asciinema.org/a/649032.js" id="asciicast-649032" async="true"></script>
 ```
 
-The main functionalities for the `yaml` input deck is given in
-```
-"examples/functionalities.yaml"
-```
+`PeriLab -e` copies the examples into the current directory. The structure of the `yaml` input deck is described in [Input File](input_yaml.md).
 
 ## Using `PeriLab` with multiple processors (MPI)
 
@@ -43,8 +40,14 @@ julia> MPI.install_mpiexecjl()
 
 Run PeriLab with two processors:
 ```sh
-$ mpiexecjl -n 2 julia -e 'using PeriLab' examples/DCB/DCBmodel.yaml
+$ mpiexecjl -n 2 -bind-to core julia -e 'using PeriLab' examples/DCB/DCBmodel.yaml
 ```
+
+`-bind-to core` pins every rank to one core, so the operating system does not move ranks between cores or sockets. This keeps caches and memory local and can shorten runs with many ranks considerably. For ranks with several threads, reserve a core per thread, e.g. 4 ranks with 4 threads each:
+```sh
+$ mpiexecjl -n 4 -bind-to core:4 julia -t 4 -e 'using PeriLab' examples/DCB/DCBmodel.yaml
+```
+With OpenMPI the options are `--bind-to core` and `--map-by slot:PE=4`; with Slurm use `srun --cpu-bind=cores`.
 
 ## Postprocessing
 
@@ -62,10 +65,6 @@ The size can be scaled.
 
 ![](../assets/gauss_scale.png)
 
-
-## Training
-
-The training input is given under the examples folder. The documentation and a video will follow.
 
 ## Index
 ```@index

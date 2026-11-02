@@ -27,8 +27,8 @@ PeriLab:
         Environmental Temperature: 30
         Type: Bond based
         Thermal Conductivity: 0.12
-        Thermal Conductivity Print Bed: 1.2
-        Print Bed Temperature: 60.0
+        Bed Temperature: 60.0
+        Bed Thermal Conductivity: 1.2
         # Thermal Expansion Coefficient: 7.0e-5
         # Reference Temperature: 0.
   Blocks:

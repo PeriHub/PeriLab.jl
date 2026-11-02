@@ -8,10 +8,11 @@ using TimerOutputs: @timeit
 
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
-using .....ModuleLoader: find_module_files, create_module_specifics
-global module_list = find_module_files(@__DIR__, "contact_model_name")
-for mod in module_list
-    include(mod["File"])
+using .....ModuleLoader: find_registered_modules
+using ......ParameterSpec: model_module
+using .....InputDeck: ContactInput, contact_blocks, contact_search_frequency
+for file in find_registered_modules(@__DIR__, "register_contact")
+    include(file)
 end
 
 using LinearAlgebra
@@ -24,56 +25,44 @@ export init_contact_model
 export compute_contact_model
 
 """
-    init_model(params)
+    init_contact_model(contact)
 
 Initializes the contact model.
 
 # Arguments
-- `params:`: Contact parameter.
+- `contact::ContactInput`: The typed `Contact` section.
 """
-function init_contact_model(params)
+function init_contact_model(contact::ContactInput)
     @info "Init Contact Model"
-    Data_Manager.set_contact_properties(params)
+    Data_Manager.set_contact_properties(contact)
 
-    check_valid_contact_model(params, Data_Manager.get_all_blocks())
-    contact_blocks = get_all_contact_blocks(params)
+    check_valid_contact_model(contact, Data_Manager.get_all_blocks())
+    contact_block_list = contact_blocks(contact)
     # get all the contact block surface global ids and reduce the exchange positions to this points.
     # all following functions deal with the local contact position id.
-    if !haskey(params, "Globals")
-        params["Globals"] = Dict()
-        if isnothing(get(params["Globals"], "Only Surface Contact Nodes", nothing))
-            params["Globals"]["Global Search Frequency"] = 1
-        elseif params["Globals"]["Global Search Frequency"] < 1
-            @warn "Globals Search Frequency must be greater than zero and set to 1."
-            params["Globals"]["Global Search Frequency"] = 1
-        end
-    end
-    only_surface = get(params["Globals"], "Only Surface Contact Nodes", true)
+    only_surface = contact.globals.only_surface_contact_nodes
 
-    global_contact_ids = identify_contact_block_nodes(contact_blocks,
+    global_contact_ids = identify_contact_block_nodes(contact_block_list,
                                                       only_surface)
     contact_nodes = Data_Manager.create_constant_node_scalar_field("Contact Nodes", Int64)
     block_list = Data_Manager.get_all_blocks()
 
-    mapping = contact_block_ids(global_contact_ids, block_list, contact_blocks)
+    mapping = contact_block_ids(global_contact_ids, block_list, contact_block_list)
 
     Data_Manager.set_contact_block_ids(mapping)
     # identify all surface which have no neighboring nodes
     if only_surface
-        free_surfaces = identify_free_contact_surfaces(contact_blocks)
+        free_surfaces = identify_free_contact_surfaces(contact_block_list)
     end
     points = Data_Manager.get_all_positions()
 
     block_nodes = get_block_nodes(block_list, length(block_list)) # all ids
 
-    for contact_model in filter(k -> k != "Globals", keys(params))
-        for (cg, contact_params) in pairs(params[contact_model]["Contact Groups"])
-            if !haskey(contact_params, "Global Search Frequency")
-                contact_params["Global Search Frequency"] = params["Globals"]["Global Search Frequency"]
-            end
+    for model in values(contact.models)
+        for (cg, group) in pairs(model.base.contact_groups)
             Data_Manager.set_search_step(cg, 0)
-            slave_id = contact_params["Slave Block ID"]
-            master_id = contact_params["Master Block ID"]
+            slave_id = group.slave_block_id
+            master_id = group.master_block_id
             @info "Contact pair Master block $master_id - Slave block $slave_id"
             if !only_surface
                 Data_Manager.set_free_contact_nodes(master_id, block_nodes[master_id])
@@ -114,23 +103,9 @@ function init_contact_model(params)
                                                    Data_Manager.get_local_contact_ids())
 
     @info "Set contact models"
-    for (cm, contact_params) in pairs(params)
-        if cm == "Globals"
-            continue
-        end
-        init_contact_search(contact_params, cm)
-
-        mod = create_module_specifics(contact_params["Type"],
-                                      module_list,
-                                      @__MODULE__,
-                                      "contact_model_name")
-        if isnothing(mod)
-            @abort "No contact model of type " * contact_params["Type"] *
-                   " exists."
-            return
-        end
-        Data_Manager.set_model_module(contact_params["Type"], mod)
-        mod.init_contact_model(contact_params)
+    for (cm, model) in pairs(contact.models)
+        init_contact_search(cm)
+        contact_module(model).init_contact_model(model.model, model)
     end
 
     @info "Finish Init Contact Model"
@@ -176,30 +151,20 @@ function contact_block_ids(global_ids::Vector{Int64}, block_list, contact_blocks
     return mapping
 end
 
-function get_all_contact_blocks(params)
-    contact_blocks = Vector{Int64}([])
-    for contact_model in filter(k -> k != "Globals", keys(params))
-        for contact_groups in values(params[contact_model]["Contact Groups"])
-            append!(contact_blocks, contact_groups["Master Block ID"])
-            append!(contact_blocks, contact_groups["Slave Block ID"])
-        end
-    end
-    return Vector{Int64}(sort(unique(contact_blocks)))
-end
+# the module of a contact model: the one that declares its parameter struct
+contact_module(model) = model_module(model.model)
 
 """
-    compute_model( nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
+    compute_contact_model(contact, time, dt)
 
-Compute the forces of the contact model.
+Searches the contact pairs and computes the forces of every contact model.
 
 # Arguments
-- `nodes::AbstractVector{Int64}`: The nodes.
-- `model_param::Dict`: The contact parameter.
-- `block::Int64`: The current block.
+- `contact::ContactInput`: The typed `Contact` section.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 """
-function compute_contact_model(contact_params::Dict,
+function compute_contact_model(contact::ContactInput,
                                time::Float64,
                                dt::Float64)
     # computes and synchronizes the relevant positions
@@ -219,31 +184,24 @@ function compute_contact_model(contact_params::Dict,
     end
     Data_Manager.set_all_positions(all_positions)
     @timeit "Contact search" begin
-        for (cm, block_contact_params) in pairs(contact_params)
-            if cm == "Globals"
-                continue
-            end
-
-            mod = Data_Manager.get_model_module(block_contact_params["Type"])
-            for (cg, block_contact_group) in pairs(block_contact_params["Contact Groups"])
+        for model in values(contact.models)
+            mod = contact_module(model)
+            for (cg, group) in pairs(model.base.contact_groups)
                 n = Data_Manager.get_search_step(cg) + 1
-
-                # needed in search and in model evaluation
-                block_contact_group["Contact Radius"] = block_contact_params["Contact Radius"]
                 Data_Manager.set_contact_dict(cg, Dict())
 
-                @timeit "compute_contact_pairs" compute_contact_pairs(cg,
-                                                                      block_contact_group)
+                @timeit "compute_contact_pairs" compute_contact_pairs(cg, group,
+                                                                      model.base.contact_radius)
                 @timeit "compute_contact_model" mod.compute_contact_model(cg,
-                                                                          block_contact_params,
+                                                                          model.model,
+                                                                          model,
                                                                           compute_master_force_density,
                                                                           compute_slave_force_density)
-                if n == block_contact_group["Global Search Frequency"]
+                if n == contact_search_frequency(group, contact.globals)
                     Data_Manager.set_search_step(cg, 0)
                 end
             end
         end
-        #compute_contact()
     end
 end
 
@@ -255,7 +213,8 @@ function compute_slave_force_density(id_s, id_m, contact_force)
     compute_force_density(id_s, id_m, contact_force)
 end
 
-function compute_force_density(id_1::Int64, id_2::Int64, contact_force::Vector{Float64})
+function compute_force_density(id_1::Int64, id_2::Int64,
+                               contact_force::AbstractVector{Float64})
     mapping::Dict{Int64,Int64} = Data_Manager.get_exchange_id_to_local_id()
 
     if isnothing(get(mapping, id_1, nothing))
@@ -397,49 +356,26 @@ function get_double_surfs(normals_i, offsets_i, normals_j, offsets_j)
     end
     return ids
 end
-function check_valid_contact_model(params, block_ids::Vector{Int64})
-    # inverse master slave check
-    # tuple liste bauen und dann die neuen invers checken
+function check_valid_contact_model(contact::ContactInput, block_ids)
+    # an inverse pair (1-2 in one group, 2-1 in another) is not allowed
     check_dict = Dict{Int64,Int64}()
-    for contact_model in filter(k -> k != "Globals", keys(params))
-        for contact_groups in values(params[contact_model]["Contact Groups"])
-            if !haskey(contact_groups, "Master Block ID")
-                @abort "Contact model needs a ''Master''"
-                return
-            end
-            if !haskey(contact_groups, "Slave Block ID")
-                @abort "Contact model needs a ''Slave''"
-                return
-            end
-            if contact_groups["Master Block ID"] == contact_groups["Slave Block ID"]
-                @abort "Contact master and slave are equal. Self contact is not implemented yet."
-                return
-            end
-
-            if !(contact_groups["Master Block ID"] in block_ids)
-                @abort "Block defintion in master does not exist."
-                return
-            end
-            if !(contact_groups["Slave Block ID"] in block_ids)
-                @abort "Block defintion in slave does not exist."
-                return
-            end
-            check_dict[contact_groups["Master Block ID"]] = contact_groups["Slave Block ID"]
-            if haskey(check_dict, contact_groups["Slave Block ID"]) &&
-               check_dict[contact_groups["Slave Block ID"]] ==
-               contact_groups["Master Block ID"]
-                @abort "Master and Slave should be defined in an inverse way, e.g. Master = 1, Slave = 2 in model 1 and Master = 2, Slave = 1 in model 2."
-                return
-            end
-            if !haskey(contact_groups, "Search Radius")
-                @abort "Contact model needs a ''Search Radius''."
-                return
-            end
-            if contact_groups["Search Radius"] <= 0
-                @abort "''Search Radius'' must be greater than zero."
-                return
-            end
+    for model in values(contact.models), group in values(model.base.contact_groups)
+        master = group.master_block_id
+        slave = group.slave_block_id
+        if !(master in block_ids)
+            @abort "Block defintion in master does not exist."
+            return
+        end
+        if !(slave in block_ids)
+            @abort "Block defintion in slave does not exist."
+            return
+        end
+        check_dict[master] = slave
+        if get(check_dict, slave, nothing) == master
+            @abort "Master and Slave should be defined in an inverse way, e.g. Master = 1, Slave = 2 in model 1 and Master = 2, Slave = 1 in model 2."
+            return
         end
     end
+    return nothing
 end
 end

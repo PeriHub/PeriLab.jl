@@ -25,7 +25,6 @@ PeriLab:
     Thermal Models:
       Thermal:
         Thermal Model: "Heat Transfer"
-        Type: "Bond based"
         Heat Transfer Coefficient: 100
         Environmental Temperature: 0
         Thermal Conductivity: 1000

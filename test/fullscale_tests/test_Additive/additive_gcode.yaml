@@ -10,11 +10,9 @@ PeriLab:
     Type: "Gcode"
     Input Mesh File: Zugstab_small.gcode
     Gcode:
-      Overwrite Mesh: True
       Sampling: 6.0 # 1.5
       Width: 0.4
       Height: 0.4
-      Scale: 1.0
       Start Command: "TYPE:Solid infill,TYPE:Perimeter"
       Stop Command: "TYPE:Custom,TYPE:Skirt/Brim"
       Blocks:
@@ -30,8 +28,8 @@ PeriLab:
         Thermal Model: "Thermal Flow+Heat Transfer"
         Type: "Bond based"
         Thermal Conductivity: 0.12
-        Thermal Conductivity Print Bed: 1.2
-        Print Bed Temperature: 298.15
+        Bed Temperature: 298.15
+        Bed Thermal Conductivity: 1.2
         Environmental Temperature: 298.15
         Heat Transfer Coefficient: 15.0e-3
   Blocks:

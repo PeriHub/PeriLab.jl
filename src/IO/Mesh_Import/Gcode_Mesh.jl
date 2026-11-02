@@ -11,13 +11,14 @@ MIT licensed GcodeParser.jl project (https://github.com/janvorisek/GcodeParser.j
 module Gcode_Mesh
 
 using LinearAlgebra
-using LazyGrids
 using Rotations
 using CSV, DataFrames
+using ...IO: csv_reader
 using NearestNeighbors
 using ....Helpers: sub_in_place!, normalize_in_place!, progress_bar
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
+using ....InputDeck: PeriLabInput, gcode_block_ids
 
 export mesh_import_name
 export read_mesh
@@ -448,7 +449,8 @@ function deposit_mesh_points!(dataobject, sx::Number, sy::Number, sz::Number,
                   time_to_activation + dataobject["previous_time"],
                   roll * 180 / pi,
                   pitch * 180 / pi,
-                  yaw * 180 / pi
+                  yaw * 180 / pi,
+                  pd_mesh["extent"]...
               ])
     end
 end
@@ -766,36 +768,36 @@ function tait_bryant_angles(orientation_vector, up_vector = [0, 0, 1])
 end
 
 """
-    read_mesh(params::Dict, filename::String)
+    read_mesh(input::PeriLabInput, filename::String)
 
 Reads a Gcode file and builds the peridynamic mesh by simulating the additive
 printing process. The result is cached to a text file so subsequent runs do not
 have to re-parse the gcode unless the user asks for it.
 
 # Arguments
-- `params::Dict`: The parameters.
+- `input::PeriLabInput`: The typed input deck.
 - `filename::String`: The path to the gcode file.
 # Returns
 - `mesh::DataFrame`: The mesh data as a DataFrame.
 """
-function read_mesh(params::Dict, filename::String)
-    sampling = params["Discretization"]["Gcode"]["Sampling"]
-    scale = get(params["Discretization"]["Gcode"], "Scale", 1)
-    width = params["Discretization"]["Gcode"]["Width"]
-    height = params["Discretization"]["Gcode"]["Height"]
-    blocks = get(params["Discretization"]["Gcode"], "Blocks", nothing)
+function read_mesh(input::PeriLabInput, filename::String)
+    gcode = input.sections.discretization.gcode
+    gcode === nothing && @abort "Discretization type \"Gcode\" needs a \"Gcode\" section"
+    txt_file = replace(filename, ".gcode" => ".txt")
+    if !gcode.overwrite_mesh && isfile(txt_file)
+        @info "Read existing mesh $txt_file instead of the gcode file"
+        return csv_reader(txt_file)
+    end
+    sampling = gcode.sampling
+    width = gcode.width
+    height = gcode.height
+    blocks = gcode_block_ids(gcode)
 
     commands_dict = Dict{String,Any}()
-    commands_dict["Start"] = get(params["Discretization"]["Gcode"], "Start Command",
-                                 nothing)
-    commands_dict["Stop"] = get(params["Discretization"]["Gcode"], "Stop Command", nothing)
-    commands_dict["End"] = get(params["Discretization"]["Gcode"], "End Command", nothing)
+    commands_dict["Start"] = gcode.start_command
+    commands_dict["Stop"] = gcode.stop_command
+    commands_dict["End"] = gcode.end_command
 
-    if !isnothing(commands_dict["Start"])
-        if isnothing(commands_dict["Stop"])
-            @abort "Start command is set but no stop command"
-        end
-    end
     if !isnothing(commands_dict["Stop"])
         if isnothing(commands_dict["Start"])
             @abort "Stop command is set but no start command"
@@ -803,13 +805,15 @@ function read_mesh(params::Dict, filename::String)
     end
 
     @info "Read gcode file $filename"
-    @info "Params: Sampling $sampling, width $width and scale $scale "
+    @info "Params: Sampling $sampling, width $width "
 
     pd_mesh = Dict{String,Any}()
     pd_mesh["sampling"] = sampling
     pd_mesh["volume"] = sampling * width * height
     pd_mesh["previous_extruding"] = 0
     pd_mesh["width"] = width
+    # strand box in its own frame (along the path, across, up), see Heat_Transfer
+    pd_mesh["extent"] = (sampling, width, height)
     pd_mesh["remaining_distance"] = sampling / 2
     pd_mesh["blocks"] = blocks
 
@@ -821,7 +825,10 @@ function read_mesh(params::Dict, filename::String)
                                    Activation_Time = Float64[],
                                    Angles_x = Float64[],
                                    Angles_y = Float64[],
-                                   Angles_z = Float64[])
+                                   Angles_z = Float64[],
+                                   Extent_x = Float64[],
+                                   Extent_y = Float64[],
+                                   Extent_z = Float64[])
     pd_mesh["dir"] = zeros(3)
     pd_mesh["start_point"] = zeros(3)
     pd_mesh["point"] = zeros(3)
@@ -837,10 +844,9 @@ function read_mesh(params::Dict, filename::String)
     @info "Number of points: $(size(pd_mesh["mesh_df"],1))"
     @info "Printing time: $(maximum(pd_mesh["mesh_df"].Activation_Time)) seconds"
 
-    txt_file = replace(filename, ".gcode" => ".txt")
     write(txt_file,
-          "header: x y z block_id volume Activation_Time Angles_x Angles_y Angles_z\n")
-    CSV.write(txt_file, pd_mesh["mesh_df"]; delim = ' ', append = true)
+          "header: x y z block_id volume Activation_Time Angles_x Angles_y Angles_z Extent_x Extent_y Extent_z\n")
+    CSV.write(txt_file, pd_mesh["mesh_df"]; delim = (' '), append = true)
 
     @info "Finished reading mesh data"
 

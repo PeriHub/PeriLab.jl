@@ -24,21 +24,20 @@ using .FEM_Basis:
 include("./Coupling/Coupling_Factory.jl")
 
 using ...Helpers: fast_mul!, get_mapping
+using ...InputDeck: FEMParams, fem_degree
 using .Coupling
 export init_FEM
 export eval_FEM
 
-function init_FEM(complete_params::Dict)
-    if !haskey(complete_params, "FEM")
-        @abort "Invalid FEM parameters"
-        return
-    end
-    params = convert(Dict{String,Any}, complete_params["FEM"])
-    valid_models(params)
+function init_FEM(::Nothing, material_models::AbstractDict)
+    @abort "Invalid FEM parameters"
+    return
+end
 
-    Data_Manager.set_properties("FEM", params)
-    if !haskey(complete_params["Models"]["Material Models"], params["Material Model"])
-        @abort "The FEM material model $(params["Material Model"]) is not defined"
+function init_FEM(fem::FEMParams, material_models::AbstractDict)
+    Data_Manager.set_fem_params(fem)
+    if !haskey(material_models, fem.material_model)
+        @abort "The FEM material model $(fem.material_model) is not defined"
         return
     end
     if !("Material Gradient" in Data_Manager.get_all_field_keys())
@@ -50,7 +49,7 @@ function init_FEM(complete_params::Dict)
     dof = Data_Manager.get_dof()
     nelements = Data_Manager.get_num_elements()
     elements::Vector{Int64} = 1:nelements
-    p = get_polynomial_degree(params, dof)
+    p = get_polynomial_degree(fem_degree(fem), dof)
     coordinates = Data_Manager.get_field("Coordinates")
 
     if isnothing(p)
@@ -93,7 +92,7 @@ function init_FEM(complete_params::Dict)
     N[:],
     B_elem = create_element_matrices(dof,
                                      p,
-                                     create_module_specifics(params["Element Type"],
+                                     create_module_specifics(fem.element_type,
                                                              module_list,
                                                              @__MODULE__,
                                                              specifics))
@@ -102,11 +101,11 @@ function init_FEM(complete_params::Dict)
     end
     specifics = Dict{String,String}("Call Function" => "init_element",
                                     "Name" => "element_name")
-    create_module_specifics(params["Element Type"],
+    create_module_specifics(fem.element_type,
                             module_list,
                             @__MODULE__,
                             specifics,
-                            (elements, params, p))
+                            (elements, fem, p))
 
     elements = Vector{Int64}(1:nelements)
     topology = Data_Manager.get_field("FE Topology")
@@ -147,27 +146,6 @@ function init_FEM(complete_params::Dict)
     @info "End FEM init"
 end
 
-function valid_models(params::Dict)
-    if haskey(params, "Additive Model")
-        @warn "Additive models are not supported for FEM yet"
-    end
-    if haskey(params, "Damage Model")
-        @warn "Damage models are not supported for FEM"
-    end
-    if haskey(params, "Thermal Model")
-        @warn "Thermal models are not supported for FEM yet"
-    end
-    if !haskey(params, "Material Model")
-        @abort "No material model has been defined for FEM in the block."
-        # else
-        #     # in future -> FE support -> check with set modules
-        #     if !Correspondence_Elastic.fe_support()
-        #         @abort "No FEM support for " * params["Material Model"]
-        #         return nothing
-        #     end
-    end
-end
-
 function compute_stresses!(dof::Int64,
                            hooke_matrix::AbstractArray{Float64},
                            time::Float64,
@@ -180,11 +158,9 @@ function compute_stresses!(dof::Int64,
 end
 
 function eval_FEM(elements::AbstractVector{Int64},
-                  params::Dict{String,Any},
                   time::Float64,
                   dt::Float64)
     return compute_FEM(elements,
-                       params,
                        compute_stresses!,
                        time,
                        dt)

@@ -2,11 +2,19 @@
 
 ## Contact Search
 
-| Parameter      | Unit  | Description                                      |
-| -------------- | ----- | ------------------------------------------------ |
-| Contact Radius | $[m]$ | Radius to get a list of potential contact pairs. |
-| Master         | $[-]$ | Block ID of the master nodes.                    |
-| Slave          | $[-]$ | Block ID of the slave nodes.                     |
+Every contact entry names its model in `Type` and has these keys:
+
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Contact"))
+```
+
+Each entry of `Contact Groups` is a pair of blocks:
+
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Contact → Contact Groups"))
+```
 
 **Initialization**
 
@@ -87,9 +95,10 @@ All cores (except core 1) send it's displacement values to core 1. Core 1 sends 
 
 ## Contact Models
 
-| Contact Model     | Penalty Contact |
-| ----------------- | --------------- |
-| Contact Stiffness | ✔️              |
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Penalty Contact"))
+```
 
 ## Penalty Contact
 
@@ -121,11 +130,8 @@ Within PeriLab the functions compute_master_force\_\_density and compute\_\_slav
 
 ### Friction Contact
 
-| Contact Model      | Penalty Contact |
-| ------------------ | :-------------: |
-| Friction Coeffient |       ✔️        |
 
-The model is computed if the ""Friction Coeffient"" is greater than zero. For friction the normal forces
+The model is computed if the `Friction Coefficient` is greater than zero. For friction the normal forces
 
 $$\mathbf{f}_n=c_{Penalty}\frac{(r_{contact}-d)}{\delta_{slave}}\mathbf{n}$$
 are used. The tangential direction must be computed. Following the [Peridigm](https://github.com/peridigm/peridigm/blob/master/src/contact/Peridigm_ShortRangeForceContactModel.cpp) algorithm, the normal velocity of the master node $m$ and the slave node $s$ are

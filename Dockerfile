@@ -2,40 +2,64 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM julia:1.12
+FROM julia:1.12 AS build
+
+# Copy only necessary files for building
+COPY src ./PeriLab/src
+COPY Project.toml ./PeriLab/Project.toml
 
 WORKDIR /PeriLab
 
+# Install build dependencies
 RUN apt-get update \
-    && apt-get install -yq --no-install-recommends build-essential libxml2 \
+    && apt-get install -yq build-essential libxml2
+
+ENV JULIA_CPU_TARGET="generic"
+
+# JuliaC lives in the default environment, so it is not compiled into the PeriLab image
+RUN julia -e 'using Pkg; Pkg.add("JuliaC")'
+RUN julia --project -e 'using Pkg; Pkg.instantiate()'
+RUN julia -e 'import JuliaC; JuliaC.main(["--output-exe", "PeriLab", "--bundle", "build", "."])'
+# --trim=safe --experimental
+
+#TODO: use alpine
+FROM debian:trixie-slim AS main
+
+WORKDIR /app
+
+# Create the destination directory
+RUN mkdir PeriLab
+
+# Assuming /PeriLab/build is the build directory from previous stages
+COPY --from=build /PeriLab/build /app/PeriLab
+COPY Project.toml /app/Project.toml
+
+# Move the build folder, set permissions, and delete the rest
+RUN chmod +x /app/PeriLab/bin/PeriLab
+
+ENV PATH="/app/PeriLab/bin:${PATH}"
+
+# --- API wrapper additions -------------------------------------------------
+
+# Python runtime for the HTTP wrapper around the PeriLab binary
+RUN apt-get update \
+    && apt-get install -yq --no-install-recommends python3 python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-COPY Project.toml ./Project.toml
+COPY requirements.txt /app/requirements.txt
+RUN pip3 install --no-cache-dir --break-system-packages -r /app/requirements.txt
 
-RUN julia --project=. -e 'using Pkg; Pkg.instantiate()'
+COPY app /app/api
 
-COPY src ./src
+# Where uploaded job inputs and results are written; mount a volume here
+# for persistence across container restarts.
+RUN mkdir -p /app/simulations
+ENV PERILAB_BIN="/app/PeriLab/bin/PeriLab"
+ENV PERILAB_JOBS_DIR="/app/simulations"
+ENV MAX_CONCURRENT_JOBS="2"
+# ENV PERILAB_MPI_LAUNCHER="mpiexecjl"   # set this if you add MPI to the image
 
-# Install PeriLab itself as an app (pkg> app develop path) so `using
-# PeriLab` / `main()` work from the project path at /PeriLab.
-RUN julia --project=. -e 'using Pkg; Pkg.precompile(); Pkg.Apps.develop(path=".")'
+EXPOSE 3000
 
-# Ensure `julia` is on PATH inside the container; load ~/.bashrc settings
-# (licenses, env vars) for interactive and `docker exec` sessions.
-RUN echo 'export PATH="$HOME/.julia/bin:$PATH"' >> ~/.bashrc \
-    && (source ~/.bashrc || true)
-
-# Thin wrapper so `docker exec <container> run-perilab <args>` is the whole
-# invocation -- the PeriLab App executable resolves on PATH and takes the
-# passed-through CLI args (e.g. an input deck path).
-RUN printf '#!/bin/bash\nexec PeriLab "$@"\n' \
-    > /usr/local/bin/run-perilab \
-    && chmod +x /usr/local/bin/run-perilab
-
-COPY docker-entrypoint.sh ./docker-entrypoint.sh
-
-# Keeps the container alive for `docker exec` -- this process does
-# nothing else. Each actual simulation run is a separate `docker exec
-# <container> run-perilab <args>` call, not this CMD.
-ENTRYPOINT ["./docker-entrypoint.sh"]
-CMD ["sleep", "infinity"]
+WORKDIR /app
+CMD ["python3", "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "3000"]
