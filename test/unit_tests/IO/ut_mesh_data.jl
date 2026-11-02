@@ -10,14 +10,14 @@ using DataFrames
 @testset "ut_read_mesh" begin
     path = "./unit_tests/IO/"
     params = typed_input(Dict("Discretization" => Dict("Type" => "not supported",
-                                           "Input Mesh File" => "example_mesh.txt")))
+                                   "Input Mesh File" => "example_mesh.txt")))
     @test_logs (:error,
                 "No mesh importer for type 'not supported' exists.") @test_throws PeriLab.PeriLabError begin
         PeriLab.IO.read_mesh(params, path)
     end
 
     params = typed_input(Dict("Discretization" => Dict("Type" => "Text File",
-                                           "Input Mesh File" => "example_mesh.txt")))
+                                   "Input Mesh File" => "example_mesh.txt")))
     @test_logs (:error, "Mesh file ./example_mesh.txt does not exist") @test_throws PeriLab.PeriLabError begin
         PeriLab.IO.read_mesh(params, "./")
     end
@@ -42,7 +42,7 @@ using DataFrames
     @test collect(skipmissing(data[4, :])) == [5, 6, 7, 8]
 
     params = typed_input(Dict("Discretization" => Dict("Type" => "Exodus",
-                                           "Input Mesh File" => "example_mesh.g")))
+                                   "Input Mesh File" => "example_mesh.g")))
     data = PeriLab.IO.read_mesh(params, path)
     @test length(data[:, 1]) == 324
     @test data[!, "block_id"][1] == 1
@@ -52,9 +52,9 @@ end
 @testset "ut_check_dataframe" begin
     path = "./unit_tests/IO/"
     params = typed_input(Dict("Discretization" => Dict("Type" => "Text File",
-                                           "Input Mesh File" => "example_mesh.txt")))
+                                   "Input Mesh File" => "example_mesh.txt")))
     params_wrong = typed_input(Dict("Discretization" => Dict("Type" => "Text File",
-                                                             "Input Mesh File" => "example_wrong_mesh.txt")))
+                                         "Input Mesh File" => "example_wrong_mesh.txt")))
     data = PeriLab.IO.read_mesh(params, path)
     data_wrong = PeriLab.IO.read_mesh(params_wrong, path)
     if isnothing(data)
@@ -673,11 +673,12 @@ end
     @test mesh == mesh_return
     @test isnothing(node_sets)
 
-    params = typed_section(PeriLab.InputDeck.SurfaceExtrusionParams, Dict("Direction" => "X",
-                                                                       "Step_X" => 1.0,
-                                                                       "Step_Y" => 1.0,
-                                                                       "Step_Z" => 1.0,
-                                                                       "Number" => 2))
+    params = typed_section(PeriLab.InputDeck.SurfaceExtrusionParams,
+                           Dict("Direction" => "X",
+                                "Step_X" => 1.0,
+                                "Step_Y" => 1.0,
+                                "Step_Z" => 1.0,
+                                "Number" => 2))
 
     mesh_expected = DataFrame(x = [
                                   0.0,
@@ -729,18 +730,20 @@ end
     @test node_sets ==
           Dict("Extruded_2" => [4, 5, 6, 7], "Extruded_1" => [0, 1, 2, 3])
 
-    params = typed_section(PeriLab.InputDeck.SurfaceExtrusionParams, Dict("Direction" => "Y",
-                                                                       "Step_X" => 1.0,
-                                                                       "Step_Y" => 1.0,
-                                                                       "Step_Z" => 1.0,
-                                                                       "Number" => 2))
+    params = typed_section(PeriLab.InputDeck.SurfaceExtrusionParams,
+                           Dict("Direction" => "Y",
+                                "Step_X" => 1.0,
+                                "Step_Y" => 1.0,
+                                "Step_Z" => 1.0,
+                                "Number" => 2))
     mesh_return, node_sets = PeriLab.IO.extrude_surface_mesh(mesh, params)
 
-    params = typed_section(PeriLab.InputDeck.SurfaceExtrusionParams, Dict("Direction" => "X",
-                                                                       "Step_X" => 1.0,
-                                                                       "Step_Y" => 1.0,
-                                                                       "Step_Z" => 1.0,
-                                                                       "Number" => 2))
+    params = typed_section(PeriLab.InputDeck.SurfaceExtrusionParams,
+                           Dict("Direction" => "X",
+                                "Step_X" => 1.0,
+                                "Step_Y" => 1.0,
+                                "Step_Z" => 1.0,
+                                "Number" => 2))
 
     mesh = DataFrame(x = [0.0, 1.0, 0.0, 1.0],
                      y = [0.0, 0.0, 1.0, 1.0],
@@ -818,11 +821,12 @@ end
                      volume = [0.2, 0.2, 0.2, 0.2],
                      block_id = [1, 1, 1, 1])
 
-    params = typed_section(PeriLab.InputDeck.SurfaceExtrusionParams, Dict("Direction" => "Y",
-                                                                       "Step_X" => 1.0,
-                                                                       "Step_Y" => 1.0,
-                                                                       "Step_Z" => 1.0,
-                                                                       "Number" => 2))
+    params = typed_section(PeriLab.InputDeck.SurfaceExtrusionParams,
+                           Dict("Direction" => "Y",
+                                "Step_X" => 1.0,
+                                "Step_Y" => 1.0,
+                                "Step_Z" => 1.0,
+                                "Number" => 2))
 
     mesh_expected = DataFrame(x = [
                                   0.0,
@@ -887,4 +891,21 @@ end
     @test mesh_expected == mesh_return
     @test node_sets ==
           Dict("Extruded_2" => [4, 5, 6, 7], "Extruded_1" => [0, 1, 2, 3])
+end
+
+@testset "ut_gcode_cross_section_offsets" begin
+    G = PeriLab.IO.Mesh_Import.Gcode_Mesh
+    pd_mesh = Dict{String,Any}("dir" => [1.0, 0.0, 0.0], "width" => 2.0, "height" => 1.0,
+                               "nodes_across" => (1, 1))
+    # default: one node on the path point
+    @test G.cross_section_offsets(pd_mesh, [0, 0, 1]) == ((0.0, 0.0, 0.0),)
+    # path along x: 4 x 2 cell centers across y (width 2) and along z (height 1)
+    pd_mesh["nodes_across"] = (4, 2)
+    offsets = G.cross_section_offsets(pd_mesh, [0, 0, 1])
+    @test length(offsets) == 8
+    @test sort(unique(round.(getindex.(offsets, 2); digits = 12))) ==
+          [-0.75, -0.25, 0.25, 0.75]
+    @test sort(unique(round.(getindex.(offsets, 3); digits = 12))) == [-0.25, 0.25]
+    @test all(o -> o[1] == 0.0, offsets)
+    @test all(abs.(sum(collect.(offsets))) .< 1e-12) # centered on the path point
 end

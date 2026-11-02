@@ -419,6 +419,7 @@ function deposit_mesh_points!(dataobject, sx::Number, sy::Number, sz::Number,
         line_z = [pd_mesh["start_point"][3]]
     end
 
+    offsets = cross_section_offsets(pd_mesh, dataobject["up_vector"])
     for i in eachindex(line_x)
         pd_mesh["point"][1] = line_x[i]
         pd_mesh["point"][2] = line_y[i]
@@ -427,32 +428,57 @@ function deposit_mesh_points!(dataobject, sx::Number, sy::Number, sz::Number,
         dist_along_line = distance_along_line(pd_mesh["dir"], pd_mesh["point_diff"])
         time_to_activation = v > 0 ? dist_along_line / v : 0.0
 
-        block_id = 1
-        if !isnothing(pd_mesh["blocks"])
-            global x = pd_mesh["point"][1]
-            global y = pd_mesh["point"][2]
-            global z = pd_mesh["point"][3]
-            for block in pd_mesh["blocks"]
-                if eval(Meta.parse(block[2]))
-                    block_id = block[1]
+        for offset in offsets
+            px = pd_mesh["point"][1] + offset[1]
+            py = pd_mesh["point"][2] + offset[2]
+            pz = pd_mesh["point"][3] + offset[3]
+            block_id = 1
+            if !isnothing(pd_mesh["blocks"])
+                global x = px
+                global y = py
+                global z = pz
+                for block in pd_mesh["blocks"]
+                    if eval(Meta.parse(block[2]))
+                        block_id = block[1]
+                    end
                 end
             end
-        end
 
-        push!(pd_mesh["mesh_df"],
-              [
-                  pd_mesh["point"][1],
-                  pd_mesh["point"][2],
-                  pd_mesh["point"][3],
-                  block_id,
-                  pd_mesh["volume"],
-                  time_to_activation + dataobject["previous_time"],
-                  roll * 180 / pi,
-                  pitch * 180 / pi,
-                  yaw * 180 / pi,
-                  pd_mesh["extent"]...
-              ])
+            push!(pd_mesh["mesh_df"],
+                  [
+                      px,
+                      py,
+                      pz,
+                      block_id,
+                      pd_mesh["volume"],
+                      time_to_activation + dataobject["previous_time"],
+                      roll * 180 / pi,
+                      pitch * 180 / pi,
+                      yaw * 180 / pi,
+                      pd_mesh["extent"]...
+                  ])
+        end
     end
+end
+
+"""
+    cross_section_offsets(pd_mesh, up_vector)
+
+Offsets of the nodes of one strand cross section from the path point: a grid of
+`Nodes Across Width` x `Nodes Across Height` cell centers spanning width x height, across
+the path direction `pd_mesh["dir"]` and along the up vector. One zero offset by default.
+"""
+function cross_section_offsets(pd_mesh, up_vector)
+    nw, nh = pd_mesh["nodes_across"]
+    (nw == 1 && nh == 1) && return ((0.0, 0.0, 0.0),)
+    dir = pd_mesh["dir"]
+    across = cross(Float64.(up_vector), dir)
+    # vertical move: any horizontal direction is across
+    across = norm(across) > 1e-12 ? normalize(across) : [1.0, 0.0, 0.0]
+    up = cross(dir, across)
+    sw, sh = pd_mesh["width"] / nw, pd_mesh["height"] / nh
+    return [Tuple((a - (nw + 1) / 2) * sw * across + (b - (nh + 1) / 2) * sh * up)
+            for b in 1:nh for a in 1:nw]
 end
 
 """
@@ -487,7 +513,12 @@ function trace_arc!(dataobject, cx::Float64, cy::Float64, r::Float64,
     if do_mesh
         n_steps = max(1, ceil(Int, arc_len / pd_mesh["sampling"]))
         prev_x, prev_y, prev_z = start_x, start_y, start_z
+        # deposit_mesh_points! times each sub-chord against [previous_time, time]:
+        # give every (equally long) sub-chord its share of the arc's time window
+        t_start, t_end = dataobject["previous_time"], dataobject["time"]
         for k in 1:n_steps
+            dataobject["previous_time"] = t_start + (t_end - t_start) * (k - 1) / n_steps
+            dataobject["time"] = t_start + (t_end - t_start) * k / n_steps
             if k == n_steps
                 nx, ny, nz = end_x, end_y, end_z
             else
@@ -500,6 +531,7 @@ function trace_arc!(dataobject, cx::Float64, cy::Float64, r::Float64,
             deposit_mesh_points!(dataobject, prev_x, prev_y, prev_z, nx, ny, nz)
             prev_x, prev_y, prev_z = nx, ny, nz
         end
+        dataobject["previous_time"], dataobject["time"] = t_start, t_end
     end
 
     dataobject["x"], dataobject["y"], dataobject["z"] = end_x, end_y, end_z
@@ -809,11 +841,14 @@ function read_mesh(input::PeriLabInput, filename::String)
 
     pd_mesh = Dict{String,Any}()
     pd_mesh["sampling"] = sampling
-    pd_mesh["volume"] = sampling * width * height
+    nw, nh = gcode.nodes_across_width, gcode.nodes_across_height
+    pd_mesh["volume"] = sampling * width * height / (nw * nh)
     pd_mesh["previous_extruding"] = 0
     pd_mesh["width"] = width
-    # strand box in its own frame (along the path, across, up), see Heat_Transfer
-    pd_mesh["extent"] = (sampling, width, height)
+    pd_mesh["height"] = height
+    pd_mesh["nodes_across"] = (nw, nh)
+    # node box in the strand frame (along the path, across, up), see Heat_Transfer
+    pd_mesh["extent"] = (sampling, width / nw, height / nh)
     pd_mesh["remaining_distance"] = sampling / 2
     pd_mesh["blocks"] = blocks
 

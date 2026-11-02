@@ -31,6 +31,10 @@ end
     width::Float64 = req("Width"; min = 0, quantity = :length)
     "Layer height of the printed strand; with sampling and width it sets the node volume"
     height::Float64 = req("Height"; min = 0, quantity = :length)
+    "Nodes across the strand width; the strand cross section is split into Nodes Across Width x Nodes Across Height nodes"
+    nodes_across_width::Int64 = opt("Nodes Across Width"; default = 1, min = 1)
+    "Nodes across the strand height (layer height)"
+    nodes_across_height::Int64 = opt("Nodes Across Height"; default = 1, min = 1)
     "Comma-separated G-code commands that switch node generation on; without it every extruding move creates nodes"
     start_command::Union{Nothing,String} = opt("Start Command"; default = nothing)
     "Comma-separated G-code commands that switch node generation off; needs a start command"
