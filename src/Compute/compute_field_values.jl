@@ -6,7 +6,7 @@ using ...Data_Manager
 using ...Helpers: find_active_nodes, add_in_place!, invert
 using StaticArrays: MMatrix, SMatrix
 using ..Material_Basis:
-                        get_strain, get_Hooke_matrix,
+                        get_strain, hooke_matrix,
                         compute_deviatoric_and_spherical_stresses
 
 """
@@ -30,11 +30,17 @@ Computes the partial stresses.
 - `nodes::Vector{Int64}`: List of block nodes.
 """
 function get_partial_stresses(nodes::AbstractVector{Int64})
-    bond_forces = Data_Manager.get_field("Bond Forces")
-    undeformed_bond = Data_Manager.get_field("Bond Geometry")
-    volume = Data_Manager.get_field("Volume")
-    stress = Data_Manager.get_field("Cauchy Stress", "NP1")
+    bond_forces::BondVectorField{Float64} = Data_Manager.get_field("Bond Forces")
+    undeformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Bond Geometry")
+    volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
+    stress::NodeTensorField{Float64} = Data_Manager.get_field("Cauchy Stress", "NP1")
+    partial_stresses!(stress, nodes, bond_forces, undeformed_bond, volume)
+end
 
+function partial_stresses!(stress::NodeTensorField{Float64}, nodes::AbstractVector{Int64},
+                           bond_forces::BondVectorState{Float64},
+                           undeformed_bond::BondVectorState{Float64},
+                           volume::NodeScalarField{Float64})
     for iID in nodes
         str = @view stress[iID, :, :]
         add_in_place!(str, bond_forces[iID], undeformed_bond[iID], volume[iID])
@@ -72,9 +78,9 @@ end
         sigma22 = stress_NP1[iID, 2, 2]
         sigma12 = stress_NP1[iID, 1, 2]
 
-        vm = sigma11 * sigma11 + sigma22 * sigma22 - sigma11 * sigma22 +
-             3 * sigma12 * sigma12
-        von_Mises_stress[iID] = sqrt(vm)
+        vm = sigma11^2 + sigma22^2 - sigma11 * sigma22 +
+             3 * sigma12^2
+        von_Mises_stress[iID] = sqrt(max(vm, 0.0))
     end
 end
 
@@ -88,11 +94,11 @@ end
         sigma13 = stress_NP1[iID, 1, 3]
         sigma23 = stress_NP1[iID, 2, 3]
 
-        vm = sigma11 * sigma11 + sigma22 * sigma22 + sigma33 * sigma33 -
+        vm = sigma11^2 + sigma22^2 + sigma33^2 -
              sigma11 * sigma22 - sigma11 * sigma33 - sigma22 * sigma33 +
-             3 * (sigma12 * sigma12 + sigma13 * sigma13 + sigma23 * sigma23)
+             3 * (sigma12^2 + sigma13^2 + sigma23^2)
 
-        von_Mises_stress[iID] = sqrt(vm)
+        von_Mises_stress[iID] = sqrt(max(vm, 0.0))
     end
 end
 
@@ -107,45 +113,43 @@ Calculate the von Mises stress.
 """
 function calculate_strain(nodes::AbstractVector{Int64},
                           hooke_matrix::Union{Matrix{Float64},MMatrix,SMatrix})
-    stress_NP1 = Data_Manager.get_field("Cauchy Stress", "NP1")
-    strain = Data_Manager.get_field("Strain", "NP1")
+    stress_NP1 = Data_Manager.get_field("Cauchy Stress", "NP1")::Array{Float64,3}
+    strain = Data_Manager.get_field("Strain", "NP1")::Array{Float64,3}
     for iID in nodes
-        strain[iID, :, :] = get_strain(stress_NP1[iID, :, :], hooke_matrix)
+        @views strain[iID, :, :] = get_strain(stress_NP1[iID, :, :], hooke_matrix)
     end
 end
 
 """
-    calculate_stresses(block_nodes::Dict{Int64,Vector{Int64}}, options::Dict{String, Any})
+    calculate_stresses(block_nodes::Dict{Int64,Vector{Int64}}, options::CalculationOptions)
 
 Computes the stresses.
 
 # Arguments
 - `block_nodes::Dict{Int64,Vector{Int64}}`: List of block nodes.
-- `options::Dict{String, Any}`: List of options.
+- `options::CalculationOptions`: Which stress and strain fields to compute.
 """
 function calculate_stresses(block_nodes::Dict{Int64,Vector{Int64}},
-                            options::Dict{String,Any})
-    active_list = Data_Manager.get_field("Active")
+                            options::CalculationOptions)
+    active_list = Data_Manager.get_field("Active")::Vector{Bool}
     for block in eachindex(block_nodes)
-        correspondence = occursin("Correspondence",
-                                  Data_Manager.get_properties(block, "Material Model")["Material Model"])
-        if options["Calculate Cauchy"] |
-           options["Calculate von Mises stress"] |
-           options["Calculate Strain"] | correspondence
-            active_nodes = Data_Manager.get_field("Active Nodes")
+        material = Data_Manager.get_block_models(block).material
+        correspondence = material.correspondence
+
+        if options.cauchy |
+           options.von_mises |
+           options.strain | correspondence
+            active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
             active_nodes = find_active_nodes(active_list, active_nodes, block_nodes[block])
             if !correspondence
                 get_partial_stresses(active_nodes)
             end
         end
-        if options["Calculate von Mises stress"] | correspondence
+        if options.von_mises #| correspondence
             calculate_von_mises_stress(active_nodes)
         end
-        if options["Calculate Strain"] && !correspondence
-            material_parameter = Data_Manager.get_properties(block, "Material Model")
-            hookeMatrix = get_Hooke_matrix(material_parameter,
-                                           material_parameter["Symmetry"],
-                                           Data_Manager.get_dof())
+        if options.strain && !correspondence
+            hookeMatrix = hooke_matrix(material, Data_Manager.get_dof())
             calculate_strain(active_nodes,
                              invert(hookeMatrix))
         end

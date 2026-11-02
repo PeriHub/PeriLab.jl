@@ -25,10 +25,10 @@
     rm(filename)
 end
 
-@testset "ut_read_input_file" begin
+@testset "ut_read_input_deck" begin
     @test_logs (:error,
                 "filename can not be found. Make sure the file exist and is readable.") @test_throws PeriLab.PeriLabError begin
-        PeriLab.IO.read_input_file("filename")
+        PeriLab.IO.read_input_deck("filename")
     end
     filename = "test.xml"
     fid = open(filename, "w")
@@ -37,7 +37,7 @@ end
     close(fid)
     @test_logs (:error,
                 "Not a supported filetype $filename") @test_throws PeriLab.PeriLabError begin
-        PeriLab.IO.read_input_file(filename)
+        PeriLab.IO.read_input_deck(filename)
     end
     rm(filename)
     filename = "test.yaml"
@@ -51,16 +51,62 @@ end
     println(fid, "  Type: test")
     println(fid, " Blocks:")
     println(fid, "  Block_1:")
+    println(fid, "   Block ID: 1")
+    println(fid, "   Density: 1.0")
+    println(fid, "   Horizon: 1.0")
     println(fid, " Solver:")
     println(fid, "  Initial Time: 0.0")
     println(fid, "  Final Time: 1.0")
+    println(fid, "  Verlet:")
+    println(fid, "   Safety Factor: 1.0")
     close(fid)
-    dict = PeriLab.IO.read_input_file(filename)
-    @test dict["Models"]["d"] == 3
-    @test dict["Models"]["a"] == 1
-    @test dict["Discretization"]["Input Mesh File"] == "test"
-    @test dict["Discretization"]["Type"] == "test"
-    @test dict["Solver"]["Initial Time"] == 0.0
-    @test dict["Solver"]["Final Time"] == 1.0
+    input = PeriLab.IO.read_input_deck(filename; no_strict = true)  # Models keys d, a are placeholders
+    @test input isa PeriLab.InputDeck.PeriLabInput
+    @test input.sections.discretization.input_mesh_file == "test"
+    @test input.sections.discretization.type == "test"
+    @test input.sections.solver.initial_time == 0.0
+    @test input.sections.solver.final_time == 1.0
     rm(filename)
+end
+
+@testset "read_input_deck errors" begin
+    @test_logs (:error,
+                "missing.yaml can not be found. Make sure the file exist and is readable.") @test_throws PeriLab.PeriLabError PeriLab.IO.read_input_deck("missing.yaml")
+    file = joinpath(mktempdir(), "deck.txt")
+    write(file, "x")
+    @test_logs (:error, "Not a supported filetype $file") @test_throws PeriLab.PeriLabError PeriLab.IO.read_input_deck(file)
+end
+
+@testset "ut_read_input_deck: empty file or no mapping at the top" begin
+    filename = "test_invalid.yaml"
+    for content in ("", "- a\n- b\n", "PeriLab\n")
+        write(filename, content)
+        @test_logs (:error, "Yaml file is not valid.") match_mode=:any @test_throws PeriLab.PeriLabError begin
+            PeriLab.IO.read_input_deck(filename)
+        end
+    end
+    rm(filename)
+end
+
+@testset "read_input_deck uses an already parsed deck" begin
+    # PeriLab.main parses the YAML once (for the licensed models) and hands the
+    # dict on; the file is not read a second time
+    dir = mktempdir()
+    file = joinpath(dir, "deck.yaml")
+    write(file, "not: [a, valid, deck\n")
+    raw = Dict("PeriLab" => Dict("Models" => Dict("Material Models" => Dict("E" => Dict("Material Model" => "Bond-based Elastic",
+                                                        "Bulk Modulus" => 1.0,
+                                                        "Shear Modulus" => 1.0))),
+"Discretization" => Dict("Input Mesh File" => "m.txt",
+                                                          "Type" => "Text File"),
+                                 "Blocks" => Dict("Block_1" => Dict("Block ID" => 1,
+                                                                    "Density" => 1.0,
+                                                                    "Horizon" => 1.0,
+"Material Model" => "E")),
+                                 "Solver" => Dict("Initial Time" => 0.0,
+                                                  "Final Time" => 1.0,
+                                                  "Verlet" => Dict("Safety Factor" => 1.0))))
+    input = PeriLab.IO.read_input_deck(file; raw_deck = raw)
+    @test input.sections.discretization.input_mesh_file == "m.txt"
+    @test input.sections.solver.final_time == 1.0
 end

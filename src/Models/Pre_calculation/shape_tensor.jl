@@ -3,48 +3,34 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Shape_Tensor
-using DataStructures: OrderedDict
 
 using ......Data_Manager
-using ......Helpers: find_active_nodes
+using ......Helpers: find_active_nodes, get_active_update_nodes
+import ..ONLY_FLAGGED_BONDS_CHANGED
 using ......Geometry: compute_shape_tensors!
-export pre_calculation_name
 export init_model
-export compute
+export compute_model
 export fields_for_local_synchronization
 
-"""
-	pre_calculation_name()
-
-Gives the pre_calculation name. It is needed for comparison with the yaml input deck.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the Pre_Calculation.
-
-Example:
-```julia
-println(pre_calculation_name())
-"Shape Tensor"
-```
-"""
-function pre_calculation_name()
-    return "Shape Tensor"
+using ......ParameterSpec: @params, register_pre_calculation
+"Switch only: this pre-calculation has no parameters."
+@params "Computes the shape tensor of each node, needed for the deformation gradient" struct ShapeTensorParams
 end
+__init__() = register_pre_calculation("Shape Tensor", ShapeTensorParams)
 
 """
-    init_model(nodes, parameter)
+    init_model(nodes, p, pre_calculation, block)
 
 Inits the shape tensor calculation.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `parameter::Dict(String, Any)`: Dictionary with parameter.
+- `p::ShapeTensorParams`: The model parameters.
+- `pre_calculation`: `nothing` (pre-calculations have no shared parameters).
+- `block::Int64`: The current block.
 
 """
-function init_model(nodes::AbstractVector{Int64},
-                    parameter::Union{Dict,OrderedDict},
+function init_model(nodes::AbstractVector{Int64}, p::ShapeTensorParams, pre_calculation,
                     block::Int64)
     dof = Data_Manager.get_dof()
     Data_Manager.create_constant_node_tensor_field("Shape Tensor", Float64, dof)
@@ -70,26 +56,38 @@ function init_model(nodes::AbstractVector{Int64},
 end
 
 """
-    compute(nodes::AbstractVector{Int64})
+    compute_model(nodes, p, pre_calculation, block, time, dt)
 
 Compute the shape tensor.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
+- `p::ShapeTensorParams`: The model parameters.
+- `pre_calculation`: `nothing` (pre-calculations have no shared parameters).
+- `block::Int64`: The current block.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
 """
-function compute(nodes::AbstractVector{Int64},
-                 parameter::Union{Dict,OrderedDict},
-                 block::Int64)
+function compute_model(nodes::AbstractVector{Int64}, p::ShapeTensorParams, pre_calculation,
+                       block::Int64, time::Float64, dt::Float64)
     nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
     volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
     omega::BondScalarState{Float64} = Data_Manager.get_field("Influence Function")
     bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
-    undeformed_bond::BondVectorState{Float64} = Data_Manager.get_field("Bond Geometry")
+    undeformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Bond Geometry")
     shape_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Shape Tensor")
     inverse_shape_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Inverse Shape Tensor")
-    # update_list = Data_Manager.get_field("Update")
-    # active_nodes = Data_Manager.get_field("Active Nodes")
-    # active_nodes = find_active_nodes(update_list, active_nodes, nodes)
+    # K only changes with the bond damage, so in the first pass of `compute_models` only the
+    # flagged nodes (e.g. all at the first step) are computed. Additive and degradation models
+    # change bonds without the flag.
+    active_models = Data_Manager.get_active_models()
+    if ONLY_FLAGGED_BONDS_CHANGED[] && !haskey(active_models, "Additive Model") &&
+       !haskey(active_models, "Degradation Model")
+        nodes = get_active_update_nodes(Data_Manager.get_field("Active")::Vector{Bool},
+                                        Data_Manager.get_field("Update")::Vector{Bool},
+                                        nodes,
+                                        Data_Manager.get_field("Update Nodes")::Vector{Int64})
+    end
 
     compute_shape_tensors!(shape_tensor,
                            inverse_shape_tensor,

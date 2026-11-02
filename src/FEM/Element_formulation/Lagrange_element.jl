@@ -15,18 +15,18 @@ function element_name()
 end
 
 """
-    init_element(elements::AbstractVector{Int64}, element_params::Dict, p::Vector{Int64})
+    init_element(elements::AbstractVector{Int64}, element_params::FEMParams, p::Vector{Int64})
 
 Init the Lagrange element of a given polynomial degree. This degree can be different for each direction
 
 # Arguments
 - `elements::AbstractVector{Int64}`: listed element numbers
-- `element_params::Dict`: Element specific data.
+- `element_params::FEMParams`: Element specific data.
 - `p::Vector{Int64}`: A vector containing the polynomial degrees for each degree of freedom.
 """
 
 function init_element(elements::AbstractVector{Int64},
-                      element_params::Dict,
+                      element_params,
                       p::Vector{Int64})
 end
 """

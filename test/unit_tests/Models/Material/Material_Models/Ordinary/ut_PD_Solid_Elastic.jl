@@ -4,7 +4,7 @@
 
 #using Test
 @testset "get_name&fe_support" begin
-    @test PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Elastic.material_name() ==
-          "PD Solid Elastic"
+    @test parentmodule(PeriLab.ParameterSpec.lookup_model(:material, "PD Solid Elastic")) ===
+      PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Elastic
     @test !(PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Elastic.fe_support())
 end

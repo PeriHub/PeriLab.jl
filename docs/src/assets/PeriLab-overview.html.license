@@ -1,0 +1,7 @@
+SPDX-FileCopyrightText: 2026 Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+
+SPDX-License-Identifier: BSD-3-Clause
+
+Architectural overview of PeriLab.jl rendered as a self-contained interactive
+HTML diagram. View the source specification at
+https://github.com/PeriHub/PeriLab.jl (see the archify diagram metadata).

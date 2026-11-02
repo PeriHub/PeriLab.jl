@@ -134,9 +134,8 @@ Get the step of the simulation.
 - `Int64`: The step of the simulation.
 
 """
-function get_step()::Union{Int64,Nothing}
-    step = data["step"]::Int64  # Type assertion
-    return step == -1 ? nothing : step::Int64
+function get_step()::Int64
+    return data["step"]
 end
 
 """
@@ -148,8 +147,8 @@ Set the max_step of the simulation.
 - `max_step::Int64`: The max_step of the simulation.
 
 """
-function set_max_step(max_step::Union{Int64,Nothing})
-    data["max_step"] = isnothing(max_step) ? -1 : max_step
+function set_max_step(max_step::Int64)
+    data["max_step"] = max_step == 1 ? -1 : max_step
 end
 
 """
@@ -161,7 +160,7 @@ Get the max_step of the simulation.
 - `Int64`: The max_step of the simulation.
 
 """
-function get_max_step()::Union{Int64}
+function get_max_step()::Int64
     return data["max_step"]::Int64
 end
 
@@ -183,8 +182,8 @@ end
 
 Set all dof without displacment boundary conditions.
 
-# Returns
--
+# Arguments
+- `values::Vector{Int64}`: The dof without boundary condition.
 
 """
 function set_bc_free_dof(values::Vector{Int64})
@@ -233,7 +232,6 @@ set_num_controller(10)  # sets the number of nodes to 10
 function set_num_controller(n::Int64)
     data["num_controller"] = n
     set_nnodes()
-    return nothing
 end
 
 function set_analysis_model(what::String, block_id::Int64, model::AbstractString)

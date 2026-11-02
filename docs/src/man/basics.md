@@ -2,7 +2,7 @@
 
 ## Setting up the Environment
 
-If want to use the PeriLab package you need to install it first.
+PeriLab needs Julia 1.12 or newer. Install it as an app:
 You can do it using the following commands:
 
 ```julia
@@ -15,18 +15,9 @@ or
 ```julia
 julia> ] # ']' should be pressed
 
-(@v1.9) pkg> app add PeriLab
+(@v1.12) pkg> app add PeriLab
 ```
-Additionally, it is recommended to check the version of PeriLab that
-you have installed with the `status` command.
-
-```julia
-julia> ]
-
-(@v1.9) pkg> status PeriLab
-      Status `~\v1.6\Project.toml`
-  [a93c6f00] PeriLab v1.0.0
-```
+`PeriLab --help` lists the command line options; the version is printed at the start of every run.
 
 If you want to make sure everything works as expected you can run the tests
 bundled with PeriLab:

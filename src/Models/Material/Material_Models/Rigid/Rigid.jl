@@ -5,11 +5,16 @@
 module Rigid
 
 using .......Data_Manager
+using ......ParameterSpec: @params, register_material
 
 export init_model
 export fe_support
-export material_name
 export compute_model
+
+"Parameters of Rigid beyond the shared material keys (none)."
+@params "Rigid body: no internal forces and no deformation" struct RigidParams
+end
+__init__() = register_material("Rigid", RigidParams)
 
 """
   fe_support()
@@ -32,41 +37,35 @@ function fe_support()
 end
 
 """
-  init_model(nodes::AbstractVector{Int64}, material_parameter::Dict{String, Any})
+  init_model(nodes::AbstractVector{Int64}, p, material, block::Int64)
 
 Initializes the material model.
 
 # Arguments
   - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `p`: Model parameters; `material::BlockMaterial`: typed block material (`material.base`, `material.moduli`, `material.symmetry`).
 """
 function init_model(nodes::AbstractVector{Int64},
-                    material_parameter::Dict{String,Any})
+                    p::RigidParams,
+                    material,
+                    block::Int64)
     @info "Rigid material is applied. No internal forces are calculated. No deformation occurs only rigid body motion."
 end
 
 """
-    material_name()
-
-Returns the name of the material model.
-"""
-function material_name()
-    return "Rigid"
-end
-
-"""
-    compute_model(nodes::AbstractVector{Int64}, material_parameter::Dict{String, Any}, time::Float64, dt::Float64)
+    compute_model(nodes::AbstractVector{Int64}, p, material, time::Float64, dt::Float64)
 
 Calculate the elastic bond force for each node.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `p`: Model parameters; `material::BlockMaterial`: typed block material (`material.base`, `material.moduli`, `material.symmetry`).
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 """
 function compute_model(nodes::AbstractVector{Int64},
-                       material_parameter::Dict{String,Any},
+                       p::RigidParams,
+                       material,
                        block::Int64,
                        time::Float64,
                        dt::Float64)

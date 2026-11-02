@@ -1,11 +1,32 @@
 # Module overview
+
+The following diagram shows how the main modules of `PeriLab.jl` fit together:
+the CLI entry, the `run()` orchestrator, the central `Data_Manager`, the
+`solver()` time-stepping loop, the pluggable multi-physics `Model` factory, the
+`FEM` coupling, and the shared support/compute/MPI foundations.
+
+```@raw html
+<style>
+.archify-view {
+    display: block;
+    width: 100%;
+    border: 0;
+    max-width: 1280px;
+}
+</style>
+<iframe src="assets/PeriLab-overview.html" class="archify-view" height="720" frameborder="0"></iframe>
+```
+
+The module hierarchy below lists the submodules in more detail.
+
 - PeriLab
     - Helpers
     - Geometry
     - Data_Manager
     - Logging_Module
     - MPI_Communication
-    - Parameter_Handling
+    - ParameterSpec
+    - InputDeck
     - IO
     - Solver_Manager
         - Material_Basis

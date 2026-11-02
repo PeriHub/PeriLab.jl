@@ -2,19 +2,7 @@
 
 ## Rectangular Plane
 
-For a recangular plane following parameters needs to be defined:
-
-- **Normal X/Y/Z**: Numeric values representing normal components. (Float64 or Int64)
-
-- **Lower Left Corner X/Y/Z**: Numeric values representing lower left corner components. (Float64 or Int64)
-
-- **Bottom Unit Vector X/Y/Z**: Numeric values representing bottom unit vector components. (Float64 or Int64)
-
-- **Bottom Length**: Numeric value representing the bottom length. (Float64 or Int64)
-
-- **Side Length**: Numeric value representing the side length. (Float64 or Int64)
-
-- **Allow Contact**: Bool value if true allows normal contact (bonds cary load unter pressure not tension)
+A rectangle in a plane given by its normal; bonds crossing it are cut.
 
 ![Discretization_BondFilters_RectangularPlane](../assets/Discretization_BondFilters_RectangularPlane.png)
 
@@ -39,10 +27,13 @@ Bond Filters:
 
 ## Disk
 
-For a disk following parameters needs to be defined:
+A disk given by its center, normal and radius; bonds crossing it are cut.
 
-- **Normal X/Y/Z**: Numeric values representing normal components. (Float64 or Int64)
+## Keys
 
-- **Center X/Y/Z**: Numeric values representing center components. (Float64 or Int64)
+Both filters are entries of `Bond Filters` in the `Discretization` section:
 
-- **Radius**: Numeric value representing the radius. (Float64 or Int64)
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("Discretization → Bond Filters"))
+```

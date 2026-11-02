@@ -12,7 +12,7 @@ PeriLab:
     Material Models:
       Mat_1:
         Material Model: "Correspondence Elastic"
-        Symmetry: Anisotropic
+        Symmetry: anisotropic
         C11: 53619.92831989742
         C12: 42419.92831989742
         C13: 5826.105142734548
@@ -37,7 +37,7 @@ PeriLab:
         Zero Energy Control: "Global"
       Mat_2:
         Material Model: "Correspondence Elastic"
-        Symmetry: Anisotropic
+        Symmetry: anisotropic
         C11: 53619.92831989742
         C12: 42419.92831989742
         C13: 5826.105142734548

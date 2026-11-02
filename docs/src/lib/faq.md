@@ -10,11 +10,11 @@ PeriLab is a peridynamic simulation software designed for different kind of mech
 
 ### What are the system requirements for installing PeriLab?
 
-In order to install PeriLab, you will need to have a recent version of Julia or Docker installed on your system.
+PeriLab needs Julia 1.12 or newer, or Docker.
 
 ### How do I update my PeriLab software?
 
-To update PeriLab you just need to run `julia -e "using Pkg; Pkg.update()"` or pull the latest version of the PeriLab Docker image.
+Installed as an app, update it with `pkg> app update PeriLab` (or `julia -e "using Pkg; Pkg.Apps.update(\"PeriLab\")"`); with Docker pull the latest PeriLab image.
 
 ## Simulation and Analysis
 
@@ -24,9 +24,9 @@ There are multiple options to generate your own input mesh:
 
 - Use the [Perihub](https://github.com/PeriHub/Perihub) framework to generate your own input mesh.
 
-- Generate your own input mesh with julia, [here](https://github.com/PeriHub/PeriLab.jl/blob/main/examples/Training/meshing/mesh.jl) is an example.
+- Generate your own input mesh with julia, [here](https://github.com/PeriHub/PeriLab.jl/blob/main/scripts/mesh.jl) is an example.
 
-- Create a .png image of your 2D model and translate it with this [script](https://github.com/PeriHub/PeriLab.jl/blob/main/examples/Training/meshing/image.jl).
+- Create a .png image of your 2D model and translate it with this [script](https://github.com/PeriHub/PeriLab.jl/blob/main/scripts/image.jl).
 
 - Use an existing Abaqus Inputfile (.inp).
 

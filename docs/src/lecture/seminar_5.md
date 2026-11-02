@@ -86,7 +86,7 @@ PeriLab:
         Symmetry: "isotropic plane stress"
         Young's Modulus: 7000
         Poisson's Ratio: 0.3
-        Global Control: true
+        Zero Energy Control: "Global"
   Outputs:
     Output1:
       Output Filename: "truss"

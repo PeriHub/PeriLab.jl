@@ -6,6 +6,7 @@ module Arlequin_Coupling
 
 using TimerOutputs: @timeit
 using ......Data_Manager
+using ......InputDeck: FEMParams, FEMCouplingParams, fem_degree
 using ......PeriLabExceptions: @abort
 include("../Element_formulation/Lagrange_element.jl")
 using .Lagrange_element:
@@ -31,14 +32,10 @@ function coupling_name()
     return "Arlequin"
 end
 
-function init_coupling_model(nodes, fe_params::Dict{String,Any})
+function init_coupling_model(nodes, fem::FEMParams)
     @info "Coupling $(coupling_name()) is active."
     dof = Data_Manager.get_dof()
-    p = get_polynomial_degree(fe_params, dof)
-    if !haskey(fe_params["Coupling"], "PD Weight")
-        fe_params["Coupling"]["PD Weight"] = 0.5
-        @info "Weight for coupling is set to 0.5."
-    end
+    p = get_polynomial_degree(fem_degree(fem), dof)
 
     el_topology = Data_Manager.get_field("FE Topology")
     coordinates = Data_Manager.get_field("Coordinates")
@@ -46,11 +43,11 @@ function init_coupling_model(nodes, fe_params::Dict{String,Any})
     pd_nodes = Data_Manager.get_field("PD Nodes")
     fe_nodes = Data_Manager.get_field("FE Nodes")
     pd_nodes = find_active_nodes(fe_nodes, pd_nodes, nodes, false)
-    if haskey(fe_params["Coupling"], "Coupling Block")
-        @info "Pre defined coupling region is block $(fe_params["Coupling"]["Coupling Block"])"
+    if fem.coupling.coupling_block !== nothing
+        @info "Pre defined coupling region is block $(fem.coupling.coupling_block)"
         pd_nodes = get_coupling_zone(pd_nodes,
                                      Data_Manager.get_field("Block_Id"),
-                                     fe_params["Coupling"]["Coupling Block"])
+                                     fem.coupling.coupling_block)
     end
     lumped_mass = Data_Manager.get_field("Lumped Mass Matrix")
 
@@ -64,12 +61,8 @@ function init_coupling_model(nodes, fe_params::Dict{String,Any})
         @abort "Coupling is supported only for linear elements yet."
         return nothing
     end
-    if !haskey(fe_params["Coupling"], "Kappa")
-        fe_params["Coupling"]["Kappa"] = 1.0
-        @info "Coupling stiffness is set to 1."
-    end
-    kappa = fe_params["Coupling"]["Kappa"]
-    weight_coefficient = fe_params["Coupling"]["PD Weight"]
+    kappa = fem.coupling.kappa
+    weight_coefficient = fem.coupling.pd_weight
     @info "Coupling stiffness kappa: $kappa"
     # Assign Element ids
     @info "Find Coupling Pairs"
@@ -130,7 +123,7 @@ end
 # 0.25 shape function check # TODO 0.25  -> not in FEM
 ##
 
-function compute_coupling(fem_params::Dict)
+function compute_coupling(coupling::FEMCouplingParams)
     dof = Data_Manager.get_dof()
     el_topology = Data_Manager.get_field("FE Topology")
     force_densities = Data_Manager.get_field("Force Densities", "NP1")
@@ -139,7 +132,7 @@ function compute_coupling(fem_params::Dict)
     coupling_matrix = Data_Manager.get_field("Coupling Matrix")
     # EQ(13) in 10.1002/pamm.202400021 is fulfilled , also for the mass part.
     # F_i/rho = a ?! TODO check this assumption
-    weight_coefficient = fem_params["Coupling"]["PD Weight"]
+    weight_coefficient = coupling.pd_weight
     coupling_dict = Data_Manager.get_coupling_dict()
     unique_fe_coupling_nodes = Data_Manager.get_coupling_fe_nodes()
     force_densities[unique_fe_coupling_nodes, :] .*= weight_coefficient

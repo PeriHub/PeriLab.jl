@@ -33,6 +33,15 @@ function create_result_file(filename::String, outputs::Dict)
     return Dict("filename" => filename, "file" => csv_file, "type" => "CSV")
 end
 
+function open_csv_result_file(filename::String)
+    if !isfile(filename)
+        error("File $filename does not exist, cannot reuse it.")
+    end
+    @info "Reusing output " * filename
+    csv_file = open(filename, "a")
+    return Dict("filename" => filename, "file" => csv_file, "type" => "CSV")
+end
+
 """
     write_global_results_in_csv(csv_file::IOStream, time::Float64, global_values)
 

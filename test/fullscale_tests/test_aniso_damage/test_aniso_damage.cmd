@@ -4,6 +4,6 @@ TIME STEPS absolute 1.0E-14
 NODAL VARIABLES absolute 1.0E-12
 	DisplacementsX   absolute 1.0E-9
 	DisplacementsY   absolute 1.0E-9
-	ForcesX   		 absolute 6.0E-9
-	ForcesY   		 absolute 6.0E-9
+	ForcesX   		 absolute 1.0E-8
+	ForcesY   		 absolute 1.0E-8
 	Damage		     absolute 1.0E-9

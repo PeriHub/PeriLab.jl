@@ -381,46 +381,75 @@ if ncores == 3
         end
     end
 
+    # standalone under mpiexec (no helper.jl): build the typed block material inline
+    ctx = PeriLab.ParameterSpec.ParseContext()
+    parsed = PeriLab.ParameterSpec.parse_model(:material,
+                                               Dict{String,Any}("Material Model" => "Bond-based Elastic",
+                                                                "Young's Modulus" => 1.0),
+                                               "test", ctx; name_key = "Material Model")
+    PeriLab.ParameterSpec.report!(ctx)
+    material = PeriLab.Solver_Manager.Model_Factory.Material.block_material(parsed, dof)
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(Vector{Int64}(1:nodes),
-                                                                               Dict("Bulk Modulus" => 1.0,
-                                                                                    "Young's Modulus" => 1.0))
+                                                                               material.model,
+                                                                               material, 1)
     PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(Vector{Int64}(1:nodes),
-                                                                                  Dict("Bulk Modulus" => 1.0,
-                                                                                       "Young's Modulus" => 1.0),
+                                                                                  material.model,
+                                                                                  material,
                                                                                   1,
                                                                                   0.0,
                                                                                   0.0)
 
-    bf = PeriLab.Data_Manager.get_field("Bond Forces")
-
-    PeriLab.MPI_Communication.synch_controller_bonds_to_responder(comm, overlap_map, bf,
-                                                                  dof)
-
-    if rank == 0
-        test = test_dict["synch_controller_bonds_to_responder_rank_0"] = Dict("tests" => [],
-                                                                              "line" => [])
-        # push_test!(test, (bf[1] == Float64(-0.9)), @__FILE__, @__LINE__)
-    end
-
-    PeriLab.MPI_Communication.synch_controller_bonds_to_responder_flattened(comm,
-                                                                            overlap_map, bf,
-                                                                            dof)
-    if rank == 0
-        test = test_dict["synch_controller_bonds_to_responder_flattened_rank_0"] = Dict("tests" => [],
-                                                                                        "line" => [])
-        # push_test!(test, (bf[1] == Float64(-0.9)), @__FILE__, @__LINE__)
-    end
-
-    solver_options = Dict("Models" => ["Material"])
-    params = Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
-                                                     "Material Model" => "Test 1"),
-                                   "block_2" => Dict("Block ID" => 2,
-                                                     "Material Model" => "Test 2")))
-    PeriLab.IO.show_block_summary(solver_options, params, "", false, comm)
-    PeriLab.IO.show_block_summary(solver_options, params, "", true, comm)
+    models = ["Material"]
+    # runs standalone under mpiexec (no test/helper.jl), so convert inline
+    params = PeriLab.ParameterSpec.convert_value(Dict{String,PeriLab.InputDeck.BlockParams},
+                                                 Dict("block_1" => Dict("Block ID" => 1,
+                                                           "Density" => 1.0,
+                                                           "Horizon" => 1.0,
+                                                           "Material Model" => "Test 1"),
+                                                      "block_2" => Dict("Block ID" => 2,
+                                                           "Density" => 1.0,
+                                                           "Horizon" => 1.0,
+                                                           "Material Model" => "Test 2")),
+                                                 "blocks",
+                                                 PeriLab.ParameterSpec.ParseContext())
+    PeriLab.IO.show_block_summary(models, params, "", false, comm)
+    PeriLab.IO.show_block_summary(models, params, "", true, comm)
     PeriLab.Logging_Module.init_logging("test", false, false, 0, 2)
     PeriLab.IO.show_mpi_summary("test", false, comm)
     PeriLab.IO.show_mpi_summary("test", true, comm)
+
+    # bond exchange: responder rows only hold the bonds to neighbors on their rank
+    DM = PeriLab.Data_Manager
+    DM.initialize_data()
+    DM.set_comm(comm)
+    DM.set_num_controller(rank == 1 ? 2 : 1)
+    DM.set_num_responder(rank == 1 ? 1 : 2)
+    DM.set_dof(dof)
+    global_nlist = Dict(1 => [2, 3], 2 => [3, 4], 3 => [2, 4], 4 => [1, 3])
+    local_nodes = distribution[rank + 1]
+    local_rows = [[findfirst(==(n), local_nodes)
+                   for n in global_nlist[g] if n in local_nodes]
+                  for g in local_nodes]
+    nn = DM.create_constant_node_scalar_field("Number of Neighbors", Int64)
+    nn .= length.(local_rows)
+    nlist = DM.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
+    for (iID, row) in enumerate(local_rows)
+        nlist[iID] .= row
+    end
+    PeriLab.IO.create_bond_overlap_map!(overlap_map, nlist, distribution, rank + 1)
+    expected(g, n) = [10.0 * g + n, -(10.0 * g + n)]
+    bf = DM.create_constant_bond_vector_state("Bond Forces", Float64, dof)
+    for iID in 1:DM.get_nnodes(), (jID, nID) in enumerate(nlist[iID])
+        bf[iID][jID] = expected(local_nodes[iID], local_nodes[nID])
+    end
+    PeriLab.MPI_Communication.synch_controller_bonds_to_responder_flattened(comm,
+                                                                            overlap_map, bf)
+    test = test_dict["synch_controller_bonds_to_responder_rank_$rank"] = Dict("tests" => [],
+                                                                              "line" => [])
+    for iID in eachindex(local_nodes), (jID, nID) in enumerate(nlist[iID])
+        push_test!(test, bf[iID][jID] == expected(local_nodes[iID], local_nodes[nID]),
+                   @__FILE__, @__LINE__)
+    end
 end
 
 open("test_results_$rank.json", "w") do f
