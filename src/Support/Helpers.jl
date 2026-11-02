@@ -69,7 +69,7 @@ function get_update_nodes(active_list,
                           active_nodes,
                           active_model_name)
     if active_model_name == "Damage Model"
-        return @view active_nodes[:]
+        return active_nodes
     else
         return get_active_update_nodes(active_list, update_list, nodes, update_nodes)
     end
@@ -580,14 +580,16 @@ Returns the active nodes and the update nodes.
 function get_active_update_nodes(active::AbstractVector{Bool},
                                  update::AbstractVector{Bool},
                                  nodes::AbstractVector{Int64}, index::Vector{Int64})
+    # resize! within the capacity of the buffer does not allocate
+    nodes === index || resize!(index, length(nodes))
     count::Int64 = 0
-    for node in nodes
+    @inbounds for node in nodes
         if active[node] && update[node]
             count += 1
             index[count] = node
         end
     end
-    return view(index, 1:count)
+    return resize!(index, count)
 end
 
 "The D×D tensor of node `iID` of a node tensor field, as an `SMatrix` (no allocation)."
@@ -605,18 +607,27 @@ const COMPUTE_LABELS = Dict{String,String}()
 "Timer label `\"compute \$name\"`, built once instead of every step."
 compute_label(name::String) = get!(() -> "compute " * name, COMPUTE_LABELS, name)
 
+"""
+	find_active_nodes(active, active_nodes, nodes, false_or_true = true)
+
+Writes the nodes of `nodes` with `active[node] == false_or_true` into the buffer
+`active_nodes` and returns the buffer resized to their number. `nodes` may be the buffer
+itself. `resize!` within the capacity of the buffer does not allocate, and returning the
+`Vector` instead of a view avoids boxing it in dynamically dispatched model calls.
+"""
 function find_active_nodes(active::AbstractVector{Bool},
-                           active_nodes::AbstractVector{Int64},
+                           active_nodes::Vector{Int64},
                            nodes::AbstractVector{Int64},
                            false_or_true::Bool = true)
+    nodes === active_nodes || resize!(active_nodes, length(nodes))
     count::Int64 = 0
-    for node in nodes
+    @inbounds for node in nodes
         if active[node] == false_or_true
             count += 1
             active_nodes[count] = node
         end
     end
-    return view(active_nodes, 1:count)
+    return resize!(active_nodes, count)
 end
 
 """

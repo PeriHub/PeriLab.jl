@@ -191,8 +191,8 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
                         dt::Float64,
                         time::Float64,
                         options::Vector{String},
-                        synchronise_field)
-    fem_option = Data_Manager.fem_active()
+                        synchronise_field::Function)
+    fem_option = Data_Manager.fem_active()::Bool
     if fem_option
         fe_nodes = Data_Manager.get_field("FE Nodes")::Vector{Bool}
     end
@@ -230,7 +230,7 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
                                                  active_nodes,
                                                  nodes,
                                                  false)
-                if active_nodes == []
+                if isempty(active_nodes)
                     continue
                 end
             end
@@ -273,7 +273,7 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
                                                  active_nodes,
                                                  nodes,
                                                  false)
-                if active_nodes == []
+                if isempty(active_nodes)
                     continue
                 end
             end
