@@ -74,6 +74,39 @@ end
     @test HT.relaxation_factor(1e-12) ≈ 1
 end
 
+@testset "ut_surface_heat_flow_radiation" begin
+    # large heat capacity: the flow is exactly eps sigma (T^4 - Tenv^4) A/V
+    heat_flow = [0.0]
+    HT.apply_surface_heat_flow!(heat_flow, [1600.0], [2.0], [0.0], [true], [1], 0.0, 300.0,
+                                0.0, 0.0, [1.0], [1e12], 1.0; eps_sigma = 3.0e-11)
+    @test heat_flow[1] ≈ 3.0e-11 * (1600.0^4 - 300.0^4) * 2.0
+
+    # V1.5: lumped capacitance cooling by radiation only, rho c dT/dt = -k (T^4 - Tenv^4) A/V,
+    # with steps far beyond the explicit limit against a fine RK4 reference
+    k, Tenv, T0, rho_c, tend = 5.0e-11, 300.0, 1600.0, 3.46, 200.0
+    rhs(T) = -k * (T^4 - Tenv^4) / rho_c
+    Tref, h = T0, 1e-3
+    for _ in 1:round(Int, tend / h)
+        k1 = rhs(Tref)
+        k2 = rhs(Tref + h / 2 * k1)
+        k3 = rhs(Tref + h / 2 * k2)
+        k4 = rhs(Tref + h * k3)
+        Tref += h / 6 * (k1 + 2k2 + 2k3 + k4)
+    end
+    for dt in (0.1, 2.0)
+        T = T0
+        for _ in 1:round(Int, tend / dt)
+            heat_flow = [0.0]
+            HT.apply_surface_heat_flow!(heat_flow, [T], [1.0], [0.0], [true], [1], 0.0,
+                                        Tenv,
+                                        0.0, 0.0, [1.0], [rho_c], dt; eps_sigma = k)
+            T -= heat_flow[1] * dt / rho_c
+            @test T >= Tenv
+        end
+        @test isapprox(T - Tenv, Tref - Tenv; rtol = 0.02)
+    end
+end
+
 @testset "ut_specific_volume_crossing_strands_3d" begin
     # G-code strands (sampling 2, width 0.42, height 0.2); the upper one is rotated by 90°
     extent = [2.0 0.42 0.2; 2.0 0.42 0.2]

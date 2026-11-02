@@ -30,6 +30,13 @@ import ......ParameterSpec: check!
                                                            default = nothing, min = 0)
     "Position of the build plate along the last coordinate axis (z in 3D, y in 2D)"
     bed_position::Float64 = opt("Bed Position"; default = 0.0)
+    "Emissivity of the faces exchanging heat with the environment; radiation eps sigma (T^4 - Tenv^4) per area, temperatures in Kelvin. No radiation if not given"
+    emissivity::Union{Nothing,Float64} = opt("Emissivity"; default = nothing, min = 0,
+                                             max = 1)
+    "Stefan-Boltzmann constant in the units of the model, e.g. 5.670374e-8 (m, kg, s, K) or 5.670374e-11 (mm, t, s, K)"
+    stefan_boltzmann_constant::Union{Nothing,
+                                     Float64} = opt("Stefan-Boltzmann Constant";
+                                                    default = nothing, min = 0)
 end
 __init__() = register_thermal("Heat Transfer", HeatTransferParams)
 
@@ -42,6 +49,10 @@ function check!(p::HeatTransferParams, path::String, ctx::ParseContext)
         p.bed_thermal_conductivity !== nothing)
         add_error!(ctx, join_path(path, "Bed Temperature"),
                    "required for the heat exchange with the build plate")
+    end
+    if (p.emissivity === nothing) != (p.stefan_boltzmann_constant === nothing)
+        add_error!(ctx, join_path(path, "Stefan-Boltzmann Constant"),
+                   "give Emissivity and Stefan-Boltzmann Constant together for radiation")
     end
     return nothing
 end
@@ -155,7 +166,9 @@ function compute_model(nodes::AbstractVector{Int64}, p::HeatTransferParams, ther
                                  Data_Manager.get_field("Specific Heat Capacity"), dt,
                                  p.bed_thermal_conductivity,
                                  Data_Manager.get_field("Extent"),
-                                 Data_Manager.get_field("Bed Face"))
+                                 Data_Manager.get_field("Bed Face");
+                                 eps_sigma = p.emissivity === nothing ? 0.0 :
+                                             p.emissivity * p.stefan_boltzmann_constant)
     end
 end
 
@@ -237,6 +250,10 @@ Both are a linear relaxation `q = a (T - Tw)` of the node towards a mean wall te
 `Tw`. The explicit update `dT = -q dt / (rho c)` is unstable for `a dt / (rho c) > 2`, so the
 flow is scaled by `(1 - exp(-x)) / x`, `x = a dt / (rho c)`: the explicit update then gives
 the exact solution of the relaxation over the step, for any time step.
+
+Radiation `eps_sigma (T^4 - Tenv^4)` is added to the environment as the coefficient
+`eps_sigma (T^2 + Tenv^2)(T + Tenv)` of the current temperature, which gives exactly the
+radiated flow and keeps the update stable.
 """
 function apply_surface_heat_flow!(heat_flow::AbstractVector{Float64},
                                   temperature::AbstractVector{Float64},
@@ -250,11 +267,12 @@ function apply_surface_heat_flow!(heat_flow::AbstractVector{Float64},
                                   heat_capacity::AbstractVector{Float64}, dt::Float64,
                                   bed_conductivity::Union{Nothing,Float64} = nothing,
                                   extent::AbstractMatrix{Float64} = zeros(0, 0),
-                                  bed_face::AbstractVector{Int64} = Int64[])
+                                  bed_face::AbstractVector{Int64} = Int64[];
+                                  eps_sigma::Float64 = 0.0)
     @inbounds for iID in nodes
         surface_nodes[iID] || continue
         T = temperature[iID]
-        a_env = kappa * specific_volume[iID]
+        a_env = (kappa + eps_sigma * (T^2 + Tenv^2) * (T + Tenv)) * specific_volume[iID]
         a_bed = bed_specific_volume[iID] > 0 ?
                 bed_coefficient(kappa_bed, bed_conductivity, extent, bed_face, iID) *
                 bed_specific_volume[iID] : 0.0
