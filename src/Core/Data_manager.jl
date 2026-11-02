@@ -555,7 +555,7 @@ get_nnodes()  # returns the current number of controler nodes. The neighbors are
 ```
 """
 function get_nnodes()
-    return data["num_controller"]
+    return data["num_controller"]::Int64
 end
 
 """
