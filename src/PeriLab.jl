@@ -342,6 +342,24 @@ function get_examples()
 end
 
 """
+    post_process(input, result_files, output_dir, merged)
+
+Lets the licensed additive modules post-process the finished results (e.g. reports).
+`merged`: the Exodus files were merged from MPI ranks into `output_dir`. A failure only
+warns; the simulation itself is finished.
+"""
+function post_process(input, result_files, output_dir, merged::Bool)
+    paths = [merged ? joinpath(output_dir, split(basename(f["filename"]), ".")[1] * ".e") :
+             f["filename"]
+             for f in result_files if f["type"] == "Exodus"]
+    try
+        Solver_Manager.Model_Factory.Additive.post_process_licensed(input, paths)
+    catch e
+        @warn "Post processing failed" exception = e
+    end
+end
+
+"""
     dry_run_estimate(solver_run, solver_context)
 
 Estimates runtime and output size of a solver step from a few steps: an untimed
@@ -430,6 +448,7 @@ function run(filename::String;
 
         result_files = nothing
         outputs = nothing
+        input = nothing
         try
             # atexit(() -> cleanup(comm))
             if silent && debug
@@ -594,6 +613,9 @@ function run(filename::String;
                 MPI.Barrier(comm)
                 if (size > 1 && !debug && !reload) || dry_run
                     IO.delete_files(result_files, output_dir)
+                end
+                if exit_code == 0 && !dry_run && rank == 0
+                    post_process(input, result_files, output_dir, size > 1)
                 end
             end
         end
