@@ -4,7 +4,7 @@
 
 import MPI
 using Test
-using JSON3
+using JSON
 using TimerOutputs
 import PeriLab
 
@@ -452,8 +452,6 @@ if ncores == 3
     end
 end
 
-open("test_results_$rank.json", "w") do f
-    JSON3.pretty(f, JSON3.write(test_dict))
-end
+JSON.json("test_results_$rank.json", test_dict; pretty = true)
 
 # MPI.Finalize()

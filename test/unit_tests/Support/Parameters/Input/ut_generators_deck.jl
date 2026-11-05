@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-import JSON3
+import JSON
 const GID = PeriLab.InputDeck
 
 const UT_SCHEMA = PeriLab.to_json_schema(GID.PeriLabInput)
@@ -23,7 +23,7 @@ end
     @test haskey(UT_DECK["properties"], "Solver") &&
           haskey(UT_DECK["properties"], "Contact")
     @test UT_DECK["properties"]["Globals"] == Dict("type" => "object")
-    @test JSON3.read(JSON3.write(UT_SCHEMA)) isa JSON3.Object       # serialisable
+    @test JSON.parse(JSON.json(UT_SCHEMA)) isa JSON.Object       # serialisable
 end
 
 @testset "model entries in the schema" begin
@@ -303,7 +303,7 @@ end
 @testset "print_json_schema" begin
     io = IOBuffer()
     PeriLab.print_json_schema(io)
-    schema = JSON3.read(String(take!(io)))
+    schema = JSON.parse(String(take!(io)))
     @test haskey(schema["properties"], "PeriLab")
     solver = schema["properties"]["PeriLab"]["properties"]["Solver"]
     @test !isempty(solver["description"])

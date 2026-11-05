@@ -23,7 +23,7 @@ MPI.Init()
     end
     @testset "Aqua" begin
         Aqua.test_all(PeriLab, ambiguities = false,
-                      stale_deps = (ignore = [:ZipArchives, :JSON3],))
+                      stale_deps = (ignore = [:ZipArchives],))
     end
     @testset "unit_tests" begin
         @testset "FEM" begin

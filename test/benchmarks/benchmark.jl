@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using TimerOutputs
-using JSON3
+using JSON
 const to = TimerOutput()
 
 include("../helper.jl")
@@ -15,6 +15,4 @@ cd("test/benchmarks") do
     @timeit to "perilab 4" run_perilab("strain_xx", 4, false)
 end
 
-open("benchmark_results.json", "w") do f
-    JSON3.pretty(f, JSON3.write(TimerOutputs.todict(to)))
-end
+JSON.json("benchmark_results.json", TimerOutputs.todict(to); pretty = true)

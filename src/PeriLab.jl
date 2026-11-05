@@ -55,7 +55,7 @@ using ArgParse
 using Dates
 using LibGit2
 using StyledStrings
-import JSON3
+import JSON
 
 using .Data_Manager
 using .PeriLabExceptions: @abort, PeriLabError
@@ -189,7 +189,7 @@ Write the JSON Schema of the input deck (`to_json_schema(PeriLabInput)`) to `io`
 Used by `PeriLab --json_schema` and the API's `GET /schema`.
 """
 function print_json_schema(io::Base.IO = stdout)
-    JSON3.write(io, to_json_schema(InputDeck.PeriLabInput))
+    JSON.json(io, to_json_schema(InputDeck.PeriLabInput))
     println(io)
 end
 

@@ -77,7 +77,7 @@ DotEnv.load!()
 
 import Downloads
 import YAML
-import JSON3
+import JSON
 import SHA
 
 export find_module_files, find_registered_modules, create_module_specifics,
@@ -505,7 +505,7 @@ function _fetch_and_verify_all(license_server_url::AbstractString,
     validation = _validate(license_server_url, license_key, machine_id)
 
     if !validation.valid
-        @abort "PeriHub license check failed: $(get(validation, :reason, "unknown reason"))"
+        @abort "PeriHub license check failed: $(get(validation, "reason", "unknown reason"))"
     end
 
     # Module downloads use the short-lived, module-scoped download_token
@@ -530,7 +530,7 @@ function _fetch_and_verify_all(license_server_url::AbstractString,
 
         # Falls back to the file name itself as its own type if the server
         # config didn't tag one -- defensive, not expected in normal use.
-        module_type = string(get(validation.module_types, Symbol(module_name), module_name))
+        module_type = string(get(validation.module_types, module_name, module_name))
         detected_name = _detect_module_name(source)
         push!(entries,
               (module_name = module_name, module_type = module_type,
@@ -557,11 +557,11 @@ end
 
 function _validate(license_server_url::AbstractString, license_key::AbstractString,
                    machine_id::AbstractString)
-    body = JSON3.write(Dict("license_key" => license_key, "machine_id" => machine_id))
+    body = JSON.json(Dict("license_key" => license_key, "machine_id" => machine_id))
     _, response = _request(rstrip(license_server_url, '/') * "/api/v1/validate";
                            method = "POST",
                            headers = ["Content-Type" => "application/json"], body = body)
-    return JSON3.read(response)
+    return JSON.parse(response)
 end
 
 function _fetch_module_source(license_server_url::AbstractString,

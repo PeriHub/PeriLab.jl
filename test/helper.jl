@@ -5,7 +5,7 @@
 using Exodus
 using Test
 using MPI
-using JSON3
+using JSON
 using Logging
 using CSV
 using DataFrames
@@ -135,7 +135,7 @@ function check_test_json(cores)
     for i in 1:cores
         @testset "core $i" begin
             failed = false
-            data = JSON3.read(read("test_results_$(i-1).json", String))
+            data = JSON.parse(read("test_results_$(i-1).json", String))
             for testset in keys(data)
                 @testset "$testset" begin
                     for test in data[testset]["tests"]
