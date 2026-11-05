@@ -342,6 +342,56 @@ function get_examples()
 end
 
 """
+    dry_run_estimate(solver_run, solver_context)
+
+Estimates runtime and output size of a solver step from a few steps: an untimed
+warm-up step (compilation), 2 steps that write every step to measure the size and
+write time of one output per file, and 10 timed steps without output. The file
+size before these steps (header, mesh, initial output) is counted once, each output
+`(nsteps + 1) / output frequency` times (a solver run of `nsteps` steps has `nsteps + 1`
+iterations). The runtime is that of the first steps; models whose cost changes during
+the run (e.g. additive printing activating nodes) can take longer.
+"""
+function dry_run_estimate(solver_run, solver_context)
+    nsteps = solver_run.time.nsteps
+    steps(n) = Solver_Manager.solver(Solver_Manager.with_steps(solver_run, n),
+                                     solver_context)
+    output_frequency = Data_Manager.get_output_frequency()
+    frequencies = [o["Output Frequency"] for o in output_frequency]
+    sizes_before = [filesize(f["filename"]) for f in solver_context.result_files]
+
+    # write every step: warm-up (compilation), then size and time of one output
+    set_frequency(f) = foreach(o -> (o["Output Frequency"] = f; o["Counter"] = 0),
+                               output_frequency)
+    set_frequency(1)
+    steps(1)
+    sizes = [filesize(f["filename"]) for f in solver_context.result_files]
+    measured = 2
+    elapsed = @elapsed result_files = steps(measured)
+    per_output = ([filesize(f["filename"]) for f in result_files] .- sizes) ./
+                 (measured + 1)
+    step_and_write_time = elapsed / (measured + 1)
+
+    # steps without output
+    set_frequency(typemax(Int64))
+    timed = min(10, nsteps)
+    elapsed = @elapsed @timeit "Solver" steps(timed)
+    step_time = elapsed / (timed + 1)
+    write_time = max(step_and_write_time - step_time, 0.0)
+    foreach(((o, f),) -> (o["Output Frequency"] = f; o["Counter"] = 0),
+            zip(output_frequency, frequencies))
+
+    outputs = (nsteps + 1) ./ frequencies
+    share = sum(per_output) > 0 ? per_output ./ sum(per_output) :
+            fill(1 / length(per_output), length(per_output))
+    runtime = step_time * (nsteps + 1) + write_time * sum(share .* outputs)
+    @info "Estimated runtime: " * string(runtime) * " [s]"
+    @info "Estimated filesize: " * string(sum(sizes_before .+ per_output .* outputs)) *
+          " [b]"
+    return result_files
+end
+
+"""
 	main(filename::String, output_dir::String="", dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false, reload::Bool=false)
 
 Entry point for the PeriLab application.
@@ -503,21 +553,7 @@ function run(filename::String;
                                                                                                                 dt,
                                                                                                                 fallback_dt))
                 if dry_run
-                    nsteps = solver_run.time.nsteps
-                    elapsed_time = @elapsed begin
-                        @timeit "Solver" result_files=Solver_Manager.solver(Solver_Manager.with_steps(solver_run,
-                                                                                                      10),
-                                                                            solver_context)
-                    end
-
-                    @info "Estimated runtime: " *
-                          string((elapsed_time / 10) * nsteps) *
-                          " [s]"
-                    file_size = IO.get_file_size(result_files)
-                    @info "Estimated filesize: " *
-                          string((file_size / 10) * nsteps) *
-                          " [b]"
-
+                    result_files = dry_run_estimate(solver_run, solver_context)
                 else
                     @timeit "Solver_Manager.solver" result_files=Solver_Manager.solver(solver_run,
                                                                                        solver_context)
