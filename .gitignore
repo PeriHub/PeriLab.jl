@@ -23,5 +23,4 @@ scripts/Output
 scripts/3d_plate.jl
 .qodo
 test/tmp/test.jl
-CLAUDE.md
 docs/src/generated/
