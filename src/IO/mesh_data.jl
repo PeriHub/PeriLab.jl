@@ -523,7 +523,9 @@ function distribution_to_cores(comm::MPI.Comm,
         meshdata = Dict()
     end
     meshdata = broadcast_value(comm, meshdata)
-    for fieldname in keys(meshdata)
+    # sorted: the broadcast copy of a Dict can iterate in a different order than on the
+    # root, and every field is a collective send -> ranks would mix up the fields
+    for fieldname in sort!(collect(keys(meshdata)))
         field_dof = length(meshdata[fieldname]["Mesh ID"])
         if field_dof == 1
             datafield = Data_Manager.create_constant_node_scalar_field(fieldname,

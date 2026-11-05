@@ -586,6 +586,8 @@ function run(filename::String;
                 MPI.Abort(comm, exit_code)
             end
             if !isnothing(result_files)
+                # all ranks must have closed their files before rank 0 merges them
+                size > 1 && MPI.Barrier(comm)
                 if size > 1 && rank == 0
                     IO.merge_exodus_files(result_files, output_dir)
                 end
