@@ -46,6 +46,26 @@ end
                                                      evaluated = true)
 end
 
+@params "Generates the mesh from a KUKA KRL print program (.src) by sampling the printed LIN paths; needs a license" struct KukaParams
+    "Regenerate the mesh from the KRL program; if false and the .txt mesh written by a previous run exists next to the program, that mesh is read instead"
+    overwrite_mesh::Bool = opt("Overwrite Mesh"; default = true)
+    "Distance between two nodes along a printed path"
+    sampling::Float64 = req("Sampling"; min = 0, quantity = :length)
+    "Width of the printed strand; with sampling and height it sets the node volume"
+    width::Float64 = req("Width"; min = 0, quantity = :length)
+    "Layer height of the printed strand; with sampling and width it sets the node volume"
+    height::Float64 = req("Height"; min = 0, quantity = :length)
+    "Nodes across the strand width; the strand cross section is split into Nodes Across Width x Nodes Across Height nodes"
+    nodes_across_width::Int64 = opt("Nodes Across Width"; default = 1, min = 1)
+    "Nodes across the strand height (layer height)"
+    nodes_across_height::Int64 = opt("Nodes Across Height"; default = 1, min = 1)
+    "Real path speed / programmed \$VEL.CP, e.g. 0.58 if the robot only reached 58 % of the programmed speed"
+    speed_factor::Float64 = opt("Speed Factor"; default = 1.0, min = 0)
+    "Block id => condition on the node position x, y, z (e.g. \"z > 2.0\"); a node gets the last block whose condition holds, block 1 otherwise"
+    blocks::Union{Nothing,Dict{String,String}} = opt("Blocks"; default = nothing,
+                                                     evaluated = true)
+end
+
 const _DISK = Dict("Type" => ["Disk"])
 const _RECTANGLE = Dict("Type" => ["Rectangular_Plane"])
 
@@ -99,7 +119,7 @@ end
 
 # the mesh importers (`mesh_import_name()` of the modules in IO/Mesh_Import); an unknown
 # type is reported when the mesh is read
-const _MESH_TYPES = ["Text File", "Exodus", "Abaqus", "Gmsh", "Gcode"]
+const _MESH_TYPES = ["Text File", "Exodus", "Abaqus", "Gmsh", "Gcode", "Kuka"]
 
 @params "Mesh input: the point cloud or mesh file, node sets, bond filters and the neighbor search" struct DiscretizationParams
     "Mesh format"
@@ -113,13 +133,15 @@ const _MESH_TYPES = ["Text File", "Exodus", "Abaqus", "Gmsh", "Gcode"]
                                                               Union{Int64,String}}(),
                                                evaluated = true,
                                                when = Dict("Type" => ["Text File", "Gmsh",
-                                                               "Gcode"]))
+                                                               "Gcode", "Kuka"]))
     "Named bond filters"
     bond_filters::Dict{String,BondFilterParams} = opt("Bond Filters";
                                                       default = Dict{String,
                                                                      BondFilterParams}())
     gcode::Union{Nothing,GcodeParams} = opt("Gcode"; default = nothing,
                                             when = Dict("Type" => ["Gcode"]))
+    kuka::Union{Nothing,KukaParams} = opt("Kuka"; default = nothing,
+                                          when = Dict("Type" => ["Kuka"]))
     "Weight of each bond as a function of its length xi (or xiX, xiY, xiZ), e.g. \"1/xi^2\"; all bonds weigh 1 if not given"
     influence_function::Union{Nothing,String} = opt("Influence Function"; default = nothing,
                                                     evaluated = true)
@@ -148,7 +170,7 @@ function mesh_scaling(d::DiscretizationParams)
         something(d.horizon_mesh_scaling_z, 1.0)]
 end
 
-function check!(g::GcodeParams, path::String, ctx::ParseContext)
+function check!(g::Union{GcodeParams,KukaParams}, path::String, ctx::ParseContext)
     g.blocks === nothing && return nothing
     for key in keys(g.blocks)
         tryparse(Int64, key) === nothing &&
@@ -158,8 +180,8 @@ function check!(g::GcodeParams, path::String, ctx::ParseContext)
     return nothing
 end
 
-"Gcode block assignment: block id => condition, or `nothing`."
-function gcode_block_ids(g::GcodeParams)
+"Gcode/Kuka block assignment: block id => condition, or `nothing`."
+function gcode_block_ids(g::Union{GcodeParams,KukaParams})
     g.blocks === nothing && return nothing
     return Dict{Int64,String}(parse(Int64, key) => condition
                               for (key, condition) in g.blocks)

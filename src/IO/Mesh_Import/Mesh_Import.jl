@@ -18,7 +18,7 @@ module Mesh_Import
 
 using ...Data_Manager
 using ...PeriLabExceptions: @abort
-using ...ModuleLoader: find_module_files, create_module_specifics
+using ...ModuleLoader: find_module_files, create_module_specifics, licensed_modules
 using ...InputDeck: PeriLabInput
 
 include("Mesh_Volume.jl")
@@ -62,12 +62,21 @@ function read_mesh(input::PeriLabInput, path::String)
                                        @__MODULE__,
                                        "mesh_import_name")
     if isnothing(importer)
+        # licensed importers (e.g. Kuka) are only fetched when a deck asks for them
+        for m in licensed_modules(@__MODULE__, "MeshImport")
+            m in module_list || push!(module_list, m)
+        end
+        importer = create_module_specifics(type, module_list, @__MODULE__,
+                                           "mesh_import_name")
+    end
+    if isnothing(importer)
         @abort "No mesh importer for type '$type' exists."
         return nothing
     end
 
-    @info "Read mesh file $mesh_path using importer $(importer.mesh_import_name())"
-    return importer.read_mesh(input, mesh_path)
+    @info "Read mesh file $mesh_path using importer $type"
+    # invokelatest: a licensed importer was just included, after this call started
+    return Base.invokelatest(() -> importer.read_mesh(input, mesh_path))
 end
 
 end # module Mesh_Import

@@ -800,6 +800,63 @@ function tait_bryant_angles(orientation_vector, up_vector = [0, 0, 1])
 end
 
 """
+    new_pd_mesh(sampling, width, height, nw, nh, blocks)
+
+Empty mesh state for `deposit_mesh_points!`: sampling, strand cross section
+(`nw` x `nh` nodes across width x height) and the empty mesh DataFrame.
+Shared with the licensed Kuka importer.
+"""
+function new_pd_mesh(sampling, width, height, nw, nh, blocks)
+    pd_mesh = Dict{String,Any}()
+    pd_mesh["sampling"] = sampling
+    pd_mesh["volume"] = sampling * width * height / (nw * nh)
+    pd_mesh["previous_extruding"] = 0
+    pd_mesh["width"] = width
+    pd_mesh["height"] = height
+    pd_mesh["nodes_across"] = (nw, nh)
+    # node box in the strand frame (along the path, across, up), see Heat_Transfer
+    pd_mesh["extent"] = (sampling, width / nw, height / nh)
+    pd_mesh["remaining_distance"] = sampling / 2
+    pd_mesh["blocks"] = blocks
+
+    pd_mesh["mesh_df"] = DataFrame(x = Float64[],
+                                   y = Float64[],
+                                   z = Float64[],
+                                   block_id = Int64[],
+                                   volume = Float64[],
+                                   Activation_Time = Float64[],
+                                   Angles_x = Float64[],
+                                   Angles_y = Float64[],
+                                   Angles_z = Float64[],
+                                   Extent_x = Float64[],
+                                   Extent_y = Float64[],
+                                   Extent_z = Float64[])
+    pd_mesh["dir"] = zeros(3)
+    pd_mesh["start_point"] = zeros(3)
+    pd_mesh["point"] = zeros(3)
+    pd_mesh["point_diff"] = zeros(3)
+    return pd_mesh
+end
+
+"""
+    save_mesh(pd_mesh, txt_file)
+
+Aborts if no node was deposited, otherwise writes the mesh to `txt_file`
+(read back instead of the print path if `Overwrite Mesh` is false).
+"""
+function save_mesh(pd_mesh, txt_file)
+    if size(pd_mesh["mesh_df"], 1) == 0
+        @abort "No points found in the print path file, maybe its format is not supported?"
+    end
+    @info "Number of points: $(size(pd_mesh["mesh_df"],1))"
+    @info "Printing time: $(maximum(pd_mesh["mesh_df"].Activation_Time)) seconds"
+
+    write(txt_file,
+          "header: x y z block_id volume Activation_Time Angles_x Angles_y Angles_z Extent_x Extent_y Extent_z\n")
+    CSV.write(txt_file, pd_mesh["mesh_df"]; delim = (' '), append = true)
+end
+
+"""
     read_mesh(input::PeriLabInput, filename::String)
 
 Reads a Gcode file and builds the peridynamic mesh by simulating the additive
@@ -839,49 +896,13 @@ function read_mesh(input::PeriLabInput, filename::String)
     @info "Read gcode file $filename"
     @info "Params: Sampling $sampling, width $width "
 
-    pd_mesh = Dict{String,Any}()
-    pd_mesh["sampling"] = sampling
-    nw, nh = gcode.nodes_across_width, gcode.nodes_across_height
-    pd_mesh["volume"] = sampling * width * height / (nw * nh)
-    pd_mesh["previous_extruding"] = 0
-    pd_mesh["width"] = width
-    pd_mesh["height"] = height
-    pd_mesh["nodes_across"] = (nw, nh)
-    # node box in the strand frame (along the path, across, up), see Heat_Transfer
-    pd_mesh["extent"] = (sampling, width / nw, height / nh)
-    pd_mesh["remaining_distance"] = sampling / 2
-    pd_mesh["blocks"] = blocks
-
-    pd_mesh["mesh_df"] = DataFrame(x = Float64[],
-                                   y = Float64[],
-                                   z = Float64[],
-                                   block_id = Int64[],
-                                   volume = Float64[],
-                                   Activation_Time = Float64[],
-                                   Angles_x = Float64[],
-                                   Angles_y = Float64[],
-                                   Angles_z = Float64[],
-                                   Extent_x = Float64[],
-                                   Extent_y = Float64[],
-                                   Extent_z = Float64[])
-    pd_mesh["dir"] = zeros(3)
-    pd_mesh["start_point"] = zeros(3)
-    pd_mesh["point"] = zeros(3)
-    pd_mesh["point_diff"] = zeros(3)
+    pd_mesh = new_pd_mesh(sampling, width, height, gcode.nodes_across_width,
+                          gcode.nodes_across_height, blocks)
 
     @info "Writing mesh"
     write_mesh(filename, commands_dict, Data_Manager.get_silent(), pd_mesh)
 
-    if size(pd_mesh["mesh_df"], 1) == 0
-        @abort "No points found in the gcode file, maybe the gcode format is not supported?"
-        return nothing
-    end
-    @info "Number of points: $(size(pd_mesh["mesh_df"],1))"
-    @info "Printing time: $(maximum(pd_mesh["mesh_df"].Activation_Time)) seconds"
-
-    write(txt_file,
-          "header: x y z block_id volume Activation_Time Angles_x Angles_y Angles_z Extent_x Extent_y Extent_z\n")
-    CSV.write(txt_file, pd_mesh["mesh_df"]; delim = (' '), append = true)
+    save_mesh(pd_mesh, txt_file)
 
     @info "Finished reading mesh data"
 
