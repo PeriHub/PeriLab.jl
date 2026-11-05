@@ -559,7 +559,6 @@ function init_orientations(blocks::Dict{String,BlockParams})
         return
     end
     dof = Data_Manager.get_dof()
-    nnodes = Data_Manager.get_nnodes()
     orientations = Data_Manager.create_constant_node_vector_field("Orientations", Float64,
                                                                   3)
     rotation_tensor_field = Data_Manager.create_constant_node_tensor_field("Rotation Tensor",
@@ -567,7 +566,8 @@ function init_orientations(blocks::Dict{String,BlockParams})
                                                                            dof)
     angles = Data_Manager.get_field("Angles")
 
-    for iID in 1:nnodes
+    # ghost nodes too: their rotation is used by the owned nodes (e.g. heat transfer faces)
+    for iID in axes(angles, 1)
         rotation_tensor_field[iID, :, :] = rotation_tensor(angles[iID, :], dof)
 
         if dof == 2

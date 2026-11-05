@@ -33,6 +33,7 @@ function init_fields()
     # must be specified, because it might be that no temperature model has been defined
     Data_Manager.create_node_scalar_field("Temperature", Float64)
     Data_Manager.create_node_scalar_field("Heat Flow", Float64)
+    Data_Manager.set_synch("Temperature", false, true)
 
     bond_damageN = Data_Manager.get_bond_damage("N")
     bond_damageNP1 = Data_Manager.get_bond_damage("NP1")
@@ -78,6 +79,22 @@ end
 
 # not a deck (empty file, a list): the input validation reports it
 load_licensed_models(raw_deck) = Any[]
+
+"""
+    post_process_licensed(input, exodus_files::Vector{String})
+
+Calls `post_process(input, exodus_files)` of every loaded licensed additive module that
+defines it, after the simulation (rank 0, final Exodus files).
+"""
+function post_process_licensed(input, exodus_files::Vector{String})
+    # invokelatest: the licensed modules are defined at runtime (newer world)
+    Base.invokelatest() do
+        for m in licensed
+            mod = getfield(@__MODULE__, Symbol(m["Module Name"]))
+            isdefined(mod, :post_process) && mod.post_process(input, exodus_files)
+        end
+    end
+end
 
 """
     compute_model(nodes::AbstractVector{Int64}, p, block::Int64, time::Float64, dt::Float64)

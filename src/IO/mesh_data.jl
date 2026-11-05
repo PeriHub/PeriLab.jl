@@ -215,7 +215,7 @@ function set_angles(blocks::Dict{String,BlockParams})
         Data_Manager.set_rotation(true)
         angles = Data_Manager.create_constant_node_vector_field("Angles", Float64, dof)
 
-        for iID in 1:Data_Manager.get_nnodes()
+        for iID in eachindex(block_ids) # ghost nodes included
             angles_global = block_angles(block_by_id(blocks, block_ids[iID])..., dof)
             if isnothing(angles_global)
                 angles_global = 0.0

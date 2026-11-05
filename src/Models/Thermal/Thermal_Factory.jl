@@ -44,6 +44,8 @@ function init_fields()
     Data_Manager.create_node_scalar_field("Temperature", Float64)
     Data_Manager.create_constant_node_scalar_field("Delta Temperature", Float64)
     Data_Manager.create_node_scalar_field("Heat Flow", Float64)
+    # ghost nodes are not integrated on this rank; without it they stay at 0 K and act as heat sinks
+    Data_Manager.set_synch("Temperature", false, true)
     Data_Manager.create_constant_node_scalar_field("Specific Volume", Float64)
     # if it is already initialized via mesh file no new field is created here
     Data_Manager.create_constant_node_scalar_field("Surface_Nodes", Bool;
