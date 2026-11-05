@@ -327,7 +327,7 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
                                                                        active_nodes,
                                                                        nodes))
                 else
-                    find_active_nodes(active_list, active_nodes, nodes)
+                    active_nodes = find_active_nodes(active_list, active_nodes, nodes)
                 end
                 @timeit "local_damping_due_to_damage" Material.compute_local_damping(active_nodes,
                                                                                      local_damping,
