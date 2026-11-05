@@ -578,27 +578,20 @@ function local_synch(model, direction, synchronise_field)
 end
 
 """
-	compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64}, lambda::Float64, Cv::Float64)
+	compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64}, lambda)
 
-Calculate the critical time step for a thermodynamic simulation based on  [OterkusS2014](@cite).
-
-This function iterates over a collection of nodes and computes the critical time step for each node using provided input data and parameters.
+Critical time step of the explicit bond-based heat conduction [OterkusS2014](@cite):
+`dt < rho c_v / (kappa sum_j V_j / |xi_ij|)` with the micro-conductivity
+`kappa = lambda 6 / (pi delta^(dof+1))` of the thermal flow model (see
+`Thermal_Flow.init_bond_weights!`). The largest eigenvalue of `lambda` is used for
+anisotropic conductivities.
 
 # Arguments
-- `nodes::AbstractVector{Int64}`: The collection of nodes to calculate the critical time step for.
-- `lambda::Float64`: The material parameter used in the calculations.
-- `Cv::Float64`: The heat capacity at constant volume used in the calculations.
+- `nodes::AbstractVector{Int64}`: The nodes to check.
+- `lambda`: The thermal conductivity (scalar, per direction, or matrix).
 
 # Returns
-- `Float64`: The calculated critical time step for the thermodynamic simulation.
-
-# Dependencies
-This function depends on the following data fields from the `Data_Manager` module:
-- `get_nlist()`: Returns the neighbor list.
-- `get_field("Density")`: Returns the density field.
-- `get_field("Bond Length")`: Returns the bond distance field.
-- `get_field("Volume")`: Returns the volume field.
-- `get_field("Number of Neighbors")`: Returns the number of neighbors field.
+- `Float64`: The smallest critical time step of the nodes.
 """
 function compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64},
                                                   lambda::Union{Float64,Int64})
@@ -607,16 +600,19 @@ function compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64},
     density = Data_Manager.get_field("Density")
     undeformed_bond_length = Data_Manager.get_field("Bond Length")
     volume = Data_Manager.get_field("Volume")
+    horizon = Data_Manager.get_field("Horizon")
     Cv = Data_Manager.get_field("Specific Heat Capacity")
+    dof = Data_Manager.get_dof()
     lambda = matrix_style(lambda)
     eigLam = maximum(eigvals(lambda))
 
     for iID in nodes
+        kappa = eigLam * 6.0 / (pi * horizon[iID]^(dof + 1))
         denominator = get_cs_denominator(volume[nlist[iID]], undeformed_bond_length[iID])
-        t = density[iID] * Cv[iID] / (eigLam * denominator)
+        t = density[iID] * Cv[iID] / (kappa * denominator)
         critical_time_step = test_timestep(t, critical_time_step)
     end
-    return sqrt(critical_time_step)
+    return critical_time_step
 end
 
 """

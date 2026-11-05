@@ -67,9 +67,21 @@ blocks = PeriLab.Data_Manager.set_block_name_list(blocks)
 end
 # from Peridigm
 @testset "ut_thermodynamic_crititical_time_step" begin
+    # dt = rho c / (lambda 6 / (pi delta^(dof+1)) sum_j V_j / |xi_ij|), smallest over the nodes
+    PeriLab.Data_Manager.get_field("Density") .= [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
+    PeriLab.Data_Manager.get_field("Volume") .= 0.5
+    PeriLab.Data_Manager.get_field("Horizon") .= 3.1
+    lambda = 0.12
     t = PeriLab.Solver_Manager.Model_Factory.compute_thermodynamic_critical_time_step(Vector{Int64}(1:nnodes),
-                                                                                      Float64(0.12))
-    @test t == 1e25
+                                                                                      lambda)
+    kappa = lambda * 6 / (pi * 3.1^(dof + 1))
+    expected = minimum(PeriLab.Data_Manager.get_field("Density")[i] * 18000 /
+                       (kappa * sum(0.5 ./ undeformed_bond_length[i])) for i in 1:nnodes)
+    @test t ≈ expected
+    # 2 x conductivity => half the time step, no square root
+    @test PeriLab.Solver_Manager.Model_Factory.compute_thermodynamic_critical_time_step(Vector{Int64}(1:nnodes),
+                                                                                        2lambda) ≈
+          expected / 2
 end
 
 @testset "ut_read_properties" begin
@@ -77,12 +89,13 @@ end
     PeriLab.Data_Manager.set_block_name_list(["block_1"])
     PeriLab.Data_Manager.set_block_id_list([1])
     input = typed_input(Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
-                                                                "Density" => 1.0,
-                                                                "Horizon" => 1.0,
-                                                                "Thermal Model" => "therm")),
-                             "Models" => Dict("Thermal Models" => Dict("therm" => Dict("Thermal Model" => "Heat Transfer",
-                                                                                       "Heat Transfer Coefficient" => 1.0,
-                                                                                       "Environmental Temperature" => 30)))))
+                                       "Density" => 1.0,
+                                       "Horizon" => 1.0,
+                                       "Thermal Model" => "therm")),
+                             "Models" => Dict("Thermal Models" => Dict("therm" =>
+                                           Dict("Thermal Model" => "Heat Transfer",
+                                                "Heat Transfer Coefficient" => 1.0,
+                                                "Environmental Temperature" => 30)))))
     PeriLab.Solver_Manager.Model_Factory.read_properties(input, false)
     @test PeriLab.Data_Manager.get_block_models(1).thermal === input.thermals["therm"]
 end
@@ -119,13 +132,14 @@ end
     PeriLab.Data_Manager.set_num_controller(3)
     PeriLab.Data_Manager.set_dof(2)
     input = typed_input(Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
-                                                                 "Density" => 1.0,
-                                                                 "Horizon" => 1.0,
-                                                                 "Material Model" => "Mat")),
-                             "Models" => Dict("Material Models" => Dict("Mat" => Dict("Material Model" => "PD Solid Elastic",
-                                                                                       "Symmetry" => "isotropic plane strain",
-                                                                                       "Bulk Modulus" => 10.0,
-                                                                                       "Shear Modulus" => 10.0)))))
+                                       "Density" => 1.0,
+                                       "Horizon" => 1.0,
+                                       "Material Model" => "Mat")),
+                             "Models" => Dict("Material Models" => Dict("Mat" =>
+                                           Dict("Material Model" => "PD Solid Elastic",
+                                                "Symmetry" => "isotropic plane strain",
+                                                "Bulk Modulus" => 10.0,
+                                                "Shear Modulus" => 10.0)))))
     PeriLab.Data_Manager.set_block_name_list(["block_1"])
     PeriLab.Data_Manager.set_block_id_list([1])
     PeriLab.Solver_Manager.Model_Factory.read_properties(input, true)
@@ -133,9 +147,7 @@ end
     @test m isa PeriLab.Solver_Manager.Model_Factory.Material.BlockMaterial
     @test m.symmetry == "plane strain"
     @test m.moduli.youngs_modulus == 22.5
-
 end
-
 
 @testset "read_properties aborts on an undefined material name" begin
     PeriLab.Data_Manager.initialize_data()
@@ -143,14 +155,15 @@ end
     PeriLab.Data_Manager.set_dof(2)
     PeriLab.Data_Manager.set_block_name_list(["block_1"])
     PeriLab.Data_Manager.set_block_id_list([1])
-    models = Dict("Material Models" => Dict("Mat" => Dict("Material Model" => "PD Solid Elastic",
-                                                          "Symmetry" => "isotropic plane strain",
-                                                          "Bulk Modulus" => 10.0,
-                                                          "Shear Modulus" => 10.0)))
+    models = Dict("Material Models" =>
+                      Dict("Mat" => Dict("Material Model" => "PD Solid Elastic",
+                                "Symmetry" => "isotropic plane strain",
+                                "Bulk Modulus" => 10.0,
+                                "Shear Modulus" => 10.0)))
     input = typed_input(Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
-                                                                 "Density" => 1.0,
-                                                                 "Horizon" => 1.0,
-                                                                 "Material Model" => "Steeel")),
+                                       "Density" => 1.0,
+                                       "Horizon" => 1.0,
+                                       "Material Model" => "Steeel")),
                              "Models" => models))
     @test_logs (:error,
                 "Material Model model with name Steeel is defined in blocks, but missing in the Material Models definition.") @test_throws PeriLab.PeriLabError PeriLab.Solver_Manager.Model_Factory.read_properties(input,
@@ -178,10 +191,11 @@ end
     PeriLab.Data_Manager.set_block_name_list(["block_1", "block_2"])
     PeriLab.Data_Manager.set_block_id_list([1, 2])
     blocks = Dict("block_1" => Dict("Block ID" => 1, "Density" => 1.0, "Horizon" => 1.0,
-                                    "Damage Model" => "Dam"),
+                       "Damage Model" => "Dam"),
                   "block_2" => Dict("Block ID" => 2, "Density" => 1.0, "Horizon" => 1.0))
-    models = Dict("Damage Models" => Dict("Dam" => Dict("Damage Model" => "Critical Stretch",
-                                                        "Critical Value" => 0.1)))
+    models = Dict("Damage Models" =>
+                      Dict("Dam" => Dict("Damage Model" => "Critical Stretch",
+                                "Critical Value" => 0.1)))
     input = typed_input(Dict("Blocks" => blocks, "Models" => models))
     PeriLab.Solver_Manager.Model_Factory.read_properties(input, false)
     d = PeriLab.Data_Manager.get_block_models(1).damage
@@ -192,11 +206,11 @@ end
     input = typed_input(Dict("Blocks" => blocks, "Models" => models))
     @test_logs (:error,
                 "Damage Model model with name Dmg is defined in blocks, but missing in the Damage Models definition.") match_mode=:any @test_throws PeriLab.PeriLabError PeriLab.Solver_Manager.Model_Factory.read_properties(input,
-                                                                                                                                                                                                                                false)
+                                                                                                                                                                                                                              false)
     input = typed_input(Dict("Blocks" => blocks, "Models" => Dict()))
     @test_logs (:error,
                 "Damage Model is defined in blocks, but no Damage Models definition block exists") match_mode=:any @test_throws PeriLab.PeriLabError PeriLab.Solver_Manager.Model_Factory.read_properties(input,
-                                                                                                                                                                                                                 false)
+                                                                                                                                                                                                          false)
 end
 
 @testset "local damping reads the block damage" begin
@@ -204,11 +218,13 @@ end
     MF = PeriLab.Solver_Manager.Model_Factory
     @test !MF.has_block_model(1, "Damage Model")
     damping = Dict("Representative Young's modulus" => 1.0, "Damping coefficient" => 0.5)
-    damages = Dict("Dam" => Dict("Damage Model" => "Critical Stretch", "Critical Value" => 0.1,
-                                 "Local Damping" => damping))
+    damages = Dict("Dam" =>
+                       Dict("Damage Model" => "Critical Stretch", "Critical Value" => 0.1,
+                            "Local Damping" => damping))
     blocks = Dict("block_1" => Dict("Block ID" => 1, "Density" => 1.0, "Horizon" => 1.0,
-                                    "Damage Model" => "Dam"))
-    input = typed_input(Dict("Blocks" => blocks, "Models" => Dict("Damage Models" => damages)))
+                       "Damage Model" => "Dam"))
+    input = typed_input(Dict("Blocks" => blocks,
+                             "Models" => Dict("Damage Models" => damages)))
     d = MF.Damage.block_damage(input.damages["Dam"])
     PeriLab.Data_Manager.set_block_models(1, PeriLab.Data_Manager.BlockModels(damage = d))
     @test MF.has_block_model(1, "Damage Model")
