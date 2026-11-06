@@ -650,6 +650,9 @@ function init_results_in_exodus(exo::ExodusDatabase,
         write_names(exo, GlobalVariable, global_output_names)
         write_values(exo, GlobalVariable, 1, zeros(Float64, length(global_output_names)))
     end
+    # step 1 holds the zero placeholders above; without its time the value is undefined
+    # and differs between the rank files (epu: "times on processors do not match")
+    write_time(exo, 1, 0.0)
 
     return exo
 end
