@@ -390,17 +390,18 @@ function get_results_mapping(input::PeriLabInput, path::String)
                     elseif compute.compute_class == "Nearest_Point_Data"
                         #find neares_point_id and reduce over cores
 
-                        coor = Data_Manager.get_field("Coordinates")
+                        # owned nodes only, so exactly one rank reports the point
+                        coor = Data_Manager.get_field("Coordinates")[1:Data_Manager.get_nnodes(),
+                                                                     :]
                         point = [compute.x, compute.y, compute.z]
                         tree = KDTree(coor'; leafsize = 2)
                         nearest_point_id, nearest_point_distance = nn(tree, point)
                         if Data_Manager.get_mpi_active()
-                            min_global_distance = nearest_point_distance
-                            find_and_set_core_value_min(Data_Manager.get_comm(),
-                                                        min_global_distance)
+                            min_global_distance = find_and_set_core_value_min(Data_Manager.get_comm(),
+                                                                              nearest_point_distance)
                             if min_global_distance != nearest_point_distance
                                 #Point on other core is closer to point
-                                nodeset = []
+                                nodeset = Int64[]
                             else
                                 nodeset = [nearest_point_id]
                             end
