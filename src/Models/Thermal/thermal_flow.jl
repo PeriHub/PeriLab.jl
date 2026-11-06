@@ -8,7 +8,8 @@ using StaticArrays
 using TimerOutputs: @timeit
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
-using .....Helpers: node_tensor
+using .....Helpers: node_tensor, MINBATCH
+using Polyester: @batch
 export compute_model
 export init_model
 export fields_for_local_synchronization
@@ -196,13 +197,13 @@ function compute_heat_flow_state_bond_based!(nodes::AbstractVector{Int64},
                                              active::AbstractVector{Bool},
                                              temperature::AbstractVector{Float64},
                                              heat_flow::AbstractVector{Float64})
-    @inbounds for iID in nodes
+    @batch minbatch=MINBATCH for iID in nodes
         active[iID] || continue
         Ti = temperature[iID]
         flow = 0.0
         w = weight[iID]
         d = bond_damage[iID]
-        for (jID, neighborID) in enumerate(nlist[iID])
+        @inbounds for (jID, neighborID) in enumerate(nlist[iID])
             flow += w[jID] * d[jID] * (temperature[neighborID] - Ti)
         end
         heat_flow[iID] -= flow
