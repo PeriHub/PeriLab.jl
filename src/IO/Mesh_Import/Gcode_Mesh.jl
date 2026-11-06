@@ -706,15 +706,13 @@ function arc(cmds, dataobject, clockwise::Bool)
             dataobject["previous_extruding"] = false
             return  # zero-length chord, cannot compute arc
         end
-        h = sqrt(max(0.0, r_param^2 - (chord / 2)^2))
-        if clockwise
-            cx = (start_x + end_x) / 2 - h * dy / chord
-            cy = (start_y + end_y) / 2 + h * dx / chord
-        else
-            cx = (start_x + end_x) / 2 + h * dy / chord
-            cy = (start_y + end_y) / 2 - h * dx / chord
-        end
-        r = r_param
+        r = abs(r_param)
+        h = sqrt(max(0.0, r^2 - (chord / 2)^2))
+        # R > 0: short arc (<= 180°), center right of the chord for G2, left for G3;
+        # R < 0: long arc, center on the other side
+        side = (clockwise ? 1.0 : -1.0) * sign(r_param)
+        cx = (start_x + end_x) / 2 + side * h * dy / chord
+        cy = (start_y + end_y) / 2 - side * h * dx / chord
     else
         cx = start_x + ic
         cy = start_y + jc
@@ -729,8 +727,8 @@ function arc(cmds, dataobject, clockwise::Bool)
     # end up <= θ1 (subtract 2π if it's currently greater). Counterclockwise
     # (G03) must sweep with *increasing* angle, so θ2 should end up >= θ1
     # (add 2π if it's currently smaller).
-    if abs(θ2 - θ1) < 1e-12
-        θ2 = θ1 + π * (clockwise ? -1.0 : 1.0)
+    if abs(θ2 - θ1) < 1e-12 # end point = start point: full circle
+        θ2 = θ1 + 2π * (clockwise ? -1.0 : 1.0)
     elseif clockwise
         θ2 > θ1 && (θ2 -= 2π)
     else

@@ -125,6 +125,13 @@ MPI.Init()
             @testset "ut_bond_filter" begin
                 include("unit_tests/IO/ut_bond_filter.jl")
             end
+
+            @testset "ut_gcode_mesh" begin
+                include("unit_tests/IO/ut_gcode_mesh.jl")
+            end
+            @testset "ut_exodus_mesh" begin
+                include("unit_tests/IO/ut_exodus_mesh.jl")
+            end
         end
         @testset "MPI" begin
             @testset "ut_MPI" begin

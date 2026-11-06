@@ -77,33 +77,25 @@ function read_mesh(input::PeriLabInput, filename::String)
                                                       block_id,
                                                       block.num_nodes_per_elem *
                                                       block.num_elem)
-        if block.elem_type == "TETRA"
+        if block.elem_type in ("TETRA", "HEX8")
+            element_volume = block.elem_type == "TETRA" ? tetrahedron_volume : hex8_volume
             for i in 1:(block.num_elem)
                 indices = (block.num_nodes_per_elem * (i - 1) + 1):(block.num_nodes_per_elem * i)
                 node_ids = block_id_map[indices]
                 vertices = coords[:, node_ids]
                 center = sum(vertices, dims = 2) / size(vertices)[2]
-                volume = tetrahedron_volume(vertices)
+                volume = element_volume(vertices)
                 push!(mesh_df,
                       (x = center[1],
                        y = center[2],
                        z = center[3],
                        volume = volume,
                        block_id = Int64(block_id)))
-            end
-        elseif block.elem_type == "HEX8"
-            for i in 1:(block.num_elem)
-                indices = (block.num_nodes_per_elem * (i - 1) + 1):(block.num_nodes_per_elem * i)
-                node_ids = block_id_map[indices]
-                vertices = coords[:, node_ids]
-                center = sum(vertices, dims = 2) / size(vertices)[2]
-                volume = hex8_volume(vertices)
-                push!(mesh_df,
-                      (x = center[1],
-                       y = center[2],
-                       z = center[3],
-                       volume = volume,
-                       block_id = Int64(block_id)))
+                # the element center is the node: nodal variables are averaged over the element nodes
+                for nodal_var_name in nodal_var_names
+                    push!(nodals[nodal_var_name * "_sorted"],
+                          sum(nodals[nodal_var_name][node_ids]) / length(node_ids))
+                end
             end
         elseif block.elem_type == "SPHERE"
             volume_nodal_name = nothing
