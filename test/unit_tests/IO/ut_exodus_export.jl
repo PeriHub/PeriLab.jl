@@ -72,6 +72,17 @@ topology[2, 1] = 2
 topology[2, 2] = 3
 topology[2, 3] = 4
 topology[2, 4] = 5
+@testset "ut_create_result_file_compression" begin
+    hdf5 = UInt8[0x89, 0x48, 0x44, 0x46] # netCDF-4 files are HDF5 files
+    for (compression, netcdf4) in ((true, true), (false, false))
+        filename = "./tmp/compression_$compression.e"
+        exo = PeriLab.IO.create_result_file(filename, 4, 3, 1, 0; compression = compression)
+        close(exo["file"])
+        @test (read(filename, 4) == hdf5) == netcdf4
+        rm(filename)
+    end
+end
+
 @testset "ut_create_result_file" begin
     filename1 = "./tmp/" * "test.e"
     filename2 = "./tmp/" * "test2.e"

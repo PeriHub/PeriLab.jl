@@ -9,6 +9,9 @@ Currently `Exodus` and `CSV` are supported as output types.
 !!! tip "Flush File"
     By default the output files will be flushed after each write-step, meaning you can look at the results while the simulation is still running.
 
+!!! tip "Compression"
+    With `Compression: true` an Exodus output is written as a netCDF-4 file with lossless zlib compression (also after merging the MPI rank files). Unprinted or unloaded regions full of zeros compress very well. The file needs a netCDF-4 capable reader (ParaView, SEACAS, Exodus.jl and netCDF4-python are fine) and, as an HDF5 file, may be unreadable if the run crashes while writing.
+
 ## Output Frequency / Number of Output Steps
 As the number of solver steps can be quite large and you don't want to buy new drives for every simulation we want to specify the number of output steps written.
 

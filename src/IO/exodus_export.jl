@@ -83,7 +83,8 @@ function create_result_file(filename::AbstractString,
                             num_node_sets::Int64,
                             num_elements::Int64 = 0,
                             FEtopology::Union{Nothing,Matrix{Int64}} = nothing;
-                            num_owned_nodes::Int64 = num_nodes)
+                            num_owned_nodes::Int64 = num_nodes,
+                            compression::Bool = false)
     if isfile(filename)
         rm(filename)
     end
@@ -115,10 +116,40 @@ function create_result_file(filename::AbstractString,
     @info "Create output " * filename
     @debug "Exodus init: $num_nodes nodes, $num_elems elements, $num_elem_blks blocks"
 
-    exo_db = ExodusDatabase{maps_int_type,ids_int_type,bulk_int_type,float_type}(filename,
+    exo_db = compression ? create_compressed_exodus(filename, init) :
+             ExodusDatabase{maps_int_type,ids_int_type,bulk_int_type,float_type}(filename,
                                                                                  "w",
                                                                                  init)
     return Dict("filename" => filename, "file" => exo_db, "type" => "Exodus")
+end
+
+"""
+    create_compressed_exodus(filename, init)
+
+Creates a netCDF-4 Exodus file with lossless compression (zlib level 1 + shuffle), as
+`ExodusDatabase{Int32,Int32,Int32,Float64}(filename, "w", init)` does for classic files.
+Exodus.jl has no option for the file format (the `EXODUS_NETCDF4` environment variable is
+read by libexodus only once per process), so this mirrors its constructor.
+"""
+function create_compressed_exodus(filename::AbstractString, init::Initialization)
+    mode = Exodus.EX_CLOBBER | Exodus.EX_NETCDF4
+    exo = ccall((:ex_create_int, Exodus.Exodus_jll.libexodus), Cint,
+                (Cstring, Cint, Ref{Cint}, Ref{Cint}, Cint),
+                filename, mode, Exodus.cpu_word_size, sizeof(Float64),
+                Exodus.EX_API_VERS_NODOT)
+    Exodus.exodus_error_check(exo, "create_compressed_exodus -> ex_create_int")
+    for (option, value) in ((3, 1), (4, 1)) # EX_OPT_COMPRESSION_LEVEL, _SHUFFLE
+        err = ccall((:ex_set_option, Exodus.Exodus_jll.libexodus), Cint, (Cint, Cint, Cint),
+                    exo, option, value)
+        Exodus.exodus_error_check(exo, err, "create_compressed_exodus -> ex_set_option")
+    end
+    Exodus.write_initialization!(exo, init)
+    names() = Dict{String,Int32}()
+    return ExodusDatabase{Int32,Int32,Int32,Float64,typeof(init)}(exo, "w",
+                                                                  String(filename),
+                                                                  init, names(), names(),
+                                                                  names(), names(), names(),
+                                                                  names(), names(), names())
 end
 
 function open_result_file(filename::AbstractString)
@@ -822,7 +853,8 @@ end
 """
     merge_exodus_file(file_name::AbstractString)
 
-Merges the exodus file
+Merges the exodus file. netCDF-4 rank files (`Compression`) give a compressed netCDF-4
+file, classic rank files a classic file.
 
 # Arguments
 - `file_name::AbstractString`: The name of the file to merge
@@ -830,5 +862,14 @@ Merges the exodus file
 - `exo::ExodusDatabase`: The exodus file
 """
 function merge_exodus_file(file_name::AbstractString)
+    # epu writes a classic, uncompressed file by default; keep netCDF-4 rank files
+    # (Compression) netCDF-4 and compressed in the merged file
+    if read(file_name, 4) == UInt8[0x89, 0x48, 0x44, 0x46] # HDF5 signature
+        Exodus.Exodus_jll.epu_exe() do exe
+            run(pipeline(`$exe -auto -netcdf4 -compress_data 1 $(abspath(file_name))`;
+                         stdout = "epu.log", stderr = "epu_err.log"))
+        end
+        return nothing
+    end
     return epu(file_name)
 end

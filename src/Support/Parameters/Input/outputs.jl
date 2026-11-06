@@ -13,7 +13,8 @@ const _EXODUS = Dict("Output File Type" => ["Exodus"])
     "Field and compute class names to write (true) or skip (false)"
     output_variables::Dict{String,Bool} = req("Output Variables")
     "Writes every n-th step; per solver step as \"n1 n2\"; give this or Number of Output Steps, which takes precedence"
-    output_frequency::Union{Nothing,Int64,String} = opt("Output Frequency"; default = nothing)
+    output_frequency::Union{Nothing,Int64,String} = opt("Output Frequency";
+                                                        default = nothing)
     "Number of outputs, evenly spread over the solver steps; per solver step as \"n1 n2\"; give this or Output Frequency; wins if both are given"
     number_of_output_steps::Union{Nothing,Int64,String} = opt("Number of Output Steps";
                                                               default = nothing)
@@ -25,6 +26,8 @@ const _EXODUS = Dict("Output File Type" => ["Exodus"])
     write_after_damage::Bool = opt("Write After Damage"; default = false)
     "Closes the file after every output so it can be read while the simulation runs"
     flush_file::Bool = opt("Flush File"; default = true)
+    "Writes a compressed (lossless) netCDF-4 file; smaller, but needs a netCDF-4 capable reader and is less robust if the run crashes while writing"
+    compression::Bool = opt("Compression"; default = false, when = _EXODUS)
     "Writes the bonds as line elements so bond fields can be visualized; switched on automatically when a bond field is requested"
     bond_export::Bool = opt("Bond Export"; default = false, when = _EXODUS)
     "Blocks whose bonds are exported: a block id or ids separated by spaces, e.g. \"1 3\"; all blocks if not given"
@@ -32,11 +35,13 @@ const _EXODUS = Dict("Output File Type" => ["Exodus"])
                        String} = opt("Bond Blocks"; default = nothing,
                                      when = _EXODUS)
     "Writes every n-th step of a fallback solver; per solver step as \"n1 n2\"; Fallback Number of Output Steps takes precedence; without either the output keeps its interval in time"
-    fallback_output_frequency::Union{Nothing,Int64,String} = opt("Fallback Output Frequency";
-                                                                 default = nothing)
+    fallback_output_frequency::Union{Nothing,Int64,
+                                     String} = opt("Fallback Output Frequency";
+                                                   default = nothing)
     "Number of outputs over the steps of a fallback solver; per solver step as \"n1 n2\"; wins over Fallback Output Frequency"
-    fallback_number_of_output_steps::Union{Nothing,Int64,String} = opt("Fallback Number of Output Steps";
-                                                                       default = nothing)
+    fallback_number_of_output_steps::Union{Nothing,Int64,
+                                           String} = opt("Fallback Number of Output Steps";
+                                                         default = nothing)
 end
 
 function ParameterSpec.required_groups(::Type{OutputParams})

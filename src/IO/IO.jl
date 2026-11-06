@@ -355,6 +355,7 @@ function get_results_mapping(input::PeriLabInput, path::String)
         # Bond export settings have to be carried over, otherwise
         # init_bond_information_export never sees them and silently exports every block.
         output_mapping[id]["Bond Export"] = output.bond_export
+        output_mapping[id]["Compression"] = output.compression
         if output.bond_blocks !== nothing
             output_mapping[id]["Bond Blocks"] = output.bond_blocks
         end
@@ -742,7 +743,9 @@ function init_write_results(input::PeriLabInput,
                                          nnsets,
                                          num_fem_elements + n_bond_elements,
                                          topology;
-                                         num_owned_nodes = nnodes))
+                                         num_owned_nodes = nnodes,
+                                         compression = get(outputs[id], "Compression",
+                                                           false)))
             end
         elseif ".csv" == filename[(end - 3):end]
             if rank == 0
