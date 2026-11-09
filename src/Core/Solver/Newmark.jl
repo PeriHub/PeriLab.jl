@@ -10,20 +10,42 @@ using TimerOutputs: @timeit
 
 using ...Data_Manager
 using ...Helpers: check_inf_or_nan, find_active_nodes
-using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof, BoundaryCondition
-using ...ParameterSpec: @params, register_solver
+using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof,
+                             BoundaryCondition
+using ...ParameterSpec: @params, register_solver, ParseContext
+import ...ParameterSpec: check!
 using ...InputDeck: SolverParams, SolverOptions, start_time, end_time
-using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, synchronise_field,
+using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, StepFailed,
+                       synchronise_field,
                        compute_parabolic_problems_before_model_evaluation,
                        compute_parabolic_problems_after_model_evaluation
 
-@params "Implicit Newmark time integration with the stiffness matrix of correspondence materials" struct NewmarkParams <: SolverOptions
+@params "Implicit Newmark time integration with the stiffness matrix of correspondence materials" struct NewmarkParams <:
+                                                                                                         SolverOptions
     "Rebuilds the stiffness matrix in every step, e.g. for damage or large deformations; otherwise the initial matrix is reused"
     matrix_update::Bool = opt("Matrix Update"; default = false)
     "Newmark parameter weighting the accelerations in the velocity update (often called gamma); 0.5 adds no numerical damping"
     newmark_delta::Float64 = opt("Newmark Delta"; default = 0.5)
     "Newmark parameter weighting the accelerations in the displacement update (often called beta); 0.25 (0.5 + delta)^2 if not given"
     newmark_alpha::Union{Nothing,Float64} = opt("Newmark Alpha"; default = nothing)
+    "Where the stiffness matrix lives: SparseArrays (serial SparseMatrixCSC), CPU (distributed over the MPI ranks), GPU or Mixed (CPU and GPU ranks); CPU, GPU and Mixed need the licensed matrix elements and Linear Solver: BiCGStab"
+    matrix_backend::String = opt("Matrix Backend"; default = "SparseArrays",
+                                 allowed = ["SparseArrays", "CPU", "GPU", "Mixed"])
+    "Nodes of a GPU rank relative to a CPU rank (Matrix Backend: Mixed)"
+    gpu_weight::Float64 = opt("GPU Weight"; default = 1.0, min = 0)
+    "LU (direct, Matrix Backend: SparseArrays) or BiCGStab (iterative with Jacobi, Matrix Backend: CPU, GPU or Mixed)"
+    linear_solver::String = opt("Linear Solver"; default = "LU",
+                                allowed = ["LU", "BiCGStab"])
+    "Relative residual at which BiCGStab stops"
+    linear_solver_tolerance::Float64 = opt("Linear Solver Tolerance"; default = 1e-10,
+                                           min = 0)
+    "BiCGStab iterations after which a step fails (StepFailed)"
+    linear_solver_maximum_iterations::Int64 = opt("Linear Solver Maximum Iterations";
+                                                  default = 20000, min = 1)
+end
+
+function check!(p::NewmarkParams, path::String, ctx::ParseContext)
+    check_implicit_backend!(p, path, ctx)
 end
 __init__() = register_solver("Newmark", NewmarkParams)
 using ..Model_Factory: compute_stiff_matrix_compatible_models,
@@ -31,11 +53,13 @@ using ..Model_Factory: compute_stiff_matrix_compatible_models,
 
 using ..Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
                                      compute_model
+using ..Matrix_Adapter: MatrixSystem, init_matrix_system, apply_stiffness!,
+                        ImplicitWorkspace, init_implicit, set_prescribed!, solve_implicit!,
+                        check_implicit_backend!
 using ..Model_Factory.Pre_Calculation.Bond_Deformation
 
 export init_solver
 import ..Solver_Common: prepare_solver, time_step!
-
 
 # ────────────────────────────────────────────────────────────
 # Cache
@@ -88,10 +112,17 @@ function init_solver(options::NewmarkParams,
     beta = options.newmark_delta # name is delta because of beta. Internally it is beta.
     alpha = something(options.newmark_alpha, 0.25 * (0.5 + beta)^2)
 
+    distributed = options.matrix_backend != "SparseArrays"
     for (block, nodes) in pairs(block_nodes)
-        init_model(nodes, Data_Manager.get_block_models(block).material, block)
+        init_model(nodes, Data_Manager.get_block_models(block).material, block;
+                   distributed = distributed)
     end
-    @timeit "init matrix" init_matrix()
+    sys = nothing
+    if distributed
+        sys = @timeit "init_matrix_system" init_matrix_system(options.matrix_backend)
+    else
+        @timeit "init matrix" init_matrix()
+    end
     density = Data_Manager.get_field("Density")
 
     Data_Manager.set_mass_matrix(build_mass_matrix(density, Data_Manager.get_nnodes(),
@@ -100,7 +131,8 @@ function init_solver(options::NewmarkParams,
     coor = Data_Manager.get_field("Coordinates")
     Data_Manager.get_field("Deformed Coordinates", "N") .= coor
     Data_Manager.get_field("Deformed Coordinates", "NP1") .= coor
-    return TimeWindow(initial_time, final_time, dt, nsteps), (alpha = alpha, beta = beta)
+    return TimeWindow(initial_time, final_time, dt, nsteps),
+           (alpha = alpha, beta = beta, sys = sys)
 end
 
 # ────────────────────────────────────────────────────────────
@@ -435,6 +467,127 @@ end
 function compute_matrix(nodes::AbstractVector{Int64})
     isempty(nodes) && return Data_Manager.get_stiffness_matrix()
     compute_model(nodes)
+end
+
+"""
+    DistributedNewmarkWorkspace
+
+Newmark coefficients, fields, the distributed matrix and the BiCGStab solve of
+`K + a₀ M` (`Matrix Backend` CPU, GPU or Mixed, `Linear Solver: BiCGStab`).
+"""
+struct DistributedNewmarkWorkspace{I<:ImplicitWorkspace}
+    volume::Vector{Float64}
+    coor::Matrix{Float64}
+    density::Vector{Float64}
+    external_forces::Matrix{Float64}
+    external_force_densities::Matrix{Float64}
+    a0::Float64
+    a2::Float64
+    a3::Float64
+    a6::Float64
+    a7::Float64
+    implicit::I
+    free::Vector{Int64}
+    rhs::Matrix{Float64}
+    ku::Matrix{Float64}
+    rtol::Float64
+    itmax::Int64
+end
+
+const DistributedNewmarkRun = SolverRun{NewmarkParams,
+                                        <:NamedTuple{(:alpha, :beta, :sys),
+                                                     <:Tuple{Float64,Float64,MatrixSystem}}}
+
+"""
+    prepare_solver(run::DistributedNewmarkRun, ctx::SolverContext)
+
+Workspace of the distributed Newmark solver; the BiCGStab operator is `K + a₀ ρ`.
+"""
+function prepare_solver(run::DistributedNewmarkRun, ctx::SolverContext)
+    dt = run.time.dt
+    alpha, beta = run.state.alpha, run.state.beta
+    a0 = 1.0 / (alpha * dt^2)
+    n = Data_Manager.get_nnodes()
+    dof = Data_Manager.get_dof()
+    density = Data_Manager.get_field("Density")
+    options = run.params.options
+    @info "Newmark: alpha=$alpha, gamma=$beta, dt=$dt, Linear Solver: BiCGStab"
+    return DistributedNewmarkWorkspace(Data_Manager.get_field("Volume"),
+                                       Data_Manager.get_field("Coordinates"), density,
+                                       Data_Manager.get_field("External Forces"),
+                                       Data_Manager.get_field("External Force Densities"),
+                                       a0, 1.0 / (alpha * dt), 1.0 / (2.0 * alpha) - 1.0,
+                                       dt * (1.0 - beta), beta * dt,
+                                       init_implicit(run.state.sys;
+                                                     shift = a0 .* density[1:n]),
+                                       convert(Vector{Int64},
+                                               Data_Manager.get_bc_free_dof()),
+                                       zeros(n, dof), zeros(n, dof),
+                                       options.linear_solver_tolerance,
+                                       options.linear_solver_maximum_iterations)
+end
+
+"""
+    time_step!(ws::DistributedNewmarkWorkspace, run::SolverRun{NewmarkParams}, ctx::SolverContext, clock::StepClock)
+
+One Newmark step with BiCGStab on the distributed matrix, the same equations as
+`newmark_step!` (`(K + a₀ M) u_f = −f_ext − f_int + M (a₀ uₙ + a₂ vₙ + a₃ aₙ) − K_fp u_p`,
+lumped mass `M = ρ`). A step that does not converge returns `StepFailed`.
+"""
+function time_step!(ws::DistributedNewmarkWorkspace, run::SolverRun{NewmarkParams},
+                    ctx::SolverContext, clock::StepClock)
+    time, step_time, dt = clock.time, clock.step_time, clock.dt
+    sys = ws.implicit.sys
+    n, dof = sys.n_own, sys.dof
+    nodes = 1:n
+    a0, a2, a3, a6, a7 = ws.a0, ws.a2, ws.a3, ws.a6, ws.a7
+    uN = Data_Manager.get_field("Displacements", "N")
+    uNP1 = Data_Manager.get_field("Displacements", "NP1")
+    vN = Data_Manager.get_field("Velocity", "N")
+    vNP1 = Data_Manager.get_field("Velocity", "NP1")
+    aN = Data_Manager.get_field("Acceleration", "N")
+    aNP1 = Data_Manager.get_field("Acceleration", "NP1")
+    deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
+    forces = Data_Manager.get_field("Forces", "NP1")
+    fd = Data_Manager.get_field("Force Densities", "NP1")
+    f_ext = ws.external_force_densities
+    active_list = Data_Manager.get_field("Active")
+    active_nodes = find_active_nodes(active_list, Data_Manager.get_field("Active Nodes"),
+                                     collect(nodes))
+    deformed_coorNP1 .= ws.coor
+    compute_parabolic_problems_before_model_evaluation(active_nodes, run)
+    apply_bc_dirichlet(["Displacements", "Forces", "Force Densities", "Temperature"],
+                       ctx.bcs, time, step_time)
+    @. f_ext += ws.external_forces / ws.volume
+    @. deformed_coorNP1 = ws.coor + uN
+    compute_matrix_based_bond_forces(ctx.block_nodes, time, dt)
+    @timeit "compute_models" compute_stiff_matrix_compatible_models(ctx.block_nodes, dt,
+                                                                    time, run.models,
+                                                                    synchronise_field)
+    set_prescribed!(ws.implicit, ws.free, active_list)
+    @views @. ws.rhs = -f_ext[nodes, :] - fd[nodes, :] +
+                       ws.density[nodes] *
+                       (a0 * uN[nodes, :] + a2 * vN[nodes, :] + a3 * aN[nodes, :])
+    stats = @timeit "BiCGStab" solve_implicit!(uNP1, ws.rhs, ws.implicit; rtol = ws.rtol,
+                                               itmax = ws.itmax)
+    if !stats.solved
+        @warn "BiCGStab did not converge: relative residual $(stats.residual) after $(stats.niter) iterations"
+        return StepFailed("BiCGStab did not converge (relative residual $(stats.residual))")
+    end
+    apply_stiffness!(ws.ku, uNP1, sys)
+    flags = trues(n, dof)
+    flags[ws.free] .= false
+    @inbounds for c in 1:dof, i in nodes
+        (flags[i, c] || !active_list[i]) && (fd[i, c] = ws.ku[i, c] - f_ext[i, c])
+        forces[i, c] = fd[i, c] * ws.volume[i]
+        aNP1[i, c] = a0 * (uNP1[i, c] - uN[i, c]) - a2 * vN[i, c] - a3 * aN[i, c]
+        vNP1[i, c] = vN[i, c] + a6 * aN[i, c] + a7 * aNP1[i, c]
+    end
+    @. deformed_coorNP1 = ws.coor + uNP1
+    active_nodes = find_active_nodes(active_list, Data_Manager.get_field("Active Nodes"),
+                                     collect(nodes))
+    compute_parabolic_problems_after_model_evaluation(active_nodes, run, dt)
+    return nothing
 end
 
 end # module Newmark

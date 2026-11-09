@@ -1,0 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Christian Willberg
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+runs_*/
+results_*.csv

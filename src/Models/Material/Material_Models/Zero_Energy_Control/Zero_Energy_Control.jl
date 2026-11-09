@@ -71,7 +71,8 @@ function create_zero_energy_mode_stiffness!(nodes::AbstractVector{Int64},
                                             CVoigt::AbstractArray{Float64,3},
                                             Kinv::Array{Float64,3},
                                             zStiff::Array{Float64,3})
-    zero_energy_model = Data_Manager.get_analysis_model("Zero Energy Control Model", 1)
+    block = Data_Manager.analysis_model_block("Zero Energy Control Model")
+    zero_energy_model = Data_Manager.get_analysis_model("Zero Energy Control Model", block)
     mod = Data_Manager.get_model_module(zero_energy_model[1])
     return mod.create_zero_energy_mode_stiffness!(nodes, dof, CVoigt, Kinv, zStiff)
 end

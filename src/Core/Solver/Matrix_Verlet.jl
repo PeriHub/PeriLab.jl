@@ -15,13 +15,16 @@ using ...PeriLabExceptions: @abort
 
 using ...Helpers: check_inf_or_nan, matrix_style
 
-using ...ParameterSpec: @params, register_solver
+using ...ParameterSpec: @params, register_solver, ParseContext, add_error!, join_path
+import ...ParameterSpec: check!
 using ...InputDeck: SolverParams, SolverOptions, CalculationOptions, start_time, end_time
 using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, synchronise_field,
                        compute_parabolic_problems_before_model_evaluation,
                        compute_parabolic_problems_after_model_evaluation
 using ...MPI_Communication: find_and_set_core_value_min, find_and_set_core_value_max
-using ..Model_Factory: compute_models, compute_crititical_time_step
+using ..Model_Factory: compute_models, compute_crititical_time_step,
+                       compute_stiff_matrix_compatible_models,
+                       compute_matrix_based_bond_forces
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof,
                              BoundaryCondition
 using ...Logging_Module: print_table
@@ -41,11 +44,25 @@ using .Model_reduction: init_reduce_model, ReducedState, setup_reduced_state,
     numerical_damping::Float64 = opt("Numerical Damping"; default = 0.0, min = 0)
     model_reduction::Union{Nothing,ModelReductionParams} = opt("Model Reduction";
                                                                default = nothing)
+    "Where the stiffness matrix lives: SparseArrays (serial SparseMatrixCSC), CPU (distributed over the MPI ranks), GPU or Mixed (CPU and GPU ranks); CPU, GPU and Mixed need the licensed matrix elements"
+    matrix_backend::String = opt("Matrix Backend"; default = "SparseArrays",
+                                 allowed = ["SparseArrays", "CPU", "GPU", "Mixed"])
+    "Nodes of a GPU rank relative to a CPU rank (Matrix Backend: Mixed)"
+    gpu_weight::Float64 = opt("GPU Weight"; default = 1.0, min = 0)
+end
+
+function check!(p::VerletMatrixParams, path::String, ctx::ParseContext)
+    p.matrix_backend != "SparseArrays" && p.model_reduction !== nothing &&
+        add_error!(ctx, join_path(path, "Matrix Backend"),
+                   "Model Reduction requires Matrix Backend: SparseArrays")
+    return nothing
 end
 __init__() = register_solver("Verlet Matrix Based", VerletMatrixParams)
 include("../../Compute/compute_field_values.jl")
 using ..Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
                                      compute_model
+using ..Matrix_Adapter: MatrixSystem, init_matrix_system, apply_stiffness!, exchange_field!,
+                        update_system!, refresh_active!
 export init_solver
 import ..Solver_Common: prepare_solver, time_step!
 
@@ -62,9 +79,6 @@ function init_solver(options::VerletMatrixParams,
                      bcs::Dict{String,BoundaryCondition},
                      block_nodes::Dict{Int64,Vector{Int64}})
     horizon = Data_Manager.get_field("Horizon")
-    if Data_Manager.get_rank() > 1
-        @warn "Implementation might not work for MPI. Especially for coupling. It has to be tested."
-    end
     find_bc_free_dof(bcs)
     initial_time = start_time(params, Data_Manager.get_current_time())
     final_time = end_time(params, Data_Manager.get_current_time())
@@ -86,6 +100,10 @@ function init_solver(options::VerletMatrixParams,
     if nsteps == 1
         nsteps = nsteps_temp
     end
+    # every rank integrates with the same time step (as the Verlet solver)
+    comm = Data_Manager.get_comm()
+    dt = find_and_set_core_value_min(comm, dt)
+    nsteps = find_and_set_core_value_max(comm, nsteps)
 
     dof = Data_Manager.get_dof()
     density = Data_Manager.get_field("Density")
@@ -99,7 +117,20 @@ function init_solver(options::VerletMatrixParams,
     @info "dt: $dt"
     @info "Numerical Damping: $(options.numerical_damping)"
 
-    K = Data_Manager.get_stiffness_matrix()
+    @info "Matrix Backend: $(options.matrix_backend)"
+    if options.matrix_backend != "SparseArrays"
+        # thermal models would add the material forces a second time (they come from K)
+        thermal &&
+            @abort "Verlet Matrix Based with Matrix Backend $(options.matrix_backend) does not support thermal models yet."
+        for (block, nodes) in pairs(block_nodes)
+            init_model(nodes, Data_Manager.get_block_models(block).material, block;
+                       distributed = true)
+        end
+        sys = @timeit "init_matrix_system" init_matrix_system(options.matrix_backend)
+        # compute_models covers no node, K drives the whole domain
+        Data_Manager.set_reduced_model_pd(Int64[])
+        return TimeWindow(initial_time, final_time, dt, nsteps), sys
+    end
 
     for (block, nodes) in pairs(block_nodes)
         init_model(nodes, Data_Manager.get_block_models(block).material, block)
@@ -299,6 +330,114 @@ function time_step!(ws::MatrixVerletWorkspace, run::SolverRun{VerletMatrixParams
             push_to_nodes!(aNP1, state.q_ddot, master_nodes, state)
         end
     end
+    return nothing
+end
+
+"""
+    DistributedVerletWorkspace
+
+Fields and the distributed stiffness matrix (`Matrix_Adapter.MatrixSystem`) of the
+matrix based Verlet solver with `Matrix Backend` CPU, GPU or Mixed; `f_int` holds `−K u`.
+"""
+struct DistributedVerletWorkspace{S<:MatrixSystem}
+    coor::Matrix{Float64}
+    active_list::Vector{Bool}
+    volume::Vector{Float64}
+    density::Vector{Float64}
+    external_forces::Matrix{Float64}
+    external_force_densities::Matrix{Float64}
+    numerical_damping::Float64
+    sys::S
+    f_int::Matrix{Float64}
+end
+
+"""
+    prepare_solver(run::SolverRun{VerletMatrixParams,<:MatrixSystem}, ctx::SolverContext)
+
+Workspace of the distributed matrix based Verlet solver.
+"""
+function prepare_solver(run::SolverRun{VerletMatrixParams,<:MatrixSystem},
+                        ctx::SolverContext)
+    material = "Material" in run.models
+    dof = Data_Manager.get_dof()
+    return DistributedVerletWorkspace(Data_Manager.get_field("Coordinates"),
+                                      Data_Manager.get_field("Active"),
+                                      Data_Manager.get_field("Volume"),
+                                      Data_Manager.get_field("Density"),
+                                      material ?
+                                      Data_Manager.get_field("External Forces") :
+                                      zeros(0, 0),
+                                      material ?
+                                      Data_Manager.get_field("External Force Densities") :
+                                      zeros(0, 0),
+                                      run.params.options.numerical_damping, run.state,
+                                      zeros(Data_Manager.get_nnodes(), dof))
+end
+
+"""
+    time_step!(ws::DistributedVerletWorkspace, run::SolverRun{VerletMatrixParams}, ctx::SolverContext, clock::StepClock)
+
+One explicit Verlet step of the own nodes with `f = −K u` from the distributed matrix
+and the per-node mass `a = f / ρ`. The models run as in the implicit matrix solvers
+(`compute_stiff_matrix_compatible_models`: no material forces, those come from `K`); with
+damage models the bond forces of the current deformation feed them. The matrix is
+reassembled when a rank flags `Update` (damage) or the `Active` field changes (additive,
+status mask).
+"""
+function time_step!(ws::DistributedVerletWorkspace, run::SolverRun{VerletMatrixParams},
+                    ctx::SolverContext, clock::StepClock)
+    bcs = ctx.bcs
+    time = clock.time
+    step_time = clock.step_time
+    dt = clock.dt
+    own = 1:(ws.sys.n_own)
+    volume = ws.volume
+    damping = ws.numerical_damping
+    uN::Matrix{Float64} = Data_Manager.get_field("Displacements", "N")
+    uNP1::Matrix{Float64} = Data_Manager.get_field("Displacements", "NP1")
+    forces::Matrix{Float64} = Data_Manager.get_field("Forces", "NP1")
+    deformed_coorNP1::Matrix{Float64} = Data_Manager.get_field("Deformed Coordinates",
+                                                               "NP1")
+    vN::Matrix{Float64} = Data_Manager.get_field("Velocity", "N")
+    vNP1::Matrix{Float64} = Data_Manager.get_field("Velocity", "NP1")
+    aN::Matrix{Float64} = Data_Manager.get_field("Acceleration", "N")
+    aNP1::Matrix{Float64} = Data_Manager.get_field("Acceleration", "NP1")
+    fd::Matrix{Float64} = Data_Manager.get_field("Force Densities", "NP1")
+    damage = "Damage" in run.models
+    @timeit "compute Velocity" begin
+        @views @. vNP1[own, :] = (1 - damping) * vN[own, :] + 0.5 * dt * aN[own, :]
+        apply_bc_dirichlet(["Velocity"], bcs, time, step_time)
+        @views @. uNP1[own, :] = uN[own, :] + dt * vNP1[own, :]
+    end
+    @timeit "apply BC" apply_bc_dirichlet(["Displacements", "Temperature"], bcs, time,
+                                          step_time)
+    # ghost displacements of the owners: the deformed bonds to ghosts are current
+    @timeit "exchange displacements" exchange_field!(uNP1, ws.sys)
+    @timeit "deformed coor" @views deformed_coorNP1 .= ws.coor .+ uNP1
+    damage &&
+        @timeit "bond forces" compute_matrix_based_bond_forces(ctx.block_nodes, time, dt)
+    @timeit "compute models" compute_stiff_matrix_compatible_models(ctx.block_nodes, dt,
+                                                                    time, run.models,
+                                                                    synchronise_field)
+    @timeit "update matrix" begin
+        activated = @timeit "refresh active" refresh_active!(ws.sys, ws.active_list)
+        @timeit "update system" update_system!(ws.sys, Data_Manager.get_field("Update");
+                                               force = activated)
+    end
+    @timeit "Force computations" begin
+        @timeit "Force matrix computations" apply_stiffness!(ws.f_int, uNP1, ws.sys)
+        if !isempty(ws.external_forces)
+            @views @. fd[own, :] += ws.f_int[own, :] +
+                                    ws.external_force_densities[own, :] +
+                                    ws.external_forces[own, :] / volume[own]
+        else
+            @views @. fd[own, :] += ws.f_int[own, :]
+        end
+        @views @. forces[own, :] = fd[own, :] * volume[own]
+        check_inf_or_nan(fd, "Force Densities")
+    end
+    @timeit "Accelaration computation" @views @. aNP1[own, :] = fd[own, :] /
+                                                                ws.density[own]
     return nothing
 end
 

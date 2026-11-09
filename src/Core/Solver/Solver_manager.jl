@@ -18,6 +18,8 @@ include("../../Models/Material/Material_Models/Correspondence/Correspondence_mat
 include("../../Models/Model_Factory.jl")
 include("../BC_manager.jl")
 include("Solver_Common.jl")
+include("Matrix/PD_Matrix.jl")
+include("Matrix/Matrix_Adapter.jl")
 using .Solver_Common
 
 for file in find_registered_modules(@__DIR__, "register_solver")

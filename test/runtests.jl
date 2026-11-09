@@ -99,6 +99,16 @@ MPI.Init()
                 @testset "ut_time_loop" begin
                     include("unit_tests/Core/Solver/ut_time_loop.jl")
                 end
+                @testset "Matrix" begin
+                    include("unit_tests/Core/Solver/Matrix/matrix_helper.jl")
+                    include("unit_tests/Core/Solver/Matrix/ut_Matrix_Assembly.jl")
+                    include("unit_tests/Core/Solver/Matrix/ut_Operators.jl")
+                    include("unit_tests/Core/Solver/Matrix/ut_BiCGStab.jl")
+                    include("unit_tests/Core/Solver/Matrix/ut_Elements.jl")
+                    include("unit_tests/Core/Solver/Matrix/ut_matrix_verlet_params.jl")
+                    # needs the licensed matrix elements (like the additive tests)
+                    include("unit_tests/Core/Solver/Matrix/ut_perilab_correspondence.jl")
+                end
             end
             @testset "Module_inclusion" begin
                 include("unit_tests/Core/Module_inclusion/ut_set_Modules.jl")
@@ -136,6 +146,10 @@ MPI.Init()
         @testset "MPI" begin
             @testset "ut_MPI" begin
                 include("unit_tests/MPI_communication/ut_MPI_call.jl")
+            end
+            @testset "test_MPI_matrix" begin
+                # halo exchange of PD_Matrix (3 ranks: arbitrary ghost order, end ranks)
+                run_mpi_test("test_MPI_matrix.jl", 3, false, "multifunctional_test")
             end
         end
 
@@ -342,6 +356,10 @@ MPI.Init()
         end
         @testset "test_model_reduction_Verlet_matrix" begin
             include("fullscale_tests/test_model_reduction_Verlet_matrix/test_model_reduction_Verlet_matrix.jl")
+        end
+        @testset "test_matrix_backend" begin
+            # distributed PD_Matrix backend, needs the licensed matrix elements
+            include("fullscale_tests/test_matrix_backend/test_matrix_backend.jl")
         end
         @testset "test_large_model_matrix_model_based" begin
             include("fullscale_tests/test_large_model_matrix_based/test_large_model_matrix_based.jl")

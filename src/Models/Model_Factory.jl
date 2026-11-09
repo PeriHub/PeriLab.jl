@@ -383,17 +383,15 @@ function compute_stiff_matrix_compatible_models(block_nodes::Dict{Int64,Vector{I
     end
     for (active_model_name, active_model) in pairs(Data_Manager.get_active_models())
 
-        #local_synch(Data_Manager, active_model_name, "upload_to_cores", synchronise_field)
-        # maybe not needed?
-        #local_synch(Data_Manager,
-        #	active_model_name,
-        #	"download_from_cores",
-        #	synchronise_field)
         #TODO: Change Thermal for Thermal Expansion only!
         if active_model_name == "Material Model" && !("Thermal" in options)
             # we need here an activation trigger for mixed models in future
             continue
         end
+        # ghost values the model reads (e.g. bond forces for the damage models), as in
+        # compute_models; nothing to do on one rank
+        local_synch(active_model_name, "upload_to_cores", synchronise_field)
+        local_synch(active_model_name, "download_from_cores", synchronise_field)
 
         for (block, nodes) in pairs(block_nodes)
             # "delete" the view of active nodes

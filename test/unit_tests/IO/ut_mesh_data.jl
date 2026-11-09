@@ -305,6 +305,21 @@ end
                                               distribution[3])
     end
 end
+@testset "ut_create_distribution_weighted" begin
+    # Matrix Backend Mixed: GPU ranks get GPU Weight times the nodes of a CPU rank
+    distribution, point_to_core = PeriLab.IO.create_distribution(100, 3;
+                                                                 weights = [16.0, 1.0, 1.0])
+    @test length.(distribution) == [89, 6, 5]
+    @test vcat(distribution...) == collect(1:100)
+    @test point_to_core[89:90] == [1, 2]
+    # every rank keeps at least one node
+    distribution, _ = PeriLab.IO.create_distribution(5, 3; weights = [100.0, 1.0, 1.0])
+    @test length.(distribution) == [3, 1, 1]
+    # without weights: equal chunks, the last takes the rest
+    @test length.(first(PeriLab.IO.create_distribution(10, 3))) == [3, 3, 4]
+    @test PeriLab.Solver_Manager.PD_Matrix.rank_weights(MPI.COMM_WORLD, "CPU", 16.0) ==
+          [1.0]
+end
 @testset "ut_create_distribution" begin
     distribution, point_to_core = PeriLab.IO.create_distribution(4, 1)
     @test length(distribution) == 1

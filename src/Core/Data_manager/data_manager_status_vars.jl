@@ -246,6 +246,17 @@ function set_analysis_model(what::String, block_id::Int64, model::AbstractString
     end
 end
 
+"""
+    analysis_model_block(what::String)
+
+The lowest block id with a model of class `what` on this rank, `nothing` without one (an
+MPI rank holds only the blocks of its nodes).
+"""
+function analysis_model_block(what::String)
+    blocks = keys(get(data["analysis_models"], what, Dict{Int64,Vector{String}}()))
+    return isempty(blocks) ? nothing : minimum(blocks)
+end
+
 function get_analysis_model(what::String, block_id::Int64)::Vector{String}
     if !haskey(data["analysis_models"], what)
         @abort "No model class $what exists. Please check the initialization."

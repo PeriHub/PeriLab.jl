@@ -620,13 +620,16 @@ end
 # Public interface
 # =============================================================================
 
-function init_model(nodes::AbstractVector{Int64}, material, block_id::Int64)
+# `distributed`: the matrix lives in PD_Matrix (Matrix Backend CPU/GPU/Mixed), which runs
+# with MPI; the serial SparseMatrixCSC path does not
+function init_model(nodes::AbstractVector{Int64}, material, block_id::Int64;
+                    distributed::Bool = false)
     Zero_Energy_Control.init_model(nodes, material, block_id)
 
     update_list = Data_Manager.get_field("Update")
     update_list .= true
-    if Data_Manager.get_max_rank() > 1
-        @abort "Correspondence matrix based not implemented for parallel runs."
+    if Data_Manager.get_max_rank() > 1 && !distributed
+        @abort "Correspondence matrix based with Matrix Backend: SparseArrays is not implemented for parallel runs."
     end
 end
 
@@ -863,7 +866,9 @@ function _setup_zero_energy(nodes, dof, C_voigt_trafo, inverse_shape_tensor,
                             include_zero_energy)
     use_zero_energy = false
     zStiff = nothing
-    material = Data_Manager.get_block_models(1).material
+    block = Data_Manager.analysis_model_block("Zero Energy Control Model")
+    block === nothing && return use_zero_energy, zStiff
+    material = Data_Manager.get_block_models(block).material
     if material !== nothing && material.base.zero_energy_control !== nothing
         if material.base.zero_energy_control == "Global"
             use_zero_energy = include_zero_energy
