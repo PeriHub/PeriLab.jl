@@ -365,6 +365,36 @@ end
     @test point_to_core == Int64[1, 2, 2, 1]
 end
 
+@testset "ut_create_distribution_coordinate_based" begin
+    # 8 x 2 strip numbered row by row: cut across the strip, not along the rows
+    coor = Float64[[x for y in 0:1 for x in 0:7] [y for y in 0:1 for x in 0:7]]
+    nlist = [Int64[] for _ in 1:16]
+    distribution, point_to_core = PeriLab.IO.create_distribution_coordinate_based(coor,
+                                                                                  nlist, 2)
+    @test distribution[1] == [1, 2, 3, 4, 9, 10, 11, 12]
+    @test distribution[2] == [5, 6, 7, 8, 13, 14, 15, 16]
+    @test point_to_core == [fill(1, 4); fill(2, 4); fill(1, 4); fill(2, 4)]
+    # 4 x 4 square on 4 ranks: quadrants
+    coor = Float64[[x for y in 0:3 for x in 0:3] [y for y in 0:3 for x in 0:3]]
+    distribution, _ = PeriLab.IO.create_distribution_coordinate_based(coor, nlist, 4)
+    @test sort(distribution) == sort([[1, 2, 5, 6], [3, 4, 7, 8], [9, 10, 13, 14],
+                   [11, 12, 15, 16]])
+    # weighted by neighbors: node 1 has five, so the cut is 2 / 4 instead of 3 / 3
+    coor = Float64[0:5 zeros(6)]
+    distribution, _ = PeriLab.IO.create_distribution_coordinate_based(coor,
+                                                                      [[2, 3, 4, 5, 6], [1],
+                                                                          [1], [1], [1], [1]
+                                                                      ],
+                                                                      2)
+    @test distribution == [[1, 2], [3, 4, 5, 6]]
+    coor = Float64[0 0; 1 0; 2 0; 3 0]
+    @test_logs (:error,
+                "Number of cores 5 exceeds number of nodes 4.") @test_throws PeriLab.PeriLabError PeriLab.IO.create_distribution_coordinate_based(coor,
+                                                                                                                                                  [Int64[]
+                                                                                                                                                   for _ in 1:4],
+                                                                                                                                                  5)
+end
+
 @testset "ut_local_nodes_from_dict" begin
     create_global_to_local_mapping = Dict{Int64,Int64}(1 => 2, 2 => 4, 3 => 3, 4 => 1)
     global_nodes = Vector{Int64}(1:4)

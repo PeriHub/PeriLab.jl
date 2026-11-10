@@ -159,7 +159,7 @@ const _MESH_TYPES = ["Text File", "Exodus", "Abaqus", "Gmsh", "Gcode", "Kuka"]
     "Factor on the horizon in z for the neighbor search, for elliptic neighborhoods"
     horizon_mesh_scaling_z::Union{Nothing,Float64} = opt("Horizon Mesh Scaling Z";
                                                          default = nothing)
-    "How nodes are split across MPI ranks: \"Neighbor based\", \"Node based\", or any other value for an even split by node number"
+    "How nodes are split across MPI ranks: \"Coordinate based\" (default, compact parts by recursive coordinate bisection), \"Neighbor based\" and \"Node based\" (in node number order), or any other value for an even split by node number"
     distribution_type::Union{Nothing,String} = opt("Distribution Type"; default = nothing)
 end
 

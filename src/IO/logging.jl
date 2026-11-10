@@ -19,6 +19,8 @@ export get_current_git_info
 export get_log_stream
 
 log_file::String = ""
+# the one handle all log writers share; separate handles would overwrite each other
+log_stream::Union{Nothing,IOStream} = nothing
 
 """
     set_log_file(filename::String)
@@ -64,13 +66,18 @@ function get_log_file()
     return log_file
 end
 
-function print_exception(e::Exception)
-    global log_file
-    if log_file != ""
-        open(log_file, "a") do io
-            println(io, "[Error] ", e)
-        end
-    end
+"""
+    print_exception(e::Exception, backtrace = nothing)
+
+Writes an unexpected error, with its backtrace, to the log file; MPI ranks without a
+log file write it to stderr. Under MPI the rank is aborted right after, before the error
+could be rethrown and printed.
+"""
+function print_exception(e::Exception, backtrace = nothing)
+    message = "[Error] " * sprint(showerror, e, backtrace)
+    io = something(log_stream, stderr)
+    println(io, message)
+    flush(io)
 end
 """
     AbortLogger
@@ -199,7 +206,7 @@ Initialize the logging.
 - `size::Int64`: The size.
 """
 function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, size::Int64)
-    global log_file
+    global log_file, log_stream
 
     filedirectory = dirname(filename)
     if isempty(filedirectory)
@@ -216,8 +223,11 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
         global_logger(AbortLogger(MinLevelLogger(ConsoleLogger(stderr), Logging.Error)))
         return
     end
+    # one handle for the file logger, error reports and (silent) stderr, which MPI's
+    # abort message also uses
+    log_stream = open(log_file, "w")
     if debug
-        file_logger = FormatLogger(log_file; append = false) do io, args
+        file_logger = FormatLogger(log_stream) do io, args
             println(io,
                     "[",
                     args.level,
@@ -232,11 +242,11 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
         demux_logger = TeeLogger(MinLevelLogger(filtered_logger, Logging.Debug),
                                  MinLevelLogger(file_logger, Logging.Debug))
     else
-        file_logger = FormatLogger(log_file; append = false) do io, args
+        file_logger = FormatLogger(log_stream) do io, args
             println(io, "[", args.level, "] ", args.message)
         end
         if silent
-            redirect_stderr(open(log_file, "a"))
+            redirect_stderr(log_stream)
             demux_logger = TeeLogger(MinLevelLogger(file_logger, Logging.Debug))
         else
             filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))

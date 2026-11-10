@@ -592,7 +592,7 @@ function run(filename::String;
             if e isa InterruptException
                 @info "PeriLab was interrupted"
             elseif !isa(e, PeriLabError)
-                Logging_Module.print_exception(e)
+                Logging_Module.print_exception(e, catch_backtrace())
                 rethrow(e)
             end
         finally
@@ -602,6 +602,8 @@ function run(filename::String;
             end
             # ponytail: the other ranks may be stuck in a collective, so no merge after an error
             if size > 1 && exit_code != 0
+                # the abort ends the process at once; buffered error messages would be lost
+                flush(stderr)
                 MPI.Abort(comm, exit_code)
             end
             if !isnothing(result_files)

@@ -228,10 +228,14 @@ class JobManager:
             # The Step: progress lines live in PeriLab's own log, which
             # appears partway through the run; the monitor tails it live.
             try:
-                proc = subprocess.Popen(
-                    job.command,
-                    cwd=job.dir,
-                )
+                # console output of all ranks, e.g. errors of MPI ranks without a log file
+                with open(job.dir / "console.txt", "ab") as console:
+                    proc = subprocess.Popen(
+                        job.command,
+                        cwd=job.dir,
+                        stdout=console,
+                        stderr=subprocess.STDOUT,
+                    )
                 job._process = proc
                 monitor = threading.Thread(
                     target=self._monitor_log,

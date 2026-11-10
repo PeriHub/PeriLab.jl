@@ -782,16 +782,11 @@ function load_and_evaluate_mesh(input::PeriLabInput,
                                                       dof)
     end
     @debug "Start distribution"
-    if discretization.distribution_type !== nothing
-        @timeit "node_distribution" distribution, ptc,
-                                    ntype=node_distribution(nlist,
-                                                            ranksize,
-                                                            discretization.distribution_type)
-    else
-        @timeit "node_distribution" distribution, ptc,
-                                    ntype=node_distribution(nlist,
-                                                            ranksize)
-    end
+    coor = Matrix{Float64}(mesh[!, names(mesh)[1:dof]])
+    @timeit "node_distribution" distribution, ptc,
+                                ntype=node_distribution(nlist, coor, ranksize,
+                                                        something(discretization.distribution_type,
+                                                                  "Coordinate based"))
 
     el_distribution = nothing
     if input.sections.fem !== nothing && !isnothing(external_topology)
@@ -949,12 +944,13 @@ function element_distribution(topology::Vector{Vector{Int64}},
 end
 
 """
-    node_distribution(nlist::NestedNeighborhoodList, size::Int64)
+    node_distribution(nlist::NestedNeighborhoodList, coor, size::Int64, distribution_type)
 
 Create the distribution of the nodes.
 
 # Arguments
 - `nlist::NestedNeighborhoodList`: The neighborhood list of the mesh elements.
+- `coor::AbstractMatrix{Float64}`: Coordinates, one row per node.
 - `size::Int64`: The number of ranks.
 - `distribution_type::String`: The distribution type.
 # Returns
@@ -963,8 +959,9 @@ Create the distribution of the nodes.
 - `ntype::Dict`: The type of the nodes.
 """
 function node_distribution(nlist::NestedNeighborhoodList,
+                           coor::AbstractMatrix{Float64},
                            size::Int64,
-                           distribution_type::String = "Neighbor based")
+                           distribution_type::String = "Coordinate based")
     nnodes = length(nlist)
     ntype = Dict("controllers" => Int64[], "responder" => Int64[])
     if size == 1
@@ -973,7 +970,9 @@ function node_distribution(nlist::NestedNeighborhoodList,
         return [collect(1:nnodes)], Int64[], ntype
     end
 
-    if distribution_type == "Neighbor based"
+    if distribution_type == "Coordinate based"
+        distribution, ptc = create_distribution_coordinate_based(coor, nlist, size)
+    elseif distribution_type == "Neighbor based"
         distribution, ptc = create_distribution_neighbor_based(nnodes, nlist, size)
     elseif distribution_type == "Node based"
         distribution, ptc = create_distribution_node_based(nnodes, nlist, size)
@@ -1203,6 +1202,60 @@ function create_distribution_neighbor_based(nnodes::Int64,
         point_to_core[distribution[i]] .= i
     end
     return distribution, point_to_core
+end
+
+"""
+    create_distribution_coordinate_based(coor, nlist, ranks)
+
+Recursive coordinate bisection: splits the nodes along the longest edge of their
+bounding box, weighted by their number of neighbors, until there is one part per rank.
+The parts are compact, so few nodes are overlap nodes, independent of the node
+numbering of the mesh.
+
+# Arguments
+- `coor::AbstractMatrix{Float64}`: Coordinates, one row per node.
+- `nlist::NestedNeighborhoodList`: The neighborhood list.
+- `ranks::Int64`: The number of ranks.
+# Returns
+- `distribution::Vector{Vector{Int64}}`: The nodes of each rank, ascending.
+- `point_to_core::Vector{Int64}`: The rank of each node.
+"""
+function create_distribution_coordinate_based(coor::AbstractMatrix{Float64},
+                                              nlist::NestedNeighborhoodList,
+                                              ranks::Int64)
+    nnodes = size(coor, 1)
+    if ranks > nnodes
+        @abort "Number of cores $ranks exceeds number of nodes $nnodes."
+    end
+    weight = length.(nlist) .+ 1
+    distribution = Vector{Vector{Int64}}(undef, ranks)
+    bisect_nodes!(distribution, collect(1:nnodes), 1, ranks, coor, weight)
+    point_to_core = zeros(Int64, nnodes)
+    for (rank, nodes) in enumerate(distribution)
+        sort!(nodes)
+        point_to_core[nodes] .= rank
+    end
+    return distribution, point_to_core
+end
+
+# splits `nodes` onto the ranks first_rank:first_rank+ranks-1
+function bisect_nodes!(distribution, nodes, first_rank, ranks, coor, weight)
+    if ranks == 1
+        distribution[first_rank] = nodes
+        return
+    end
+    extent = [maximum(view(coor, nodes, d)) - minimum(view(coor, nodes, d))
+              for d in axes(coor, 2)]
+    axis = argmax(extent)
+    sort!(nodes; by = i -> coor[i, axis])
+    left = ranks ÷ 2
+    target = sum(view(weight, nodes)) * left / ranks
+    split = searchsortedfirst(cumsum(view(weight, nodes)), target)
+    # at least one node per rank on both sides
+    split = clamp(split, left, length(nodes) - (ranks - left))
+    bisect_nodes!(distribution, nodes[1:split], first_rank, left, coor, weight)
+    bisect_nodes!(distribution, nodes[(split + 1):end], first_rank + left, ranks - left,
+                  coor, weight)
 end
 
 """
