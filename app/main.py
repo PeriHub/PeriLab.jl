@@ -39,7 +39,8 @@ PERILAB_BIN = os.environ.get("PERILAB_BIN", "/app/PeriLab/bin/PeriLab")
 PERILAB_VERSION_FILE = "/app/Project.toml"
 JOBS_DIR = Path(os.environ.get("PERILAB_JOBS_DIR", "/app/simulations"))
 MAX_CONCURRENT_JOBS = int(os.environ.get("MAX_CONCURRENT_JOBS", "2"))
-RETENTION_DAYS = float(os.environ.get("PERILAB_JOB_RETENTION_DAYS", "7"))
+# Days to keep finished jobs; unset = keep forever
+RETENTION_DAYS = float(os.environ.get("PERILAB_JOB_RETENTION_DAYS", "inf"))
 # Set this to "mpiexecjl" (and install MPI in the image) to allow num_procs > 1.
 MPI_LAUNCHER = os.environ.get("PERILAB_MPI_LAUNCHER") or (
     shutil.which("mpiexecjl") or shutil.which("mpiexec")

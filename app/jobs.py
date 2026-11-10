@@ -99,7 +99,7 @@ def _safe_relative_path(name: str) -> Path:
 
 class JobManager:
     def __init__(self, base_dir: Path, binary_path: str, max_concurrent: int = 2,
-                 mpi_launcher: Optional[str] = None, retention_days: float = 7.0):
+                 mpi_launcher: Optional[str] = None, retention_days: float = float("inf")):
         self.base_dir = Path(base_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self.binary_path = binary_path
