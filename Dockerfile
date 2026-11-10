@@ -64,7 +64,7 @@ COPY app /app/api
 RUN mkdir -p /app/simulations
 ENV PERILAB_BIN="/app/PeriLab/bin/PeriLab"
 ENV PERILAB_JOBS_DIR="/app/simulations"
-ENV MAX_CONCURRENT_JOBS="2"
+ENV MAX_CONCURRENT_JOBS="10"
 
 EXPOSE 3000
 
