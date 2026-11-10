@@ -47,6 +47,12 @@ function typed_block_model(block::Int64, name::String)
     return getfield(models, _BLOCK_MODEL_FIELDS[name])
 end
 has_block_model(block::Int64, name::String) = typed_block_model(block, name) !== nothing
+# (name, id) of all blocks of the deck, ordered by id, so every rank iterates them alike
+function deck_blocks(input::PeriLabInput)
+    sort!([(name, b.block_id)
+           for (name, b) in input.sections.blocks];
+          by = last)
+end
 block_model_parameters(block::Int64, name::String) = typed_block_model(block, name)
 # local damping of a block's damage model, or `nothing`
 function block_local_damping(block::Int64)
@@ -86,7 +92,7 @@ function init_models(input::PeriLabInput,
                      synchronise_field)
     if "Pre_Calculation" in models
         @info "Check pre calculation models are initialized for material models"
-        Pre_Calculation.check_dependencies(block_nodes)
+        Pre_Calculation.check_dependencies(last.(deck_blocks(input)))
         for material in values(input.materials)
             material.base.accuracy_order === nothing ||
                 Data_Manager.set_accuracy_order(material.base.accuracy_order)
@@ -120,8 +126,6 @@ function init_models(input::PeriLabInput,
             if has_block_model(block, active_model_name)
                 @timeit "init $active_model_name models" active_model.init_model(block_nodes[block],
                                                                                  block)
-                @timeit "init fields_for_local_synchronization $active_model_name models" active_model.fields_for_local_synchronization(active_model_name,
-                                                                                                                                        block)
                 if active_model_name == "Damage Model" &&
                    block_local_damping(block) !== nothing
                     Material.init_local_damping(block_nodes[block],
@@ -131,6 +135,13 @@ function init_models(input::PeriLabInput,
                 model_used = true
                 # put it in Data_Manager
             end
+        end
+        # every exchange needs its partner rank, so all ranks register the fields of all
+        # blocks, also of blocks without nodes on this rank
+        for (_, block) in deck_blocks(input)
+            has_block_model(block, active_model_name) || continue
+            @timeit "init fields_for_local_synchronization $active_model_name models" active_model.fields_for_local_synchronization(active_model_name,
+                                                                                                                                    block)
         end
         if !model_used
             @warn "$active_model_name is defined and activated, but not referenced in any block definition"
@@ -488,8 +499,9 @@ thermal, pre-calculation) in `Data_Manager`; aborts on undefined model names.
 """
 function read_properties(input::PeriLabInput, material_model::Bool)
     dof = Data_Manager.get_dof()
-    for (block_name, block) in zip(Data_Manager.get_block_name_list(),
-                                   Data_Manager.get_block_id_list())
+    # every block of the deck, also those without nodes on this rank: the fields a model
+    # synchronises must be the same on all ranks (see `init_models`)
+    for (block_name, block) in deck_blocks(input)
         material = nothing
         if material_model
             wb = block_typed_model(input, block_name, :material_model, "Material Model",

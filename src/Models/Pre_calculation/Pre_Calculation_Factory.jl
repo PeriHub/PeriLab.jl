@@ -119,16 +119,16 @@ function fields_for_local_synchronization(model, block)
 end
 
 """
-    check_dependencies(block_nodes::Dict{Int64,Vector{Int64}})
+    check_dependencies(block_ids)
 
 Adds the pre-calculations the block's material needs, and the ones the active
 pre-calculations depend on, and stores the block's list in run order.
 
 # Arguments
-- `block_nodes::Dict{Int64,Vector{Int64}}`: block nodes.
+- `block_ids`: IDs of the blocks.
 """
-function check_dependencies(block_nodes::Dict{Int64,Vector{Int64}})
-    for block_id in eachindex(block_nodes)
+function check_dependencies(block_ids)
+    for block_id in block_ids
         models = Data_Manager.get_block_models(block_id)
         material = models.material
         material === nothing && continue

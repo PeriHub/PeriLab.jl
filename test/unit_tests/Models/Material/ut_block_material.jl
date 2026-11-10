@@ -611,10 +611,7 @@ end
         PeriLab.Data_Manager.set_block_id_list([1])
         PeriLab.Data_Manager.set_block_models(1,
                                               PeriLab.Data_Manager.BlockModels(material = typed_block_material(raw)))
-        PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.check_dependencies(Dict(1 =>
-                                                                                         [1,
-                                                                                             2
-                                                                                         ]))
+        PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.check_dependencies([1])
         return PeriLab.Data_Manager.get_block_models(1).pre_calculation
     end
     corr = Dict{String,Any}("Material Model" => "Correspondence Elastic",

@@ -10,7 +10,7 @@
     @test isempty(m.pre_calculation)
     MF = PeriLab.Solver_Manager.Model_Factory
     for name in ("Material Model", "Damage Model", "Thermal Model", "Additive Model",
-                 "Degradation Model", "Pre Calculation Model")
+        "Degradation Model", "Pre Calculation Model")
         @test !MF.has_block_model(1, name)
     end
     @test MF.local_damping_symmetry(1) == "3D"
@@ -25,16 +25,18 @@ end
     m = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
                                   "Symmetry" => "isotropic", "Bulk Modulus" => 1.0,
                                   "Shear Modulus" => 1.0))
-    th = typed_model(:thermal, Dict("Thermal Model" => "Heat Transfer",
-                                    "Heat Transfer Coefficient" => 1.0,
-                                    "Environmental Temperature" => 30);
+    th = typed_model(:thermal,
+                     Dict("Thermal Model" => "Heat Transfer",
+                          "Heat Transfer Coefficient" => 1.0,
+                          "Environmental Temperature" => 30);
                      name_key = "Thermal Model")
     PeriLab.Data_Manager.set_block_models(1,
                                           PeriLab.Data_Manager.BlockModels(material = m,
                                                                            thermal = th,
                                                                            pre_calculation = ["Shape Tensor"]))
-    PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.check_dependencies(Dict(1 => [1, 2]))
+    PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.check_dependencies([1])
     b = PeriLab.Data_Manager.get_block_models(1)
-    @test b.pre_calculation == ["Deformed Bond Geometry", "Shape Tensor", "Deformation Gradient"]
+    @test b.pre_calculation ==
+          ["Deformed Bond Geometry", "Shape Tensor", "Deformation Gradient"]
     @test b.material === m && b.thermal === th             # other parts kept
 end
