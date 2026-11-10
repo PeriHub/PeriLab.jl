@@ -39,6 +39,14 @@ RUN chmod +x /app/PeriLab/bin/PeriLab
 
 ENV PATH="/app/PeriLab/bin:${PATH}"
 
+# The bundle ships the MPICH the binary links against; this wrapper puts its
+# mpiexec on PATH with the bundled libraries (hwloc, ...) it needs outside Julia.
+RUN printf '%s\n' '#!/bin/sh' \
+    'A=/app/PeriLab/share/julia/artifacts' \
+    'export LD_LIBRARY_PATH="$(ls -d $A/*/lib | tr "\n" :)$LD_LIBRARY_PATH"' \
+    'exec $(ls $A/*/bin/mpiexec) "$@"' > /usr/local/bin/mpiexec \
+    && chmod +x /usr/local/bin/mpiexec
+
 # --- API wrapper additions -------------------------------------------------
 
 # Python runtime for the HTTP wrapper around the PeriLab binary
@@ -57,7 +65,6 @@ RUN mkdir -p /app/simulations
 ENV PERILAB_BIN="/app/PeriLab/bin/PeriLab"
 ENV PERILAB_JOBS_DIR="/app/simulations"
 ENV MAX_CONCURRENT_JOBS="2"
-# ENV PERILAB_MPI_LAUNCHER="mpiexecjl"   # set this if you add MPI to the image
 
 EXPOSE 3000
 

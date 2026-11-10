@@ -41,7 +41,7 @@ JOBS_DIR = Path(os.environ.get("PERILAB_JOBS_DIR", "/app/simulations"))
 MAX_CONCURRENT_JOBS = int(os.environ.get("MAX_CONCURRENT_JOBS", "2"))
 # Days to keep finished jobs; unset = keep forever
 RETENTION_DAYS = float(os.environ.get("PERILAB_JOB_RETENTION_DAYS", "inf"))
-# Set this to "mpiexecjl" (and install MPI in the image) to allow num_procs > 1.
+# The image provides mpiexec (bundled MPICH); override to use another launcher.
 MPI_LAUNCHER = os.environ.get("PERILAB_MPI_LAUNCHER") or (
     shutil.which("mpiexecjl") or shutil.which("mpiexec")
 )
@@ -145,7 +145,7 @@ async def submit_job(
     args: Optional[str] = Form(
         default="", description="Extra CLI flags for PeriLab, e.g. '-v --dryrun'"
     ),
-    num_procs: int = Form(default=1, description="MPI ranks (requires MPI launcher in image)"),
+    num_procs: int = Form(default=1, description="MPI ranks, at most the number of CPUs of the container"),
     user_id: Optional[str] = Form(
         default=None, description="Owner id; jobs are tagged with it for filtering"
     ),

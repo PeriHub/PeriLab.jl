@@ -168,6 +168,9 @@ class JobManager:
     # ------------------------------------------------------------------ #
     def create_job(self, input_filename: str, files: dict, extra_args: list,
                    num_procs: int = 1, user_id: Optional[str] = None) -> Job:
+        max_procs = os.cpu_count() or 1
+        if not 1 <= num_procs <= max_procs:
+            raise ValueError(f"num_procs must be between 1 and {max_procs}")
         job_id = uuid.uuid4().hex[:12]
         job_dir = self.base_dir / job_id
         job_dir.mkdir(parents=True)
@@ -208,7 +211,9 @@ class JobManager:
         ``<job_dir>/impact_glass_<timestamp>.log``. Returns ``None`` if
         PeriLab hasn't created it yet (it appears partway through the run).
         """
-        main_rel = job.command[1] if len(job.command) > 1 else None
+        # Serial: [binary, deck, ...]; MPI: [launcher, "-n", N, binary, deck, ...]
+        cmd = job.command
+        main_rel = cmd[4] if len(cmd) > 4 and cmd[1] == "-n" else (cmd[1] if len(cmd) > 1 else None)
         if not main_rel:
             return None
         stem = Path(main_rel).stem
