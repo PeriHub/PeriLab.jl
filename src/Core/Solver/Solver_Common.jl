@@ -19,7 +19,8 @@ using ...InputDeck: SolverParams, SolverOptions, CalculationOptions
 using ...ParameterSpec: model_module
 import ...InputDeck: solver_name
 using ...MPI_Communication: synch_responder_to_controller, synch_controller_to_responder,
-                            synch_controller_bonds_to_responder_flattened
+                            synch_controller_bonds_to_responder_flattened,
+                            find_and_set_core_value_max
 using ..Boundary_Conditions: BoundaryCondition
 
 export TimeWindow, SolverRun, SolverContext, with_steps, synchronise_field,
@@ -314,7 +315,7 @@ function time_loop(run::SolverRun, ctx::SolverContext)
     return result_files
 end
 
-"Maximum NP1 damage over the active nodes (0 without active nodes)."
+"Maximum NP1 damage over the active nodes of all ranks (0 without active nodes)."
 function max_active_damage()
     damage = Data_Manager.get_damage("NP1")::Vector{Float64}
     active = Data_Manager.get_field("Active")::Vector{Bool}
@@ -322,6 +323,11 @@ function max_active_damage()
     nnodes = Data_Manager.get_nnodes()::Int64
     @inbounds for i in 1:nnodes
         active[i] && (max_damage = max(max_damage, damage[i]))
+    end
+    # the maximum of all ranks: the time loop cancels and writes "Write After Damage"
+    # outputs on it, which all ranks must do together
+    if Data_Manager.get_mpi_active()
+        max_damage = find_and_set_core_value_max(Data_Manager.get_comm(), max_damage)
     end
     return max_damage
 end

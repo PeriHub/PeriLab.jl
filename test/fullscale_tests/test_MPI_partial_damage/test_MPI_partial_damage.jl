@@ -7,4 +7,6 @@
 folder_name = basename(@__FILE__)[1:(end - 3)]
 cd("fullscale_tests/" * folder_name) do
     run_perilab("partial_damage", 2, true, folder_name)
+    # stops at the first damage, which only one rank has
+    run_perilab("partial_damage_max", 2, true, folder_name)
 end
