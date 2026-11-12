@@ -317,9 +317,10 @@ include("Material_Models/Correspondence/Correspondence.jl")
 
 using ...Material_Basis:
                          distribute_forces!,
+                         hooke_matrix,
                          init_local_damping_due_to_damage,
                          local_damping_due_to_damage
-using LinearAlgebra: dot
+using LinearAlgebra: dot, eigmax, Symmetric
 using StaticArrays
 """
     ElasticModuli
@@ -542,37 +543,19 @@ function correspondence_model(model, name::AbstractString)
     return correspondence
 end
 
-_constant(x) = x === nothing ? nothing : value(x, 1)
-
 """
     critical_bulk_modulus(material)
 
-Bulk modulus used for the critical time step (legacy rules): the isotropic bulk
-modulus; for orthotropic constants the compliance-based estimate; else C44/C55/C66
-or Shear Modulus XY as estimates; `nothing` if none is defined.
+Bulk modulus used for the critical time step: the isotropic bulk modulus; for
+materials defined by a stiffness matrix the largest eigenvalue of the Hooke matrix
+divided by the dimension (the bulk modulus of an isotropic material in 3D, its 2D
+bulk modulus in plane stress / plane strain), so the stiffest direction sets the
+time step.
 """
 function critical_bulk_modulus(material::BlockMaterial)
     material.moduli === nothing || return material.moduli.bulk_modulus
-    base = material.base
-    nu_xy, nu_yz, nu_xz = _constant(base.poissons_ratio_xy),
-                          _constant(base.poissons_ratio_yz),
-                          _constant(base.poissons_ratio_xz)
-    if nu_xy !== nothing && nu_yz !== nothing && nu_xz !== nothing
-        E_x, E_y, E_z = _constant(base.youngs_modulus_x), _constant(base.youngs_modulus_y),
-                        _constant(base.youngs_modulus_z)
-        s11 = 1 / E_x
-        s22 = 1 / E_y
-        s33 = 1 / E_z
-        s12 = -nu_xy / E_x
-        s23 = -nu_yz / E_z
-        s13 = -nu_xz / E_z
-        return 1 / (s11 + s22 + s33 + 2 * (s12 + s23 + s13))
-    elseif base.c44 !== nothing && base.c55 !== nothing && base.c66 !== nothing
-        return maximum([base.c44 / 2, base.c55 / 2, base.c66 / 2])
-    elseif base.shear_modulus_xy !== nothing
-        return _constant(base.shear_modulus_xy) / 2
-    end
-    return nothing
+    dof = Data_Manager.get_dof()
+    return eigmax(Symmetric(Matrix(hooke_matrix(material, dof)))) / dof
 end
 
 export init_model

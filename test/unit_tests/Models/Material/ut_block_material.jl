@@ -577,32 +577,40 @@ end
     iso = typed_block_material(Dict("Material Model" => "PD Solid Elastic",
                                     "Bulk Modulus" => 7.0, "Shear Modulus" => 2.0))
     @test BMAT.critical_bulk_modulus(iso) == 7.0
-    ortho = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
-                                      "Symmetry" => "orthotropic",
-                                      "Young's Modulus X" => 2.0,
-                                      "Young's Modulus Y" => 1.5,
-                                      "Young's Modulus Z" => 1.0,
-                                      "Poisson's Ratio XY" => 0.3,
-                                      "Poisson's Ratio YZ" => 0.25,
-                                      "Poisson's Ratio XZ" => 0.2,
-                                      "Shear Modulus XY" => 0.7, "Shear Modulus YZ" => 0.6,
-                                      "Shear Modulus XZ" => 0.5))
-    s11, s22, s33 = 1 / 2.0, 1 / 1.5, 1 / 1.0
-    s12, s23, s13 = -0.3 / 2.0, -0.25 / 1.0, -0.2 / 1.0
-    @test BMAT.critical_bulk_modulus(ortho) ≈
-          1 / (s11 + s22 + s33 + 2 * (s12 + s23 + s13))
+    # an isotropic stiffness matrix (lambda = 4, mu = 3) gives K = lambda + 2mu/3
+    lambda, mu = 4.0, 3.0
+    c(i, j) = i <= 3 && j <= 3 ? (i == j ? lambda + 2mu : lambda) : (i == j ? mu : 0.0)
     aniso = typed_block_material(merge(Dict{String,Any}("Material Model" => "Correspondence Elastic",
                                                         "Symmetry" => "anisotropic"),
-                                       Dict("C$i$j" => (i == j ? 10.0 * i : 1.0)
-                                            for i in 1:6 for j in i:6)))
-    @test BMAT.critical_bulk_modulus(aniso) == maximum([40.0 / 2, 50.0 / 2, 60.0 / 2])
+                                       Dict("C$i$j" => c(i, j) for i in 1:6 for j in i:6)))
+    @test BMAT.critical_bulk_modulus(aniso) ≈ 6.0
+    ortho = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
+                                      "Symmetry" => "orthotropic",
+                                      "Young's Modulus X" => 2.5,
+                                      "Young's Modulus Y" => 2.5,
+                                      "Young's Modulus Z" => 2.5,
+                                      "Poisson's Ratio XY" => 0.3,
+                                      "Poisson's Ratio YZ" => 0.3,
+                                      "Poisson's Ratio XZ" => 0.3,
+                                      "Shear Modulus XY" => 2.5 / 2.6,
+                                      "Shear Modulus YZ" => 2.5 / 2.6,
+                                      "Shear Modulus XZ" => 2.5 / 2.6))
+    @test BMAT.critical_bulk_modulus(ortho) ≈ 2.5 / (3 * (1 - 2 * 0.3))
+    # the stiff fibre direction sets it, not the shear modulus (DIN6034: G_xy / 2 was
+    # 30 times too soft, the time step too large)
+    ut_reset(2)
     transverse = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
                                            "Symmetry" => "transverse isotropic plane stress",
-                                           "Young's Modulus X" => 2.0,
-                                           "Young's Modulus Y" => 1.5,
-                                           "Poisson's Ratio XY" => 0.3,
-                                           "Shear Modulus XY" => 0.8))
-    @test BMAT.critical_bulk_modulus(transverse) == 0.4
+                                           "Young's Modulus X" => 135800.0,
+                                           "Young's Modulus Y" => 11700.0,
+                                           "Poisson's Ratio XY" => 0.31,
+                                           "Shear Modulus XY" => 7900.0))
+    nu_yx = 0.31 * 11700 / 135800
+    q = 1 - 0.31 * nu_yx
+    a, d, b = 135800 / q, 11700 / q, nu_yx * 135800 / q
+    @test BMAT.critical_bulk_modulus(transverse) ≈
+          ((a + d) / 2 + sqrt(((a - d) / 2)^2 + b^2)) / 2
+    @test BMAT.critical_bulk_modulus(transverse) > 135800 / 2
 end
 
 @testset "pre-calculation dependencies" begin
