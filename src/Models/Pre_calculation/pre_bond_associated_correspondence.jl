@@ -7,6 +7,8 @@ module Pre_Bond_Associated_Correspondence
 using .......Data_Manager
 using .......Geometry: compute_weighted_deformation_gradient
 using StaticArrays: @MVector, MVector, SVector
+using LinearAlgebra: det, tr
+using .......PeriLabExceptions: @abort
 export fields_for_local_synchronization
 export init_model
 export compute_model
@@ -224,11 +226,18 @@ function compute_Lagrangian_gradient_weights(nodes::AbstractVector{Int64},
             QTQ!(M, omega[iID][jID], bond_damage[iID][jID], volume[nID], Q)
         end
 
+        # M scales with (omega * volume)^n, i.e. with the units and the mesh size; the
+        # singularity check runs on M / (tr(M) / n), so only the bond geometry decides
+        scale = tr(M) / size(M, 1)
+        if !(scale > 0) || abs(det(M ./ scale)) < 1e-12
+            moment_matrix_singular(iID, M, accuracy_order, dof, bond_damage)
+            return
+        end
+        M ./= scale
         # in place: `invert` is not type stable, rebinding `Minv` made the bond loop
         # below dispatch dynamically
-        copyto!(Minv,
-                invert(M,
-                       "In compute_Lagrangian_gradient_weights the matrix M is singular and cannot be inverted. To many bond damages or a to small horizon might cause this."))
+        copyto!(Minv, invert(M, "Moment matrix M is singular."))
+        Minv ./= scale
 
         @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
             Q = calculate_Q(accuracy_order, dof, bond_geometry[iID][jID], horizon[iID], Q)
@@ -247,6 +256,16 @@ function compute_Lagrangian_gradient_weights(nodes::AbstractVector{Int64},
         end
     end
 end
+function moment_matrix_singular(iID, M, accuracy_order, dof, bond_damage)
+    bonds = count(!iszero, bond_damage[iID])
+    @abort "Bond associated correspondence: the moment matrix of node $iID is singular. " *
+           "Accuracy Order $accuracy_order in $(dof)D needs at least $(size(M, 1)) bonds " *
+           "in linearly independent directions (more for a well conditioned matrix); " *
+           "the node has $bonds unbroken bonds. Increase the horizon (about 2.5 dx or " *
+           "more for Accuracy Order 1, larger for higher orders) or lower the Accuracy " *
+           "Order. Nodes at corners, next to a bond filter or at a crack have the fewest bonds."
+end
+
 function QTQ!(M, omega, bond_damage, volume, Q)
     # each operation does not need the sum. It's an integral over all neighbor nodes.
     @inbounds @fastmath for m in axes(M, 1)

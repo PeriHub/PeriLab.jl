@@ -166,7 +166,10 @@ if ncores == 3
     A = PeriLab.MPI_Communication.synch_responder_to_controller(comm, overlap_map, A, 1)
     B = PeriLab.MPI_Communication.synch_responder_to_controller(comm, overlap_map, B, 4)
     C = PeriLab.MPI_Communication.synch_responder_to_controller(comm, overlap_map, C, 1)
+    # node tensor field (3D array, e.g. the deformation gradient) synchs like D column wise
+    T = cat(D, 2 .* D; dims = 3)
     D = PeriLab.MPI_Communication.synch_responder_to_controller(comm, overlap_map, D, 5)
+    T = PeriLab.MPI_Communication.synch_responder_to_controller(comm, overlap_map, T, 10)
     E = PeriLab.MPI_Communication.synch_responder_to_controller(comm, overlap_map, E, 1)
 
     if rank == 0
@@ -232,6 +235,9 @@ if ncores == 3
     B = PeriLab.MPI_Communication.synch_controller_to_responder(comm, overlap_map, B, 4)
     C = PeriLab.MPI_Communication.synch_controller_to_responder(comm, overlap_map, C, 1)
     D = PeriLab.MPI_Communication.synch_controller_to_responder(comm, overlap_map, D, 5)
+    T = PeriLab.MPI_Communication.synch_controller_to_responder(comm, overlap_map, T, 10)
+    test = test_dict["synch_tensor_field_$rank"] = Dict("tests" => [], "line" => [])
+    push_test!(test, T[:, :, 1] == D && T[:, :, 2] == 2 .* D, @__FILE__, @__LINE__)
     E = PeriLab.MPI_Communication.synch_controller_to_responder(comm, overlap_map, E, 1)
     if rank == 0
         test = test_dict["synch_controller_to_responder_rank_0"] = Dict("tests" => [],

@@ -67,10 +67,15 @@ Returns a user developer defined local synchronization. This happens before each
 function fields_for_local_synchronization(model::String)
     download_from_cores = false
     upload_to_cores = true
-    Data_Manager.set_local_synch(model,
-                                 "Deformation Gradient",
-                                 download_from_cores,
-                                 upload_to_cores)
+    # the bond deformation gradient and the stress integral read both at the neighbor;
+    # created here, since the exchange needs them on every rank
+    dof = Data_Manager.get_dof()
+    Data_Manager.create_constant_node_tensor_field("Weighted Deformation Gradient",
+                                                   Float64, dof)
+    Data_Manager.create_constant_node_scalar_field("Weighted Volume", Float64)
+    for field in ("Weighted Deformation Gradient", "Weighted Volume")
+        Data_Manager.set_local_synch(model, field, download_from_cores, upload_to_cores)
+    end
 end
 
 """
@@ -229,7 +234,9 @@ function compute_stress_integral(nodes::AbstractVector{Int64},
                 continue
             end
             bond = bond_geometry[iID][jID]
-            temp = (I - bond * bond') ./ (bond_length[iID][jID] * bond_length[iID][jID])
+            # projector orthogonal to the bond, I - ξ⊗ξ/|ξ|² (dividing I by |ξ|² as well
+            # made the force depend on the length unit and the mesh size)
+            temp = I - bond * bond' ./ (bond_length[iID][jID] * bond_length[iID][jID])
 
             factor = volume[nID] *
                      omega[iID][jID] *

@@ -128,8 +128,8 @@ function synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof
         jcore == MPI.Comm_rank(comm) + 1 && continue
         recv_index = maps[jcore]["Controller"]
         isempty(recv_index) && continue
-        buffer = dof == 1 ? similar(vector, length(recv_index)) :
-                 similar(vector, length(recv_index), size(vector, 2))
+        # any array rank (node scalars, vectors, tensors): node index is the first dim
+        buffer = similar(vector, (length(recv_index), size(vector)[2:end]...))
         push!(recv_requests, MPI.Irecv!(buffer, comm; source = jcore - 1, tag = 0))
         push!(received, (recv_index, buffer))
     end
@@ -138,18 +138,14 @@ function synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof
         jcore == MPI.Comm_rank(comm) + 1 && continue
         send_index = maps[jcore]["Responder"]
         isempty(send_index) && continue
-        buffer = dof == 1 ? vector[send_index] : vector[send_index, :]
+        buffer = copy(selectdim(vector, 1, send_index))
         push!(send_requests, MPI.Isend(buffer, comm; dest = jcore - 1, tag = 0))
     end
     MPI.Waitall(recv_requests)
     # summed in the rank order, as before; Bool fields are only exchanged
     if !(eltype(vector) <: Bool)
         for (recv_index, buffer) in received
-            if dof == 1
-                vector[recv_index] .+= buffer
-            else
-                vector[recv_index, :] .+= buffer
-            end
+            selectdim(vector, 1, recv_index) .+= buffer
         end
     end
     MPI.Waitall(send_requests)
@@ -180,8 +176,8 @@ function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof
         jcore == MPI.Comm_rank(comm) + 1 && continue
         recv_index = maps[jcore]["Responder"]
         isempty(recv_index) && continue
-        buffer = dof == 1 ? similar(vector, length(recv_index)) :
-                 similar(vector, length(recv_index), size(vector, 2))
+        # any array rank (node scalars, vectors, tensors): node index is the first dim
+        buffer = similar(vector, (length(recv_index), size(vector)[2:end]...))
         push!(recv_requests, MPI.Irecv!(buffer, comm; source = jcore - 1, tag = 0))
         push!(received, (recv_index, buffer))
     end
@@ -190,16 +186,12 @@ function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof
         jcore == MPI.Comm_rank(comm) + 1 && continue
         send_index = maps[jcore]["Controller"]
         isempty(send_index) && continue
-        buffer = dof == 1 ? vector[send_index] : vector[send_index, :]
+        buffer = copy(selectdim(vector, 1, send_index))
         push!(send_requests, MPI.Isend(buffer, comm; dest = jcore - 1, tag = 0))
     end
     MPI.Waitall(recv_requests)
     for (recv_index, buffer) in received
-        if dof == 1
-            vector[recv_index] = buffer
-        else
-            vector[recv_index, :] = buffer
-        end
+        selectdim(vector, 1, recv_index) .= buffer
     end
     MPI.Waitall(send_requests)
     return vector
