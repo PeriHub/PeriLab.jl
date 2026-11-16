@@ -9,7 +9,6 @@ using StaticArrays: I, @MMatrix, MMatrix, SMatrix, SVector
 using ........Data_Manager
 using ........PeriLabExceptions: @abort
 using .........ParameterSpec: model_parts, model_module, model_function
-using .....Material_Basis: compute_Piola_Kirchhoff_stress!
 using ........Helpers:
                        find_local_neighbors, invert, rotate, determinant, smat,
                        matrix_diff!, tensor_buffer, node_tensor
@@ -211,6 +210,7 @@ function compute_model(nodes::AbstractVector{Int64},
                                      gradient_weights,
                                      omega,
                                      bond_damage,
+                                     ba_deformation_gradient,
                                      bond_force)
 end
 
@@ -226,7 +226,6 @@ function compute_stress_integral(nodes::AbstractVector{Int64},
                                  bond_stresses::BondTensorState{Float64},
                                  deformation_gradient::BondTensorState{Float64},
                                  stress_integral::Array{Float64,3}) where {D}
-    pk_stress = MMatrix{D,D,Float64}(undef)
     for iID in nodes
         integral = zero(SMatrix{D,D,Float64,D * D})
         for (jID, nID) in enumerate(nlist[iID])
@@ -242,9 +241,9 @@ function compute_stress_integral(nodes::AbstractVector{Int64},
                      omega[iID][jID] *
                      bond_damage[iID][jID] *
                      (0.5 / weighted_volume[iID] + 0.5 / weighted_volume[nID])
-            compute_Piola_Kirchhoff_stress!(pk_stress, bond_stresses[iID][jID],
-                                            deformation_gradient[iID][jID])
-            integral += factor .* SMatrix(pk_stress) * temp
+            # P = F S: the bond stress comes from the Green-Lagrange strain (see Correspondence)
+            integral += factor .* (deformation_gradient[iID][jID] *
+                         bond_stresses[iID][jID]) * temp
         end
         for j in 1:D, i in 1:D
             stress_integral[iID, i, j] = integral[i, j]
@@ -334,6 +333,7 @@ function compute_bond_forces(nodes::AbstractVector{Int64},
                              gradient_weights,
                              omega,
                              bond_damage,
+                             deformation_gradient,
                              bond_forces) where {D}
     for iID in nodes
         integral = node_tensor(integral_nodal_stress, iID, Val(D))
@@ -346,7 +346,8 @@ function compute_bond_forces(nodes::AbstractVector{Int64},
                                     bond_damage[iID][jID] * omega[iID][jID] /
                                     (weighted_volume[iID] * bond_length[iID][jID] *
                                      bond_length[iID][jID]) .*
-                                    bond_stress[iID][jID] *
+                                    (deformation_gradient[iID][jID] *
+                                     bond_stress[iID][jID]) *
                                     bond_geometry[iID][jID]
         end
     end

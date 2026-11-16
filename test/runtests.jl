@@ -216,6 +216,7 @@ MPI.Init()
                     include("unit_tests/Models/Material/Material_Models/BondBased/ut_Unified_Bondbased_Elastic.jl")
                 end
                 @testset "ut_correspondence" begin
+                    include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence.jl")
                     include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_Plastic.jl")
                     include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_UMAT.jl")
                     include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_VUMAT.jl")

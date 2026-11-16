@@ -15,13 +15,15 @@ $$\mathbf{K}=\int_{\mathcal{H}}\underline{\omega}\langle \boldsymbol{\xi}\rangle
 !!! info "Positive definiteness in numerics"
     In numerical applications if bonds break the shape tensor is positive semi definite. $\det\mathbf{K}=0$ can occur and the inversion of the shape tensor won't work.
 
-Based on this definition strain measures can be created to calculate the Cauchy stresses
+Based on this definition the Green-Lagrange strain $\mathbf{E}=\frac{1}{2}(\mathbf{F}^T\mathbf{F}-\mathbf{I})$ (or, with `Linear Strain`, the small strain $\frac{1}{2}(\mathbf{F}+\mathbf{F}^T)-\mathbf{I}$) is computed and the stress is integrated from its increments
 
-$$\boldsymbol{\sigma} = f(\mathbf{F}, t, T, ...)$$
+$$\mathbf{S} = f(\mathbf{E}, t, T, ...)$$
 
-To get the force densities the First-Piola Kirchhoff stress tensor has to be calculated by
+Since $\mathbf{E}$ is invariant to rigid rotations, $\mathbf{S}$ is the second Piola-Kirchhoff stress, although the field is called `Cauchy Stress`. With `Rotation` the material law is evaluated in the material orientation (`Angles`), which is fixed; the polar rotation of $\mathbf{F}$ is not used. For small deformations all stress measures coincide. The First-Piola Kirchhoff stress tensor is
 
-$$\mathbf{P} = \text{det}(\mathbf{F})\boldsymbol{\sigma}\mathbf{F}^{-T}$$
+$$\mathbf{P} = \mathbf{F}\mathbf{S}$$
+
+so that $\mathbf{P}\mathbf{F}^T$ is symmetric (balance of angular momentum) and the forces of a prestressed body rotate with it.
 
 and finaly the force density vector can be determined as
 
