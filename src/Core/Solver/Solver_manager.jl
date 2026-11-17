@@ -105,6 +105,13 @@ function init(input::PeriLabInput, step_id::Int64)
                                                    input.sections.discretization.influence_function)
     end
     Data_Manager.create_bond_scalar_state("Bond Damage", Float64; default_value = 1)
+    # contact bonds of a bond filter are broken for the material, see Material.contact_forces!
+    filtered = Data_Manager.get_filtered_nlist()
+    if !isnothing(filtered)
+        for time in ("N", "NP1"), (iID, bonds) in enumerate(filtered)
+            Data_Manager.get_bond_damage(time)[iID][bonds] .= 0
+        end
+    end
     @debug "Read properties"
     read_properties(input, "Material" in models)
     @debug "Init models"

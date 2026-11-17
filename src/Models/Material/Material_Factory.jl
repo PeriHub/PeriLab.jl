@@ -317,10 +317,13 @@ include("Material_Models/Correspondence/Correspondence.jl")
 
 using ...Material_Basis:
                          distribute_forces!,
+                         contact_forces!,
+                         bond_based_constant,
+                         youngs_modulus_along,
                          hooke_matrix,
                          init_local_damping_due_to_damage,
                          local_damping_due_to_damage
-using LinearAlgebra: dot, eigmax, Symmetric
+using LinearAlgebra: dot, eigmax, Symmetric, norm
 using StaticArrays
 """
     ElasticModuli
@@ -617,6 +620,7 @@ function init_model(nodes::AbstractVector{Int64}, block::Int64)
     end
 
     bind_material!(material)
+    init_contact_stiffness(nodes, material)
     if material.correspondence
         return Correspondence.init_model(nodes, material, block)
     end
@@ -624,20 +628,33 @@ function init_model(nodes::AbstractVector{Int64}, block::Int64)
     for part in model_parts(material.model)
         model_module(part).init_model(nodes, part, material, block)
     end
-    #TODO in extra function
-    # nlist = Data_Manager.get_nlist()
+end
+
+"""
+    init_contact_stiffness(nodes::AbstractVector{Int64}, material)
+
+Stiffness of the contact bonds of a bond filter with `Allow Contact` (see
+`contact_forces!`): the bond-based elastic micromodulus of the block with the Young's
+modulus along the filter normal, times the `Contact Stiffness Factor` (the length of
+"Bond Norm"). Halved like the bond-based force, because both bond directions act.
+"""
+function init_contact_stiffness(nodes::AbstractVector{Int64}, material)
     nlist_filtered_ids = Data_Manager.get_filtered_nlist()
-    if !isnothing(nlist_filtered_ids)
-        bond_norm = Data_Manager.get_field("Bond Norm")
-        bond_geometry = Data_Manager.get_field("Bond Geometry")
-        for iID in nodes
-            if length(nlist_filtered_ids[iID]) != 0
-                for neighborID in nlist_filtered_ids[iID]
-                    bond_norm[iID][neighborID] = bond_norm[iID][neighborID] *
-                                                 sign(dot((bond_geometry[iID][neighborID]),
-                                                          bond_norm[iID][neighborID]))
-                end
-            end
+    isnothing(nlist_filtered_ids) && return
+    stiffness = Data_Manager.create_field!("Contact Stiffness",
+                                           [zeros(length(bonds))
+                                            for bonds in nlist_filtered_ids],
+                                           "Contact Stiffness")
+    bond_norm = Data_Manager.get_field("Bond Norm")
+    horizon = Data_Manager.get_field("Horizon")
+    dof = Data_Manager.get_dof()
+    for iID in nodes
+        constant = bond_based_constant(material.symmetry, horizon[iID])
+        for (k, jID) in enumerate(nlist_filtered_ids[iID])
+            factor = norm(bond_norm[iID][jID])
+            stiffness[iID][k] = 0.5 * constant * factor *
+                                youngs_modulus_along(material, bond_norm[iID][jID] / factor,
+                                                     dof, iID)
         end
     end
 end
@@ -753,22 +770,17 @@ function distribute_force_densities(nodes::AbstractVector{Int64})
         volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
         bond_damage::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
     end
-    if !isnothing(nlist_filtered_ids)
-        bond_norm = Data_Manager.get_field("Bond Norm")
-        displacements = Data_Manager.get_field("Displacements", "NP1")
-        @timeit "local dist" distribute_forces!(force_densities,
-                                                nodes,
-                                                nlist,
-                                                nlist_filtered_ids,
-                                                bond_force,
-                                                volume,
-                                                bond_damage,
-                                                displacements,
-                                                bond_norm)
-    else
-        @timeit "local dist" distribute_forces!(force_densities, nodes, nlist,
-                                                bond_force, volume, bond_damage)
-    end
+    @timeit "local dist" distribute_forces!(force_densities, nodes, nlist,
+                                            bond_force, volume, bond_damage)
+    isnothing(nlist_filtered_ids) && return
+    @timeit "contact bonds" contact_forces!(force_densities, nodes, nlist,
+                                            nlist_filtered_ids, volume,
+                                            Data_Manager.get_field("Bond Geometry"),
+                                            Data_Manager.get_field("Deformed Bond Geometry",
+                                                                   "NP1"),
+                                            Data_Manager.get_field("Bond Length"),
+                                            Data_Manager.get_field("Bond Norm"),
+                                            Data_Manager.get_field("Contact Stiffness"))
 end
 
 function compute_correspondence_bond_forces(nodes::AbstractVector{Int64}, material,

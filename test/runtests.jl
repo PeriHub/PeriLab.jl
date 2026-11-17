@@ -365,6 +365,9 @@ MPI.Init()
         @testset "test_penalty_contact" begin
             include("fullscale_tests/test_Penalty_Contact/test_Penalty_Contact.jl")
         end
+        @testset "test_bond_filter_contact" begin
+            include("fullscale_tests/test_bond_filter_contact/test_bond_filter_contact.jl")
+        end
     end
 end
 

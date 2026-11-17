@@ -6,6 +6,7 @@ using ....InputDeck: BondFilterParams, bond_filter
 using ....Data_Manager
 using ....ModuleLoader: find_registered_modules
 using DataFrames
+using LinearAlgebra: dot
 
 for file in find_registered_modules(joinpath(@__DIR__, "Bond_Filter"),
                                     "register_bond_filter")
@@ -16,7 +17,8 @@ export apply_bond_filters
 """
     apply_bond_filters(nlist::NestedNeighborhoodList, mesh::DataFrame, filters::Dict{String,BondFilterParams}, dof::Int64)
 
-Apply the bond filters to the neighborhood list.
+Apply the bond filters to the neighborhood list. Filters without `Allow Contact` remove
+the bonds; with it the bonds stay as contact bonds (see `Material.distribute_force_densities`).
 
 # Arguments
 - `nlist::NestedNeighborhoodList`: The neighborhood list.
@@ -25,64 +27,42 @@ Apply the bond filters to the neighborhood list.
 - `dof::Int64`: The degrees of freedom.
 # Returns
 - `nlist::NestedNeighborhoodList`: The filtered neighborhood list.
-- `nlist_filtered_ids::NestedNeighborhoodList`: The filtered neighborhood list.
+- `bond_norm`: `nothing` without contact filters; else a vector per bond: zero for a
+  normal bond, for a contact bond the filter normal oriented along the bond and scaled by
+  the `Contact Stiffness Factor`.
 """
-
 function apply_bond_filters(nlist::NestedNeighborhoodList,
                             mesh::DataFrame,
                             filters::Dict{String,BondFilterParams},
                             dof::Int64)
-    nlist_filtered_ids = nothing
     bond_norm = nothing
-    contact_enabled = false
-    if !isempty(filters)
-        @debug "Apply bond filters"
-        coor = names(mesh)[1:dof]
-        nnodes = length(mesh[!, coor[1]])
-        data = zeros(dof, nnodes)
-        for i in 1:dof
-            data[i, :] = values(mesh[!, coor[i]])
-        end
-
-        for (filter_name, filter) in filters
-            contact_enabled = filter.allow_contact
-            if contact_enabled
-                break
-            end
-        end
-        if contact_enabled
-            @info "Normal contact is applied within the bond filter."
-            nlist_filtered_ids = fill(Vector{Int64}([]), nnodes)
-            bond_norm = []
-            for iID in 1:nnodes
-                push!(bond_norm, [fill(1.0, dof) for n in 1:length(nlist[iID])])
-            end
-        end
-
-        for (name, filter) in filters
-            # the type was checked when the input deck was read
-            filter_flag, normal = bond_filter(filter.type).run(nnodes, data, filter, nlist,
-                                                               dof)
-            # Theoretically all bond filter can be in contact mode from memory side
-            # but only the chosen ones are stored here.
-            for iID in 1:nnodes
-                if filter.allow_contact &&
-                   any(x -> x == false, filter_flag[iID])
-                    indices = findall(x -> x in setdiff(nlist[iID],
-                                                   nlist[iID][filter_flag[iID]]),
-                                      nlist[iID])
-                    nlist_filtered_ids[iID] = indices
-                    for jID in indices
-                        bond_norm[iID][jID] .= normal
-                    end
-                else
-                    nlist[iID] = nlist[iID][filter_flag[iID]]
-                end
-            end
-        end
-        @debug "Finished applying bond filters"
+    isempty(filters) && return nlist, bond_norm
+    @debug "Apply bond filters"
+    data = permutedims(Matrix{Float64}(mesh[!, names(mesh)[1:dof]]))
+    nnodes = size(data, 2)
+    if any(filter -> filter.allow_contact, values(filters))
+        @info "Normal contact is applied within the bond filter."
+        bond_norm = [[zeros(dof) for _ in neighbors] for neighbors in nlist]
     end
-    return nlist, nlist_filtered_ids, bond_norm
+    for (name, filter) in filters
+        # the type was checked when the input deck was read
+        filter_flag, normal = bond_filter(filter.type).run(nnodes, data, filter, nlist,
+                                                           dof)
+        for iID in 1:nnodes
+            if filter.allow_contact
+                for jID in findall(!, filter_flag[iID])
+                    bond = data[:, nlist[iID][jID]] - data[:, iID]
+                    bond_norm[iID][jID] .= sign(dot(bond, normal)) *
+                                           filter.contact_stiffness_factor .* normal
+                end
+            else
+                nlist[iID] = nlist[iID][filter_flag[iID]]
+                isnothing(bond_norm) || (bond_norm[iID] = bond_norm[iID][filter_flag[iID]])
+            end
+        end
+    end
+    @debug "Finished applying bond filters"
+    return nlist, bond_norm
 end
 
 end

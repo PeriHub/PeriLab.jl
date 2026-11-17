@@ -227,9 +227,10 @@ damageIndex = sum_i (brokenBonds_i * volume_i) / volumeNeighborhood
 """
 function damage_index(nodes::AbstractVector{Int64},
                       nlist_filtered_ids::NestedNeighborhoodList)
+    # contact bonds of a bond filter stay broken; a damage model must not heal them
     bond_damageNP1 = Data_Manager.get_bond_damage("NP1")
     for iID in nodes
-        bond_damageNP1[iID][nlist_filtered_ids[iID]] .= 1
+        bond_damageNP1[iID][nlist_filtered_ids[iID]] .= 0
     end
     return damage_index(nodes)
 end

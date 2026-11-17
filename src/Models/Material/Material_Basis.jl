@@ -86,14 +86,15 @@ end
 function compute_bond_based_constants(nodes::AbstractVector{Int64}, symmetry, constant,
                                       horizon)
     for iID in nodes
-        if symmetry == "plane stress"
-            constant[iID] = 9 / (pi * horizon[iID]^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
-        elseif symmetry == "plane strain"
-            constant[iID] = 48 / (5 * pi * horizon[iID]^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
-        else
-            constant[iID] = 12 / (pi * horizon[iID]^4) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
-        end
+        constant[iID] = bond_based_constant(symmetry, horizon[iID])
     end
+end
+
+# https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
+function bond_based_constant(symmetry, horizon::Float64)
+    symmetry == "plane stress" && return 9 / (pi * horizon^3)
+    symmetry == "plane strain" && return 48 / (5 * pi * horizon^3)
+    return 12 / (pi * horizon^4)
 end
 
 const _HOOKE_BASE_FIELDS = Dict("Young's Modulus X" => :youngs_modulus_x,
@@ -347,64 +348,61 @@ function get_2D_Hooke_matrix(aniso_matrix::MMatrix{T}, symmetry::String,
 end
 
 """
-	distribute_forces!(nodes::AbstractVector{Int64}, nlist::BondScalarState{Int64}, nlist_filtered_ids::NestedNeighborhoodList, bond_force::Vector{Matrix{Float64}}, volume::NodeScalarField{Float64}, bond_damage::BondScalarState{Float64}, displacements::Matrix{Float64}, bond_norm::Vector{Matrix{Float64}}, force_densities::Matrix{Float64})
+    contact_forces!(force_densities, nodes, nlist, nlist_filtered_ids, volume, bond_geometry, deformed_bond, bond_length, bond_norm, contact_stiffness)
 
-Distribute the forces on the nodes
+Adds the forces of the contact bonds of a bond filter with `Allow Contact`. A contact
+bond is broken for the material; it only pushes its nodes apart along the filter normal
+`n` while they approach each other: f = c (Δu⋅n) / |ξ| n for Δu⋅n < 0 (bond-based style,
+no friction).
 
 # Arguments
-- `nodes::AbstractVector{Int64}`: The nodes.
-- `nlist::BondScalarState{Int64}`: The neighbor list.
-- `nlist_filtered_ids::NestedNeighborhoodList,`:  The filtered neighbor list.
-- `bond_force::Vector{Matrix{Float64}}`: The bond forces.
-- `volume::NodeScalarField{Float64}`: The volumes.
-- `bond_damage::BondScalarState{Float64}`: The bond damage.
-- `displacements::Matrix{Float64}`: The displacements.
-- `bond_norm::Vector{Matrix{Float64}}`: The pre defined bond normal.
-- `force_densities::Matrix{Float64}`: The force densities.
-# Returns
-- `force_densities::Matrix{Float64}`: The force densities.
+- `nlist_filtered_ids::NestedNeighborhoodList`: The contact bonds (bond indices) of each node.
+- `bond_norm`: The filter normal of a contact bond (oriented along the bond, see `apply_bond_filters`).
+- `contact_stiffness`: The stiffness c of each contact bond, aligned to `nlist_filtered_ids`.
 """
-function distribute_forces!(force_densities::Matrix{Float64},
-                            nodes::AbstractVector{Int64},
-                            nlist::BondScalarState{Int64},
-                            nlist_filtered_ids::NestedNeighborhoodList,
-                            bond_force::BondVectorState{Float64},
-                            volume::NodeScalarField{Float64},
-                            bond_damage::BondScalarState{Float64},
-                            displacements::Matrix{Float64},
-                            bond_norm::BondVectorState{Float64,D}) where {D}
-    @inbounds @fastmath for iID in nodes
-        # the filtered bonds are rewritten in "Bond Norm" itself (as before), so the
-        # distribution below reads the updated norms directly
-        norms = bond_norm[iID]
+function contact_forces!(force_densities::Matrix{Float64},
+                         nodes::AbstractVector{Int64},
+                         nlist::BondScalarState{Int64},
+                         nlist_filtered_ids::NestedNeighborhoodList,
+                         volume::NodeScalarField{Float64},
+                         bond_geometry::BondVectorState{Float64,D},
+                         deformed_bond::BondVectorState{Float64,D},
+                         bond_length::BondScalarState{Float64},
+                         bond_norm::BondVectorState{Float64,D},
+                         contact_stiffness::Vector{Vector{Float64}}) where {D}
+    @inbounds for iID in nodes
         neighbors = nlist[iID]
-        for neighborID in nlist_filtered_ids[iID]
-            relative_displacement = SVector{D,Float64}(ntuple(d -> displacements[neighbors[neighborID],
-                                                                                 d] -
-                                                                   displacements[iID, d],
-                                                              Val(D)))
-            if dot(relative_displacement, norms[neighborID]) > 0
-                norms[neighborID] = zero(norms[neighborID])
-            else
-                norms[neighborID] = abs.(norms[neighborID])
-            end
-        end
-
-        forces = bond_force[iID]
-        damage = bond_damage[iID]
-        for jID in eachindex(neighbors)
+        for (k, jID) in enumerate(nlist_filtered_ids[iID])
+            n = normalize(bond_norm[iID][jID])
+            # relative displacement of the neighbor along n
+            closing = dot(deformed_bond[iID][jID] - bond_geometry[iID][jID], n)
+            closing < 0 || continue
+            f = (contact_stiffness[iID][k] * closing / bond_length[iID][jID]) * n
+            neighborID = neighbors[jID]
             for m in 1:D
-                force_densities[iID, m] += damage[jID] *
-                                           forces[jID][m] *
-                                           volume[neighbors[jID]] *
-                                           norms[jID][m]
-                force_densities[neighbors[jID], m] -= damage[jID] *
-                                                      forces[jID][m] *
-                                                      volume[iID] *
-                                                      norms[jID][m]
+                force_densities[iID, m] += f[m] * volume[neighborID]
+                force_densities[neighborID, m] -= f[m] * volume[iID]
             end
         end
     end
+end
+
+"""
+    youngs_modulus_along(material, n, dof, ID)
+
+Young's modulus of a typed block material at node `ID` along the unit vector `n`:
+`E` for an isotropic material, else from the compliance, 1/E_n = s' C⁻¹ s with the
+Voigt vector s of the uniaxial stress n⊗n.
+"""
+function youngs_modulus_along(material, n::AbstractVector{Float64}, dof::Int64, ID::Int64)
+    symmetry = lowercase(material.hooke_symmetry)
+    any(s -> occursin(s, symmetry),
+        ("anisotropic", "orthotropic", "transverse isotropic")) ||
+        return _typed_constant(material, "Young's Modulus", ID)
+    C = hooke_matrix(material, dof, ID)
+    s = dof == 2 ? SVector(n[1]^2, n[2]^2, n[1] * n[2]) :
+        SVector(n[1]^2, n[2]^2, n[3]^2, n[2] * n[3], n[1] * n[3], n[1] * n[2])
+    return 1 / dot(s, C \ s)
 end
 
 """

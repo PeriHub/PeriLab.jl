@@ -115,6 +115,8 @@ const _RECTANGLE = Dict("Type" => ["Rectangular_Plane"])
                                               when = _RECTANGLE)
     "Keeps the filtered bonds as contact bonds so the two sides cannot penetrate each other"
     allow_contact::Bool = opt("Allow Contact"; default = false)
+    "Scales the contact stiffness of the filtered bonds (bond-based micromodulus with the Young's modulus along the filter normal)"
+    contact_stiffness_factor::Float64 = opt("Contact Stiffness Factor"; default = 1.0)
 end
 
 # the mesh importers (`mesh_import_name()` of the modules in IO/Mesh_Import); an unknown
@@ -246,5 +248,8 @@ function check!(f::BondFilterParams, path::String, ctx::ParseContext)
     missing = [key for key in filter.required if getfield(f, field[key]) === nothing]
     isempty(missing) ||
         add_error!(ctx, path, "\"$(f.type)\" bond filter requires: $(join(missing, ", "))")
+    # a contact bond is marked by its nonzero "Bond Norm", see apply_bond_filters
+    f.allow_contact && f.contact_stiffness_factor <= 0 &&
+        add_error!(ctx, join_path(path, "Contact Stiffness Factor"), "must be > 0")
     return nothing
 end
