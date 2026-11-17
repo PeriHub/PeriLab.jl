@@ -10,6 +10,7 @@ using Printf
 using PrettyTables
 using Logging
 using LinearAlgebra: lu
+using Serialization
 using ...Data_Manager
 using ...PeriLabExceptions: @abort
 
@@ -41,6 +42,9 @@ using .Model_reduction: init_reduce_model, ReducedState, setup_reduced_state,
     numerical_damping::Float64 = opt("Numerical Damping"; default = 0.0, min = 0)
     model_reduction::Union{Nothing,ModelReductionParams} = opt("Model Reduction";
                                                                default = nothing)
+    "File with the assembled stiffness matrix: loaded if it exists instead of assembling it, written otherwise. Not checked against the deck; delete it after changing mesh, blocks or materials"
+    stiffness_matrix_cache::Union{Nothing,String} = opt("Stiffness Matrix Cache";
+                                                        default = nothing)
 end
 __init__() = register_solver("Verlet Matrix Based", VerletMatrixParams)
 include("../../Compute/compute_field_values.jl")
@@ -104,7 +108,26 @@ function init_solver(options::VerletMatrixParams,
     for (block, nodes) in pairs(block_nodes)
         init_model(nodes, Data_Manager.get_block_models(block).material, block)
     end
-    @timeit "init_matrix" init_matrix()
+    # Assembly is the most expensive setup step and yields the same K as long as mesh,
+    # blocks and materials are unchanged, e.g. while iterating on the model reduction.
+    cache_file = options.stiffness_matrix_cache
+    if !isnothing(cache_file) && isfile(cache_file)
+        @info "Matrix Verlet: loading cached stiffness matrix from $cache_file"
+        cached = Serialization.deserialize(cache_file)
+        Data_Manager.set_stiffness_matrix(cached.K)
+        Data_Manager.set_nzval_map(cached.col_ptr, cached.row_ptr)
+        Data_Manager.set_cb_tensors(cached.cb_tensors)
+    else
+        @timeit "init_matrix" init_matrix()
+        if !isnothing(cache_file)
+            @info "Matrix Verlet: saving stiffness matrix to $cache_file"
+            col_ptr, row_ptr = Data_Manager.get_nzval_map()
+            Serialization.serialize(cache_file,
+                                    (K = Data_Manager.get_stiffness_matrix(),
+                                     col_ptr = col_ptr, row_ptr = row_ptr,
+                                     cb_tensors = Data_Manager.get_cb_tensors()))
+        end
+    end
     K = Data_Manager.get_stiffness_matrix()
 
     density_mass = zeros(length(density) * Data_Manager.get_dof())
@@ -116,8 +139,9 @@ function init_solver(options::VerletMatrixParams,
         @info "Model reduction enabled."
         @timeit "Model reduction" init_reduce_model(model_reduction, block_nodes,
                                                     density_mass)
-        mass = Data_Manager.get_mass_matrix()
-        Data_Manager.set_mass_matrix(lu(sparse(mass)))
+        # the reduced mass matrix is symmetric positive definite with a dense boundary
+        # block; Cholesky needs no copy and far less memory there than a sparse LU
+        Data_Manager.set_mass_matrix(cholesky(Symmetric(Data_Manager.get_mass_matrix())))
         return TimeWindow(initial_time, final_time, dt, nsteps), nothing
     end
     # if not reduced the mass has to be created here.
@@ -145,7 +169,7 @@ struct MatrixVerletWorkspace{TM,TK,TS}
     numerical_damping::Float64
     M_fact::TM
     K::TK
-    master_nodes::Vector{Int64}
+    retained_nodes::Vector{Int64}
     state::TS
     modal_active::Bool
 end
@@ -154,15 +178,15 @@ end
     prepare_solver(run::SolverRun{VerletMatrixParams}, ctx::SolverContext)
 
 Fetches the fields and matrices and sets up the state vectors; with a model
-reduction only the master nodes and the modal coordinates are integrated.
+reduction only the retained nodes and the modal coordinates are integrated.
 """
 function prepare_solver(run::SolverRun{VerletMatrixParams}, ctx::SolverContext)
     material = "Material" in run.models
     K = Data_Manager.get_stiffness_matrix()::AbstractMatrix{Float64}
-    # Master nodes and state vectors. Without a reduction every node is a master and the
+    # Retained nodes and state vectors. Without a reduction every node is retained and the
     # state has no modal part, so the step needs no case distinction: the reduced
-    # run differs only in which nodes are masters and in the extra modal entries.
-    master_nodes,
+    # run differs only in which nodes are retained and in the extra modal entries.
+    retained_nodes,
     state = setup_reduced_state(something(run.params.options.model_reduction, false), K)
     return MatrixVerletWorkspace(Data_Manager.get_field("Coordinates"),
                                  Data_Manager.get_field("Active"),
@@ -175,7 +199,7 @@ function prepare_solver(run::SolverRun{VerletMatrixParams}, ctx::SolverContext)
                                  run.params.options.numerical_damping,
                                  Data_Manager.get_mass_matrix(),
                                  K,
-                                 master_nodes,
+                                 retained_nodes,
                                  state,
                                  n_modal(state) > 0)
 end
@@ -201,7 +225,7 @@ function time_step!(ws::MatrixVerletWorkspace, run::SolverRun{VerletMatrixParams
     numerical_damping = ws.numerical_damping
     M_fact = ws.M_fact
     K = ws.K
-    master_nodes = ws.master_nodes
+    retained_nodes = ws.retained_nodes
     state = ws.state
     modal_active = ws.modal_active
     @inbounds @fastmath begin
@@ -222,9 +246,9 @@ function time_step!(ws::MatrixVerletWorkspace, run::SolverRun{VerletMatrixParams
             # compute_models covers exactly the material point nodes that have
             # been swapped out of K -- empty without a reduction, so
             # compute_models contributes nothing anywhere and K alone drives
-            # the whole domain. master_nodes already covers every node in that
+            # the whole domain. retained_nodes already covers every node in that
             # case too, so no case distinction is needed here either.
-            active_nodes::Vector{Int64} = master_nodes
+            active_nodes::Vector{Int64} = retained_nodes
             active_list .= false
             active_list[Data_Manager.get_reduced_model_pd()] .= true
         end
@@ -267,9 +291,9 @@ function time_step!(ws::MatrixVerletWorkspace, run::SolverRun{VerletMatrixParams
                                                 synchronise_field)
 
         @timeit "Force computations" begin
-            # Displacements of the master nodes into the state; the modal part was
+            # Displacements of the retained nodes into the state; the modal part was
             # already advanced above and stays as it is.
-            pull_from_nodes!(state.q, uNP1, master_nodes, state)
+            pull_from_nodes!(state.q, uNP1, retained_nodes, state)
 
             # f = -K q over the whole state, modal coordinates included
             @timeit "Force matrix computations" mul!(state.f, K, state.q)
@@ -284,9 +308,9 @@ function time_step!(ws::MatrixVerletWorkspace, run::SolverRun{VerletMatrixParams
                                                 external_forces[active_nodes,
                                                                 :] /
                                                 volume[active_nodes]
-            add_from_nodes!(state.f, force_densities_NP1, master_nodes, state)
+            add_from_nodes!(state.f, force_densities_NP1, retained_nodes, state)
 
-            push_to_nodes!(force_densities_NP1, state.f, master_nodes, state)
+            push_to_nodes!(force_densities_NP1, state.f, retained_nodes, state)
 
             @. @views forces[active_nodes,
                              :] = force_densities_NP1[active_nodes, :] *
@@ -296,7 +320,7 @@ function time_step!(ws::MatrixVerletWorkspace, run::SolverRun{VerletMatrixParams
         @timeit "Accelaration computation" begin
             #state.q_ddot .= M_fact \ state.f
             ldiv!(state.q_ddot, M_fact, state.f)
-            push_to_nodes!(aNP1, state.q_ddot, master_nodes, state)
+            push_to_nodes!(aNP1, state.q_ddot, retained_nodes, state)
         end
     end
     return nothing

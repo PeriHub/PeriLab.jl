@@ -18,7 +18,7 @@ export fields_for_local_synchronization
 using ......ParameterSpec: @params, register_damage
 @params "Critical energy release rate with different critical values along the material axes (Anisotropic Damage)" struct CriticalEnergyAnisotropicParams
     "Breaks bonds only under tension, not under compression"
-    only_tension::Bool = opt("Only Tension"; default = false)
+    only_tension::Bool = opt("Only Tension"; default = true)
     "Out-of-plane thickness of a 2D model, used to convert the energy release rate to a bond energy"
     thickness::Float64 = opt("Thickness"; default = 1.0, min = 0, quantity = :length)
 end

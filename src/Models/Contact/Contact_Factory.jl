@@ -57,6 +57,7 @@ function init_contact_model(contact::ContactInput)
     points = Data_Manager.get_all_positions()
 
     block_nodes = get_block_nodes(block_list, length(block_list)) # all ids
+    contact_index = Dict(id => index for (index, id) in enumerate(global_contact_ids))
 
     for model in values(contact.models)
         for (cg, group) in pairs(model.base.contact_groups)
@@ -65,8 +66,15 @@ function init_contact_model(contact::ContactInput)
             master_id = group.master_block_id
             @info "Contact pair Master block $master_id - Slave block $slave_id"
             if !only_surface
-                Data_Manager.set_free_contact_nodes(master_id, block_nodes[master_id])
-                Data_Manager.set_free_contact_nodes(slave_id, block_nodes[slave_id])
+                # the positions are reduced to global_contact_ids below, so the free
+                # contact nodes are given as indices into that list, as in
+                # compute_and_set_free_contact_nodes
+                Data_Manager.set_free_contact_nodes(master_id,
+                                                    [contact_index[id]
+                                                     for id in block_nodes[master_id]])
+                Data_Manager.set_free_contact_nodes(slave_id,
+                                                    [contact_index[id]
+                                                     for id in block_nodes[slave_id]])
                 continue
             end
 

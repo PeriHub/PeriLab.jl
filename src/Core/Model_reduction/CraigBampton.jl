@@ -88,7 +88,20 @@ end
 nonzero_columns(A::AbstractMatrix) = findall(!iszero, vec(sum(abs, A; dims = 1)))
 
 """
-    factorize_condensed(Kll)
+    _warn_not_pd(err = nothing)
+
+Warns that the condensed stiffness failed to factorize as positive definite, shared
+between the dense in-place path and the sparse fallback below.
+"""
+function _warn_not_pd(err = nothing)
+    @warn "Cholesky of the condensed stiffness failed, falling back to LU. Kll is not " *
+          "positive definite: check whether every condensed node is tied to the " *
+          "retained region -- an isolated node or a detached cluster has a rigid body " *
+          "mode." exception=err
+end
+
+"""
+    factorize_condensed!(Kll)
 
 Factorization of the condensed stiffness, Cholesky where possible.
 
@@ -103,19 +116,40 @@ fixed interface points at a condensed region falling apart into pieces not tied 
 retained degree of freedom — or, in peridynamics, simply at a stiffness that is not
 symmetric.
 
+Dense `Kll` (a `StridedMatrix` of a BLAS float type -- what a single, small condensed
+region typically comes down to) factorizes in place: LAPACK's `potrf` touches only the
+upper triangle it is asked for, so on failure the lower triangle plus the saved diagonal
+is enough to rebuild the original matrix for the LU fallback, without a second copy of
+`Kll`. Anything else -- in particular a `SparseMatrixCSC`, which `cholesky!`/`lu!` do not
+support in place -- goes through the ordinary, allocating `cholesky`/`lu`.
+
 # Arguments
 - `Kll::AbstractMatrix`: Stiffness of the condensed part
 # Returns
 - A factorization object supporting `ldiv!`
 """
-function factorize_condensed(Kll::AbstractMatrix)
+function factorize_condensed!(Kll::StridedMatrix{<:LinearAlgebra.BlasFloat})
+    n = LinearAlgebra.checksquare(Kll)
+    d = diag(Kll)
+    F = cholesky!(Symmetric(Kll, :U); check = false)
+    issuccess(F) && return F
+
+    _warn_not_pd()
+    # potrf changed only the upper triangle and the diagonal; the lower one is intact
+    @inbounds for j in 1:n
+        Kll[j, j] = d[j]
+        for i in 1:(j - 1)
+            Kll[i, j] = Kll[j, i]
+        end
+    end
+    return lu!(Kll)
+end
+
+function factorize_condensed!(Kll::AbstractMatrix)
     try
         return cholesky(Symmetric(Kll))
     catch err
-        @warn "Cholesky of the condensed stiffness failed, falling back to LU. Kll is " *
-              "not positive definite: check whether every condensed node is tied to " *
-              "the retained region, an isolated node or a detached cluster has a " *
-              "rigid body mode." exception=err
+        _warn_not_pd(err)
         return lu(Kll)
     end
 end
@@ -228,7 +262,7 @@ function fixed_interface_modes(Kll::AbstractMatrix, Mll::Diagonal, n_modes::Int6
         return X, factorization.values[1:n_modes]
     end
 
-    operator = ShiftInvertOperator(factorize_condensed(K_active), scale,
+    operator = ShiftInvertOperator(factorize_condensed!(K_active), scale,
                                    Vector{Float64}(undef, length(active)))
 
     last_error = nothing
@@ -485,8 +519,34 @@ function report_modal_coupling(K_reduced::SparseMatrixCSC, M_reduced::SparseMatr
 end
 
 """
+    limit_frequency(X, w, max_frequency)
+
+Keeps the modes whose frequency `sqrt(w) / 2 pi` does not exceed `max_frequency`.
+
+The eigenvalues come sorted in ascending order, so the kept modes are the first ones. If
+every computed mode lies below the limit, further modes below it may exist that were
+never computed; `Number of Modes` bounds how many are, and a warning says so.
+
+# Arguments
+- `X::Matrix{Float64}`: Modes, one per column
+- `w::Vector{Float64}`: Eigenvalues, ascending
+- `max_frequency::Float64`: Highest frequency to keep in Hz
+# Returns
+- `X::Matrix{Float64}`, `w::Vector{Float64}`: The kept modes and eigenvalues
+"""
+function limit_frequency(X::Matrix{Float64}, w::Vector{Float64}, max_frequency::Float64)
+    n_kept = count(<=(max_frequency), sqrt.(w) ./ (2 * pi))
+    if n_kept == length(w) && !isempty(w)
+        @warn "Craig-Bampton: all $(length(w)) computed modes lie below the maximum " *
+              "frequency of $(max_frequency) Hz; raise 'Number of Modes' to find more."
+    end
+    @info "Craig-Bampton: $n_kept of $(length(w)) modes up to $(max_frequency) Hz kept"
+    return X[:, 1:n_kept], w[1:n_kept]
+end
+
+"""
     reduce_matrices(K, M_diag, r, l, n_modes = 1; block_size = 512,
-                    check_symmetry_sample = 2000)
+                    check_symmetry_sample = 2000, max_frequency = nothing)
 
 Craig-Bampton reduction of a stiffness and a lumped mass matrix.
 
@@ -529,6 +589,9 @@ retained degrees of freedom.
 
 `n_modes = 0` drops the modal part and leaves Guyan condensation.
 
+With `max_frequency` set, `n_modes` becomes an upper bound: the `n_modes` lowest modes
+are computed and only those with a frequency up to `max_frequency` are kept.
+
 # Arguments
 - `K::AbstractMatrix`: Stiffness matrix
 - `M_diag::AbstractVector`: Lumped mass matrix as a vector, one entry per degree of freedom.
@@ -536,9 +599,11 @@ retained degrees of freedom.
   density, not a physical mass; it is used as-is, with no volume weighting.
 - `r::AbstractVector{<:Integer}`: Indices of the retained degrees of freedom
 - `l::AbstractVector{<:Integer}`: Indices of the condensed degrees of freedom
-- `n_modes::Integer`: Number of fixed-interface modes to keep
+- `n_modes::Integer`: Number of fixed-interface modes to keep; the upper bound if
+  `max_frequency` is set
 # Keywords
 - `block_size::Int64`: Right hand sides solved at once for the recovery modes
+- `max_frequency::Union{Nothing,Float64}`: Highest fixed-interface frequency in Hz to keep
 - `check_symmetry_sample::Int64`: Entries drawn for the symmetry check, 0 disables it
 # Returns
 - `K_reduced::SparseMatrixCSC`: Reduced stiffness, size `length(r) + n_modes`
@@ -550,7 +615,8 @@ function reduce_matrices(K::AbstractMatrix,
                          l::AbstractVector{<:Integer},
                          n_modes::Integer = 1;
                          block_size::Int64 = 512,
-                         check_symmetry_sample::Int64 = 2000)
+                         check_symmetry_sample::Int64 = 2000,
+                         max_frequency::Union{Nothing,Float64} = nothing)
     r = collect(Int64, r)
     l = collect(Int64, l)
     n_modes = Int64(n_modes)
@@ -592,19 +658,25 @@ function reduce_matrices(K::AbstractMatrix,
           "reduced size $(nr + n_modes), dense blocks of " *
           "$(round(nc^2 * 8 / 2^20; digits = 1)) MiB"
 
-    @timeit "CB factorize Kll" factorization=factorize_condensed(Kll)
+    @timeit "CB factorize Kll" factorization=factorize_condensed!(Kll)
 
     @timeit "CB recovery modes" B=recovery_modes(factorization, Klr, coupling;
                                                  block_size = block_size)
 
     # The modes are normalised against Mll, so X' Mll X = I.
     @timeit "CB fixed interface modes" X, w=fixed_interface_modes(Kll, Mll, n_modes)
+    if !isnothing(max_frequency)
+        X, w = limit_frequency(X, w, max_frequency)
+        n_modes = length(w)
+    end
 
     if n_modes > 0
-        f_lo = sqrt(w[1]) / (2 * pi)
-        f_hi = sqrt(w[end]) / (2 * pi)
-        @info "Craig-Bampton fixed-interface frequencies: $(round(f_lo; sigdigits = 4)) Hz " *
-              "(mode 1) to $(round(f_hi; sigdigits = 4)) Hz (mode $n_modes)"
+        frequencies = sqrt.(w) ./ (2 * pi)
+        @info "Craig-Bampton fixed-interface frequencies: " *
+              "$(round(frequencies[1]; sigdigits = 4)) Hz (mode 1) to " *
+              "$(round(frequencies[end]; sigdigits = 4)) Hz (mode $n_modes)"
+        @info "Craig-Bampton fixed-interface frequency list [Hz]: " *
+              join(round.(frequencies; sigdigits = 6), ", ")
     end
 
     n_total = nr + n_modes
