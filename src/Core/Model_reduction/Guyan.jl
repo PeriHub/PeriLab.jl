@@ -21,30 +21,31 @@ function model_reduction_name()
 end
 
 """
-    reduce_matrices(K, M_diag, m, s, n_modes = 1)
+    reduce_matrices(K, M_diag, r, l, n_modes = 1)
 
 Guyan reduction (static condensation) [GuyanRJ1965](@cite) of a stiffness and a lumped mass matrix.
 
-The condensed degrees of freedom are expressed through the master ones by the static
-relation `x_s = T x_m` with `T = -K_ss \\ K_sm`, which gives
+The condensed degrees of freedom are expressed through the retained ones by the static
+relation `x_l = T x_r` with `T = -K_ll \\ K_lr`, which gives
 
-    K_r = K_mm + K_ms T
-    M_r = M_mm + T' M_ss T
+    K_R = K_rr + K_rl T
+    M_R = M_rr + T' M_ll T
 
 The inertia of the condensed degrees of freedom is only carried over through `T`, so the
 reduction is exact for the static case and approximate for dynamics — the error grows
 with frequency. Use Craig-Bampton where the dynamic behaviour matters.
 
-The mass term omits the coupling blocks `M_ms T` and `T' M_sm`, which is correct here
+The mass term omits the coupling blocks `M_rl T` and `T' M_lr`, which is correct here
 because the mass matrix is lumped and therefore has no off-diagonal entries. With a
 consistent mass matrix those blocks would have to be included.
 
-A master degree of freedom with no bond into the condensed region has an all-zero column
-in `K_sm`, so its column of `T` is `K_ss^-1 * 0 = 0`, and — independently — an all-zero
-row in `K_ms` makes its row of `K_ms T` zero regardless of `T`. `coupling` is the union
-of both, so `K_ms T` and `T' M_ss T` are computed only on that `nc x nc` block instead of
-densely over all `nm` master degrees of freedom; every other entry of `K_r`/`M_r` is
-exactly `K_mm`/`Diagonal(M_diag[m])`. This holds without assuming `K` symmetric.
+A retained degree of freedom with no bond into the condensed region has an all-zero
+column in `K_lr`, so its column of `T` is `K_ll^-1 * 0 = 0`, and — independently — an
+all-zero row in `K_rl` makes its row of `K_rl T` zero regardless of `T`. `coupling` is the
+union of both, so `K_rl T` and `T' M_ll T` are computed only on that `nc x nc` block
+instead of densely over all `nr` retained degrees of freedom; every other entry of
+`K_R`/`M_R` is exactly `K_rr`/`Diagonal(M_diag[r])`. This holds without assuming `K`
+symmetric.
 
 `n_modes` is not used; it is part of the signature so that all reduction schemes share
 one interface.
@@ -52,64 +53,64 @@ one interface.
 # Arguments
 - `K::AbstractMatrix{Float64}`: Stiffness matrix
 - `M_diag::Vector{Float64}`: Lumped mass matrix as a vector, one entry per degree of freedom
-- `m::Vector{Int64}`: Indices of the master degrees of freedom
-- `s::Vector{Int64}`: Indices of the condensed degrees of freedom
+- `r::Vector{Int64}`: Indices of the retained degrees of freedom
+- `l::Vector{Int64}`: Indices of the condensed degrees of freedom
 - `n_modes::Int64`: Unused, kept for interface compatibility
 # Returns
-- `K_reduced::SparseMatrixCSC`: Reduced stiffness matrix, size `length(m)`
+- `K_reduced::SparseMatrixCSC`: Reduced stiffness matrix, size `length(r)`
 - `M_reduced::SparseMatrixCSC`: Reduced mass matrix, same size
 """
 function reduce_matrices(K::AbstractMatrix{Float64}, M_diag::Vector{Float64},
-                         m::Vector{Int64}, s::Vector{Int64}, n_modes::Int64 = 1)
-    nm = length(m)
-    ns = length(s)
+                         r::Vector{Int64}, l::Vector{Int64}, n_modes::Int64 = 1)
+    nr = length(r)
+    nl = length(l)
 
-    if !isempty(intersect(m, s))
-        throw(ArgumentError("Master and condensed index sets overlap."))
+    if !isempty(intersect(r, l))
+        throw(ArgumentError("Retained and condensed index sets overlap."))
     end
 
-    K_mm = K[m, m]
-    K_ms = K[m, s]
-    K_ss = K[s, s]
-    K_sm = K[s, m]
+    K_rr = K[r, r]
+    K_rl = K[r, l]
+    K_ll = K[l, l]
+    K_lr = K[l, r]
 
-    coupling = union(findall(!iszero, vec(sum(abs, K_ms; dims = 2))),
-                     findall(!iszero, vec(sum(abs, K_sm; dims = 1))))
+    coupling = union(findall(!iszero, vec(sum(abs, K_rl; dims = 2))),
+                     findall(!iszero, vec(sum(abs, K_lr; dims = 1))))
     nc = length(coupling)
 
-    K_ss_fact = lu(K_ss)
-    T = Matrix(K_sm[:, coupling])
-    ldiv!(K_ss_fact, T)
+    K_ll_fact = lu(K_ll)
+    T = Matrix(K_lr[:, coupling])
+    ldiv!(K_ll_fact, T)
     T .*= -1.0
 
     Kbb_fill = Matrix{Float64}(undef, nc, nc)
-    mul!(Kbb_fill, K_ms[coupling, :], T)
+    mul!(Kbb_fill, K_rl[coupling, :], T)
 
-    rows, columns, values = findnz(K_mm)
+    rows, columns, values = findnz(K_rr)
     @inbounds for (j, cj) in enumerate(coupling), (i, ci) in enumerate(coupling)
         push!(rows, ci)
         push!(columns, cj)
         push!(values, Kbb_fill[i, j])
     end
-    K_reduced = sparse(rows, columns, values, nm, nm)
+    K_reduced = sparse(rows, columns, values, nr, nr)
 
-    # M_ss is diagonal, so scaling T by sqrt(M_ss) turns T' M_ss T into a plain product.
-    root_mass = sqrt.(M_diag[s])
-    @inbounds for j in 1:nc, i in 1:ns
+    # M_ll is diagonal, so scaling T by sqrt(M_ll) turns T' M_ll T into a plain product.
+    root_mass = sqrt.(M_diag[l])
+    @inbounds for j in 1:nc, i in 1:nl
         T[i, j] *= root_mass[i]
     end
     Mbb_fill = Matrix{Float64}(undef, nc, nc)
     mul!(Mbb_fill, T', T)
 
-    m_rows = collect(1:nm)
-    m_columns = collect(1:nm)
-    m_values = M_diag[m]
+    mrows = collect(1:nr)
+    mcolumns = collect(1:nr)
+    mvalues = M_diag[r]
     @inbounds for (j, cj) in enumerate(coupling), (i, ci) in enumerate(coupling)
-        push!(m_rows, ci)
-        push!(m_columns, cj)
-        push!(m_values, Mbb_fill[i, j])
+        push!(mrows, ci)
+        push!(mcolumns, cj)
+        push!(mvalues, Mbb_fill[i, j])
     end
-    M_reduced = sparse(m_rows, m_columns, m_values, nm, nm)
+    M_reduced = sparse(mrows, mcolumns, mvalues, nr, nr)
 
     return K_reduced, M_reduced
 end

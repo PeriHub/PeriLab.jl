@@ -12,11 +12,11 @@ Linear static solver assembles **K once** and solves `Ku = F_ext` incrementally 
 
 **Strategy 3: Guyan-Condensed Verlet**
 
-Guyan condensation applied from the start. Domain partitioned into slave nodes (condensed), matrix master nodes Ω_c, and PD nodes Ω_p. Condensed dynamic system integrated with Velocity-Verlet throughout.
+Guyan condensation applied from the start. Domain partitioned into condensed nodes, matrix retained nodes Ω_c, and PD nodes Ω_p. Condensed dynamic system integrated with Velocity-Verlet throughout.
 
 **Strategy 4: Static + Guyan-Condensed Verlet**
 
-Combines Strategy 2 (static load introduction) with Strategy 3 (condensed dynamic phase). After the static phase, slave DOFs are eliminated and the condensed system is integrated with Velocity-Verlet. Efficient load introduction + reduced active DOFs during crack propagation.
+Combines Strategy 2 (static load introduction) with Strategy 3 (condensed dynamic phase). After the static phase, condensed DOFs are eliminated and the condensed system is integrated with Velocity-Verlet. Efficient load introduction + reduced active DOFs during crack propagation.
 
 ### Solutions
 
