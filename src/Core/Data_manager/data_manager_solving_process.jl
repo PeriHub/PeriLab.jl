@@ -7,6 +7,7 @@ export reset_NP1
 export set_NP1_to_N
 export switch_bonds!
 export track_bond_damage_N
+export set_np1_start
 function switch_bonds!(field_N::BondField{E}, field_NP1::BondField{E}) where {E}
     copyto!(flatview(field_N), flatview(field_NP1))
 end
@@ -24,6 +25,34 @@ function track_bond_damage_N()
         switch_bonds!(get_bond_damage("N"), get_bond_damage("NP1"))
     return nothing
 end
+
+"""
+    set_np1_start(name::String, mode::Symbol)
+
+How the NP1 state of `name` starts a step (after `switch_NP1_to_N` and `reset_NP1`):
+`:fill` with the fill value (default), `:copy` of N (a monotonic field whose model updates
+only some nodes, e.g. the node damage), `:keep` as it is (a field every step overwrites on
+every node it reads, e.g. the deformed bond geometry; skips the refill).
+"""
+function set_np1_start(name::String, mode::Symbol)
+    mode in (:fill, :copy, :keep) || @abort "Unknown NP1 start mode $mode for $name."
+    data["NP1 Start"][name] = mode
+    return nothing
+end
+
+# starts the NP1 state of `key` as `set_np1_start` defines
+function _start_np1!(key::String, entry::NP1_to_N, active::Vector{Bool})
+    mode = get(data["NP1 Start"]::Dict{String,Symbol}, key, :fill)
+    mode === :keep && return nothing
+    if mode === :copy
+        _copy_field!(get_field(key, "NP1"), get_field(key, "N"))
+        return nothing
+    end
+    _fill_field_barrier(get_field(key, "NP1"), active, entry)
+end
+
+_copy_field!(field_NP1::AbstractArray, field_N::AbstractArray) = copyto!(field_NP1, field_N)
+_copy_field!(field_NP1::BondField, field_N::BondField) = switch_bonds!(field_NP1, field_N)
 
 """
     set_NP1_to_N(name::String, type::Type)
@@ -71,14 +100,11 @@ function switch_NP1_to_N()
         switch_bonds!(field_N, field_NP1)
     end
 
-    # TODO performance: every NP1 field is refilled after the swap, also the ones the next
-    # step overwrites completely (e.g. deformed bond geometry). Only accumulated fields and
-    # fields read before written need it; this needs a per field decision. Note that the
-    # node damage NP1 restarts from the fill value, so the damage index runs on all nodes.
+    # every NP1 field is refilled after the swap unless `set_np1_start` says otherwise
     for (key, entry) in np1_to_n
         key == "Bond Damage" && continue
         swap_n_np1!(entry)
-        _fill_field_barrier(get_field(key, "NP1"), active, entry)
+        _start_np1!(key, entry, active)
     end
 end
 
@@ -94,9 +120,9 @@ function reset_NP1()
     if haskey(data["NP1_to_N"], "Bond Damage") && data["Track Bond Damage N"]::Bool
         switch_bonds!(get_field("Bond Damage", "NP1"), get_field("Bond Damage", "N"))
     end
-    for key::String in keys(data["NP1_to_N"])
+    for (key, entry) in data["NP1_to_N"]
         key == "Bond Damage" && continue
-        _fill_field_barrier(get_field(key, "NP1"), active, data["NP1_to_N"][key])
+        _start_np1!(key, entry, active)
     end
     # restored bonds are not flagged by the damage models; the next step must recompute
     # every node (e.g. the shape tensor, see ONLY_FLAGGED_BONDS_CHANGED)

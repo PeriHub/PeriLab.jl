@@ -174,6 +174,8 @@ Creates the damage field and the inverse neighbor list.
 function init_fields()
     dof = Data_Manager.get_dof()
     Data_Manager.create_node_scalar_field("Damage", Float64)
+    # the damage index only grows and is recomputed for the flagged nodes only
+    Data_Manager.set_np1_start("Damage", :copy)
     # energy released by bond failure (critical energy models); created here, because the
     # damage models of later solver steps are initialized after the output
     Data_Manager.create_constant_node_scalar_field("Dissipated Energy", Float64)
@@ -203,11 +205,19 @@ function compute_model(nodes::AbstractVector{Int64}, damage::BlockDamage, block:
     Data_Manager.bind_dependent_tables!(damage.tables)
     model_function(damage.model, Val(:compute_model))(nodes, damage.model, damage, block,
                                                       time, dt)
+    # the first call of a block covers all nodes (bonds broken at the start, e.g. by a bond
+    # filter), later ones only the nodes whose bonds the damage model changed
+    all_nodes = !(block in INDEXED_BLOCKS)
+    push!(INDEXED_BLOCKS, block)
     if isnothing(Data_Manager.get_filtered_nlist())
-        @timeit "compute index" return damage_index(nodes)
+        @timeit "compute index" return damage_index(nodes, all_nodes)
     end
-    @timeit "compute index" return damage_index(nodes, Data_Manager.get_filtered_nlist())
+    @timeit "compute index" return damage_index(nodes, all_nodes,
+                                                Data_Manager.get_filtered_nlist())
 end
+
+# blocks whose damage index was computed for all nodes once; reset by `init_model`
+const INDEXED_BLOCKS = Set{Int64}()
 
 """
     fields_for_local_synchronization(model, block)
@@ -232,30 +242,43 @@ damageIndex = sum_i (brokenBonds_i * volume_i) / volumeNeighborhood
 # Arguments
 - `nodes::AbstractVector{Int64}`: corresponding nodes to this model
 """
-function damage_index(nodes::AbstractVector{Int64},
+function damage_index(nodes::AbstractVector{Int64}, all_nodes::Bool,
                       nlist_filtered_ids::NestedNeighborhoodList)
     # contact bonds of a bond filter stay broken; a damage model must not heal them
-    bond_damageNP1 = Data_Manager.get_bond_damage("NP1")
-    for iID in nodes
-        bond_damageNP1[iID][nlist_filtered_ids[iID]] .= 0
-    end
-    return damage_index(nodes)
+    bond_damageNP1 = Data_Manager.get_bond_damage("NP1")::BondScalarState{Float64}
+    update = all_nodes ? Bool[] : Data_Manager.get_field("Update")::NodeScalarField{Bool}
+    _keep_filtered_broken!(bond_damageNP1, nodes, all_nodes, update, nlist_filtered_ids)
+    return damage_index(nodes, all_nodes)
 end
 
-function damage_index(nodes::AbstractVector{Int64})
+function _keep_filtered_broken!(bond_damage::BondScalarState{Float64},
+                                nodes::AbstractVector{Int64}, all_nodes::Bool,
+                                update::NodeScalarField{Bool}, nlist_filtered_ids)
+    for iID in nodes
+        (all_nodes || update[iID]) || continue
+        bond_damage[iID][nlist_filtered_ids[iID]] .= 0
+    end
+end
+
+function damage_index(nodes::AbstractVector{Int64}, all_nodes::Bool = true)
     nlist = Data_Manager.get_nlist()::BondScalarState{Int64}
     volume = Data_Manager.get_field("Volume")::NodeScalarField{Float64}
     bond_damageNP1 = Data_Manager.get_bond_damage("NP1")::BondScalarState{Float64}
     damage = Data_Manager.get_damage("NP1")::NodeScalarField{Float64}
-    compute_index(damage, nodes, volume, nlist, bond_damageNP1)
+    update = all_nodes ? Bool[] : Data_Manager.get_field("Update")::NodeScalarField{Bool}
+    compute_index(damage, nodes, volume, nlist, bond_damageNP1, update, all_nodes)
 end
 
 function compute_index(damage::NodeScalarField{Float64},
                        nodes::AbstractVector{Int64},
                        volume::NodeScalarField{Float64},
                        nlist::BondScalarState{Int64},
-                       bond_damage::BondScalarState{Float64})::Nothing
+                       bond_damage::BondScalarState{Float64},
+                       update::AbstractVector{Bool} = Bool[],
+                       all_nodes::Bool = true)::Nothing
     @batch minbatch=MINBATCH for iID in nodes
+        # unflagged nodes keep their bonds, their damage NP1 is the copy of N
+        (all_nodes || update[iID]) || continue
         undamaged_volume = 0.0  # More explicit than zero(Float64)
         totalDamage = 0.0
 
@@ -291,6 +314,7 @@ its interface and anisotropic critical values.
 - `block::Int64`: Block identifier.
 """
 function init_model(nodes::AbstractVector{Int64}, block::Int64)
+    delete!(INDEXED_BLOCKS, block)
     damage = Data_Manager.get_block_models(block).damage
     model_module(damage.model).init_model(nodes, damage.model, damage, block)
     model_module(damage.model).fields_for_local_synchronization("Damage Model")

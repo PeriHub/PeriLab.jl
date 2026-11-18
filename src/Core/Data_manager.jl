@@ -193,6 +193,7 @@ function initialize_data()
     data["active_models"] = OrderedDict{String,Module}()
     data["all_active_models"] = OrderedDict{String,Module}()
     data["NP1_to_N"] = Dict{String,NP1_to_N}()
+    data["NP1 Start"] = Dict{String,Symbol}()
     data["coupling_fe_nodes"] = []
     data["BC_free_dof"] = []
     data["Contact Nodes"] = Dict{Int64,Vector{Int64}}()

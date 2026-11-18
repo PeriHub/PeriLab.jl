@@ -176,6 +176,31 @@ end
     @test UTL_DM.get_field("A", "N") == [3.0, 3.0]
 end
 
+@testset "NP1 start modes" begin
+    UTL_DM.initialize_data()
+    UTL_DM.set_num_controller(2)
+    UTL_DM.set_dof(2)
+    UTL_DM.create_constant_node_scalar_field("Active", Bool; default_value = true)
+    for name in ("F", "C", "K")
+        UTL_DM.create_node_scalar_field(name, Float64)
+    end
+    UTL_DM.set_np1_start("C", :copy)
+    UTL_DM.set_np1_start("K", :keep)
+    @test_logs (:error, "Unknown NP1 start mode zero for K.") @test_throws PeriLab.PeriLabError UTL_DM.set_np1_start("K",
+                                                                                                                     :zero)
+    for step in 1:2
+        foreach(name -> UTL_DM.get_field(name, "NP1") .= step, ("F", "C", "K"))
+        UTL_DM.switch_NP1_to_N()
+    end
+    # N holds step 2; NP1 is filled, a copy of N, or the untouched buffer of step 1
+    @test UTL_DM.get_field("F", "NP1") == [0.0, 0.0]
+    @test UTL_DM.get_field("C", "NP1") == [2.0, 2.0]
+    @test UTL_DM.get_field("K", "NP1") == [1.0, 1.0]
+    UTL_DM.get_field("C", "NP1") .= 5.0
+    UTL_DM.reset_NP1()
+    @test UTL_DM.get_field("C", "NP1") == [2.0, 2.0]
+end
+
 @testset "Bond Damage N is only copied if tracked" begin
     UTL_DM.initialize_data()
     UTL_DM.set_num_controller(2)

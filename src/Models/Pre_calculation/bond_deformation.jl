@@ -32,6 +32,9 @@ function init_model(nodes::AbstractVector{Int64}, p::DeformedBondGeometryParams,
     dof = Data_Manager.get_dof()
     Data_Manager.create_bond_vector_state("Deformed Bond Geometry", Float64, dof)
     Data_Manager.create_bond_scalar_state("Deformed Bond Length", Float64)
+    # rewritten every step for every node of the block: no refill in switch_NP1_to_N
+    Data_Manager.set_np1_start("Deformed Bond Geometry", :keep)
+    Data_Manager.set_np1_start("Deformed Bond Length", :keep)
 end
 
 """
