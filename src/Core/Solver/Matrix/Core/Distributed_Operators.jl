@@ -25,11 +25,16 @@ struct SerialSpace <: AbstractSpace
     n::Int64
 end
 
-"Distributed over the ranks of `comm`; `n` own degrees of freedom on this rank."
+"""
+Distributed over the ranks of `comm`; `n` own degrees of freedom on this rank. `buffer`
+holds the value of the `Allreduce` of `inner`, so no buffer is created per inner product.
+"""
 struct MPISpace <: AbstractSpace
     comm::MPI.Comm
     n::Int64
+    buffer::Vector{Float64}
 end
+MPISpace(comm::MPI.Comm, n::Int64) = MPISpace(comm, n, zeros(1))
 
 n_own(space::AbstractSpace) = space.n
 
@@ -42,8 +47,9 @@ function inner(space::SerialSpace, x::AbstractVector, y::AbstractVector)
     return dot(view(x, 1:(space.n)), view(y, 1:(space.n)))
 end
 function inner(space::MPISpace, x::AbstractVector, y::AbstractVector)
-    local_value = dot(view(x, 1:(space.n)), view(y, 1:(space.n)))
-    return MPI.Allreduce(local_value, +, space.comm)
+    space.buffer[1] = dot(view(x, 1:(space.n)), view(y, 1:(space.n)))
+    MPI.Allreduce!(space.buffer, +, space.comm)
+    return space.buffer[1]
 end
 
 """

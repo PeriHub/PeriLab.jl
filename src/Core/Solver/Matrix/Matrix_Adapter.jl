@@ -271,7 +271,9 @@ any rank changed, then the matrix has to be reassembled (`update_system!`).
 """
 function refresh_active!(sys::MatrixSystem, active::AbstractVector{Bool})
     n, dof = sys.n_own, sys.dof
-    host = Array(view(sys.active, 1:(n * dof)))
+    # host arrays are compared in place; a device mask is copied to the host first
+    host = sys.active isa Array ? view(sys.active, 1:(n * dof)) :
+           Array(view(sys.active, 1:(n * dof)))
     changed = any(host[(i - 1) * dof + c] != active[i] for i in 1:n for c in 1:dof)
     sys.halo === nothing || (changed = MPI.Allreduce(changed, |, Data_Manager.get_comm()))
     changed || return false
