@@ -322,6 +322,13 @@ function time_step!(ws::MatrixVerletWorkspace, run::SolverRun{VerletMatrixParams
             ldiv!(state.q_ddot, M_fact, state.f)
             push_to_nodes!(aNP1, state.q_ddot, retained_nodes, state)
         end
+        # second half step of the velocity Verlet scheme
+        @. @views vNP1[active_nodes, :] += 0.5 * dt * aNP1[active_nodes, :]
+        if modal_active
+            modal_part(state.q_dot, state) .+= 0.5 .* dt .*
+                                               modal_part(state.q_ddot, state)
+        end
+        apply_bc_dirichlet(["Velocity"], bcs, time, step_time)
     end
     return nothing
 end

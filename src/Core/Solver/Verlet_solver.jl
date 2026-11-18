@@ -293,6 +293,11 @@ function time_step!(ws::VerletWorkspace, run::SolverRun{VerletParams}, ctx::Solv
                 compute_forces!(volume, density, active_nodes,
                                 "Material" in run.models)
             end
+            # second half step of the velocity Verlet scheme, on all active nodes (FEM too)
+            active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
+            active_nodes = find_active_nodes(active_list, active_nodes,
+                                             1:Data_Manager.get_nnodes())
+            finish_velocity!(dt, active_nodes, bcs, time, step_time)
         end
 
         compute_parabolic_problems_after_model_evaluation(active_nodes, run, dt)
@@ -335,6 +340,26 @@ function update_velocity_and_position!(dt::Float64,
         end
     end
 
+    return nothing
+end
+
+"""
+    finish_velocity!(dt, active_nodes, bcs, time, step_time)
+
+Second half step of the velocity Verlet scheme, `v_{n+1} = v_{n+1/2} + dt/2 a_{n+1}`
+(the first half step and the numerical damping are in `update_velocity_and_position!`).
+"""
+function finish_velocity!(dt::Float64, active_nodes::AbstractVector{Int}, bcs,
+                          time::Float64, step_time::Float64)
+    vNP1::NodeVectorField{Float64} = Data_Manager.get_field("Velocity", "NP1")
+    aNP1::NodeVectorField{Float64} = Data_Manager.get_field("Acceleration", "NP1")
+    c::Float64 = 0.5 * dt
+    @inbounds for i in active_nodes
+        for d in axes(vNP1, 2)
+            vNP1[i, d] += c * aNP1[i, d]
+        end
+    end
+    apply_bc_dirichlet(["Velocity"], bcs, time, step_time)
     return nothing
 end
 
