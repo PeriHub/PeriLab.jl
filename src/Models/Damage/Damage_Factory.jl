@@ -5,6 +5,7 @@
 module Damage
 
 using TimerOutputs: @timeit
+using LinearAlgebra: dot
 using Polyester: @batch
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
@@ -147,6 +148,12 @@ function critical_value_lookup(critical_value, inter_block_damage::Bool, block::
     end
     return (iID, neighborID) -> value(critical_value, iID)
 end
+
+"Values of the `Compression` option: how a shortened bond counts (full, skipped, only its transverse part)."
+const COMPRESSION_MODES = ["full", "none", "shear"]
+
+"Part of `v` normal to the unit vector `n`."
+transverse(v, n) = v - dot(v, n) * n
 
 for file in find_registered_modules(@__DIR__, "register_damage")
     include(file)

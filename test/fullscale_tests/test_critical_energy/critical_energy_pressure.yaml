@@ -23,11 +23,11 @@ PeriLab:
       Dam_1:
         Damage Model: "Critical Energy"
         Critical Value: 0.1
-        Only Tension: true
+        Compression: none
       Dam_2:
         Damage Model: "Critical Energy"
         Critical Value: 0.1
-        Only Tension: false
+        Compression: full
   Blocks:
     block_1:
       Block ID: 1

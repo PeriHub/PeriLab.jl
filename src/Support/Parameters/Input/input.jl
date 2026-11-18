@@ -16,11 +16,13 @@
     multistep_solver::Dict{String,SolverParams} = opt("Multistep Solver";
                                                       default = Dict{String,SolverParams}())
     "Result files, one entry per name"
-    outputs::Dict{String,OutputParams} = opt("Outputs"; default = Dict{String,OutputParams}())
+    outputs::Dict{String,OutputParams} = opt("Outputs";
+                                             default = Dict{String,OutputParams}())
     "Global values for the outputs, one entry per name; the name is used in Output Variables"
-    compute_class_parameters::Dict{String,ComputeClassParams} = opt("Compute Class Parameters";
-                                                                    default = Dict{String,
-                                                                                   ComputeClassParams}())
+    compute_class_parameters::Dict{String,
+                                   ComputeClassParams} = opt("Compute Class Parameters";
+                                                             default = Dict{String,
+                                                                            ComputeClassParams}())
     fem::Union{Nothing,FEMParams} = opt("FEM"; default = nothing)
     surface_correction::Union{Nothing,SurfaceCorrectionParams} = opt("Surface Correction";
                                                                      default = nothing)
@@ -34,19 +36,21 @@ end
 
 function check!(p::PeriLabSections, path::String, ctx::ParseContext)
     isempty(p.blocks) && add_error!(ctx, join_path(path, "Blocks"),
-                                    "at least one block is required")
+               "at least one block is required")
     if p.solver !== nothing
         solver_path = join_path(path, "Solver")
         for (key, value) in (("Initial Time", p.solver.initial_time),
-                             ("Final Time", p.solver.final_time))
+            ("Final Time", p.solver.final_time))
             value === nothing &&
-                add_error!(ctx, join_path(solver_path, key), "missing (required for \"Solver\")")
+                add_error!(ctx, join_path(solver_path, key),
+                           "missing (required for \"Solver\")")
         end
     end
     for (name, step) in p.multistep_solver
         if step.step_id === nothing
             add_error!(ctx,
-                       join_path(join_path(join_path(path, "Multistep Solver"), name), "Step ID"),
+                       join_path(join_path(join_path(path, "Multistep Solver"), name),
+                                 "Step ID"),
                        "missing (required in a multistep solver step)")
         end
     end
@@ -109,17 +113,20 @@ function parse_models(models::AbstractDict, section::String, category::Symbol,
             continue
         end
         model = ParameterSpec.parse_model(category,
-                                          Dict{String,Any}(string(k) => v for (k, v) in entry),
+                                          Dict{String,Any}(string(k) => v
+                                                           for (k, v) in entry),
                                           entry_path, ctx; name_key = name_key)
         model === nothing || (parsed[string(name)] = model)
     end
     return parsed
 end
 
-parse_materials(models::AbstractDict, ctx::ParseContext) = parse_models(models,
-                                                                        "Material Models",
-                                                                        :material,
-                                                                        "Material Model", ctx)
+function parse_materials(models::AbstractDict, ctx::ParseContext)
+    parse_models(models,
+                 "Material Models",
+                 :material,
+                 "Material Model", ctx)
+end
 
 "Typed models of `section` that cannot be combined with `+`."
 function parse_single_models(models::AbstractDict, section::String, category::Symbol,
@@ -134,11 +141,24 @@ function parse_single_models(models::AbstractDict, section::String, category::Sy
     return parsed
 end
 
-parse_damages(models::AbstractDict, ctx::ParseContext) = parse_single_models(models,
-                                                                             "Damage Models",
-                                                                             :damage,
-                                                                             "Damage Model",
-                                                                             ctx)
+function parse_damages(models::AbstractDict, ctx::ParseContext)
+    reject_only_tension!(models, ctx)
+    return parse_single_models(models, "Damage Models", :damage, "Damage Model", ctx)
+end
+
+# `Only Tension` was replaced by `Compression`: an error even without strict validation
+function reject_only_tension!(models::AbstractDict, ctx::ParseContext)
+    raw = get(models, "Damage Models", nothing)
+    raw isa AbstractDict || return
+    for (name, entry) in raw
+        entry isa AbstractDict && haskey(entry, "Only Tension") || continue
+        add_error!(ctx,
+                   join_path(join_path(join_path("Models", "Damage Models"), string(name)),
+                             "Only Tension"),
+                   "\"Only Tension\" was removed; use \"Compression\" (Only Tension: true → Compression: none, false → Compression: full)")
+        delete!(entry, "Only Tension")
+    end
+end
 
 # old switch names: accepted when off, an error naming the replacement when on
 const DEPRECATED_PRE_CALCULATIONS = Dict("Bond Associated Deformation Gradient" => "Bond Associated Correspondence")
@@ -155,7 +175,8 @@ function parse_pre_calculation_switches(raw, path::String, ctx::ParseContext)
     for (name, replacement) in DEPRECATED_PRE_CALCULATIONS
         haskey(switches, name) || continue
         switches[name] &&
-            add_error!(ctx, join_path(path, name), "no longer supported; use \"$replacement\"")
+            add_error!(ctx, join_path(path, name),
+                       "no longer supported; use \"$replacement\"")
         delete!(switches, name)
     end
     ParameterSpec.check_unknown!(switches,
@@ -193,7 +214,8 @@ function read_input(deck::AbstractDict, directory::AbstractString = ""; strict::
     ctx = ParseContext(directory = directory, strict = strict)
     # the special keys are read below; passing them as known keys makes
     # misspellings of them ("contact", "Contacts") errors with suggestions
-    sections = parse_section(PeriLabSections, Dict{String,Any}(string(k) => v for (k, v) in deck),
+    sections = parse_section(PeriLabSections,
+                             Dict{String,Any}(string(k) => v for (k, v) in deck),
                              "", ctx; known_extra = _SPECIAL_KEYS)
     sections === nothing ||
         (ctx.node_fields = mesh_node_fields(sections.discretization, directory))
@@ -221,10 +243,12 @@ function read_input(deck::AbstractDict, directory::AbstractString = ""; strict::
                Dict{String,Any}()
     pre_global = models isa AbstractDict && haskey(models, "Pre Calculation Global") ?
                  parse_pre_calculation_switches(models["Pre Calculation Global"],
-                                                join_path("Models", "Pre Calculation Global"),
+                                                join_path("Models",
+                                                          "Pre Calculation Global"),
                                                 ctx) : nothing
     pre_calculations = Dict{String,Dict{String,Bool}}()
-    raw_pre = models isa AbstractDict ? get(models, "Pre Calculation Models", nothing) : nothing
+    raw_pre = models isa AbstractDict ? get(models, "Pre Calculation Models", nothing) :
+              nothing
     if raw_pre isa AbstractDict
         for (name, entry) in raw_pre
             s = parse_pre_calculation_switches(entry,

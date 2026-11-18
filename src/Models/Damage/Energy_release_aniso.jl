@@ -9,7 +9,7 @@ using StaticArrays
 using ......Data_Manager
 using ......PeriLabExceptions: @abort
 using ......Helpers: node_tensor, with_dof
-using ..Damage: init_inverse_bond_id
+using ..Damage: init_inverse_bond_id, COMPRESSION_MODES, transverse
 
 export compute_model
 export init_model
@@ -17,8 +17,8 @@ export fields_for_local_synchronization
 
 using ......ParameterSpec: @params, register_damage
 @params "Critical energy release rate with different critical values along the material axes (Anisotropic Damage)" struct CriticalEnergyAnisotropicParams
-    "Breaks bonds only under tension, not under compression"
-    only_tension::Bool = opt("Only Tension"; default = true)
+    "How a shortened bond counts: full (as a stretched one), none (skipped) or shear (only the part of its deformation transverse to the bond)"
+    compression::String = opt("Compression"; default = "none", allowed = COMPRESSION_MODES)
     "Out-of-plane thickness of a 2D model, used to convert the energy release rate to a bond energy"
     thickness::Float64 = opt("Thickness"; default = 1.0, min = 0, quantity = :length)
 end
@@ -39,15 +39,16 @@ Calculates the elastic energy of each bond and compares it to a critical one. If
 """
 function compute_model(nodes::AbstractVector{Int64}, p::CriticalEnergyAnisotropicParams,
                        damage, block::Int64, time::Float64, dt::Float64)
-    return _critical_energy_aniso!(nodes, p.only_tension)
+    return _critical_energy_aniso!(nodes, p.compression == "none",
+                                   p.compression == "shear")
 end
 
-function _critical_energy_aniso!(nodes::AbstractVector{Int64}, tension::Bool)
+function _critical_energy_aniso!(nodes::AbstractVector{Int64}, tension::Bool, shear::Bool)
     # function barrier on the dof: the fields below get concrete types
-    with_dof(D -> _critical_energy_aniso!(nodes, tension, D))
+    with_dof(D -> _critical_energy_aniso!(nodes, tension, shear, D))
 end
 
-function _critical_energy_aniso!(nodes::AbstractVector{Int64}, tension::Bool,
+function _critical_energy_aniso!(nodes::AbstractVector{Int64}, tension::Bool, shear::Bool,
                                  ::Val{D}) where {D}
     nlist = Data_Manager.get_nlist()::BondScalarState{Int64}
     block_ids = Data_Manager.get_field("Block_Id")::NodeScalarField{Int64}
@@ -81,9 +82,9 @@ function _critical_energy_aniso!(nodes::AbstractVector{Int64}, tension::Bool,
                    quad_horizons[iID]
         @fastmath for jID in eachindex(neighbors)
             relative_displacement = deformed[jID] - undeformed[jID]
-            norm_displacement = dot(relative_displacement, relative_displacement)
-            if norm_displacement == 0 ||
-               (tension && deformed_length[jID] - undeformed_length[jID] < 0)
+            compressed = deformed_length[jID] < undeformed_length[jID]
+            if dot(relative_displacement, relative_displacement) == 0 ||
+               (tension && compressed)
                 continue
             end
             # the bond may not exist at the neighbor, due to different horizons
@@ -91,9 +92,12 @@ function _critical_energy_aniso!(nodes::AbstractVector{Int64}, tension::Bool,
             inverse_neighborID == 0 && continue
 
             force_difference = forces[jID] - bond_forces[neighbors[jID]][inverse_neighborID]
-            product = dot(force_difference, relative_displacement)
-            projected_force = (product / norm_displacement) * relative_displacement
-            bond_energy = 0.25 * sum(abs.(projected_force) .* abs.(relative_displacement))
+            if shear && compressed
+                n = deformed[jID] / deformed_length[jID]
+                relative_displacement = transverse(relative_displacement, n)
+                force_difference = transverse(force_difference, n)
+            end
+            bond_energy = 0.25 * abs(dot(force_difference, relative_displacement))
 
             rotated_bond = rotation ? R * deformed[jID] : deformed[jID]
             bond_norm = abs.(rotated_bond) / deformed_length[jID]

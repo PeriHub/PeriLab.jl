@@ -23,7 +23,7 @@ PeriLab:
       Dam_1:
         Damage Model: "Critical Stretch"
         Critical Value: 0.1
-        Only Tension: False
+        Compression: full
   Blocks:
     block_1:
       Block ID: 1

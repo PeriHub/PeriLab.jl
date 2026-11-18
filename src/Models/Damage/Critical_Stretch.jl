@@ -3,17 +3,19 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Critical_Stretch
+using LinearAlgebra: norm
 using .....Data_Manager
 using .....Geometry: compute_stretch!
-using ..Damage: critical_value_lookup
+using .....Helpers: with_dof
+using ..Damage: critical_value_lookup, COMPRESSION_MODES, transverse
 export compute_model
 export init_model
 export fields_for_local_synchronization
 
 using ......ParameterSpec: @params, register_damage
 @params "Breaks a bond once its stretch exceeds the critical value" struct CriticalStretchParams
-    "Breaks bonds only under tension, not under compression"
-    only_tension::Bool = opt("Only Tension"; default = true)
+    "How a shortened bond counts: full (its absolute stretch), none (skipped) or shear (its transverse displacement over its length)"
+    compression::String = opt("Compression"; default = "none", allowed = COMPRESSION_MODES)
 end
 __init__() = register_damage("Critical Stretch", CriticalStretchParams)
 
@@ -34,12 +36,17 @@ function compute_model(nodes::AbstractVector{Int64}, p::CriticalStretchParams, d
                        block::Int64, time::Float64, dt::Float64)
     crit_of = critical_value_lookup(damage.base.critical_value,
                                     damage.base.interblock_damage !== nothing, block)
-    return _critical_stretch!(nodes, p.only_tension, crit_of)
+    return _critical_stretch!(nodes, p.compression, crit_of)
 end
 
-# function barrier: `crit_of` has a concrete closure type here
-function _critical_stretch!(nodes::AbstractVector{Int64}, tension::Bool,
+# function barrier: `crit_of` has a concrete closure type here, the dof becomes `D`
+function _critical_stretch!(nodes::AbstractVector{Int64}, compression::String,
                             crit_of::F) where {F}
+    with_dof(D -> _critical_stretch!(nodes, compression, crit_of, D))
+end
+
+function _critical_stretch!(nodes::AbstractVector{Int64}, compression::String,
+                            crit_of::F, ::Val{D}) where {F,D}
     nlist::BondScalarState{Int64} = Data_Manager.get_nlist()
     bond_damageNP1::BondScalarState{Float64} = Data_Manager.get_bond_damage("NP1")
     update_list::NodeScalarField{Bool} = Data_Manager.get_field("Update")
@@ -47,12 +54,27 @@ function _critical_stretch!(nodes::AbstractVector{Int64}, tension::Bool,
     deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
                                                                             "NP1")
     stretch::BondScalarState{Float64} = Data_Manager.get_field("Bond Stretch")
+    undeformed_bond = Data_Manager.get_field("Bond Geometry")::BondVectorState{Float64,D}
+    deformed_bond = Data_Manager.get_field("Deformed Bond Geometry",
+                                           "NP1")::BondVectorState{Float64,D}
     compute_stretch!(stretch, deformed_bond_length, undeformed_bond_length)
     # TBD all points; for MPI it must be only the nodes
+    full = compression == "full"
+    shear = compression == "shear"
 
     for iID in nodes
         @inbounds for (jID, neighborID) in enumerate(nlist[iID])
-            stretch_check = tension ? stretch[iID][jID] : abs(stretch[iID][jID])
+            s = stretch[iID][jID]
+            stretch_check = if s >= 0 || full
+                abs(s)
+            elseif shear
+                deformed = deformed_bond[iID][jID]
+                n = deformed / deformed_bond_length[iID][jID]
+                norm(transverse(deformed - undeformed_bond[iID][jID], n)) /
+                undeformed_bond_length[iID][jID]
+            else
+                s
+            end
             if stretch_check > crit_of(iID, neighborID)
                 bond_damageNP1[iID][jID] = 0.0
                 update_list[iID] = true
