@@ -33,6 +33,7 @@ RUN mkdir PeriLab
 # Assuming /PeriLab/build is the build directory from previous stages
 COPY --from=build /PeriLab/build /app/PeriLab
 COPY Project.toml /app/Project.toml
+
 # Licensed modules are include_string'd at runtime; their `using LinearAlgebra` etc.
 # resolves PeriLab's deps through this project (already loaded in the app, no stdlib dir needed).
 ENV JULIA_LOAD_PATH="/app/Project.toml"
