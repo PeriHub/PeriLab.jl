@@ -12,16 +12,25 @@ a volume corrections factor $\lambda_{corr}$ is introduced deviding the domain v
 
 $$\lambda_{corr}=\frac{2V_0}{V(\mathbf{x})+V(\mathbf{x}')}$$
 ![](../assets/volume_correction.png)
-The reference volumen $V_0$ is depended on the dimension (3D or 2D)
+The reference volume $V_0$ is the domain volume of a node with a full horizon. The analytical horizon volume is
 
-$$V_{0-3D}=\frac{4\pi\delta^3}{3}$$
+$$V_{0-3D}=\frac{4\pi\delta^3}{3}, \qquad V_{0-2D}=\pi\delta^2$$
 
-$$V_{0-2D}=\frac{\pi\delta^2h}{4}$$
+(in 2D the mesh volumes are areas). The discrete neighbor sum of an interior node differs from it by several percent (the node itself is excluded, partial volumes at the horizon edge are not treated). PeriLab therefore takes the domain volume of the most embedded node of the block, $V_0 = V_{0,analytical}\max_k V(\mathbf{x}_k)/V_{0,analytical}(\mathbf{x}_k)$, so bonds between interior nodes get $\lambda_{corr}=1$ and only bonds near surfaces are scaled up. A block thinner than two horizons has no fully embedded node; its most embedded node is then taken as the reference.
 
 this factor is than multiplied to the bond force
 $$\mathbf{t}_{corr} =\lambda_{corr}\mathbf{t}$$
 
 !!! warn "Only mechanical"
     Surface correction is right now only applied for mechanical properties.
+
+!!! info "Bond-based and ordinary state-based models"
+    The volume correction scales the bond forces. It is meant for bond-based and ordinary state-based models. Correspondence models (also bond-associated) are skipped with an info message: their shape tensor already accounts for missing neighbors, a second correction would stiffen the surfaces.
+
+!!! info "Pre-cracks"
+    Bonds cut by a bond filter count as missing, so the faces of a pre-crack are corrected like free surfaces.
+
+!!! note "Directional error"
+    The factor is isotropic, the missing bonds are not. For a surface parallel to the load, the missing bonds point mostly across the load, so the correction overshoots there: in a 2D bond-based bar under tension the surface nodes go from about 20 % too soft to about 25 % too stiff. The mean error of the bar still decreases.
 
 You can apply the surface correction initialy for all outer surfaces and continuous, for cracks or additive manufacturing.
