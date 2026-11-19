@@ -29,6 +29,14 @@ Markdown.parse(PeriLab.parameter_table("Thermal Flow"))
 using PeriLab, Markdown
 Markdown.parse(PeriLab.parameter_table("Heat Transfer"))
 ```
+## STVD Flow
+
+Spatio-temporal variable diffusivity [AtiehM2021](@cite): the temperature field is the diffusant concentration, released from an inert core by a reaction front. Serial only.
+
+```@eval
+using PeriLab, Markdown
+Markdown.parse(PeriLab.parameter_table("STVD Flow"))
+```
 ## HETVAL
 
 User-defined heat generation from an Abaqus HETVAL subroutine, compiled into a shared library
