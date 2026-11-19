@@ -90,7 +90,7 @@ PeriLab:
         Critical Value: 0.0035714285714285716
         Local Damping:
           Representative Young's modulus: 70000
-          Damping coefficient: 0.9
+          Damping coefficient: 0.45
     Material Models:
       Aluminium:
         Material Model: "PD Solid Elastic"

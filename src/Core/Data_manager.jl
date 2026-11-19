@@ -88,6 +88,7 @@ export get_inverse_nlist
 export get_local_nodes
 export get_model_module
 export get_nlist
+export create_deformed_bond_states
 export get_nnsets
 export get_nsets
 export get_nnodes
@@ -528,6 +529,29 @@ Get the neighborhood list.
 """
 function get_nlist()
     return _get_field("Neighborhoodlist")
+end
+
+"""
+    create_deformed_bond_states(dof)
+
+Creates the N and NP1 states of "Deformed Bond Geometry" and "Deformed Bond Length".
+New states start at the undeformed "Bond Geometry" and "Bond Length": models that read
+the N state (e.g. a bond extension rate) see no motion in the first step.
+"""
+function create_deformed_bond_states(dof::Int64)
+    new = !has_key("Deformed Bond LengthNP1")
+    geometry = create_bond_vector_state("Deformed Bond Geometry", Float64, dof)
+    len = create_bond_scalar_state("Deformed Bond Length", Float64)
+    new && has_key("Bond Length") || return nothing
+    undeformed_geometry = flatview(get_field("Bond Geometry"))
+    undeformed_length = flatview(get_field("Bond Length"))
+    for state in geometry
+        copyto!(flatview(state), undeformed_geometry)
+    end
+    for state in len
+        copyto!(flatview(state), undeformed_length)
+    end
+    return nothing
 end
 
 """

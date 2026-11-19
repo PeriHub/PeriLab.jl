@@ -76,7 +76,13 @@ and using the Young's modulus $E$ and the mass density $\rho$ the dilatation wav
 
 $$v_0=\sqrt{\frac{E}{\rho}}$$
 
-The damping coefficient $d$ is dimensionless. The damping force of a bond is about $d$ times the bond-based force $c\,\overline{\phi}$ at a strain equal to the ratio of bond extension rate to wave speed, $\dot{e}/v_0$. Values of $d \approx 0.1$ to $1$ are useful; $d=0$ switches the damping off. Only bonds with a damaged end are damped.
+The damping coefficient $d$ is dimensionless. The damping force of a bond is about $d$ times the bond-based force $c\,\overline{\phi}$ at a strain equal to the ratio of bond extension rate to wave speed, $\dot{e}/v_0$. The stable range depends on the time step (below); $d=0$ switches the damping off. Only bonds with a damaged end are damped.
+
+The damping is explicit: the extension rate comes from the deformed bond lengths of the last two steps (both start at the undeformed length, so the first step sees no motion). It is stable for
+
+$$\frac{d\, c\, \sum_j V_j\, \Delta t}{v_0\, \rho} < 1$$
+
+with the bond-based stiffness $c = E\,k$, the volumes $V_j$ of the neighbors and the time step $\Delta t$ (all bonds fully damaged; with average damage $\overline{\phi}$ the limit is $1/\overline{\phi}$ times larger). PeriLab checks this in the first step and warns with the largest stable coefficient. The limit scales with $1/\Delta t$: halving the time step doubles the stable $d$. Example: 2D plane stress, $E$ = 183700 MPa, $\rho$ = 1.6e-9 t/mm³, $\delta$ = 0.208 mm, $\Delta t$ = 1e-8 s gives $d \lesssim 0.2$.
 
 It is switched on with a `Local Damping` section in the damage model entry:
 

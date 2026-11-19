@@ -30,8 +30,7 @@ Initializes the fields.
 """
 function init_fields()
     dof = Data_Manager.get_dof()
-    Data_Manager.create_bond_vector_state("Deformed Bond Geometry", Float64, dof)
-    Data_Manager.create_bond_scalar_state("Deformed Bond Length", Float64)
+    Data_Manager.create_deformed_bond_states(dof)
     Data_Manager.create_node_vector_field("Displacements", Float64, dof)
 end
 

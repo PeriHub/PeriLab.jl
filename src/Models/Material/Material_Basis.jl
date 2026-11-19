@@ -22,10 +22,45 @@ export apply_pointwise_E
 export compute_bond_based_constants
 export init_local_damping_due_to_damage
 export local_damping_due_to_damage
+# the stability of the damping is checked once per run, in the first step (dt is known)
+const LOCAL_DAMPING_CHECKED = Ref(false)
+
 function local_damping_due_to_damage(nodes::AbstractVector{Int64},
                                      params, dt)
+    LOCAL_DAMPING_CHECKED[] || check_local_damping_stability(nodes, params, dt)
     # function barrier on the dof: the fields below get concrete types
     with_dof(D -> _local_damping_due_to_damage!(nodes, params, dt, D))
+end
+
+"""
+    local_damping_stability(nodes, params, dt)
+
+Largest `c E k ΣV_j dt / (v0 ρ)` of `nodes` (all bonds fully damaged). The damping is
+explicit in the velocity; it is stable for values below 1 (damping matrix
+2cEk/v0 Σ φ̄ V e⊗e, factor 2 for neighbors moving in antiphase, forward Euler limit 2).
+"""
+function local_damping_stability(nodes::AbstractVector{Int64}, params, dt)
+    nlist = Data_Manager.get_nlist()::BondScalarState{Int64}
+    density = Data_Manager.get_field("Density")::NodeScalarField{Float64}
+    volume = Data_Manager.get_field("Volume")::NodeScalarField{Float64}
+    constant = Data_Manager.get_field("Bond Based Constant")::NodeScalarField{Float64}
+    E::Float64 = params.representative_youngs_modulus
+    worst = 0.0
+    for iID in nodes
+        v0 = sqrt(E / density[iID])
+        neighbor_volume = sum(nID -> volume[nID], nlist[iID]; init = 0.0)
+        worst = max(worst,
+                    params.damping_coefficient * E * constant[iID] * neighbor_volume * dt /
+                    (v0 * density[iID]))
+    end
+    return worst
+end
+
+function check_local_damping_stability(nodes, params, dt)
+    LOCAL_DAMPING_CHECKED[] = true
+    worst = local_damping_stability(nodes, params, dt)
+    worst > 1 &&
+        @warn "Local damping may be unstable: c E k ΣV dt / (v0 ρ) = $(round(worst; sigdigits = 3)) > 1 at fully damaged bonds. Use a Damping coefficient below $(round(params.damping_coefficient / worst; sigdigits = 2)) or a smaller time step."
 end
 
 function _local_damping_due_to_damage!(nodes::AbstractVector{Int64}, params, dt,
@@ -54,6 +89,8 @@ function _local_damping_due_to_damage!(nodes::AbstractVector{Int64}, params, dt,
         lengthNP1 = deformed_bond_lengthNP1[iID]
         bonds = deformend_bond_geometry[iID]
         for jID in eachindex(neighbors)
+            # no length, no direction (a node without deformed state)
+            (lengthNP1[jID] == 0 || lengthN[jID] == 0) && continue
             nID = neighbors[jID]
             avg_damage = 0.5 * (damage[iID] + damage[nID])
 
@@ -77,6 +114,7 @@ function init_local_damping_due_to_damage(nodes::AbstractVector{Int64},
                                           symmetry::String,
                                           local_damping)
     @info "Local damping is active with damping coefficient $(local_damping.damping_coefficient)"
+    LOCAL_DAMPING_CHECKED[] = false
     constant = Data_Manager.create_constant_node_scalar_field("Bond Based Constant",
                                                               Float64)
     horizon = Data_Manager.get_field("Horizon")

@@ -170,3 +170,49 @@ end
                                                                           deformation_gradient)
     @test isapprox(result, expected_result)
 end
+
+@testset "ut_local_damping_first_step" begin
+    # damaged from t = 0 (e.g. bond filter with contact), nothing moves: no damping force
+    DM = PeriLab.Data_Manager
+    DM.initialize_data()
+    DM.set_num_controller(3)
+    DM.set_dof(2)
+    DM.create_constant_node_scalar_field("Number of Neighbors", Int64) .= 2
+    nlist = DM.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
+    nlist[1] .= [2, 3]
+    nlist[2] .= [1, 3]
+    nlist[3] .= [1, 2]
+    x = [0.0 0.0; 1.0 0.0; 0.0 1.0]
+    geometry = DM.create_constant_bond_vector_state("Bond Geometry", Float64, 2)
+    len = DM.create_constant_bond_scalar_state("Bond Length", Float64)
+    for i in 1:3, (j, n) in enumerate(nlist[i])
+        geometry[i][j] = x[n, :] - x[i, :]
+        len[i][j] = hypot((x[n, :] - x[i, :])...)
+    end
+    DM.create_deformed_bond_states(2)
+    for time in ("N", "NP1")
+        @test DM.get_field("Deformed Bond Length", time) == len
+        @test DM.get_field("Deformed Bond Geometry", time) == geometry
+    end
+    DM.create_constant_node_scalar_field("Horizon", Float64) .= 1.5
+    DM.create_constant_node_scalar_field("Density", Float64) .= 2.0
+    DM.create_constant_node_scalar_field("Volume", Float64) .= 0.5
+    _, damage = DM.create_node_scalar_field("Damage", Float64)
+    damage .= [0.4, 0.1, 0.0]
+    _, force = DM.create_node_vector_field("Force Densities", Float64, 2)
+    params = (representative_youngs_modulus = 8.0, damping_coefficient = 0.3)
+    MB = PeriLab.Solver_Manager.Material_Basis
+    MB.init_local_damping_due_to_damage(1:3, "plane stress", params)
+    MB.local_damping_due_to_damage(1:3, params, 0.1)
+    @test all(force .== 0)
+
+    # a bond without deformed state is skipped, not 0/0
+    DM.get_field("Deformed Bond Length", "N")[1][1] = 0.0
+    MB.local_damping_due_to_damage(1:3, params, 0.1)
+    @test all(isfinite, force)
+
+    # stability number c E k ΣV dt / (v0 ρ)
+    k = MB.bond_based_constant("plane stress", 1.5)
+    @test MB.local_damping_stability(1:3, params, 0.1) ≈
+          0.3 * 8.0 * k * 1.0 * 0.1 / (2.0 * 2.0)
+end
