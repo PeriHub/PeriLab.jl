@@ -55,7 +55,7 @@ function _local_damping_due_to_damage!(nodes::AbstractVector{Int64}, params, dt,
         bonds = deformend_bond_geometry[iID]
         for jID in eachindex(neighbors)
             nID = neighbors[jID]
-            avg_damage = 0.5 * (damage[iID] - damage[nID])
+            avg_damage = 0.5 * (damage[iID] + damage[nID])
 
             t = local_damping *
                 E *

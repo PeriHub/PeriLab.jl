@@ -28,7 +28,7 @@ end
     "Young's modulus that sets the wave speed of the damping"
     representative_youngs_modulus::Float64 = req("Representative Young's modulus"; min = 0,
                                                  quantity = :stress)
-    "Strength of the damping; 0 switches it off"
+    "Dimensionless strength of the damping, useful range about 0.1-1; 0 switches it off"
     damping_coefficient::Float64 = req("Damping coefficient"; min = 0)
 end
 

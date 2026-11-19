@@ -76,6 +76,8 @@ and using the Young's modulus $E$ and the mass density $\rho$ the dilatation wav
 
 $$v_0=\sqrt{\frac{E}{\rho}}$$
 
+The damping coefficient $d$ is dimensionless. The damping force of a bond is about $d$ times the bond-based force $c\,\overline{\phi}$ at a strain equal to the ratio of bond extension rate to wave speed, $\dot{e}/v_0$. Values of $d \approx 0.1$ to $1$ are useful; $d=0$ switches the damping off. Only bonds with a damaged end are damped.
+
 It is switched on with a `Local Damping` section in the damage model entry:
 
 ```@eval

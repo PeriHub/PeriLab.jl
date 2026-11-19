@@ -327,6 +327,11 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
 
     if "Material" in options
         if "Damage" in options
+            # the damping averages the damage of both bond ends: ghost neighbors need it
+            any(!isnothing(block_local_damping(block)) for block in keys(block_nodes)) &&
+                synchronise_field(Data_Manager.get_comm(), DAMAGE_SYNCH,
+                                  Data_Manager.get_overlap_map(), Data_Manager.get_field,
+                                  "Damage", "upload_to_cores")
             for (block, nodes) in pairs(block_nodes)
                 local_damping = block_local_damping(block)
                 local_damping === nothing && continue
@@ -576,6 +581,10 @@ function add_model(model_name::String, all::Bool = false)
         @abort "Model $model_name is not specified and cannot be included."
     end
 end
+
+const DAMAGE_SYNCH = Dict("Damage" => Dict{String,Any}("upload_to_cores" => true,
+                                           "download_from_cores" => false,
+                                           "dof" => 1, "time" => "NP1"))
 
 function local_synch(model, direction, synchronise_field)
     synch_fields = Data_Manager.get_local_synch_fields(model)
