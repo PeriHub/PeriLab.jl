@@ -178,8 +178,15 @@ function find_registered_modules(directory::AbstractString, register_function::S
     isdir(directory) || return String[]
     call = register_function * "("
     excluded(file) = any(e -> file == e || startswith(file, joinpath(e, "")), exclude)
+    files = find_jl_files(directory)
+    # the precompile cache must notice new model files (directory listing) and files
+    # that gain a register call; neither is seen through `include`
+    for (root, _, _) in walkdir(directory)
+        include_dependency(root)
+    end
+    foreach(include_dependency, files)
     return [file
-            for file in find_jl_files(directory)
+            for file in files
             if !excluded(file) && any(line -> occursin(call, line), eachline(file))]
 end
 
