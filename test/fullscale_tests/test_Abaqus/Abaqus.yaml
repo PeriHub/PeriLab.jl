@@ -54,4 +54,4 @@ PeriLab:
     Final Time: 1.0e-4
     Material Models: True
     Verlet:
-      Safety Factor: 1.0
+      Safety Factor: 0.7 # the bond-based estimate is ~20 % too large for PD Solid Elastic (nu 0.34)

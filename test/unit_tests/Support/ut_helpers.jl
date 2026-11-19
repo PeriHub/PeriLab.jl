@@ -489,6 +489,14 @@ end
 
 # only interface test, because the called fromVoigt function is tested in "Tensors"
 @testset "ut_get_fourth_order" begin
+    # the 3D result is a shared buffer: coupling terms of an earlier call must not survive
+    coupled = zeros(Float64, 6, 6)
+    coupled[1, 4] = 7.0
+    @test PeriLab.Solver_Manager.Helpers.get_fourth_order(coupled, 3)[1, 1, 2, 3] == 7.0
+    @test PeriLab.Solver_Manager.Helpers.get_fourth_order(zeros(Float64, 6, 6), 3)[1, 1,
+                                                                                   2,
+                                                                                   3] ==
+          0.0
     @test size(PeriLab.Solver_Manager.Helpers.get_fourth_order(zeros(Float64, 6, 6),
                                                                3)) == (3, 3, 3, 3)
     @test size(PeriLab.Solver_Manager.Helpers.get_fourth_order(zeros(Float64, 3, 3),
