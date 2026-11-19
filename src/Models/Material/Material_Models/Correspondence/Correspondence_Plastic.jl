@@ -8,7 +8,7 @@ using .......ParameterSpec: @params, Dependent, register_material, value
 using ......PeriLabExceptions: @abort
 using .....Material_Basis:
                            flaw_function, get_von_mises_yield_stress,
-                           compute_deviatoric_and_spherical_stresses
+                           compute_deviatoric_and_spherical_stresses, hooke_matrix
 using LinearAlgebra
 using StaticArrays
 export fe_support
@@ -72,10 +72,7 @@ Initializes the model fields of `nodes`.
 """
 function init_model(nodes::AbstractVector{Int64}, p::CorrespondencePlasticParams, material,
                     block::Int64)
-    if material.moduli === nothing
-        @abort "Shear Modulus must be defined to be able to run this plastic material"
-        return
-    end
+    material.moduli === nothing && init_plastic_shear_modulus(nodes, material, block)
     Data_Manager.create_node_scalar_field("von Mises Yield Stress", Float64)
     Data_Manager.create_node_scalar_field("Plastic Strain", Float64)
     if material.base.bond_associated
@@ -83,6 +80,43 @@ function init_model(nodes::AbstractVector{Int64}, p::CorrespondencePlasticParams
         Data_Manager.create_bond_scalar_state("Plastic Bond Strain", Float64)
     end
 end
+
+"""
+    init_plastic_shear_modulus(nodes, material, block)
+
+Anisotropic elasticity (no isotropic moduli) has no single shear modulus; the
+equivalent plastic strain update takes `Shear Modulus`, else `Shear Modulus XY`, else
+the in-plane shear entry of the Hooke matrix (engineering shear, C66 = G). Stored in
+the node field "Plastic Shear Modulus".
+"""
+function init_plastic_shear_modulus(nodes, material, block::Int64)
+    base = material.base
+    dof = Data_Manager.get_dof()
+    shear = dof == 2 ? 3 : 6
+    G = Data_Manager.create_constant_node_scalar_field("Plastic Shear Modulus", Float64)
+    # ponytail: a dependent Shear Modulus XY is frozen at its init value here
+    for iID in nodes
+        G[iID] = base.shear_modulus !== nothing ? base.shear_modulus :
+                 base.shear_modulus_xy !== nothing ? value(base.shear_modulus_xy, iID) :
+                 hooke_matrix(material, dof, iID)[shear, shear]
+    end
+    if any(iID -> !(G[iID] > 0), nodes)
+        @abort "Correspondence Plastic needs a shear modulus: give \"Shear Modulus\" or \"Shear Modulus XY\""
+    end
+    source = base.shear_modulus !== nothing ? "Shear Modulus" :
+             base.shear_modulus_xy !== nothing ? "Shear Modulus XY" : "Hooke matrix C66"
+    isempty(nodes) ||
+        @info "Correspondence Plastic in block $block: shear modulus $(G[first(nodes)]) from $source for the plastic strain"
+end
+
+# shear modulus of the equivalent plastic strain update (number or per node)
+function plastic_shear_modulus(material)::Union{Float64,Vector{Float64}}
+    material.moduli === nothing &&
+        return Data_Manager.get_field("Plastic Shear Modulus")::Vector{Float64}
+    return material.moduli.shear_modulus
+end
+@inline _at(x::Float64, ::Int64) = x
+@inline _at(x::Vector{Float64}, id::Int64) = x[id]
 
 """
     compute_stresses(nodes, dof, p, material, time, dt, strain_increment, stress_N, stress_NP1)
@@ -126,6 +160,7 @@ function compute_stresses(nodes,
     plastic_strain_NP1::NodeScalarField{Float64} = Data_Manager.get_field("Plastic Strain",
                                                                           "NP1")
     coordinates::NodeVectorField{Float64} = Data_Manager.get_field("Coordinates")
+    shear_modulus = plastic_shear_modulus(material)
 
     # sqrt23::Float64 = sqrt(2 / 3)
     for iID in nodes
@@ -147,7 +182,7 @@ function compute_stresses(nodes,
                                                             plastic_strain_NP1[iID],
                                                             plastic_strain_N[iID],
                                                             reduced_yield_stress,
-                                                            material.moduli.shear_modulus,
+                                                            _at(shear_modulus, iID),
                                                             dof,
                                                             sqrt23,
                                                             dev_strain_inc)
@@ -196,6 +231,7 @@ function compute_stresses_ba(nodes,
     plastic_strain_N = Data_Manager.get_field("Plastic Bond Strain", "N")
     plastic_strain_NP1 = Data_Manager.get_field("Plastic Bond Strain", "NP1")
     coordinates = Data_Manager.get_field("Coordinates")
+    shear_modulus = plastic_shear_modulus(material)
     spherical_stress_N::Float64 = 0
     deviatoric_stress_N = @MMatrix zeros(dof, dof)
 
@@ -226,7 +262,8 @@ function compute_stresses_ba(nodes,
                                                                      plastic_strain_NP1[iID][jID],
                                                                      plastic_strain_N[iID][jID],
                                                                      reduced_yield_stress,
-                                                                     material.moduli.shear_modulus,
+                                                                     _at(shear_modulus,
+                                                                         iID),
                                                                      dof,
                                                                      sqrt23,
                                                                      dev_strain_inc)
@@ -249,8 +286,9 @@ function compute_plastic_model(stress_NP1,
                                dof,
                                sqrt23,
                                dev_strain_inc)
-    compute_deviatoric_and_spherical_stresses(stress_NP1, spherical_stress_NP1,
-                                              deviatoric_stress_NP1, dof)
+    spherical_stress_NP1 = compute_deviatoric_and_spherical_stresses(stress_NP1, 0.0,
+                                                                     deviatoric_stress_NP1,
+                                                                     dof)
 
     von_Mises_stress_yield = get_von_mises_yield_stress(deviatoric_stress_NP1)
     if von_Mises_stress_yield < reduced_yield_stress
@@ -258,12 +296,10 @@ function compute_plastic_model(stress_NP1,
         plastic_strain_NP1 = plastic_strain_N
         return plastic_strain_NP1, von_Mises_stress_yield
     end
-    deviatoric_stress_magnitude_NP1 = max(1.0e-20, von_Mises_stress_yield / sqrt23)
+    deviatoric_stress_magnitude_NP1 = max(1.0e-20, norm(deviatoric_stress_NP1))
     deviatoric_stress_NP1 .*= sqrt23 * reduced_yield_stress /
                               deviatoric_stress_magnitude_NP1
     # stress_NP1 = deviatoric_stress_NP1 + spherical_stress_NP1 * I, in place
-    # (spherical_stress_NP1 is the value passed in, compute_deviatoric_and_spherical_stresses
-    # does not return the spherical part)
     stress_NP1 .= deviatoric_stress_NP1
     stress_NP1[diagind(stress_NP1)] .+= spherical_stress_NP1
 

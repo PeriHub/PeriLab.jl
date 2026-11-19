@@ -356,12 +356,18 @@ const BCORR = BMAT.Correspondence
     end
 end
 
-# Result of the legacy (material dict) Correspondence Plastic, recorded before its removal.
-const UT_PLASTIC_REFERENCE = [0.004444444444444446 0.0 0.0; 0.004444444444444446 0.0 0.0;;;
-                              0.0 -0.0022222222222222227 0.0; 0.0 -0.0022222222222222227 0.0;;;
-                              0.0 0.0 -0.0022222222222222227; 0.0 0.0 -0.0022222222222222227]
+# Radial return of the trial stress diag(0.5, 0, 0) to the yield stress 0.01: the
+# deviator diag(1/3, -1/6, -1/6) is scaled by 0.01 / 0.5, the pressure 1/6 is kept.
+# (The legacy reference had the deviator scaled to 2/3 of the yield stress and no pressure.)
+const UT_PLASTIC_REFERENCE = let s = [1 / 3, -1 / 6, -1 / 6] .* (0.01 / 0.5) .+ 1 / 6
+    r = zeros(2, 3, 3)
+    for i in 1:3
+        r[:, i, i] .= s[i]
+    end
+    r
+end
 
-@testset "Correspondence Plastic typed compute equals legacy" begin
+@testset "Correspondence Plastic typed compute radial return" begin
     dof = 3
     nnodes = 2
     raw = Dict{String,Any}("Material Model" => "Correspondence Elastic + Correspondence Plastic",

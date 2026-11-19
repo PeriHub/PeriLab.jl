@@ -71,6 +71,11 @@ It uses the shared elastic keys. With an anisotropic `Symmetry` you can provide 
 ## Correspondence Plastic
 The [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence/Correspondence_Plastic.jl) material uses elastic stresses and calculate the plastic part. Has to be combined with a function, which provides elastic stresses.
 
+The trial stress comes from the elastic model (e.g. `Correspondence Elastic`), so any `Symmetry` works, also anisotropic, orthotropic and transverse isotropic ones. The shear modulus is only used for the equivalent plastic strain; without isotropic constants it is taken from `Shear Modulus` (an extra key next to the anisotropic constants), else `Shear Modulus XY`, else the in-plane shear entry $C_{66}$ of the Hooke matrix. The value is logged at init.
+
+!!! warning "Limitations"
+    The return mapping is a radial return to the von Mises surface. With anisotropic elasticity this is not the closest-point projection in the energy norm, so it is an approximation for mildly anisotropic materials; an anisotropic (e.g. Hill) yield surface is not available. In 2D the deviator is formed from the in-plane stress components ($\sigma_{zz}$ is neither computed nor constrained during the return); the output `von Mises Stress` uses a different formula and can exceed the yield stress.
+
 ```@eval
 using PeriLab, Markdown
 Markdown.parse(PeriLab.parameter_table("Correspondence Plastic"))

@@ -64,7 +64,9 @@ When the trial stress exceeds the yield surface, a radial return mapping is appl
 
 ### Step 1: Calculate Trial Deviatoric Stress Magnitude
 
-$$\|\boldsymbol{s}^{trial}\| = \frac{\sigma_{vM}^{trial}}{\sqrt{\frac{2}{3}}}$$
+$$\|\boldsymbol{s}^{trial}\| = \sqrt{\boldsymbol{s}^{trial}:\boldsymbol{s}^{trial}} = \sqrt{\frac{2}{3}}\,\sigma_{vM}^{trial}$$
+
+so Step 2 scales the von Mises stress exactly to $\sigma_y$.
 
 ### Step 2: Scale Deviatoric Stress to Yield Surface
 

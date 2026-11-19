@@ -508,6 +508,7 @@ function compute_deviatoric_and_spherical_stresses(stress,
         end
         deviatoric_stress[i, i] -= spherical_stress
     end
+    return spherical_stress
 end
 
 """
