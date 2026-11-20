@@ -849,8 +849,8 @@ function save_mesh(pd_mesh, txt_file)
     @info "Number of points: $(size(pd_mesh["mesh_df"],1))"
     @info "Printing time: $(maximum(pd_mesh["mesh_df"].Activation_Time)) seconds"
 
-    write(txt_file,
-          "header: x y z block_id volume Activation_Time Angles_x Angles_y Angles_z Extent_x Extent_y Extent_z\n")
+    # header from the columns: importers may add their own (e.g. Layer of the Kuka importer)
+    write(txt_file, "header: " * join(names(pd_mesh["mesh_df"]), " ") * "\n")
     CSV.write(txt_file, pd_mesh["mesh_df"]; delim = (' '), append = true)
 end
 
