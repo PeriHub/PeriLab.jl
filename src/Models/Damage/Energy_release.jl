@@ -86,7 +86,7 @@ function _critical_energy!(nodes::AbstractVector{Int64}, tension::Bool, shear::B
         energy = bond_energy[iID]
         damage = bond_damage[iID]
         quad_horizon = quad_horizons[iID]
-        @inbounds @fastmath for jID in eachindex(neighbors)
+        @inbounds for jID in eachindex(neighbors)
             relative_displacement = deformed[jID] - undeformed[jID]
             compressed = deformed_length[jID] < undeformed_length[jID]
             if dot(relative_displacement, relative_displacement) == 0 ||
