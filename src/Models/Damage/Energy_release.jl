@@ -73,6 +73,8 @@ function _critical_energy!(nodes::AbstractVector{Int64}, tension::Bool, shear::B
                                                   "NP1")::BondScalarState{Float64}
     quad_horizons = Data_Manager.get_field("Quad Horizon")::NodeScalarField{Float64}
     inverse_bond_id = Data_Manager.get_field("Inverse Bond ID")::BondScalarState{Int64}
+    volume = Data_Manager.get_field("Volume")::NodeScalarField{Float64}
+    dissipated_energy = Data_Manager.get_field("Dissipated Energy")::NodeScalarField{Float64}
 
     @batch minbatch=MINBATCH for iID in nodes
         # the bond views of the node, built once instead of per bond
@@ -112,6 +114,9 @@ function _critical_energy!(nodes::AbstractVector{Int64}, tension::Bool, shear::B
             # associated results: there a node also depends on the weighted volume of its
             # neighbors, whose changes are not flagged.
             if bond_energy_j > crit_of(iID, neighborID) * quad_horizon
+                damage[jID] > 0 &&
+                    (dissipated_energy[iID] += bond_energy_j * volume[iID] *
+                                               volume[neighborID])
                 damage[jID] = 0.0
                 update_list[iID] = true
             end
@@ -140,7 +145,8 @@ Get the quadric of the horizon. The bond energy w is the half bond (one node) sh
 sum_j w_ij V_j is the strain energy density and a bond pair stores 2w. A straight crack is
 crossed per unit area by the bonds with int_0^delta 2 xi^2 dxi = 2 delta^3/3 (2D, per thickness),
 so the critical half bond energy is w_c = 3 G/(4 delta^3 t). The former 2D value 3/(pi delta^3 t)
-dissipated 4/pi G.
+dissipated 4/pi G. In 3D the bonds crossing a unit area give pi delta^4/4, so w_c = 2 G/(pi delta^4); the
+former 3D value 4/(pi delta^4) (Foster et al., energy per bond pair) dissipated 2 G.
 
 # Arguments
 - `horizon::Float64`: The horizon of the block.
@@ -156,7 +162,7 @@ function get_quad_horizon(horizon::Float64, dof::Int64, thickness::Float64,
         return Float64(3 / (4 * avg_horizon^3 * thickness))
     end
     #TODO: Use average horizon
-    return Float64(4 / (pi * avg_horizon^4))
+    return Float64(2 / (pi * avg_horizon^4))
 end
 
 """

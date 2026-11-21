@@ -11,7 +11,7 @@
                                                                                        3,
                                                                                        thickness,
                                                                                        3.0) ==
-          Float64(4 / (pi * horizon^4))
+          Float64(2 / (pi * horizon^4))
     @test PeriLab.Solver_Manager.Model_Factory.Damage.Critical_Energy.get_quad_horizon(horizon,
                                                                                        2,
                                                                                        thickness,
@@ -24,7 +24,7 @@
                                                                                        3,
                                                                                        thickness,
                                                                                        3.0) ==
-          Float64(4 / (pi * horizon^4))
+          Float64(2 / (pi * horizon^4))
     @test PeriLab.Solver_Manager.Model_Factory.Damage.Critical_Energy.get_quad_horizon(horizon,
                                                                                        2,
                                                                                        thickness,

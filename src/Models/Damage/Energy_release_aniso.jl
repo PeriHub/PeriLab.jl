@@ -39,16 +39,28 @@ Calculates the elastic energy of each bond and compares it to a critical one. If
 """
 function compute_model(nodes::AbstractVector{Int64}, p::CriticalEnergyAnisotropicParams,
                        damage, block::Int64, time::Float64, dt::Float64)
+    aniso = damage.base.anisotropic_damage
     return _critical_energy_aniso!(nodes, p.compression == "none",
-                                   p.compression == "shear")
+                                   p.compression == "shear",
+                                   criterion_id(aniso.bond_criterion), aniso.exponent)
 end
 
-function _critical_energy_aniso!(nodes::AbstractVector{Int64}, tension::Bool, shear::Bool)
-    # function barrier on the dof: the fields below get concrete types
-    with_dof(D -> _critical_energy_aniso!(nodes, tension, shear, D))
+# Bond Criterion as an integer, so that the kernel does not compare strings per bond
+const AXIS, AXIS_FORCE, DIRECTIONAL, AXIS_STRETCH, DIRECTIONAL_STRETCH = 1, 2, 3, 4, 5
+function criterion_id(name::String)
+    findfirst(==(name),
+              ["Axis", "Axis Force", "Directional",
+                  "Axis Stretch", "Directional Stretch"])
 end
 
 function _critical_energy_aniso!(nodes::AbstractVector{Int64}, tension::Bool, shear::Bool,
+                                 criterion::Int64, exponent::Float64)
+    # function barrier on the dof: the fields below get concrete types
+    with_dof(D -> _critical_energy_aniso!(nodes, tension, shear, criterion, exponent, D))
+end
+
+function _critical_energy_aniso!(nodes::AbstractVector{Int64}, tension::Bool, shear::Bool,
+                                 criterion::Int64, exponent::Float64,
                                  ::Val{D}) where {D}
     nlist = Data_Manager.get_nlist()::BondScalarState{Int64}
     block_ids = Data_Manager.get_field("Block_Id")::NodeScalarField{Int64}
@@ -64,8 +76,13 @@ function _critical_energy_aniso!(nodes::AbstractVector{Int64}, tension::Bool, sh
     quad_horizons = Data_Manager.get_field("Quad Horizon")::NodeScalarField{Float64}
     inverse_bond_id = Data_Manager.get_field("Inverse Bond ID")::BondScalarState{Int64}
     rotation_tensor = Data_Manager.get_field("Rotation Tensor")::NodeTensorField{Float64}
+    axis_failure = Data_Manager.get_field("Anisotropic Axis Failure")::BondVectorState{Bool,
+                                                                                       D}
+    volume = Data_Manager.get_field("Volume")::NodeScalarField{Float64}
+    dissipated_energy = Data_Manager.get_field("Dissipated Energy")::NodeScalarField{Float64}
     aniso_crit_values = Data_Manager.get_aniso_crit_values()::Dict{Int64,Any}
-    rotation = Data_Manager.get_rotation()
+    stretch_based = criterion == AXIS_STRETCH || criterion == DIRECTIONAL_STRETCH
+    dominance = criterion == AXIS_FORCE || criterion == AXIS_STRETCH
 
     @inbounds for iID in nodes
         # the bond views of the node, built once instead of per bond
@@ -77,10 +94,12 @@ function _critical_energy_aniso!(nodes::AbstractVector{Int64}, tension::Bool, sh
         inverse_ids = inverse_bond_id[iID]
         forces = bond_forces[iID]
         damage = bond_damage[iID]
+        failure = axis_failure[iID]
         R = node_tensor(rotation_tensor, iID, Val(D))
-        critical = SVector{D,Float64}(aniso_crit_values[block_ids[iID]]::Vector{Float64}) *
-                   quad_horizons[iID]
-        @fastmath for jID in eachindex(neighbors)
+        crit = SVector{D,Float64}(aniso_crit_values[block_ids[iID]]::Vector{Float64})
+        # energy criteria compare with G_k * quad horizon, stretch criteria with s_k
+        critical = stretch_based ? crit : crit * quad_horizons[iID]
+        for jID in eachindex(neighbors)
             relative_displacement = deformed[jID] - undeformed[jID]
             compressed = deformed_length[jID] < undeformed_length[jID]
             if dot(relative_displacement, relative_displacement) == 0 ||
@@ -90,20 +109,51 @@ function _critical_energy_aniso!(nodes::AbstractVector{Int64}, tension::Bool, sh
             # the bond may not exist at the neighbor, due to different horizons
             inverse_neighborID = inverse_ids[jID]
             inverse_neighborID == 0 && continue
+            neighborID = neighbors[jID]
 
-            force_difference = forces[jID] - bond_forces[neighbors[jID]][inverse_neighborID]
+            force_difference = forces[jID] - bond_forces[neighborID][inverse_neighborID]
             if shear && compressed
                 n = deformed[jID] / deformed_length[jID]
                 relative_displacement = transverse(relative_displacement, n)
                 force_difference = transverse(force_difference, n)
             end
             bond_energy = 0.25 * abs(dot(force_difference, relative_displacement))
+            # energy released per unit of lost damage
+            released = bond_energy * volume[iID] * volume[neighborID]
 
-            rotated_bond = rotation ? R * deformed[jID] : deformed[jID]
-            bond_norm = abs.(rotated_bond) / deformed_length[jID]
-            exceeded = bond_energy * bond_norm .> critical
-            damage[jID] = max(damage[jID] - sum(bond_norm .* exceeded), 0.0)
-            any(exceeded) && (update_list[iID] = true)
+            # bond direction in material coordinates (the rotation tensor maps material ->
+            # global); squared direction cosines are sign independent and sum to one
+            weights = (transpose(R) * deformed[jID] / deformed_length[jID]) .^ 2
+            # bond stretch for the stretch criteria, bond energy for the energy criteria
+            value = stretch_based ? deformed_length[jID] / undeformed_length[jID] - 1 :
+                    bond_energy
+
+            if criterion == DIRECTIONAL || criterion == DIRECTIONAL_STRETCH
+                exceeded = criterion == DIRECTIONAL ?
+                           value > directional_critical_value(critical, weights, exponent) :
+                           value^2 > directional_critical_stretch2(critical, weights,
+                                                         exponent)
+                exceeded || continue
+                damage[jID] > 0 && (dissipated_energy[iID] += released)
+                damage[jID] = 0.0
+                update_list[iID] = true
+                continue
+            end
+
+            # axis criteria: the failure of an axis is irreversible
+            failed = failure[jID]
+            new_failed = failed .| (value .> critical)
+            new_failed == failed && continue
+            failure[jID] = new_failed
+            # all axes failed: no share left (1 - sum(w) only up to round-off)
+            remaining = all(new_failed) ? 0.0 : 1.0 - sum(weights .* new_failed)
+            dominance && any(new_failed .& (weights .>= 0.5)) && (remaining = 0.0)
+            new_damage = clamp(min(damage[jID], remaining), 0.0, 1.0)
+            # the bond energy follows from the damaged bond forces: release its lost share
+            damage[jID] > 0 &&
+                (dissipated_energy[iID] += released * (1 - new_damage / damage[jID]))
+            damage[jID] = new_damage
+            update_list[iID] = true
         end
     end
 end
@@ -164,7 +214,8 @@ Get the quadric of the horizon. The bond energy w is the half bond (one node) sh
 sum_j w_ij V_j is the strain energy density and a bond pair stores 2w. A straight crack is
 crossed per unit area by the bonds with int_0^delta 2 xi^2 dxi = 2 delta^3/3 (2D, per thickness),
 so the critical half bond energy is w_c = 3 G/(4 delta^3 t). The former 2D value 3/(pi delta^3 t)
-dissipated 4/pi G.
+dissipated 4/pi G. In 3D the bonds crossing a unit area give pi delta^4/4, so w_c = 2 G/(pi delta^4); the
+former 3D value 4/(pi delta^4) (Foster et al., energy per bond pair) dissipated 2 G.
 
 # Arguments
 - `horizon::Float64`: The horizon of the block.
@@ -177,7 +228,7 @@ function get_quad_horizon(horizon::Float64, dof::Int64, thickness::Float64)
     if dof == 2
         return Float64(3 / (4 * horizon^3 * thickness))
     end
-    return Float64(4 / (pi * horizon^4))
+    return Float64(2 / (pi * horizon^4))
 end
 
 """
@@ -193,6 +244,14 @@ function init_model(nodes::AbstractVector{Int64}, p::CriticalEnergyAnisotropicPa
     end
     dof = Data_Manager.get_dof()
     quad_horizon = Data_Manager.create_constant_node_scalar_field("Quad Horizon", Float64)
+    # irreversible failure flag per material axis and bond
+    Data_Manager.create_constant_bond_vector_state("Anisotropic Axis Failure", Bool, dof)
+    aniso = damage.base.anisotropic_damage
+    if aniso.bond_criterion == "Axis Force" && aniso.force_filter
+        # marker for the correspondence model: a failed axis removes the bond force
+        # component along that material axis, the other components stay
+        Data_Manager.create_constant_node_scalar_field("Anisotropic Force Filter", Bool)
+    end
     init_inverse_bond_id()
     horizon = Data_Manager.get_field("Horizon")
     thickness::Float64 = p.thickness

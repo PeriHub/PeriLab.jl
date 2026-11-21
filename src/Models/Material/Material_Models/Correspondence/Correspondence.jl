@@ -185,26 +185,20 @@ axes, f = (I - sum_k chi_k a_k a_k^T) f. The axes a_k are the columns of the rot
 tensor. The scalar bond damage still scales the force as before.
 """
 function filter_failed_axes!(nodes::AbstractVector{Int64},
-                             bond_force::BondVectorState{Float64},
-                             bond_damage::BondScalarState{Float64})
-    axis_failed::BondVectorState{Bool} = Data_Manager.get_field("Anisotropic Axis Failure")
-    rotation_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Rotation Tensor")
-    dof = Data_Manager.get_dof()
+                             bond_force::BondVectorState{Float64,D},
+                             bond_damage::BondScalarState{Float64}) where {D}
+    axis_failure = Data_Manager.get_field("Anisotropic Axis Failure")::BondVectorState{Bool,
+                                                                                       D}
+    rotation_tensor = Data_Manager.get_field("Rotation Tensor")::NodeTensorField{Float64}
     @inbounds for iID in nodes
-        for jID in eachindex(bond_damage[iID])
-            failed = axis_failed[iID][jID]
-            any(failed) || continue
-            f = bond_force[iID][jID]
-            for k in 1:dof
-                failed[k] || continue
-                fa = 0.0
-                for m in 1:dof
-                    fa += rotation_tensor[iID, m, k] * f[m]
-                end
-                for m in 1:dof
-                    f[m] -= fa * rotation_tensor[iID, m, k]
-                end
-            end
+        failure = axis_failure[iID]
+        any(any, failure) || continue
+        forces = bond_force[iID]
+        R = node_tensor(rotation_tensor, iID, Val(D))
+        for jID in eachindex(forces)
+            any(failure[jID]) || continue
+            # material components of the force, those along failed axes removed
+            forces[jID] = R * ((transpose(R) * forces[jID]) .* .!failure[jID])
         end
     end
 end

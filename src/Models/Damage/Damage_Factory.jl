@@ -22,6 +22,14 @@ import .....ParameterSpec: check!
     critical_value_y::Float64 = req("Critical Value Y")
     "Critical bond energy for the bond share along the material z axis (3D); the y value if not given"
     critical_value_z::Union{Nothing,Float64} = opt("Critical Value Z"; default = nothing)
+    "How a bond fails: Axis (each material axis fails on its own, the bond keeps the share of the intact axes), Axis Force (Axis, and the bond fails completely if a failed axis has a weight >= 0.5), Directional (the bond fails as a whole at the critical value interpolated for its direction), Axis Stretch and Directional Stretch (the same with critical stretches as critical values)"
+    bond_criterion::String = opt("Bond Criterion"; default = "Axis",
+                                 allowed = ["Axis", "Axis Force", "Directional",
+                                     "Axis Stretch", "Directional Stretch"])
+    "Axis Force only: a failed axis removes the bond force component along it (correspondence models)"
+    force_filter::Bool = opt("Force Filter"; default = true)
+    "Exponent n of the directional interpolation of the critical values (Directional, Directional Stretch)"
+    exponent::Float64 = opt("Exponent"; default = 1.0, min = 0)
 end
 
 @params "Damps the waves released when bonds break (local damping after Silling)" struct LocalDampingParams

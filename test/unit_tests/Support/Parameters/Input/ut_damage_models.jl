@@ -45,6 +45,37 @@ ut_messages(ctx) = Dict(e.path => e.message for e in ctx.errors)
     @test d.model.thickness == 1.0
     @test d.base.anisotropic_damage.critical_value_y == 2.0
     @test d.base.anisotropic_damage.critical_value_z === nothing
+    @test d.base.anisotropic_damage.bond_criterion == "Axis"
+    @test d.base.anisotropic_damage.force_filter
+    @test d.base.anisotropic_damage.exponent == 1.0
+end
+
+@testset "anisotropic damage block of the CT50 paper deck" begin
+    input, ctx = ut_damage(Dict("Damage Model" => "Critical Energy Anisotropic",
+                                "Critical Value" => 20.3797,
+                                "Anisotropic Damage" =>
+                                    Dict("Critical Value X" => 34.1385,
+                                         "Critical Value Y" => 20.3797,
+                                         "Bond Criterion" => "Axis Force",
+                                         "Force Filter" => false)))
+    @test isempty(ctx.errors)
+    a = input.damages["Dam"].base.anisotropic_damage
+    @test a.bond_criterion == "Axis Force" && !a.force_filter
+    @test a.critical_value_x == 34.1385
+    input, ctx = ut_damage(Dict("Damage Model" => "Critical Energy Anisotropic",
+                                "Critical Value" => 0.01,
+                                "Anisotropic Damage" => Dict("Critical Value X" => 0.02,
+                                     "Critical Value Y" => 0.01,
+                                     "Bond Criterion" => "Directional Stretch",
+                                     "Exponent" => 8.0)))
+    @test isempty(ctx.errors)
+    @test input.damages["Dam"].base.anisotropic_damage.exponent == 8.0
+    _, ctx = ut_damage(Dict("Damage Model" => "Critical Energy Anisotropic",
+                            "Critical Value" => 1.0,
+                            "Anisotropic Damage" => Dict("Critical Value X" => 1.0,
+                                 "Critical Value Y" => 1.0,
+                                 "Bond Criterion" => "Axes")))
+    @test !isempty(ctx.errors)
 end
 
 @testset "damage input errors" begin
