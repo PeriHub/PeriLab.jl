@@ -4,10 +4,6 @@
 
 FROM julia:1.12 AS build
 
-# Copy only necessary files for building
-COPY src ./PeriLab/src
-COPY Project.toml ./PeriLab/Project.toml
-
 WORKDIR /PeriLab
 
 # Install build dependencies
@@ -18,7 +14,13 @@ ENV JULIA_CPU_TARGET="generic"
 
 # JuliaC lives in the default environment, so it is not compiled into the PeriLab image
 RUN julia -e 'using Pkg; Pkg.add("JuliaC")'
-RUN julia --project -e 'using Pkg; Pkg.instantiate()'
+
+# Dependencies first, against a stub module, so this layer stays cached when only src changes
+COPY Project.toml ./Project.toml
+RUN mkdir src && echo 'module PeriLab end' > src/PeriLab.jl \
+    && julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+
+COPY src ./src
 RUN julia -e 'import JuliaC; JuliaC.main(["--output-exe", "PeriLab", "--bundle", "build", "."])'
 # --trim=safe --experimental
 
@@ -26,6 +28,14 @@ RUN julia -e 'import JuliaC; JuliaC.main(["--output-exe", "PeriLab", "--bundle",
 FROM debian:trixie-slim AS main
 
 WORKDIR /app
+
+# Python runtime for the HTTP wrapper around the PeriLab binary
+RUN apt-get update \
+    && apt-get install -yq --no-install-recommends python3 python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt /app/requirements.txt
+RUN pip3 install --no-cache-dir --break-system-packages -r /app/requirements.txt
 
 # Create the destination directory
 RUN mkdir PeriLab
@@ -50,16 +60,6 @@ RUN printf '%s\n' '#!/bin/sh' \
     'export LD_LIBRARY_PATH="$(ls -d $A/*/lib | tr "\n" :)$LD_LIBRARY_PATH"' \
     'exec $(ls $A/*/bin/mpiexec) "$@"' > /usr/local/bin/mpiexec \
     && chmod +x /usr/local/bin/mpiexec
-
-# --- API wrapper additions -------------------------------------------------
-
-# Python runtime for the HTTP wrapper around the PeriLab binary
-RUN apt-get update \
-    && apt-get install -yq --no-install-recommends python3 python3-pip \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt /app/requirements.txt
-RUN pip3 install --no-cache-dir --break-system-packages -r /app/requirements.txt
 
 COPY app /app/api
 
