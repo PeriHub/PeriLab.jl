@@ -300,8 +300,8 @@ MPI.Init()
         @testset "test_critical_energy" begin
             include("fullscale_tests/test_critical_energy/test_critical_energy.jl")
         end
-        @testset "test_MPI_partial_damage" begin
-            include("fullscale_tests/test_MPI_partial_damage/test_MPI_partial_damage.jl")
+        @testset "test_MPI_batch" begin
+            include("fullscale_tests/test_MPI_batch.jl")
         end
         @testset "test_thermal_expansion" begin
             include("fullscale_tests/test_thermal_expansion/test_thermal_expansion.jl")

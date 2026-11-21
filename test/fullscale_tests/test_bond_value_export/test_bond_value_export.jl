@@ -3,9 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 folder_name = basename(@__FILE__)[1:(end - 3)]
+# the MPI runs are in test_MPI_batch.jl
 cd("fullscale_tests/" * folder_name) do
     run_perilab("bond_value_export", 1, true, folder_name)
-    run_perilab("bond_value_export", 2, true, folder_name)
     run_perilab("bond_value_export_block_wise", 1, true, folder_name)
-    run_perilab("bond_value_export_block_wise", 2, true, folder_name)
 end

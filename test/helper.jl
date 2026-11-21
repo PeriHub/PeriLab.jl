@@ -49,38 +49,37 @@ function run_perilab(filename, cores, compare, folder_name = ""; silent = true,
         #     @test exit_code == 0
         # end
     end
-    if compare
-        same = false
-        if cores == 1
-            same = exodiff(filename * ".e",
-                           "./Reference/" * filename * ".e";
-                           command_file = folder_name * ".cmd")
-        else
-            same = exodiff(filename * ".e",
-                           "./Reference/" * filename * ".e",
-                           ["-p", "-f", folder_name * ".cmd"])
-        end
-        @test same
-        if same
-            rm("exodiff.log")
-            rm(filename * ".e")
-        else
-            mv("exodiff.log", filename * "_exodiff.log", force = true)
-        end
+    compare && compare_results(filename, folder_name, cores; compare_csv = compare_csv)
+    compare || rm(filename * ".e"; force = true)
+end
+
+"""
+    compare_results(filename, folder_name, cores; compare_csv = false, dir = ".")
+
+Compares `<dir>/<filename>.e` (and `.csv`) with `Reference/<filename>.e` and deletes the
+result if it matches; a failed comparison keeps it and the exodiff log.
+"""
+function compare_results(filename, folder_name, cores; compare_csv = false, dir = ".")
+    result = joinpath(dir, filename * ".e")
+    reference = "./Reference/" * filename * ".e"
+    same = cores == 1 ?
+           exodiff(result, reference; command_file = folder_name * ".cmd") :
+           exodiff(result, reference, ["-p", "-f", folder_name * ".cmd"])
+    @test same
+    if same
+        rm("exodiff.log")
+        rm(result)
     else
-        try
-            rm(filename * ".e")
-        catch
-            # File does not exist
-        end
+        mv("exodiff.log", joinpath(dir, filename * "_exodiff.log"), force = true)
     end
     if compare_csv
-        results_csv = CSV.read(open(filename * ".csv"), DataFrame)
+        result_csv = joinpath(dir, filename * ".csv")
+        results = CSV.read(open(result_csv), DataFrame)
         reference_csv = CSV.read(open("./Reference/" * filename * ".csv"), DataFrame)
         for i in 1:size(reference_csv)[2]
-            @test results_csv[:, i]≈reference_csv[:, i] atol=1e-15
+            @test results[:, i]≈reference_csv[:, i] atol=1e-15
         end
-        rm(filename * ".csv")
+        rm(result_csv)
     end
 end
 
