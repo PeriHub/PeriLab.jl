@@ -146,6 +146,9 @@ async def submit_job(
         default="", description="Extra CLI flags for PeriLab, e.g. '-v --dryrun'"
     ),
     num_procs: int = Form(default=1, description="MPI ranks, at most the number of CPUs of the container"),
+    num_threads: int = Form(
+        default=1, description="Julia threads per process (JULIA_NUM_THREADS), at most the number of CPUs"
+    ),
     user_id: Optional[str] = Form(
         default=None, description="Owner id; jobs are tagged with it for filtering"
     ),
@@ -162,7 +165,8 @@ async def submit_job(
     extra_args = args.split() if args else []
 
     try:
-        job = manager.create_job(input_file.filename, files, extra_args, num_procs, user_id)
+        job = manager.create_job(input_file.filename, files, extra_args, num_procs, user_id,
+                                 num_threads)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except RuntimeError as e:

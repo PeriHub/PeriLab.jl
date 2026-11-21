@@ -49,6 +49,7 @@ class Job:
     started_at: Optional[float] = None
     finished_at: Optional[float] = None
     user_id: Optional[str] = None
+    num_threads: int = 1  # Julia threads per process (JULIA_NUM_THREADS)
 
     # Live progress parsed from the PeriLab log while the job runs.
     # "[Info] Step: 1 / 2 [2.500e-04 s]" -> step=1, total_steps=2, sim_time=2.5e-04
@@ -167,10 +168,13 @@ class JobManager:
     # Job creation / execution
     # ------------------------------------------------------------------ #
     def create_job(self, input_filename: str, files: dict, extra_args: list,
-                   num_procs: int = 1, user_id: Optional[str] = None) -> Job:
+                   num_procs: int = 1, user_id: Optional[str] = None,
+                   num_threads: int = 1) -> Job:
         max_procs = os.cpu_count() or 1
         if not 1 <= num_procs <= max_procs:
             raise ValueError(f"num_procs must be between 1 and {max_procs}")
+        if not 1 <= num_threads <= max_procs:
+            raise ValueError(f"num_threads must be between 1 and {max_procs}")
         job_id = uuid.uuid4().hex[:12]
         job_dir = self.base_dir / job_id
         job_dir.mkdir(parents=True)
@@ -196,7 +200,8 @@ class JobManager:
             command = [self.mpi_launcher, "-n", str(num_procs), self.binary_path,
                        str(main_rel), *extra_args]
 
-        job = Job(id=job_id, dir=job_dir, command=command, user_id=user_id)
+        job = Job(id=job_id, dir=job_dir, command=command, user_id=user_id,
+                  num_threads=num_threads)
         job.save()
         with self._registry_lock:
             self.jobs[job_id] = job
@@ -233,6 +238,7 @@ class JobManager:
                     proc = subprocess.Popen(
                         job.command,
                         cwd=job.dir,
+                        env={**os.environ, "JULIA_NUM_THREADS": str(job.num_threads)},
                         stdout=console,
                         stderr=subprocess.STDOUT,
                     )
