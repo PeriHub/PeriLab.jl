@@ -66,6 +66,7 @@ function init_data(input::PeriLabInput,
         size = MPI.Comm_size(comm)
         rank = MPI.Comm_rank(comm) + 1
         fem_active::Bool = false
+        weights = mixed_rank_weights(input, comm)
         if rank == 1
             @timeit "load_and_evaluate_mesh" distribution,
                                              mesh,
@@ -78,7 +79,8 @@ function init_data(input::PeriLabInput,
                                              topology,
                                              element_distribution=load_and_evaluate_mesh(input,
                                                                                          path,
-                                                                                         size)
+                                                                                         size;
+                                                                                         weights = weights)
             if !isnothing(element_distribution)
                 fem_active = true
             end
@@ -713,7 +715,8 @@ Load and evaluate the mesh data.
 """
 function load_and_evaluate_mesh(input::PeriLabInput,
                                 path::String,
-                                ranksize::Int64)
+                                ranksize::Int64;
+                                weights::Union{Nothing,Vector{Float64}} = nothing)
     discretization = input.sections.discretization
     if discretization.type == "Abaqus"
         @timeit "read_mesh" mesh, nsets=read_mesh(input, path)
@@ -765,7 +768,8 @@ function load_and_evaluate_mesh(input::PeriLabInput,
     @timeit "node_distribution" distribution, ptc,
                                 ntype=node_distribution(nlist, coor, ranksize,
                                                         something(discretization.distribution_type,
-                                                                  "Coordinate based"))
+                                                                  "Coordinate based");
+                                                        weights = weights)
 
     el_distribution = nothing
     if input.sections.fem !== nothing && !isnothing(external_topology)
@@ -939,7 +943,8 @@ Create the distribution of the nodes.
 function node_distribution(nlist::NestedNeighborhoodList,
                            coor::AbstractMatrix{Float64},
                            size::Int64,
-                           distribution_type::String = "Coordinate based")
+                           distribution_type::String = "Coordinate based";
+                           weights::Union{Nothing,Vector{Float64}} = nothing)
     nnodes = length(nlist)
     ntype = Dict("controllers" => Int64[], "responder" => Int64[])
     if size == 1
@@ -948,7 +953,9 @@ function node_distribution(nlist::NestedNeighborhoodList,
         return [collect(1:nnodes)], Int64[], ntype
     end
 
-    if distribution_type == "Coordinate based"
+    if weights !== nothing
+        distribution, ptc = create_distribution(nnodes, size; weights = weights)
+    elseif distribution_type == "Coordinate based"
         distribution, ptc = create_distribution_coordinate_based(coor, nlist, size)
     elseif distribution_type == "Neighbor based"
         distribution, ptc = create_distribution_neighbor_based(nnodes, nlist, size)
@@ -1237,21 +1244,27 @@ function bisect_nodes!(distribution, nodes, first_rank, ranks, coor, weight)
 end
 
 """
-    create_distribution(nnodes::Int64, size::Int64)
+    create_distribution(nnodes::Int64, size::Int64; weights = nothing)
 
 Calculate the initial size of each chunk for a nearly equal number of nodes vs. cores this algorithm might lead to the problem, that the last core is not equally loaded
+
+With `weights` (one per rank, `Matrix Backend: Mixed`) the contiguous chunks have the
+lengths `round(nnodes · w_r / Σw)`, at least one node each; the last chunk takes the rest.
 
 # Arguments
 - `nnodes::Int64`: The number of nodes.
 - `size::Int64`: The number of cores.
+- `weights::Union{Nothing,Vector{Float64}}`: Relative number of nodes per rank.
 # Returns
 - `distribution::Array{Int64,1}`: The distribution of the nodes.
 - `point_to_core::Array{Int64,1}`: The number of nodes in each rank.
 """
-function create_distribution(nnodes::Int64, size::Int64)
+function create_distribution(nnodes::Int64, size::Int64;
+                             weights::Union{Nothing,Vector{Float64}} = nothing)
     if size > nnodes
         @abort "Number of cores $size exceeds number of nodes $nnodes."
     end
+    weights === nothing || return weighted_distribution(nnodes, weights)
     chunk_size = div(nnodes, size)
     # Split the data into chunks
     distribution = fill(Int64[], size)
@@ -1266,6 +1279,41 @@ function create_distribution(nnodes::Int64, size::Int64)
         point_to_core[start_idx:end_idx] .= i
     end
     return distribution, point_to_core
+end
+
+function weighted_distribution(nnodes::Int64, weights::Vector{Float64})
+    size = length(weights)
+    distribution = Vector{Vector{Int64}}(undef, size)
+    point_to_core = zeros(Int64, nnodes)
+    start_idx = 1
+    for i in 1:size
+        left = nnodes - start_idx + 1
+        n = i == size ? left :
+            clamp(round(Int64, nnodes * weights[i] / sum(weights)), 1, left - (size - i))
+        distribution[i] = collect(start_idx:(start_idx + n - 1))
+        point_to_core[distribution[i]] .= i
+        start_idx += n
+    end
+    return distribution, point_to_core
+end
+
+"""
+    mixed_rank_weights(input::PeriLabInput, comm::MPI.Comm)
+
+Node weights of the ranks for a `Verlet Matrix Based` solver with `Matrix Backend: Mixed`
+(`GPU Weight` for ranks on a GPU, else 1); `nothing` for every other solver or one rank.
+Collective: every rank calls it.
+"""
+function mixed_rank_weights(input::PeriLabInput, comm::MPI.Comm)
+    MPI.Comm_size(comm) == 1 && return nothing
+    steps = input.sections.solver === nothing ?
+            collect(values(input.sections.multistep_solver)) : [input.sections.solver]
+    i = findfirst(s -> hasproperty(s.options, :matrix_backend) &&
+                       s.options.matrix_backend == "Mixed", steps)
+    i === nothing && return nothing
+    # PD_Matrix (inside Solver_Manager) is loaded after IO, so it is looked up at runtime
+    pd_matrix = parentmodule(@__MODULE__).Solver_Manager.PD_Matrix
+    return pd_matrix.rank_weights(comm, "Mixed", steps[i].options.gpu_weight)
 end
 
 """
