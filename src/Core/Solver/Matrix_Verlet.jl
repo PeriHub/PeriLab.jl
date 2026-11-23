@@ -469,6 +469,9 @@ function time_step!(ws::DistributedVerletWorkspace, run::SolverRun{VerletMatrixP
     end
     @timeit "Accelaration computation" @views @. aNP1[own, :] = fd[own, :] /
                                                                 ws.density[own]
+    # second half step of the velocity Verlet scheme
+    @views @. vNP1[own, :] += 0.5 * dt * aNP1[own, :]
+    apply_bc_dirichlet(["Velocity"], bcs, time, step_time)
     return nothing
 end
 
