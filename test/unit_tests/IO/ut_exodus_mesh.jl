@@ -8,8 +8,7 @@ using Exodus
 function exodus_mesh(coords::Matrix{Float64}, elem_type::String, conn::Matrix{Int32};
                      nodal = Dict{String,Vector{Float64}}())
     file = tempname() * ".e"
-    init = Initialization{Int32(3),Int32(size(coords, 2)),Int32(size(conn, 2)),Int32(1),
-                          Int32(0),Int32(0)}()
+    init = Initialization{Int32}(3, size(coords, 2), size(conn, 2), 1, 0, 0)
     exo = ExodusDatabase{Int32,Int32,Int32,Float64}(file, "w", init)
     write_coordinates(exo, coords)
     write_block(exo, 1, elem_type, conn)

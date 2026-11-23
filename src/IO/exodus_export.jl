@@ -106,12 +106,8 @@ function create_result_file(filename::AbstractString,
 
     num_side_sets = 0
 
-    init = Initialization{Int32(num_dim),
-                          Int32(num_nodes),
-                          Int32(num_elems),
-                          Int32(num_elem_blks),
-                          Int32(num_node_sets),
-                          Int32(num_side_sets)}()
+    init = Initialization{Int32}(num_dim, num_nodes, num_elems, num_elem_blks,
+                                 num_node_sets, num_side_sets)
 
     @info "Create output " * filename
     @debug "Exodus init: $num_nodes nodes, $num_elems elements, $num_elem_blks blocks"
@@ -132,7 +128,7 @@ Exodus.jl has no option for the file format (the `EXODUS_NETCDF4` environment va
 read by libexodus only once per process), so this mirrors its constructor.
 """
 function create_compressed_exodus(filename::AbstractString, init::Initialization)
-    mode = Exodus.EX_CLOBBER | Exodus.EX_NETCDF4
+    mode = Exodus.EX_CLOBBER | Exodus.LibExodus.EX_NETCDF4
     exo = ccall((:ex_create_int, Exodus.Exodus_jll.libexodus), Cint,
                 (Cstring, Cint, Ref{Cint}, Ref{Cint}, Cint),
                 filename, mode, Exodus.cpu_word_size, sizeof(Float64),
@@ -145,11 +141,9 @@ function create_compressed_exodus(filename::AbstractString, init::Initialization
     end
     Exodus.write_initialization!(exo, init)
     names() = Dict{String,Int32}()
-    return ExodusDatabase{Int32,Int32,Int32,Float64,typeof(init)}(exo, "w",
-                                                                  String(filename),
-                                                                  init, names(), names(),
-                                                                  names(), names(), names(),
-                                                                  names(), names(), names())
+    return ExodusDatabase{Int32,Int32,Int32,Float64}(exo, "w", String(filename), init,
+                                                     names(), names(), names(), names(),
+                                                     names(), names(), names(), names())
 end
 
 function open_result_file(filename::AbstractString)
@@ -693,10 +687,7 @@ end
 
 Number of nodes the database was initialised with.
 
-Exodus.jl carries the initialisation as type parameters,
-`Initialization{num_dim, num_nodes, num_elems, num_elem_blks, num_node_sets,
-num_side_sets}` — the same order `create_result_file` builds it in. There is no
-exported accessor, so the parameter is read off the type.
+Read from the `Initialization` the database was opened or created with.
 
 # Arguments
 - `exo::ExodusDatabase`: The exodus file
@@ -704,7 +695,7 @@ exported accessor, so the parameter is read off the type.
 - `::Int64`: Node count of the file
 """
 function exodus_num_nodes(exo::ExodusDatabase)
-    return Int64(typeof(exo.init).parameters[2])
+    return Int64(exo.init.num_nodes)
 end
 
 """

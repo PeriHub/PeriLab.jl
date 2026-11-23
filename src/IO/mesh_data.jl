@@ -632,6 +632,10 @@ end
 
 Read external topoloy data from a file and return it as a DataFrame.
 
+Elements can have different node counts, so the rows are ragged; shorter rows are
+padded with `missing`. Parsed by hand because CSV.jl 1.x drops the fields of rows
+longer than the first one instead of widening the table.
+
 # Arguments
 - `filename::String`: The path to the mesh file.
 # Returns
@@ -642,7 +646,12 @@ function read_external_topology(filename::String)
         return nothing
     end
     @info "Read external topology file $filename"
-    return csv_reader(filename)
+    header_line, _ = get_header(filename)
+    rows = [parse.(Int64, split(line))
+            for line in Iterators.drop(eachline(filename), header_line)
+            if !isempty(strip(line)) && !startswith(strip(line), "#")]
+    return DataFrame([[get(row, i, missing) for row in rows]
+                      for i in 1:maximum(length, rows)], :auto)
 end
 
 """
