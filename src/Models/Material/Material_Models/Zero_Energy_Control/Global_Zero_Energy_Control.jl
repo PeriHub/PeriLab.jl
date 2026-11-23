@@ -43,15 +43,45 @@ Initializes the global zero energy control fields.
 function init_model(nodes::AbstractVector{Int64}, material)
     dof::Int64 = Data_Manager.get_dof()
     Data_Manager.create_constant_node_tensor_field("Zero Energy Stiffness", Float64, dof)
-    "Material Gradient" in Data_Manager.get_all_field_keys() && return
-    hooke::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Material Gradient",
-                                                                                     Float64,
-                                                                                     Int64((dof *
-                                                                                            (dof +
-                                                                                             1)) /
-                                                                                           2))
+    nvoigt = Int64((dof * (dof + 1)) / 2)
+    if !("Material Gradient" in Data_Manager.get_all_field_keys())
+        hooke::NodeTensorField{Float64} = Data_Manager.create_constant_node_tensor_field("Material Gradient",
+                                                                                         Float64,
+                                                                                         nvoigt)
+        for iID in nodes
+            @views hooke[iID, :, :] = hooke_matrix(material, dof, iID)
+        end
+    end
+    (Data_Manager.get_rotation() && !is_umat(material)) || return
+    # C and the angles are constant for non-UMAT materials: rotate C once here instead of in
+    # every step. "Material Gradient" stays in material coordinates (the correspondence
+    # material rotates around the stress computation and reads it).
+    C = Data_Manager.get_field("Material Gradient")::NodeTensorField{Float64}
+    angles = Data_Manager.get_field("Angles")::NodeVectorField{Float64}
+    C_rot = Data_Manager.create_constant_node_tensor_field("Zero Energy Material Gradient",
+                                                           Float64, nvoigt)
+    rotate_voigt!(nodes, dof, C, angles, C_rot)
+end
+
+"""
+    rotate_voigt!(nodes, dof, CVoigt, angles, C_rot)
+
+Rotates the Voigt matrices `CVoigt` of `nodes` by `angles` (like `rotate_fourth_order_tensor`
+with `back = false`) and stores them as full symmetric Voigt matrices in `C_rot`.
+"""
+function rotate_voigt!(nodes::AbstractVector{Int64}, dof::Int64,
+                       CVoigt::AbstractArray{Float64,3}, angles::AbstractArray{Float64},
+                       C_rot::AbstractArray{Float64,3})
+    C4 = zeros(dof, dof, dof, dof)
+    tmp = similar(C4)
+    ij = dof == 2 ? ((1, 1), (2, 2), (1, 2)) :
+         ((1, 1), (2, 2), (3, 3), (2, 3), (1, 3), (1, 2))
     for iID in nodes
-        @views hooke[iID, :, :] = hooke_matrix(material, dof, iID)
+        @views R = rotation_tensor(angles[iID, :], dof)[1:dof, 1:dof]
+        @views fourth_order_rotation!(C4, tmp, R, get_fourth_order(CVoigt[iID, :, :], dof))
+        for (b, (k, l)) in enumerate(ij), (a, (i, j)) in enumerate(ij)
+            C_rot[iID, a, b] = C4[i, j, k, l]
+        end
     end
 end
 
@@ -88,20 +118,17 @@ function _compute_control!(nodes::AbstractVector{Int64}, apply_zero_energy::Bool
                                            "NP1")::BondVectorState{Float64,D}
     omega = Data_Manager.get_field("Influence Function")::BondScalarState{Float64}
     Kinv = Data_Manager.get_field("Inverse Shape Tensor")::NodeTensorField{Float64}
-    hooke_matrix = Data_Manager.get_field("Material Gradient")::NodeTensorField{Float64}
     zStiff = Data_Manager.get_field("Zero Energy Stiffness")::NodeTensorField{Float64}
 
     # TODO performance: Z = C Kinv is rebuilt for all nodes every step, but only changes with
     # Kinv (bond damage). Build it in init and then only for the nodes flagged "Update",
-    # like the shape tensor; UMATs and rotations (angles) need the full update.
+    # like the shape tensor; UMATs need the full update.
     if apply_zero_energy
-        if Data_Manager.get_rotation()
-            angles = Data_Manager.get_field("Angles")::NodeVectorField{Float64}
-            create_zero_energy_mode_stiffness!(nodes, D, hooke_matrix, angles, Kinv,
-                                               zStiff)
-        else
-            zero_energy_mode_stiffness!(nodes, hooke_matrix, Kinv, zStiff, Val(D))
-        end
+        # rotated materials: C rotated once in `init_model`
+        C = Data_Manager.get_field(Data_Manager.get_rotation() ?
+                                   "Zero Energy Material Gradient" :
+                                   "Material Gradient")::NodeTensorField{Float64}
+        zero_energy_mode_stiffness!(nodes, C, Kinv, zStiff, Val(D))
     end
     zero_energy_mode_forces!(nodes, zStiff, deformation_gradient, undeformed_bond,
                              deformed_bond, omega, bond_force)
@@ -226,34 +253,6 @@ function global_zero_energy_mode_stiffness(ID::Int64,
 end
 
 """
-	create_zero_energy_mode_stiffness(nodes::AbstractVector{Int64}, dof::Int64, CVoigt::Union{MMatrix,Matrix{Float64}}, angles::Matrix{Float64}, Kinv::Array{Float64, 3}, zStiff::Array{Float64, 3})
-
-Creates the zero energy mode stiffness
-
-# Arguments
-- `nodes::AbstractVector{Int64}`: The nodes
-- `dof::Int64`: The degree of freedom
-- `CVoigt::Union{MMatrix, Matrix{Float64}}`: The Voigt matrix
-- `angles::Matrix{Float64}`: The angles
-- `Kinv::Array{Float64, 3}`: The inverse shape tensor
-- `zStiff::Array{Float64, 3}`: The zero energy stiffness
-# Returns
-- `zStiff::SubArray`: The zero energy stiffness
-"""
-function create_zero_energy_mode_stiffness!(nodes::AbstractVector{Int64},
-                                            dof::Int64,
-                                            CVoigt::AbstractArray{Float64,3},
-                                            angles::AbstractArray{Float64},
-                                            Kinv::AbstractArray{Float64,3},
-                                            zStiff::AbstractArray{Float64,3})
-    for iID in nodes
-        @views C = get_fourth_order(CVoigt[iID, :, :], dof)
-        @views C = rotate_fourth_order_tensor(angles[iID, :], C, dof, false)
-        global_zero_energy_mode_stiffness(iID, C, Kinv, zStiff)
-    end
-end
-
-"""
 	rotate_fourth_order_tensor(angles::Union{Vector{Float64},Vector{Int64}}, C::Array{Float64,4}, dof::Int64, back::Bool)
 
 Rotates the fourth order tensor
@@ -278,30 +277,31 @@ end
 
 function fourth_order_rotation(R, C::Array{Float64,4})
     C_rot = similar(C)
-    @inbounds @fastmath for m in axes(C, 1)
-        @inbounds @fastmath for n in axes(C, 1)
-            @inbounds @fastmath for o in axes(C, 1)
-                @inbounds @fastmath for p in axes(C, 1)
-                    Cmnop = zero(eltype(C))
-                    @inbounds @fastmath for i in axes(C, 1)
-                        @inbounds @fastmath for j in axes(C, 1)
-                            @inbounds @fastmath for k in axes(C, 1)
-                                @inbounds @fastmath for l in axes(C, 1)
-                                    Cmnop += C[i, j, k, l] *
-                                             R[m, i] *
-                                             R[n, j] *
-                                             R[o, k] *
-                                             R[p, l]
-                                end
-                            end
-                        end
-                    end
-                    C_rot[m, n, o, p] = Cmnop
-                end
-            end
-        end
-    end
+    return fourth_order_rotation!(C_rot, similar(C), R, C)
+end
+
+# C_rot_mnop = R_mi R_nj R_ok R_pl C_ijkl, one index at a time (4 D^5 instead of D^8 loops);
+# `tmp` is a buffer of the size of C
+function fourth_order_rotation!(C_rot::AbstractArray{Float64,4},
+                                tmp::AbstractArray{Float64,4},
+                                R, C::AbstractArray{Float64,4})
+    rotate_index!(tmp, R, C, 1)
+    rotate_index!(C_rot, R, tmp, 2)
+    rotate_index!(tmp, R, C_rot, 3)
+    rotate_index!(C_rot, R, tmp, 4)
     return C_rot
+end
+
+function rotate_index!(out, R, A, dim::Int)
+    n = size(A, 1)
+    @inbounds for I in CartesianIndices(out)
+        s = 0.0
+        for q in 1:n
+            s += R[I[dim], q] * A[Base.setindex(Tuple(I), q, dim)...]
+        end
+        out[I] = s
+    end
+    return out
 end
 
 end
