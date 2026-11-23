@@ -13,17 +13,38 @@ using ...PeriLabExceptions: @abort
 using ...Helpers: check_inf_or_nan, find_active_nodes, matrix_style,
                   create_permutation
 # using ...MPI_Communication: barrier
-using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof, BoundaryCondition
-using ...ParameterSpec: @params, register_solver
+using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof,
+                             BoundaryCondition
+using ...ParameterSpec: @params, register_solver, ParseContext
+import ...ParameterSpec: check!
 using ...InputDeck: SolverParams, SolverOptions, start_time, end_time
 using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, StepFailed,
                        synchronise_field,
                        compute_parabolic_problems_before_model_evaluation,
                        compute_parabolic_problems_after_model_evaluation
 
-@params "Linear static solver with the stiffness matrix of correspondence materials" struct LinearStaticMatrixParams <: SolverOptions
+@params "Linear static solver with the stiffness matrix of correspondence materials" struct LinearStaticMatrixParams <:
+                                                                                            SolverOptions
     "Rebuilds the stiffness matrix in every step, e.g. for damage; otherwise the initial matrix is reused"
     matrix_update::Bool = opt("Matrix Update"; default = false)
+    "Where the stiffness matrix lives: SparseArrays (serial SparseMatrixCSC), CPU (distributed over the MPI ranks), GPU or Mixed (CPU and GPU ranks); CPU, GPU and Mixed need the licensed matrix elements and Linear Solver: BiCGStab"
+    matrix_backend::String = opt("Matrix Backend"; default = "SparseArrays",
+                                 allowed = ["SparseArrays", "CPU", "GPU", "Mixed"])
+    "Nodes of a GPU rank relative to a CPU rank (Matrix Backend: Mixed)"
+    gpu_weight::Float64 = opt("GPU Weight"; default = 1.0, min = 0)
+    "LU (direct, Matrix Backend: SparseArrays) or BiCGStab (iterative with Jacobi, Matrix Backend: CPU, GPU or Mixed)"
+    linear_solver::String = opt("Linear Solver"; default = "LU",
+                                allowed = ["LU", "BiCGStab"])
+    "Relative residual at which BiCGStab stops"
+    linear_solver_tolerance::Float64 = opt("Linear Solver Tolerance"; default = 1e-10,
+                                           min = 0)
+    "BiCGStab iterations after which a step fails (StepFailed)"
+    linear_solver_maximum_iterations::Int64 = opt("Linear Solver Maximum Iterations";
+                                                  default = 20000, min = 1)
+end
+
+function check!(p::LinearStaticMatrixParams, path::String, ctx::ParseContext)
+    check_implicit_backend!(p, path, ctx)
 end
 __init__() = register_solver("Linear Static Matrix Based", LinearStaticMatrixParams)
 
@@ -32,11 +53,13 @@ using ..Model_Factory: compute_stiff_matrix_compatible_models,
 
 using ..Correspondence_matrix_based: init_model, init_matrix,
                                      compute_model
+using ..Matrix_Adapter: MatrixSystem, init_matrix_system, apply_stiffness!,
+                        ImplicitWorkspace, init_implicit, set_prescribed!, solve_implicit!,
+                        check_implicit_backend!
 using ..Model_Factory.Pre_Calculation.Bond_Deformation
 
 export init_solver
 import ..Solver_Common: prepare_solver, time_step!
-
 
 mutable struct DisplacementSolverCache
     # Workspace
@@ -105,17 +128,23 @@ function init_solver(options::LinearStaticMatrixParams,
         if !material.correspondence
             @abort "Only Correspondence Models are supported with the Linear Static Matrix based solver"
         end
-        init_model(nodes, material, block)
+        init_model(nodes, material, block;
+                   distributed = options.matrix_backend != "SparseArrays")
     end
 
-    @timeit "init matrix" init_matrix()
+    state = nothing
+    if options.matrix_backend == "SparseArrays"
+        @timeit "init matrix" init_matrix()
+    else
+        state = @timeit "init_matrix_system" init_matrix_system(options.matrix_backend)
+    end
     Data_Manager.create_node_scalar_field("Damage", Float64)
     deformed_coorN = Data_Manager.get_field("Deformed Coordinates", "N")
     deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
     coor = Data_Manager.get_field("Coordinates")
     deformed_coorN .= coor
     deformed_coorNP1 .= coor
-    return TimeWindow(initial_time, final_time, dt, nsteps), nothing
+    return TimeWindow(initial_time, final_time, dt, nsteps), state
 
     ### for coupled thermal analysis
 
@@ -584,6 +613,119 @@ function compute_displacements!(K::AbstractMatrix{Float64},
         r_bc = K_bc_rows * u_vec
         @inbounds for (idx, i) in enumerate(bc_dofs)
             F_int_vec[i] = r_bc[idx] - F_ext_vec[i]
+        end
+    end
+    return nothing
+end
+
+"""
+    DistributedStaticWorkspace
+
+Fields, the distributed matrix and the BiCGStab solve of the linear static solver with
+`Matrix Backend` CPU, GPU or Mixed (`Linear Solver: BiCGStab`).
+"""
+struct DistributedStaticWorkspace{I<:ImplicitWorkspace}
+    volume::Vector{Float64}
+    coor::Matrix{Float64}
+    external_forces::Matrix{Float64}
+    external_force_densities::Matrix{Float64}
+    implicit::I
+    free::Vector{Int64}
+    rhs::Matrix{Float64}
+    b::Matrix{Float64}
+    ku::Matrix{Float64}
+    rtol::Float64
+    itmax::Int64
+end
+
+"""
+    prepare_solver(run::SolverRun{LinearStaticMatrixParams,<:MatrixSystem}, ctx::SolverContext)
+
+Workspace of the distributed linear static solver.
+"""
+function prepare_solver(run::SolverRun{LinearStaticMatrixParams,<:MatrixSystem},
+                        ctx::SolverContext)
+    n = Data_Manager.get_nnodes()
+    dof = Data_Manager.get_dof()
+    options = run.params.options
+    material = "Material" in run.models
+    return DistributedStaticWorkspace(Data_Manager.get_field("Volume"),
+                                      Data_Manager.get_field("Coordinates"),
+                                      material ?
+                                      Data_Manager.get_field("External Forces") :
+                                      zeros(n, dof),
+                                      material ?
+                                      Data_Manager.get_field("External Force Densities") :
+                                      zeros(n, dof),
+                                      init_implicit(run.state),
+                                      convert(Vector{Int64},
+                                              Data_Manager.get_bc_free_dof()),
+                                      zeros(n, dof), zeros(n, dof), zeros(n, dof),
+                                      options.linear_solver_tolerance,
+                                      options.linear_solver_maximum_iterations)
+end
+
+"""
+    time_step!(ws::DistributedStaticWorkspace, run::SolverRun{LinearStaticMatrixParams}, ctx::SolverContext, clock::StepClock)
+
+One linear static step with BiCGStab on the distributed matrix: `K_ff u_f = f_ext + f_int −
+K_fp u_p`; force densities as in the LU path (free: `f_int − K_fp u_p`, prescribed: the
+reaction `−(K u)_p − f_ext`). A step that does not converge returns `StepFailed`.
+"""
+function time_step!(ws::DistributedStaticWorkspace,
+                    run::SolverRun{LinearStaticMatrixParams},
+                    ctx::SolverContext, clock::StepClock)
+    time, step_time, dt = clock.time, clock.step_time, clock.dt
+    sys = ws.implicit.sys
+    n, dof = sys.n_own, sys.dof
+    nodes = 1:n
+    uN::NodeVectorField{Float64} = Data_Manager.get_field("Displacements", "N")
+    uNP1::NodeVectorField{Float64} = Data_Manager.get_field("Displacements", "NP1")
+    velocities::NodeVectorField{Float64} = Data_Manager.get_field("Velocity", "NP1")
+    deformed_coorNP1::NodeVectorField{Float64} = Data_Manager.get_field("Deformed Coordinates",
+                                                                        "NP1")
+    forces::NodeVectorField{Float64} = Data_Manager.get_field("Forces", "NP1")
+    fd::NodeVectorField{Float64} = Data_Manager.get_field("Force Densities", "NP1")
+    f_ext = ws.external_force_densities
+    deformed_coorNP1 .= ws.coor
+    active_list = Data_Manager.get_field("Active")
+    active_nodes = find_active_nodes(active_list, Data_Manager.get_field("Active Nodes"),
+                                     collect(nodes))
+    compute_parabolic_problems_before_model_evaluation(active_nodes, run)
+    apply_bc_dirichlet(["Displacements", "Forces", "Force Densities", "Temperature"],
+                       ctx.bcs, time, step_time)
+    @. f_ext += ws.external_forces / ws.volume
+    @timeit "compute_models" compute_stiff_matrix_compatible_models(ctx.block_nodes, dt,
+                                                                    time, run.models,
+                                                                    synchronise_field)
+    set_prescribed!(ws.implicit, ws.free, active_list)
+    @views @. ws.rhs = f_ext[nodes, :] + fd[nodes, :]
+    stats = @timeit "BiCGStab" solve_implicit!(uNP1, ws.rhs, ws.implicit; rtol = ws.rtol,
+                                               itmax = ws.itmax, b_field = ws.b)
+    if !stats.solved
+        @warn "BiCGStab did not converge: relative residual $(stats.residual) after $(stats.niter) iterations"
+        return StepFailed("BiCGStab did not converge (relative residual $(stats.residual))")
+    end
+    apply_stiffness!(ws.ku, uNP1, sys)
+    prescribed = trues(n, dof)
+    prescribed[ws.free] .= false
+    @inbounds for c in 1:dof, i in nodes
+        fd[i, c] = prescribed[i, c] || !active_list[i] ? ws.ku[i, c] - f_ext[i, c] :
+                   fd[i, c] + ws.b[i, c]
+        forces[i, c] += fd[i, c] * ws.volume[i]
+    end
+    @. deformed_coorNP1 = ws.coor + uNP1
+    compute_matrix_based_bond_forces(ctx.block_nodes, time, dt)
+    active_nodes = find_active_nodes(active_list, Data_Manager.get_field("Active Nodes"),
+                                     collect(nodes))
+    compute_parabolic_problems_after_model_evaluation(active_nodes, run, dt)
+    @. velocities = (uNP1 - uN) / dt
+    if "Damage" in run.models
+        damageN = Data_Manager.get_damage("N")
+        damageNP1 = Data_Manager.get_damage("NP1")
+        for i in active_nodes
+            damageNP1[i] > damageN[i] &&
+                return StepFailed("damage initiated; the stiffness matrix does not follow damage")
         end
     end
     return nothing

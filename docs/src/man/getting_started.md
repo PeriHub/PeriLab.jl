@@ -49,6 +49,8 @@ $ mpiexecjl -n 4 -bind-to core:4 julia -t 4 -e 'using PeriLab' examples/DCB/DCBm
 ```
 With OpenMPI the options are `--bind-to core` and `--map-by slot:PE=4`; with Slurm use `srun --cpu-bind=cores`.
 
+Which solvers and models run in parallel, the matrix backends (CPU, GPU, Mixed) and hints on the scaling are described in [Parallel Computing](parallel.md).
+
 ## Postprocessing
 
 For post-processing of the Exodus result files  [ParaView](https://www.paraview.org) is used. You can open the .e file directly. All output data can be find there. At step 0 all zero. They are filled in the first step. The number of steps are defined in the yaml.

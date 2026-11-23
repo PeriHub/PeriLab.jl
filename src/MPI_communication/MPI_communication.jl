@@ -104,9 +104,69 @@ end
 """
 
 """
+    SynchBuffers{T}
+
+Send and receive buffers of the node and bond synchronisation, one per neighbour rank, and
+their requests. Created once per element type `T` and reused by every synchronisation:
+`resize!` within the capacity of a buffer does not allocate, so after the first steps no
+buffer is created any more.
+"""
+struct SynchBuffers{T}
+    send::Vector{Vector{T}}
+    recv::Vector{Vector{T}}
+    send_requests::MPI.MultiRequest
+    recv_requests::MPI.MultiRequest
+end
+
+const SYNCH_BUFFERS = Dict{DataType,Any}()
+
+"""
+    synch_buffers(::Type{T}, ncores::Int64)
+
+The `SynchBuffers{T}` of this process for `ncores` ranks (created on first use).
+"""
+function synch_buffers(::Type{T}, ncores::Int64)::SynchBuffers{T} where {T}
+    buffers = get(SYNCH_BUFFERS, T, nothing)
+    buffers isa SynchBuffers{T} && length(buffers.send) == ncores && return buffers
+    buffers = SynchBuffers{T}([T[] for _ in 1:ncores], [T[] for _ in 1:ncores],
+                              MPI.MultiRequest(ncores), MPI.MultiRequest(ncores))
+    SYNCH_BUFFERS[T] = buffers
+    return buffers
+end
+
+# values per row: all trailing dimensions (vector: 1, matrix: columns, tensor field: d·d)
+columns(vector::AbstractArray) = length(vector) ÷ max(size(vector, 1), 1)
+
+# rows `index` of `vector` (all values of a row, column major) into `buffer`
+function pack!(buffer::Vector{T}, vector::AbstractArray{T},
+               index::Vector{Int64}) where {T}
+    n = length(index)
+    rows = size(vector, 1)
+    resize!(buffer, n * columns(vector))
+    @inbounds for c in 1:columns(vector), (k, i) in enumerate(index)
+        buffer[(c - 1) * n + k] = vector[(c - 1) * rows + i]
+    end
+    return buffer
+end
+
+# `buffer` (layout of `pack!`) into the rows `index` of `vector`; `add` sums instead
+function unpack!(vector::AbstractArray{T}, index::Vector{Int64}, buffer::Vector{T},
+                 add::Bool) where {T}
+    n = length(index)
+    rows = size(vector, 1)
+    @inbounds for c in 1:columns(vector), (k, i) in enumerate(index)
+        j = (c - 1) * rows + i
+        vector[j] = add ? vector[j] + buffer[(c - 1) * n + k] : buffer[(c - 1) * n + k]
+    end
+    return vector
+end
+
+"""
     synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof)
 
-Synch the responder to the controller
+Sends the values of the responder rows to the ranks that control these nodes and adds them
+there (Bool fields are only exchanged). Uses the reused `SynchBuffers`; no buffer is
+allocated per call.
 
 # Arguments
 - `comm::MPI.Comm`: The MPI communicator
@@ -119,43 +179,44 @@ Synch the responder to the controller
 function synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof)
     ncores = MPI.Comm_size(comm)
     ncores == 1 && return vector
-    maps = overlapnodes[MPI.Comm_rank(comm) + 1]
+    rank = MPI.Comm_rank(comm)
+    maps = overlapnodes[rank + 1]
+    buffers = synch_buffers(eltype(vector), ncores)
     # all receives are posted before the sends, so no rank waits for the loop order of
     # another; the responder (sent) and controller (received) rows are disjoint
-    recv_requests = MPI.Request[]
-    received = Tuple{Vector{Int64},Any}[]
     for jcore in 1:ncores
-        jcore == MPI.Comm_rank(comm) + 1 && continue
+        jcore == rank + 1 && continue
         recv_index = maps[jcore]["Controller"]
         isempty(recv_index) && continue
-        # any array rank (node scalars, vectors, tensors): node index is the first dim
-        buffer = similar(vector, (length(recv_index), size(vector)[2:end]...))
-        push!(recv_requests, MPI.Irecv!(buffer, comm; source = jcore - 1, tag = 0))
-        push!(received, (recv_index, buffer))
+        buffer = resize!(buffers.recv[jcore], length(recv_index) * columns(vector))
+        MPI.Irecv!(buffer, comm, buffers.recv_requests[jcore]; source = jcore - 1, tag = 0)
     end
-    send_requests = MPI.Request[]
     for jcore in 1:ncores
-        jcore == MPI.Comm_rank(comm) + 1 && continue
+        jcore == rank + 1 && continue
         send_index = maps[jcore]["Responder"]
         isempty(send_index) && continue
-        buffer = copy(selectdim(vector, 1, send_index))
-        push!(send_requests, MPI.Isend(buffer, comm; dest = jcore - 1, tag = 0))
+        buffer = pack!(buffers.send[jcore], vector, send_index)
+        MPI.Isend(buffer, comm, buffers.send_requests[jcore]; dest = jcore - 1, tag = 0)
     end
-    MPI.Waitall(recv_requests)
+    MPI.Waitall(buffers.recv_requests)
     # summed in the rank order, as before; Bool fields are only exchanged
     if !(eltype(vector) <: Bool)
-        for (recv_index, buffer) in received
-            selectdim(vector, 1, recv_index) .+= buffer
+        for jcore in 1:ncores
+            jcore == rank + 1 && continue
+            recv_index = maps[jcore]["Controller"]
+            isempty(recv_index) && continue
+            unpack!(vector, recv_index, buffers.recv[jcore], true)
         end
     end
-    MPI.Waitall(send_requests)
+    MPI.Waitall(buffers.send_requests)
     return vector
 end
 
 """
     synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof)
 
-Synch the controller to the responder
+Sends the values of the controller rows to the ranks where these nodes are responders.
+Uses the reused `SynchBuffers`; no buffer is allocated per call.
 
 # Arguments
 - `comm::MPI.Comm`: The MPI communicator
@@ -168,32 +229,32 @@ Synch the controller to the responder
 function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof)
     ncores = MPI.Comm_size(comm)
     ncores == 1 && return vector
-    maps = overlapnodes[MPI.Comm_rank(comm) + 1]
+    rank = MPI.Comm_rank(comm)
+    maps = overlapnodes[rank + 1]
+    buffers = synch_buffers(eltype(vector), ncores)
     # receives first, then sends (see `synch_responder_to_controller`)
-    recv_requests = MPI.Request[]
-    received = Tuple{Vector{Int64},Any}[]
     for jcore in 1:ncores
-        jcore == MPI.Comm_rank(comm) + 1 && continue
+        jcore == rank + 1 && continue
         recv_index = maps[jcore]["Responder"]
         isempty(recv_index) && continue
-        # any array rank (node scalars, vectors, tensors): node index is the first dim
-        buffer = similar(vector, (length(recv_index), size(vector)[2:end]...))
-        push!(recv_requests, MPI.Irecv!(buffer, comm; source = jcore - 1, tag = 0))
-        push!(received, (recv_index, buffer))
+        buffer = resize!(buffers.recv[jcore], length(recv_index) * columns(vector))
+        MPI.Irecv!(buffer, comm, buffers.recv_requests[jcore]; source = jcore - 1, tag = 0)
     end
-    send_requests = MPI.Request[]
     for jcore in 1:ncores
-        jcore == MPI.Comm_rank(comm) + 1 && continue
+        jcore == rank + 1 && continue
         send_index = maps[jcore]["Controller"]
         isempty(send_index) && continue
-        buffer = copy(selectdim(vector, 1, send_index))
-        push!(send_requests, MPI.Isend(buffer, comm; dest = jcore - 1, tag = 0))
+        buffer = pack!(buffers.send[jcore], vector, send_index)
+        MPI.Isend(buffer, comm, buffers.send_requests[jcore]; dest = jcore - 1, tag = 0)
     end
-    MPI.Waitall(recv_requests)
-    for (recv_index, buffer) in received
-        selectdim(vector, 1, recv_index) .= buffer
+    MPI.Waitall(buffers.recv_requests)
+    for jcore in 1:ncores
+        jcore == rank + 1 && continue
+        recv_index = maps[jcore]["Responder"]
+        isempty(recv_index) && continue
+        unpack!(vector, recv_index, buffers.recv[jcore], false)
     end
-    MPI.Waitall(send_requests)
+    MPI.Waitall(buffers.send_requests)
     return vector
 end
 
@@ -209,7 +270,8 @@ end
 Sends the bond values of the controller nodes to the ranks where they are responders. A
 responder row only holds the bonds known on its rank; the flat bond indices of both sides
 are the `"Bond Controller"` and `"Bond Responder"` entries of the overlap map (see
-`create_bond_overlap_map!`).
+`create_bond_overlap_map!`). Uses the reused `SynchBuffers`; no buffer is allocated per
+call.
 
 # Arguments
 - `comm::MPI.Comm`: The MPI communicator
@@ -223,32 +285,43 @@ function synch_controller_bonds_to_responder_flattened(comm::MPI.Comm,
                                                        array)
     ncores = MPI.Comm_size(comm)
     ncores == 1 && return array
-    maps = overlapnodes[MPI.Comm_rank(comm) + 1]
+    rank = MPI.Comm_rank(comm)
+    maps = overlapnodes[rank + 1]
     flat = flatview(array)
+    isempty(flat) && return array
+    # all scalar values of the bonds; bond b holds values (b - 1) * per_bond .+ (1:per_bond)
+    values = bond_values_view(flat)
+    per_bond = length(values) ÷ length(flat)
+    buffers = synch_buffers(eltype(values), ncores)
     # receives first, then sends (see `synch_responder_to_controller`)
-    recv_requests = MPI.Request[]
-    received = Tuple{Vector{Int64},Any}[]
     for jcore in 1:ncores
-        jcore == MPI.Comm_rank(comm) + 1 && continue
+        jcore == rank + 1 && continue
         recv_bonds = maps[jcore]["Bond Responder"]
         isempty(recv_bonds) && continue
-        buffer = collect(bond_values_view(view(flat, recv_bonds)))
-        push!(recv_requests, MPI.Irecv!(buffer, comm; source = jcore - 1, tag = 0))
-        push!(received, (recv_bonds, buffer))
+        buffer = resize!(buffers.recv[jcore], length(recv_bonds) * per_bond)
+        MPI.Irecv!(buffer, comm, buffers.recv_requests[jcore]; source = jcore - 1, tag = 0)
     end
-    send_requests = MPI.Request[]
     for jcore in 1:ncores
-        jcore == MPI.Comm_rank(comm) + 1 && continue
+        jcore == rank + 1 && continue
         send_bonds = maps[jcore]["Bond Controller"]
         isempty(send_bonds) && continue
-        buffer = collect(bond_values_view(view(flat, send_bonds)))
-        push!(send_requests, MPI.Isend(buffer, comm; dest = jcore - 1, tag = 0))
+        buffer = resize!(buffers.send[jcore], length(send_bonds) * per_bond)
+        @inbounds for (k, b) in enumerate(send_bonds), l in 1:per_bond
+            buffer[(k - 1) * per_bond + l] = values[(b - 1) * per_bond + l]
+        end
+        MPI.Isend(buffer, comm, buffers.send_requests[jcore]; dest = jcore - 1, tag = 0)
     end
-    MPI.Waitall(recv_requests)
-    for (recv_bonds, buffer) in received
-        copyto!(bond_values_view(view(flat, recv_bonds)), buffer)
+    MPI.Waitall(buffers.recv_requests)
+    for jcore in 1:ncores
+        jcore == rank + 1 && continue
+        recv_bonds = maps[jcore]["Bond Responder"]
+        isempty(recv_bonds) && continue
+        buffer = buffers.recv[jcore]
+        @inbounds for (k, b) in enumerate(recv_bonds), l in 1:per_bond
+            values[(b - 1) * per_bond + l] = buffer[(k - 1) * per_bond + l]
+        end
     end
-    MPI.Waitall(send_requests)
+    MPI.Waitall(buffers.send_requests)
     return array
 end
 
@@ -373,12 +446,16 @@ Find and set core value sum
 - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
 """
 function find_and_set_core_value_sum(comm::MPI.Comm,
-                                     value::T) where {T<:Union{Float64,Int64,
-                                                               Vector{Float64},
+                                     value::T) where {T<:Union{Float64,Int64}}
+    return MPI.Allreduce(value, MPI.SUM, comm)
+end
+# arrays are summed in place (no new array per call)
+function find_and_set_core_value_sum(comm::MPI.Comm,
+                                     value::T) where {T<:Union{Vector{Float64},
                                                                Vector{Int64},
                                                                Matrix{Float64},
                                                                Matrix{Int64}}}
-    return MPI.Allreduce(value, MPI.SUM, comm)
+    return MPI.Allreduce!(value, MPI.SUM, comm)
 end
 
 """
@@ -409,12 +486,16 @@ Find and set core value sum
 - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
 """
 function find_and_set_core_value_min(comm::MPI.Comm,
-                                     value::T) where {T<:Union{Float64,Int64,
-                                                               Vector{Float64},
+                                     value::T) where {T<:Union{Float64,Int64}}
+    return MPI.Allreduce(value, MPI.MIN, comm)
+end
+# arrays are reduced in place (no new array per call)
+function find_and_set_core_value_min(comm::MPI.Comm,
+                                     value::T) where {T<:Union{Vector{Float64},
                                                                Vector{Int64},
                                                                Matrix{Float64},
                                                                Matrix{Int64}}}
-    return MPI.Allreduce(value, MPI.MIN, comm)
+    return MPI.Allreduce!(value, MPI.MIN, comm)
 end
 
 """

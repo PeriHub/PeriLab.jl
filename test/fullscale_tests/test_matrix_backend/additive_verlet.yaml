@@ -1,0 +1,69 @@
+# SPDX-FileCopyrightText: 2026 Christian Willberg
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Printing (Simple additive model, licensed) with Verlet Matrix Based on the distributed
+# matrix: the activation times of test_matrix_based_additive scaled by 1e-5, mechanical
+# only, the right half of the first row pulled in x.
+PeriLab:
+  Blocks:
+    All:
+      Block ID: 1
+      Density: 1000
+      Material Model: PLA
+      Horizon: 0.001505
+      Specific Heat Capacity: 3000.33
+      Additive Model: Additive Model 1
+  Discretization:
+    Input Mesh File: mesh_additive.txt
+    Type: Text File
+    Node Sets:
+      Node Set 1: x<0.0001
+      Node Set 2: x>0.0049 && y<0.0001
+  Models:
+    Additive Models:
+      Additive Model 1:
+        Additive Model: Simple
+        Print Temperature: 230.0
+    Material Models:
+      PLA:
+        Material Model: Correspondence Elastic
+        Poisson's Ratio: 0.33
+        Young's Modulus: 3.0e+9
+        Symmetry: isotropic plane stress
+        Zero Energy Control: "Global"
+  Boundary Conditions:
+    BC_1:
+      Variable: "Displacements"
+      Node Set: "Node Set 1"
+      Coordinate: "x"
+      Value: "0.0"
+      Type: "Dirichlet"
+    BC_2:
+      Variable: "Displacements"
+      Node Set: "Node Set 1"
+      Coordinate: "y"
+      Value: "0.0"
+      Type: "Dirichlet"
+    BC_3:
+      Variable: "Displacements"
+      Node Set: "Node Set 2"
+      Coordinate: "x"
+      Value: "1.0*t"
+      Type: "Dirichlet"
+  Outputs:
+    Output1:
+      Number of Output Steps: 5
+      Output File Type: Exodus
+      Output Filename: additive_verlet
+      Output Variables:
+        Active: true
+        Displacements: true
+  Solver:
+    Additive Models: true
+    Final Time: 3.0e-5
+    Initial Time: 0.0
+    Material Models: true
+    Verlet Matrix Based:
+      Safety Factor: 0.9
+      Matrix Backend: CPU
