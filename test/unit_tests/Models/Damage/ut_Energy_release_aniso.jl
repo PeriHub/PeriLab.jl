@@ -182,3 +182,8 @@ end
     @test CEA.get_quad_horizon(2.0, 2, 3.0) == 3 / (4 * 2.0^3 * 3.0)
     @test CEA.get_quad_horizon(2.0, 3, 3.0) == 2 / (pi * 2.0^4)
 end
+
+@testset "anisotropic with Interlayer Bonding aborts" begin
+    p = merge(ut_aniso("Axis"), Dict{String,Any}("Interlayer Bonding" => true))
+    @test_throws PeriLab.PeriLabError ut_aniso_setup(p)
+end

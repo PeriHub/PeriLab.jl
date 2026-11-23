@@ -130,7 +130,9 @@ function synchronise_field(comm,
         if direction == "upload_to_cores"
             if synch_fields[synch_field][direction]
                 vector = get_field(synch_field, synch_fields[synch_field]["time"])
-                if occursin("Bond", synch_field)
+                # bond fields (VectorOfVectors) by type, not by name: e.g. the node field
+                # "Bonding Degree Min" contains "Bond"
+                if !(eltype(vector) <: Number)
                     @timeit "synch_controller_bonds_to_responder_flattened" return synch_controller_bonds_to_responder_flattened(comm,
                                                                                                                                  overlap_map,
                                                                                                                                  vector)

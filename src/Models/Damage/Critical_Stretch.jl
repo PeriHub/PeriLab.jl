@@ -35,7 +35,9 @@ Calculates the stretch of each bond and compares it to a critical one. If it is 
 function compute_model(nodes::AbstractVector{Int64}, p::CriticalStretchParams, damage,
                        block::Int64, time::Float64, dt::Float64)
     crit_of = critical_value_lookup(damage.base.critical_value,
-                                    damage.base.interblock_damage !== nothing, block)
+                                    damage.base.interblock_damage !== nothing, block;
+                                    bonding_exponent = damage.base.interlayer_bonding ? 1 :
+                                                       0)
     return _critical_stretch!(nodes, p.compression, crit_of)
 end
 
@@ -75,7 +77,7 @@ function _critical_stretch!(nodes::AbstractVector{Int64}, compression::String,
             else
                 s
             end
-            if stretch_check > crit_of(iID, neighborID)
+            if stretch_check > crit_of(iID, jID, neighborID)
                 bond_damageNP1[iID][jID] = 0.0
                 update_list[iID] = true
             end

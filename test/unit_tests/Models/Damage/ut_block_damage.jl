@@ -191,7 +191,7 @@ function ut_bond_energies(compression, deformed, force)
     PeriLab.Data_Manager.create_constant_node_scalar_field("Volume", Float64) .= 1.0
     PeriLab.Data_Manager.create_constant_node_scalar_field("Dissipated Energy", Float64)
     BDAM.Critical_Energy._critical_energy!([1, 2], compression == "none",
-                                           compression == "shear", (i, j) -> Inf)
+                                           compression == "shear", (i, j, k) -> Inf)
     return (energy[1][1], energy[2][1])
 end
 

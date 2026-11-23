@@ -427,6 +427,11 @@ function deposit_mesh_points!(dataobject, sx::Number, sy::Number, sz::Number,
         sub_in_place!(pd_mesh["point_diff"], pd_mesh["point"], pd_mesh["start_point"])
         dist_along_line = distance_along_line(pd_mesh["dir"], pd_mesh["point_diff"])
         time_to_activation = v > 0 ? dist_along_line / v : 0.0
+        # new layer if the path point rose more than half a layer height
+        if pd_mesh["point"][3] > pd_mesh["layer_z"] + pd_mesh["height"] / 2
+            pd_mesh["layer"] += 1
+            pd_mesh["layer_z"] = pd_mesh["point"][3]
+        end
 
         for offset in offsets
             px = pd_mesh["point"][1] + offset[1]
@@ -455,7 +460,8 @@ function deposit_mesh_points!(dataobject, sx::Number, sy::Number, sz::Number,
                       roll * 180 / pi,
                       pitch * 180 / pi,
                       yaw * 180 / pi,
-                      pd_mesh["extent"]...
+                      pd_mesh["extent"]...,
+                      pd_mesh["layer"]
                   ])
         end
     end
@@ -828,7 +834,10 @@ function new_pd_mesh(sampling, width, height, nw, nh, blocks)
                                    Angles_z = Float64[],
                                    Extent_x = Float64[],
                                    Extent_y = Float64[],
-                                   Extent_z = Float64[])
+                                   Extent_z = Float64[],
+                                   Layer = Int64[])
+    pd_mesh["layer"] = 0
+    pd_mesh["layer_z"] = -Inf
     pd_mesh["dir"] = zeros(3)
     pd_mesh["start_point"] = zeros(3)
     pd_mesh["point"] = zeros(3)

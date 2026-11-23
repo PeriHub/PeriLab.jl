@@ -85,3 +85,26 @@ end
     @test damageNP1_test[2] == 1
     @test damageNP1_test[3] == 1
 end
+
+@testset "critical value scaled by Bonding Degree" begin
+    DM = PeriLab.Data_Manager
+    DM.initialize_data()
+    DM.set_num_controller(2)
+    DM.set_dof(3)
+    nn = DM.create_constant_node_scalar_field("Number of Neighbors", Int64)
+    nn .= 1
+    nlist = DM.create_constant_bond_scalar_state("Neighborhoodlist", Int64)
+    nlist[1] = [2]
+    nlist[2] = [1]
+    D = PeriLab.Solver_Manager.Model_Factory.Damage
+    c = PeriLab.ParameterSpec.Constant(0.1)
+    @test D.critical_value_lookup(c, false, 1)(1, 1, 2) == 0.1
+    @test_throws PeriLab.PeriLabError D.critical_value_lookup(c, false, 1;
+                                                              bonding_exponent = 1)
+    B = DM.create_constant_bond_scalar_state("Bonding Degree", Float64;
+                                             default_value = 1.0)
+    B[1][1] = 0.5
+    @test D.critical_value_lookup(c, false, 1; bonding_exponent = 1)(1, 1, 2) ≈ 0.05
+    @test D.critical_value_lookup(c, false, 1; bonding_exponent = 2)(1, 1, 2) ≈ 0.025
+    @test D.critical_value_lookup(c, false, 1; bonding_exponent = 1)(2, 1, 1) ≈ 0.1
+end

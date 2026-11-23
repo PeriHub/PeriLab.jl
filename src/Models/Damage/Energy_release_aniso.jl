@@ -235,12 +235,15 @@ end
     init_model(nodes, p, damage, block)
 
 Creates the fields of the model and the quadric horizons of the block nodes; needs
-`Anisotropic Damage` and the Angles field.
+`Anisotropic Damage` and the Angles field; aborts with `Interlayer Bonding`.
 """
 function init_model(nodes::AbstractVector{Int64}, p::CriticalEnergyAnisotropicParams,
                     damage, block::Int64)
     if damage.base.anisotropic_damage === nothing
         @abort "Critical Energy Anisotropic requires Anisotropic Damage."
+    end
+    if damage.base.interlayer_bonding
+        @abort "Interlayer Bonding is not supported by Critical Energy Anisotropic"
     end
     dof = Data_Manager.get_dof()
     quad_horizon = Data_Manager.create_constant_node_scalar_field("Quad Horizon", Float64)

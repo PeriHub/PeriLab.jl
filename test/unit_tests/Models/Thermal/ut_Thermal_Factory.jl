@@ -53,3 +53,40 @@ end
     @test PeriLab.Data_Manager.has_key("Bond Face")
     @test PeriLab.Data_Manager.has_key("Extent")
 end
+
+@testset "licensed thermal models" begin
+    T = PeriLab.Solver_Manager.Model_Factory.Thermal
+    # no thermal models in the deck: nothing loaded, no license contact
+    @test T.load_licensed_models(Dict("PeriLab" => Dict("Models" => Dict()))) == Any[]
+    @test T.load_licensed_models(Dict("x" => 1)) == Any[]
+    # local dev mode with a dummy licensed thermal module
+    dir = mktempdir()
+    write(joinpath(dir, "Dummy_thermal.jl"), """
+        module Dummy_Thermal
+        using ......ParameterSpec: @params, register_thermal
+        @params struct DummyThermalParams
+            value::Float64 = opt("Value"; default = 1.0)
+        end
+        __init__() = register_thermal("Dummy Licensed Thermal", DummyThermalParams)
+        post_process(input, files) = (global called = files; nothing)
+        end""")
+    write(joinpath(dir, "config.yaml"),
+          "features:\n  t:\n    modules:\n      - file: Dummy_thermal.jl\n        type: Thermal\n")
+    # licensed_modules reloads a `.env` above the working directory (DotEnv), which would
+    # undo the withenv below once an earlier test registered it; run from an empty directory
+    saved = copy(T.licensed)
+    cd(mktempdir()) do
+        withenv("LICENSED_MODULES_CONFIG" => joinpath(dir, "config.yaml"),
+                "LICENSED_MODULES_DIR" => dir) do
+            empty!(T.licensed)
+            deck = Dict("PeriLab" => Dict("Models" => Dict("Thermal Models" => Dict())))
+            mods = T.load_licensed_models(deck)
+            @test any(m -> m["Module Name"] == "Dummy_Thermal", mods)
+            @test any(first.(PeriLab.ParameterSpec.registered_models(:thermal)) .==
+                      "Dummy Licensed Thermal")
+            T.post_process_licensed(nothing, ["a.e"])
+            @test Base.invokelatest(getfield, T.Dummy_Thermal, :called) == ["a.e"]
+        end
+    end
+    append!(empty!(T.licensed), saved)
+end

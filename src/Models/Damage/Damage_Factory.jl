@@ -56,6 +56,8 @@ own keys).
                                                                      default = nothing)
     local_damping::Union{Nothing,LocalDampingParams} = opt("Local Damping";
                                                            default = nothing)
+    "Scales the critical value of every bond by its Bonding Degree (Critical Stretch: B, Energy Release: B²); needs the Interlayer Bonding thermal model in an earlier step"
+    interlayer_bonding::Bool = opt("Interlayer Bonding"; default = false)
 end
 
 const INTERBLOCK_KEY = r"^Interblock Critical Value \d+_\d+$"
@@ -138,23 +140,39 @@ function init_inverse_bond_id()
 end
 
 """
-    critical_value_lookup(critical_value, inter_block_damage::Bool, block::Int64)
+    critical_value_lookup(critical_value, inter_block_damage::Bool, block::Int64;
+                          bonding_exponent::Int = 0)
 
-Returns `(iID, neighborID) -> critical value` of a bond: the `Critical_Value` node field
-if it exists, else the interblock matrix, else the `Critical Value` parameter. Each case
-is its own closure type, so a bond loop taking it as an argument is type stable.
+Returns `(iID, jID, neighborID) -> critical value` of bond `jID` of node `iID`: the
+`Critical_Value` node field if it exists, else the interblock matrix, else the
+`Critical Value` parameter. With `bonding_exponent > 0` the value is multiplied by
+`Bonding Degree[iID][jID]^bonding_exponent` (the bond field of the Interlayer Bonding
+thermal model). Each case is its own closure type, so a bond loop taking it as an
+argument is type stable.
 """
-function critical_value_lookup(critical_value, inter_block_damage::Bool, block::Int64)
+function critical_value_lookup(critical_value, inter_block_damage::Bool, block::Int64;
+                               bonding_exponent::Int = 0)
+    base = _base_critical_value(critical_value, inter_block_damage, block)
+    bonding_exponent == 0 && return base
+    if !Data_Manager.has_key("Bonding Degree")
+        @abort "Interlayer Bonding needs the bond field Bonding Degree: add the Interlayer Bonding thermal model to an earlier solver step"
+    end
+    bonding::BondScalarState{Float64} = Data_Manager.get_field("Bonding Degree")
+    return (iID, jID, neighborID) -> base(iID, jID, neighborID) *
+                                     bonding[iID][jID]^bonding_exponent
+end
+
+function _base_critical_value(critical_value, inter_block_damage::Bool, block::Int64)
     if Data_Manager.has_key("Critical_Value")
         crit_field::NodeScalarField{Float64} = Data_Manager.get_field("Critical_Value")
-        return (iID, neighborID) -> crit_field[iID]
+        return (iID, jID, neighborID) -> crit_field[iID]
     elseif inter_block_damage
         block_ids::NodeScalarField{Int64} = Data_Manager.get_field("Block_Id")
         crit_matrix::Array{Float64,3} = Data_Manager.get_crit_values_matrix()
-        return (iID, neighborID) -> crit_matrix[block_ids[iID], block_ids[neighborID],
-                                                block]
+        return (iID, jID, neighborID) -> crit_matrix[block_ids[iID], block_ids[neighborID],
+                                                     block]
     end
-    return (iID, neighborID) -> value(critical_value, iID)
+    return (iID, jID, neighborID) -> value(critical_value, iID)
 end
 
 "Values of the `Compression` option: how a shortened bond counts (full, skipped, only its transverse part)."

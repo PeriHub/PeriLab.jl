@@ -66,3 +66,15 @@ end
     @test all(abs.(radius(df, 0, 0) .- 10) .< 0.02)
     @test size(df, 1) == 16
 end
+
+@testset "ut_gcode_layer" begin
+    # two 3 mm lines at z = 0.2, one at z = 0.6 (height 0.4), one travel back down in between
+    df = gcode_mesh(["G0 X0 Y0 Z0.2 F600", "G1 X3 Y0 E1", "G1 X3 Y3 E1",
+                        "G0 X0 Y0 Z0.6", "G1 X3 Y0 E1"])
+    @test "Layer" in names(df)
+    @test df.Layer[df.z .< 0.4] == fill(1, count(df.z .< 0.4))
+    @test all(==(2), df.Layer[df.z .> 0.4])
+    # a z step smaller than height/2 (z-hop / seam) stays in the layer
+    df = gcode_mesh(["G0 X0 Y0 Z0.2 F600", "G1 X3 Y0 E1", "G0 Z0.3", "G1 X6 Y0 E1"])
+    @test all(==(1), df.Layer)
+end

@@ -206,6 +206,7 @@ function (@main)(ARGS)
         # the licensed models register their parameters when loaded; invokelatest
         # because their types and methods are defined at runtime
         Solver_Manager.Model_Factory.Additive.load_licensed_models()
+        Solver_Manager.Model_Factory.Thermal.load_licensed_models()
         Base.invokelatest(print_json_schema)
         return 0
     end
@@ -344,18 +345,21 @@ end
 """
     post_process(input, result_files, output_dir, merged)
 
-Lets the licensed additive modules post-process the finished results (e.g. reports).
-`merged`: the Exodus files were merged from MPI ranks into `output_dir`. A failure only
-warns; the simulation itself is finished.
+Lets the licensed additive and thermal modules post-process the finished results (e.g.
+reports). `merged`: the Exodus files were merged from MPI ranks into `output_dir`. A failure
+only warns, separately for additive and thermal; the simulation itself is finished.
 """
 function post_process(input, result_files, output_dir, merged::Bool)
     paths = [merged ? joinpath(output_dir, split(basename(f["filename"]), ".")[1] * ".e") :
              f["filename"]
              for f in result_files if f["type"] == "Exodus"]
-    try
-        Solver_Manager.Model_Factory.Additive.post_process_licensed(input, paths)
-    catch e
-        @warn "Post processing failed" exception = e
+    MF = Solver_Manager.Model_Factory
+    for factory in (MF.Additive, MF.Thermal)
+        try
+            factory.post_process_licensed(input, paths)
+        catch e
+            @warn "Post processing of the licensed $(nameof(factory)) models failed" exception = e
+        end
     end
 end
 
@@ -502,6 +506,7 @@ function run(filename::String;
             raw_deck = isfile(filename) && occursin("yaml", filename) ?
                        IO.read_input(filename) : nothing
             Solver_Manager.Model_Factory.Additive.load_licensed_models(raw_deck)
+            Solver_Manager.Model_Factory.Thermal.load_licensed_models(raw_deck)
             @timeit "IO.initialize_data" input,
                                          steps=IO.initialize_data(filename,
                                                                   filedirectory,

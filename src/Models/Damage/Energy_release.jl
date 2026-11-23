@@ -47,7 +47,9 @@ Calculates the elastic energy of each bond and compares it to a critical one. If
 function compute_model(nodes::AbstractVector{Int64}, p::CriticalEnergyParams, damage,
                        block::Int64, time::Float64, dt::Float64)
     crit_of = critical_value_lookup(damage.base.critical_value,
-                                    damage.base.interblock_damage !== nothing, block)
+                                    damage.base.interblock_damage !== nothing, block;
+                                    bonding_exponent = damage.base.interlayer_bonding ? 2 :
+                                                       0)
     return _critical_energy!(nodes, p.compression == "none", p.compression == "shear",
                              crit_of)
 end
@@ -113,7 +115,7 @@ function _critical_energy!(nodes::AbstractVector{Int64}, tension::Bool, shear::B
             # A `damage[jID] > 0 &&` guard saves ~10% for correspondence, but changes bond
             # associated results: there a node also depends on the weighted volume of its
             # neighbors, whose changes are not flagged.
-            if bond_energy_j > crit_of(iID, neighborID) * quad_horizon
+            if bond_energy_j > crit_of(iID, jID, neighborID) * quad_horizon
                 damage[jID] > 0 &&
                     (dissipated_energy[iID] += bond_energy_j * volume[iID] *
                                                volume[neighborID])

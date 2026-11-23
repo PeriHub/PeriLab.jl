@@ -7,7 +7,7 @@ module Thermal
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
 using TimerOutputs: @timeit
-using ....ModuleLoader: find_registered_modules
+using ....ModuleLoader: find_registered_modules, licensed_modules
 
 using .....ParameterSpec: @params, register_base!, WithBase, model_parts, model_module,
                           model_function, model_label
@@ -28,6 +28,52 @@ end
 __init__() = register_base!(:thermal, ThermalBaseParams)
 for file in find_registered_modules(@__DIR__, "register_thermal")
     include(file)
+end
+
+global licensed = Any[]
+
+"""
+    load_licensed_models()
+
+Includes the licensed `Interlayer` helper and thermal modules (if a license is configured)
+so that they register their parameter structs before the input deck is read. Runs once.
+"""
+function load_licensed_models()
+    isempty(licensed) || return licensed
+    global licensed = vcat(licensed_modules(@__MODULE__, "Interlayer"),
+                           licensed_modules(@__MODULE__, "Thermal"))
+    return licensed
+end
+
+"""
+    load_licensed_models(raw_deck)
+
+Loads the licensed thermal modules only if the raw input deck (the YAML dict) has
+`Models: Thermal Models`, so that other runs never contact the license server.
+"""
+function load_licensed_models(raw_deck::AbstractDict)
+    models = get(get(raw_deck, "PeriLab", Dict()), "Models", nothing)
+    (models isa AbstractDict && haskey(models, "Thermal Models")) || return Any[]
+    return load_licensed_models()
+end
+
+# not a deck (empty file, a list): the input validation reports it
+load_licensed_models(raw_deck) = Any[]
+
+"""
+    post_process_licensed(input, exodus_files::Vector{String})
+
+Calls `post_process(input, exodus_files)` of every loaded licensed thermal module that
+defines it, after the simulation (rank 0, final Exodus files).
+"""
+function post_process_licensed(input, exodus_files::Vector{String})
+    # invokelatest: the licensed modules are defined at runtime (newer world)
+    Base.invokelatest() do
+        for m in licensed
+            mod = getfield(@__MODULE__, Symbol(m["Module Name"]))
+            isdefined(mod, :post_process) && mod.post_process(input, exodus_files)
+        end
+    end
 end
 
 export init_model
@@ -85,7 +131,9 @@ Initializes every part of the block's thermal model (`Data_Manager.get_block_mod
 function init_model(nodes::AbstractVector{Int64}, block::Int64)
     thermal = Data_Manager.get_block_models(block).thermal
     for part in model_parts(thermal.model)
-        model_module(part).init_model(nodes, part, thermal, block)
+        # invokelatest: licensed models are defined at runtime (compute_model runs inside
+        # the solver's invokelatest already)
+        Base.@invokelatest model_module(part).init_model(nodes, part, thermal, block)
     end
 end
 
@@ -101,7 +149,7 @@ Defines all synchronization fields for local synchronization
 function fields_for_local_synchronization(model, block)
     thermal = Data_Manager.get_block_models(block).thermal
     for part in model_parts(thermal.model)
-        model_module(part).fields_for_local_synchronization(model)
+        Base.@invokelatest model_module(part).fields_for_local_synchronization(model)
     end
 end
 

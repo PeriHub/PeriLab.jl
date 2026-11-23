@@ -55,12 +55,13 @@ global licensed = Any[]
 """
     load_licensed_models()
 
-Includes the licensed additive modules (if a license is configured) so that they
+Includes the licensed `Interlayer` helper and additive modules (if a license is configured) so that they
 register their parameter structs before the input deck is read. Runs once.
 """
 function load_licensed_models()
     isempty(licensed) || return licensed
-    global licensed = licensed_modules(@__MODULE__, "Additive")
+    global licensed = vcat(licensed_modules(@__MODULE__, "Interlayer"),
+                           licensed_modules(@__MODULE__, "Additive"))
     return licensed
 end
 
