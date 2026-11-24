@@ -169,11 +169,14 @@ function init_solver(options::VerletMatrixParams,
     if reduce
         @info "Model reduction enabled."
         @timeit "Model reduction" init_reduce_model(model_reduction, block_nodes,
-                                                    density_mass)
+                                                    density_mass, bcs)
         # the reduced mass matrix is symmetric positive definite with a dense boundary
         # block; Cholesky needs no copy and far less memory there than a sparse LU
-        Data_Manager.set_mass_matrix(cholesky(Symmetric(Data_Manager.get_mass_matrix())))
-        return TimeWindow(initial_time, final_time, dt, nsteps), nothing
+        M = Data_Manager.get_mass_matrix()
+        M_fact = cholesky(Symmetric(M))
+        Data_Manager.set_mass_matrix(M_fact)
+        return TimeWindow(initial_time, final_time, dt, nsteps),
+               prescribed_dofs(M, M_fact, Data_Manager.get_reduced_model_retained())
     end
     # if not reduced the mass has to be created here.
     mass = Diagonal(density_mass)
@@ -184,6 +187,89 @@ function init_solver(options::VerletMatrixParams,
 
     return TimeWindow(initial_time, final_time, dt, nsteps), nothing
 end
+
+"""
+    PrescribedDofs
+
+Prescribed displacement degrees of freedom of a reduced model that the reduced mass
+couples to other degrees of freedom (retained nodes next to the condensed region).
+Solving `M a = f` with them free and overwriting their acceleration afterwards leaves
+their inertial reaction out of the other accelerations. The constrained solution is the
+free one plus a correction through the reaction forces `lambda` (`E` selects the
+prescribed entries):
+
+    a = M \\ f + Z lambda,   Z = M \\ E,   (E' Z) lambda = a_p - E' (M \\ f)
+
+The prescribed acceleration `a_p` comes from the prescribed displacements in the state.
+"""
+struct PrescribedDofs
+    index::Vector{Int64}
+    Z::Matrix{Float64}
+    S_fact::Cholesky{Float64,Matrix{Float64}}
+    q_prev::Vector{Float64}
+    v_prev::Vector{Float64}
+    lambda::Vector{Float64}
+end
+
+"""
+    prescribed_dofs(M, M_fact, retained_nodes)
+
+The [`PrescribedDofs`](@ref) of the Dirichlet displacement conditions on retained nodes
+with an off-diagonal entry in the reduced mass `M`, or `nothing` if there are none.
+"""
+function prescribed_dofs(M::SparseMatrixCSC{Float64,Int64}, M_fact,
+                         retained_nodes::Vector{Int64})
+    nnodes = Data_Manager.get_nnodes()
+    n_retained = length(retained_nodes)
+    position = zeros(Int64, nnodes)
+    position[retained_nodes] .= 1:n_retained
+    rows = rowvals(M)
+    index = Int64[]
+    for i in setdiff(1:(nnodes * Data_Manager.get_dof()), Data_Manager.get_bc_free_dof())
+        k = position[mod1(i, nnodes)]
+        k == 0 && continue # condensed, rejected by init_reduce_model
+        j = (cld(i, nnodes) - 1) * n_retained + k
+        any(r -> r != j, view(rows, nzrange(M, j))) && push!(index, j)
+    end
+    isempty(index) && return nothing
+    E = zeros(size(M, 1), length(index))
+    for (c, j) in enumerate(index)
+        E[j, c] = 1.0
+    end
+    Z = M_fact \ E
+    @info "Matrix Verlet: $(length(index)) prescribed degrees of freedom coupled by the " *
+          "reduced mass"
+    # start values: the displacements and velocities of the prescribed dofs now
+    u = vec(Data_Manager.get_field("Displacements", "N")[retained_nodes, :])
+    v = vec(Data_Manager.get_field("Velocity", "N")[retained_nodes, :])
+    return PrescribedDofs(index, Z, cholesky(Symmetric(Z[index, :])), u[index], v[index],
+                          zeros(length(index)))
+end
+
+prescribed_dofs(M, M_fact, retained_nodes) = nothing
+
+"""
+    correct_prescribed!(a, p, q, dt)
+
+Corrects the accelerations `a = M \\ f` for the prescribed degrees of freedom, see
+[`PrescribedDofs`](@ref).
+"""
+function correct_prescribed!(a::Vector{Float64}, p::PrescribedDofs, q::Vector{Float64},
+                             dt::Float64)
+    # ponytail: a_p from the change of the secant velocity, one step late; enough for
+    # the impulse of a ramp, a smooth load would need the BC at t + dt
+    for (c, j) in enumerate(p.index)
+        v = (q[j] - p.q_prev[c]) / dt
+        p.lambda[c] = (v - p.v_prev[c]) / dt - a[j]
+        p.v_prev[c] = v
+        p.q_prev[c] = q[j]
+    end
+    ldiv!(p.S_fact, p.lambda)
+    mul!(a, p.Z, p.lambda, 1.0, 1.0)
+    return nothing
+end
+
+correct_prescribed!(a, ::Nothing, q, dt) = nothing
 
 """
     MatrixVerletWorkspace
@@ -203,6 +289,7 @@ struct MatrixVerletWorkspace{TM,TK,TS}
     retained_nodes::Vector{Int64}
     state::TS
     modal_active::Bool
+    prescribed::Union{Nothing,PrescribedDofs}
 end
 
 """
@@ -232,7 +319,8 @@ function prepare_solver(run::SolverRun{VerletMatrixParams}, ctx::SolverContext)
                                  K,
                                  retained_nodes,
                                  state,
-                                 n_modal(state) > 0)
+                                 n_modal(state) > 0,
+                                 run.state)
 end
 
 """
@@ -351,6 +439,7 @@ function time_step!(ws::MatrixVerletWorkspace, run::SolverRun{VerletMatrixParams
         @timeit "Accelaration computation" begin
             #state.q_ddot .= M_fact \ state.f
             ldiv!(state.q_ddot, M_fact, state.f)
+            correct_prescribed!(state.q_ddot, ws.prescribed, state.q, dt)
             push_to_nodes!(aNP1, state.q_ddot, retained_nodes, state)
         end
         # second half step of the velocity Verlet scheme

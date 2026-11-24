@@ -54,3 +54,28 @@ end
                                       "Maximum Frequency" => 1000), "MR", ctx)
     @test ctx.errors[1].path == "MR.\"Maximum Frequency\""
 end
+
+@testset "Retained Node Sets" begin
+    p = ut_mr(Dict{String,Any}("Type" => "Craig Bampton", "Reduction Blocks" => 2,
+                               "Retained Node Sets" => "Node Set 1, Node Set 2"))
+    @test p.retained_node_sets == "Node Set 1, Node Set 2"
+    @test isnothing(ut_mr(Dict{String,Any}("Type" => "Craig Bampton")).retained_node_sets)
+
+    PeriLab.Data_Manager.initialize_data()
+    PeriLab.Data_Manager.set_glob_to_loc(Dict(1 => 1, 2 => 2, 3 => 3))
+    PeriLab.Data_Manager.get_nsets()["Node Set 1"] = [3, 1]
+    PeriLab.Data_Manager.get_nsets()["Node Set 2"] = [1, 2]
+    @test UT_MR.retained_node_set_nodes(p) == [1, 2, 3]
+    missing_set = ut_mr(Dict{String,Any}("Type" => "Craig Bampton",
+                                         "Retained Node Sets" => "Node Set 1, Nope"))
+    @test_throws PeriLab.PeriLabError UT_MR.retained_node_set_nodes(missing_set)
+
+    # only inside Model Reduction
+    ctx = PS.ParseContext()
+    PS.parse_section(ID.SolverParams,
+                     Dict{String,Any}("Initial Time" => 0.0, "Final Time" => 1.0,
+                                      "Verlet Matrix Based" =>
+                                          Dict{String,Any}("Retained Node Sets" => "Node Set 1")),
+                     "Solver", ctx)
+    @test startswith(ctx.errors[1].message, "unknown key")
+end

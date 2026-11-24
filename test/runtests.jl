@@ -368,6 +368,9 @@ MPI.Init()
         @testset "test_model_reduction_Verlet_matrix" begin
             include("fullscale_tests/test_model_reduction_Verlet_matrix/test_model_reduction_Verlet_matrix.jl")
         end
+        @testset "test_retained_node_sets" begin
+            include("fullscale_tests/test_retained_node_sets/test_retained_node_sets.jl")
+        end
         @testset "test_matrix_backend" begin
             # distributed PD_Matrix backend, needs the licensed matrix elements
             include("fullscale_tests/test_matrix_backend/test_matrix_backend.jl")

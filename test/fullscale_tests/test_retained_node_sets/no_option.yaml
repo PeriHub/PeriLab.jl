@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Blocks:
+    block_1: {Block ID: 1, Density: 2700, Horizon: 0.000752, Material Model: mat_1}
+    block_2: {Block ID: 2, Density: 2700, Horizon: 0.000752, Material Model: mat_1}
+  Boundary Conditions:
+    BC_1: {Coordinate: x, Node Set: Fix, Variable: Displacements, Value: 0, Type: Dirichlet}
+    BC_2: {Coordinate: y, Node Set: Fix, Variable: Displacements, Value: 0, Type: Dirichlet}
+    BC_3: {Coordinate: y, Node Set: Load, Variable: Displacements, Value: 0.0002*t/0.0003, Type: Dirichlet}
+  Discretization:
+    Input Mesh File: mesh.txt
+    Node Sets: {Fix: ns_fix.txt, Load: ns_load.txt}
+    Type: Text File
+  Outputs:
+    Output1:
+      Output Frequency: 50
+      Output Filename: no_option
+      Output File Type: Exodus
+      Output Variables: {Displacements: true, Forces: true}
+  Models:
+    Material Models:
+      mat_1:
+        Material Model: "Correspondence Elastic"
+        Zero Energy Control: "Global"
+        Symmetry: isotropic plane stress
+        Young's Modulus: 1.2e08
+        Poisson's Ratio: 0.3
+  Solver:
+    Final Time: 0.0003
+    Initial Time: 0.0
+    Material Models: true
+    Verlet Matrix Based:
+      Safety Factor: 0.9
+      Model Reduction: {Type: Craig Bampton, Reduction Blocks: 2}

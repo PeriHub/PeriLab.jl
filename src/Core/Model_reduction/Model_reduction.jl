@@ -5,6 +5,7 @@
 module Model_reduction
 using TimerOutputs: @timeit
 using ...Data_Manager
+using ....PeriLabExceptions: @abort
 using ....ParameterSpec: @params, ParseContext, add_error!, join_path
 import ....ParameterSpec: check!
 
@@ -33,6 +34,9 @@ const CRAIG_BAMPTON_TYPES = ["Craig Bampton", "Craig Bampton Cascade"]
     "File with the reduced stiffness and mass matrices: loaded if it exists (checked against the retained nodes and dof only), written otherwise. For studies that change only the non-reduced region"
     reduced_matrix_cache::Union{Nothing,String} = opt("Reduced Matrix Cache";
                                                       default = nothing)
+    "Node sets separated by commas whose nodes stay physical degrees of freedom of the reduced system without being material points; their forces come from the reduced matrix only. For boundary conditions on nodes inside the reduction blocks"
+    retained_node_sets::Union{Nothing,String} = opt("Retained Node Sets";
+                                                    default = nothing)
 end
 
 function check!(p::ModelReductionParams, path::String, ctx::ParseContext)
@@ -311,7 +315,42 @@ function parse_reduction_blocks(model_param::ModelReductionParams)
 end
 
 """
-    partition_nodes(block_nodes, reduction_blocks, material_point_region)
+    retained_node_set_nodes(model_param)
+
+Local ids of the nodes in the `"Retained Node Sets"` (names separated by commas), sorted
+and unique; empty if the option is not given. Aborts if a node set does not exist.
+"""
+function retained_node_set_nodes(model_param::ModelReductionParams)
+    isnothing(model_param.retained_node_sets) && return Int64[]
+    nsets = Data_Manager.get_nsets()
+    nodes = Int64[]
+    for name in filter(!isempty, strip.(split(model_param.retained_node_sets, ",")))
+        haskey(nsets, name) ||
+            @abort "Model Reduction: Retained Node Set '$name' is missing"
+        append!(nodes, Data_Manager.get_local_nodes(nsets[name]))
+    end
+    return sort!(unique!(nodes))
+end
+
+"""
+    check_bcs_on_condensed(bcs, condensed_nodes)
+
+Aborts if a boundary condition acts on condensed nodes: they are no degrees of freedom
+of the reduced system, so the condition would have no effect.
+"""
+function check_bcs_on_condensed(bcs::AbstractDict, condensed_nodes::Vector{Int64})
+    for (name, bc) in bcs
+        n = length(intersect(bc.node_set, condensed_nodes))
+        n == 0 && continue
+        @abort "Model Reduction: boundary condition '$name' acts on $n condensed " *
+               "node(s), where it has no effect. Add its node set to 'Retained Node " *
+               "Sets' of the Model Reduction to keep these nodes in the reduced system."
+    end
+    return nothing
+end
+
+"""
+    partition_nodes(block_nodes, reduction_blocks, material_point_region, extra_retained = Int64[])
 
 Splits every node into the sets the reduction needs.
 
@@ -324,16 +363,22 @@ computation of their own, relying entirely on the reduced operator.
 `material_point_region = false` empties the material point set, folding every retained
 node into the coupling layer instead.
 
+`extra_retained` (the `"Retained Node Sets"`) are retained as well, but as coupling
+nodes: physical degrees of freedom, no material points. They may lie anywhere in the
+reduction blocks.
+
 # Arguments
 - `block_nodes::AbstractDict{Int64,Vector{Int64}}`: Nodes per block
 - `reduction_blocks::Vector{Int64}`: Block IDs to condense away
 - `material_point_region::Bool`: Whether the non-reduction blocks keep their own force computation
+- `extra_retained::Vector{Int64}`: Further nodes to retain as coupling nodes
 # Returns
 - `retained_nodes::Vector{Int64}`, `condensed_nodes::Vector{Int64}`,
   `pd_nodes::Vector{Int64}`, `coupling_nodes::Vector{Int64}`, all sorted
 """
 function partition_nodes(block_nodes::AbstractDict{Int64,Vector{Int64}},
-                         reduction_blocks::Vector{Int64}, material_point_region::Bool)
+                         reduction_blocks::Vector{Int64}, material_point_region::Bool,
+                         extra_retained::Vector{Int64} = Int64[])
     nlist = Data_Manager.get_nlist()
     nnodes = Data_Manager.get_nnodes()
 
@@ -348,6 +393,7 @@ function partition_nodes(block_nodes::AbstractDict{Int64,Vector{Int64}},
         append!(retained_nodes, nlist[node])
     end
     append!(retained_nodes, pd_nodes)
+    append!(retained_nodes, extra_retained)
     retained_nodes = sort(unique(retained_nodes))
 
     material_point_region || empty!(pd_nodes)
@@ -363,16 +409,16 @@ end
     mark_coupling_field!(retained_nodes, condensed_nodes, pd_nodes, coupling_nodes)
 
 Fills the `"Coupling Nodes"` field for visualisation and debugging; it has no effect on
-the reduction itself.
+the reduction itself. Values: 4 material point, 5 coupling, 6 condensed node. The first
+output step (time 0) holds zeros, as for every nodal output variable.
 """
 function mark_coupling_field!(retained_nodes::Vector{Int64},
                               condensed_nodes::Vector{Int64},
                               pd_nodes::Vector{Int64}, coupling_nodes::Vector{Int64})
     cn = Data_Manager.create_constant_node_scalar_field("Coupling Nodes", Int64)
-    cn[retained_nodes] .= 3
     cn[condensed_nodes] .= 6
-    cn[pd_nodes] .+= 1  # added to be sure that all points are handled
-    cn[coupling_nodes] .+= 3  # added to be sure that all points are handled
+    cn[pd_nodes] .= 4
+    cn[coupling_nodes] .= 5
     return nothing
 end
 
@@ -392,7 +438,7 @@ end
 
 function init_reduce_model(model_param::ModelReductionParams,
                            block_nodes::AbstractDict{Int64,Vector{Int64}},
-                           density)
+                           density, bcs::AbstractDict = Dict())
     reduction_blocks = parse_reduction_blocks(model_param)
     isnothing(reduction_blocks) && return
 
@@ -411,11 +457,15 @@ function init_reduce_model(model_param::ModelReductionParams,
         frequency_kwargs
     end
 
+    extra_retained = retained_node_set_nodes(model_param)
     retained_nodes, condensed_nodes, pd_nodes,
-    coupling_nodes = partition_nodes(block_nodes, reduction_blocks, material_point_region)
+    coupling_nodes = partition_nodes(block_nodes, reduction_blocks, material_point_region,
+                                     extra_retained)
     @info "Model Reduction: $(length(retained_nodes)) retained, " *
           "$(length(condensed_nodes)) condensed, $(length(pd_nodes)) material point, " *
-          "$(length(coupling_nodes)) coupling nodes"
+          "$(length(coupling_nodes)) coupling nodes, $(length(extra_retained)) retained " *
+          "by node sets"
+    check_bcs_on_condensed(bcs, condensed_nodes)
 
     if pd_nodes != []
         # init_matrix already assembled every node, PD included, since it runs before
