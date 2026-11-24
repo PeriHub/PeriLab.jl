@@ -7,7 +7,7 @@ using LinearAlgebra: norm
 using .....Data_Manager
 using .....Geometry: compute_stretch!
 using .....Helpers: with_dof
-using ..Damage: critical_value_lookup, COMPRESSION_MODES, transverse
+using ..Damage: with_critical_value, COMPRESSION_MODES, transverse
 export compute_model
 export init_model
 export fields_for_local_synchronization
@@ -34,11 +34,11 @@ Calculates the stretch of each bond and compares it to a critical one. If it is 
 """
 function compute_model(nodes::AbstractVector{Int64}, p::CriticalStretchParams, damage,
                        block::Int64, time::Float64, dt::Float64)
-    crit_of = critical_value_lookup(damage.base.critical_value,
-                                    damage.base.interblock_damage !== nothing, block;
-                                    bonding_exponent = damage.base.interlayer_bonding ? 1 :
-                                                       0)
-    return _critical_stretch!(nodes, p.compression, crit_of)
+    compression = p.compression
+    return with_critical_value(crit_of -> _critical_stretch!(nodes, compression, crit_of),
+                               damage.base.critical_value,
+                               damage.base.interblock_damage !== nothing, block;
+                               bonding_exponent = damage.base.interlayer_bonding ? 1 : 0)
 end
 
 # function barrier: `crit_of` has a concrete closure type here, the dof becomes `D`

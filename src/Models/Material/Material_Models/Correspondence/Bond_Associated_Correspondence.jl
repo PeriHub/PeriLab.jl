@@ -11,7 +11,7 @@ using ........PeriLabExceptions: @abort
 using .........ParameterSpec: model_parts, model_module, model_function
 using ........Helpers:
                        find_local_neighbors, invert, rotate, determinant, smat,
-                       matrix_diff!, tensor_buffer, node_tensor
+                       matrix_diff!, tensor_buffer, node_tensor, each_call
 using ........Geometry:
                         compute_strain!,
                         compute_bond_level_rotation_tensor,
@@ -172,11 +172,9 @@ function compute_model(nodes::AbstractVector{Int64},
         end
     end
 
-    for part in model_parts(material.model)
-        model_function(part, Val(:compute_stresses_ba))(nodes, nlist, dof, part, material,
-                                                        time, dt, strain_increment,
-                                                        stress_N, stress_NP1)
-    end
+    # the parts of a composite have different types: a loop would box them
+    each_call(compute_stresses_ba_part!, model_parts(material.model), nodes, nlist, dof,
+              material, time, dt, strain_increment, stress_N, stress_NP1)
 
     if rotation
         for iID in nodes
@@ -352,6 +350,14 @@ function compute_bond_forces(nodes::AbstractVector{Int64},
         end
     end
     return bond_forces
+end
+
+function compute_stresses_ba_part!(part, nodes, nlist, dof::Int64, material, time::Float64,
+                                   dt::Float64, strain_increment, stress_N, stress_NP1)
+    model_function(part, Val(:compute_stresses_ba))(nodes, nlist, dof, part, material,
+                                                    time, dt, strain_increment, stress_N,
+                                                    stress_NP1)
+    return nothing
 end
 
 end

@@ -134,7 +134,8 @@ Removes all fields, so that no field of an earlier run is left.
 """
 function initialize_data()
     empty!(fieldmanager.fields)
-    data["current_time"] = 0.0
+    # a typed box: set every step, a Float64 stored in `data` would be boxed each time
+    data["current_time"] = Ref(0.0)
 
     data["step"] = 0
     data["max_step"] = 0
@@ -181,7 +182,7 @@ function initialize_data()
     data["FEM Parameters"] = nothing
     data["Block Models"] = Dict{Int64,BlockModels}()
     data["Surface Correction"] = nothing
-    data["output_frequency"] = []
+    data["output_frequency"] = Dict{String,Int64}[]
     data["accuracy_order"] = 1
     data["rank"] = 0
     data["cancel"] = false
@@ -773,10 +774,11 @@ end
 This function returns the `output_frequency` variable.
 
 # Returns
-- `output_frequency`::Any: The value of the `output_frequency` variable.
+- `output_frequency::Vector{Dict{String,Int64}}`: Counter, output frequency and step of
+  every output.
 """
 function get_output_frequency()
-    return data["output_frequency"]
+    return data["output_frequency"]::Vector{Dict{String,Int64}}
 end
 
 """
@@ -1146,7 +1148,7 @@ Sets the output frequency globally.
 # Arguments
 - `value`: The value to set as the output frequency.
 """
-function set_output_frequency(value)
+function set_output_frequency(value::Vector{Dict{String,Int64}})
     data["output_frequency"] = value
 end
 

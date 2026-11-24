@@ -8,6 +8,7 @@ using ....Data_Manager
 using ....PeriLabExceptions: @abort
 using TimerOutputs: @timeit
 using ....ModuleLoader: find_registered_modules, licensed_modules
+using ....Helpers: each_call
 
 using .....ParameterSpec: @params, register_base!, WithBase, model_parts, model_module,
                           model_function, model_label
@@ -112,11 +113,17 @@ Computes every part of the block's thermal model, in deck order.
 """
 function compute_model(nodes::AbstractVector{Int64}, thermal::WithBase, block::Int64,
                        time::Float64, dt::Float64)
-    for part in model_parts(thermal.model)
-        @timeit model_label(part) model_function(part, Val(:compute_model))(nodes, part,
-                                                                            thermal, block,
-                                                                            time, dt)
-    end
+    # the parts of a composite have different types: a loop would box them
+    each_call(compute_part!, model_parts(thermal.model), nodes, thermal, block, time, dt)
+    return nothing
+end
+
+function compute_part!(part, nodes::AbstractVector{Int64}, thermal::WithBase, block::Int64,
+                       time::Float64, dt::Float64)
+    @timeit model_label(part) model_function(part, Val(:compute_model))(nodes, part,
+                                                                        thermal, block,
+                                                                        time, dt)
+    return nothing
 end
 
 """

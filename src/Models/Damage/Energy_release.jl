@@ -21,7 +21,7 @@ export init_model
 export fields_for_local_synchronization
 
 using ......ParameterSpec: @params, register_damage
-using ..Damage: critical_value_lookup, init_inverse_bond_id, COMPRESSION_MODES, transverse
+using ..Damage: with_critical_value, init_inverse_bond_id, COMPRESSION_MODES, transverse
 @params "Breaks a bond once its energy exceeds the critical energy release rate" struct CriticalEnergyParams
     "How a shortened bond counts: full (as a stretched one), none (skipped) or shear (only the part of its deformation transverse to the bond)"
     compression::String = opt("Compression"; default = "none", allowed = COMPRESSION_MODES)
@@ -46,12 +46,12 @@ Calculates the elastic energy of each bond and compares it to a critical one. If
 """
 function compute_model(nodes::AbstractVector{Int64}, p::CriticalEnergyParams, damage,
                        block::Int64, time::Float64, dt::Float64)
-    crit_of = critical_value_lookup(damage.base.critical_value,
-                                    damage.base.interblock_damage !== nothing, block;
-                                    bonding_exponent = damage.base.interlayer_bonding ? 2 :
-                                                       0)
-    return _critical_energy!(nodes, p.compression == "none", p.compression == "shear",
-                             crit_of)
+    tension = p.compression == "none"
+    shear = p.compression == "shear"
+    return with_critical_value(crit_of -> _critical_energy!(nodes, tension, shear, crit_of),
+                               damage.base.critical_value,
+                               damage.base.interblock_damage !== nothing, block;
+                               bonding_exponent = damage.base.interlayer_bonding ? 2 : 0)
 end
 
 # function barrier: `crit_of` has a concrete closure type here, the dof becomes `D`

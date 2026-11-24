@@ -831,7 +831,7 @@ function set_output_frequency(input::PeriLabInput,
                               reuse::Bool)
     frequencies = output_frequencies(input.sections.outputs, nsteps, step_id)
     if step_id <= 1 && !reuse
-        output_frequency = []
+        output_frequency = Dict{String,Int64}[]
         for id in eachindex(frequencies)
             push!(output_frequency,
                   Dict{String,Int64}("Counter" => 0,
@@ -891,10 +891,12 @@ function write_results(result_files::Vector{Dict},
     for id in eachindex(result_files)
         output_type = outputs[id]["Output File Type"]
         # step 1 ist the zero step?!
-        if outputs[id]["write_after_damage"] && max_damage == 0.0
+        # typed as in `OutputParams`; compared untyped, `time` would be boxed every step
+        if outputs[id]["write_after_damage"]::Bool && max_damage == 0.0
             continue
         end
-        if outputs[id]["start_time"] > time || outputs[id]["end_time"] < time
+        if outputs[id]["start_time"]::Float64 > time ||
+           outputs[id]["end_time"]::Float64 < time
             continue
         end
         output_frequency = Data_Manager.get_output_frequency()

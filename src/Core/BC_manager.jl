@@ -8,6 +8,8 @@ export apply_bc_dirichlet
 export apply_bc_neumann
 export find_bc_free_dof
 export BoundaryCondition
+export dirichlet_plan
+export DirichletPlan
 
 using ...Data_Manager
 using ...InputDeck: BoundaryConditionParams, bc_node_set_names, bc_step_ids
@@ -28,7 +30,8 @@ end
 A boundary condition prepared for one solver step: the resolved field
 (`variable`, `time` = `"NP1"` or `"Constant"`), its `type`, the local nodes it
 acts on, and its `value` — a number or an expression string from the input
-deck, replaced by the compiled expression after the first evaluation.
+deck, replaced by the compiled expression after the first evaluation. `source` keeps
+the value of the input deck (for `dirichlet_plan`).
 """
 mutable struct BoundaryCondition
     variable::String
@@ -38,6 +41,12 @@ mutable struct BoundaryCondition
     coordinate::Union{Nothing,String}
     node_set::Vector{Int64}
     value::Any
+    source::Union{Float64,Int64,String}
+end
+
+function BoundaryCondition(variable, time, type, initial, coordinate, node_set, value)
+    return BoundaryCondition(variable, time, type, initial, coordinate, node_set, value,
+                             value)
 end
 
 """
@@ -307,50 +316,42 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
         # @warn "Ignoring boundary condition $name.\n No nodes found, check Input Deck and or Node Sets."
         return bc
     end
-    bc_out = bc
-    bc = string(bc)
-    bc = clean_up(bc)
+    bc_func = compile_bc(bc, dof)
+    return eval_bc!(field_values, bc_func, coordinates, time, step_time, dof, initial, name,
+                    neumann)
+end
+
+# the parsed (broadcasting) expression of the value `bc` of a boundary condition
+function bc_expression(bc::Union{Float64,Int64,String}, dof::Int64)
+    bc = clean_up(string(bc))
     if dof < 3 && occursin(r"\bz\b", bc)
         @abort "z is not valid in a 2D problem."
         return nothing
     end
-    bc_value = Meta.parse(bc)
+    return Meta.parse(bc)
+end
 
-    if dof > 2
-        func_args = [:x, :y, :z, :t, :st]
-        dynamic_func_expr = quote
-            ($(func_args...),) -> $bc_value
-        end
+"""
+    compile_bc(bc::Union{Float64,Int64,String}, dof::Int64)
 
-        dynamic_bc_3D_func = Base.eval(@__MODULE__, dynamic_func_expr)
+The value or expression `bc` of a boundary condition as the function
+`(x, y, t, st)` (2D) or `(x, y, z, t, st)` (3D) of the coordinate columns, the time and
+the step time. It is defined with `eval`, so it is called with `invokelatest` or from code
+entered after it (see `Solver_Common.run_steps`).
+"""
+function compile_bc(bc::Union{Float64,Int64,String}, dof::Int64)
+    bc_value = bc_expression(bc, dof)
+    func_args = dof > 2 ? [:x, :y, :z, :t, :st] : [:x, :y, :t, :st]
+    return Base.eval(@__MODULE__, quote
+                         ($(func_args...),) -> $bc_value
+                     end)
+end
 
-        value = Base.invokelatest(dynamic_bc_3D_func,
-                                  (coordinate_column(coordinates, 1),
-                                   coordinate_column(coordinates, 2),
-                                   coordinate_column(coordinates, 3),
-                                   time,
-                                   step_time)...)
-        bc_out = dynamic_bc_3D_func
-    else
-        func_args = [:x, :y, :t, :st]
-        dynamic_func_expr = quote
-            ($(func_args...),) -> $bc_value
-        end
-
-        dynamic_2D_bc_func = Base.eval(@__MODULE__, dynamic_func_expr)
-
-        value = Base.invokelatest(dynamic_2D_bc_func,
-                                  (coordinate_column(coordinates, 1),
-                                   coordinate_column(coordinates, 2),
-                                   time,
-                                   step_time)...)
-        bc_out = dynamic_2D_bc_func
-    end
-
+# writes the value of a boundary condition into `field_values`
+function assign_bc!(field_values, value, initial::Bool, time::Float64, neumann::Bool)
     if isnothing(value) || (initial && time != 0.0)
-        return bc_out
+        return nothing
     end
-
     if value isa Number
         if neumann
             field_values .+= value
@@ -360,8 +361,7 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
     else
         copyto!(field_values, value)
     end
-
-    return bc_out
+    return nothing
 end
 
 """
@@ -412,21 +412,143 @@ function eval_bc!(field_values::Union{SubArray,NodeScalarField{Float64},
                                    time,
                                    step_time)...)
     end
-
-    if isnothing(value) || (initial && time != 0.0)
-        return bc
-    end
-
-    if value isa Number
-        if neumann
-            field_values .+= value
-        else
-            fill!(field_values, value)
-        end
-    else
-        copyto!(field_values, value)
-    end
+    assign_bc!(field_values, value, initial, time, neumann)
     return bc
+end
+
+"""
+    BCClock
+
+Time and step time of the step a `DirichletPlan` is applied in; one object per plan, so
+the compiled boundary conditions read them without boxing.
+"""
+mutable struct BCClock
+    time::Float64
+    step_time::Float64
+end
+
+"""
+    DirichletCall
+
+A Dirichlet or initial boundary condition of a solver run, compiled once: the field
+`field` at `time`, its `column` (0 for a node scalar field), the nodes and `write`, which
+evaluates the value and writes it (`compile_bc_writer`).
+"""
+struct DirichletCall
+    field::String
+    time::String
+    column::Int64
+    node_set::Vector{Int64}
+    initial::Bool
+    write::Function
+end
+
+"""
+    DirichletPlan
+
+The compiled boundary conditions of a solver run (`dirichlet_plan`). The writers are not
+type parameters: they are defined with `eval` in every run, as type parameters they would
+recompile the solver loop in every run.
+"""
+struct DirichletPlan
+    calls::Vector{DirichletCall}
+    clock::BCClock
+end
+
+# the field a boundary condition of `variable` writes into
+function bc_field(bc::BoundaryCondition)
+    bc.variable == "Forces" ? ("External Forces", "Constant") :
+    bc.variable == "Force Densities" ?
+    ("External Force Densities", "Constant") :
+    (bc.variable, bc.time)
+end
+
+bc_values(field::AbstractVector, nodes::Vector{Int64}, ::Int64) = view(field, nodes)
+function bc_values(field::AbstractMatrix, nodes::Vector{Int64}, column::Int64)
+    return view(field, nodes, column)
+end
+
+"""
+    compile_bc_writer(bc::Union{Float64,Int64,String}, dof::Int64)
+
+The value or expression `bc` of a boundary condition as the function
+`(field, nodes, column, coordinates, clock::BCClock, initial)` that evaluates it with
+`x`, `y` (`z`), `t` and `st` and writes it into `field` (see `assign_bc!`). All arguments
+are objects that already exist, so the dynamic call of the writer allocates nothing.
+"""
+function compile_bc_writer(bc::Union{Float64,Int64,String}, dof::Int64)
+    return get!(() -> _compile_bc_writer(bc, dof), BC_WRITERS, (bc, dof))
+end
+
+# the writers depend only on the value and dof: a run reuses the compiled ones of earlier
+# runs instead of compiling them again
+const BC_WRITERS = Dict{Tuple{Union{Float64,Int64,String},Int64},Function}()
+
+function _compile_bc_writer(bc::Union{Float64,Int64,String}, dof::Int64)
+    bc_value = bc_expression(bc, dof)
+    z = dof > 2 ? :(z = view(coordinates, nodes, 3)) : nothing
+    return Base.eval(@__MODULE__,
+                     quote
+                         (field, nodes, column, coordinates, clock,
+                          initial) -> begin
+                             x = view(coordinates, nodes, 1)
+                             y = view(coordinates, nodes, 2)
+                             $z
+                             t = clock.time
+                             st = clock.step_time
+                             assign_bc!(bc_values(field, nodes, column), $bc_value,
+                                        initial, t, false)
+                             return nothing
+                         end
+                     end)
+end
+
+"""
+    dirichlet_plan(bcs::Dict{String,BoundaryCondition}, variables)
+
+The Dirichlet and initial boundary conditions of `bcs` on `variables`, compiled, in the
+order of `bcs`. A solver builds the plan in `prepare_solver` and applies it with
+`apply_bc_dirichlet(plan, time, step_time)` without allocations; the writers are defined
+after the caller's world, so the step loop is entered with `invokelatest`
+(`Solver_Common.run_steps`).
+"""
+function dirichlet_plan(bcs::Dict{String,BoundaryCondition}, variables)
+    dof = Data_Manager.get_dof()
+    calls = DirichletCall[]
+    for (_, bc) in bcs
+        bc.type in ("Initial", "Dirichlet") || continue
+        bc.variable in variables || continue
+        # no node of the condition on this rank
+        isempty(bc.node_set) && continue
+        name, time = bc_field(bc)
+        column = 0
+        if ndims(Data_Manager.get_field(name, time)) > 1
+            haskey(DOF_MAPPING, bc.coordinate) ||
+                @abort "Coordinate in boundary condition must be x,y or z."
+            column = Int64(DOF_MAPPING[bc.coordinate])
+        end
+        push!(calls,
+              DirichletCall(name, time, column, bc.node_set, bc.initial,
+                            compile_bc_writer(bc.source, dof)))
+    end
+    return DirichletPlan(calls, BCClock(0.0, 0.0))
+end
+
+"""
+    apply_bc_dirichlet(plan::DirichletPlan, time::Float64, step_time::Float64)
+
+Applies the boundary conditions of a `dirichlet_plan`.
+"""
+function apply_bc_dirichlet(plan::DirichletPlan, time::Float64, step_time::Float64)
+    isempty(plan.calls) && return nothing
+    plan.clock.time = time
+    plan.clock.step_time = step_time
+    coordinates = Data_Manager.get_field("Coordinates")::Matrix{Float64}
+    for call in plan.calls
+        call.write(Data_Manager.get_field(call.field, call.time), call.node_set,
+                   call.column, coordinates, plan.clock, call.initial)
+    end
+    return nothing
 end
 
 end

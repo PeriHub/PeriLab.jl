@@ -12,6 +12,7 @@ using StaticArrays
 using TimerOutputs: @timeit
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
+using .....Helpers: with_dof
 using ...Pre_Calculation: Deformation_Gradient
 export fields_for_local_synchronization
 export compute_model
@@ -91,30 +92,18 @@ function compute_model(nodes::AbstractVector{Int64}, p::ThermalExpansionParams, 
                        block::Int64, time::Float64, dt::Float64)
     temperature_NP1::NodeScalarField{Float64} = Data_Manager.get_field("Temperature",
                                                                        "NP1")
-    dof::Int64 = Data_Manager.get_dof()
     alpha::Union{Float64,
                  Vector{Float64}} = p.thermal_expansion_coefficient
-
-    @timeit "thermal_expansion_matrix" alpha_mat=thermal_expansion_matrix(alpha,
-                                                                          Val(dof))
     ref_temp::Float64 = something(p.reference_temperature, 0.0)
-
-    undeformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Bond Geometry")
     undeformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Bond Length")
-    deformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Deformed Bond Geometry",
-                                                                     "NP1")
     deformed_bond_length::BondScalarState{Float64} = Data_Manager.get_field("Deformed Bond Length",
                                                                             "NP1")
 
-    @timeit "apply_thermal_expansion!" apply_thermal_expansion!(deformed_bond,
-                                                                deformed_bond_length,
-                                                                nodes,
-                                                                temperature_NP1,
-                                                                ref_temp,
-                                                                alpha_mat,
-                                                                undeformed_bond,
-                                                                undeformed_bond_length,
-                                                                dof)
+    # the dof as a compile time constant: the bond vectors and the expansion matrix are
+    # typed by it, so the kernel is called statically
+    @timeit "apply_thermal_expansion!" thermal_expansion!(nodes, temperature_NP1, ref_temp,
+                                                          alpha, deformed_bond_length,
+                                                          undeformed_bond_length)
 
     if Data_Manager.has_key("Deformation Gradient")
         #TODO all forces computed are from the original configuration
@@ -123,6 +112,32 @@ function compute_model(nodes::AbstractVector{Int64}, p::ThermalExpansionParams, 
                                                                           nothing, block,
                                                                           time, dt)
     end
+end
+
+# function barrier: called with the concrete type of `alpha`, the closure captures only
+# the typed arguments
+function thermal_expansion!(nodes::AbstractVector{Int64},
+                            temperature_NP1::NodeScalarField{Float64}, ref_temp::Float64,
+                            alpha::Union{Float64,Vector{Float64}},
+                            deformed_bond_length::BondScalarState{Float64},
+                            undeformed_bond_length::BondScalarState{Float64})
+    with_dof(D -> thermal_expansion!(nodes, temperature_NP1, ref_temp, alpha,
+                                     deformed_bond_length, undeformed_bond_length, D))
+end
+function thermal_expansion!(nodes::AbstractVector{Int64},
+                            temperature_NP1::NodeScalarField{Float64}, ref_temp::Float64,
+                            alpha::Union{Float64,Vector{Float64}},
+                            deformed_bond_length::BondScalarState{Float64},
+                            undeformed_bond_length::BondScalarState{Float64},
+                            ::Val{D}) where {D}
+    apply_thermal_expansion!(Data_Manager.get_field("Deformed Bond Geometry",
+                                                    "NP1")::BondVectorState{Float64,D},
+                             deformed_bond_length, nodes, temperature_NP1, ref_temp,
+                             thermal_expansion_matrix(alpha, Val(D)),
+                             Data_Manager.get_field("Bond Geometry")::BondVectorState{Float64,
+                                                                                      D},
+                             undeformed_bond_length, D)
+    return nothing
 end
 
 """

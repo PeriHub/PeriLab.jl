@@ -141,7 +141,7 @@ function compute_shape_tensors!(shape_tensor::NodeTensorField{Float64},
                                 volume::NodeScalarField{Float64},
                                 omega::BondScalarState{Float64},
                                 bond_damage::BondScalarState{Float64},
-                                undeformed_bond::BondVectorState{Float64})
+                                undeformed_bond::BondVectorState{Float64,D}) where {D}
     for iID in nodes
         @views compute_shape_tensor!(shape_tensor,
                                      volume[nlist[iID]],
@@ -152,7 +152,8 @@ function compute_shape_tensors!(shape_tensor::NodeTensorField{Float64},
 
         @views invert(inverse_shape_tensor[iID, :,
                                            :], shape_tensor[iID, :, :],
-                      "Shape Tensor is singular and cannot be inverted.\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds.")
+                      "Shape Tensor is singular and cannot be inverted.\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds.",
+                      Val(D))
     end
 end
 

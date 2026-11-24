@@ -59,14 +59,17 @@ end
 
 "Environmental temperature: a number, or an expression in the time `t` (evaluated at `time`)."
 environmental_temperature(T::Float64, time::Float64) = T
+# the expression of `t` compiled once (it was parsed and evaluated in every call)
+const TEMPERATURE_EXPRESSIONS = Dict{String,Function}()
 function environmental_temperature(expression::String, time::Float64)
-    global t = time
-    return Float64(eval(Meta.parse(expression)))
+    f = get!(() -> Core.eval(@__MODULE__, :(t -> $(Meta.parse(expression)))),
+             TEMPERATURE_EXPRESSIONS, expression)
+    return Float64(Base.invokelatest(f, time))
 end
 
 using TimerOutputs: @timeit
 using .....Data_Manager
-using .....Helpers: node_tensor
+using .....Helpers: node_tensor, with_dof
 
 # Each node is a box with the edge lengths "Extent" (from the mesh, e.g. sampling x width x
 # height of a G-code strand in its own frame; else a cube of the node volume), oriented by
@@ -148,25 +151,33 @@ function compute_model(nodes::AbstractVector{Int64}, p::HeatTransferParams, ther
                        block::Int64, time::Float64, dt::Float64)
     Tenv::Float64 = environmental_temperature(p.environmental_temperature, time)
     kappa_bed = something(p.bed_heat_transfer_coefficient, p.heat_transfer_coefficient)
-    Tbed::Float64 = p.bed_temperature === nothing ? Tenv :
-                    environmental_temperature(p.bed_temperature, time)
+    # explicit branches: a dispatch over the three types of the field returns a boxed value
+    bed_T = p.bed_temperature
+    Tbed::Float64 = bed_T === nothing ? Tenv :
+                    bed_T isa Float64 ? bed_T :
+                    environmental_temperature(bed_T::String, time)
     if p.allow_surface_change
         # without damage a node stays covered, so it is not checked again
         freeze = !haskey(Data_Manager.get_active_models(), "Damage Model")
         @timeit "compute_specific_volume!" compute_specific_volume!(nodes, freeze)
     end
+    # typed fields: the kernel is called statically, its Float64 arguments are not boxed
     @timeit "apply_surface_heat_flow!" begin
-        apply_surface_heat_flow!(Data_Manager.get_field("Heat Flow", "NP1"),
-                                 Data_Manager.get_field("Temperature", "NP1"),
-                                 Data_Manager.get_field("Specific Volume"),
-                                 Data_Manager.get_field("Bed Specific Volume"),
-                                 Data_Manager.get_field("Surface_Nodes"), nodes,
+        apply_surface_heat_flow!(Data_Manager.get_field("Heat Flow",
+                                                        "NP1")::NodeScalarField{Float64},
+                                 Data_Manager.get_field("Temperature",
+                                                        "NP1")::NodeScalarField{Float64},
+                                 Data_Manager.get_field("Specific Volume")::NodeScalarField{Float64},
+                                 Data_Manager.get_field("Bed Specific Volume")::NodeScalarField{Float64},
+                                 Data_Manager.get_field("Surface_Nodes")::NodeScalarField{Bool},
+                                 nodes,
                                  p.heat_transfer_coefficient, Tenv, kappa_bed, Tbed,
-                                 Data_Manager.get_field("Density"),
-                                 Data_Manager.get_field("Specific Heat Capacity"), dt,
+                                 Data_Manager.get_field("Density")::NodeScalarField{Float64},
+                                 Data_Manager.get_field("Specific Heat Capacity")::NodeScalarField{Float64},
+                                 dt,
                                  p.bed_thermal_conductivity,
-                                 Data_Manager.get_field("Extent"),
-                                 Data_Manager.get_field("Bed Face");
+                                 Data_Manager.get_field("Extent")::NodeVectorField{Float64},
+                                 Data_Manager.get_field("Bed Face")::NodeScalarField{Int64};
                                  eps_sigma = p.emissivity === nothing ? 0.0 :
                                              p.emissivity * p.stefan_boltzmann_constant)
     end
@@ -175,26 +186,48 @@ end
 function compute_specific_volume!(nodes::AbstractVector{Int64}, freeze::Bool)
     extent::NodeVectorField{Float64} = Data_Manager.get_field("Extent")
     # "Active" is created after the model init if no additive model defines it; all nodes are active then
-    active = Data_Manager.has_key("Active") ? Data_Manager.get_field("Active") :
+    active = Data_Manager.has_key("Active") ?
+             Data_Manager.get_field("Active")::Vector{Bool} :
              fill(true, size(extent, 1))
-    if freeze
-        # without damage only activated nodes change the surface of themselves and their neighbors
-        nodes = surface_update_nodes!(Data_Manager.get_field("Surface Update Nodes"),
-                                      Data_Manager.get_field("Surface Update"),
-                                      Data_Manager.get_field("Surface Active"),
-                                      Data_Manager.get_field("Surface Border"), active,
-                                      nodes, Data_Manager.get_nlist(),
-                                      Data_Manager.get_nnodes())
-    end
-    compute_specific_volume!(Data_Manager.get_field("Specific Volume"),
-                             Data_Manager.get_field("Bed Specific Volume"),
-                             Data_Manager.get_field("Surface_Nodes"), nodes,
-                             Data_Manager.get_nlist(), active,
-                             Data_Manager.get_bond_damage("NP1"),
-                             Data_Manager.get_field("Bond Face"),
-                             Data_Manager.get_field("Bond Face Area"), extent,
-                             Data_Manager.get_field("Bed Face"), freeze,
-                             Val(size(extent, 2)))
+    # without damage only activated nodes change the surface of themselves and their
+    # neighbors; both cases call the barrier directly (a Vector/SubArray union is boxed)
+    freeze || return specific_volume_fields!(nodes, active, extent, freeze)
+    return specific_volume_fields!(surface_update_nodes!(Data_Manager.get_field("Surface Update Nodes")::NodeScalarField{Int64},
+                                                         Data_Manager.get_field("Surface Update")::NodeScalarField{Bool},
+                                                         Data_Manager.get_field("Surface Active")::NodeScalarField{Bool},
+                                                         Data_Manager.get_field("Surface Border")::NodeScalarField{Bool},
+                                                         active, nodes,
+                                                         Data_Manager.get_nlist()::BondScalarState{Int64},
+                                                         Data_Manager.get_nnodes()),
+                                   active, extent, freeze)
+end
+
+# typed fields and the dof as a compile time constant (extent has dof columns): the
+# kernel is called statically
+function specific_volume_fields!(update_nodes::AbstractVector{Int64},
+                                 active::Vector{Bool}, extent::NodeVectorField{Float64},
+                                 freeze::Bool)
+    specific_volume_barrier!(Data_Manager.get_field("Specific Volume")::NodeScalarField{Float64},
+                             Data_Manager.get_field("Bed Specific Volume")::NodeScalarField{Float64},
+                             Data_Manager.get_field("Surface_Nodes")::NodeScalarField{Bool},
+                             update_nodes,
+                             Data_Manager.get_nlist()::BondScalarState{Int64}, active,
+                             Data_Manager.get_bond_damage("NP1")::BondScalarState{Float64},
+                             Data_Manager.get_field("Bond Face")::BondScalarState{Int64},
+                             Data_Manager.get_field("Bond Face Area")::BondScalarState{Float64},
+                             extent,
+                             Data_Manager.get_field("Bed Face")::NodeScalarField{Int64},
+                             freeze)
+end
+
+# function barrier: called with the concrete argument types, the closure captures only them
+function specific_volume_barrier!(specific_volume, bed_specific_volume, surface_nodes,
+                                  nodes, nlist, active, bond_damage, bond_face,
+                                  bond_face_area, extent, bed_face, freeze::Bool)
+    with_dof(D -> compute_specific_volume!(specific_volume, bed_specific_volume,
+                                           surface_nodes, nodes, nlist, active, bond_damage,
+                                           bond_face, bond_face_area, extent, bed_face,
+                                           freeze, D))
 end
 
 """

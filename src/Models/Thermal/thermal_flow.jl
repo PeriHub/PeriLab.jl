@@ -93,7 +93,7 @@ function compute_model(nodes::AbstractVector{Int64}, p::ThermalFlowParams, therm
     undeformed_bond::BondVectorField{Float64} = Data_Manager.get_field("Bond Geometry")
     volume::NodeScalarField{Float64} = Data_Manager.get_field("Volume")
     temperature::NodeScalarField{Float64} = Data_Manager.get_field("Temperature", "NP1")
-    active = Data_Manager.get_field("Active")
+    active = Data_Manager.get_field("Active")::Vector{Bool}
 
     lambda::Float64 = thermal.base.thermal_conductivity
     rotation::Bool = Data_Manager.get_element_rotation()
@@ -103,7 +103,7 @@ function compute_model(nodes::AbstractVector{Int64}, p::ThermalFlowParams, therm
     end
     if p.type == BondBased
         @timeit "heat_flow" compute_heat_flow_state_bond_based!(nodes, nlist,
-                                                                Data_Manager.get_field("Thermal Bond Weight"),
+                                                                Data_Manager.get_field("Thermal Bond Weight")::BondScalarState{Float64},
                                                                 bond_damage, active,
                                                                 temperature, heat_flow)
         return

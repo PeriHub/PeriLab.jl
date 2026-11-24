@@ -143,20 +143,22 @@ concentration only if neither node is completely inert.
 function compute_model(nodes::AbstractVector{Int64}, p::STVDFlowParams, thermal,
                        block::Int64, time::Float64, dt::Float64)
     front_depth = compute_front_depth(p, time)
+    # typed fields: the kernel is called statically, its Float64 arguments are not boxed
     compute_stvd_flow!(nodes,
                        Data_Manager.get_dof(),
-                       Data_Manager.get_nlist(),
+                       Data_Manager.get_nlist()::BondScalarState{Int64},
                        thermal.base.thermal_conductivity,
                        front_depth,
                        p.release == Continuous,
-                       Data_Manager.get_field("STVD_Depth"),
-                       Data_Manager.get_field("STVD_Spacing"),
-                       Data_Manager.get_bond_damage("NP1"),
-                       Data_Manager.get_field("Bond Length"),
-                       Data_Manager.get_field("Horizon"),
-                       Data_Manager.get_field("Temperature", "NP1"),
-                       Data_Manager.get_field("Volume"),
-                       Data_Manager.get_field("Heat Flow", "NP1"))
+                       Data_Manager.get_field("STVD_Depth")::NodeScalarField{Float64},
+                       Data_Manager.get_field("STVD_Spacing")::NodeScalarField{Float64},
+                       Data_Manager.get_bond_damage("NP1")::BondScalarState{Float64},
+                       Data_Manager.get_field("Bond Length")::BondScalarState{Float64},
+                       Data_Manager.get_field("Horizon")::NodeScalarField{Float64},
+                       Data_Manager.get_field("Temperature",
+                                              "NP1")::NodeScalarField{Float64},
+                       Data_Manager.get_field("Volume")::NodeScalarField{Float64},
+                       Data_Manager.get_field("Heat Flow", "NP1")::NodeScalarField{Float64})
 end
 
 """

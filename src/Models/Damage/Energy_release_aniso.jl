@@ -48,9 +48,9 @@ end
 # Bond Criterion as an integer, so that the kernel does not compare strings per bond
 const AXIS, AXIS_FORCE, DIRECTIONAL, AXIS_STRETCH, DIRECTIONAL_STRETCH = 1, 2, 3, 4, 5
 function criterion_id(name::String)
+    # a tuple: a vector literal would be allocated in every call
     findfirst(==(name),
-              ["Axis", "Axis Force", "Directional",
-                  "Axis Stretch", "Directional Stretch"])
+              ("Axis", "Axis Force", "Directional", "Axis Stretch", "Directional Stretch"))
 end
 
 function _critical_energy_aniso!(nodes::AbstractVector{Int64}, tension::Bool, shear::Bool,

@@ -97,7 +97,8 @@ Set the current time of the simulation.
 - `time::Float64`: The current time of the simulation.
 """
 function set_current_time(time::Float64)
-    data["current_time"] = time
+    (data["current_time"]::Base.RefValue{Float64})[] = time
+    return nothing
 end
 
 """
@@ -109,7 +110,7 @@ Get the current time of the simulation.
 - `Float64`: The current time of the simulation.
 """
 function get_current_time()::Float64
-    return data["current_time"]::Float64
+    return (data["current_time"]::Base.RefValue{Float64})[]
 end
 
 """

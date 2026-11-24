@@ -4,7 +4,7 @@
 
 module Correspondence
 
-using TimerOutputs: @timeit
+using TimerOutputs: @timeit_debug
 
 using .....Data_Manager
 using .....PeriLabExceptions: @abort
@@ -23,7 +23,7 @@ include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
 using ....Material_Basis: compute_Piola_Kirchhoff_stress!
 using .......Helpers: invert, rotate, node_tensor, determinant, smat, matrix_diff!,
-                      fast_mul!, mat_mul!
+                      fast_mul!, mat_mul!, each_call
 using .......Geometry: compute_strain!, compute_linear_strain!
 
 export init_model
@@ -123,16 +123,18 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
     strain_increment::NodeTensorField{Float64} = Data_Manager.get_field("Strain Increment")
 
     if material.base.linear_strain
-        @timeit "compute linear strain" compute_linear_strain!(nodes, deformation_gradient,
-                                                               strain_NP1)
+        @timeit_debug "compute linear strain" compute_linear_strain!(nodes,
+                                                                     deformation_gradient,
+                                                                     strain_NP1)
     else
-        @timeit "compute strain" compute_strain!(nodes, deformation_gradient, strain_NP1)
+        @timeit_debug "compute strain" compute_strain!(nodes, deformation_gradient,
+                                                       strain_NP1)
     end
-    @timeit "compute matrix diff" matrix_diff!(strain_increment, nodes, strain_NP1,
-                                               strain_N)
+    @timeit_debug "compute matrix diff" matrix_diff!(strain_increment, nodes, strain_NP1,
+                                                     strain_N)
     #@abort ""
     if rotation
-        @timeit "rotate forward" begin
+        @timeit_debug "rotate forward" begin
             rotation_tensor::NodeTensorField{Float64} = Data_Manager.get_field("Rotation Tensor")
             rotate(nodes, stress_N, rotation_tensor, false)
             rotate(nodes, strain_increment,
@@ -140,41 +142,46 @@ function compute_correspondence_model(nodes::AbstractVector{Int64},
         end
     end
 
-    @timeit "compute material" begin
-        for part in model_parts(material.model)
-            model_function(part, Val(:compute_stresses))(nodes, dof, part, material,
-                                                         time, dt, strain_increment,
-                                                         stress_N, stress_NP1)
-        end
+    @timeit_debug "compute material" begin
+        # the parts of a composite have different types: a loop would box them
+        each_call(compute_stresses_part!, model_parts(material.model), nodes, dof,
+                  material, time, dt, strain_increment, stress_N, stress_NP1)
     end
 
     if rotation
-        @timeit "rotate back" begin
+        @timeit_debug "rotate back" begin
             rotate(nodes, stress_NP1, rotation_tensor, true)
         end
     end
 
-    @timeit "compute bond force" calculate_bond_force!(nodes,
-                                                       dof,
-                                                       deformation_gradient,
-                                                       undeformed_bond,
-                                                       bond_damage,
-                                                       omega,
-                                                       inverse_shape_tensor,
-                                                       stress_NP1,
-                                                       bond_force)
+    @timeit_debug "compute bond force" calculate_bond_force!(nodes,
+                                                             dof,
+                                                             deformation_gradient,
+                                                             undeformed_bond,
+                                                             bond_damage,
+                                                             omega,
+                                                             inverse_shape_tensor,
+                                                             stress_NP1,
+                                                             bond_force)
 
     force_filter::Bool = Data_Manager.has_key("Anisotropic Force Filter")
 
-    @timeit "zero energy" Zero_Energy_Control.compute_zero_energy_control(nodes,
-                                                                          material,
-                                                                          block,
-                                                                          time,
-                                                                          dt)
+    @timeit_debug "zero energy" Zero_Energy_Control.compute_zero_energy_control(nodes,
+                                                                                material,
+                                                                                block,
+                                                                                time,
+                                                                                dt)
     if force_filter
-        @timeit "anisotropic bond damage" filter_failed_axes!(nodes, bond_force,
-                                                              bond_damage)
+        @timeit_debug "anisotropic bond damage" filter_failed_axes!(nodes, bond_force,
+                                                                    bond_damage)
     end
+end
+
+function compute_stresses_part!(part, nodes, dof::Int64, material, time::Float64,
+                                dt::Float64, strain_increment, stress_N, stress_NP1)
+    model_function(part, Val(:compute_stresses))(nodes, dof, part, material, time, dt,
+                                                 strain_increment, stress_N, stress_NP1)
+    return nothing
 end
 
 """
@@ -228,9 +235,11 @@ function calculate_bond_force!(nodes::AbstractVector{Int64},
                                omega::BondScalarState{Float64},
                                inverse_shape_tensor::NodeTensorField{Float64},
                                stress_NP1::NodeTensorField{Float64},
-                               bond_force::BondVectorState{Float64})
+                               bond_force::BondVectorState{Float64,D}) where {D}
+    # the dimension of the bond vectors (D == dof) as a compile time constant; Val(dof)
+    # would dispatch dynamically and box the bond fields
     calculate_bond_force!(bond_force, nodes, deformation_gradient, undeformed_bond,
-                          bond_damage, omega, inverse_shape_tensor, stress_NP1, Val(dof))
+                          bond_damage, omega, inverse_shape_tensor, stress_NP1, Val(D))
 end
 
 # f_ij = ω d P K⁻¹ ξ with the first Piola-Kirchhoff stress P = F S. "Cauchy Stress" holds

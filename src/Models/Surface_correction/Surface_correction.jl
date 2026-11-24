@@ -14,7 +14,7 @@ export compute_surface_correction
 function compute_surface_correction(nodes,
                                     local_synch,
                                     synchronise_field)
-    sc = Data_Manager.get_surface_correction()
+    sc = Data_Manager.get_surface_correction()::Union{Nothing,SurfaceCorrectionParams}
     sc === nothing && return
     # SurfaceCorrectionParams allows only "Volume Correction"
     if sc.update

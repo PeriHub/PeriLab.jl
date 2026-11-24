@@ -10,7 +10,7 @@ using ...PeriLabExceptions: @abort
 using ...Helpers:
                   check_inf_or_nan, find_active_nodes, invert,
                   determinant, matrix_style, eigvals, get_update_nodes,
-                  compute_label
+                  compute_label, each_call
 using ...InputDeck: PeriLabInput, ContactInput, CalculationOptions, block_by_id
 include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("./Surface_correction/Surface_correction.jl")
@@ -178,18 +178,169 @@ end
 
 # The update pass recomputes the nodes the damage model flags only if the damage model runs
 # before the pre calculations (the model order depends on the solver steps).
-function damage_before_pre_calculation()
-    for name in keys(Data_Manager.get_active_models())
-        name == "Damage Model" && return true
-        name == "Pre Calculation Model" && return false
+damage_before_pre_calculation(::Tuple{}) = false
+# recursive: a loop over the heterogeneous `model_plan` tuple would box its elements
+function damage_before_pre_calculation(plan::Tuple)
+    name = first(plan).name
+    name == "Damage Model" && return true
+    name == "Pre Calculation Model" && return false
+    return damage_before_pre_calculation(Base.tail(plan))
+end
+
+"""
+    BlockModelCall{P}
+
+The typed parameters `params` of one block for one model category.
+"""
+struct BlockModelCall{P}
+    block::Int64
+    nodes::Vector{Int64}
+    params::P
+end
+
+"""
+    CategoryCalls{F,C}
+
+An active model category (`"Material Model"`, ...): its `compute_model` function
+(`compute(nodes, params, block, time, dt)`) and the blocks with a model of this category
+(a tuple of `BlockModelCall`).
+"""
+struct CategoryCalls{F,C<:Tuple}
+    name::String
+    label::String
+    compute::F
+    blocks::C
+end
+
+# the pre calculations of a block run as the typed `name => parameters` tuple
+plan_parameters(::String, params) = params
+function plan_parameters(name::String, names::Vector{String})
+    return name == "Pre Calculation Model" ? Pre_Calculation.typed_pre_calculations(names) :
+           names
+end
+
+"""
+    model_plan(block_nodes::Dict{Int64,Vector{Int64}})
+
+The active models of `block_nodes` as a tuple of `CategoryCalls`, in the order of the
+active models. Its type holds the model and parameter types, so `compute_models` calls
+every model statically; built once per run by the solver (`prepare_solver`).
+"""
+function model_plan(block_nodes::Dict{Int64,Vector{Int64}})
+    return Tuple(CategoryCalls(name, compute_label(name), mod.compute_model,
+                               Tuple(BlockModelCall(block, nodes,
+                                                    plan_parameters(name,
+                                                                    block_model_parameters(block,
+                                                                                           name)))
+                                     for (block, nodes) in pairs(block_nodes)
+                                     if has_block_model(block, name)))
+                 for (name, mod) in pairs(Data_Manager.get_active_models()))
+end
+
+# first pass: the active nodes of every block; the damage models run in the update pass
+function compute_active!(cat::CategoryCalls, active_list::Vector{Bool}, fem_option::Bool,
+                         fe_nodes::Vector{Bool}, time::Float64, dt::Float64,
+                         synchronise_field::Function)
+    cat.name == "Damage Model" && return nothing
+    local_synch(cat.name, "upload_to_cores", synchronise_field)
+    # maybe not needed?
+    local_synch(cat.name, "download_from_cores", synchronise_field)
+    each_call(compute_active_block!, cat.blocks, cat, active_list, fem_option, fe_nodes,
+              time, dt)
+end
+
+function compute_active_block!(call::BlockModelCall, cat::CategoryCalls,
+                               active_list::Vector{Bool}, fem_option::Bool,
+                               fe_nodes::Vector{Bool}, time::Float64, dt::Float64)
+    # "delete" the view of active nodes
+    active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
+    active_nodes = find_active_nodes(active_list, active_nodes, call.nodes,
+                                     cat.name != "Additive Model")
+    if fem_option # TODO might lead to problems in 3D
+        # find all non-FEM nodes in active nodes
+        active_nodes = find_active_nodes(fe_nodes, active_nodes, call.nodes, false)
+        isempty(active_nodes) && return nothing
     end
-    return false
+    @timeit cat.label cat.compute(active_nodes, call.params, call.block, time, dt)
+    return nothing
+end
+
+# update pass: the nodes flagged in `Update`; the additive models ran in the first pass
+function compute_updated!(cat::CategoryCalls, active_list::Vector{Bool},
+                          update_list::Vector{Bool}, fem_option::Bool,
+                          fe_nodes::Vector{Bool}, time::Float64, dt::Float64,
+                          synchronise_field::Function)
+    cat.name == "Additive Model" && return nothing
+    local_synch(cat.name, "upload_to_cores", synchronise_field)
+    # maybe not needed?
+    local_synch(cat.name, "download_from_cores", synchronise_field)
+    each_call(compute_updated_block!, cat.blocks, cat, active_list, update_list,
+              fem_option, fe_nodes, time, dt)
+end
+
+function compute_updated_block!(call::BlockModelCall, cat::CategoryCalls,
+                                active_list::Vector{Bool}, update_list::Vector{Bool},
+                                fem_option::Bool, fe_nodes::Vector{Bool}, time::Float64,
+                                dt::Float64)
+    active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
+    update_nodes = Data_Manager.get_field("Update Nodes")::Vector{Int64}
+    active_nodes = find_active_nodes(active_list, active_nodes, call.nodes)
+    if fem_option
+        # FEM active means FEM nodes
+        active_nodes = find_active_nodes(fe_nodes, active_nodes, call.nodes, false)
+        isempty(active_nodes) && return nothing
+    end
+    update_nodes = get_update_nodes(active_list, update_list, call.nodes, update_nodes,
+                                    active_nodes, cat.name)
+    isempty(update_nodes) && return nothing
+    @timeit cat.label cat.compute(update_nodes, call.params, call.block, time, dt)
+    return nothing
+end
+
+# local damping of the damage models of the plan: their typed parameters hold it, a lookup
+# in the untyped block models would box it in every step
+any_local_damping(::Tuple{}) = false
+function any_local_damping(plan::Tuple)
+    return has_local_damping(first(plan)) || any_local_damping(Base.tail(plan))
+end
+function has_local_damping(cat::CategoryCalls)
+    return cat.name == "Damage Model" && any_block_damping(cat.blocks)
+end
+any_block_damping(::Tuple{}) = false
+function any_block_damping(blocks::Tuple)
+    return base_local_damping(first(blocks).params) !== nothing ||
+           any_block_damping(Base.tail(blocks))
+end
+
+function local_damping!(cat::CategoryCalls, active_list::Vector{Bool}, fem_option::Bool,
+                        fe_nodes::Vector{Bool}, dt::Float64)
+    cat.name == "Damage Model" || return nothing
+    each_call(block_local_damping!, cat.blocks, active_list, fem_option, fe_nodes, dt)
+end
+
+function block_local_damping!(call::BlockModelCall, active_list::Vector{Bool},
+                              fem_option::Bool, fe_nodes::Vector{Bool}, dt::Float64)
+    local_damping = base_local_damping(call.params)
+    local_damping === nothing && return nothing
+    active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
+    if fem_option
+        active_nodes = find_active_nodes(active_list, active_nodes,
+                                         find_active_nodes(fe_nodes, active_nodes,
+                                                           call.nodes))
+    else
+        active_nodes = find_active_nodes(active_list, active_nodes, call.nodes)
+    end
+    @timeit "local_damping_due_to_damage" Material.compute_local_damping(active_nodes,
+                                                                         local_damping, dt)
+    return nothing
 end
 
 """
 	compute_models(block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field)
 
-Computes the material point models
+Computes the material point models; builds the `model_plan` of `block_nodes` on every
+call. Solvers that run many steps keep the plan and call
+`compute_models(plan, block_nodes, ...)`.
 
 # Arguments
 - `block_nodes::Dict{Int64,Vector{Int64}}`: The block nodes
@@ -203,112 +354,42 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
                         time::Float64,
                         options::Vector{String},
                         synchronise_field::Function)
-    fem_option = Data_Manager.fem_active()::Bool
-    if fem_option
-        fe_nodes = Data_Manager.get_field("FE Nodes")::Vector{Bool}
-    end
+    return compute_models(model_plan(block_nodes), block_nodes, dt, time, options,
+                          synchronise_field)
+end
 
+"""
+	compute_models(plan::Tuple, block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field)
+
+Computes the material point models of the `model_plan` `plan` of `block_nodes`.
+"""
+function compute_models(plan::Tuple,
+                        block_nodes::Dict{Int64,Vector{Int64}},
+                        dt::Float64,
+                        time::Float64,
+                        options::Vector{String},
+                        synchronise_field::Function)
+    fem_option = Data_Manager.fem_active()::Bool
     active_list = Data_Manager.get_field("Active")::Vector{Bool}
+    # unused without FEM
+    fe_nodes = fem_option ? Data_Manager.get_field("FE Nodes")::Vector{Bool} : active_list
+
     # TODO check if pre calculation should run block wise. For mixed model applications it makes sense.
     # TODO add for pre calculation a whole model option, to get the neighbors as well, e.g. for bond associated
     # TODO check for loop order?
-    Pre_Calculation.ONLY_FLAGGED_BONDS_CHANGED[] = damage_before_pre_calculation()
-    for (active_model_name, active_model) in pairs(Data_Manager.get_active_models())
-        #synchronise_field(Data_Manager.local_synch_fiels(active_model_name))
-        if active_model_name == "Damage Model"
-            continue
-        end
-
-        local_synch(active_model_name, "upload_to_cores", synchronise_field)
-        # maybe not needed?
-        local_synch(active_model_name,
-                    "download_from_cores",
-                    synchronise_field)
-
-        for (block, nodes) in pairs(block_nodes)
-            # "delete" the view of active nodes
-            active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
-
-            active_nodes = find_active_nodes(active_list,
-                                             active_nodes,
-                                             nodes,
-                                             active_model_name != "Additive Model")
-
-            if fem_option # TODO might lead to problems in 3D
-                # find all non-FEM nodes in active nodes
-                #active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
-                active_nodes = find_active_nodes(fe_nodes,
-                                                 active_nodes,
-                                                 nodes,
-                                                 false)
-                if isempty(active_nodes)
-                    continue
-                end
-            end
-            if has_block_model(block, active_model_name)
-                # synch
-                @timeit compute_label(active_model_name) active_model.compute_model(active_nodes,
-                                                                                    block_model_parameters(block,
-                                                                                                           active_model_name),
-                                                                                    block,
-                                                                                    time,
-                                                                                    dt)
-            end
-        end
-    end
+    Pre_Calculation.ONLY_FLAGGED_BONDS_CHANGED[] = damage_before_pre_calculation(plan)
+    each_call(compute_active!, plan, active_list, fem_option, fe_nodes, time, dt,
+              synchronise_field)
     Pre_Calculation.ONLY_FLAGGED_BONDS_CHANGED[] = false
 
     # Why not update_list.=false? -> avoid neighbors in MPI
     update_list = Data_Manager.get_field("Update")::Vector{Bool}
-    for (block, nodes) in pairs(block_nodes)
+    for nodes in values(block_nodes)
         update_list[nodes] .= false
     end
 
-    for (active_model_name, active_model) in pairs(Data_Manager.get_active_models())
-        if active_model_name == "Additive Model"
-            continue
-        end
-        local_synch(active_model_name, "upload_to_cores", synchronise_field)
-        # maybe not needed?
-        local_synch(active_model_name,
-                    "download_from_cores",
-                    synchronise_field)
-        for (block, nodes) in pairs(block_nodes)
-            active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
-            update_nodes = Data_Manager.get_field("Update Nodes")::Vector{Int64}
-            active_nodes = find_active_nodes(active_list, active_nodes, nodes)
-            if fem_option
-                # FEM active means FEM nodes
-                #active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
-                active_nodes = find_active_nodes(fe_nodes,
-                                                 active_nodes,
-                                                 nodes,
-                                                 false)
-                if isempty(active_nodes)
-                    continue
-                end
-            end
-            update_nodes = get_update_nodes(active_list,
-                                            update_list,
-                                            nodes,
-                                            update_nodes,
-                                            active_nodes,
-                                            active_model_name)
-            isempty(update_nodes) && continue
-
-            # active or all, or does it not matter?
-
-            if has_block_model(block, active_model_name)
-                # TODO synch
-                @timeit compute_label(active_model_name) active_model.compute_model(update_nodes,
-                                                                                    block_model_parameters(block,
-                                                                                                           active_model_name),
-                                                                                    block,
-                                                                                    time,
-                                                                                    dt)
-            end
-        end
-    end
+    each_call(compute_updated!, plan, active_list, update_list, fem_option, fe_nodes,
+              time, dt, synchronise_field)
     # must be here to avoid double distributions
     # distributes ones over all nodes
     if fem_option
@@ -328,27 +409,11 @@ function compute_models(block_nodes::Dict{Int64,Vector{Int64}},
     if "Material" in options
         if "Damage" in options
             # the damping averages the damage of both bond ends: ghost neighbors need it
-            any(!isnothing(block_local_damping(block)) for block in keys(block_nodes)) &&
+            any_local_damping(plan) &&
                 synchronise_field(Data_Manager.get_comm(), DAMAGE_SYNCH,
                                   Data_Manager.get_overlap_map(), Data_Manager.get_field,
                                   "Damage", "upload_to_cores")
-            for (block, nodes) in pairs(block_nodes)
-                local_damping = block_local_damping(block)
-                local_damping === nothing && continue
-                active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
-                if fem_option
-                    active_nodes = find_active_nodes(active_list,
-                                                     active_nodes,
-                                                     find_active_nodes(fe_nodes,
-                                                                       active_nodes,
-                                                                       nodes))
-                else
-                    active_nodes = find_active_nodes(active_list, active_nodes, nodes)
-                end
-                @timeit "local_damping_due_to_damage" Material.compute_local_damping(active_nodes,
-                                                                                     local_damping,
-                                                                                     dt)
-            end
+            each_call(local_damping!, plan, active_list, fem_option, fe_nodes, dt)
         end
         active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
         active_nodes = find_active_nodes(active_list, active_nodes,

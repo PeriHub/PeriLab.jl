@@ -82,7 +82,9 @@ end
         @abort "Field $(np1_to_n.NP1) not found. Cannot fill NP1 field from N."
         return
     end
-    fill_field!(field_NP1, active, np1_to_n.value)
+    # the dispatch on the (untyped) field gets the entry, not its value: a value would be
+    # boxed on every call
+    fill_field!(field_NP1, active, np1_to_n)
 end
 
 """
@@ -132,8 +134,8 @@ end
 
 @inline function fill_field!(field_NP1::BondField{E},
                              active::Vector{Bool},
-                             value::T) where {E,T<:Union{Int64,Float64,Bool}}
-    fill_in_place!(field_NP1, _bond_value(E, value), active)
+                             entry::NP1_to_N{T}) where {E,T<:Union{Int64,Float64,Bool}}
+    fill_in_place!(field_NP1, _bond_value(E, entry.value), active)
 end
 
 _bond_value(::Type{E}, value) where {E<:Number} = E(value)
@@ -141,8 +143,8 @@ _bond_value(::Type{E}, value) where {E<:StaticArray} = E(ntuple(_ -> value, Val(
 
 @inline function fill_field!(field_NP1::Array{T,N},
                              active::Vector{Bool},
-                             value::T) where {T<:Union{Int64,Float64,Bool},N}
-    fill!(field_NP1, value)
+                             entry::NP1_to_N{T}) where {T<:Union{Int64,Float64,Bool},N}
+    fill!(field_NP1, entry.value)
 end
 
 @inline function fill_in_place!(A::BondField{E},

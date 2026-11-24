@@ -25,6 +25,7 @@ export check_inf_or_nan
 export compute_geometry
 export find_active_nodes
 export compute_label
+export each_call
 export node_tensor
 export with_dof
 export find_inverse_bond_index!
@@ -608,6 +609,18 @@ const COMPUTE_LABELS = Dict{String,String}()
 compute_label(name::String) = get!(() -> "compute " * name, COMPUTE_LABELS, name)
 
 """
+    each_call(f, t::Tuple, args...)
+
+`f(x, args...)` for every element `x` of `t`, unrolled: for a tuple of different types
+(e.g. typed model or BC calls) every call is static, a loop would box the elements.
+"""
+@inline each_call(::F, ::Tuple{}, args...) where {F} = nothing
+@inline function each_call(f::F, t::Tuple, args...) where {F}
+    f(first(t), args...)
+    return each_call(f, Base.tail(t), args...)
+end
+
+"""
 	find_active_nodes(active, active_nodes, nodes, false_or_true = true)
 
 Writes the nodes of `nodes` with `active[node] == false_or_true` into the buffer
@@ -913,6 +926,23 @@ function invert(Ainv::AbstractMatrix{Float64}, A::AbstractMatrix{Float64},
     end
 end
 
+# the dimension as a compile time constant: determinant, inverse and, for a singular
+# matrix, the pseudo inverse use static matrices (the size of `A` is not known statically,
+# `smat(A)` is not type stable)
+function invert(Ainv::AbstractMatrix{Float64}, A::AbstractMatrix{Float64},
+                error_message::String, ::Val{D}) where {D}
+    detA::Float64 = D == 2 ? det_2x2(A) : det_3x3(A)
+    if abs(detA) < 1e-10
+        Ainv .= pinv(SMatrix{D,D,Float64}(A))
+        return
+    end
+    if D == 2
+        inv_2x2_with_det!(Ainv, A, detA)
+    else
+        inv_3x3_with_det!(Ainv, A, detA)
+    end
+end
+
 function determinant(A::AbstractMatrix{Float64})
     return det(smat(A))
 end
@@ -1086,13 +1116,15 @@ Rotates the second order tensor.
 function rotate_second_order_tensor2x2(R::AbstractMatrix{Float64},
                                        tensor::AbstractMatrix{Float64},
                                        back::Bool)
-    rotation2x2!(back ? R' : R, tensor)
+    # one call per case: `back ? R' : R` is a union of two views, boxed in every call
+    back ? rotation2x2!(R', tensor) : rotation2x2!(R, tensor)
     return nothing
 end
 function rotate_second_order_tensor3x3(R::AbstractMatrix{Float64},
                                        tensor::AbstractMatrix{Float64},
                                        back::Bool)
-    rotation3x3!(back ? R' : R, tensor)
+    # one call per case: `back ? R' : R` is a union of two views, boxed in every call
+    back ? rotation3x3!(R', tensor) : rotation3x3!(R, tensor)
     return nothing
 end
 function rotation3x3!(R::AbstractMatrix{Float64}, T::AbstractMatrix{Float64})

@@ -28,8 +28,9 @@ using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, synchron
 end
 __init__() = register_solver("Verlet", VerletParams)
 using ...MPI_Communication: find_and_set_core_value_min, find_and_set_core_value_max
-using ..Model_Factory: compute_models, compute_crititical_time_step
-using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, BoundaryCondition
+using ..Model_Factory: compute_models, compute_crititical_time_step, model_plan
+using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, BoundaryCondition,
+                             dirichlet_plan, DirichletPlan
 using ...Logging_Module: print_table
 include("../../Compute/compute_field_values.jl")
 export init_solver
@@ -147,7 +148,7 @@ end
 
 Fields Verlet reads in every step.
 """
-struct VerletWorkspace
+struct VerletWorkspace{P<:Tuple}
     volume::Vector{Float64}
     density::Vector{Float64}
     coor::Matrix{Float64}
@@ -155,6 +156,13 @@ struct VerletWorkspace
     fem_option::Bool
     fe_nodes::Vector{Bool}
     numerical_damping::Float64
+    # the typed model calls (`Model_Factory.model_plan`)
+    models::P
+    # the compiled boundary conditions (`dirichlet_plan`) of the motion, the forces and the
+    # velocity
+    bc_motion::DirichletPlan
+    bc_forces::DirichletPlan
+    bc_velocity::DirichletPlan
 end
 
 """
@@ -170,7 +178,11 @@ function prepare_solver(run::SolverRun{VerletParams}, ctx::SolverContext)
                            Data_Manager.get_field("Active"),
                            fem_option,
                            fem_option ? Data_Manager.get_field("FE Nodes") : Bool[],
-                           run.params.options.numerical_damping)
+                           run.params.options.numerical_damping,
+                           model_plan(ctx.block_nodes),
+                           dirichlet_plan(ctx.bcs, ("Displacements", "Temperature")),
+                           dirichlet_plan(ctx.bcs, ("Forces", "Force Densities")),
+                           dirichlet_plan(ctx.bcs, ("Velocity",)))
 end
 
 """
@@ -183,7 +195,6 @@ Writing results, the damage limit, `NP1 → N` and the time are done by the shar
 function time_step!(ws::VerletWorkspace, run::SolverRun{VerletParams}, ctx::SolverContext,
                     clock::StepClock)
     block_nodes = ctx.block_nodes
-    bcs = ctx.bcs
     time = clock.time
     step_time = clock.step_time
     dt = clock.dt
@@ -221,7 +232,7 @@ function time_step!(ws::VerletWorkspace, run::SolverRun{VerletParams}, ctx::Solv
                                       numerical_damping,
                                       active_nodes,
                                       "Material" in run.models,
-                                      bcs,
+                                      ws.bc_velocity,
                                       time,
                                       step_time)
 
@@ -230,10 +241,7 @@ function time_step!(ws::VerletWorkspace, run::SolverRun{VerletParams}, ctx::Solv
         #     concentrationNP1[active_nodes] = concentrationN[active_nodes] +
         #                                      delta_concentration[active_nodes]
         # end
-        apply_bc_dirichlet(["Displacements", "Temperature"],
-                           bcs,
-                           time,
-                           step_time) #-> Dirichlet
+        apply_bc_dirichlet(ws.bc_motion, time, step_time) #-> Dirichlet
         #needed because of optional deformation_gradient, Deformed bonds, etc.
         # all points to guarantee that the neighbors have coor as coordinates if they are not active
 
@@ -244,7 +252,8 @@ function time_step!(ws::VerletWorkspace, run::SolverRun{VerletParams}, ctx::Solv
                                                              "upload_to_cores")
         # synch
 
-        @timeit "compute_models" compute_models(block_nodes,
+        @timeit "compute_models" compute_models(ws.models,
+                                                block_nodes,
                                                 dt,
                                                 time,
                                                 run.models,
@@ -260,10 +269,7 @@ function time_step!(ws::VerletWorkspace, run::SolverRun{VerletParams}, ctx::Solv
         @timeit "download_from_cores" Data_Manager.synch_manager(synchronise_field,
                                                                  "download_from_cores")
         # synch
-        @timeit "apply_bc_dirichlet" apply_bc_dirichlet(["Forces", "Force Densities"],
-                                                        bcs,
-                                                        time,
-                                                        step_time) #-> Dirichlet
+        @timeit "apply_bc_dirichlet" apply_bc_dirichlet(ws.bc_forces, time, step_time) #-> Dirichlet
         # @timeit "apply_bc_neumann" apply_bc_neumann(bcs, time) #-> von neumann
         active_nodes = get_field("Active Nodes")::Vector{Int64}
         active_nodes = find_active_nodes(active_list, active_nodes,
@@ -297,7 +303,7 @@ function time_step!(ws::VerletWorkspace, run::SolverRun{VerletParams}, ctx::Solv
             active_nodes = Data_Manager.get_field("Active Nodes")::Vector{Int64}
             active_nodes = find_active_nodes(active_list, active_nodes,
                                              1:Data_Manager.get_nnodes())
-            finish_velocity!(dt, active_nodes, bcs, time, step_time)
+            finish_velocity!(dt, active_nodes, ws.bc_velocity, time, step_time)
         end
 
         compute_parabolic_problems_after_model_evaluation(active_nodes, run, dt)
@@ -309,7 +315,7 @@ function update_velocity_and_position!(dt::Float64,
                                        numerical_damping::Float64,
                                        active_nodes::AbstractVector{Int},
                                        has_material::Bool,
-                                       bcs,
+                                       bc_velocity::DirichletPlan,
                                        time::Float64,
                                        step_time::Float64)
     if !has_material
@@ -332,7 +338,7 @@ function update_velocity_and_position!(dt::Float64,
         end
     end
 
-    apply_bc_dirichlet(["Velocity"], bcs, time, step_time)
+    apply_bc_dirichlet(bc_velocity, time, step_time)
 
     @inbounds for i in active_nodes
         for d in axes(uNP1, 2)
@@ -344,13 +350,13 @@ function update_velocity_and_position!(dt::Float64,
 end
 
 """
-    finish_velocity!(dt, active_nodes, bcs, time, step_time)
+    finish_velocity!(dt, active_nodes, bc_velocity, time, step_time)
 
 Second half step of the velocity Verlet scheme, `v_{n+1} = v_{n+1/2} + dt/2 a_{n+1}`
 (the first half step and the numerical damping are in `update_velocity_and_position!`).
 """
-function finish_velocity!(dt::Float64, active_nodes::AbstractVector{Int}, bcs,
-                          time::Float64, step_time::Float64)
+function finish_velocity!(dt::Float64, active_nodes::AbstractVector{Int},
+                          bc_velocity::DirichletPlan, time::Float64, step_time::Float64)
     vNP1::NodeVectorField{Float64} = Data_Manager.get_field("Velocity", "NP1")
     aNP1::NodeVectorField{Float64} = Data_Manager.get_field("Acceleration", "NP1")
     c::Float64 = 0.5 * dt
@@ -359,7 +365,7 @@ function finish_velocity!(dt::Float64, active_nodes::AbstractVector{Int}, bcs,
             vNP1[i, d] += c * aNP1[i, d]
         end
     end
-    apply_bc_dirichlet(["Velocity"], bcs, time, step_time)
+    apply_bc_dirichlet(bc_velocity, time, step_time)
     return nothing
 end
 

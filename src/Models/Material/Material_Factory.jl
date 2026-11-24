@@ -6,10 +6,11 @@ module Material
 
 include("Material_Models/Ordinary/Ordinary.jl")
 
-using TimerOutputs: @timeit
+using TimerOutputs: @timeit, @timeit_debug
 using ....Data_Manager
 using ....PeriLabExceptions: @abort
 using ....ModuleLoader: find_registered_modules
+using ....Helpers: each_call, with_dof
 using .....ParameterSpec: @params, Dependent, register_base!, WithBase, Composite,
                           ParseContext, add_error!, join_path, Table1D, dependent_tables,
                           value, model_parts, model_module,
@@ -695,15 +696,15 @@ function compute_model(nodes::AbstractVector{Int64},
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    @timeit "all" begin
+    @timeit_debug "all" begin
         if material.correspondence
-            @timeit "corresponcence" begin
+            @timeit_debug "corresponcence" begin
                 Correspondence.compute_model(nodes, bind_material!(material), block, time,
                                              dt)
                 return
             end
         end
-        @timeit "material" compute_block_material(nodes, material, block, time, dt)
+        @timeit_debug "material" compute_block_material(nodes, material, block, time, dt)
     end
 end
 
@@ -722,9 +723,14 @@ end
 function compute_block_material(nodes::AbstractVector{Int64}, material::BlockMaterial,
                                 block::Int64, time::Float64, dt::Float64)
     bind_material!(material)
-    for part in model_parts(material.model)
-        model_function(part, Val(:compute_model))(nodes, part, material, block, time, dt)
-    end
+    # the parts of a composite have different types: a loop would box them
+    each_call(compute_part!, model_parts(material.model), nodes, material, block, time, dt)
+    return nothing
+end
+
+function compute_part!(part, nodes::AbstractVector{Int64}, material::BlockMaterial,
+                       block::Int64, time::Float64, dt::Float64)
+    model_function(part, Val(:compute_model))(nodes, part, material, block, time, dt)
     return nothing
 end
 
@@ -772,14 +778,31 @@ function distribute_force_densities(nodes::AbstractVector{Int64})
     @timeit "local dist" distribute_forces!(force_densities, nodes, nlist,
                                             bond_force, volume, bond_damage)
     isnothing(nlist_filtered_ids) && return
-    @timeit "contact bonds" contact_forces!(force_densities, nodes, nlist,
-                                            nlist_filtered_ids, volume,
-                                            Data_Manager.get_field("Bond Geometry"),
-                                            Data_Manager.get_field("Deformed Bond Geometry",
-                                                                   "NP1"),
-                                            Data_Manager.get_field("Bond Length"),
-                                            Data_Manager.get_field("Bond Norm"),
-                                            Data_Manager.get_field("Contact Stiffness"))
+    @timeit "contact bonds" contact_bonds!(force_densities, nodes, nlist,
+                                           nlist_filtered_ids::NestedNeighborhoodList,
+                                           volume)
+end
+
+# function barrier: the fields are typed and the dof is a compile time constant, so the
+# kernel is called statically (the closure captures only the typed arguments)
+function contact_bonds!(force_densities::NodeVectorField{Float64},
+                        nodes::AbstractVector{Int64}, nlist::BondScalarState{Int64},
+                        filtered_ids::NestedNeighborhoodList,
+                        volume::NodeScalarField{Float64})
+    with_dof(D -> contact_bonds!(force_densities, nodes, nlist, filtered_ids, volume, D))
+end
+function contact_bonds!(force_densities::NodeVectorField{Float64},
+                        nodes::AbstractVector{Int64}, nlist::BondScalarState{Int64},
+                        filtered_ids::NestedNeighborhoodList,
+                        volume::NodeScalarField{Float64}, ::Val{D}) where {D}
+    contact_forces!(force_densities, nodes, nlist, filtered_ids, volume,
+                    Data_Manager.get_field("Bond Geometry")::BondVectorState{Float64,D},
+                    Data_Manager.get_field("Deformed Bond Geometry",
+                                           "NP1")::BondVectorState{Float64,D},
+                    Data_Manager.get_field("Bond Length")::BondScalarState{Float64},
+                    Data_Manager.get_field("Bond Norm")::BondVectorState{Float64,D},
+                    Data_Manager.get_field("Contact Stiffness")::Vector{Vector{Float64}})
+    return nothing
 end
 
 function compute_correspondence_bond_forces(nodes::AbstractVector{Int64}, material,

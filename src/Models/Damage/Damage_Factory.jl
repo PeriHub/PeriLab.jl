@@ -152,27 +152,46 @@ argument is type stable.
 """
 function critical_value_lookup(critical_value, inter_block_damage::Bool, block::Int64;
                                bonding_exponent::Int = 0)
-    base = _base_critical_value(critical_value, inter_block_damage, block)
-    bonding_exponent == 0 && return base
+    return with_critical_value(identity, critical_value, inter_block_damage, block;
+                               bonding_exponent)
+end
+
+"""
+    with_critical_value(f, critical_value, inter_block_damage::Bool, block::Int64;
+                        bonding_exponent::Int = 0)
+
+`f(crit_of)` with the lookup of `critical_value_lookup`. Every case calls `f` with its
+own closure type, so the lookup is not returned (a returned closure of one of several
+types is boxed in every call); the damage models run their bond loop in `f`.
+"""
+function with_critical_value(f::F, critical_value, inter_block_damage::Bool, block::Int64;
+                             bonding_exponent::Int = 0) where {F}
+    if Data_Manager.has_key("Critical_Value")
+        crit_field::NodeScalarField{Float64} = Data_Manager.get_field("Critical_Value")
+        return with_bonding(f, (iID, jID, neighborID) -> crit_field[iID],
+                            bonding_exponent)
+    elseif inter_block_damage
+        block_ids::NodeScalarField{Int64} = Data_Manager.get_field("Block_Id")
+        crit_matrix::Array{Float64,3} = Data_Manager.get_crit_values_matrix()
+        return with_bonding(f,
+                            (iID, jID, neighborID) -> crit_matrix[block_ids[iID],
+                                                                  block_ids[neighborID],
+                                                                  block],
+                            bonding_exponent)
+    end
+    return with_bonding(f, (iID, jID, neighborID) -> value(critical_value, iID),
+                        bonding_exponent)
+end
+
+# the critical value scaled by `Bonding Degree^bonding_exponent` (Interlayer Bonding)
+function with_bonding(f::F, base::B, bonding_exponent::Int) where {F,B}
+    bonding_exponent == 0 && return f(base)
     if !Data_Manager.has_key("Bonding Degree")
         @abort "Interlayer Bonding needs the bond field Bonding Degree: add the Interlayer Bonding thermal model to an earlier solver step"
     end
     bonding::BondScalarState{Float64} = Data_Manager.get_field("Bonding Degree")
-    return (iID, jID, neighborID) -> base(iID, jID, neighborID) *
-                                     bonding[iID][jID]^bonding_exponent
-end
-
-function _base_critical_value(critical_value, inter_block_damage::Bool, block::Int64)
-    if Data_Manager.has_key("Critical_Value")
-        crit_field::NodeScalarField{Float64} = Data_Manager.get_field("Critical_Value")
-        return (iID, jID, neighborID) -> crit_field[iID]
-    elseif inter_block_damage
-        block_ids::NodeScalarField{Int64} = Data_Manager.get_field("Block_Id")
-        crit_matrix::Array{Float64,3} = Data_Manager.get_crit_values_matrix()
-        return (iID, jID, neighborID) -> crit_matrix[block_ids[iID], block_ids[neighborID],
-                                                     block]
-    end
-    return (iID, jID, neighborID) -> value(critical_value, iID)
+    return f((iID, jID, neighborID) -> base(iID, jID, neighborID) *
+                                       bonding[iID][jID]^bonding_exponent)
 end
 
 "Values of the `Compression` option: how a shortened bond counts (full, skipped, only its transverse part)."
@@ -282,7 +301,11 @@ function _keep_filtered_broken!(bond_damage::BondScalarState{Float64},
                                 update::NodeScalarField{Bool}, nlist_filtered_ids)
     for iID in nodes
         (all_nodes || update[iID]) || continue
-        bond_damage[iID][nlist_filtered_ids[iID]] .= 0
+        # element-wise: a view with an index vector of the bond view copies the indices
+        damage = bond_damage[iID]
+        for jID in nlist_filtered_ids[iID]
+            damage[jID] = 0.0
+        end
     end
 end
 

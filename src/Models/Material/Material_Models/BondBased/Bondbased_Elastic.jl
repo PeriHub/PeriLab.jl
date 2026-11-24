@@ -89,25 +89,34 @@ function compute_model(nodes::AbstractVector{Int64},
 
     E = material.moduli.youngs_modulus
 
-    for iID in nodes
-        @timeit "any zero" begin
-            for deformed_length in deformed_bond_length[iID]
-                if deformed_length == 0
-                    @abort "Length of bond is zero due to its deformation."
-                    return nothing
-                end
-            end
-        end
-        # Calculate the bond force
-        @timeit "compute_bb_force!" compute_bb_force!(bond_force[iID],
-                                                      0.5 * constant[iID],
-                                                      bond_damage[iID],
-                                                      deformed_bond_length[iID],
-                                                      undeformed_bond_length[iID],
-                                                      deformed_bond[iID])
-    end
+    # function barrier: the bond vector fields are 2D or 3D, the node loop runs with
+    # their concrete types (a loop over the union would box the bond views)
+    @timeit "compute_bb_force!" compute_bb_forces!(bond_force, nodes, constant, bond_damage,
+                                                   deformed_bond_length,
+                                                   undeformed_bond_length, deformed_bond)
     # might be put in constant
     @timeit "apply_pointwise_E" apply_pointwise_E(nodes, E, bond_force)
+end
+
+function compute_bb_forces!(bond_force::BondVectorState{Float64,D},
+                            nodes::AbstractVector{Int64},
+                            constant::NodeScalarField{Float64},
+                            bond_damage::BondScalarState{Float64},
+                            deformed_bond_length::BondScalarState{Float64},
+                            undeformed_bond_length::BondScalarState{Float64},
+                            deformed_bond::BondVectorState{Float64,D}) where {D}
+    for iID in nodes
+        for deformed_length in deformed_bond_length[iID]
+            if deformed_length == 0
+                @abort "Length of bond is zero due to its deformation."
+                return nothing
+            end
+        end
+        compute_bb_force!(bond_force[iID], 0.5 * constant[iID], bond_damage[iID],
+                          deformed_bond_length[iID], undeformed_bond_length[iID],
+                          deformed_bond[iID])
+    end
+    return nothing
 end
 
 function compute_bb_force!(bond_force::AbstractVector{<:AbstractVector{Float64}},

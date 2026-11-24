@@ -11,6 +11,11 @@ global module_list = find_module_files(@__DIR__, "control_name")
 for mod in module_list
     include(mod["File"])
 end
+# the controls of this folder as `(control_name(), compute_control)`; the tuple holds the
+# concrete function types, so the control of a block is called statically
+const CONTROLS = Tuple((getfield(@__MODULE__, Symbol(m["Module Name"])).control_name(),
+                        getfield(@__MODULE__, Symbol(m["Module Name"])).compute_control)
+                       for m in module_list)
 
 """
     init_model(nodes, material, block)
@@ -54,12 +59,16 @@ Applies the zero energy control of a block.
 """
 function compute_zero_energy_control(nodes::AbstractVector{Int64}, material, block::Int64,
                                      time::Float64, dt::Float64)
-    for zero_energy_model in Data_Manager.get_analysis_model("Zero Energy Control Model",
-                                                             block)
-        zero_energy_model == "" && continue
-        mod = Data_Manager.get_model_module(zero_energy_model)
-        mod.compute_control(nodes, material, time, dt)
-    end
+    name = material.base.zero_energy_control
+    name === nothing && return nothing
+    return compute_control(CONTROLS, name, nodes, material, time, dt)
+end
+
+compute_control(::Tuple{}, name::String, nodes, material, time, dt) = nothing
+function compute_control(controls::Tuple, name::String, nodes, material, time, dt)
+    control_name, compute = first(controls)
+    control_name == name && return compute(nodes, material, time, dt)
+    return compute_control(Base.tail(controls), name, nodes, material, time, dt)
 end
 
 ```

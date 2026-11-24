@@ -63,16 +63,17 @@ end
 What a solver run reads and writes besides the fields: nodes, BCs, output, and
 `fallback_output_frequency(nsteps, dt, fallback_dt)`, which sets the output
 frequencies when a fallback solver with `nsteps` steps of `fallback_dt` takes over
-from steps of `dt`.
+from steps of `dt`. The functions are type parameters, so the step loop calls them
+statically.
 """
-struct SolverContext
+struct SolverContext{W<:Function,F<:Function}
     block_nodes::Dict{Int64,Vector{Int64}}
     bcs::Dict{String,BoundaryCondition}
     outputs::Dict{Int64,Dict{}}
     result_files::Vector{Dict}
-    write_results::Function
+    write_results::W
     silent::Bool
-    fallback_output_frequency::Function
+    fallback_output_frequency::F
 end
 
 function SolverContext(block_nodes, bcs, outputs, result_files, write_results, silent)
@@ -179,10 +180,10 @@ function compute_parabolic_problems_after_model_evaluation(active_nodes, run::So
        !("Thermal" in run.all_models)
         return
     end
-    deltaT = Data_Manager.get_field("Delta Temperature")
-    flowNP1 = Data_Manager.get_field("Heat Flow", "NP1")
-    density = Data_Manager.get_field("Density")
-    heat_capacity = Data_Manager.get_field("Specific Heat Capacity")
+    deltaT = Data_Manager.get_field("Delta Temperature")::Vector{Float64}
+    flowNP1 = Data_Manager.get_field("Heat Flow", "NP1")::Vector{Float64}
+    density = Data_Manager.get_field("Density")::Vector{Float64}
+    heat_capacity = Data_Manager.get_field("Specific Heat Capacity")::Vector{Float64}
     if "Thermal" in run.models
         check_inf_or_nan(flowNP1, "Heat Flow")
         # heat capacity check. if it is zero deltaT = 0
@@ -342,16 +343,26 @@ Steps of one run, starting at `step_time` (time since the start of the solver st
 """
 function run_steps(run::SolverRun, ctx::SolverContext, result_files, step_time::Float64)
     ws = prepare_solver(run, ctx)
-    name = solver_name(run)
     rank = Data_Manager.get_rank()
-    show = rank == 0 && !ctx.silent
+    iter = progress_bar(rank, run.time.nsteps, ctx.silent)
+    # function barrier: the loop is compiled for the concrete workspace and progress bar.
+    # prepare_solver may compile code (e.g. the BC expressions), which the loop then calls
+    # directly, so it runs in the latest world
+    return Base.invokelatest(step_loop, ws, iter, run, ctx, result_files, step_time,
+                             rank == 0 && !ctx.silent)
+end
+
+function step_loop(ws, iter, run::SolverRun, ctx::SolverContext, result_files,
+                   step_time::Float64, show::Bool)
+    name = solver_name(run)
     nsteps = run.time.nsteps
     dt = run.time.dt
     time = run.time.initial_time
     max_damage = 0.0
     damage_init = false
     damage_models = "Damage" in run.models
-    iter = progress_bar(rank, nsteps, ctx.silent)
+    # progress output in about 100 steps of the run
+    log_every = max(1, cld(nsteps, 100))
     for idt in iter
         Data_Manager.set_iteration(idt)
         clock = StepClock(idt, time, step_time, dt)
@@ -382,10 +393,10 @@ function run_steps(run::SolverRun, ctx::SolverContext, result_files, step_time::
         time += dt
         step_time += dt
         Data_Manager.set_current_time(time)
-        if idt % ceil(nsteps / 100) == 0 || idt == 1 || idt == nsteps + 1
+        if idt % log_every == 0 || idt == 1 || idt == nsteps + 1
             @info "Step: $idt / $(nsteps+1) [$(@sprintf("%.3e", time)) s]"
+            show && set_postfix(iter, t = @sprintf("%.3e", time))
         end
-        show && set_postfix(iter, t = @sprintf("%.3e", time))
     end
     return result_files, nothing
 end
