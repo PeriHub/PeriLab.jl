@@ -170,10 +170,10 @@ function init_solver(options::VerletMatrixParams,
         @info "Model reduction enabled."
         @timeit "Model reduction" init_reduce_model(model_reduction, block_nodes,
                                                     density_mass, bcs)
-        # the reduced mass matrix is symmetric positive definite with a dense boundary
-        # block; Cholesky needs no copy and far less memory there than a sparse LU
+        # the reduced mass matrix is symmetric positive definite: diagonal except for a
+        # dense block of the coupling dofs and the modes, which is inverted once
         M = Data_Manager.get_mass_matrix()
-        M_fact = cholesky(Symmetric(M))
+        M_fact = BlockMass(M)
         Data_Manager.set_mass_matrix(M_fact)
         return TimeWindow(initial_time, final_time, dt, nsteps),
                prescribed_dofs(M, M_fact, Data_Manager.get_reduced_model_retained())
@@ -186,6 +186,120 @@ function init_solver(options::VerletMatrixParams,
     Data_Manager.set_reduced_model_pd(Int64[])
 
     return TimeWindow(initial_time, final_time, dt, nsteps), nothing
+end
+
+"""
+    BlockMass
+
+Inverse of a reduced mass that is diagonal except for one dense block: the degrees of
+freedom `c` with an off-diagonal entry (coupling dofs and modes). They have no entry
+with the diagonal ones `d`, so
+
+    M^-1 = | diag(m_d)^-1   0        |
+           | 0              M_cc^-1  |
+
+`M_cc^-1` is stored explicitly (upper triangle used) and applied with a threaded `symv`:
+one pass over half of it per step, where the two triangular solves of a Cholesky factor
+read it twice and run on one core.
+"""
+struct BlockMass
+    d::Vector{Int64}
+    m_d::Vector{Float64}
+    c::Vector{Int64}
+    M_cc_inv::Matrix{Float64}
+    xc::Vector{Float64}
+    yc::Vector{Float64}
+end
+
+function BlockMass(M::SparseMatrixCSC{Float64,Int64})
+    rows = rowvals(M)
+    is_c = [any(r -> r != j, view(rows, nzrange(M, j))) for j in 1:size(M, 2)]
+    c = findall(is_c)
+    d = findall(!, is_c)
+    M_cc_inv = Matrix(M[c, c])
+    # inverse in place: upper triangle of the inverse, M_cc_inv is the factor's storage
+    LAPACK.potrf!('U', M_cc_inv)[2] == 0 ||
+        throw(PosDefException(1))
+    LAPACK.potri!('U', M_cc_inv)
+    return BlockMass(d, Vector(diag(M))[d], c, M_cc_inv, zeros(length(c)),
+                     zeros(length(c)))
+end
+
+function LinearAlgebra.ldiv!(y::AbstractVector{Float64}, B::BlockMass,
+                             x::AbstractVector{Float64})
+    @inbounds for (k, i) in enumerate(B.d)
+        y[i] = x[i] / B.m_d[k]
+    end
+    @inbounds for (k, i) in enumerate(B.c)
+        B.xc[k] = x[i]
+    end
+    BLAS.symv!('U', 1.0, B.M_cc_inv, B.xc, 0.0, B.yc)
+    @inbounds for (k, i) in enumerate(B.c)
+        y[i] = B.yc[k]
+    end
+    return y
+end
+
+function Base.:\(B::BlockMass, E::AbstractMatrix{Float64})
+    Y = zeros(size(E))
+    Y[B.d, :] .= E[B.d, :] ./ B.m_d
+    Y[B.c, :] .= Symmetric(B.M_cc_inv, :U) * E[B.c, :]
+    return Y
+end
+
+"""
+    DenseBlockStiffness
+
+Reduced stiffness split into the dense block `K[c, c]` of the coupling dofs and modes,
+stored as a dense matrix and applied with a threaded `gemv`, and the sparse rest. Stored
+sparse, the dense block takes twice the memory (values and row indices) and its product
+runs on one core.
+"""
+struct DenseBlockStiffness
+    rest::SparseMatrixCSC{Float64,Int64}
+    c::Vector{Int64}
+    K_cc::Matrix{Float64}
+    xc::Vector{Float64}
+    yc::Vector{Float64}
+end
+
+function DenseBlockStiffness(K::SparseMatrixCSC{Float64,Int64}, c::Vector{Int64})
+    n = size(K, 2)
+    position = zeros(Int64, n)
+    position[c] .= eachindex(c)
+    K_cc = zeros(length(c), length(c))
+    colptr = ones(Int64, n + 1)
+    rowval = Int64[]
+    nzval = Float64[]
+    rows = rowvals(K)
+    values = nonzeros(K)
+    for j in 1:n
+        for index in nzrange(K, j)
+            i = rows[index]
+            if position[i] > 0 && position[j] > 0
+                K_cc[position[i], position[j]] = values[index]
+            else
+                push!(rowval, i)
+                push!(nzval, values[index])
+            end
+        end
+        colptr[j + 1] = length(rowval) + 1
+    end
+    return DenseBlockStiffness(SparseMatrixCSC(size(K, 1), n, colptr, rowval, nzval), c,
+                               K_cc, zeros(length(c)), zeros(length(c)))
+end
+
+function LinearAlgebra.mul!(y::AbstractVector{Float64}, A::DenseBlockStiffness,
+                            x::AbstractVector{Float64})
+    mul!(y, A.rest, x)
+    @inbounds for (k, i) in enumerate(A.c)
+        A.xc[k] = x[i]
+    end
+    mul!(A.yc, A.K_cc, A.xc)
+    @inbounds for (k, i) in enumerate(A.c)
+        y[i] += A.yc[k]
+    end
+    return y
 end
 
 """
@@ -306,6 +420,9 @@ function prepare_solver(run::SolverRun{VerletMatrixParams}, ctx::SolverContext)
     # run differs only in which nodes are retained and in the extra modal entries.
     retained_nodes,
     state = setup_reduced_state(something(run.params.options.model_reduction, false), K)
+    M_fact = Data_Manager.get_mass_matrix()
+    # reduced: the dense block of K is the one of the mass (coupling dofs and modes)
+    M_fact isa BlockMass && (K = DenseBlockStiffness(K, M_fact.c))
     return MatrixVerletWorkspace(Data_Manager.get_field("Coordinates"),
                                  Data_Manager.get_field("Active"),
                                  Data_Manager.get_field("Volume"),
@@ -315,7 +432,7 @@ function prepare_solver(run::SolverRun{VerletMatrixParams}, ctx::SolverContext)
                                  Data_Manager.get_field("External Force Densities") :
                                  zeros(0, 0),
                                  run.params.options.numerical_damping,
-                                 Data_Manager.get_mass_matrix(),
+                                 M_fact,
                                  K,
                                  retained_nodes,
                                  state,

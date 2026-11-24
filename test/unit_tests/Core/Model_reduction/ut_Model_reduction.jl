@@ -162,3 +162,30 @@ end
     @test a[p_idx] ≈ a_p
     @test a[free] ≈ A[free, free] \ (f[free] - A[free, p_idx] * a_p)
 end
+
+@testset "dense block mass and stiffness" begin
+    Matrix_Verlet = PeriLab.Solver_Manager.Matrix_Verlet
+    SparseArrays = Matrix_Verlet.SparseArrays
+    LinearAlgebra = Matrix_Verlet.LinearAlgebra
+    # dofs 2, 4, 5 coupled, 1, 3, 6 diagonal
+    A = [4.0 1.0 0.5; 1.0 3.0 0.2; 0.5 0.2 2.0]
+    M = SparseArrays.spzeros(6, 6)
+    for (i, m) in zip([1, 3, 6], [1.0, 2.0, 3.0])
+        M[i, i] = m
+    end
+    M[[2, 4, 5], [2, 4, 5]] = A
+    B = Matrix_Verlet.BlockMass(M)
+    @test B.c == [2, 4, 5]
+    f = [1.0, -2.0, 0.5, 3.0, -1.0, 2.0]
+    y = zeros(6)
+    LinearAlgebra.ldiv!(y, B, f)
+    @test y ≈ Matrix(M) \ f
+    E = [f 2 .* f]
+    @test B \ E ≈ Matrix(M) \ E
+
+    K = SparseArrays.sprandn(6, 6, 0.4) + SparseArrays.sparse(M)
+    Kop = Matrix_Verlet.DenseBlockStiffness(K, B.c)
+    @test SparseArrays.nnz(Kop.rest) + count(!iszero, Kop.K_cc) == SparseArrays.nnz(K)
+    LinearAlgebra.mul!(y, Kop, f)
+    @test y ≈ K * f
+end
