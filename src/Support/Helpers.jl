@@ -926,9 +926,8 @@ function invert(Ainv::AbstractMatrix{Float64}, A::AbstractMatrix{Float64},
     end
 end
 
-# Relative singularity limit of the shape tensor: directions whose stiffness is below this
-# fraction of the largest one (e.g. only damaged bonds left) are dropped by the pseudo
-# inverse instead of inverted to huge values.
+# Relative singularity limit of the shape tensor: below it the intact bonds of a node do not
+# span all directions and its inverse shape tensor is set to zero (see `invert` below).
 const SHAPE_TENSOR_RTOL = 1e-3
 
 # the dimension as a compile time constant: determinant, inverse and, for a singular
@@ -937,17 +936,17 @@ const SHAPE_TENSOR_RTOL = 1e-3
 function invert(Ainv::AbstractMatrix{Float64}, A::AbstractMatrix{Float64},
                 error_message::String, ::Val{D}) where {D}
     detA::Float64 = D == 2 ? det_2x2(A) : det_3x3(A)
-    # det / (tr / D)^D is 1 for an isotropic neighbourhood and 0 for a singular one. The
-    # fallback removes the stiffness only in directions without intact bonds; a NaN in A
-    # takes the fallback (the comparison is false) and gives 0, as does K = 0.
+    # det / (tr / D)^D is 1 for an isotropic neighbourhood and 0 for a singular one. A node
+    # whose intact bonds do not span all directions (relative det below the tolerance) gets
+    # K^-1 = 0: its correspondence bond forces F S K^-1 xi and its zero energy forces
+    # (Z = C K^-1) vanish and it moves as a detached fragment. pinv was unstable: a rank-1 F
+    # gives a spurious strain of -1/2 normal to the remaining bonds, whose stress pushes the
+    # node along them without bound. K = 0 (no intact bonds) and a NaN in A (the comparison
+    # is false) give 0 as well.
     As = SMatrix{D,D,Float64}(A)
     scale = (tr(As) / D)^D
     if !(abs(detA) > SHAPE_TENSOR_RTOL^(D - 1) * scale)
-        if all(isfinite, As)
-            Ainv .= pinv(As; rtol = SHAPE_TENSOR_RTOL)
-        else
-            fill!(Ainv, 0.0)
-        end
+        Ainv .= 0.0
         return
     end
     if D == 2

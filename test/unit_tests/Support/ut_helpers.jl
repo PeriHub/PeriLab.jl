@@ -676,12 +676,12 @@ end
     A3 = [3.0 0.2 0.1; 0.2 2.0 0.4; 0.1 0.4 1.5]
     @test inv_val(A2) ≈ inv(A2)
     @test inv_val(A3) ≈ inv(A3)
-    # (b) nearly singular: the weak direction is dropped
-    @test inv_val(diagm([1.0, 1e-5])) ≈ diagm([1.0, 0.0])
+    # (b) intact bonds do not span all directions: zero inverse
+    @test inv_val(diagm([1.0, 1e-5])) == zeros(2, 2)
+    @test inv_val([1.0 2.0; 2.0 4.0]) == zeros(2, 2)
+    @test inv_val([1.0 1.0 0.0; 1.0 1.0 0.0; 0.0 0.0 1.0]) == zeros(3, 3)
     # (c) zero shape tensor
     @test inv_val(zeros(2, 2)) == zeros(2, 2)
-    # (d) NaN entry: no huge or non-finite inverse
-    Ainv = inv_val([1.0 NaN; 0.0 1.0])
-    @test all(isfinite, Ainv)
-    @test maximum(abs, Ainv) <= 1.0
+    # (d) NaN entry
+    @test inv_val([1.0 NaN; 0.0 1.0]) == zeros(2, 2)
 end
