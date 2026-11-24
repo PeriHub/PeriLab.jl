@@ -8,7 +8,7 @@ using PointNeighbors: GridNeighborhoodSearch, initialize_grid!, foreach_neighbor
 #using Tensors
 using ProgressBars: ProgressBar
 using LinearAlgebra: Adjoint, dot, det, norm, pinv, eigvals, inv, normalize, cross, diagm,
-                     cholesky
+                     cholesky, tr
 using StaticArrays: MMatrix, MVector, SMatrix, @SMatrix, SVector, @SVector
 using ArraysOfArrays: flatview
 using CDDLib
@@ -926,14 +926,28 @@ function invert(Ainv::AbstractMatrix{Float64}, A::AbstractMatrix{Float64},
     end
 end
 
+# Relative singularity limit of the shape tensor: directions whose stiffness is below this
+# fraction of the largest one (e.g. only damaged bonds left) are dropped by the pseudo
+# inverse instead of inverted to huge values.
+const SHAPE_TENSOR_RTOL = 1e-3
+
 # the dimension as a compile time constant: determinant, inverse and, for a singular
 # matrix, the pseudo inverse use static matrices (the size of `A` is not known statically,
-# `smat(A)` is not type stable)
+# `smat(A)` is not type stable). Used for the shape tensor (compute_shape_tensors!).
 function invert(Ainv::AbstractMatrix{Float64}, A::AbstractMatrix{Float64},
                 error_message::String, ::Val{D}) where {D}
     detA::Float64 = D == 2 ? det_2x2(A) : det_3x3(A)
-    if abs(detA) < 1e-10
-        Ainv .= pinv(SMatrix{D,D,Float64}(A))
+    # det / (tr / D)^D is 1 for an isotropic neighbourhood and 0 for a singular one. The
+    # fallback removes the stiffness only in directions without intact bonds; a NaN in A
+    # takes the fallback (the comparison is false) and gives 0, as does K = 0.
+    As = SMatrix{D,D,Float64}(A)
+    scale = (tr(As) / D)^D
+    if !(abs(detA) > SHAPE_TENSOR_RTOL^(D - 1) * scale)
+        if all(isfinite, As)
+            Ainv .= pinv(As; rtol = SHAPE_TENSOR_RTOL)
+        else
+            fill!(Ainv, 0.0)
+        end
         return
     end
     if D == 2

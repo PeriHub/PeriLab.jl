@@ -663,3 +663,25 @@ end
                                                        ])
     end
 end
+
+@testset "ut_invert_shape_tensor" begin
+    H = PeriLab.Solver_Manager.Helpers
+    function inv_val(A)
+        Ainv = fill(NaN, size(A))
+        H.invert(Ainv, A, "singular", Val(size(A, 1)))
+        return Ainv
+    end
+    # (a) well conditioned: same as inv
+    A2 = [2.0 0.3; 0.3 1.0]
+    A3 = [3.0 0.2 0.1; 0.2 2.0 0.4; 0.1 0.4 1.5]
+    @test inv_val(A2) ≈ inv(A2)
+    @test inv_val(A3) ≈ inv(A3)
+    # (b) nearly singular: the weak direction is dropped
+    @test inv_val(diagm([1.0, 1e-5])) ≈ diagm([1.0, 0.0])
+    # (c) zero shape tensor
+    @test inv_val(zeros(2, 2)) == zeros(2, 2)
+    # (d) NaN entry: no huge or non-finite inverse
+    Ainv = inv_val([1.0 NaN; 0.0 1.0])
+    @test all(isfinite, Ainv)
+    @test maximum(abs, Ainv) <= 1.0
+end
