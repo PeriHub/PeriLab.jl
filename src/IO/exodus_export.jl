@@ -856,7 +856,7 @@ function merge_exodus_file(file_name::AbstractString)
     # epu writes a classic, uncompressed file by default; keep netCDF-4 rank files
     # (Compression) netCDF-4 and compressed in the merged file
     netcdf4 = read(file_name, 4) == UInt8[0x89, 0x48, 0x44, 0x46] # HDF5 signature
-    options = netcdf4 ? `-netcdf4 -compress_data 1` : ``
+    options = netcdf4 ? `-netcdf4 -compress 1` : ``
     # Not Exodus.epu: since Exodus 0.15 it fails on any stderr output, and epu always
     # warns there that the element ids of the bond blocks are not consistent per block.
     # run throws if epu itself fails.
