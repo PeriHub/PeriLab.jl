@@ -171,7 +171,7 @@ end
 Fields and nlsolve settings of the static solver; `start_u` is the start value
 of the next step.
 """
-mutable struct StaticWorkspace
+mutable struct StaticWorkspace{P<:Tuple}
     bc_free_dof::Vector{Int64}
     scaling::Float64
     xtol::Float64
@@ -184,6 +184,8 @@ mutable struct StaticWorkspace
     forces::Matrix{Float64}
     volume::Vector{Float64}
     active_list::Vector{Bool}
+    # the typed model calls (`Model_Factory.model_plan`), built once
+    models::P
 end
 
 """
@@ -204,7 +206,8 @@ function prepare_solver(run::SolverRun{StaticParams}, ctx::SolverContext)
                            Data_Manager.get_field("Displacements", "NP1"),
                            Data_Manager.get_field("Forces", "NP1"),
                            Data_Manager.get_field("Volume"),
-                           Data_Manager.get_field("Active"))
+                           Data_Manager.get_field("Active"),
+                           Model_Factory.model_plan(ctx.block_nodes))
 end
 
 """
@@ -226,7 +229,8 @@ function time_step!(ws::StaticWorkspace, run::SolverRun{StaticParams}, ctx::Solv
                                      1:Data_Manager.get_nnodes())
     compute_parabolic_problems_before_model_evaluation(active_nodes, run)
     apply_bc_dirichlet(["Displacements", "Temperature"], bcs, time, step_time + dt)
-    sol = nlsolve((residual, U) -> residual!(residual, U, ws.bc_free_dof, block_nodes, dt,
+    sol = nlsolve((residual, U) -> residual!(residual, U, ws.bc_free_dof, ws.models,
+                                             block_nodes, dt,
                                              time, run.models, synchronise_field,
                                              ws.scaling),
                   ws.start_u;
@@ -253,6 +257,7 @@ end
 function residual!(residual,
                    U,
                    bc_free_dof,
+                   models_plan::Tuple,
                    block_nodes,
                    dt,
                    time,
@@ -291,7 +296,8 @@ function residual!(residual,
 
     Data_Manager.synch_manager(synchronise_field, "upload_to_cores")
     # synch
-    Model_Factory.compute_models(block_nodes,
+    Model_Factory.compute_models(models_plan,
+                                 block_nodes,
                                  dt,
                                  time,
                                  models,

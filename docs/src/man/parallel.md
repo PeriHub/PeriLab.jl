@@ -70,6 +70,16 @@ All models run with MPI. Two things to know:
 
   Correspondence materials, contact, boundary conditions and the matrix backends run on one
   thread per rank; use more MPI ranks instead.
+- **BLAS threads**: `Verlet Matrix Based` with `Model Reduction` multiplies the dense block
+  of the reduced matrices with OpenBLAS threads in every step. After each call the OpenBLAS
+  threads keep spinning for about 0.1 s (2^28 cycles) and take the cores away from the
+  threaded loops above, which then get slower with more threads. Start Julia with
+  `OPENBLAS_THREAD_TIMEOUT=4` (the threads sleep after 2^4 cycles), e.g.
+  `OPENBLAS_THREAD_TIMEOUT=4 OPENBLAS_NUM_THREADS=16 julia -t 16 ...`; it has to be set
+  before Julia starts. `BLAS.set_num_threads(1)` around the loops does not stop the spinning.
+  If the material point region is small, splitting the cores (`julia -t 8` with
+  `OPENBLAS_NUM_THREADS=8` on 16 cores) can be faster still; compare the timers of a short
+  run (`--verbose`).
 
 ## Scaling
 

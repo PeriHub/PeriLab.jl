@@ -48,8 +48,7 @@ end
 using SparseArrays
 using Serialization
 using ....ModuleLoader: find_module_files, create_module_specifics
-using ...Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
-                                      rebuild_matrix!
+using ...Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix
 using ...Helpers: find_active_nodes, create_permutation
 global module_list = find_module_files(@__DIR__, "model_reduction_name")
 for mod in module_list
@@ -436,11 +435,21 @@ function expand_density_per_dof(density, dof::Int64)
     return density_mass
 end
 
+"""
+    init_reduce_model(model_param, block_nodes, density, bcs; assemble!)
+
+Partitions the nodes, then sets the reduced stiffness and mass matrices, loaded from the
+`Reduced Matrix Cache` or condensed from the stiffness matrix. `assemble!(nodes)` assembles
+the stiffness matrix of `nodes` (every node but the material points) into the
+`Data_Manager`; it is called once and only if the matrix is needed. `assemble!(nodes;
+matrix = false)` sets up only the fields of the stiffness matrix, for a loaded reduction.
+"""
 function init_reduce_model(model_param::ModelReductionParams,
                            block_nodes::AbstractDict{Int64,Vector{Int64}},
-                           density, bcs::AbstractDict = Dict())
+                           density, bcs::AbstractDict = Dict(); assemble!::Function)
+    nnodes = Data_Manager.get_nnodes()
     reduction_blocks = parse_reduction_blocks(model_param)
-    isnothing(reduction_blocks) && return
+    isnothing(reduction_blocks) && return assemble!(collect(1:nnodes))
 
     @info "Model Reduction Type: $(model_param.type)"
     @info "Reduction blocks: $reduction_blocks"
@@ -467,32 +476,20 @@ function init_reduce_model(model_param::ModelReductionParams,
           "by node sets"
     check_bcs_on_condensed(bcs, condensed_nodes)
 
-    if pd_nodes != []
-        # init_matrix already assembled every node, PD included, since it runs before
-        # the reduction blocks (and therefore pd_nodes) are known. Rebuild from a blank
-        # slate with them excluded now that they are known, rather than patch the
-        # existing assembly: compute_model's subtract-old/add-new is a no-op here (old
-        # and current state are still identical at this point in setup), so it would
-        # leave their init_matrix contribution in place instead of removing it.
-        nodes = setdiff(collect(1:Data_Manager.get_nnodes()), pd_nodes)
-        @timeit "update_material_point_part" rebuild_matrix!(nodes)
-        @info "Model Reduction: rebuilt stiffness matrix excluding material point nodes"
-    end
-    K = Data_Manager.get_stiffness_matrix()
-
+    # material point nodes get their forces from the material models, not from K
+    assembled_nodes = setdiff(collect(1:nnodes), pd_nodes)
     if retained_nodes == []
         @warn "No retained nodes defined for model reduction. Using full stiffness matrix."
-        return
+        return assemble!(assembled_nodes)
     end
     if condensed_nodes == []
         @warn "No condensed nodes defined for model reduction. Using full stiffness matrix."
-        return
+        return assemble!(assembled_nodes)
     end
 
     mark_coupling_field!(retained_nodes, condensed_nodes, pd_nodes, coupling_nodes)
 
     dof = Data_Manager.get_dof()
-    nnodes = Data_Manager.get_nnodes()
     perm_retained = create_permutation(retained_nodes, dof, nnodes)
     perm_condensed = create_permutation(condensed_nodes, dof, nnodes)
     density_mass = expand_density_per_dof(density, dof)
@@ -526,7 +523,11 @@ function init_reduce_model(model_param::ModelReductionParams,
                   "recomputing."
         end
     end
-    if !loaded_from_cache
+    if loaded_from_cache
+        assemble!(assembled_nodes; matrix = false)
+    else
+        assemble!(assembled_nodes)
+        K = Data_Manager.get_stiffness_matrix()
         @timeit "Condensation" K_reduced,
                                mass_reduced=mod.reduce_matrices(K, density_mass,
                                                                 perm_retained,

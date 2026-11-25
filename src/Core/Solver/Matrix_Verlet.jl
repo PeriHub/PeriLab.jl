@@ -23,7 +23,7 @@ using ..Solver_Common: TimeWindow, SolverRun, SolverContext, StepClock, synchron
                        compute_parabolic_problems_before_model_evaluation,
                        compute_parabolic_problems_after_model_evaluation
 using ...MPI_Communication: find_and_set_core_value_min, find_and_set_core_value_max
-using ..Model_Factory: compute_models, compute_crititical_time_step,
+using ..Model_Factory: compute_models, compute_crititical_time_step, model_plan,
                        compute_stiff_matrix_compatible_models,
                        compute_matrix_based_bond_forces
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof,
@@ -64,7 +64,7 @@ end
 __init__() = register_solver("Verlet Matrix Based", VerletMatrixParams)
 include("../../Compute/compute_field_values.jl")
 using ..Correspondence_matrix_based: build_mass_matrix, init_model, init_matrix,
-                                     compute_model
+                                     compute_model, rebuild_matrix!
 using ..Matrix_Adapter: MatrixSystem, init_matrix_system, apply_stiffness!, exchange_field!,
                         update_system!, refresh_active!
 export init_solver
@@ -139,28 +139,6 @@ function init_solver(options::VerletMatrixParams,
     for (block, nodes) in pairs(block_nodes)
         init_model(nodes, Data_Manager.get_block_models(block).material, block)
     end
-    # Assembly is the most expensive setup step and yields the same K as long as mesh,
-    # blocks and materials are unchanged, e.g. while iterating on the model reduction.
-    cache_file = options.stiffness_matrix_cache
-    if !isnothing(cache_file) && isfile(cache_file)
-        @info "Matrix Verlet: loading cached stiffness matrix from $cache_file"
-        cached = Serialization.deserialize(cache_file)
-        Data_Manager.set_stiffness_matrix(cached.K)
-        Data_Manager.set_nzval_map(cached.col_ptr, cached.row_ptr)
-        Data_Manager.set_cb_tensors(cached.cb_tensors)
-    else
-        @timeit "init_matrix" init_matrix()
-        if !isnothing(cache_file)
-            @info "Matrix Verlet: saving stiffness matrix to $cache_file"
-            col_ptr, row_ptr = Data_Manager.get_nzval_map()
-            Serialization.serialize(cache_file,
-                                    (K = Data_Manager.get_stiffness_matrix(),
-                                     col_ptr = col_ptr, row_ptr = row_ptr,
-                                     cb_tensors = Data_Manager.get_cb_tensors()))
-        end
-    end
-    K = Data_Manager.get_stiffness_matrix()
-
     density_mass = zeros(length(density) * Data_Manager.get_dof())
     for iID in eachindex(density_mass)
         density_mass[iID] = density[Int(ceil(iID / dof))]
@@ -168,8 +146,15 @@ function init_solver(options::VerletMatrixParams,
 
     if reduce
         @info "Model reduction enabled."
+        cache_file = options.stiffness_matrix_cache
+        assemble!(nodes; matrix = true) = assemble_stiffness!(cache_file, nodes; matrix)
         @timeit "Model reduction" init_reduce_model(model_reduction, block_nodes,
-                                                    density_mass, bcs)
+                                                    density_mass, bcs; assemble!)
+        Threads.nthreads() > 1 && BLAS.get_num_threads() > 1 &&
+            !haskey(ENV, "OPENBLAS_THREAD_TIMEOUT") &&
+            @warn "Matrix Verlet: the spinning OpenBLAS threads of the reduced matrix " *
+                  "products slow down the threaded models; start Julia with " *
+                  "OPENBLAS_THREAD_TIMEOUT=4 (see the parallel computing manual)."
         # the reduced mass matrix is symmetric positive definite: diagonal except for a
         # dense block of the coupling dofs and the modes, which is inverted once
         M = Data_Manager.get_mass_matrix()
@@ -178,6 +163,8 @@ function init_solver(options::VerletMatrixParams,
         return TimeWindow(initial_time, final_time, dt, nsteps),
                prescribed_dofs(M, M_fact, Data_Manager.get_reduced_model_retained())
     end
+    assemble_stiffness!(options.stiffness_matrix_cache,
+                        collect(1:Data_Manager.get_nnodes()))
     # if not reduced the mass has to be created here.
     mass = Diagonal(density_mass)
     Data_Manager.set_mass_matrix(lu(sparse(mass)))
@@ -186,6 +173,48 @@ function init_solver(options::VerletMatrixParams,
     Data_Manager.set_reduced_model_pd(Int64[])
 
     return TimeWindow(initial_time, final_time, dt, nsteps), nothing
+end
+
+"""
+    assemble_stiffness!(cache_file, nodes; matrix = true)
+
+Assembles the stiffness matrix of `nodes` (every node, or every node but the material
+points of a model reduction) into the `Data_Manager`, once. With a `Stiffness Matrix Cache`
+the full matrix is loaded or assembled and saved, and `nodes` are reassembled from it.
+`matrix = false` sets up only the fields the matrix setup creates, for a run whose (reduced)
+matrix is loaded; as before, a loaded stiffness matrix sets up none.
+"""
+function assemble_stiffness!(cache_file::Union{Nothing,String}, nodes::Vector{Int64};
+                             matrix::Bool = true)
+    all_nodes = length(nodes) == Data_Manager.get_nnodes()
+    # Assembly is the most expensive setup step and yields the same K as long as mesh,
+    # blocks and materials are unchanged, e.g. while iterating on the model reduction.
+    if !isnothing(cache_file) && isfile(cache_file)
+        matrix || return nothing
+        @info "Matrix Verlet: loading cached stiffness matrix from $cache_file"
+        cached = Serialization.deserialize(cache_file)
+        Data_Manager.set_stiffness_matrix(cached.K)
+        Data_Manager.set_nzval_map(cached.col_ptr, cached.row_ptr)
+        Data_Manager.set_cb_tensors(cached.cb_tensors)
+    elseif isnothing(cache_file) || !matrix
+        @timeit "init_matrix" init_matrix(; pattern = matrix,
+                                          assemble = matrix && all_nodes)
+        matrix || return nothing
+    else
+        @timeit "init_matrix" init_matrix()
+        @info "Matrix Verlet: saving stiffness matrix to $cache_file"
+        col_ptr, row_ptr = Data_Manager.get_nzval_map()
+        Serialization.serialize(cache_file,
+                                (K = Data_Manager.get_stiffness_matrix(),
+                                 col_ptr = col_ptr, row_ptr = row_ptr,
+                                 cb_tensors = Data_Manager.get_cb_tensors()))
+    end
+    if !all_nodes
+        # rebuild from zero: only `nodes`, with the pattern of every node
+        @timeit "update_material_point_part" rebuild_matrix!(nodes)
+        @info "Matrix Verlet: assembled the stiffness matrix without the material points"
+    end
+    return nothing
 end
 
 """
@@ -391,7 +420,7 @@ correct_prescribed!(a, ::Nothing, q, dt) = nothing
 Fields, mass matrix factorization, stiffness matrix and the (possibly reduced)
 state vectors of the matrix based Verlet solver.
 """
-struct MatrixVerletWorkspace{TM,TK,TS}
+struct MatrixVerletWorkspace{TM,TK,TS,P<:Tuple}
     coor::Matrix{Float64}
     active_list::Vector{Bool}
     volume::Vector{Float64}
@@ -404,6 +433,8 @@ struct MatrixVerletWorkspace{TM,TK,TS}
     state::TS
     modal_active::Bool
     prescribed::Union{Nothing,PrescribedDofs}
+    # the typed model calls (`Model_Factory.model_plan`), built once
+    models::P
 end
 
 """
@@ -437,7 +468,8 @@ function prepare_solver(run::SolverRun{VerletMatrixParams}, ctx::SolverContext)
                                  retained_nodes,
                                  state,
                                  n_modal(state) > 0,
-                                 run.state)
+                                 run.state,
+                                 model_plan(ctx.block_nodes))
 end
 
 """
@@ -520,7 +552,8 @@ function time_step!(ws::MatrixVerletWorkspace, run::SolverRun{VerletMatrixParams
                                               step_time) #-> Dirichlet
         @timeit "deformed coor" @views deformed_coorNP1 .= coor .+ uNP1
 
-        @timeit "compute models" compute_models(block_nodes,
+        @timeit "compute models" compute_models(ws.models,
+                                                block_nodes,
                                                 dt,
                                                 time,
                                                 run.models,

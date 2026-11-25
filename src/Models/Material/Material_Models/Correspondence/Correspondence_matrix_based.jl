@@ -203,8 +203,7 @@ end
 """
     k_loop!(K_local, K_block, CB_k_i, D_inv_i, X_ij,
                     ω_ij, V_i, V_j, mj, dof,
-                    nj, iID, volume, omega, bond_damage,
-                    row_i_base, row_j_base)
+                    nj, iID, volume, omega, bond_damage, j_idx)
 
 Inner k-loop: computes and scatters normal stiffness contributions
 K^□_ijk for all neighbors k of node i, given a fixed bond (i,j).
@@ -226,8 +225,7 @@ function k_loop!(K_local::Matrix{Float64},
                  volume::Vector{Float64},
                  omega::BondScalarState{Float64},
                  bond_damage::BondScalarState{Float64},
-                 row_i_base::NTuple{N,Int64},
-                 row_j_base::NTuple{N,Int64}) where {N}
+                 j_idx::Int64)
     omega_i = omega[iID]
     damage_i = bond_damage[iID]
     D_inv_i = @view inverse_shape_tensor[iID, :, :]
@@ -245,8 +243,9 @@ function k_loop!(K_local::Matrix{Float64},
                 val = K_block[m, o]
                 fwd = val * V_j
                 bwd = val * V_i
-                row_i = row_i_base[m]
-                row_j = row_j_base[m]
+                # local rows of i and j for component m
+                row_i = m * (mj + 1)
+                row_j = (m - 1) * (mj + 1) + j_idx
                 K_local[row_i, col_ii] += fwd
                 K_local[row_i, col_ik] -= fwd
                 K_local[row_j, col_ii] -= bwd
@@ -419,7 +418,7 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int64},
     D_inv_X = Vector{Float64}(undef, dof)
     ldof = (max_neighbors + 1) * dof
     K_local = zeros(ldof, ldof)
-    local_nzidx = zeros(Int, ldof, ldof)
+    local_nzidx = zeros(Int, max_neighbors + 1, max_neighbors + 1)
 
     nzval = K.nzval   # direct reference — avoids repeated field access
 
@@ -434,9 +433,6 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int64},
 
             fill!(@view(K_local[1:((mj + 1) * dof), 1:((mj + 1) * dof)]), 0.0)
 
-            # Hoisted local row offsets for center node i
-            row_i_base = ntuple(m -> m * (mj + 1), dof)
-
             for (j_idx, jID) in enumerate(nj)
                 bond_damage[iID][j_idx] == 0.0 && continue
 
@@ -448,27 +444,9 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int64},
                 # shared by normal k-loop and ZE k-loop
                 mul!(D_inv_X, D_inv_i, X_ij)
 
-                # Hoisted local row offsets for neighbor j
-                row_j_base = ntuple(m -> (m - 1) * (mj + 1) + j_idx, dof)
-
                 # ── Normal stiffness: merged fwd + bwd, all k ─────────────────
-                @timeit "k_loop" k_loop!(K_local,
-                                         K_block,
-                                         CB_k_i,
-                                         inverse_shape_tensor,
-                                         X_ij,
-                                         ω_ij,
-                                         V_i,
-                                         V_j,
-                                         mj,
-                                         dof,
-                                         nj,
-                                         iID,
-                                         volume,
-                                         omega,
-                                         bond_damage,
-                                         row_i_base,
-                                         row_j_base)
+                k_loop!(K_local, K_block, CB_k_i, inverse_shape_tensor, X_ij, ω_ij, V_i,
+                        V_j, mj, dof, nj, iID, volume, omega, bond_damage, j_idx)
 
                 # ── Zero-energy stabilization: unified loop over all k ────────
                 # Diagonal (k==j) and cross terms (k≠j) share the same scatter
@@ -477,7 +455,7 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int64},
                 #           → f_fwd = ω_ij*γ_fwd*V_j, f_bwd = -ω_ij*γ_bwd*V_i
                 # For k≠j:  dot_k = X_ik^T D_i^{-1} X_ij  (reuses D_inv_X)
                 # Both cases reduce to the same two lines below.
-                @timeit "ze_loop" for (k_idx, kID) in enumerate(nj)
+                for (k_idx, kID) in enumerate(nj)
                     bond_damage[iID][k_idx] == 0.0 && continue
 
                     ω_ik = omega[iID][k_idx] * bond_damage[iID][k_idx]
@@ -498,8 +476,8 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int64},
                         col_ik = (o - 1) * (mj + 1) + k_idx
                         for m in 1:dof
                             Zmo = Z_i[m, o]
-                            row_i = row_i_base[m]
-                            row_j = row_j_base[m]
+                            row_i = m * (mj + 1)
+                            row_j = (m - 1) * (mj + 1) + j_idx
                             vf = f_fwd * Zmo
                             vb = f_bwd * Zmo
                             K_local[row_i, col_ii] += vf
@@ -512,38 +490,32 @@ function assemble_stiffness_with_zero_energy(K::SparseMatrixCSC{Float64,Int64},
             end  # j_loop
 
             # ── FLUSH: K_local → K.nzval ──────────────────────────────────────
-            # Phase 1: build index cache (O(log nnz) per entry, once per node)
-            # Phase 2: scatter into nzval using cached indices
-            @timeit "scatter_to_K" begin
-                blk1 = mj + 1
-                @inbounds for c in 1:blk1
-                    col_node = c <= mj ? nj[c] : iID
-                    for o in 1:dof
-                        gcol = (o - 1) * nnodes + col_node
-                        rlo = K_colptr[gcol]
-                        rhi = K_colptr[gcol+1] - 1
-                        for r in 1:blk1
-                            row_node = r <= mj ? nj[r] : iID
-                            for m in 1:dof
-                                grow = (m - 1) * nnodes + row_node
-                                pos = searchsortedfirst(K_rowval, grow, rlo, rhi,
-                                                        Base.Order.Forward)
-                                local_nzidx[(m-1)*blk1+r,
-                                            (o-1)*blk1+c] = pos
-                            end
-                        end
-                    end
+            # Every column of K (`build_sparsity_and_map`) holds the sorted row nodes of
+            # its column node once per row component m, at the same offsets for every
+            # column component o. So the position of a row node is searched once per
+            # (row node, column node) pair, not once per dof pair.
+            blk1 = mj + 1
+            @inbounds for c in 1:blk1
+                col_node = c <= mj ? nj[c] : iID
+                lo = K_colptr[col_node]
+                hi = lo + (K_colptr[col_node + 1] - lo) ÷ dof - 1
+                for r in 1:blk1
+                    row_node = r <= mj ? nj[r] : iID
+                    local_nzidx[r, c] = searchsortedfirst(K_rowval, row_node, lo, hi,
+                                                          Base.Order.Forward) - lo
                 end
-                @inbounds for c in 1:blk1, o in 1:dof
-                    for r in 1:blk1, m in 1:dof
-                        val = K_local[(m-1)*blk1+r, (o-1)*blk1+c]
-                        abs(val) <= 1e-14 && continue
-                        nzval[local_nzidx[(m-1)*blk1+r,
-                                          (o-1)*blk1+c]] += sign *
-                                                            val
-                    end
+            end
+            @inbounds for c in 1:blk1, o in 1:dof
+                col_node = c <= mj ? nj[c] : iID
+                gcol = (o - 1) * nnodes + col_node
+                base = K_colptr[gcol]
+                len = (K_colptr[gcol + 1] - base) ÷ dof
+                for r in 1:blk1, m in 1:dof
+                    val = K_local[(m - 1) * blk1 + r, (o - 1) * blk1 + c]
+                    abs(val) <= 1e-14 && continue
+                    nzval[base + (m - 1) * len + local_nzidx[r, c]] += sign * val
                 end
-            end  # scatter_to_K
+            end
         end  # iID loop
     end  # assembly
 
@@ -591,7 +563,16 @@ function init_model(nodes::AbstractVector{Int64}, material, block_id::Int64;
     end
 end
 
-function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = true)
+"""
+    init_matrix(use_block_style = true, include_zero_energy = true; pattern = true, assemble = pattern)
+
+Sets up the fields of the stiffness matrix (old states, zero energy stiffness), its
+sparsity pattern and CB tensors (`pattern`) and assembles every node into it (`assemble`).
+`pattern = false` is for a run whose matrix comes from elsewhere (a loaded reduced matrix),
+`assemble = false` for one that assembles only some nodes with [`rebuild_matrix!`](@ref).
+"""
+function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = true;
+                     pattern::Bool = true, assemble::Bool = pattern)
     # the stiffness update compares the bond damage of N and NP1
     Data_Manager.track_bond_damage_N()
     nodes = collect(1:Data_Manager.get_nnodes())
@@ -636,6 +617,7 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
                 Data_Manager.create_constant_node_tensor_field("Old Zero Energy Stiffness",
                                                                Float64, dof) : nothing
     zStiffOld .= zStiff
+    pattern || return nothing
     # Build sparsity pattern + nzval map ONCE and store in Data_Manager
     @timeit "build_sparsity" begin
         @info "Build sparsity pattern"
@@ -651,6 +633,7 @@ function init_matrix(use_block_style::Bool = true, include_zero_energy::Bool = t
     all_CB_tensors = [zeros(Float64, number_of_neighbors[i], dof, dof, dof)
                       for i in 1:nnodes]
     Data_Manager.set_cb_tensors(all_CB_tensors)
+    assemble || return nothing
     @info "Assemble matrix"
     @timeit "assemble" assemble_stiffness_with_zero_energy(K_sparse, K_colptr, K_rowval,
                                                            all_CB_tensors, nodes, nodes,
