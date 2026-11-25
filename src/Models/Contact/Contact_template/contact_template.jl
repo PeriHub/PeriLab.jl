@@ -45,7 +45,7 @@ end
 """
     compute_contact_model(cg, p, contact, compute_master_force_density, compute_slave_force_density)
 
-Computes the contact forces of contact group `cg`. The contact pairs of the group are in `Data_Manager.get_contact_dict(cg)`.
+Computes the contact forces of contact group `cg`. The contact pairs of the group are in `Contact_Search.contact_pairs(cg)` (`ContactPairs`: masters with their slaves, distances and normals as CSR).
 
 # Arguments
 - `cg::String`: The contact group.

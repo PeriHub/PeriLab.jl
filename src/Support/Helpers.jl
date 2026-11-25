@@ -138,7 +138,8 @@ function compute_free_surface_nodes(points::Union{Matrix{Float64},Matrix{Int64}}
         end
     end
     # not possible; deformation leads to a switch in surface numbers
-    return sort(free_nodes)
+    # a node on two free surfaces (an edge or corner) is one free node
+    return unique!(sort!(free_nodes))
 end
 
 # taken from peridigm
@@ -217,7 +218,8 @@ function get_nearest_neighbors(nodes,
         coords_sys = system_coordinates'
         coords_nb = neighbor_coordinates'
     end
-    initialize_grid!(nhs, coords_sys)
+    # the grid holds the potential neighbors (initializing it with the system points first
+    # was overwritten right away)
     initialize_grid!(nhs, coords_nb)
 
     # the grid is only read, every node fills its own list

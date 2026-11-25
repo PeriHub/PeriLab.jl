@@ -11,16 +11,17 @@ using .....PeriLabExceptions: @abort
 using .....ModuleLoader: find_registered_modules
 using ......ParameterSpec: model_module
 using .....InputDeck: ContactInput, contact_blocks, contact_search_frequency
+# before the contact models: they read the contact pairs (`Contact_Search.contact_pairs`)
+include("Contact_search.jl")
+using .Contact_Search: ContactSearch, compute_contact_pairs!, global_search_due
 for file in find_registered_modules(@__DIR__, "register_contact")
     include(file)
 end
 
 using LinearAlgebra
 using .....MPI_Communication: find_and_set_core_value_sum
-include("Contact_search.jl")
-using .Contact_Search: init_contact_search, compute_geometry, get_surface_information,
-                       compute_contact_pairs
-using .....Helpers: remove_ids, get_block_nodes, compute_free_surface_nodes, find_indices
+using .....Helpers: remove_ids, get_block_nodes, compute_free_surface_nodes, find_indices,
+                    compute_geometry, get_surface_information, each_call
 export init_contact_model
 export compute_contact_model
 
@@ -61,7 +62,6 @@ function init_contact_model(contact::ContactInput)
 
     for model in values(contact.models)
         for (cg, group) in pairs(model.base.contact_groups)
-            Data_Manager.set_search_step(cg, 0)
             slave_id = group.slave_block_id
             master_id = group.master_block_id
             @info "Contact pair Master block $master_id - Slave block $slave_id"
@@ -110,13 +110,70 @@ function init_contact_model(contact::ContactInput)
                                                    shared_horizon,
                                                    Data_Manager.get_local_contact_ids())
 
+    init_contact_search(contact)
+
     @info "Set contact models"
-    for (cm, model) in pairs(contact.models)
-        init_contact_search(cm)
+    for model in values(contact.models)
         contact_module(model).init_contact_model(model.model, model)
     end
 
     @info "Finish Init Contact Model"
+end
+
+"""
+    ContactCall{S,M,F}
+
+A contact group of a run: its name, search state, contact model of the input deck
+(`model.model` the typed parameters) and the model's `compute_contact_model`.
+"""
+struct ContactCall{S<:ContactSearch,M,F}
+    name::String
+    search::S
+    model::M
+    compute::F
+end
+
+"""
+    ContactState{C}
+
+The contact groups as a tuple of `ContactCall` (its type holds the models, so every
+group is computed statically) and the deformed coordinates this rank contributes to the
+contact positions: its controller nodes `local_ids` with their rows `exchange_ids`.
+Between two global searches only the `candidate_rows` (the candidate nodes of all
+contact groups, `candidate_local` their local id or 0) are synchronized, over `buffer`.
+"""
+struct ContactState{C<:Tuple}
+    calls::C
+    local_ids::Vector{Int64}
+    exchange_ids::Vector{Int64}
+    candidate_rows::Vector{Int64}
+    candidate_local::Vector{Int64}
+    buffer::Vector{Float64}
+end
+
+"""
+    init_contact_search(contact::ContactInput)
+
+Creates the search state of every contact group (`Contact_Search.ContactSearch`) and
+which coordinates this rank synchronizes.
+"""
+function init_contact_search(contact::ContactInput)
+    dof = Data_Manager.get_dof()
+    calls = []
+    for model in values(contact.models), (cg, group) in pairs(model.base.contact_groups)
+        search = ContactSearch(dof,
+                               Data_Manager.get_free_contact_nodes(group.master_block_id),
+                               Data_Manager.get_free_contact_nodes(group.slave_block_id),
+                               model.base.contact_radius, group.search_radius,
+                               contact_search_frequency(group, contact.globals))
+        Data_Manager.set_contact_search(cg, search)
+        push!(calls,
+              ContactCall(cg, search, model, contact_module(model).compute_contact_model))
+    end
+    order = sort!(collect(Data_Manager.get_local_contact_ids()::Dict{Int64,Int64});
+                  by = last)
+    Data_Manager.set_contact_state(ContactState(Tuple(calls), first.(order), last.(order),
+                                                Int64[], Int64[], Float64[]))
 end
 
 function create_local_contact_id_mapping(global_contact_ids)
@@ -175,42 +232,95 @@ Searches the contact pairs and computes the forces of every contact model.
 function compute_contact_model(contact::ContactInput,
                                time::Float64,
                                dt::Float64)
-    # computes and synchronizes the relevant positions
-    all_positions = Data_Manager.get_all_positions()
-    if Data_Manager.global_synchronization()
-        Data_Manager.clear_synchronization_list()
-        all_positions = synchronize_contact_points("Deformed Coordinates",
-                                                   "NP1",
-                                                   all_positions,
-                                                   Data_Manager.get_local_contact_ids())
-    else
-        # local synchronization occurs if Global Search Frequency > 1
-        update_list = Data_Manager.synchronization_list()
-        all_positions = synchronize_contact_points("Deformed Coordinates",
-                                                   "NP1",
-                                                   all_positions, update_list)
-    end
-    Data_Manager.set_all_positions(all_positions)
-    @timeit "Contact search" begin
-        for model in values(contact.models)
-            mod = contact_module(model)
-            for (cg, group) in pairs(model.base.contact_groups)
-                n = Data_Manager.get_search_step(cg) + 1
-                Data_Manager.set_contact_dict(cg, Dict())
+    # function barrier: the contact state holds the typed contact groups
+    return compute_contacts!(Data_Manager.get_contact_state())
+end
 
-                @timeit "compute_contact_pairs" compute_contact_pairs(cg, group,
-                                                                      model.base.contact_radius)
-                @timeit "compute_contact_model" mod.compute_contact_model(cg,
-                                                                          model.model,
-                                                                          model,
-                                                                          compute_master_force_density,
-                                                                          compute_slave_force_density)
-                if n == contact_search_frequency(group, contact.globals)
-                    Data_Manager.set_search_step(cg, 0)
-                end
+function compute_contacts!(state::ContactState)
+    # all positions for a global search, else only the candidate nodes
+    global_step = any_global_search(state.calls)
+    @timeit "synchronize contact positions" synchronize_contact_positions!(state,
+                                                                           global_step)
+    @timeit "Contact search" each_call(compute_contact!, state.calls)
+    global_step && update_candidate_rows!(state)
+    return nothing
+end
+
+any_global_search(::Tuple{}) = false
+function any_global_search(calls::Tuple)
+    return global_search_due(first(calls).search) || any_global_search(Base.tail(calls))
+end
+
+function compute_contact!(call::ContactCall)
+    @timeit "compute_contact_pairs" compute_contact_pairs!(call.search)
+    @timeit "compute_contact_model" call.compute(call.name, call.model.model, call.model,
+                                                 compute_master_force_density,
+                                                 compute_slave_force_density)
+    return nothing
+end
+
+"""
+    synchronize_contact_positions!(sync::ContactState, global_step::Bool)
+
+Writes the deformed coordinates into the contact positions (`get_all_positions`): all
+contact nodes for a global search, else only the candidate nodes. With MPI every rank adds
+its controller nodes and the rows are summed over the ranks.
+"""
+function synchronize_contact_positions!(sync::ContactState, global_step::Bool)
+    positions = Data_Manager.get_all_positions()::Matrix{Float64}
+    coor = Data_Manager.get_field("Deformed Coordinates", "NP1")::NodeVectorField{Float64}
+    dof = size(positions, 2)
+    parallel = Data_Manager.get_max_rank() > 1
+    if global_step
+        fill!(positions, 0.0)
+        @inbounds for (local_id, row) in zip(sync.local_ids, sync.exchange_ids),
+                      d in 1:dof
+            positions[row, d] = coor[local_id, d]
+        end
+        parallel && find_and_set_core_value_sum(Data_Manager.get_comm(), positions)
+        return nothing
+    end
+    if !parallel
+        @inbounds for (row, local_id) in zip(sync.candidate_rows, sync.candidate_local)
+            local_id == 0 && continue
+            for d in 1:dof
+                positions[row, d] = coor[local_id, d]
             end
         end
+        return nothing
     end
+    buffer = sync.buffer
+    @inbounds for (k, (row, local_id)) in enumerate(zip(sync.candidate_rows,
+                                                        sync.candidate_local)),
+                  d in 1:dof
+        buffer[(k - 1) * dof + d] = local_id == 0 ? 0.0 : coor[local_id, d]
+    end
+    find_and_set_core_value_sum(Data_Manager.get_comm(), buffer)
+    @inbounds for (k, row) in enumerate(sync.candidate_rows), d in 1:dof
+        positions[row, d] = buffer[(k - 1) * dof + d]
+    end
+    return nothing
+end
+
+# the candidate nodes of all contact groups after a global search, synchronized until the
+# next one
+function update_candidate_rows!(sync::ContactState)
+    rows = sync.candidate_rows
+    empty!(rows)
+    each_call(append_candidates!, sync.calls, rows)
+    unique!(sort!(rows))
+    mapping = Data_Manager.get_exchange_id_to_local_id()::Dict{Int64,Int64}
+    resize!(sync.candidate_local, length(rows))
+    for (k, row) in enumerate(rows)
+        sync.candidate_local[k] = get(mapping, row, 0)
+    end
+    resize!(sync.buffer, length(rows) * size(Data_Manager.get_all_positions(), 2))
+    return nothing
+end
+
+function append_candidates!(call::ContactCall, rows::Vector{Int64})
+    append!(rows,
+            call.search.candidate_nodes)
 end
 
 function compute_master_force_density(id_m, id_s, contact_force)
@@ -231,8 +341,12 @@ function compute_force_density(id_1::Int64, id_2::Int64,
     shared_volume::Matrix{Float64} = Data_Manager.get_field("Shared Volumes")
     force_densities::NodeVectorField{Float64} = Data_Manager.get_field("Force Densities",
                                                                        "NP1")
-
-    @views force_densities[mapping[id_1], :] .+= contact_force .* shared_volume[id_2]
+    # element-wise: a row view of the force densities would be created for every pair
+    local_id = mapping[id_1]
+    volume = shared_volume[id_2]
+    @inbounds for d in eachindex(contact_force)
+        force_densities[local_id, d] += contact_force[d] * volume
+    end
     #println(force_densities[mapping[id_1], :])
 end
 """
