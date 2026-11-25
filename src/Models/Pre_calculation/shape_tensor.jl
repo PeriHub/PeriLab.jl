@@ -97,6 +97,28 @@ function compute_model(nodes::AbstractVector{Int64}, p::ShapeTensorParams, pre_c
                            omega,
                            bond_damage,
                            undeformed_bond)
+    detach_nodes!(inverse_shape_tensor, nodes, block)
+end
+
+"""
+    detach_nodes!(inverse_shape_tensor, nodes, block)
+
+Sets the inverse shape tensor of the `nodes` whose damage index reached the `Detach Damage`
+of the block material to zero: the deformation gradient, the correspondence bond forces and
+the zero energy control then vanish for them, as for a node without bonds. Off (no effect)
+for the default 1 and without damage models.
+"""
+function detach_nodes!(inverse_shape_tensor::NodeTensorField{Float64},
+                       nodes::AbstractVector{Int64}, block::Int64)
+    material = Data_Manager.get_block_models(block).material
+    material === nothing && return nothing
+    threshold::Float64 = material.base.detach_damage
+    (threshold >= 1.0 || !Data_Manager.has_key("DamageNP1")) && return nothing
+    damage = Data_Manager.get_damage("NP1")
+    for iID in nodes
+        damage[iID] >= threshold && (inverse_shape_tensor[iID, :, :] .= 0.0)
+    end
+    return nothing
 end
 
 """

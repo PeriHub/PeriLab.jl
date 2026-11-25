@@ -208,6 +208,7 @@ MPI.Init()
             end
             @testset "ut_Pre_calculation" begin
                 include("unit_tests/Models/Pre_calculation/ut_pre_bond_associated_correspondence.jl")
+                include("unit_tests/Models/Pre_calculation/ut_shape_tensor_detach.jl")
             end
             @testset "ut_Damage" begin
                 include("unit_tests/Models/Damage/ut_Damage_Factory.jl")

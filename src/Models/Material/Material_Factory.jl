@@ -240,6 +240,8 @@ symmetry; they are completed at initialisation.
     "Stabilization against zero-energy modes of correspondence materials, e.g. \"Global\""
     zero_energy_control::Union{Nothing,String} = opt("Zero Energy Control";
                                                      default = nothing)
+    "Correspondence materials: nodes whose damage index (broken bond volume fraction) is at least this value get an inverse shape tensor of zero, so they carry no correspondence and zero energy forces and move as detached fragments; 1 switches it off. For strongly anisotropic bond criteria that break whole bond directions, where the few remaining bonds no longer determine the deformation gradient. Keep it off for additive manufacturing: inactive neighbors count as broken bonds, so freshly activated nodes would be detached at once"
+    detach_damage::Float64 = opt("Detach Damage"; default = 1.0, min = 0, max = 1)
     "Uses the bond-associated correspondence formulation, which evaluates the deformation gradient per bond instead of per node"
     bond_associated::Bool = opt("Bond Associated"; default = false)
     "Uses the small-strain tensor instead of the Green-Lagrange strain in correspondence materials"
@@ -250,6 +252,8 @@ end
 
 # stiffness-matrix materials must define all their constants
 function check!(p::MaterialBaseParams, path::String, ctx::ParseContext)
+    p.detach_damage > 0 ||
+        add_error!(ctx, join_path(path, "Detach Damage"), "must be greater than 0")
     p.symmetry === nothing && return nothing
     field = Dict(fs.alias => fs.name for fs in parameter_spec(MaterialBaseParams))
     missing_keys = [key

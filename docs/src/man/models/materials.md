@@ -16,6 +16,7 @@ The models related functions can be found [here](@ref "Model Factory - Functions
 | Poisson's/Young's/Bulk/Shear | ✔️| ✔️ | ✔️ | ✔️     | ✔️     |
 | Yield Stress               |                   |                  | ✔️|                        | ✔️     |
 | Zero Energy Control        |                   |                  |                  | ✔️     | ✔️     |
+| Detach Damage              |                   |                  |                  | ✔️     | ✔️     |
 | C11/C12/.../C66            | (✔️)| (✔️) | (✔️) | (✔️)     | (✔️)     |
 
 `Density` and `Horizon` are keys of the [block](../../generated/input_sections.md#Blocks). Every material model entry accepts these shared keys:
