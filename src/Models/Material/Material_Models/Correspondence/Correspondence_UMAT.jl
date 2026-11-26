@@ -172,23 +172,19 @@ function init_model(nodes::AbstractVector{Int64}, p::CorrespondenceUMATParams, m
     end
 end
 
-# moduli scaled by the state variable named by State Factor ID (the legacy init re-ran
-# get_all_elastic_moduli after creating the State Variables field)
+# moduli scaled by the state variable named by State Factor ID; scales the unscaled
+# moduli of the node fields (elastic_moduli keeps them unscaled), so the factor is applied
+# once, whether or not the State Variables existed when the block material was built
 function _state_scaled(material)
     id = material.base.state_factor_id
     (id === nothing || material.moduli === nothing) && return material
     factor = Data_Manager.get_field("State Variables")[:, id]
-    m = material.moduli
-    moduli = (bulk_modulus = m.bulk_modulus .* factor,
-              youngs_modulus = m.youngs_modulus .* factor,
-              shear_modulus = m.shear_modulus .* factor,
-              poissons_ratio = m.poissons_ratio)
-    Data_Manager.get_field("Bulk_Modulus") .= moduli.bulk_modulus
-    Data_Manager.get_field("Young's_Modulus") .= moduli.youngs_modulus
-    Data_Manager.get_field("Shear_Modulus") .= moduli.shear_modulus
+    moduli = (bulk_modulus = Data_Manager.get_field("Bulk_Modulus") .* factor,
+              youngs_modulus = Data_Manager.get_field("Young's_Modulus") .* factor,
+              shear_modulus = Data_Manager.get_field("Shear_Modulus") .* factor,
+              poissons_ratio = Data_Manager.get_field("Poisson's_Ratio"))
     return (base = material.base, moduli = moduli, hooke_symmetry = material.hooke_symmetry)
 end
-
 
 """
     compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, p, material, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
@@ -219,10 +215,10 @@ function _umat_stresses!(nodes::AbstractVector{Int64},
                          nprops::Int64,
                          cmname::String,
                          time::Float64,
-                          dt::Float64,
-                          strain_increment::AbstractArray{Float64,3},
-                          stress_N::AbstractArray{Float64,3},
-                          stress_NP1::AbstractArray{Float64,3})
+                         dt::Float64,
+                         strain_increment::AbstractArray{Float64,3},
+                         stress_N::AbstractArray{Float64,3},
+                         stress_NP1::AbstractArray{Float64,3})
     # the notation from the Abaqus Fortran subroutine is used.
     props = Data_Manager.get_field("Properties")
 
@@ -361,21 +357,25 @@ Computes the stresses of `nodes`.
 - `stress_N`: Stress of step N.
 - `stress_NP1`: Stress of step N+1, updated in place.
 """
-compute_stresses(nodes::AbstractVector{Int64}, dof::Int64, p::CorrespondenceUMATParams,
-                 material, time::Float64, dt::Float64,
-                 strain_increment::AbstractArray{Float64,3},
-                 stress_N::AbstractArray{Float64,3}, stress_NP1::AbstractArray{Float64,3}) = _umat_stresses!(nodes,
-                                                                                                             dof,
-                                                                                                             something(p.number_of_state_variables,
-                                                                                                                       1),
-                                                                                                             p.number_of_properties,
-                                                                                                             something(p.umat_material_name,
-                                                                                                                       ""),
-                                                                                                             time,
-                                                                                                             dt,
-                                                                                                             strain_increment,
-                                                                                                             stress_N,
-                                                                                                             stress_NP1)
+function compute_stresses(nodes::AbstractVector{Int64}, dof::Int64,
+                          p::CorrespondenceUMATParams,
+                          material, time::Float64, dt::Float64,
+                          strain_increment::AbstractArray{Float64,3},
+                          stress_N::AbstractArray{Float64,3},
+                          stress_NP1::AbstractArray{Float64,3})
+    _umat_stresses!(nodes,
+                    dof,
+                    something(p.number_of_state_variables,
+                              1),
+                    p.number_of_properties,
+                    something(p.umat_material_name,
+                              ""),
+                    time,
+                    dt,
+                    strain_increment,
+                    stress_N,
+                    stress_NP1)
+end
 """
     compute_stresses_ba(nodes, nlist, dof, p, material, time, dt, strain_increment, stress_N, stress_NP1)
 
@@ -393,9 +393,12 @@ Computes the bond-associated stresses of `nodes`.
 - `stress_N`: Stress of step N.
 - `stress_NP1`: Stress of step N+1, updated in place.
 """
-compute_stresses_ba(nodes, nlist, dof::Int64, p::CorrespondenceUMATParams, material,
-                    time::Float64, dt::Float64, strain_increment, stress_N, stress_NP1) = @abort "Correspondence UMAT not yet implemented for bond associated."
-
+function compute_stresses_ba(nodes, nlist, dof::Int64, p::CorrespondenceUMATParams,
+                             material,
+                             time::Float64, dt::Float64, strain_increment, stress_N,
+                             stress_NP1)
+    @abort "Correspondence UMAT not yet implemented for bond associated."
+end
 
 """
     UMAT_interface(filename::String, STRESS::Vector{Float64}, STATEV::Vector{Float64}, DDSDDE::Matrix{Float64}, SSE::Float64, SPD::Float64, SCD::Float64, RPL::Float64, DDSDDT::Vector{Float64}, DRPLDE::Vector{Float64}, DRPLDT::Float64, STRAN::Vector{Float64}, DSTRAN::Vector{Float64}, TIME::Vector{Float64}, DTIME::Float64, TEMP::Float64, DTEMP::Float64, PREDEF::Vector{Float64}, DPRED::Vector{Float64}, CMNAME::Cstring, NDI::Int64, NSHR::Int64, NTENS::Int64, NSTATEV::Int64, PROPS::Vector{Float64}, NPROPS::Int64, COORDS::Vector{Float64}, DROT::Matrix{Float64}, PNEWDT::Float64, CELENT::Float64, DFGRD0::Matrix{Float64}, DFGRD1::Matrix{Float64}, NOEL::Int64, NPT::Int64, LAYER::Int64, KSPT::Int64, JSTEP::Int64, KINC::Int64)

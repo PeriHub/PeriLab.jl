@@ -523,9 +523,25 @@ end
                                   "File" => ut_umat_file(), "Number of Properties" => 1,
                                   "State Factor ID" => 1, "Young's Modulus" => 10.0,
                                   "Poisson's Ratio" => 0.25))
-    E = copy(m.moduli.youngs_modulus)
+    @test m.moduli.youngs_modulus ≈ fill(20.0, 3)
+    # the fields keep the unscaled moduli
+    @test PeriLab.Data_Manager.get_field("Young's_Modulus") ≈ fill(10.0, 3)
     BCORR.Correspondence_UMAT.init_model([1, 2, 3], m.model, m, 1)
-    @test PeriLab.Data_Manager.get_field("Young's_Modulus") ≈ 2 .* E
+    @test PeriLab.Data_Manager.get_field("Young's_Modulus") ≈ fill(10.0, 3)
+    @test PeriLab.Data_Manager.get_field("Material Gradient")[1, :, :] ≈
+          Matrix(BBASIS.hooke_matrix(m, 3, 1))
+end
+
+@testset "state factor is not compounded over solver steps" begin
+    ut_reset(3; nnodes = 3)
+    sv = PeriLab.Data_Manager.create_constant_node_scalar_field("State Variables", Float64)
+    sv .= 2.0
+    raw = Dict("Material Model" => "PD Solid Elastic", "State Factor ID" => 1,
+               "Young's Modulus" => 10.0, "Poisson's Ratio" => 0.25)
+    # read_properties builds the block material again in every solver step
+    for _ in 1:3
+        @test typed_block_material(raw).moduli.youngs_modulus ≈ fill(20.0, 3)
+    end
 end
 
 @testset "UMAT init with a state factor grows linearly with the node count" begin

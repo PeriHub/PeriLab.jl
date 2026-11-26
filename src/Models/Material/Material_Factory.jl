@@ -424,7 +424,8 @@ end
 Completes the isotropic elastic constants from any two of bulk modulus, Young's
 modulus, shear modulus and Poisson's ratio (bond-based models: Poisson's ratio
 is fixed). Moduli given per node (fields `Bulk_Modulus`, …) or a `State Factor
-ID` make the result per node, and the node fields are updated. Returns `nothing`
+ID` make the result per node, and the node fields are updated with the unscaled
+moduli (the state factor only scales the result). Returns `nothing`
 for anisotropic, orthotropic and transverse isotropic materials (stiffness
 matrix; completeness is checked when the input is read).
 """
@@ -497,17 +498,19 @@ function elastic_moduli(base::MaterialBaseParams, bond_based::Bool, dof::Int64)
         G = E ./ (2 .+ 2 .* nu)
     end
 
-    if state_factor_defined && Data_Manager.has_key("State Variables")
-        state_factor = Data_Manager.get_field("State Variables")[:, base.state_factor_id]
-        K = K .* state_factor
-        E = E .* state_factor
-        G = G .* state_factor
-    end
     if any_field_allocated
         Data_Manager.get_field("Bulk_Modulus") .= K
         Data_Manager.get_field("Young's_Modulus") .= E
         Data_Manager.get_field("Shear_Modulus") .= G
         Data_Manager.get_field("Poisson's_Ratio") .= nu
+    end
+    # the fields keep the unscaled moduli: init runs in every solver step and reads them
+    # back, scaling them in place would apply the factor again
+    if state_factor_defined && Data_Manager.has_key("State Variables")
+        state_factor = Data_Manager.get_field("State Variables")[:, base.state_factor_id]
+        K = K .* state_factor
+        E = E .* state_factor
+        G = G .* state_factor
     end
     return ElasticModuli(K, E, G, nu)
 end
