@@ -628,6 +628,9 @@ function init_model(nodes::AbstractVector{Int64}, block::Int64)
 
     bind_material!(material)
     init_contact_stiffness(nodes, material)
+    if !material.correspondence && any(!=(1.0), Data_Manager.get_horizon_mesh_scaling())
+        @warn "Block $block: Horizon Mesh Scaling gives an elliptic neighborhood, but non-correspondence materials are calibrated for a spherical one. The material becomes anisotropic (stiffer along the long axis, much softer across it). Use a correspondence material with Zero Energy Control."
+    end
     if material.correspondence
         return Correspondence.init_model(nodes, material, block)
     end

@@ -152,13 +152,13 @@ const _MESH_TYPES = ["Text File", "Exodus", "Abaqus", "Gmsh", "Gcode", "Kuka"]
     input_external_topology::Union{Nothing,
                                    ExternalTopologyParams} = opt("Input External Topology";
                                                                  default = nothing)
-    "Factor on the horizon in x for the neighbor search, for elliptic neighborhoods"
+    "Scales the x coordinates in the neighbor search, so the horizon in x is Horizon / factor (elliptic neighborhood). Only correspondence materials stay isotropic with it"
     horizon_mesh_scaling_x::Union{Nothing,Float64} = opt("Horizon Mesh Scaling X";
                                                          default = nothing)
-    "Factor on the horizon in y for the neighbor search, for elliptic neighborhoods"
+    "Scales the y coordinates in the neighbor search, so the horizon in y is Horizon / factor (elliptic neighborhood). Only correspondence materials stay isotropic with it"
     horizon_mesh_scaling_y::Union{Nothing,Float64} = opt("Horizon Mesh Scaling Y";
                                                          default = nothing)
-    "Factor on the horizon in z for the neighbor search, for elliptic neighborhoods"
+    "Scales the z coordinates in the neighbor search, so the horizon in z is Horizon / factor (elliptic neighborhood). Only correspondence materials stay isotropic with it"
     horizon_mesh_scaling_z::Union{Nothing,Float64} = opt("Horizon Mesh Scaling Z";
                                                          default = nothing)
     "How nodes are split across MPI ranks: \"Coordinate based\" (default, compact parts by recursive coordinate bisection), \"Neighbor based\" and \"Node based\" (in node number order), or any other value for an even split by node number"
