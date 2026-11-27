@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- `Zero Energy Control: Global` for the correspondence `Thermal Flow`: stabilises temperature patterns the nodal gradient does not see (a checkerboard grew without it), zero for linear fields; the stiffness is capped at the value of a full neighborhood so the bond-based critical time step stays valid
 - Typed input: every key of the input deck is declared with type, default, range and description; the deck is validated before the run starts and all problems are reported at once, with suggestions for misspelled keys
 - Strict validation: unknown keys are errors; `--no_strict` on the command line or `Strict Validation: false` in the deck reports them as warnings
 - `PeriLab.describe(name)` prints the keys of a section or model, `PeriLab.describe(name; template = true)` a YAML block to copy into an input deck
@@ -76,6 +77,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Correspondence `Thermal Flow`: heat flowed over broken bonds, e.g. into nodes not printed yet in additive simulations (energy was not conserved)
 - Von mises calculation domain error
 
 ## [2.2.3] - 2026-08-03

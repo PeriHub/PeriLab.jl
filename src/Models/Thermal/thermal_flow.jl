@@ -21,6 +21,12 @@ using ......ParameterSpec: @params, register_thermal
 @params "Heat conduction between nodes" struct ThermalFlowParams
     "Formulation of the heat flow: per bond, or from the temperature gradient as in correspondence materials"
     type::ThermalFlowType = opt("Type"; default = BondBased)
+    "Stabilization of the correspondence heat flow against temperature patterns the nodal gradient does not see (e.g. a checkerboard, which otherwise grows): \"Global\" adds a bond-based flow driven by the part of the bond temperature difference the gradient does not explain, zero for linear fields (as Zero Energy Control: Global of correspondence materials)"
+    zero_energy_control::Union{Nothing,String} = opt("Zero Energy Control";
+                                                     default = nothing,
+                                                     allowed = ["Global"],
+                                                     when = Dict("Type" =>
+                                                                     ["Correspondence"]))
 end
 
 __init__() = register_thermal("Thermal Flow", ThermalFlowParams)
@@ -130,7 +136,10 @@ function compute_model(nodes::AbstractVector{Int64}, p::ThermalFlowParams, therm
                                                                                    Kinv,
                                                                                    temperature,
                                                                                    volume,
-                                                                                   heat_flow)
+                                                                                   heat_flow;
+                                                                                   zero_energy = p.zero_energy_control ==
+                                                                                                 "Global",
+                                                                                   horizon = Data_Manager.get_field("Horizon"))
     end
 end
 
@@ -150,7 +159,9 @@ function compute_heat_flow_state_correspondence!(nodes::AbstractVector{Int64},
                                                  Kinv::Array{Float64,3},
                                                  temperature::NodeScalarField{Float64},
                                                  volume::NodeScalarField{Float64},
-                                                 heat_flow::NodeScalarField{Float64}) where {D}
+                                                 heat_flow::NodeScalarField{Float64};
+                                                 zero_energy::Bool = false,
+                                                 horizon = nothing) where {D}
     conductivity = SMatrix{D,D,Float64,D * D}(lambda)
     @inbounds for iID in nodes
         neighbors = nlist[iID]
@@ -166,15 +177,32 @@ function compute_heat_flow_state_correspondence!(nodes::AbstractVector{Int64},
         end
         K = node_tensor(Kinv, iID, Val(D))
         nablaT = K * H
-        q = rotated_conductivity(conductivity, rotation_tensor, iID) * nablaT
+        Λ = rotated_conductivity(conductivity, rotation_tensor, iID)
+        q = Λ * nablaT
+        # zero energy control (thermal analogue of Z = C : K⁻¹ of correspondence
+        # materials): z (T_j - T_i - ∇T_i·ξ) per bond, zero for linear temperature fields
+        # capped at the value of a full spherical neighborhood: near-singular shape tensors
+        # (thin parts, freshly printed nodes) would make it arbitrarily stiff and break the
+        # bond-based critical time step
+        z = zero_energy ?
+            min(sum(Λ .* K), tr(Λ) * full_inverse_shape_tensor(horizon[iID], Val(D))) :
+            0.0
         for jID in eachindex(neighbors)
             neighborID = neighbors[jID]
-            flow = dot(K * bonds[jID], q)
+            stab = z *
+                   (temperature[neighborID] - temperature[iID] - dot(nablaT, bonds[jID]))
+            # broken bonds (e.g. to nodes not printed yet) carry no heat
+            # (stab enters like the bond-based flow: heat_flow_i -= w (T_j - T_i))
+            flow = damage[jID] * (dot(K * bonds[jID], q) + stab)
             heat_flow[iID] -= flow * volume[neighborID]
             heat_flow[neighborID] += flow * volume[iID]
         end
     end
 end
+
+# K⁻¹ = k I of a full spherical (circular) neighborhood, K = ∫ ξ⊗ξ dV
+full_inverse_shape_tensor(δ, ::Val{3}) = 15 / (4 * pi * δ^5)
+full_inverse_shape_tensor(δ, ::Val{2}) = 4 / (pi * δ^4)
 
 # the conductivity in the global frame: R Λ Rᵀ (as rotate_second_order_tensor2x2/3x3)
 rotated_conductivity(conductivity, ::Nothing, iID::Int64) = conductivity
