@@ -5,4 +5,6 @@
 folder_name = basename(@__FILE__)[1:(end - 3)]
 cd("fullscale_tests/" * folder_name) do
     run_perilab("multistep", 1, true, folder_name)
+    # BCs of step 2 only: node sets must keep their global ids after the step 1 output init
+    run_perilab("multistep", 2, true, folder_name)
 end

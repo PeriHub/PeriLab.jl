@@ -667,11 +667,18 @@ function init_write_results(input::PeriLabInput,
         elem_global_ids = Data_Manager.loc_to_glob(1:(num_fem_elements + nnodes - num_nodes_in_topo))
     end
 
-    # Node sets stay on the master nodes: a set built from the responder nodes as well
-    # would make a Node_Set_Data compute count a shared node once per rank.
-    for name in eachindex(nsets)
-        existing_nodes = intersect(owned_global_ids, nsets[name])
-        nsets[name] = Data_Manager.get_local_nodes(existing_nodes)
+    # Output node sets stay on the master nodes: a set built from the responder nodes as
+    # well would make a Node_Set_Data compute count a shared node once per rank. They are
+    # a copy: the Data_Manager node sets keep their global ids for the boundary conditions
+    # of later solver steps.
+    nsets = Dict{String,Vector{Int64}}(name =>
+                                           Data_Manager.get_local_nodes(intersect(owned_global_ids,
+                                                                                  nodes))
+                                       for (name, nodes) in nsets)
+    for output in values(outputs), field in values(output["Fields"])
+        if field["global_var"] && field["compute_params"].compute_class == "Node_Set_Data"
+            field["nodeset"] = nsets[field["nodeset"]]
+        end
     end
 
     # Bond blocks per output file: the same object supplies the element and block counts
@@ -1025,11 +1032,9 @@ function get_global_values(output::Dict)
                 end
             end
         elseif compute_class == "Node_Set_Data"
-            nsets = Data_Manager.get_nsets()
-            node_set = output[varname]["nodeset"]
             global_value,
             nnodes = calculate_nodelist(fieldname, dof,
-                                        calculation_type, nsets[node_set])
+                                        calculation_type, output[varname]["nodeset"])
         elseif compute_class == "Nearest_Point_Data"
             neares_point_id = output[varname]["nodeset"]
             global_value,
