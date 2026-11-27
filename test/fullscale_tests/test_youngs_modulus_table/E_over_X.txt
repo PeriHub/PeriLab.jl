@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# E = 2100 + 51.1 * X[%] MPa
+header: Crystallinity Young's_Modulus
+0.00 2100.0
+0.05 2355.5
+0.10 2611.0
+0.15 2866.5
+0.20 3122.0
+0.25 3377.5
+0.30 3633.0
+0.35 3888.5
+0.40 4144.0
+0.45 4399.5
+0.50 4655.0

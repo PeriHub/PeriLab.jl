@@ -12,7 +12,8 @@ using ....PeriLabExceptions: @abort
 using ....ModuleLoader: find_registered_modules
 using ....Helpers: each_call, with_dof
 using .....ParameterSpec: @params, Dependent, register_base!, WithBase, Composite,
-                          ParseContext, add_error!, join_path, Table1D, dependent_tables,
+                          ParseContext, add_error!, join_path, Table1D, Constant,
+                          bind_table!, dependent_tables,
                           value, model_parts, model_module,
                           model_function, parameter_spec
 import .....ParameterSpec: check!, derive, schema_choices, conditional_required,
@@ -117,10 +118,10 @@ symmetry; they are completed at initialisation.
 @params "Material model of the blocks that use this entry: elastic constants, symmetry and options shared by all material models" struct MaterialBaseParams
     "Material symmetry and 2D assumption (plane stress or plane strain); selects which elastic constants are needed. Isotropic if not given"
     symmetry::Union{Nothing,String} = opt("Symmetry"; default = nothing)
-    "[Young's modulus](https://en.wikipedia.org/wiki/Young%27s_modulus), isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed (bond-based models fix Poisson's ratio and need one of the others); a text mesh column (e.g. Bulk_Modulus) gives it per node"
-    youngs_modulus::Union{Nothing,Float64} = opt("Young's Modulus"; default = nothing,
-                                                 min = 0, quantity = :stress,
-                                                 when = _read_by("Young's Modulus"))
+    "[Young's modulus](https://en.wikipedia.org/wiki/Young%27s_modulus), isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed (bond-based models fix Poisson's ratio and need one of the others); a text mesh column (e.g. Bulk_Modulus) gives it per node; a data file gives it as a table over a node field (e.g. Crystallinity), evaluated per node at the start of every solver step and written to the output field Young's Modulus"
+    youngs_modulus::Union{Nothing,Dependent} = opt("Young's Modulus"; default = nothing,
+                                                   min = 0, quantity = :stress,
+                                                   when = _read_by("Young's Modulus"))
     "[Poisson's ratio](https://en.wikipedia.org/wiki/Poisson%27s_ratio), isotropic elastic constant; give two of Young's modulus, Poisson's ratio, bulk modulus and shear modulus, the others are computed (bond-based models fix Poisson's ratio and need one of the others); a text mesh column (e.g. Bulk_Modulus) gives it per node"
     poissons_ratio::Union{Nothing,Float64} = opt("Poisson's Ratio"; default = nothing,
                                                  min = -1, max = 0.5,
@@ -425,17 +426,24 @@ Completes the isotropic elastic constants from any two of bulk modulus, Young's
 modulus, shear modulus and Poisson's ratio (bond-based models: Poisson's ratio
 is fixed). Moduli given per node (fields `Bulk_Modulus`, …) or a `State Factor
 ID` make the result per node, and the node fields are updated with the unscaled
-moduli (the state factor only scales the result). Returns `nothing`
+moduli (the state factor only scales the result). A Young's modulus table gives
+per node vectors of the block (see `youngs_modulus_from_table!`). Returns `nothing`
 for anisotropic, orthotropic and transverse isotropic materials (stiffness
 matrix; completeness is checked when the input is read).
 """
 function elastic_moduli(base::MaterialBaseParams, bond_based::Bool, dof::Int64)
     state_factor_defined = base.state_factor_id !== nothing
-    allocated = Dict(key => Data_Manager.has_key(_modulus_field(key))
+    table = base.youngs_modulus isa Table1D ? base.youngs_modulus : nothing
+    # a Young's modulus table gives the block its own node vectors, computed from the
+    # table and the given constants; the shared modulus fields (mesh columns, other
+    # blocks, previous steps) are not read
+    allocated = Dict(key => table === nothing &&
+                            Data_Manager.has_key(_modulus_field(key))
                      for (key, _) in _MODULI)
     any_field_allocated = any(values(allocated)) || state_factor_defined
-    given = Dict(key => getfield(base, name) for (key, name) in _MODULI)
+    given = Dict(key => _constant(getfield(base, name)) for (key, name) in _MODULI)
     has = Dict(key => given[key] !== nothing || allocated[key] for (key, _) in _MODULI)
+    table === nothing || (has["Young's Modulus"] = true)
 
     K = _modulus_value(given["Bulk Modulus"], allocated["Bulk Modulus"],
                        any_field_allocated, "Bulk Modulus")
@@ -445,6 +453,11 @@ function elastic_moduli(base::MaterialBaseParams, bond_based::Bool, dof::Int64)
                        any_field_allocated, "Shear Modulus")
     nu = _modulus_value(given["Poisson's Ratio"], allocated["Poisson's Ratio"],
                         any_field_allocated, "Poisson's Ratio")
+    if table !== nothing
+        E isa AbstractVector ||
+            (E = zeros(Data_Manager.get_nnodes() + Data_Manager.get_num_responder()))
+        youngs_modulus_from_table!(E, table)
+    end
     bulk, youngs, shear, poissons = has["Bulk Modulus"], has["Young's Modulus"],
                                     has["Shear Modulus"], has["Poisson's Ratio"]
 
@@ -515,6 +528,41 @@ function elastic_moduli(base::MaterialBaseParams, bond_based::Bool, dof::Int64)
     return ElasticModuli(K, E, G, nu)
 end
 
+_constant(::Nothing) = nothing
+_constant(x::Real) = x
+_constant(c::Constant) = c.value
+_constant(::Table1D) = nothing
+
+"""
+    youngs_modulus_from_table!(E, table)
+
+Fills the node field `E` from the Young's modulus `table` over a node field (e.g.
+`Crystallinity`), clamped to the table range. Nodes without a defined value (field
+missing, inactive node, NaN) get the value at 0, with one warning.
+"""
+function youngs_modulus_from_table!(E::AbstractVector{Float64}, table::Table1D)
+    name = table.field_name
+    field = Data_Manager._dependent_field(name)
+    if field === nothing
+        @warn "Young's Modulus from $(table.source): field \"$name\" does not exist (yet), using the value at $name = 0 for all nodes."
+        x = zeros(length(E))
+    else
+        x = Vector{Float64}(field)
+        undefined = isnan.(x)
+        Data_Manager.has_key("Active") &&
+            (undefined .|= .!Data_Manager.get_field("Active"))
+        if any(undefined)
+            x[undefined] .= 0.0
+            @warn "Young's Modulus from $(table.source): $(count(undefined)) nodes are inactive or have no $name, using the value at $name = 0."
+        end
+    end
+    bind_table!(table, x)
+    for iID in eachindex(E)
+        E[iID] = value(table, iID)
+    end
+    return E
+end
+
 """
     block_material(wb, dof)
 
@@ -531,7 +579,11 @@ function block_material(wb::WithBase, dof::Int64)
     end
     return BlockMaterial(wb.base, wb.model, material_symmetry(wb.base.symmetry, dof),
                          hooke_symmetry(wb.base.symmetry, dof), moduli,
-                         vcat(dependent_tables(wb.base), dependent_tables(wb.model)),
+                         # a Young's modulus table is evaluated once per step by
+                         # elastic_moduli, the force models see the node field
+                         filter(t -> t !== wb.base.youngs_modulus,
+                                vcat(dependent_tables(wb.base),
+                                     dependent_tables(wb.model))),
                          wb.extras,
                          correspondence)
 end
@@ -627,6 +679,11 @@ function init_model(nodes::AbstractVector{Int64}, block::Int64)
     end
 
     bind_material!(material)
+    if material.base.youngs_modulus isa Table1D
+        # output of the per node Young's modulus of a table
+        E = Data_Manager.create_constant_node_scalar_field("Young's Modulus", Float64)
+        E[nodes] .= material.moduli.youngs_modulus[nodes]
+    end
     init_contact_stiffness(nodes, material)
     if !material.correspondence && any(!=(1.0), Data_Manager.get_horizon_mesh_scaling())
         @warn "Block $block: Horizon Mesh Scaling gives an elliptic neighborhood, but non-correspondence materials are calibrated for a spherical one. The material becomes anisotropic (stiffer along the long axis, much softer across it). Use a correspondence material with Zero Energy Control."

@@ -1,0 +1,72 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# 40 x 4 x 2 mm box, dx = 0.5 mm, left end clamped, pulled by a force on the right end; the mesh
+# (with a Crystallinity column) is written by test_youngs_modulus_table.jl
+PeriLab:
+  Blocks:
+    block_1:
+      Block ID: 1
+      Density: 1.3e-9
+      Horizon: 1.5
+      Material Model: PEEK
+    block_2:
+      Block ID: 2
+      Density: 1.3e-9
+      Horizon: 1.5
+      Material Model: PEEK
+  Discretization:
+    Input Mesh File: box_mesh.txt
+    Type: Text File
+    Node Sets:
+      Node Set 1: x<1.5
+      Node Set 2: x>39.5
+  Models:
+    Material Models:
+      PEEK:
+        Material Model: Correspondence Elastic
+        Symmetry: isotropic
+        Young's Modulus: E_over_X.txt
+        Poisson's Ratio: 0.33
+        Zero Energy Control: Global
+  Boundary Conditions:
+    BC_1:
+      Variable: Displacements
+      Node Set: Node Set 1
+      Coordinate: x
+      Value: 0.0
+      Type: Dirichlet
+    BC_2:
+      Variable: Displacements
+      Node Set: Node Set 1
+      Coordinate: y
+      Value: 0.0
+      Type: Dirichlet
+    BC_3:
+      Variable: Displacements
+      Node Set: Node Set 1
+      Coordinate: z
+      Value: 0.0
+      Type: Dirichlet
+    BC_4:
+      Variable: Forces
+      Node Set: Node Set 2
+      Coordinate: x
+      Value: 2.5
+      Type: Dirichlet
+  Outputs:
+    Output1:
+      Output File Type: Exodus
+      Output Filename: box
+      Output Frequency: 1
+      Output Variables:
+        Displacements: true
+        Young's Modulus: true
+        Forces: true
+  Solver:
+    Initial Time: 0.0
+    Final Time: 1.0
+    Number of Steps: 1
+    Material Models: true
+    Linear Static Matrix Based:

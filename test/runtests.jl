@@ -372,6 +372,9 @@ MPI.Init()
         @testset "test_retained_node_sets" begin
             include("fullscale_tests/test_retained_node_sets/test_retained_node_sets.jl")
         end
+        @testset "test_youngs_modulus_table" begin
+            include("fullscale_tests/test_youngs_modulus_table/test_youngs_modulus_table.jl")
+        end
         @testset "test_matrix_backend" begin
             # distributed PD_Matrix backend, needs the licensed matrix elements
             include("fullscale_tests/test_matrix_backend/test_matrix_backend.jl")

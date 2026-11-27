@@ -712,3 +712,71 @@ end
                                    "Bulk Modulus" => 1.0, "Shear Modulus" => 1.0); dof = 2)
     @test isnothing(BMAT.check_material_symmetry(ok, 2))
 end
+
+@testset "Young's modulus table over crystallinity" begin
+    dir = mktempdir()
+    write(joinpath(dir, "E_over_X.txt"),
+          "header: Crystallinity Young's_Modulus\n" *
+          join(("$x $(2100 + 51.1 * 100 * x)" for x in 0:0.05:0.5), "\n"))
+    raw = Dict{String,Any}("Material Model" => "Correspondence Elastic",
+                           "Symmetry" => "isotropic", "Young's Modulus" => "E_over_X.txt",
+                           "Poisson's Ratio" => 0.33)
+    function table_material()
+        ctx = PeriLab.ParameterSpec.ParseContext(directory = dir)
+        wb = PeriLab.ParameterSpec.parse_model(:material, raw, "PEEK", ctx;
+                                               name_key = "Material Model")
+        @test isempty(ctx.errors)
+        return BMAT.block_material(wb, 3)
+    end
+    E(x) = 2100 + 5110 * x
+
+    ut_reset(3; nnodes = 7)
+    _, X = PeriLab.Data_Manager.create_node_scalar_field("Crystallinity", Float64)
+    X .= [0.0, 0.18, 0.5, 0.7, -0.1, NaN, 0.3]
+    active = PeriLab.Data_Manager.create_constant_node_scalar_field("Active", Bool;
+                                                                    default_value = true)
+    active[7] = false
+    m = table_material()
+    expected = [E(0.0), E(0.18), E(0.5), E(0.5), E(0.0), E(0.0), E(0.0)]
+    @test m.moduli.youngs_modulus ≈ expected
+    @test m.moduli.poissons_ratio == 0.33
+    @test m.moduli.bulk_modulus ≈ expected ./ (3 - 6 * 0.33)
+    # C_i = E_i / E_0 * C_0
+    for i in 1:7
+        @test BBASIS.hooke_matrix(m, 3, i) ≈
+              expected[i] / E(0.0) * BBASIS.hooke_matrix(m, 3, 1)
+    end
+    # the table is evaluated once per step, the force models see constant moduli
+    @test isempty(m.tables)
+    # no compounding: every solver step builds the material again from the field
+    for _ in 1:3
+        @test table_material().moduli.youngs_modulus ≈ expected
+    end
+    # the shared modulus fields of mesh columns are neither read nor written
+    @test !PeriLab.Data_Manager.has_key("Young's_Modulus")
+
+    # field missing (e.g. a step before the crystallization model ran): value at X = 0
+    ut_reset(3; nnodes = 2)
+    m = table_material()
+    @test m.moduli.youngs_modulus ≈ fill(E(0.0), 2)
+
+    # a numeric Young's modulus is unchanged
+    ut_reset(3; nnodes = 2)
+    m = typed_block_material(Dict("Material Model" => "Correspondence Elastic",
+                                  "Symmetry" => "isotropic", "Young's Modulus" => 2100.0,
+                                  "Poisson's Ratio" => 0.33))
+    @test m.moduli.youngs_modulus === 2100.0
+
+    # invalid tables
+    for (content, message) in [
+            ("header: Crystallinity Young's_Modulus\n0 1\n", "at least 2"),
+            ("header: Crystallinity Young's_Modulus\n0 1\n0.5 2\n0.2 3\n",
+             "strictly increasing")]
+        write(joinpath(dir, "bad.txt"), content)
+        ctx = PeriLab.ParameterSpec.ParseContext(directory = dir)
+        PeriLab.ParameterSpec.parse_model(:material,
+                                          merge(raw, Dict("Young's Modulus" => "bad.txt")),
+                                          "PEEK", ctx; name_key = "Material Model")
+        @test any(e -> occursin(message, string(e)), ctx.errors)
+    end
+end
