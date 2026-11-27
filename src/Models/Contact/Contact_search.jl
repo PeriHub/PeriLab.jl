@@ -77,6 +77,11 @@ function ContactSearch(dof::Int64, master_nodes::Vector{Int64}, slave_nodes::Vec
     # candidates within the search radius are a superset of the contact pairs only if the
     # search radius is not smaller than the contact radius
     radius = max(search_radius, contact_radius)
+    # between two global searches only the candidates are checked: nodes that approach
+    # each other in this time are missed without a margin
+    if frequency > 1 && search_radius <= contact_radius
+        @warn "Global Search Frequency $frequency > 1 with Search Radius $search_radius <= Contact Radius $contact_radius: contact pairs that come closer between two global searches are missed. Choose a Search Radius larger than the Contact Radius."
+    end
     grid = GridNeighborhoodSearch{dof}(search_radius = radius,
                                        n_points = length(slave_nodes))
     return ContactSearch{dof,typeof(grid)}(contact_radius, radius, frequency, 0,
