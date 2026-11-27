@@ -9,6 +9,7 @@ using .....PeriLabExceptions: @abort
 using .....Helpers: get_shared_horizon, dot, norm, with_dof
 using .....ParameterSpec: @params, register_contact
 using StaticArrays: SVector
+using ..Contact_Search: ContactPairs, contact_pairs
 
 export init_contact_model
 export compute_contact_model
@@ -41,25 +42,22 @@ end
 function compute_contact_model(cg, p::PenaltyContactParams, contact,
                                compute_master_force_density::Function,
                                compute_slave_force_density::Function)
-    contact_dict = Data_Manager.get_contact_dict(cg)
     # function barrier on the dof: the forces below are static vectors
-    with_dof(D -> penalty_forces!(contact_dict, p, contact, compute_master_force_density,
+    with_dof(D -> penalty_forces!(contact_pairs(cg), p, contact,
+                                  compute_master_force_density,
                                   compute_slave_force_density, D))
 end
 
-function penalty_forces!(contact_dict, p::PenaltyContactParams, contact,
+function penalty_forces!(pairs::ContactPairs, p::PenaltyContactParams, contact,
                          compute_master_force_density::Function,
                          compute_slave_force_density::Function, ::Val{D}) where {D}
     contact_stiffness::Float64 = p.contact_stiffness
     contact_radius::Float64 = contact.base.contact_radius
     symmetry::String = contact.base.symmetry
     #Data_Manager.get_symmetry() # TODO store in materials the information
-    for (master_id, contact) in pairs(contact_dict)
-        distances = contact["Distances"]::Vector{Float64}
-        normals = contact["Normals"]::Matrix{Float64}
-        slaves = contact["Slaves"]::Vector{Int64}
-        for id in 1:(contact["nSlaves"]::Int64)
-            slave_id = slaves[id]
+    for (k, master_id) in enumerate(pairs.masters)
+        for id in pairs.offsets[k]:(pairs.offsets[k + 1] - 1)
+            slave_id = pairs.slaves[id]
             horizon::Float64 = get_shared_horizon(slave_id) # needed to get the correct contact horizon
             # TODO symmetry needed
             if symmetry == "plane stress"
@@ -71,14 +69,15 @@ function penalty_forces!(contact_dict, p::PenaltyContactParams, contact,
                 #stiffness = 12 / (pi * horizon^4)  # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
             end
 
-            distance::Float64 = distances[id]
-            normal = SVector{D,Float64}(ntuple(d -> normals[id, d], Val(D)))
+            distance::Float64 = pairs.distances[id]
+            normal = SVector{D,Float64}(ntuple(d -> pairs.normals[(id - 1) * D + d],
+                                               Val(D)))
 
             temp = contact_stiffness * stiffness *
                    (contact_radius - distance)
             normal_force = temp .* normal
             friction_id,
-            friction_slave_id = compute_friction(id, slave_id,
+            friction_slave_id = compute_friction(master_id, slave_id,
                                                  p.friction_coefficient,
                                                  normal_force, normal)
 
