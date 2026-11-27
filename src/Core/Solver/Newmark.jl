@@ -310,7 +310,9 @@ function time_step!(ws::NewmarkWorkspace, run::SolverRun{NewmarkParams}, ctx::So
                            "Temperature"
                        ],
                        bcs, time, step_time)
-    @. external_force_densities += external_forces / volume
+    # the load of this step; the field keeps only the Force Densities boundary
+    # conditions, adding the forces in place would apply them again every step
+    external_force_densities = external_force_densities .+ external_forces ./ volume
     @. deformed_coorNP1 = coor + uN
     compute_matrix_based_bond_forces(block_nodes, time, dt) #-> für schädigung davor
     @timeit "compute_models" compute_stiff_matrix_compatible_models(block_nodes,
@@ -550,6 +552,7 @@ function time_step!(ws::DistributedNewmarkWorkspace, run::SolverRun{NewmarkParam
     deformed_coorNP1 = Data_Manager.get_field("Deformed Coordinates", "NP1")
     forces = Data_Manager.get_field("Forces", "NP1")
     fd = Data_Manager.get_field("Force Densities", "NP1")
+    # the load of this step, the field is not changed (see the LU path)
     f_ext = ws.external_force_densities
     active_list = Data_Manager.get_field("Active")
     active_nodes = find_active_nodes(active_list, Data_Manager.get_field("Active Nodes"),
@@ -558,7 +561,7 @@ function time_step!(ws::DistributedNewmarkWorkspace, run::SolverRun{NewmarkParam
     compute_parabolic_problems_before_model_evaluation(active_nodes, run)
     apply_bc_dirichlet(["Displacements", "Forces", "Force Densities", "Temperature"],
                        ctx.bcs, time, step_time)
-    @. f_ext += ws.external_forces / ws.volume
+    f_ext = f_ext .+ ws.external_forces ./ ws.volume
     @. deformed_coorNP1 = ws.coor + uN
     compute_matrix_based_bond_forces(ctx.block_nodes, time, dt)
     @timeit "compute_models" compute_stiff_matrix_compatible_models(ctx.block_nodes, dt,

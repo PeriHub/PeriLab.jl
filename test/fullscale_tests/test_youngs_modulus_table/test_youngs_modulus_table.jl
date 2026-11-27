@@ -62,5 +62,33 @@ cd("fullscale_tests/" * folder_name) do
         @test length(E_field) >= 2
         @test all(E_step ≈ expected for E_step in E_field)
     end
+
+    # a Forces boundary condition is a load, not a load increment per time step
+    @testset "Forces BC is not accumulated, $solver" for solver in ("Linear Static Matrix Based",
+                                                         "Newmark")
+        write_mesh(_ -> 0.18, _ -> 1)
+        deck = replace(read("box.yaml", String),
+                       "Number of Steps: 1" => "Number of Steps: 3",
+                       "Linear Static Matrix Based:" => "$solver:",
+                       "        Young's Modulus: true\n" => "        External Force Densities: true\n")
+        solver == "Newmark" &&
+            (deck = replace(deck, "Final Time: 1.0" => "Final Time: 1.0e-6"))
+        write("box_load.yaml", deck)
+        @test PeriLab.run("box_load.yaml"; silent = true) == 0
+        rm("box_load.yaml")
+        exo = ExodusDatabase("box.e", "r")
+        n = read_number_of_time_steps(exo)
+        for step in 2:n
+            # the field keeps the force density boundary conditions only (none here)
+            @test all(iszero,
+                      read_values(exo, NodalVariable, step, 1, "External Force Densitiesx"))
+            if solver == "Linear Static Matrix Based"
+                F = read_values(exo, NodalVariable, step, 1, "Forcesx")
+                @test sum(F[vec(x .< 1.5)])≈80 rtol=1e-8
+            end
+        end
+        close(exo)
+        rm("box.e")
+    end
     rm("box_mesh.txt")
 end
